@@ -4630,6 +4630,100 @@ class SettingsController extends Controller
     }
 
     /**
+     * Test GitHub API token
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Test result
+     */
+    public function testGitHubToken(): JSONResponse
+    {
+        try {
+            $token = $this->config->getAppValue('openregister', 'github_api_token', '');
+            
+            if (empty($token)) {
+                return new JSONResponse([
+                    'success' => false,
+                    'message' => 'No GitHub token configured'
+                ], 400);
+            }
+
+            // Test the token by making a simple API call
+            $client = \OC::$server->get(\OCP\Http\Client\IClientService::class)->newClient();
+            $response = $client->get('https://api.github.com/user', [
+                'headers' => [
+                    'Accept' => 'application/vnd.github+json',
+                    'Authorization' => 'Bearer ' . $token,
+                    'X-GitHub-Api-Version' => '2022-11-28',
+                ]
+            ]);
+
+            $data = json_decode($response->getBody(), true);
+            
+            return new JSONResponse([
+                'success' => true,
+                'message' => 'GitHub token is valid',
+                'username' => $data['login'] ?? 'Unknown',
+                'scopes' => $response->getHeader('X-OAuth-Scopes') ?? []
+            ]);
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'message' => 'GitHub token test failed: ' . $e->getMessage()
+            ], 400);
+        }
+    }
+
+    /**
+     * Test GitLab API token
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Test result
+     */
+    public function testGitLabToken(): JSONResponse
+    {
+        try {
+            $token = $this->config->getAppValue('openregister', 'gitlab_api_token', '');
+            $apiUrl = $this->config->getAppValue('openregister', 'gitlab_api_url', 'https://gitlab.com/api/v4');
+            
+            if (empty($token)) {
+                return new JSONResponse([
+                    'success' => false,
+                    'message' => 'No GitLab token configured'
+                ], 400);
+            }
+
+            // Ensure API URL doesn't end with slash
+            $apiUrl = rtrim($apiUrl, '/');
+
+            // Test the token by making a simple API call
+            $client = \OC::$server->get(\OCP\Http\Client\IClientService::class)->newClient();
+            $response = $client->get($apiUrl . '/user', [
+                'headers' => [
+                    'PRIVATE-TOKEN' => $token,
+                ]
+            ]);
+
+            $data = json_decode($response->getBody(), true);
+            
+            return new JSONResponse([
+                'success' => true,
+                'message' => 'GitLab token is valid',
+                'username' => $data['username'] ?? 'Unknown',
+                'instance' => $apiUrl
+            ]);
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'message' => 'GitLab token test failed: ' . $e->getMessage()
+            ], 400);
+        }
+    }
+
+    /**
      * Mask sensitive token for display
      *
      * @param string $token The token to mask

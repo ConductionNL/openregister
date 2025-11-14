@@ -1,137 +1,285 @@
 <template>
-	<NcSettingsSection
-		:name="t('openregister', 'API Token Configuration')"
-		:description="t('openregister', 'Configure API tokens for external service integrations')">
-		<div class="settings-section">
-			<!-- Description -->
-			<NcNoteCard type="info">
-				<p>
-					{{ t('openregister', 'API tokens are used to discover and import OpenRegister configurations from GitHub and GitLab repositories. These tokens enable the "Discover" feature in the Configuration Import dialog.') }}
-				</p>
-				<p class="mt-2">
-					<strong>{{ t('openregister', 'Required Scopes:') }}</strong>
-				</p>
-				<ul>
-					<li><strong>GitHub:</strong> {{ t('openregister', 'repo (for code search API access)') }}</li>
-					<li><strong>GitLab:</strong> {{ t('openregister', 'read_api (for global search access)') }}</li>
-				</ul>
-				<p class="mt-2">
-					<a href="https://docs.openregister.nl/user-guide/configuration/api-tokens" target="_blank" rel="noopener noreferrer">
-						{{ t('openregister', 'View detailed documentation on obtaining API tokens') }} →
-					</a>
-				</p>
-			</NcNoteCard>
-
-			<!-- GitHub Token -->
-			<div class="token-field">
-				<div class="token-header">
-					<Github :size="24" />
-					<h3>{{ t('openregister', 'GitHub Personal Access Token') }}</h3>
-				</div>
-				<NcPasswordField
-					:value.sync="githubToken"
-					:label="t('openregister', 'GitHub Token')"
-					:placeholder="t('openregister', 'ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')"
-					:helper-text="t('openregister', 'Optional: Required only for discovering configurations from GitHub')"
-					autocomplete="off"
-					@update:value="updateGitHubToken">
-					<Github :size="20" />
-				</NcPasswordField>
-				<NcButton
-					v-if="githubToken && githubToken !== originalGithubToken"
-					type="primary"
-					:disabled="saving"
-					@click="saveGitHubToken">
-					<template #icon>
-						<NcLoadingIcon v-if="saving" :size="20" />
-						<ContentSave v-else :size="20" />
-					</template>
-					{{ t('openregister', 'Save GitHub Token') }}
-				</NcButton>
-				<NcButton
-					v-if="githubToken"
-					type="error"
-					:disabled="saving"
-					@click="clearGitHubToken">
-					<template #icon>
-						<Delete :size="20" />
-					</template>
-					{{ t('openregister', 'Clear Token') }}
-				</NcButton>
-			</div>
-
-			<!-- GitLab Token -->
-			<div class="token-field">
-				<div class="token-header">
-					<Gitlab :size="24" />
-					<h3>{{ t('openregister', 'GitLab Personal Access Token') }}</h3>
-				</div>
-				<NcPasswordField
-					:value.sync="gitlabToken"
-					:label="t('openregister', 'GitLab Token')"
-					:placeholder="t('openregister', 'glpat-xxxxxxxxxxxxxxxxxxxx')"
-					:helper-text="t('openregister', 'Optional: Required only for discovering configurations from GitLab')"
-					autocomplete="off"
-					@update:value="updateGitLabToken">
-					<Gitlab :size="20" />
-				</NcPasswordField>
-				<NcButton
-					v-if="gitlabToken && gitlabToken !== originalGitlabToken"
-					type="primary"
-					:disabled="saving"
-					@click="saveGitLabToken">
-					<template #icon>
-						<NcLoadingIcon v-if="saving" :size="20" />
-						<ContentSave v-else :size="20" />
-					</template>
-					{{ t('openregister', 'Save GitLab Token') }}
-				</NcButton>
-				<NcButton
-					v-if="gitlabToken"
-					type="error"
-					:disabled="saving"
-					@click="clearGitLabToken">
-					<template #icon>
-						<Delete :size="20" />
-					</template>
-					{{ t('openregister', 'Clear Token') }}
-				</NcButton>
-			</div>
-
-			<!-- GitLab Instance URL (for self-hosted) -->
-			<div class="token-field">
-				<h3>{{ t('openregister', 'GitLab Instance URL (Optional)') }}</h3>
-				<NcTextField
-					:value.sync="gitlabUrl"
-					:label="t('openregister', 'GitLab API Base URL')"
-					:placeholder="t('openregister', 'https://gitlab.com/api/v4')"
-					:helper-text="t('openregister', 'Leave empty to use GitLab.com. For self-hosted instances, enter your GitLab API URL')"
-					@update:value="updateGitLabUrl">
-					<Web :size="20" />
-				</NcTextField>
-				<NcButton
-					v-if="gitlabUrl && gitlabUrl !== originalGitlabUrl"
-					type="primary"
-					:disabled="saving"
-					@click="saveGitLabUrl">
-					<template #icon>
-						<NcLoadingIcon v-if="saving" :size="20" />
-						<ContentSave v-else :size="20" />
-					</template>
-					{{ t('openregister', 'Save GitLab URL') }}
-				</NcButton>
-			</div>
+	<SettingsSection
+		id="api-tokens"
+		name="API Token Configuration"
+		description="Configure API tokens for external service integrations"
+		:loading="loading"
+		loading-message="Loading API tokens...">
+		<!-- Section Description -->
+		<div class="section-description-full">
+			<p class="main-description">
+				API tokens enable <strong>discovering, importing, and publishing OpenRegister configurations</strong> to GitHub and GitLab repositories.
+				With the appropriate token scopes, you can search for configurations published by the community, import them into your system,
+				and publish your own configurations back to repositories for sharing and version control.
+			</p>
+			<p class="main-description info-note">
+				<strong>🔐 Note:</strong> Tokens are <strong>optional</strong> for basic workflows. You can import configurations manually using direct URLs
+				without tokens. However, tokens with appropriate scopes are required for:
+				<strong>(1)</strong> Discovery/search features, and
+				<strong>(2)</strong> Publishing configurations to repositories.
+			</p>
 		</div>
-	</NcSettingsSection>
+
+		<!-- Required Scopes Info -->
+		<SettingsCard
+			title="Required Token Scopes"
+			icon="📋"
+			:collapsible="true"
+			:default-collapsed="true">
+			<div class="scopes-info">
+				<div class="scope-item">
+					<div class="scope-header">
+						<Github :size="20" />
+						<strong>GitHub Token</strong>
+					</div>
+					<p><strong>Required Scope:</strong> <code>repo</code></p>
+					<p class="scope-description">
+						<strong>✅ Discover & Import:</strong> Search and read configuration files from repositories<br>
+						<strong>✅ Publish & Export:</strong> Write and update configuration files to repositories
+					</p>
+					<p class="scope-note">
+						The <code>repo</code> scope provides full repository access (read and write), enabling both discovery and publishing workflows.
+					</p>
+					<a href="https://github.com/settings/tokens/new" target="_blank" rel="noopener noreferrer" class="external-link">
+						Create GitHub Personal Access Token →
+					</a>
+				</div>
+
+				<div class="scope-item">
+					<div class="scope-header">
+						<Gitlab :size="20" />
+						<strong>GitLab Token</strong>
+					</div>
+					<p><strong>Required Scopes:</strong></p>
+					<ul class="scope-list">
+						<li><code>read_api</code> - For <strong>discovery only</strong> (read-only access)</li>
+						<li><code>api</code> - For <strong>discovery AND publishing</strong> (full read/write access)</li>
+					</ul>
+					<p class="scope-description">
+						<strong>🔍 Discovery Only:</strong> Use <code>read_api</code> to search and import configurations<br>
+						<strong>📤 Discovery + Publishing:</strong> Use <code>api</code> to also export and update configurations
+					</p>
+					<p class="scope-note">
+						If you plan to publish configurations back to GitLab, select the <code>api</code> scope when creating your token.
+					</p>
+					<a href="https://gitlab.com/-/user_settings/personal_access_tokens" target="_blank" rel="noopener noreferrer" class="external-link">
+						Create GitLab Personal Access Token →
+					</a>
+				</div>
+
+				<div class="documentation-link">
+					<InformationOutline :size="20" />
+					<a href="https://docs.openregister.nl/user-guide/configuration/api-tokens" target="_blank" rel="noopener noreferrer">
+						View complete documentation on obtaining and configuring API tokens
+					</a>
+				</div>
+			</div>
+		</SettingsCard>
+
+		<!-- GitHub Token Configuration -->
+		<SettingsCard
+			title="GitHub Personal Access Token"
+			icon="🔐"
+			:collapsible="false">
+			<template #icon>
+				<Github :size="20" />
+			</template>
+
+			<div class="token-config">
+				<div class="token-field-group">
+					<label for="github-token">GitHub Token</label>
+					<NcPasswordField
+						id="github-token"
+						v-model="githubToken"
+						placeholder="ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+						autocomplete="off"
+						@update:value="updateGitHubToken">
+						<template #trailing-button-icon>
+							<Github :size="20" />
+						</template>
+					</NcPasswordField>
+					<p class="field-hint">
+						<LockOutline :size="16" /> Optional: Required for discovering and publishing configurations to/from GitHub
+					</p>
+				</div>
+
+				<div class="token-actions">
+					<NcButton
+						v-if="githubToken && githubToken !== originalGithubToken"
+						type="primary"
+						:disabled="saving"
+						@click="saveGitHubToken">
+						<template #icon>
+							<NcLoadingIcon v-if="saving" :size="20" />
+							<ContentSave v-else :size="20" />
+						</template>
+						Save Token
+					</NcButton>
+					<NcButton
+						v-if="githubToken && githubToken === originalGithubToken"
+						type="secondary"
+						:disabled="testingGithub"
+						@click="testGitHubToken">
+						<template #icon>
+							<NcLoadingIcon v-if="testingGithub" :size="20" />
+							<TestTube v-else :size="20" />
+						</template>
+						Test Token
+					</NcButton>
+					<NcButton
+						v-if="githubToken"
+						type="error"
+						:disabled="saving"
+						@click="clearGitHubToken">
+						<template #icon>
+							<Delete :size="20" />
+						</template>
+						Clear Token
+					</NcButton>
+					<span v-if="githubToken && githubToken === originalGithubToken && !githubTestResult" class="saved-indicator">
+						<CheckCircle :size="20" /> Token saved
+					</span>
+					<span v-if="githubTestResult && githubTestResult.success" class="test-result-success">
+						<CheckCircle :size="20" /> {{ githubTestResult.message }}
+					</span>
+					<span v-if="githubTestResult && !githubTestResult.success" class="test-result-error">
+						<AlertCircle :size="20" /> {{ githubTestResult.message }}
+					</span>
+				</div>
+			</div>
+		</SettingsCard>
+
+		<!-- GitLab Token Configuration -->
+		<SettingsCard
+			title="GitLab Personal Access Token"
+			icon="🔐"
+			:collapsible="false">
+			<template #icon>
+				<Gitlab :size="20" />
+			</template>
+
+			<div class="token-config">
+				<div class="token-field-group">
+					<label for="gitlab-token">GitLab Token</label>
+					<NcPasswordField
+						id="gitlab-token"
+						v-model="gitlabToken"
+						placeholder="glpat-xxxxxxxxxxxxxxxxxxxx"
+						autocomplete="off"
+						@update:value="updateGitLabToken">
+						<template #trailing-button-icon>
+							<Gitlab :size="20" />
+						</template>
+					</NcPasswordField>
+					<p class="field-hint">
+						<LockOutline :size="16" /> Optional: Use <code>read_api</code> for discovery, or <code>api</code> for discovery + publishing
+					</p>
+				</div>
+
+				<div class="token-actions">
+					<NcButton
+						v-if="gitlabToken && gitlabToken !== originalGitlabToken"
+						type="primary"
+						:disabled="saving"
+						@click="saveGitLabToken">
+						<template #icon>
+							<NcLoadingIcon v-if="saving" :size="20" />
+							<ContentSave v-else :size="20" />
+						</template>
+						Save Token
+					</NcButton>
+					<NcButton
+						v-if="gitlabToken && gitlabToken === originalGitlabToken"
+						type="secondary"
+						:disabled="testingGitlab"
+						@click="testGitLabToken">
+						<template #icon>
+							<NcLoadingIcon v-if="testingGitlab" :size="20" />
+							<TestTube v-else :size="20" />
+						</template>
+						Test Token
+					</NcButton>
+					<NcButton
+						v-if="gitlabToken"
+						type="error"
+						:disabled="saving"
+						@click="clearGitLabToken">
+						<template #icon>
+							<Delete :size="20" />
+						</template>
+						Clear Token
+					</NcButton>
+					<span v-if="gitlabToken && gitlabToken === originalGitlabToken && !gitlabTestResult" class="saved-indicator">
+						<CheckCircle :size="20" /> Token saved
+					</span>
+					<span v-if="gitlabTestResult && gitlabTestResult.success" class="test-result-success">
+						<CheckCircle :size="20" /> {{ gitlabTestResult.message }}
+					</span>
+					<span v-if="gitlabTestResult && !gitlabTestResult.success" class="test-result-error">
+						<AlertCircle :size="20" /> {{ gitlabTestResult.message }}
+					</span>
+				</div>
+
+				<!-- GitLab Instance URL -->
+				<div class="gitlab-url-section">
+					<h5>🌐 Custom GitLab Instance (Optional)</h5>
+					<div class="token-field-group">
+						<label for="gitlab-url">GitLab API Base URL</label>
+						<NcTextField
+							id="gitlab-url"
+							v-model="gitlabUrl"
+							placeholder="https://gitlab.com/api/v4"
+							@update:value="updateGitLabUrl">
+							<template #trailing-button-icon>
+								<Web :size="20" />
+							</template>
+						</NcTextField>
+						<p class="field-hint">
+							<InformationOutline :size="16" /> Leave empty to use GitLab.com. For self-hosted GitLab instances, enter your API URL
+						</p>
+					</div>
+
+					<div class="token-actions">
+						<NcButton
+							v-if="gitlabUrl && gitlabUrl !== originalGitlabUrl"
+							type="primary"
+							:disabled="saving"
+							@click="saveGitLabUrl">
+							<template #icon>
+								<NcLoadingIcon v-if="saving" :size="20" />
+								<ContentSave v-else :size="20" />
+							</template>
+							Save URL
+						</NcButton>
+						<span v-if="gitlabUrl && gitlabUrl === originalGitlabUrl" class="saved-indicator">
+							<CheckCircle :size="20" /> URL saved
+						</span>
+					</div>
+				</div>
+			</div>
+		</SettingsCard>
+
+		<!-- Save Status Message -->
+		<div v-if="saveMessage" class="save-message" :class="saveMessageType">
+			{{ saveMessage }}
+		</div>
+	</SettingsSection>
 </template>
 
 <script>
-import { NcSettingsSection, NcNoteCard, NcPasswordField, NcTextField, NcButton, NcLoadingIcon } from '@nextcloud/vue'
+import SettingsSection from '../../../components/shared/SettingsSection.vue'
+import SettingsCard from '../../../components/shared/SettingsCard.vue'
+import { NcPasswordField, NcTextField, NcButton, NcLoadingIcon } from '@nextcloud/vue'
 import Github from 'vue-material-design-icons/Github.vue'
 import Gitlab from 'vue-material-design-icons/Gitlab.vue'
 import Web from 'vue-material-design-icons/Web.vue'
 import ContentSave from 'vue-material-design-icons/ContentSave.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
+import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
+import LockOutline from 'vue-material-design-icons/LockOutline.vue'
+import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
+import TestTube from 'vue-material-design-icons/TestTube.vue'
+import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { showSuccess, showError } from '@nextcloud/dialogs'
@@ -156,8 +304,8 @@ export default {
 	name: 'ApiTokenConfiguration',
 
 	components: {
-		NcSettingsSection,
-		NcNoteCard,
+		SettingsSection,
+		SettingsCard,
 		NcPasswordField,
 		NcTextField,
 		NcButton,
@@ -167,18 +315,29 @@ export default {
 		Web,
 		ContentSave,
 		Delete,
+		CheckCircle,
+		LockOutline,
+		InformationOutline,
+		TestTube,
+		AlertCircle,
 	},
 
 	data() {
 		return {
 			loading: false,
 			saving: false,
+			testingGithub: false,
+			testingGitlab: false,
 			githubToken: '',
 			gitlabToken: '',
 			gitlabUrl: '',
 			originalGithubToken: '',
 			originalGitlabToken: '',
 			originalGitlabUrl: '',
+			saveMessage: '',
+			saveMessageType: 'success',
+			githubTestResult: null,
+			gitlabTestResult: null,
 		}
 	},
 
@@ -322,52 +481,358 @@ export default {
 			this.gitlabToken = ''
 			await this.saveGitLabToken()
 		},
+
+		/**
+		 * Show save message
+		 *
+		 * @param {string} message - The message to show
+		 * @param {string} type - The type of message ('success' or 'error')
+		 * @return {void}
+		 */
+		showSaveMessage(message, type = 'success') {
+			this.saveMessage = message
+			this.saveMessageType = type
+			setTimeout(() => {
+				this.saveMessage = ''
+			}, 3000)
+		},
+
+		/**
+		 * Test GitHub token validity
+		 *
+		 * @return {Promise<void>}
+		 */
+		async testGitHubToken() {
+			this.testingGithub = true
+			this.githubTestResult = null
+			try {
+				const response = await axios.post(generateUrl('/apps/openregister/api/settings/api-tokens/test/github'))
+				this.githubTestResult = {
+					success: true,
+					message: response.data.message,
+					username: response.data.username,
+					scopes: response.data.scopes
+				}
+				showSuccess(this.t('openregister', 'GitHub token is valid! Username: {username}', {
+					username: response.data.username
+				}))
+			} catch (error) {
+				const message = error.response?.data?.message || error.message || 'Unknown error'
+				this.githubTestResult = {
+					success: false,
+					message: message
+				}
+				showError(this.t('openregister', 'GitHub token test failed: {message}', {
+					message: message
+				}))
+			} finally {
+				this.testingGithub = false
+			}
+		},
+
+		/**
+		 * Test GitLab token validity
+		 *
+		 * @return {Promise<void>}
+		 */
+		async testGitLabToken() {
+			this.testingGitlab = true
+			this.gitlabTestResult = null
+			try {
+				const response = await axios.post(generateUrl('/apps/openregister/api/settings/api-tokens/test/gitlab'))
+				this.gitlabTestResult = {
+					success: true,
+					message: response.data.message,
+					username: response.data.username,
+					instance: response.data.instance
+				}
+				showSuccess(this.t('openregister', 'GitLab token is valid! Username: {username}', {
+					username: response.data.username
+				}))
+			} catch (error) {
+				const message = error.response?.data?.message || error.message || 'Unknown error'
+				this.gitlabTestResult = {
+					success: false,
+					message: message
+				}
+				showError(this.t('openregister', 'GitLab token test failed: {message}', {
+					message: message
+				}))
+			} finally {
+				this.testingGitlab = false
+			}
+		},
 	},
 }
 </script>
 
 <style scoped>
-.settings-section {
+/* Section Description */
+.section-description-full {
+	background: var(--color-background-hover);
+	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius-large);
+	padding: 20px;
+	margin-bottom: 20px;
+}
+
+.main-description {
+	color: var(--color-text-light);
+	font-size: 14px;
+	line-height: 1.6;
+	margin: 0 0 16px 0;
+}
+
+.main-description:last-child {
+	margin-bottom: 0;
+}
+
+.main-description.info-note {
+	background: var(--color-background-dark);
+	border-left: 4px solid var(--color-primary-element);
+	padding: 12px 16px;
+	border-radius: var(--border-radius);
+	margin-top: 16px;
+	margin-bottom: 0;
+}
+
+.main-description.info-note strong {
+	color: var(--color-primary-element);
+}
+
+/* Scopes Info */
+.scopes-info {
 	display: flex;
 	flex-direction: column;
 	gap: 24px;
-	padding: 16px 0;
 }
 
-.token-field {
-	display: flex;
-	flex-direction: column;
-	gap: 12px;
+.scope-item {
 	padding: 16px;
+	background: var(--color-background-hover);
 	border: 1px solid var(--color-border);
-	border-radius: 8px;
-	background-color: var(--color-background-hover);
+	border-radius: var(--border-radius);
 }
 
-.token-header {
+.scope-header {
 	display: flex;
 	align-items: center;
-	gap: 12px;
-	margin-bottom: 8px;
+	gap: 8px;
+	margin-bottom: 12px;
 }
 
-.token-header h3 {
-	margin: 0;
-	font-size: 1.1em;
+.scope-header strong {
+	font-size: 15px;
+	color: var(--color-main-text);
+}
+
+.scope-item p {
+	margin: 8px 0;
+	font-size: 14px;
+	line-height: 1.5;
+}
+
+.scope-item code {
+	background: var(--color-background-dark);
+	padding: 2px 6px;
+	border-radius: 3px;
+	font-family: monospace;
+	color: var(--color-primary-element);
 	font-weight: 600;
 }
 
-.mt-2 {
+.scope-description {
+	color: var(--color-text-maxcontrast);
+	font-size: 13px !important;
+	line-height: 1.6;
+}
+
+.scope-list {
+	margin: 12px 0 12px 20px;
+	padding: 0;
+	list-style: disc;
+}
+
+.scope-list li {
+	margin: 6px 0;
+	font-size: 14px;
+	line-height: 1.5;
+}
+
+.scope-list code {
+	background: var(--color-background-dark);
+	padding: 2px 6px;
+	border-radius: 3px;
+	font-family: monospace;
+	color: var(--color-primary-element);
+	font-weight: 600;
+}
+
+.scope-note {
+	margin-top: 12px;
+	padding: 8px 12px;
+	background: var(--color-background-dark);
+	border-left: 3px solid var(--color-warning);
+	border-radius: var(--border-radius);
+	font-size: 13px !important;
+	color: var(--color-text-maxcontrast);
+	font-style: italic;
+}
+
+.external-link {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	color: var(--color-primary-element);
+	text-decoration: none;
+	font-weight: 500;
 	margin-top: 8px;
 }
 
-ul {
-	margin: 8px 0;
-	padding-left: 20px;
+.external-link:hover {
+	text-decoration: underline;
 }
 
-ul li {
-	margin: 4px 0;
+.documentation-link {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 12px 16px;
+	background: var(--color-primary-element-light);
+	border-left: 3px solid var(--color-primary-element);
+	border-radius: var(--border-radius);
+}
+
+.documentation-link a {
+	color: var(--color-primary-element);
+	text-decoration: none;
+	font-weight: 500;
+}
+
+.documentation-link a:hover {
+	text-decoration: underline;
+}
+
+/* Token Configuration */
+.token-config {
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
+}
+
+.token-field-group {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.token-field-group label {
+	color: var(--color-text-maxcontrast);
+	font-weight: 500;
+	font-size: 14px;
+}
+
+.field-hint {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 13px;
+	color: var(--color-text-maxcontrast);
+	margin: 0;
+}
+
+.field-hint code {
+	background: var(--color-background-dark);
+	padding: 2px 5px;
+	border-radius: 3px;
+	font-family: monospace;
+	color: var(--color-primary-element);
+	font-size: 12px;
+	font-weight: 600;
+}
+
+.token-actions {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	flex-wrap: wrap;
+}
+
+.saved-indicator {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	color: var(--color-success);
+	font-weight: 500;
+	font-size: 14px;
+}
+
+.test-result-success {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	color: var(--color-success);
+	font-weight: 500;
+	font-size: 14px;
+	padding: 8px 12px;
+	background-color: var(--color-success-light);
+	border-radius: var(--border-radius);
+}
+
+.test-result-error {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	color: var(--color-error);
+	font-weight: 500;
+	font-size: 14px;
+	padding: 8px 12px;
+	background-color: var(--color-error-light);
+	border-radius: var(--border-radius);
+}
+
+/* GitLab URL Section */
+.gitlab-url-section {
+	margin-top: 24px;
+	padding-top: 24px;
+	border-top: 1px solid var(--color-border);
+}
+
+.gitlab-url-section h5 {
+	color: var(--color-text-light);
+	margin: 0 0 16px 0;
+	font-size: 15px;
+	font-weight: 500;
+}
+
+/* Save Message */
+.save-message {
+	padding: 12px 16px;
+	border-radius: var(--border-radius);
+	margin-top: 16px;
+	text-align: center;
+	font-weight: 500;
+}
+
+.save-message.success {
+	background: var(--color-success);
+	color: white;
+}
+
+.save-message.error {
+	background: var(--color-error);
+	color: white;
+}
+
+@media (max-width: 768px) {
+	.scopes-info {
+		gap: 16px;
+	}
+
+	.token-actions {
+		flex-direction: column;
+		align-items: stretch;
+	}
 }
 </style>
 

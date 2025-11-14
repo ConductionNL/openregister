@@ -30,6 +30,19 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 						Search GitHub and GitLab for OpenRegister configurations created by the community.
 					</p>
 
+				<!-- Token Warning -->
+				<NcNoteCard v-if="!hasGithubToken && !hasGitlabToken" type="warning">
+					<p>
+						<strong>API Tokens Not Configured</strong><br>
+						Discovery requires API tokens for GitHub and/or GitLab. Configure your tokens in the settings to enable search.
+					</p>
+					<p style="margin-top: 8px;">
+						<a :href="settingsUrl" target="_blank" style="color: var(--color-primary-element); font-weight: 600;">
+							→ Configure API Tokens in Settings
+						</a>
+					</p>
+				</NcNoteCard>
+
 				<div class="searchContainer">
 					<NcTextField
 						:value.sync="searchQuery"
@@ -41,6 +54,7 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 
 				<NcButton
 					class="github-button"
+					:disabled="!hasGithubToken || searchLoading"
 					@click="searchSource = 'github'; searchConfigurations()">
 					<template #icon>
 						<Github :size="20" />
@@ -50,12 +64,25 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 
 				<NcButton
 					class="gitlab-button"
+					:disabled="!hasGitlabToken || searchLoading"
 					@click="searchSource = 'gitlab'; searchConfigurations()">
 					<template #icon>
 						<Gitlab :size="20" />
 					</template>
 					{{ t('openregister', 'Search GitLab') }}
 				</NcButton>
+				</div>
+
+				<!-- Individual Token Warnings -->
+				<div v-if="!hasGithubToken || !hasGitlabToken" class="token-warnings">
+					<div v-if="!hasGithubToken" class="token-warning-item">
+						<Github :size="16" />
+						<span>GitHub token not configured - Search disabled</span>
+					</div>
+					<div v-if="!hasGitlabToken" class="token-warning-item">
+						<Gitlab :size="16" />
+						<span>GitLab token not configured - Search disabled</span>
+					</div>
 				</div>
 
 					<NcLoadingIcon v-if="searchLoading" :size="64" />
@@ -237,6 +264,9 @@ import LinkVariant from 'vue-material-design-icons/LinkVariant.vue'
 
 import DiscoveredConfigurationCard from '../../components/DiscoveredConfigurationCard.vue'
 
+import axios from '@nextcloud/axios'
+import { generateUrl } from '@nextcloud/router'
+
 export default {
 	name: 'ImportConfiguration',
 	components: {
@@ -268,6 +298,10 @@ export default {
 			successMessage: '',
 			error: null,
 
+			// Token availability
+			hasGithubToken: false,
+			hasGitlabToken: false,
+
 			// Discover tab
 			searchQuery: '',
 			searchSource: 'github',
@@ -294,7 +328,15 @@ export default {
 			syncInterval: 24,
 		}
 	},
+
+	async mounted() {
+		await this.checkTokenAvailability()
+	},
+
 	computed: {
+		settingsUrl() {
+			return window.location.origin + '/index.php/settings/admin/openregister#api-tokens'
+		},
 		canFetchBranches() {
 			if (this.repoSource === 'GitHub') {
 				return this.repoOwner && this.repoName
@@ -315,6 +357,29 @@ export default {
 	},
 	},
 	methods: {
+		/**
+		 * Check if API tokens are configured
+		 */
+		async checkTokenAvailability() {
+			try {
+				const response = await axios.get(generateUrl('/apps/openregister/api/settings/api-tokens'))
+				// Check if tokens exist and are not empty strings
+				// The backend returns masked tokens, so we just check if they exist
+				this.hasGithubToken = !!(response.data.github_token && response.data.github_token.length > 0)
+				this.hasGitlabToken = !!(response.data.gitlab_token && response.data.gitlab_token.length > 0)
+				
+				console.log('Token availability check:', {
+					github: this.hasGithubToken,
+					gitlab: this.hasGitlabToken
+				})
+			} catch (error) {
+				console.warn('Failed to check token availability:', error)
+				// Assume no tokens if check fails
+				this.hasGithubToken = false
+				this.hasGitlabToken = false
+			}
+		},
+
 		closeModal() {
 			navigationStore.setModal(false)
 			this.resetForm()
@@ -636,5 +701,42 @@ export default {
 .gitlab-button:hover {
 	background-color: #e24329 !important;
 	border-color: #e24329 !important;
+}
+
+/* Disabled button state */
+.github-button:disabled,
+.gitlab-button:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+.github-button:disabled:hover,
+.gitlab-button:disabled:hover {
+	background-color: inherit !important;
+	border-color: inherit !important;
+}
+
+/* Token warning styles */
+.token-warnings {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	margin-top: 12px;
+	padding: 12px;
+	background-color: var(--color-background-hover);
+	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius);
+}
+
+.token-warning-item {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	color: var(--color-text-maxcontrast);
+	font-size: 0.9em;
+}
+
+.token-warning-item span {
+	font-style: italic;
 }
 </style>
