@@ -87,6 +87,12 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 
 					<NcLoadingIcon v-if="searchLoading" :size="64" />
 
+					<!-- Search Error -->
+					<NcNoteCard v-else-if="searchError" type="error">
+						<p><strong>Search Failed</strong></p>
+						<p>{{ searchError }}</p>
+					</NcNoteCard>
+
 					<div v-else-if="searchResults.length > 0" class="resultsGrid">
 						<DiscoveredConfigurationCard
 							v-for="(result, index) in searchResults"
@@ -307,6 +313,7 @@ export default {
 			searchSource: 'github',
 			searchLoading: false,
 			searchResults: [],
+			searchError: null,
 			hasSearched: false,
 
 			// Repository tab
@@ -421,6 +428,7 @@ export default {
 			this.error = null
 			this.searchQuery = ''
 			this.searchResults = []
+			this.searchError = null
 			this.hasSearched = false
 			this.repoOwner = ''
 			this.repoNamespace = ''
@@ -438,6 +446,8 @@ export default {
 			this.searchLoading = true
 			this.hasSearched = true
 			this.error = null
+			this.searchError = null
+			this.searchResults = []
 
 			try {
 				this.searchResults = await configurationStore.discoverConfigurations(
@@ -445,7 +455,11 @@ export default {
 					this.searchQuery
 				)
 			} catch (error) {
+				// Set search-specific error for contextual display in the Discover tab
+				this.searchError = error.message || 'Failed to search configurations'
+				// Also set general error for top-level display
 				this.error = error.message || 'Failed to search configurations'
+				console.error('Search error:', error)
 			} finally {
 				this.searchLoading = false
 			}

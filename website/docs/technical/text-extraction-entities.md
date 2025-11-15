@@ -87,6 +87,7 @@ erDiagram
         int start_offset
         int end_offset
         int chunk_index
+        json position_reference
         string language
         string language_level
         float language_confidence
@@ -147,6 +148,78 @@ erDiagram
         datetime created_at
     }
 ```
+
+## Processing Architecture Overview
+
+```mermaid
+flowchart LR
+    subgraph Sources
+        Files(Files & attachments)
+        Objects(OpenRegister objects)
+        Mail(Mail threads)
+        Talk(Talk chats)
+        Calendar(Calendar items)
+    end
+
+    Files -->|File upload| FileExtract(FileTextExtractionService)
+    Objects -->|Object save| ObjectExtract(ObjectTextExtractionService)
+    Mail --> StreamIngest(Stream Ingestion Bridge)
+    Talk --> StreamIngest
+    Calendar --> StreamIngest
+
+    FileExtract --> Chunker(ChunkService)
+    ObjectExtract --> Chunker
+    StreamIngest --> Chunker
+
+    Chunker --> LangDetect(LanguageDetectionJob)
+    LangDetect --> EntityDetect(EntityExtractionService)
+    Chunker --> Vectorize(VectorizationService)
+    Chunker --> SolrPush(SolrFileService)
+
+    EntityDetect --> GdprEntities(GdprEntityMapper)
+    EntityDetect --> EntityRelations(EntityRelationMapper)
+    EntityRelations --> GdprReports(GDPR Report API)
+
+    GdprEntities --> Classification(ClassificationService)
+    Chunker --> StatsAggregator(TextExtractionService.getStats)
+    GdprEntities --> StatsAggregator
+```
+
+**Key points**:
+
+- All inputs (files, object attachments, mails, chats, calendar items) converge on the same chunking pipeline, guaranteeing consistent language detection and embedding preparation.
+- Vectorization and Solr indexing operate purely on chunks so that future sources automatically benefit.
+- GDPR entities always originate from chunks, ensuring accurate role/source tracking before classification or reporting.
+
+## Service Responsibility Diagram
+
+```mermaid
+flowchart TD
+    SettingsUI(Settings UI)
+    SettingsAPI(SettingsController)
+    TextService(TextExtractionService)
+    ObjectTextService(ObjectTextExtractionService)
+    ChunkServiceNode(ChunkService)
+    EntityService(EntityExtractionService)
+    StatsService(TextExtractionService.getStats)
+    GdprMapper(GdprEntityMapper / EntityRelationMapper)
+    ClassificationSvc(ClassificationService)
+
+    SettingsUI -->|/api/settings/files| SettingsAPI
+    SettingsAPI --> TextService
+    SettingsAPI --> ObjectTextService
+    TextService --> ChunkServiceNode
+    ObjectTextService --> ChunkServiceNode
+    ChunkServiceNode --> EntityService
+    EntityService --> GdprMapper
+    GdprMapper --> ClassificationSvc
+    TextService --> StatsService
+```
+
+- `SettingsController` coordinates requests initiated from the UI; it delegates to the existing `TextExtractionService` for file extraction and to the upcoming `ObjectTextExtractionService` for object blobs.
+- `ChunkService` centralises chunk persistence, language detection, and handoff to vector/Solr pipelines.
+- `EntityExtractionService` writes to `GdprEntityMapper` and `EntityRelationMapper`, enabling GDPR reports and anonymisation planning.
+- `TextExtractionService::getStats()` now aggregates totals across files, chunks, objects, and entities for the dashboard tiles.
 
 ## 1. FileText Entity (Existing, Updated)
 
@@ -395,6 +468,24 @@ CREATE TABLE oc_openregister_chunks (
 - **start_offset**: Character position in original text where chunk starts
 - **end_offset**: Character position in original text where chunk ends
 - **chunk_index**: Sequential chunk number (0, 1, 2, ...)
+- **position_reference**: JSON payload describing how to retrace the chunk:
+  ```json
+  // File-based chunk
+  {
+    "type": "file",
+    "start": 1024,
+    "end": 2048,
+    "length": 1024
+  }
+  // Object-based chunk
+  {
+    "type": "object",
+    "property": "address.street",
+    "register": "contracts",
+    "schema": "supplier"
+  }
+  ```
+  This guarantees every chunk can be mapped back either to an exact text span (files) or to the specific property path that produced it (objects/mail/chat entries).
 - **language**: ISO 639-1 language code ('en', 'nl', 'de', etc.)
 - **language_level**: Reading level ('A1', 'B2', 'Grade 8', '65', etc.)
 - **language_confidence**: Confidence score for language detection (0.00-1.00)

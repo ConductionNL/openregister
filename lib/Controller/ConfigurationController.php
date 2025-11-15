@@ -178,6 +178,69 @@ class ConfigurationController extends Controller
 
 
     /**
+     * Enrich configuration details by fetching actual file contents
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Enriched configuration details
+     */
+    public function enrichDetails(): JSONResponse
+    {
+        try {
+            $data = $this->request->getParams();
+            $source = strtolower($data['source'] ?? 'github');
+            $owner = $data['owner'] ?? '';
+            $repo = $data['repo'] ?? '';
+            $path = $data['path'] ?? '';
+            $branch = $data['branch'] ?? 'main';
+            
+            // Validate required parameters
+            if (empty($owner) || empty($repo) || empty($path)) {
+                return new JSONResponse(
+                    ['error' => 'Missing required parameters: owner, repo, path'],
+                    400
+                );
+            }
+            
+            $this->logger->info('Enriching configuration details', [
+                'source' => $source,
+                'owner'  => $owner,
+                'repo'   => $repo,
+                'path'   => $path,
+            ]);
+            
+            // Call appropriate service
+            $details = null;
+            if ($source === 'github') {
+                $details = $this->githubService->enrichConfigurationDetails($owner, $repo, $path, $branch);
+            } else if ($source === 'gitlab') {
+                // GitLab enrichment can be added later if needed
+                $this->logger->warning('GitLab enrichment not yet implemented');
+            }
+            
+            if ($details === null) {
+                return new JSONResponse(
+                    ['error' => 'Failed to fetch configuration details'],
+                    404
+                );
+            }
+            
+            return new JSONResponse($details, 200);
+        } catch (Exception $e) {
+            $this->logger->error('Configuration enrichment failed: ' . $e->getMessage(), [
+                'exception' => get_class($e),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            
+            return new JSONResponse(
+                ['error' => 'Failed to enrich configuration: ' . $e->getMessage()],
+                500
+            );
+        }
+    }
+
+    /**
      * Create a new configuration.
      *
      * @NoAdminRequired

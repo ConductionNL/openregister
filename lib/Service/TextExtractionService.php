@@ -22,13 +22,23 @@ namespace OCA\OpenRegister\Service;
 
 use DateTime;
 use Exception;
+use JsonException;
+use OCA\OpenRegister\Db\Chunk;
+use OCA\OpenRegister\Db\ChunkMapper;
+use OCA\OpenRegister\Db\EntityRelation;
+use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Db\FileMapper;
 use OCA\OpenRegister\Db\FileText;
 use OCA\OpenRegister\Db\FileTextMapper;
+use OCA\OpenRegister\Db\GdprEntity;
+use OCA\OpenRegister\Db\GdprEntityMapper;
+use OCA\OpenRegister\Db\ObjectTextMapper;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\Files\IRootFolder;
 use OCP\Files\NotFoundException;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\Uid\Uuid;
 use Throwable;
 
 // Document parsing libraries
@@ -71,15 +81,23 @@ class TextExtractionService
     /**
      * Constructor
      *
-     * @param FileMapper         $fileMapper       Mapper for Nextcloud files
-     * @param FileTextMapper     $fileTextMapper   Mapper for extracted text records
-     * @param IRootFolder        $rootFolder       Nextcloud root folder
-     * @param IDBConnection      $db               Database connection
-     * @param LoggerInterface    $logger           Logger
+     * @param FileMapper           $fileMapper             Mapper for Nextcloud files
+     * @param FileTextMapper       $fileTextMapper         Mapper for extracted text records
+     * @param ChunkMapper          $chunkMapper            Mapper for chunks
+     * @param ObjectTextMapper     $objectTextMapper       Mapper for legacy object texts
+     * @param GdprEntityMapper     $entityMapper           Mapper for GDPR entities
+     * @param EntityRelationMapper $entityRelationMapper   Mapper for entity relations
+     * @param IRootFolder          $rootFolder             Nextcloud root folder
+     * @param IDBConnection        $db                     Database connection
+     * @param LoggerInterface      $logger                 Logger
      */
     public function __construct(
         private readonly FileMapper $fileMapper,
         private readonly FileTextMapper $fileTextMapper,
+        private readonly ChunkMapper $chunkMapper,
+        private readonly ObjectTextMapper $objectTextMapper,
+        private readonly GdprEntityMapper $entityMapper,
+        private readonly EntityRelationMapper $entityRelationMapper,
         private readonly IRootFolder $rootFolder,
         private readonly IDBConnection $db,
         private readonly LoggerInterface $logger
@@ -105,112 +123,508 @@ class TextExtractionService
      */
     public function extractFile(int $fileId, bool $forceReExtract = false): FileText
     {
-        $this->logger->info('[TextExtractionService] Starting extraction for file', ['fileId' => $fileId]);
+        $this->logger->info('[TextExtractionService] Starting file extraction', ['fileId' => $fileId]);
 
-        // Check if file already tracked in our system
-        $existingFileText = null;
-        try {
-            $existingFileText = $this->fileTextMapper->findByFileId($fileId);
-        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-            // File not tracked yet, this is OK
-            $this->logger->debug('[TextExtractionService] File not tracked yet', ['fileId' => $fileId]);
-        }
-
-        // Get file info from Nextcloud
+        $existingFileText = $this->getFileTextRecord($fileId);
         $ncFile = $this->fileMapper->getFile($fileId);
         if ($ncFile === null) {
             throw new NotFoundException("File with ID {$fileId} not found in Nextcloud");
         }
 
-        // Determine if extraction is needed
+        $sourceTimestamp = (int) ($ncFile['mtime'] ?? time());
         $needsExtraction = $this->needsExtraction($existingFileText, $ncFile, $forceReExtract);
 
-        if ($needsExtraction === false && $existingFileText !== null) {
-            $this->logger->info('[TextExtractionService] File already extracted and up-to-date', ['fileId' => $fileId]);
-            return $existingFileText;
+        if ($needsExtraction === false && $this->isSourceUpToDate($fileId, 'file', $sourceTimestamp, $forceReExtract) === true) {
+            // File is up-to-date and all chunks are still valid; return existing record.
+            $this->logger->info('[TextExtractionService] File already processed and up-to-date', ['fileId' => $fileId]);
+            return $existingFileText ?? new FileText();
         }
 
-        // Create or update FileText entity
-        $fileText = $existingFileText ?? new FileText();
-        $fileText->setFileId($fileId);
-        $fileText->setFilePath($ncFile['path']);
-        $fileText->setFileName($ncFile['name']);
-        $fileText->setMimeType($ncFile['mimetype']);
-        $fileText->setFileSize($ncFile['size']);
-        $fileText->setFileChecksum($ncFile['checksum'] ?? null);
-        $fileText->setExtractionStatus('processing');
-        $fileText->setUpdatedAt(new DateTime());
+        // Extract and sanitize the source text payload (includes language metadata).
+        $payload = $this->extractSourceText('file', $fileId, $ncFile);
+        $chunks = $this->textToChunks($payload, [
+            'chunk_size' => self::DEFAULT_CHUNK_SIZE,
+            'chunk_overlap' => self::DEFAULT_CHUNK_OVERLAP,
+            'strategy' => self::RECURSIVE_CHARACTER,
+        ]);
 
-        if ($existingFileText === null) {
-            $fileText->setCreatedAt(new DateTime());
-            $fileText = $this->fileTextMapper->insert($fileText);
-        } else {
-            $fileText = $this->fileTextMapper->update($fileText);
-        }
+        // Persist textual chunks and include the metadata chunk at the end.
+        $this->persistChunksForSource(
+            'file',
+            $fileId,
+            $chunks,
+            $payload['owner'] ?? null,
+            $payload['organisation'] ?? null,
+            $sourceTimestamp,
+            $payload
+        );
 
-        // Perform actual text extraction
-        try {
-            $extractedText = $this->performTextExtraction($fileId, $ncFile);
-            
-            if ($extractedText !== null) {
-                // Clean and sanitize extracted text
-                $cleanedText = $this->sanitizeText($extractedText);
-                
-                // Chunk the text for better processing and search
-                $chunks = $this->chunkDocument($cleanedText, [
-                    'chunk_size' => self::DEFAULT_CHUNK_SIZE,
-                    'chunk_overlap' => self::DEFAULT_CHUNK_OVERLAP,
-                    'strategy' => self::RECURSIVE_CHARACTER
-                ]);
-                
-                // Store chunks as JSON for later use (SOLR indexing, embeddings, etc.)
-                $chunksJson = json_encode($chunks);
-                
-                // Successfully extracted and chunked text
-                $fileText->setTextContent($cleanedText);
-                $fileText->setTextLength(strlen($cleanedText));
-                $fileText->setExtractionStatus('completed');
-                $fileText->setExtractedAt(new DateTime());
-                $fileText->setExtractionError(null);
-                $fileText->setExtractionMethod('llphant'); // Using document parsing libraries
-                $fileText->setChunked(true);
-                $fileText->setChunkCount(count($chunks));
-                $fileText->setChunksJson($chunksJson); // Store chunks for later use
-                $fileText = $this->fileTextMapper->update($fileText);
-                
-                $this->logger->info('[TextExtractionService] Text extraction and chunking completed', [
-                    'fileId' => $fileId,
-                    'textLength' => strlen($cleanedText),
-                    'chunkCount' => count($chunks)
-                ]);
-            } else {
-                // Extraction returned null (unsupported file type or empty)
-                $fileText->setExtractionStatus('failed');
-                $fileText->setExtractionError('Unsupported file type or empty file');
-                
-                $this->logger->warning('[TextExtractionService] Text extraction failed', [
-                    'fileId' => $fileId,
-                    'reason' => 'Unsupported file type or empty file'
-                ]);
-                
-                $fileText = $this->fileTextMapper->update($fileText);
-            }
-            
-        } catch (Exception $e) {
-            // Extraction failed with exception
-            $fileText->setExtractionStatus('failed');
-            $fileText->setExtractionError($e->getMessage());
-            $fileText = $this->fileTextMapper->update($fileText);
-            
-            $this->logger->error('[TextExtractionService] Text extraction error', [
-                'fileId' => $fileId,
-                'error' => $e->getMessage()
-            ]);
-            
-            throw $e;
-        }
+        $fileText = $this->upsertFileTextRecord($existingFileText, $ncFile, $payload, $chunks);
+        $this->logger->info('[TextExtractionService] File extraction complete', [
+            'fileId' => $fileId,
+            'chunkCount' => count($chunks) + 1,
+        ]);
 
         return $fileText;
+    }
+
+    /**
+     * Retrieve an existing FileText record when available.
+     *
+     * @param int $fileId Identifier of the Nextcloud file.
+     *
+     * @return FileText|null
+     */
+    private function getFileTextRecord(int $fileId): ?FileText
+    {
+        try {
+            // Attempt to load an existing FileText record for this file.
+            return $this->fileTextMapper->findByFileId($fileId);
+        } catch (DoesNotExistException $exception) {
+            $this->logger->debug('[TextExtractionService] FileText record not found (yet)', [
+                'fileId' => $fileId,
+                'message' => $exception->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
+     * Determine whether the latest chunks already reflect the current source state.
+     *
+     * @param int  $sourceId        Identifier of the source (file/object/etc).
+     * @param string $sourceType    Source type key.
+     * @param int  $sourceTimestamp Source modification timestamp.
+     * @param bool $forceReExtract  Force flag coming from the caller.
+     *
+     * @phpstan-param non-empty-string $sourceType
+     * @psalm-param  non-empty-string $sourceType
+     *
+     * @return bool
+     */
+    private function isSourceUpToDate(int $sourceId, string $sourceType, int $sourceTimestamp, bool $forceReExtract): bool
+    {
+        if ($forceReExtract === true) {
+            // Caller explicitly asked to ignore cached data.
+            return false;
+        }
+
+        // Look at the newest chunk timestamp for this source.
+        $latestChunkTimestamp = $this->chunkMapper->getLatestUpdatedTimestamp($sourceType, $sourceId);
+
+        if ($latestChunkTimestamp === null) {
+            return false;
+        }
+
+        return $latestChunkTimestamp >= $sourceTimestamp;
+    }
+
+    /**
+     * Extract and sanitize text for a given source.
+     *
+     * @param string               $sourceType   Source type identifier.
+     * @param int                  $sourceId     Source identifier.
+     * @param array<string, mixed> $sourceMeta   Raw metadata from the source system.
+     *
+     * @phpstan-param non-empty-string $sourceType
+     * @psalm-param  non-empty-string $sourceType
+     *
+     * @return array{
+     *     source_type: string,
+     *     source_id: int,
+     *     text: string,
+     *     length: int,
+     *     checksum: string,
+     *     method: string,
+     *     owner: string|null,
+     *     organisation: string|null,
+     *     language: string|null,
+     *     language_level: string|null,
+     *     language_confidence: float|null,
+     *     detection_method: string|null,
+     *     metadata: array<string, mixed>
+     * }
+     *
+     * @throws Exception When the text cannot be extracted.
+     */
+    private function extractSourceText(string $sourceType, int $sourceId, array $sourceMeta): array
+    {
+        $rawText = $this->performTextExtraction($sourceId, $sourceMeta);
+        if ($rawText === null) {
+            throw new Exception('Text extraction returned no result for source.');
+        }
+
+        $cleanText = $this->sanitizeText($rawText);
+        if ($cleanText === '') {
+            throw new Exception('Text extraction resulted in an empty payload.');
+        }
+
+        // Collect lightweight language metadata to enrich chunk storage.
+        $languageSignals = $this->detectLanguageSignals($cleanText);
+
+        return [
+            'source_type' => $sourceType,
+            'source_id' => $sourceId,
+            'text' => $cleanText,
+            'length' => strlen($cleanText),
+            'checksum' => hash('sha256', $cleanText), // Stable checksum to detect text mutations.
+            'method' => 'llphant',
+            'owner' => $sourceMeta['owner'] ?? null,
+            'organisation' => $sourceMeta['organisation'] ?? null,
+            'language' => $languageSignals['language'],
+            'language_level' => $languageSignals['language_level'],
+            'language_confidence' => $languageSignals['language_confidence'],
+            'detection_method' => $languageSignals['detection_method'],
+            'metadata' => [
+                'file_path' => $sourceMeta['path'] ?? null,
+                'file_name' => $sourceMeta['name'] ?? null,
+                'mime_type' => $sourceMeta['mimetype'] ?? null,
+                'file_size' => $sourceMeta['size'] ?? null,
+            ],
+        ];
+    }
+
+    /**
+     * Lightweight placeholder for language detection.
+     *
+     * @param string $text Input text.
+     *
+     * @return array{
+     *     language: string|null,
+     *     language_level: string|null,
+     *     language_confidence: float|null,
+     *     detection_method: string|null
+     * }
+     */
+    private function detectLanguageSignals(string $text): array
+    {
+        $language = null;
+        $confidence = null;
+
+        // Extremely naive heuristic as a placeholder until dedicated detection is plugged in.
+        if (preg_match('/\b(de|het|een)\b/i', $text) === 1) {
+            $language = 'nl';
+            $confidence = 0.35;
+        } elseif (preg_match('/\b(the|and|of)\b/i', $text) === 1) {
+            $language = 'en';
+            $confidence = 0.35;
+        }
+
+        return [
+            'language' => $language,
+            'language_level' => null,
+            'language_confidence' => $confidence,
+            'detection_method' => $language === null ? null : 'heuristic',
+        ];
+    }
+
+    /**
+     * Convert a text payload into chunk DTOs ready for persistence.
+     *
+     * @param array<string, mixed> $payload Sanitized payload coming from extractSourceText().
+     * @param array<string, mixed> $options Chunking options.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function textToChunks(array $payload, array $options = []): array
+    {
+        $chunkSize = (int) ($options['chunk_size'] ?? self::DEFAULT_CHUNK_SIZE);
+        $chunkOverlap = (int) ($options['chunk_overlap'] ?? self::DEFAULT_CHUNK_OVERLAP);
+        $strategy = (string) ($options['strategy'] ?? self::RECURSIVE_CHARACTER);
+
+        // Generate the low-level chunks.
+        $rawChunks = $this->chunkDocument($payload['text'], [
+            'chunk_size' => $chunkSize,
+            'chunk_overlap' => $chunkOverlap,
+            'strategy' => $strategy,
+        ]);
+
+        $mappedChunks = [];
+
+        foreach (array_values($rawChunks) as $index => $chunk) {
+            // Translate chunk metadata to a persistence-friendly structure.
+            $mappedChunks[] = [
+                'chunk_index' => $index,
+                'text_content' => $chunk['text'],
+                'start_offset' => $chunk['start_offset'] ?? 0,
+                'end_offset' => $chunk['end_offset'] ?? strlen($chunk['text']),
+                'language' => $payload['language'] ?? null,
+                'language_level' => $payload['language_level'] ?? null,
+                'language_confidence' => $payload['language_confidence'] ?? null,
+                'detection_method' => $payload['detection_method'] ?? null,
+                'overlap_size' => $chunkOverlap,
+                'position_reference' => $this->buildPositionReference($payload['source_type'], $chunk),
+            ];
+        }
+
+        return $mappedChunks;
+    }
+
+    /**
+     * Build a structured position reference for traceability.
+     *
+     * @param string              $sourceType Source type identifier.
+     * @param array<string,mixed> $chunk      Chunk metadata from chunkDocument.
+     *
+     * @phpstan-param non-empty-string $sourceType
+     * @psalm-param  non-empty-string $sourceType
+     *
+     * @return array<string, mixed>
+     */
+    private function buildPositionReference(string $sourceType, array $chunk): array
+    {
+        if ($sourceType === 'object') {
+            return [
+                'type' => 'property-path',
+                'path' => $chunk['property_path'] ?? null,
+            ];
+        }
+
+        return [
+            'type' => 'text-range',
+            'start' => $chunk['start_offset'] ?? 0,
+            'end' => $chunk['end_offset'] ?? 0,
+        ];
+    }
+
+    /**
+     * Persist textual chunks for a source.
+     *
+     * @param string               $sourceType    Source type identifier.
+     * @param int                  $sourceId      Source identifier.
+     * @param array<int,array<string,mixed>> $chunks Chunk payloads.
+     * @param string|null          $owner         Owner identifier.
+     * @param string|null          $organisation  Organisation identifier.
+     * @param int                  $sourceTimestamp Source modification timestamp.
+     * @param array<string,mixed>  $payload        Extraction payload for metadata chunk creation.
+     * @phpstan-param non-empty-string $sourceType
+     * @psalm-param  non-empty-string $sourceType
+     *
+     * @return void
+     */
+    private function persistChunksForSource(
+        string $sourceType,
+        int $sourceId,
+        array $chunks,
+        ?string $owner,
+        ?string $organisation,
+        int $sourceTimestamp,
+        array $payload
+    ): void {
+        $this->db->beginTransaction();
+
+        try {
+            // Remove all existing chunks for this source to avoid stale data.
+            $this->chunkMapper->deleteBySource($sourceType, $sourceId);
+
+            foreach ($chunks as $chunkData) {
+                $chunkEntity = $this->hydrateChunkEntity(
+                    $sourceType,
+                    $sourceId,
+                    $chunkData,
+                    $owner,
+                    $organisation,
+                    $sourceTimestamp
+                );
+
+                $this->chunkMapper->insert($chunkEntity);
+            }
+
+            $this->persistMetadataChunk($sourceType, $sourceId, $payload, $sourceTimestamp);
+
+            $this->db->commit();
+        } catch (Throwable $throwable) {
+            $this->db->rollBack();
+            throw $throwable;
+        }
+    }
+
+    /**
+     * Create a Chunk entity from an array payload.
+     *
+     * @param string               $sourceType    Source type identifier.
+     * @param int                  $sourceId      Source identifier.
+     * @param array<string,mixed>  $chunkData     Chunk payload.
+     * @param string|null          $owner         Owner identifier.
+     * @param string|null          $organisation  Organisation identifier.
+     * @param int                  $sourceTimestamp Source modification timestamp.
+     *
+     * @phpstan-param non-empty-string $sourceType
+     * @psalm-param  non-empty-string $sourceType
+     *
+     * @return Chunk
+     */
+    private function hydrateChunkEntity(
+        string $sourceType,
+        int $sourceId,
+        array $chunkData,
+        ?string $owner,
+        ?string $organisation,
+        int $sourceTimestamp
+    ): Chunk {
+        $chunk = new Chunk();
+        $chunk->setUuid(Uuid::v4()->toRfc4122());
+        $chunk->setSourceType($sourceType);
+        $chunk->setSourceId($sourceId);
+        $chunk->setChunkIndex((int) ($chunkData['chunk_index'] ?? 0));
+        $chunk->setTextContent((string) $chunkData['text_content']);
+        $chunk->setStartOffset((int) ($chunkData['start_offset'] ?? 0));
+        $chunk->setEndOffset((int) ($chunkData['end_offset'] ?? strlen($chunkData['text_content'])));
+        $chunk->setPositionReference($chunkData['position_reference'] ?? null);
+        $chunk->setLanguage($chunkData['language'] ?? null);
+        $chunk->setLanguageLevel($chunkData['language_level'] ?? null);
+        $chunk->setLanguageConfidence($chunkData['language_confidence'] ?? null);
+        $chunk->setDetectionMethod($chunkData['detection_method'] ?? null);
+        $chunk->setIndexed(false);
+        $chunk->setVectorized(false);
+        $chunk->setEmbeddingProvider($chunkData['embedding_provider'] ?? null);
+        $chunk->setOverlapSize((int) ($chunkData['overlap_size'] ?? 0));
+        $chunk->setOwner($owner);
+        $chunk->setOrganisation($organisation);
+
+        $createdAt = (new DateTime())->setTimestamp($sourceTimestamp);
+        $chunk->setCreatedAt($createdAt);
+        $chunk->setUpdatedAt(new DateTime());
+
+        return $chunk;
+    }
+
+    /**
+     * Persist the metadata chunk that stores provenance details.
+     *
+     * @param string              $sourceType      Source type identifier.
+     * @param int                 $sourceId        Source identifier.
+     * @param array<string,mixed> $payload         Extraction payload.
+     * @param int                 $sourceTimestamp Source modification timestamp.
+     *
+     * @phpstan-param non-empty-string $sourceType
+     * @psalm-param  non-empty-string $sourceType
+     *
+     * @return void
+     */
+    private function persistMetadataChunk(string $sourceType, int $sourceId, array $payload, int $sourceTimestamp): void
+    {
+        try {
+            $metadataText = json_encode(
+                $this->summarizeMetadataPayload($payload),
+                JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT
+            );
+        } catch (JsonException $exception) {
+            $this->logger->warning('[TextExtractionService] Failed to encode metadata chunk payload', [
+                'sourceType' => $sourceType,
+                'sourceId' => $sourceId,
+                'error' => $exception->getMessage(),
+            ]);
+            $metadataText = 'metadata_encoding_failed';
+        }
+
+        $chunkData = [
+            'chunk_index' => -1,
+            'text_content' => $metadataText,
+            'start_offset' => 0,
+            'end_offset' => strlen($metadataText),
+            'language' => null,
+            'language_level' => null,
+            'language_confidence' => null,
+            'detection_method' => null,
+            'overlap_size' => 0,
+            'position_reference' => [
+                'type' => 'metadata',
+            ],
+        ];
+
+        $chunkEntity = $this->hydrateChunkEntity(
+            $sourceType,
+            $sourceId,
+            $chunkData,
+            $payload['owner'] ?? null,
+            $payload['organisation'] ?? null,
+            $sourceTimestamp
+        );
+
+        $this->chunkMapper->insert($chunkEntity);
+    }
+
+    /**
+     * Prepare metadata content for the metadata chunk.
+     *
+     * @param array<string,mixed> $payload Extraction payload.
+     *
+     * @return array<string,mixed>
+     */
+    private function summarizeMetadataPayload(array $payload): array
+    {
+        return [
+            'source_type' => $payload['source_type'] ?? null,
+            'source_id' => $payload['source_id'] ?? null,
+            'chunk_checksum' => $payload['checksum'] ?? null,
+            'text_length' => $payload['length'] ?? null,
+            'language' => $payload['language'] ?? null,
+            'language_level' => $payload['language_level'] ?? null,
+            'organisation' => $payload['organisation'] ?? null,
+            'owner' => $payload['owner'] ?? null,
+            'file_metadata' => $payload['metadata'] ?? [],
+        ];
+    }
+
+    /**
+     * Insert or update the FileText record with the latest extraction data.
+     *
+     * @param FileText|null                  $existingFileText Existing record or null.
+     * @param array<string,mixed>            $ncFile           Metadata from oc_filecache.
+     * @param array<string,mixed>            $payload          Extraction payload.
+     * @param array<int,array<string,mixed>> $chunks           Chunk payloads for optional JSON storage.
+     *
+     * @return FileText
+     */
+    private function upsertFileTextRecord(
+        ?FileText $existingFileText,
+        array $ncFile,
+        array $payload,
+        array $chunks
+    ): FileText {
+        $fileText = $existingFileText ?? new FileText();
+        $now = new DateTime();
+
+        if ($existingFileText === null) {
+            // Bootstrap a new FileText record.
+            $fileText->setUuid(Uuid::v4()->toRfc4122());
+            $fileText->setFileId((int) $ncFile['fileid']);
+            $fileText->setCreatedAt($now);
+        }
+
+        $fileText->setFilePath((string) ($ncFile['path'] ?? ''));
+        $fileText->setFileName((string) ($ncFile['name'] ?? ''));
+        $fileText->setMimeType((string) ($ncFile['mimetype'] ?? 'application/octet-stream'));
+        $fileText->setFileSize((int) ($ncFile['size'] ?? 0));
+        $fileText->setFileChecksum($payload['checksum'] ?? null);
+        $fileText->setTextContent($payload['text'] ?? null);
+        $fileText->setTextLength((int) ($payload['length'] ?? 0));
+        $fileText->setExtractionMethod((string) ($payload['method'] ?? 'llphant'));
+        $fileText->setExtractionStatus('completed');
+        $fileText->setExtractionError(null);
+        $fileText->setChunked(true);
+        $fileText->setChunkCount(count($chunks) + 1);
+        $fileText->setIndexedInSolr(false);
+        $fileText->setVectorized(false);
+        $fileText->setUpdatedAt($now);
+        $fileText->setExtractedAt($now);
+
+        try {
+            $fileText->setChunksJson(json_encode($chunks, JSON_THROW_ON_ERROR));
+        } catch (JsonException $exception) {
+            $this->logger->warning('[TextExtractionService] Failed to encode chunk JSON for FileText', [
+                'fileId' => $fileText->getFileId(),
+                'error' => $exception->getMessage(),
+            ]);
+        }
+
+        if ($existingFileText === null) {
+            return $this->fileTextMapper->insert($fileText);
+        }
+
+        return $this->fileTextMapper->update($fileText);
     }
 
     /**
