@@ -214,20 +214,11 @@ class ObjectsTool extends AbstractTool
         }
 
         try {
-            switch ($functionName) {
-                case 'search_objects':
-                    return $this->searchObjects($parameters);
-                case 'get_object':
-                    return $this->getObject($parameters);
-                case 'create_object':
-                    return $this->createObject($parameters);
-                case 'update_object':
-                    return $this->updateObject($parameters);
-                case 'delete_object':
-                    return $this->deleteObject($parameters);
-                default:
-                    throw new \InvalidArgumentException("Unknown function: {$functionName}");
-            }
+            // Convert snake_case to camelCase for PSR compliance
+            $methodName = lcfirst(str_replace('_', '', ucwords($functionName, '_')));
+            
+            // Call the method directly (LLPhant-compatible)
+            return $this->$methodName(...array_values($parameters));
         } catch (\Exception $e) {
             $this->log($functionName, $parameters, 'error', $e->getMessage());
             return $this->formatError($e->getMessage());
@@ -241,20 +232,17 @@ class ObjectsTool extends AbstractTool
      *
      * @return array Result with list of objects
      */
-    private function searchObjects(array $parameters): array
+    public function searchObjects(int $limit = 20, int $offset = 0, ?string $register = null, ?string $schema = null, ?string $query = null): array
     {
-        $limit = $parameters['limit'] ?? 20;
-        $offset = $parameters['offset'] ?? 0;
-
         $filters = [];
-        if (isset($parameters['register'])) {
-            $filters['register'] = $parameters['register'];
+        if ($register !== null) {
+            $filters['register'] = $register;
         }
-        if (isset($parameters['schema'])) {
-            $filters['schema'] = $parameters['schema'];
+        if ($schema !== null) {
+            $filters['schema'] = $schema;
         }
-        if (isset($parameters['query']) && !empty($parameters['query'])) {
-            $filters['_search'] = $parameters['query'];
+        if ($query !== null && !empty($query)) {
+            $filters['_search'] = $query;
         }
 
         $filters = $this->applyViewFilters($filters);
@@ -297,11 +285,9 @@ class ObjectsTool extends AbstractTool
      *
      * @throws \Exception If object not found
      */
-    private function getObject(array $parameters): array
+    public function getObject(string $id): array
     {
-        $this->validateParameters($parameters, ['id']);
-
-        $object = $this->objectService->findObject($parameters['id']);
+        $object = $this->objectService->findObject($id);
 
         return $this->formatSuccess(
             [
@@ -328,23 +314,21 @@ class ObjectsTool extends AbstractTool
      *
      * @throws \Exception If creation fails
      */
-    private function createObject(array $parameters): array
+    public function createObject(string $register, string $schema, array $data): array
     {
-        $this->validateParameters($parameters, ['register', 'schema', 'data']);
-
         $objectData = array_merge(
-            $parameters['data'],
+            $data,
             [
                 '@self' => [
-                    'register' => $parameters['register'],
-                    'schema' => $parameters['schema'],
+                    'register' => $register,
+                    'schema' => $schema,
                 ],
             ]
         );
 
         $object = $this->objectService->saveObject(
-            registerId: (int) $parameters['register'],
-            schemaId: (int) $parameters['schema'],
+            registerId: (int) $register,
+            schemaId: (int) $schema,
             objectArray: $objectData
         );
 
@@ -369,17 +353,15 @@ class ObjectsTool extends AbstractTool
      *
      * @throws \Exception If update fails
      */
-    private function updateObject(array $parameters): array
+    public function updateObject(string $id, array $data): array
     {
-        $this->validateParameters($parameters, ['id', 'data']);
-
         // Get existing object
-        $existingObject = $this->objectService->findObject($parameters['id']);
+        $existingObject = $this->objectService->findObject($id);
 
         // Merge new data with existing data
         $mergedData = array_merge(
             $existingObject->getObject(),
-            $parameters['data']
+            $data
         );
 
         // Update object
@@ -411,15 +393,13 @@ class ObjectsTool extends AbstractTool
      *
      * @throws \Exception If deletion fails
      */
-    private function deleteObject(array $parameters): array
+    public function deleteObject(string $id): array
     {
-        $this->validateParameters($parameters, ['id']);
-
-        $object = $this->objectService->findObject($parameters['id']);
+        $object = $this->objectService->findObject($id);
         $this->objectService->deleteObject($object->getId());
 
         return $this->formatSuccess(
-            ['id' => $parameters['id']],
+            ['id' => $id],
             'Object deleted successfully'
         );
     }

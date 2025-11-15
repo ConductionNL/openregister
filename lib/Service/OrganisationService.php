@@ -242,27 +242,13 @@ class OrganisationService
                     }
                 }
             } else {
-                // No UUID in settings, check if there's an organisation with is_default flag (legacy)
-                try {
-                    $defaultOrg = $this->organisationMapper->findDefault();
-                    $this->logger->info('Found legacy default organisation with is_default flag', [
-                        'uuid' => $defaultOrg->getUuid(),
-                    ]);
-                    
-                    // Migrate to settings
-                    if ($this->settingsService !== null) {
-                        $this->settingsService->setDefaultOrganisationUuid($defaultOrg->getUuid());
-                        $this->logger->info('Migrated default organisation to settings');
-                    }
-                } catch (DoesNotExistException $e) {
-                    // No default found at all, create new one
-                    $this->logger->info('No default organisation found, creating new one');
-                    $defaultOrg = $this->organisationMapper->createDefault();
-                    
-                    // Store in settings
-                    if ($this->settingsService !== null) {
-                        $this->settingsService->setDefaultOrganisationUuid($defaultOrg->getUuid());
-                    }
+                // No UUID in settings, create a new default organisation
+                $this->logger->info('No default organisation found in settings, creating new one');
+                $defaultOrg = $this->organisationMapper->createDefault();
+                
+                // Store in settings
+                if ($this->settingsService !== null) {
+                    $this->settingsService->setDefaultOrganisationUuid($defaultOrg->getUuid());
                 }
             }
 
@@ -1145,6 +1131,58 @@ class OrganisationService
         }
 
     }//end getDefaultOrganisation()
+
+
+    /**
+     * Get UUIDs of active organisation and all its parent organisations
+     * 
+     * This method returns an array of organisation UUIDs that the current user
+     * can access based on their active organisation and the parent hierarchy.
+     * Children can view resources from their parents, recursively up the hierarchy.
+     *
+     * Example hierarchy:
+     * - VNG (root)
+     * - Amsterdam (parent: VNG)
+     * - Noord (parent: Amsterdam)
+     * 
+     * When Noord is active, returns: [Noord-UUID, Amsterdam-UUID, VNG-UUID]
+     *
+     * This is used by MultiTenancyTrait for filtering queries to include parent resources.
+     *
+     * @return array Array of organisation UUIDs (active org + all parents)
+     */
+    public function getUserActiveOrganisations(): array
+    {
+        $activeOrg = $this->getActiveOrganisation();
+        
+        if ($activeOrg === null) {
+            $this->logger->debug('No active organisation found for user');
+            return [];
+        }
+        
+        // Start with the active organisation UUID
+        $orgUuids = [$activeOrg->getUuid()];
+        
+        // Get all parent organisations recursively
+        $parents = $this->organisationMapper->findParentChain($activeOrg->getUuid());
+        
+        // Merge active UUID with parent UUIDs
+        $orgUuids = array_merge($orgUuids, $parents);
+        
+        $this->logger->debug(
+            'Retrieved active organisations (including parents)',
+            [
+                'activeOrg' => $activeOrg->getUuid(),
+                'activeOrgName' => $activeOrg->getName(),
+                'parents' => $parents,
+                'totalOrganisations' => count($orgUuids),
+                'allUuids' => $orgUuids,
+            ]
+        );
+        
+        return $orgUuids;
+
+    }//end getUserActiveOrganisations()
 
 
 }//end class

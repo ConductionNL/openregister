@@ -81,7 +81,7 @@ class SolrManagementCommand extends Command
             ->addArgument(
                 'action',
                 InputArgument::REQUIRED,
-                'Action to perform: setup, optimize, warm, health, schema-check, clear, stats'
+                'Action to perform: setup, optimize, warm, health, schema-check, clear, stats, configure-vectors'
             )
             ->addOption(
                 'tenant-collection',

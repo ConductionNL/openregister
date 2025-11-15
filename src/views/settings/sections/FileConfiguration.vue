@@ -1,9 +1,9 @@
 <template>
 	<SettingsSection
-		name="File Configuration"
-		description="Configure file upload and text extraction settings"
+		name="Text Extraction"
+		description="Configure extraction pipelines for files, objects, and detected entities"
 		:loading="settingsStore.loadingFileSettings"
-		loading-message="Loading file configuration...">
+		loading-message="Loading text extraction settings...">
 		<template #actions>
 			<!-- File Actions Menu -->
 			<NcActions
@@ -57,13 +57,13 @@
 		<!-- Section Description -->
 		<div class="section-description-full">
 			<p class="main-description">
-				Text extraction converts files into searchable and AI-processable content. Choose from <strong>LLPhant</strong>
+				Text extraction converts uploaded files, object attachments, and captured communications into searchable and AI-processable content. Choose from <strong>LLPhant</strong>
 				(local PHP processing, best for simple files) or <strong>Dolphin AI</strong> (ByteDance API, best for complex
 				documents, OCR, tables, and formulas). Extracted text is split into chunks for embeddings and semantic search.
 			</p>
 			<p class="main-description info-note">
 				<strong>📝 Note:</strong> Text extraction is <strong>required</strong> before LLM vectorization. The process flow is:
-				File Upload → Text Extraction → Chunking → Embedding Creation. Without text extraction enabled, files cannot be
+				File/Object Upload → Text Extraction → Chunking → Embedding Creation. Without text extraction enabled, content cannot be
 				vectorized for semantic search.
 			</p>
 		</div>
@@ -330,12 +330,12 @@
 			</div>
 		</SettingsCard>
 
-		<!-- File Processing Statistics -->
+		<!-- Extraction Statistics -->
 		<div class="stats-section">
 			<h3 class="stats-title">
-				📊 File Processing Statistics
+				📊 Extraction Statistics
 			</h3>
-			<div class="stats-grid stats-grid-6">
+			<div class="stats-grid stats-grid-8">
 				<div class="stat-card">
 					<div class="stat-value">
 						{{ extractionStats.totalFiles || 0 }}
@@ -382,6 +382,22 @@
 					</div>
 					<div class="stat-label">
 						Chunks
+					</div>
+				</div>
+				<div class="stat-card info">
+					<div class="stat-value">
+						{{ extractionStats.totalObjects || 0 }}
+					</div>
+					<div class="stat-label">
+						Objects
+					</div>
+				</div>
+				<div class="stat-card info">
+					<div class="stat-value">
+						{{ extractionStats.totalEntities || 0 }}
+					</div>
+					<div class="stat-label">
+						Entities
 					</div>
 				</div>
 			</div>
@@ -549,6 +565,8 @@ export default {
 				processedFiles: 0,
 				failedFiles: 0,
 				totalChunks: 0,
+				totalObjects: 0,
+				totalEntities: 0,
 			},
 			discoveringFiles: false,
 			extractingFiles: false,
@@ -707,6 +725,8 @@ export default {
 						processedFiles: stats.processedFiles || 0,
 						failedFiles: stats.failedFiles || 0,
 						totalChunks: stats.totalChunks || 0,
+						totalObjects: stats.totalObjects || stats.total_objects || 0,
+						totalEntities: stats.totalEntities || stats.total_entities || 0,
 					}
 				}
 			} catch (error) {
@@ -1120,6 +1140,10 @@ export default {
 
 .stats-grid-6 {
 	grid-template-columns: repeat(6, 1fr);
+}
+
+.stats-grid-8 {
+	grid-template-columns: repeat(8, 1fr);
 }
 
 .stat-card {

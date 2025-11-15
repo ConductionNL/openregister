@@ -477,7 +477,13 @@ export default {
 	methods: {
 		initializeAgent() {
 			if (agentStore.agentItem) {
+				// Deep copy to avoid reactivity issues
+				const sourceTools = agentStore.agentItem.tools || []
+				const toolsArray = Array.isArray(sourceTools) ? [...sourceTools] : []
+
 				this.agentItem = { ...agentStore.agentItem }
+				// Force set the tools array to ensure reactivity
+				this.$set(this.agentItem, 'tools', toolsArray)
 				this.selectedType = this.agentTypes.find(t => t.value === this.agentItem.type)
 				this.selectedRagSearchMode = this.ragSearchModes.find(m => m.value === this.agentItem.ragSearchMode)
 				if (this.agentItem.groups && Array.isArray(this.agentItem.groups)) {
@@ -660,7 +666,7 @@ export default {
 		},
 		toggleTool(toolId, enabled) {
 			if (!this.agentItem.tools) {
-				this.agentItem.tools = []
+				this.$set(this.agentItem, 'tools', [])
 			}
 			// Support both old format (e.g., 'register') and new format (e.g., 'openregister.register')
 			// Normalize to new format
@@ -670,15 +676,14 @@ export default {
 				// Check if not already present
 				if (!this.agentItem.tools.includes(normalizedId) && !this.agentItem.tools.includes(toolId)) {
 					// Create new array to trigger Vue reactivity
-					this.agentItem.tools = [...this.agentItem.tools, normalizedId]
+					const newTools = [...this.agentItem.tools, normalizedId]
+					this.$set(this.agentItem, 'tools', newTools)
 				}
 			} else {
 				// Create new array to trigger Vue reactivity
-				this.agentItem.tools = this.agentItem.tools.filter(t => t !== normalizedId && t !== toolId)
+				const newTools = this.agentItem.tools.filter(t => t !== normalizedId && t !== toolId)
+				this.$set(this.agentItem, 'tools', newTools)
 			}
-
-			// Force Vue to detect the change by updating the reference
-			this.$set(this.agentItem, 'tools', [...this.agentItem.tools])
 		},
 		isToolChecked(toolId) {
 			if (!this.agentItem.tools) {

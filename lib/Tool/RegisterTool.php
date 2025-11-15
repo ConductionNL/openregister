@@ -206,20 +206,11 @@ class RegisterTool extends AbstractTool
         }
 
         try {
-            switch ($functionName) {
-                case 'list_registers':
-                    return $this->listRegisters($parameters);
-                case 'get_register':
-                    return $this->getRegister($parameters);
-                case 'create_register':
-                    return $this->createRegister($parameters);
-                case 'update_register':
-                    return $this->updateRegister($parameters);
-                case 'delete_register':
-                    return $this->deleteRegister($parameters);
-                default:
-                    throw new \InvalidArgumentException("Unknown function: {$functionName}");
-            }
+            // Convert snake_case to camelCase for PSR compliance
+            $methodName = lcfirst(str_replace('_', '', ucwords($functionName, '_')));
+            
+            // Call the method directly (LLPhant-compatible)
+            return $this->$methodName(...array_values($parameters));
         } catch (\Exception $e) {
             $this->log($functionName, $parameters, 'error', $e->getMessage());
             return $this->formatError($e->getMessage());
@@ -229,14 +220,15 @@ class RegisterTool extends AbstractTool
     /**
      * List registers
      *
-     * @param array $parameters Function parameters
+     * LLPhant-compatible method that can be called directly.
+     *
+     * @param int $limit  Maximum number of registers to return
+     * @param int $offset Offset for pagination
      *
      * @return array Result with list of registers
      */
-    private function listRegisters(array $parameters): array
+    public function listRegisters(int $limit = 100, int $offset = 0): array
     {
-        $limit = $parameters['limit'] ?? 100;
-        $offset = $parameters['offset'] ?? 0;
 
         $filters = [];
         $filters = $this->applyViewFilters($filters);
@@ -265,11 +257,9 @@ class RegisterTool extends AbstractTool
      *
      * @throws \Exception If register not found
      */
-    private function getRegister(array $parameters): array
+    public function getRegister(string $id): array
     {
-        $this->validateParameters($parameters, ['id']);
-
-        $register = $this->registerService->find($parameters['id']);
+        $register = $this->registerService->find($id);
 
         return $this->formatSuccess(
             [
@@ -296,17 +286,15 @@ class RegisterTool extends AbstractTool
      *
      * @throws \Exception If creation fails
      */
-    private function createRegister(array $parameters): array
+    public function createRegister(string $title, string $description = '', ?string $slug = null): array
     {
-        $this->validateParameters($parameters, ['title']);
-
         $data = [
-            'title' => $parameters['title'],
-            'description' => $parameters['description'] ?? '',
+            'title' => $title,
+            'description' => $description,
         ];
 
-        if (isset($parameters['slug'])) {
-            $data['slug'] = $parameters['slug'];
+        if ($slug !== null) {
+            $data['slug'] = $slug;
         }
 
         $register = $this->registerService->createFromArray($data);
@@ -332,23 +320,21 @@ class RegisterTool extends AbstractTool
      *
      * @throws \Exception If update fails
      */
-    private function updateRegister(array $parameters): array
+    public function updateRegister(string $id, ?string $title = null, ?string $description = null): array
     {
-        $this->validateParameters($parameters, ['id']);
-
         $data = [];
-        if (isset($parameters['title'])) {
-            $data['title'] = $parameters['title'];
+        if ($title !== null) {
+            $data['title'] = $title;
         }
-        if (isset($parameters['description'])) {
-            $data['description'] = $parameters['description'];
+        if ($description !== null) {
+            $data['description'] = $description;
         }
 
         if (empty($data)) {
             throw new \InvalidArgumentException('No update data provided');
         }
 
-        $register = $this->registerService->updateFromArray((int) $parameters['id'], $data);
+        $register = $this->registerService->updateFromArray((int) $id, $data);
 
         return $this->formatSuccess(
             [
@@ -371,15 +357,13 @@ class RegisterTool extends AbstractTool
      *
      * @throws \Exception If deletion fails
      */
-    private function deleteRegister(array $parameters): array
+    public function deleteRegister(string $id): array
     {
-        $this->validateParameters($parameters, ['id']);
-
-        $register = $this->registerService->find($parameters['id']);
+        $register = $this->registerService->find($id);
         $this->registerService->delete($register);
 
         return $this->formatSuccess(
-            ['id' => $parameters['id']],
+            ['id' => $id],
             'Register deleted successfully'
         );
     }

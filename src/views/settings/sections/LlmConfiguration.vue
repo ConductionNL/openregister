@@ -127,6 +127,22 @@
 					{{ providerConfig.chatModel }}
 				</p>
 			</div>
+
+			<div class="provider-info-card" :class="{'warning-card': !databaseInfo.vectorSupport}">
+				<h5>Vector Storage</h5>
+				<p class="provider-name">
+					{{ databaseInfo.type }}
+				</p>
+				<p v-if="databaseInfo.version !== 'Unknown'" class="model-info">
+					{{ databaseInfo.version }}
+				</p>
+				<p v-if="databaseInfo.recommendedPlugin" class="plugin-info" :class="{'warning-text': !databaseInfo.vectorSupport, 'success-text': databaseInfo.vectorSupport}">
+					{{ databaseInfo.recommendedPlugin }}
+				</p>
+				<p v-if="databaseInfo.performanceNote" class="performance-note" :title="databaseInfo.performanceNote">
+					{{ databaseInfo.performanceNote }}
+				</p>
+			</div>
 		</div>
 
 		<!-- Chat Statistics -->
@@ -220,7 +236,8 @@
 		<!-- LLM Configuration Modal -->
 		<LLMConfigModal
 			:show="showLLMConfigDialog"
-			@closing="showLLMConfigDialog = false" />
+			@closing="onLLMConfigClosed"
+			@embeddings-cleared="loadAllStats" />
 
 		<!-- File Management Modal -->
 		<FileManagementModal
@@ -337,6 +354,13 @@ export default {
 				chatProvider: null,
 				chatModel: null,
 			},
+			databaseInfo: {
+				type: 'Unknown',
+				version: 'Unknown',
+				vectorSupport: false,
+				recommendedPlugin: null,
+				performanceNote: null,
+			},
 			chatStats: {
 				totalAgents: 0,
 				totalConversations: 0,
@@ -443,6 +467,7 @@ export default {
 			await Promise.all([
 				this.loadChatStats(),
 				this.loadVectorStats(),
+				this.loadDatabaseInfo(),
 				this.settingsStore.getExtractionStats(),
 			])
 		},
@@ -467,6 +492,63 @@ export default {
 		},
 
 		/**
+		 * Load database information
+		 */
+		async loadDatabaseInfo() {
+			try {
+				const response = await axios.get(generateUrl('/apps/openregister/api/settings/database'))
+				if (response.data && response.data.success) {
+					const db = response.data.database
+
+					// Check if a different vector backend is configured
+					let performanceNote = db.performanceNote
+					let vectorSupport = db.vectorSupport
+					let displayType = db.type || 'Unknown'
+					let displayVersion = db.version || 'Unknown'
+
+					// Check LLM settings for vector backend
+					let recommendedPlugin = db.recommendedPlugin
+					try {
+						const llmResponse = await axios.get(generateUrl('/apps/openregister/api/settings/llm'))
+						const vectorBackend = llmResponse.data.vectorConfig?.backend
+
+						if (vectorBackend === 'solr') {
+							displayType = 'Solr'
+							displayVersion = '9.x (Dense Vector)'
+							performanceNote = '✅ Using Solr for vector search (100-1000x faster than PHP). Database used only for application data.'
+							recommendedPlugin = 'KNN/HNSW Indexing (active ✓)'
+							vectorSupport = true // Solr provides vector support
+						} else if (vectorBackend === 'database' && db.vectorSupport) {
+							performanceNote = `✅ Using ${db.type} with native vector operations for fast similarity search.`
+							recommendedPlugin = db.recommendedPlugin + ' (active ✓)'
+							vectorSupport = true
+						} else if (vectorBackend === 'database' && !db.vectorSupport) {
+							performanceNote = db.performanceNote
+							recommendedPlugin = db.recommendedPlugin
+						} else if (vectorBackend === 'php' || !vectorBackend) {
+							performanceNote = db.performanceNote
+							recommendedPlugin = db.recommendedPlugin
+						}
+					} catch (e) {
+						// If we can't check LLM settings, use default
+						recommendedPlugin = db.recommendedPlugin
+					}
+
+					this.databaseInfo = {
+						type: displayType,
+						version: displayVersion,
+						vectorSupport,
+						recommendedPlugin: recommendedPlugin || null,
+						performanceNote,
+					}
+				}
+			} catch (error) {
+				console.error('Failed to load database info:', error)
+				// Don't throw error, just use defaults
+			}
+		},
+
+		/**
 		 * Retry connection - tests LLM connectivity
 		 */
 		async retryConnection() {
@@ -474,7 +556,7 @@ export default {
 			this.llmError = false
 
 			try {
-				// Reload all statistics and test connection
+			// Reload all statistics and test connection
 				await this.loadAllStats()
 				this.llmConnectionStatus = 'Connected ✓'
 			} catch (error) {
@@ -484,6 +566,15 @@ export default {
 			} finally {
 				this.loadingStats = false
 			}
+		},
+
+		/**
+		 * Handle LLM Config Modal closing - reload stats to show updated backend
+		 */
+		onLLMConfigClosed() {
+			this.showLLMConfigDialog = false
+			// Reload all stats to reflect the new vector backend configuration
+			this.loadAllStats()
 		},
 
 		/**
@@ -822,7 +913,7 @@ export default {
 /* Provider Info Cards */
 .provider-info-grid {
 	display: grid;
-	grid-template-columns: repeat(2, 1fr);
+	grid-template-columns: repeat(3, 1fr);
 	gap: 16px;
 	margin-bottom: 24px;
 }
@@ -832,6 +923,11 @@ export default {
 	border: 1px solid var(--color-border);
 	border-radius: var(--border-radius);
 	padding: 16px;
+}
+
+.provider-info-card.warning-card {
+	border-color: var(--color-warning);
+	background: var(--color-warning-hover, rgba(255, 180, 0, 0.1));
 }
 
 .provider-info-card h5 {
@@ -861,6 +957,31 @@ export default {
 	font-size: 12px;
 	color: var(--color-text-lighter);
 	font-family: monospace;
+}
+
+.provider-info-card .plugin-info {
+	margin: 8px 0 0 0;
+	font-size: 12px;
+	font-weight: 500;
+}
+
+.provider-info-card .plugin-info.warning-text {
+	color: var(--color-warning);
+}
+
+.provider-info-card .plugin-info.success-text {
+	color: var(--color-success);
+}
+
+.provider-info-card .performance-note {
+	margin: 8px 0 0 0;
+	font-size: 11px;
+	color: var(--color-text-maxcontrast);
+	line-height: 1.3;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	cursor: help;
 }
 
 /* Statistics Grid (matching File Configuration tiles) */
@@ -935,6 +1056,13 @@ export default {
 
 	.provider-info-grid {
 		grid-template-columns: 1fr;
+	}
+}
+
+/* Tablet breakpoint - 2 columns for medium screens */
+@media (min-width: 641px) and (max-width: 1024px) {
+	.provider-info-grid {
+		grid-template-columns: repeat(2, 1fr);
 	}
 
 	.stats-grid {

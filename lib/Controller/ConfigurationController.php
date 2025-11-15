@@ -23,6 +23,8 @@ use GuzzleHttp\Exception\GuzzleException;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Service\ConfigurationService;
+use OCA\OpenRegister\Service\GitHubService;
+use OCA\OpenRegister\Service\GitLabService;
 use OCA\OpenRegister\Service\NotificationService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -61,6 +63,20 @@ class ConfigurationController extends Controller
     private NotificationService $notificationService;
 
     /**
+     * GitHub service instance.
+     *
+     * @var GitHubService The GitHub service instance.
+     */
+    private GitHubService $githubService;
+
+    /**
+     * GitLab service instance.
+     *
+     * @var GitLabService The GitLab service instance.
+     */
+    private GitLabService $gitlabService;
+
+    /**
      * Logger instance.
      *
      * @var LoggerInterface The logger instance.
@@ -76,6 +92,8 @@ class ConfigurationController extends Controller
      * @param ConfigurationMapper  $configurationMapper  Configuration mapper
      * @param ConfigurationService $configurationService Configuration service
      * @param NotificationService  $notificationService  Notification service
+     * @param GitHubService        $githubService        GitHub service
+     * @param GitLabService        $gitlabService        GitLab service
      * @param LoggerInterface      $logger               Logger
      */
     public function __construct(
@@ -84,6 +102,8 @@ class ConfigurationController extends Controller
         ConfigurationMapper $configurationMapper,
         ConfigurationService $configurationService,
         NotificationService $notificationService,
+        GitHubService $githubService,
+        GitLabService $gitlabService,
         LoggerInterface $logger
     ) {
         parent::__construct($appName, $request);
@@ -91,6 +111,8 @@ class ConfigurationController extends Controller
         $this->configurationMapper  = $configurationMapper;
         $this->configurationService = $configurationService;
         $this->notificationService  = $notificationService;
+        $this->githubService        = $githubService;
+        $this->gitlabService        = $gitlabService;
         $this->logger               = $logger;
 
     }//end __construct()
@@ -154,6 +176,69 @@ class ConfigurationController extends Controller
 
     }//end show()
 
+
+    /**
+     * Enrich configuration details by fetching actual file contents
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Enriched configuration details
+     */
+    public function enrichDetails(): JSONResponse
+    {
+        try {
+            $data = $this->request->getParams();
+            $source = strtolower($data['source'] ?? 'github');
+            $owner = $data['owner'] ?? '';
+            $repo = $data['repo'] ?? '';
+            $path = $data['path'] ?? '';
+            $branch = $data['branch'] ?? 'main';
+            
+            // Validate required parameters
+            if (empty($owner) || empty($repo) || empty($path)) {
+                return new JSONResponse(
+                    ['error' => 'Missing required parameters: owner, repo, path'],
+                    400
+                );
+            }
+            
+            $this->logger->info('Enriching configuration details', [
+                'source' => $source,
+                'owner'  => $owner,
+                'repo'   => $repo,
+                'path'   => $path,
+            ]);
+            
+            // Call appropriate service
+            $details = null;
+            if ($source === 'github') {
+                $details = $this->githubService->enrichConfigurationDetails($owner, $repo, $path, $branch);
+            } else if ($source === 'gitlab') {
+                // GitLab enrichment can be added later if needed
+                $this->logger->warning('GitLab enrichment not yet implemented');
+            }
+            
+            if ($details === null) {
+                return new JSONResponse(
+                    ['error' => 'Failed to fetch configuration details'],
+                    404
+                );
+            }
+            
+            return new JSONResponse($details, 200);
+        } catch (Exception $e) {
+            $this->logger->error('Configuration enrichment failed: ' . $e->getMessage(), [
+                'exception' => get_class($e),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            
+            return new JSONResponse(
+                ['error' => 'Failed to enrich configuration: ' . $e->getMessage()],
+                500
+            );
+        }
+    }
 
     /**
      * Create a new configuration.
@@ -529,6 +614,527 @@ class ConfigurationController extends Controller
         }//end try
 
     }//end export()
+
+
+    /**
+     * Discover OpenRegister configurations on GitHub or GitLab
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Search results
+     *
+     * @since 0.2.10
+     */
+    public function discover(): JSONResponse
+    {
+        try {
+            $data   = $this->request->getParams();
+            $source = strtolower($data['source'] ?? 'github');
+            $search = $data['_search'] ?? '';
+            $page   = (int) ($data['page'] ?? 1);
+            
+            $this->logger->info('Discovering configurations', [
+                'source' => $source,
+                '_search'  => $search,
+                'page'   => $page,
+            ]);
+            
+            // Validate source
+            if (!in_array($source, ['github', 'gitlab'])) {
+                return new JSONResponse(
+                    ['error' => 'Invalid source. Must be "github" or "gitlab"'],
+                    400
+                );
+            }
+            
+            // Call appropriate service
+            if ($source === 'github') {
+                $this->logger->info('About to call GitHub search service');
+                $results = $this->githubService->searchConfigurations($search, $page);
+                $this->logger->info('GitHub search completed', ['result_count' => count($results['results'] ?? [])]);
+            } else {
+                $this->logger->info('About to call GitLab search service');
+                $results = $this->gitlabService->searchConfigurations($search, $page);
+                $this->logger->info('GitLab search completed', ['result_count' => count($results['results'] ?? [])]);
+            }
+            
+            return new JSONResponse($results, 200);
+        } catch (Exception $e) {
+            $this->logger->error('Configuration discovery failed: ' . $e->getMessage(), [
+                'source' => $source ?? 'unknown',
+                'exception' => get_class($e),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            
+            return new JSONResponse(
+                ['error' => 'Failed to discover configurations: ' . $e->getMessage()],
+                500
+            );
+        }
+    }//end discover()
+
+
+    /**
+     * Get branches from a GitHub repository
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse List of branches
+     *
+     * @since 0.2.10
+     */
+    public function getGitHubBranches(): JSONResponse
+    {
+        try {
+            $data  = $this->request->getParams();
+            $owner = $data['owner'] ?? '';
+            $repo  = $data['repo'] ?? '';
+            
+            if (empty($owner) || empty($repo)) {
+                return new JSONResponse(
+                    ['error' => 'Owner and repo parameters are required'],
+                    400
+                );
+            }
+            
+            $this->logger->info('Fetching GitHub branches', [
+                'owner' => $owner,
+                'repo'  => $repo,
+            ]);
+            
+            $branches = $this->githubService->getBranches($owner, $repo);
+            
+            return new JSONResponse(['branches' => $branches], 200);
+        } catch (Exception $e) {
+            $this->logger->error('Failed to get GitHub branches: ' . $e->getMessage());
+            
+            return new JSONResponse(
+                ['error' => 'Failed to fetch branches: ' . $e->getMessage()],
+                500
+            );
+        }
+    }//end getGitHubBranches()
+
+
+    /**
+     * Get configuration files from a GitHub repository
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse List of configuration files
+     *
+     * @since 0.2.10
+     */
+    public function getGitHubConfigurations(): JSONResponse
+    {
+        try {
+            $data   = $this->request->getParams();
+            $owner  = $data['owner'] ?? '';
+            $repo   = $data['repo'] ?? '';
+            $branch = $data['branch'] ?? 'main';
+            
+            if (empty($owner) || empty($repo)) {
+                return new JSONResponse(
+                    ['error' => 'Owner and repo parameters are required'],
+                    400
+                );
+            }
+            
+            $this->logger->info('Fetching GitHub configurations', [
+                'owner'  => $owner,
+                'repo'   => $repo,
+                'branch' => $branch,
+            ]);
+            
+            $files = $this->githubService->listConfigurationFiles($owner, $repo, $branch);
+            
+            return new JSONResponse(['files' => $files], 200);
+        } catch (Exception $e) {
+            $this->logger->error('Failed to get GitHub configurations: ' . $e->getMessage());
+            
+            return new JSONResponse(
+                ['error' => 'Failed to fetch configurations: ' . $e->getMessage()],
+                500
+            );
+        }
+    }//end getGitHubConfigurations()
+
+
+    /**
+     * Get branches from a GitLab project
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse List of branches
+     *
+     * @since 0.2.10
+     */
+    public function getGitLabBranches(): JSONResponse
+    {
+        try {
+            $data      = $this->request->getParams();
+            $namespace = $data['namespace'] ?? '';
+            $project   = $data['project'] ?? '';
+            
+            if (empty($namespace) || empty($project)) {
+                return new JSONResponse(
+                    ['error' => 'Namespace and project parameters are required'],
+                    400
+                );
+            }
+            
+            // Get project ID from namespace/project path
+            $projectData = $this->gitlabService->getProjectByPath($namespace, $project);
+            $projectId   = $projectData['id'];
+            
+            $this->logger->info('Fetching GitLab branches', [
+                'namespace'  => $namespace,
+                'project'    => $project,
+                'project_id' => $projectId,
+            ]);
+            
+            $branches = $this->gitlabService->getBranches($projectId);
+            
+            return new JSONResponse(['branches' => $branches], 200);
+        } catch (Exception $e) {
+            $this->logger->error('Failed to get GitLab branches: ' . $e->getMessage());
+            
+            return new JSONResponse(
+                ['error' => 'Failed to fetch branches: ' . $e->getMessage()],
+                500
+            );
+        }
+    }//end getGitLabBranches()
+
+
+    /**
+     * Get configuration files from a GitLab project
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse List of configuration files
+     *
+     * @since 0.2.10
+     */
+    public function getGitLabConfigurations(): JSONResponse
+    {
+        try {
+            $data      = $this->request->getParams();
+            $namespace = $data['namespace'] ?? '';
+            $project   = $data['project'] ?? '';
+            $ref       = $data['ref'] ?? 'main';
+            
+            if (empty($namespace) || empty($project)) {
+                return new JSONResponse(
+                    ['error' => 'Namespace and project parameters are required'],
+                    400
+                );
+            }
+            
+            // Get project ID from namespace/project path
+            $projectData = $this->gitlabService->getProjectByPath($namespace, $project);
+            $projectId   = $projectData['id'];
+            
+            $this->logger->info('Fetching GitLab configurations', [
+                'namespace'  => $namespace,
+                'project'    => $project,
+                'project_id' => $projectId,
+                'ref'        => $ref,
+            ]);
+            
+            $files = $this->gitlabService->listConfigurationFiles($projectId, $ref);
+            
+            return new JSONResponse(['files' => $files], 200);
+        } catch (Exception $e) {
+            $this->logger->error('Failed to get GitLab configurations: ' . $e->getMessage());
+            
+            return new JSONResponse(
+                ['error' => 'Failed to fetch configurations: ' . $e->getMessage()],
+                500
+            );
+        }
+    }//end getGitLabConfigurations()
+
+
+    /**
+     * Import configuration from GitHub
+     *
+     * @NoAdminRequired
+     *
+     * @return JSONResponse Import result
+     *
+     * @since 0.2.10
+     */
+    public function importFromGitHub(): JSONResponse
+    {
+        try {
+            $data       = $this->request->getParams();
+            $owner      = $data['owner'] ?? '';
+            $repo       = $data['repo'] ?? '';
+            $path       = $data['path'] ?? '';
+            $branch     = $data['branch'] ?? 'main';
+            $syncEnabled = ($data['syncEnabled'] ?? true) === true;
+            $syncInterval = (int) ($data['syncInterval'] ?? 24);
+            
+            if (empty($owner) || empty($repo) || empty($path)) {
+                return new JSONResponse(
+                    ['error' => 'Owner, repo, and path parameters are required'],
+                    400
+                );
+            }
+            
+            $this->logger->info('Importing configuration from GitHub', [
+                'owner'  => $owner,
+                'repo'   => $repo,
+                'path'   => $path,
+                'branch' => $branch,
+            ]);
+            
+            // Get file content from GitHub
+            $configData = $this->githubService->getFileContent($owner, $repo, $path, $branch);
+            
+            // Build GitHub URL for sourceUrl
+            $sourceUrl = "https://github.com/{$owner}/{$repo}/blob/{$branch}/{$path}";
+            
+            // Set x-openregister properties for external configuration
+            if (!isset($configData['x-openregister'])) {
+                $configData['x-openregister'] = [];
+            }
+            $configData['x-openregister']['sourceType'] = 'github';
+            $configData['x-openregister']['sourceUrl']  = $sourceUrl;
+            $configData['x-openregister']['github']     = [
+                'repo'   => "{$owner}/{$repo}",
+                'branch' => $branch,
+                'path'   => $path,
+            ];
+            
+            // Get app ID and version from config
+            $appId   = $configData['x-openregister']['app'] ?? 'imported';
+            $version = $configData['info']['version'] ?? $configData['x-openregister']['version'] ?? '1.0.0';
+            
+            // Import the configuration
+            $result = $this->configurationService->importFromApp(
+                appId: $appId,
+                data: $configData,
+                version: $version,
+                force: false
+            );
+            
+            // Update the configuration to mark it as external and configure sync
+            if (isset($result['configuration'])) {
+                $configuration = $result['configuration'];
+                $configuration->setIsLocal(false);
+                $configuration->setSyncEnabled($syncEnabled);
+                $configuration->setSyncInterval($syncInterval);
+                $configuration->setSyncStatus('success');
+                $configuration->setLastSyncDate(new \DateTime());
+                $this->configurationMapper->update($configuration);
+            }
+            
+            return new JSONResponse([
+                'success' => true,
+                'message' => 'Configuration imported successfully from GitHub',
+                'result'  => $result,
+            ], 200);
+        } catch (Exception $e) {
+            $this->logger->error('Failed to import from GitHub: ' . $e->getMessage());
+            
+            return new JSONResponse(
+                ['error' => 'Failed to import configuration: ' . $e->getMessage()],
+                500
+            );
+        }
+    }//end importFromGitHub()
+
+
+    /**
+     * Import configuration from GitLab
+     *
+     * @NoAdminRequired
+     *
+     * @return JSONResponse Import result
+     *
+     * @since 0.2.10
+     */
+    public function importFromGitLab(): JSONResponse
+    {
+        try {
+            $data       = $this->request->getParams();
+            $namespace  = $data['namespace'] ?? '';
+            $project    = $data['project'] ?? '';
+            $path       = $data['path'] ?? '';
+            $ref        = $data['ref'] ?? 'main';
+            $syncEnabled = ($data['syncEnabled'] ?? true) === true;
+            $syncInterval = (int) ($data['syncInterval'] ?? 24);
+            
+            if (empty($namespace) || empty($project) || empty($path)) {
+                return new JSONResponse(
+                    ['error' => 'Namespace, project, and path parameters are required'],
+                    400
+                );
+            }
+            
+            // Get project ID from namespace/project path
+            $projectData = $this->gitlabService->getProjectByPath($namespace, $project);
+            $projectId   = $projectData['id'];
+            
+            $this->logger->info('Importing configuration from GitLab', [
+                'namespace'  => $namespace,
+                'project'    => $project,
+                'project_id' => $projectId,
+                'path'       => $path,
+                'ref'        => $ref,
+            ]);
+            
+            // Get file content from GitLab
+            $configData = $this->gitlabService->getFileContent($projectId, $path, $ref);
+            
+            // Build GitLab URL for sourceUrl
+            $gitlabBase = $this->gitlabService->getApiBase();
+            $webBase    = str_replace('/api/v4', '', $gitlabBase);
+            $sourceUrl  = "{$webBase}/{$namespace}/{$project}/-/blob/{$ref}/{$path}";
+            
+            // Set x-openregister properties for external configuration
+            if (!isset($configData['x-openregister'])) {
+                $configData['x-openregister'] = [];
+            }
+            $configData['x-openregister']['sourceType'] = 'gitlab';
+            $configData['x-openregister']['sourceUrl']  = $sourceUrl;
+            
+            // Get app ID and version from config
+            $appId   = $configData['x-openregister']['app'] ?? 'imported';
+            $version = $configData['info']['version'] ?? $configData['x-openregister']['version'] ?? '1.0.0';
+            
+            // Import the configuration
+            $result = $this->configurationService->importFromApp(
+                appId: $appId,
+                data: $configData,
+                version: $version,
+                force: false
+            );
+            
+            // Update the configuration to mark it as external and configure sync
+            if (isset($result['configuration'])) {
+                $configuration = $result['configuration'];
+                $configuration->setIsLocal(false);
+                $configuration->setSyncEnabled($syncEnabled);
+                $configuration->setSyncInterval($syncInterval);
+                $configuration->setSyncStatus('success');
+                $configuration->setLastSyncDate(new \DateTime());
+                $this->configurationMapper->update($configuration);
+            }
+            
+            return new JSONResponse([
+                'success' => true,
+                'message' => 'Configuration imported successfully from GitLab',
+                'result'  => $result,
+            ], 200);
+        } catch (Exception $e) {
+            $this->logger->error('Failed to import from GitLab: ' . $e->getMessage());
+            
+            return new JSONResponse(
+                ['error' => 'Failed to import configuration: ' . $e->getMessage()],
+                500
+            );
+        }
+    }//end importFromGitLab()
+
+
+    /**
+     * Import configuration from URL
+     *
+     * @NoAdminRequired
+     *
+     * @return JSONResponse Import result
+     *
+     * @since 0.2.10
+     */
+    public function importFromUrl(): JSONResponse
+    {
+        try {
+            $data       = $this->request->getParams();
+            $url        = $data['url'] ?? '';
+            $syncEnabled = ($data['syncEnabled'] ?? true) === true;
+            $syncInterval = (int) ($data['syncInterval'] ?? 24);
+            
+            if (empty($url)) {
+                return new JSONResponse(
+                    ['error' => 'URL parameter is required'],
+                    400
+                );
+            }
+            
+            // Validate URL
+            if (!filter_var($url, FILTER_VALIDATE_URL)) {
+                return new JSONResponse(
+                    ['error' => 'Invalid URL provided'],
+                    400
+                );
+            }
+            
+            $this->logger->info('Importing configuration from URL', [
+                'url' => $url,
+            ]);
+            
+            // Fetch content from URL
+            $client  = new \GuzzleHttp\Client();
+            $response = $client->request('GET', $url);
+            $content = $response->getBody()->getContents();
+            
+            $configData = json_decode($content, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                throw new Exception('Invalid JSON in URL response: ' . json_last_error_msg());
+            }
+            
+            // Set x-openregister properties for external configuration
+            if (!isset($configData['x-openregister'])) {
+                $configData['x-openregister'] = [];
+            }
+            $configData['x-openregister']['sourceType'] = 'url';
+            $configData['x-openregister']['sourceUrl']  = $url;
+            
+            // Get app ID and version from config
+            $appId   = $configData['x-openregister']['app'] ?? 'imported';
+            $version = $configData['info']['version'] ?? $configData['x-openregister']['version'] ?? '1.0.0';
+            
+            // Import the configuration
+            $result = $this->configurationService->importFromApp(
+                appId: $appId,
+                data: $configData,
+                version: $version,
+                force: false
+            );
+            
+            // Update the configuration to mark it as external and configure sync
+            if (isset($result['configuration'])) {
+                $configuration = $result['configuration'];
+                $configuration->setIsLocal(false);
+                $configuration->setSyncEnabled($syncEnabled);
+                $configuration->setSyncInterval($syncInterval);
+                $configuration->setSyncStatus('success');
+                $configuration->setLastSyncDate(new \DateTime());
+                $this->configurationMapper->update($configuration);
+            }
+            
+            return new JSONResponse([
+                'success' => true,
+                'message' => 'Configuration imported successfully from URL',
+                'result'  => $result,
+            ], 200);
+        } catch (Exception $e) {
+            $this->logger->error('Failed to import from URL: ' . $e->getMessage());
+            
+            return new JSONResponse(
+                ['error' => 'Failed to import configuration: ' . $e->getMessage()],
+                500
+            );
+        }
+    }//end importFromUrl()
 
 
 }//end class

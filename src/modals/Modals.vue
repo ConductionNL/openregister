@@ -10,7 +10,7 @@ import { navigationStore } from '../store/store.js'
 		<ExportRegister />
 		<DeleteRegister />
 		<EditConfiguration v-if="navigationStore.modal === 'editConfiguration'" />
-		<DeleteConfiguration />
+		<DeleteConfiguration v-if="navigationStore.dialog === 'deleteConfiguration'" />
 		<ImportConfiguration />
 		<ExportConfiguration />
 		<EditSchema v-if="navigationStore.modal === 'editSchema'" />

@@ -118,6 +118,9 @@ Open Register includes powerful AI capabilities powered by Large Language Models
 - **OpenAI**: GPT-4, GPT-3.5 Turbo for chat and text-embedding models
 - **Fireworks AI**: Fast, optimized inference with various open-source models
 - **Ollama**: Run models locally for privacy and cost-effectiveness
+  - 📦 [Integrated Setup](OLLAMA.md) - Run alongside OpenRegister
+  - 🚀 [Standalone Setup](OLLAMA-STANDALONE.md) - Run on separate machine (recommended for production)
+  - ⚡ Supports Llama 3.2, Mistral, Phi-3, and more
 - **Azure OpenAI**: Enterprise-grade AI through Microsoft Azure
 
 ### Key AI Capabilities
@@ -209,7 +212,43 @@ This project is licensed under the EUPL License - see the [LICENSE](LICENSE) fil
 
 ## Installation
 
-This project is designed to be installed from the [nextcloud app store](https://apps.nextcloud.com/apps/openregister). Alternativly a [docker-compose.yml](docker-compose.yml) is available in the repostory for quick testing. If you are looking to contribute then please setup your own development environment following [setting up a development environment](https://cloud.nextcloud.com/s/iyNGp8ryWxc7Efa?dir=/1%20Setting%20up%20a%20development%20environment/Tutorial%20for%20Windows&openfile=true).
+This project is designed to be installed from the [nextcloud app store](https://apps.nextcloud.com/apps/openregister). 
+
+### Quick Testing with Docker
+
+OpenRegister provides **two Docker Compose configurations**:
+
+#### 📦 Production/Testing Mode (`docker-compose.yml`)
+Perfect for partners, testers, and quick evaluation:
+- Downloads OpenRegister from Nextcloud App Store
+- Automatically installs and enables the app
+- No local code required
+
+```bash
+docker-compose up -d
+```
+
+#### 👨‍💻 Developer Mode (`docker-compose.dev.yml`)
+Perfect for developers working on OpenRegister code:
+- Mounts local code into the container
+- Automatically builds dependencies
+- Supports live development with `npm run watch`
+
+```bash
+docker-compose -f docker-compose.dev.yml up -d
+```
+
+**Both modes include:**
+- Nextcloud with OpenRegister **automatically configured**
+- MariaDB database
+- Solr search engine (standalone mode)
+- Ollama for local LLM inference (AI features)
+
+See the [Docker Development Setup Guide](website/docs/Development/docker-setup.md) for detailed instructions.
+
+### Development Environment
+
+If you are looking to contribute, please setup your own development environment following [setting up a development environment](https://cloud.nextcloud.com/s/iyNGp8ryWxc7Efa?dir=/1%20Setting%20up%20a%20development%20environment/Tutorial%20for%20Windows&openfile=true) or use our docker-compose setup.
 
 ## Contact
 

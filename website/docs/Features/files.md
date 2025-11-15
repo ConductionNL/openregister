@@ -161,6 +161,10 @@ For supported file types, content can be extracted for indexing and search:
 - OCR for scanned documents and images
 - Metadata extraction
 
+:::tip Enhanced Text Extraction
+OpenRegister now includes **enhanced text extraction** with entity tracking (GDPR), language detection, and language level assessment. See [Enhanced Text Extraction & GDPR Entity Tracking](../features/text-extraction-enhanced.md) for details.
+:::
+
 **Asynchronous Processing**: Text extraction happens in the background after file upload, ensuring:
 - **Fast uploads**: Your file uploads complete instantly without waiting
 - **Non-blocking**: Users don't experience delays during file operations

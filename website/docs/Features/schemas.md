@@ -1767,30 +1767,50 @@ The behavior toggle appears when a default value is set and shows helpful hints 
 **Fix**: Modified cascade logic to skip properties with `writeBack` enabled.
 **Impact**: Ensures write-back operations receive the correct data for processing.
 
-## Schema Extension (Inheritance)
+## Schema Composition (Inheritance & Extension)
 
-Schema Extension allows one schema to inherit from another schema, enabling schema reusability and maintaining DRY (Don't Repeat Yourself) principles. When a schema extends another, it inherits all properties from the parent and can override or add new properties.
+Schema Composition allows schemas to reference and build upon other schemas, enabling schema reusability and maintaining DRY (Don't Repeat Yourself) principles. OpenRegister implements JSON Schema composition patterns conforming to the [JSON Schema specification](https://json-schema.org/understanding-json-schema/reference/combining).
 
-### Core Concept
+### Core Concepts
 
-Schema extension implements an inheritance pattern where:
+OpenRegister supports three JSON Schema composition patterns:
 
-1. **Parent Schema**: The base schema that defines shared properties
-2. **Child Schema**: The schema that extends the parent, adding or overriding properties
-3. **Delta Storage**: Only differences (delta) from the parent are stored in the child schema
-4. **Resolution**: When retrieving a child schema, properties from the parent are automatically merged
+1. **allOf**: Instance must validate against ALL referenced schemas (multiple inheritance/extension)
+2. **oneOf**: Instance must validate against EXACTLY ONE referenced schema (mutually exclusive options)
+3. **anyOf**: Instance must validate against AT LEAST ONE referenced schema (flexible composition)
 
-### How It Works
+#### Liskov Substitution Principle
 
-#### Storage (Delta Approach)
+**IMPORTANT**: When extending schemas using 'allOf', OpenRegister enforces the [Liskov Substitution Principle](https://en.wikipedia.org/wiki/Liskov_substitution_principle):
 
-When you save a schema that extends another:
+- **Child schemas can ONLY ADD constraints, never relax them**
+- **Metadata fields CAN be overridden** (title, description, order, icon, placeholder, help)
+- **Validation rules CANNOT be relaxed** (type, format, enum, pattern, min/max values)
 
-1. The system compares the child schema properties with the parent schema
-2. Only the differences (new properties or property overrides) are stored in the database
-3. The 'extend' property stores the reference to the parent schema (ID, UUID, or slug)
+This ensures that any instance valid for a child schema is also valid for its parent schemas, maintaining type safety and predictability.
 
-**Example:**
+### Composition Patterns
+
+#### 1. allOf - Multiple Inheritance (Recommended for Extension)
+
+Use 'allOf' when a schema should inherit from one or more parent schemas. The instance must validate against ALL referenced schemas.
+
+**Key Features:**
+- Properties from all parent schemas are merged
+- Child can add new properties
+- Child can add stricter validation to existing properties
+- Child CANNOT relax parent constraints
+- Metadata can be overridden
+
+**Storage (Delta Approach):**
+
+When you save a schema with 'allOf':
+
+1. The system compares the child schema properties with all parent schemas
+2. Only the differences (new properties or stricter constraints) are stored in the database
+3. The 'allOf' property stores an array of parent schema references (IDs, UUIDs, or slugs)
+
+**Example - Single Parent:**
 
 ```json
 // Parent Schema (id: 42, slug: 'person')
@@ -1799,43 +1819,249 @@ When you save a schema that extends another:
   'properties': {
     'firstName': { 'type': 'string', 'minLength': 2 },
     'lastName': { 'type': 'string', 'minLength': 2 },
-    'email': { 'type': 'string', 'format': 'email' }
+    'email': { 'type': 'string' }
   },
   'required': ['firstName', 'lastName']
 }
 
-// Child Schema (stored in database)
+// Child Schema (stored in database) - VALID
 {
   'title': 'Employee',
-  'extend': '42',  // References parent schema
+  'allOf': ['42'],  // References parent schema
   'properties': {
-    'employeeId': { 'type': 'string' },  // New property
-    'email': { 'type': 'string', 'format': 'email', 'required': true }  // Override
+    'employeeId': { 'type': 'string' },  // New property - ALLOWED
+    'email': { 'type': 'string', 'format': 'email' }  // Adds format constraint - ALLOWED
   },
-  'required': ['employeeId']  // Additional required field
+  'required': ['employeeId']  // Additional required field - ALLOWED
 }
+
+// INVALID Extension Example (would throw error)
+{
+  'title': 'Customer',
+  'allOf': ['42'],
+  'properties': {
+    'firstName': { 'type': 'string', 'minLength': 1 }  // ERROR: Relaxes minLength from 2 to 1
+  }
+}
+```
+
+**Example - Multiple Parents (Multiple Inheritance):**
+
+```json
+// Parent Schema 1: Contactable
+{
+  'id': 10,
+  'title': 'Contactable',
+  'properties': {
+    'email': { 'type': 'string', 'format': 'email' },
+    'phone': { 'type': 'string', 'pattern': '^[0-9+-]+$' }
+  },
+  'required': ['email']
+}
+
+// Parent Schema 2: Addressable
+{
+  'id': 11,
+  'title': 'Addressable',
+  'properties': {
+    'street': { 'type': 'string' },
+    'city': { 'type': 'string' },
+    'postalCode': { 'type': 'string' }
+  },
+  'required': ['city']
+}
+
+// Child Schema - Combines both parents
+{
+  'title': 'Customer',
+  'allOf': ['10', '11'],  // Inherits from BOTH parents
+  'properties': {
+    'customerNumber': { 'type': 'string' },
+    'email': { 'type': 'string', 'format': 'email', 'maxLength': 100 }  // Adds maxLength
+  },
+  'required': ['customerNumber']
+}
+
+// Resolved schema will have: email, phone, street, city, postalCode, customerNumber
+// Required fields: email, city, customerNumber
+```
+
+**Metadata Override Example:**
+
+```json
+// Parent Schema
+{
+  'title': 'Person',
+  'properties': {
+    'name': { 
+      'type': 'string',
+      'title': 'Name',
+      'description': 'Person full name',
+      'minLength': 2 
+    }
+  }
+}
+
+// Child Schema - VALID (metadata can be changed)
+{
+  'allOf': ['person'],
+  'properties': {
+    'name': {
+      'title': 'Employee Name',  // ALLOWED: Metadata change
+      'description': 'Full name of the employee',  // ALLOWED: Metadata change
+      'minLength': 3  // ALLOWED: More restrictive
+    }
+  }
+}
+```
+
+**Constraint Rules:**
+
+| Change Type | Parent Value | Child Value | Allowed? | Reason |
+|-------------|--------------|-------------|----------|---------|
+| Add property | (none) | new property | ✅ Yes | Adding constraints |
+| Add format | 'type': 'string' | 'type': 'string', 'format': 'email' | ✅ Yes | More restrictive |
+| Increase minLength | 'minLength': 2 | 'minLength': 5 | ✅ Yes | More restrictive |
+| Decrease maxLength | 'maxLength': 100 | 'maxLength': 50 | ✅ Yes | More restrictive |
+| Remove enum values | 'enum': [1,2,3] | 'enum': [1,2] | ✅ Yes | More restrictive |
+| Change title | 'title': 'Name' | 'title': 'Full Name' | ✅ Yes | Metadata only |
+| Change type | 'type': 'string' | 'type': 'number' | ❌ No | Breaks compatibility |
+| Decrease minLength | 'minLength': 5 | 'minLength': 2 | ❌ No | Relaxes constraint |
+| Increase maxLength | 'maxLength': 50 | 'maxLength': 100 | ❌ No | Relaxes constraint |
+| Add enum values | 'enum': [1,2] | 'enum': [1,2,3] | ❌ No | Relaxes constraint |
+| Remove format | 'format': 'email' | (no format) | ❌ No | Relaxes constraint |
+
+#### 2. oneOf - Mutually Exclusive Options
+
+Use 'oneOf' when an instance must match EXACTLY ONE of several schemas. This is useful for discriminated unions or mutually exclusive choices.
+
+**Key Features:**
+- Instance validates against exactly one schema (not zero, not multiple)
+- Schemas are NOT merged
+- Useful for polymorphic types
+- Common in API responses with different object types
+
+**Example:**
+
+```json
+// Payment Method Schema
+{
+  'title': 'PaymentMethod',
+  'oneOf': ['credit-card-schema', 'bank-transfer-schema', 'paypal-schema'],
+  'properties': {
+    'paymentType': { 'type': 'string', 'enum': ['credit-card', 'bank-transfer', 'paypal'] }
+  }
+}
+
+// Credit Card Schema
+{
+  'id': 'credit-card-schema',
+  'title': 'CreditCard',
+  'properties': {
+    'cardNumber': { 'type': 'string' },
+    'cvv': { 'type': 'string', 'maxLength': 4 },
+    'expiryDate': { 'type': 'string' }
+  },
+  'required': ['cardNumber', 'cvv', 'expiryDate']
+}
+
+// Bank Transfer Schema  
+{
+  'id': 'bank-transfer-schema',
+  'title': 'BankTransfer',
+  'properties': {
+    'iban': { 'type': 'string' },
+    'bic': { 'type': 'string' }
+  },
+  'required': ['iban']
+}
+
+// Valid instance (matches exactly one schema)
+{
+  'paymentType': 'credit-card',
+  'cardNumber': '1234-5678-9012-3456',
+  'cvv': '123',
+  'expiryDate': '12/25'
+}
+```
+
+#### 3. anyOf - Flexible Composition
+
+Use 'anyOf' when an instance must match AT LEAST ONE of several schemas. More flexible than 'oneOf'.
+
+**Key Features:**
+- Instance validates against one or more schemas
+- Schemas are NOT merged
+- Useful for optional feature combinations
+- More permissive than 'oneOf'
+
+**Example:**
+
+```json
+// Document Schema
+{
+  'title': 'Document',
+  'anyOf': ['textual-schema', 'visual-schema', 'metadata-schema'],
+  'properties': {
+    'id': { 'type': 'string' },
+    'title': { 'type': 'string' }
+  }
+}
+
+// Textual Schema
+{
+  'id': 'textual-schema',
+  'properties': {
+    'content': { 'type': 'string' }
+  }
+}
+
+// Visual Schema
+{
+  'id': 'visual-schema',
+  'properties': {
+    'images': { 'type': 'array' }
+  }
+}
+
+// Valid: matches textual schema only
+{ 'id': '1', 'title': 'Doc', 'content': 'text' }
+
+// Valid: matches visual schema only
+{ 'id': '2', 'title': 'Image Doc', 'images': ['img1.jpg'] }
+
+// Valid: matches BOTH schemas
+{ 'id': '3', 'title': 'Rich Doc', 'content': 'text', 'images': ['img1.jpg'] }
 ```
 
 #### Retrieval (Automatic Resolution)
 
-When you retrieve a schema that extends another:
+When you retrieve a schema with composition:
 
-1. The system automatically detects the 'extend' property
-2. The parent schema is loaded and resolved (supporting multi-level inheritance)
-3. Parent properties are merged with child properties (child overrides parent)
-4. Required fields are merged (union of both)
-5. The fully resolved schema is returned
+**For allOf:**
+1. The system automatically detects the 'allOf' or 'extend' property
+2. All referenced schemas are loaded and resolved recursively (supporting multi-level composition)
+3. Properties from all parent schemas are merged with child properties
+4. Child properties can add stricter constraints (validated by LSP)
+5. Required fields are merged (union of all)
+6. The fully resolved schema is returned
 
-**Resolved Child Schema (returned by API):**
+**For oneOf and anyOf:**
+1. Referenced schemas are validated to exist
+2. Schemas are NOT merged (each remains separate)
+3. Validation happens at object creation/update time
+4. The schema structure is returned as-is with references intact
+
+**Resolved allOf Example (returned by API):**
 
 ```json
 {
   'title': 'Employee',
-  'extend': '42',
+  'allOf': ['42'],
   'properties': {
     'firstName': { 'type': 'string', 'minLength': 2 },  // From parent
     'lastName': { 'type': 'string', 'minLength': 2 },   // From parent
-    'email': { 'type': 'string', 'format': 'email', 'required': true },  // Overridden
+    'email': { 'type': 'string', 'format': 'email' },   // Parent + child constraint
     'employeeId': { 'type': 'string' }  // New property
   },
   'required': ['firstName', 'lastName', 'employeeId']  // Merged
@@ -1902,17 +2128,17 @@ The system automatically resolves the entire chain:
 3. Applies EmployeeSchema delta
 4. Returns fully resolved EmployeeSchema with all properties
 
-### Using Schema Extension
+### Using Schema Composition
 
-#### Creating an Extended Schema
+#### Creating a Composed Schema
 
-**Via API:**
+**Via API - Using allOf (Recommended):**
 
 ```json
 POST /api/schemas
 {
   'title': 'Employee',
-  'extend': '42',  // ID of parent schema
+  'allOf': ['42'],  // Array of parent schema IDs/UUIDs/slugs
   'properties': {
     'employeeId': { 'type': 'string' },
     'department': { 'type': 'string' }
@@ -1921,13 +2147,42 @@ POST /api/schemas
 }
 ```
 
+**Via API - Multiple Inheritance:**
+
+```json
+POST /api/schemas
+{
+  'title': 'Customer',
+  'allOf': ['contactable-schema', 'addressable-schema'],  // Multiple parents
+  'properties': {
+    'customerNumber': { 'type': 'string' }
+  }
+}
+```
+
+**Via API - Using oneOf:**
+
+```json
+POST /api/schemas
+{
+  'title': 'PaymentMethod',
+  'oneOf': ['credit-card', 'bank-transfer', 'paypal'],
+  'properties': {
+    'amount': { 'type': 'number' }
+  }
+}
+```
+
 **Via Frontend:**
 
 1. Navigate to Schemas → Add Schema
 2. Go to Configuration tab
-3. Select parent schema from 'Extends Schema' dropdown
+3. Select composition pattern:
+   - **allOf**: Select one or more parent schemas (multiple inheritance)
+   - **oneOf**: Select mutually exclusive schema options
+   - **anyOf**: Select flexible schema options
 4. Add or override properties as needed
-5. Save the schema
+5. Save the schema (validation will check Liskov Substitution Principle for allOf)
 
 #### Updating an Extended Schema
 
@@ -2031,38 +2286,99 @@ OrganisationBase
 - Consider impact on all children
 - Child schemas can make additional fields required
 
-### Limitations
+### Limitations and Constraints
 
-1. **Single Parent**: A schema can only extend one parent schema (no multiple inheritance)
-2. **Property Removal**: Child schemas cannot remove parent properties, only override them
-3. **Type Changes**: Changing property types in overrides should be done carefully
-4. **Performance**: Very deep inheritance chains may impact performance
+#### For allOf (Extension/Inheritance):
+
+1. **Liskov Substitution Required**: Child schemas can only add constraints, never relax them
+2. **No Constraint Relaxation**: Cannot decrease minLength, increase maxLength, add enum values, change types, etc.
+3. **Property Removal**: Child schemas cannot remove parent properties, only add to them
+4. **Type Immutability**: Property types cannot be changed (except narrowing to a subset)
+5. **Performance**: Very deep inheritance chains (5+ levels) may impact resolution performance
+
+#### For oneOf/anyOf:
+
+1. **No Property Merging**: Properties are not merged from referenced schemas
+2. **Validation Complexity**: Complex oneOf schemas may be harder to validate and debug
+3. **Ambiguity**: anyOf can accept ambiguous instances matching multiple schemas
+
+#### General Limitations:
+
+1. **Circular References**: Schemas cannot reference themselves directly or indirectly in a loop
+2. **Delta Storage**: Only works for allOf (not oneOf/anyOf)
+3. **Mixed Patterns**: Cannot combine allOf, oneOf, and anyOf in a single schema (use one pattern)
 
 ### Troubleshooting
 
 #### Schema Not Found
 
-**Error**: 'Parent schema [id] not found'
+**Error**: `Schema '[identifier]' not found`
 
-**Solution**: Verify the parent schema exists and the extend property contains a valid ID, UUID, or slug
+**Solution**: 
+- Verify the parent schema exists in the database
+- Check that the allOf/oneOf/anyOf property contains a valid ID, UUID, or slug
+- Ensure the schema is not soft-deleted
 
 #### Circular Reference
 
-**Error**: 'Circular schema extension detected'
+**Error**: `Circular schema composition detected: schema '[id]' creates a loop`
 
-**Solution**: Check the inheritance chain for circular references (A → B → A)
+**Solution**: 
+- Check the composition chain for circular references (A → B → A)
+- Use schema hierarchy visualization to identify loops
+- Break the circular dependency by restructuring the schema hierarchy
+
+#### Liskov Substitution Violation
+
+**Error**: `Schema '[id]': Property '[property]' cannot change type from 'string' to 'number'`
+
+**Solution**:
+- Child schemas cannot change property types
+- Use a different property name instead
+- Consider restructuring to use oneOf if you need different types
+
+**Error**: `Schema '[id]': Property '[property]' minLength cannot be decreased from 5 to 2 (relaxes constraint)`
+
+**Solution**:
+- Child schemas can only make constraints MORE restrictive
+- Keep minLength at 5 or increase it
+- Update metadata fields instead (title, description) which can be freely changed
+
+**Error**: `Schema '[id]': Property '[property]' enum cannot add values not in parent`
+
+**Solution**:
+- Child schemas can only remove enum values (make more restrictive)
+- Cannot add enum values as that relaxes the constraint
+- Use a separate schema or restructure using oneOf
 
 #### Property Conflicts
 
-**Issue**: Unexpected property values after extension
+**Issue**: Unexpected property values after composition
 
-**Solution**: Review property override rules and check parent schema properties
+**Solution**: 
+- Review property merging rules for allOf
+- Remember oneOf/anyOf do NOT merge properties
+- Check that metadata changes don't conflict with validation rules
+- Use delta storage by checking what's actually stored vs. what's resolved
 
 #### Resolution Issues
 
 **Issue**: Schema properties not merging correctly
 
-**Solution**: Ensure both parent and child properties are valid JSON Schema format
+**Solution**: 
+- Ensure all parent and child properties are valid JSON Schema format
+- Check that property types match between parent and child
+- Verify that nested object properties are properly structured
+- Use the API to retrieve the resolved schema and inspect the result
+
+#### Self-Reference
+
+**Error**: `Schema '[id]' cannot reference itself in allOf/oneOf/anyOf`
+
+**Solution**:
+- Remove the schema's own ID from the composition array
+- Circular self-references are never allowed
+- Check for accidental inclusion of the schema being edited
 
 ### API Examples
 
@@ -2186,6 +2502,34 @@ POST /api/objects/{register}/{extended-schema}
 # Verify object validates against resolved schema
 # Verify all properties (parent + child) are available
 ```
+
+### Quick Reference
+
+#### Composition Pattern Selection Guide
+
+| Use Case | Pattern | Merges Properties? | Use When |
+|----------|---------|-------------------|----------|
+| Single inheritance | `allOf: ['parent']` | ✅ Yes | Extending one base schema |
+| Multiple inheritance | `allOf: ['parent1', 'parent2']` | ✅ Yes | Combining multiple base schemas |
+| Type variants | `oneOf: ['typeA', 'typeB']` | ❌ No | Exactly one type must match |
+| Optional features | `anyOf: ['feature1', 'feature2']` | ❌ No | At least one must match |
+
+#### What Can Be Changed in Child Schemas (allOf)
+
+| Property Type | Can Override? | Example |
+|---------------|---------------|---------|
+| **Metadata** | ✅ Yes | title, description, order, icon, placeholder, help |
+| **Add properties** | ✅ Yes | New properties not in parent |
+| **Stricter validation** | ✅ Yes | Higher minLength, lower maxLength, fewer enum values |
+| **Add format** | ✅ Yes | Add 'format': 'email' to string property |
+| **Add pattern** | ✅ Yes | Add regex pattern to string |
+| **Add required** | ✅ Yes | Make optional property required |
+| **Change type** | ❌ No | Cannot change 'string' to 'number' |
+| **Relax validation** | ❌ No | Cannot lower minLength or raise maxLength |
+| **Add enum values** | ❌ No | Cannot expand allowed values |
+| **Remove required** | ❌ No | Cannot make required property optional |
+| **Remove format** | ❌ No | Cannot remove validation constraints |
+
 
 ## Schema Exploration & Analysis
 

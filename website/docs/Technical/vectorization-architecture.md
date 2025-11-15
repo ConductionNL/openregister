@@ -311,6 +311,157 @@ class FileVectorizationStrategyTest extends TestCase {
 }
 ```
 
+## Embedding Model Management
+
+### ⚠️ CRITICAL: Changing Embedding Models
+
+**When you change embedding models, ALL existing vectors become invalid** and must be deleted and regenerated. Vectors created with different embedding models have:
+- Different dimensions
+- Different semantic spaces
+- Incompatible similarity metrics
+
+### Model Tracking
+
+As of version 0.2.7+, OpenRegister tracks which embedding model created each vector:
+
+```sql
+-- openregister_vectors table structure
+CREATE TABLE openregister_vectors (
+    id INT PRIMARY KEY,
+    entity_type VARCHAR(255),
+    entity_id VARCHAR(255),
+    embedding BLOB,
+    embedding_model VARCHAR(255),  -- e.g., 'text-embedding-ada-002', 'llama3.2'
+    embedding_dimensions INT,
+    created_at TIMESTAMP,
+    -- ... other fields
+);
+```
+
+### Required Actions When Changing Models
+
+1. **Clear All Embeddings**: Use the "Clear All Embeddings" button in LLM Configuration
+2. **Re-vectorize All Data**:
+   - Click "Vectorize All Files" from the Actions menu
+   - Click "Vectorize All Objects" from the Actions menu
+
+### UI Workflow
+
+```
+Settings → Actions → LLM Configuration
+    ↓
+Change Embedding Model (OpenAI → Ollama)
+    ↓
+Click "Clear All Embeddings" (red button)
+    ↓
+Confirm deletion
+    ↓
+Save Configuration
+    ↓
+Settings → Actions → Vectorize All Files
+    ↓
+Settings → Actions → Vectorize All Objects
+```
+
+### API Endpoints
+
+**Check for Model Mismatches:**
+```bash
+GET /apps/openregister/api/vectors/check-model-mismatch
+
+Response:
+{
+  "has_vectors": true,
+  "mismatch": true,
+  "current_model": "llama3.2",
+  "existing_models": ["text-embedding-ada-002"],
+  "total_vectors": 598,
+  "null_model_count": 0,
+  "mismatched_models": ["text-embedding-ada-002"],
+  "message": "Embedding model has changed. Please clear all vectors and re-vectorize."
+}
+```
+
+**Clear All Embeddings:**
+```bash
+DELETE /apps/openregister/api/vectors/clear-all
+
+Response:
+{
+  "success": true,
+  "deleted": 598,
+  "message": "Deleted 598 vectors successfully"
+}
+```
+
+### Example: Switching from OpenAI to Ollama
+
+```php
+// 1. Current state: 500 vectors created with text-embedding-ada-002
+$status = $vectorEmbeddingService->checkEmbeddingModelMismatch();
+// Returns: mismatch = false (all vectors use text-embedding-ada-002)
+
+// 2. Change configuration to Ollama (llama3.2)
+$settingsService->updateLLMSettings([
+    'embeddingProvider' => 'ollama',
+    'ollamaConfig' => ['model' => 'llama3.2']
+]);
+
+// 3. Check again - now there is a mismatch!
+$status = $vectorEmbeddingService->checkEmbeddingModelMismatch();
+// Returns: mismatch = true (current: llama3.2, existing: text-embedding-ada-002)
+
+// 4. Clear all embeddings
+$result = $vectorEmbeddingService->clearAllEmbeddings();
+// Returns: deleted = 500
+
+// 5. Re-vectorize everything with new model (llama3.2)
+$vectorizationService->vectorizeBatch('file', ['mode' => 'parallel']);
+$vectorizationService->vectorizeBatch('object', ['mode' => 'serial']);
+```
+
+### Database Migration
+
+The 'embedding_model' column was added in migration 'Version1Date20251111000000':
+
+```php
+// Existing vectors (before migration) will have NULL embedding_model
+// New vectors automatically track their model
+// System warns if any NULL or mismatched models exist
+```
+
+### Why This Matters
+
+**Semantic Search Breaks:**
+```php
+// Vectors created with OpenAI text-embedding-ada-002 (1536 dimensions)
+$oldVector = [0.023, -0.142, 0.891, ...]; // 1536 values
+
+// Query vector created with Ollama llama3.2 (4096 dimensions)
+$queryVector = [0.012, -0.234, 0.456, ...]; // 4096 values
+
+// ❌ Cannot compare! Dimensions don't match, similarity is meaningless
+```
+
+**Even Same Dimensions Fail:**
+```php
+// Both models have 1536 dimensions, but:
+$openaiVector = [0.5, 0.3, -0.2]; // "apple" in OpenAI semantic space
+$ollamaVector = [0.2, -0.5, 0.8]; // "apple" in Ollama semantic space
+
+// ❌ Cosine similarity between these is meaningless!
+// They represent the same word in completely different semantic spaces
+```
+
+### Best Practices
+
+1. **Choose your embedding model carefully** before vectorizing large datasets
+2. **Track your model version** in application logs
+3. **Use the built-in model tracking** to detect mismatches
+4. **Always clear and re-vectorize** after model changes
+5. **Test new models** on a small dataset first
+6. **Document your model choice** for your team
+
 ## Future Enhancements
 
 Potential new entity types to vectorize:

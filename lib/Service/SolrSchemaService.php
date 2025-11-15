@@ -236,7 +236,7 @@ class SolrSchemaService
         
         // AI/ML fields
         '_text_' => 'text_general',       // Catch-all full-text search field
-        '_embedding_' => 'pfloat',        // Vector embeddings (multiValued=true)
+        '_embedding_' => 'knn_vector',    // Vector embeddings (dense vector for KNN search)
         '_embedding_model_' => 'string',  // Model identifier
         '_embedding_dim_' => 'pint',      // Embedding dimension count
         '_confidence_' => 'pfloat',       // ML confidence scores
@@ -275,6 +275,99 @@ class SolrSchemaService
         private readonly IConfig $config
     ) {
     }
+
+    /**
+     * Ensure knn_vector field type exists in Solr for dense vector search
+     * 
+     * This method adds the knn_vector field type to the Solr schema if it doesn't exist.
+     * Required for Solr 9+ dense vector search functionality.
+     * 
+     * @param string $collection    Collection name to configure
+     * @param int    $dimensions    Vector dimensions (default: 4096 for mistral:7b)
+     * @param string $similarity    Similarity function: 'cosine', 'dot_product', or 'euclidean'
+     * 
+     * @return bool Success status
+     */
+    public function ensureVectorFieldType(
+        string $collection, 
+        int $dimensions = 4096, 
+        string $similarity = 'cosine'
+    ): bool {
+        try {
+            $settings = $this->settingsService->getSettings();
+            $solrUrl = $this->solrService->buildSolrBaseUrl();
+            $schemaUrl = "{$solrUrl}/{$collection}/schema";
+
+            // Check if knn_vector type already exists
+            $checkUrl = "{$schemaUrl}/fieldtypes/knn_vector";
+            
+            $requestOptions = [
+                'timeout' => 30,
+                'headers' => ['Accept' => 'application/json']
+            ];
+
+            // Add authentication
+            $username = $settings['solr']['username'] ?? null;
+            $password = $settings['solr']['password'] ?? null;
+            if ($username && $password) {
+                $requestOptions['auth'] = [$username, $password];
+            }
+
+            try {
+                $response = $this->solrService->getHttpClient()->get($checkUrl, $requestOptions);
+                $data = json_decode((string)$response->getBody(), true);
+                
+                if (isset($data['fieldType'])) {
+                    $this->logger->info('knn_vector field type already exists', [
+                        'collection' => $collection
+                    ]);
+                    return true; // Already exists
+                }
+            } catch (\Exception $e) {
+                // Field type doesn't exist, continue to create it
+                $this->logger->debug('knn_vector field type not found, creating', [
+                    'collection' => $collection
+                ]);
+            }
+
+            // Add knn_vector field type
+            $payload = [
+                'add-field-type' => [
+                    'name' => 'knn_vector',
+                    'class' => 'solr.DenseVectorField',
+                    'vectorDimension' => $dimensions,
+                    'similarityFunction' => $similarity
+                ]
+            ];
+
+            $requestOptions['body'] = json_encode($payload);
+            $requestOptions['headers']['Content-Type'] = 'application/json';
+
+            $response = $this->solrService->getHttpClient()->post($schemaUrl, $requestOptions);
+            $responseData = json_decode((string)$response->getBody(), true);
+
+            if (($responseData['responseHeader']['status'] ?? -1) === 0) {
+                $this->logger->info('✅ knn_vector field type created successfully', [
+                    'collection' => $collection,
+                    'dimensions' => $dimensions,
+                    'similarity' => $similarity
+                ]);
+                return true;
+            }
+
+            $this->logger->error('Failed to create knn_vector field type', [
+                'response' => $responseData
+            ]);
+            return false;
+
+        } catch (\Exception $e) {
+            $this->logger->error('Exception creating knn_vector field type', [
+                'error' => $e->getMessage(),
+                'collection' => $collection
+            ]);
+            return false;
+        }
+    }//end ensureVectorFieldType()
 
     /**
      * Mirror all OpenRegister schemas to SOLR for current tenant with intelligent conflict resolution
@@ -757,9 +850,11 @@ class SolrSchemaService
         $multiValuedCoreFields = [
             'self_relations',   // Array of UUID references
             'self_files',       // Array of file references
-            '_embedding_',      // Vector embeddings (multi-valued floats)
             '_classification_'  // Auto-classification results (multi-valued strings)
         ];
+        
+        // NOTE: _embedding_ is NOT multi-valued! It's a single knn_vector (dense vector)
+        // The vector itself contains an array of floats, but that's internal to the type
         
         return in_array($fieldName, $multiValuedCoreFields);
     }
@@ -970,6 +1065,25 @@ class SolrSchemaService
             'force' => $force
         ]);
 
+        // STEP 1: Ensure knn_vector field type exists (required for _embedding_ field)
+        try {
+            $settings = $this->settingsService->getSettings();
+            $objectCollection = $settings['solr']['objectCollection'] ?? $settings['solr']['collection'] ?? null;
+            $fileCollection = $settings['solr']['fileCollection'] ?? null;
+            
+            if ($objectCollection) {
+                $this->ensureVectorFieldType($objectCollection, 4096, 'cosine');
+            }
+            if ($fileCollection) {
+                $this->ensureVectorFieldType($fileCollection, 4096, 'cosine');
+            }
+        } catch (\Exception $e) {
+            $this->logger->warning('Failed to ensure knn_vector field type', [
+                'error' => $e->getMessage()
+            ]);
+        }
+
+        // STEP 2: Ensure core metadata fields
         $successCount = 0;
         foreach (self::CORE_METADATA_FIELDS as $fieldName => $fieldType) {
             try {

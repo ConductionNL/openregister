@@ -395,26 +395,11 @@ class ApplicationTool extends AbstractTool implements ToolInterface
      */
     public function executeFunction(string $functionName, array $parameters, ?string $userId = null): array
     {
-        return match ($functionName) {
-            'list_applications' => $this->listApplications(
-                $parameters['limit'] ?? 50,
-                $parameters['offset'] ?? 0
-            ),
-            'get_application' => $this->getApplication($parameters['uuid']),
-            'create_application' => $this->createApplication(
-                $parameters['name'],
-                $parameters['description'] ?? null,
-                $parameters['domain'] ?? null
-            ),
-            'update_application' => $this->updateApplication(
-                $parameters['uuid'],
-                $parameters['name'] ?? null,
-                $parameters['description'] ?? null,
-                $parameters['domain'] ?? null
-            ),
-            'delete_application' => $this->deleteApplication($parameters['uuid']),
-            default => $this->formatError("Unknown function: {$functionName}"),
-        };
+        // Convert snake_case to camelCase for PSR compliance
+        $methodName = lcfirst(str_replace('_', '', ucwords($functionName, '_')));
+        
+        // Call the method directly (LLPhant-compatible)
+        return $this->$methodName(...array_values($parameters));
     }
 }
 

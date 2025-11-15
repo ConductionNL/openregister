@@ -138,6 +138,10 @@ Text extraction is the first step in the content processing pipeline. Without te
 - Processing limits
 - Manual extraction triggers
 
+:::tip Enhanced Features Available
+OpenRegister includes **enhanced text extraction** with GDPR entity tracking, language detection, and language level assessment. See [Enhanced Text Extraction](../features/text-extraction-enhanced.md) for complete documentation.
+:::
+
 ### Text Extraction Process
 
 ```mermaid
@@ -152,15 +156,21 @@ graph LR
     D2 --> E
     
     E --> F[Text Chunks]
-    F --> G[LLM Embeddings]
-    G --> H[Vector Database]
+    F --> G[Optional Enhancements]
+    G --> H1[Solr Indexing]
+    G --> H2[Vector Embeddings]
+    G --> H3[Entity Extraction]
+    G --> H4[Language Detection]
     
     style A fill:#e3f2fd
     style B fill:#fff3e0
     style E fill:#fff9c4
     style F fill:#c8e6c9
     style G fill:#b2dfdb
-    style H fill:#b39ddb
+    style H1 fill:#ffe0b2
+    style H2 fill:#ffe0b2
+    style H3 fill:#ffe0b2
+    style H4 fill:#ffe0b2
 ```
 
 ### Key Terminology

@@ -162,26 +162,52 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 										</template>
 										View Details
 									</NcActionButton>
-								</NcActions>
-							</div>
-							<!-- Schemas section -->
-							<div class="nestedCardContainer">
-								<h3>
-									<FileCodeOutline :size="16" />
-									{{ t('openregister', 'Schemas') }} ({{ register.schemas?.length || 0 }})
-								</h3>
-								<div v-if="register.schemas?.length > 0" class="schemaCount">
-									<p>
-										{{ t('openregister', 'This register contains {count} schema{plural}', {
-											count: register.schemas.length,
-											plural: register.schemas.length !== 1 ? 's' : ''
-										}) }}
-									</p>
-								</div>
-								<div v-else class="emptySchemas">
-									{{ t('openregister', 'No schemas found') }}
-								</div>
-							</div>
+							</NcActions>
+						</div>
+						
+						<!-- Register Description -->
+						<div class="registerDescription"
+							:class="{ 'registerDescription--expanded': isDescriptionExpanded(register.id), 'registerDescription--empty': !register.description }"
+							@click="register.description ? toggleDescriptionExpanded(register.id) : null">
+							{{ register.description || t('openregister', 'No description found') }}
+						</div>
+						
+						<!-- Schemas section -->
+						<table class="statisticsTable registerSchemas">
+							<thead>
+								<tr>
+									<th>{{ t('openregister', 'Schema Name') }}</th>
+									<th>{{ t('openregister', 'Type') }}</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr v-for="(schema, index) in getDisplayedSchemas(register)" :key="schema.id">
+									<td>{{ schema.title }}</td>
+									<td>{{ schema.type || 'object' }}</td>
+								</tr>
+								<tr v-if="!register.schemas || register.schemas.length === 0">
+									<td colspan="2" class="emptyText">
+										{{ t('openregister', 'No schemas found') }}
+									</td>
+								</tr>
+							</tbody>
+						</table>
+						
+					<!-- View More Button -->
+					<div v-if="getRemainingSchemasCount(register) > 0" class="viewMoreContainer">
+						<NcButton
+							type="secondary"
+							@click="toggleRegisterExpanded(register.id)">
+							<template #icon>
+								<ChevronDown v-if="!isRegisterExpanded(register.id)" :size="20" />
+								<ChevronUp v-else :size="20" />
+							</template>
+							{{ isRegisterExpanded(register.id) 
+								? t('openregister', 'Show less') 
+								: t('openregister', 'View {count} more', { count: getRemainingSchemasCount(register) }) 
+							}}
+						</NcButton>
+					</div>
 						</div>
 					</div>
 				</template>
@@ -312,7 +338,7 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 </template>
 
 <script>
-import { NcAppContent, NcEmptyContent, NcLoadingIcon, NcActions, NcActionButton, NcCheckboxRadioSwitch } from '@nextcloud/vue'
+import { NcAppContent, NcEmptyContent, NcLoadingIcon, NcActions, NcActionButton, NcCheckboxRadioSwitch, NcButton } from '@nextcloud/vue'
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
 import FileCodeOutline from 'vue-material-design-icons/FileCodeOutline.vue'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
@@ -326,6 +352,8 @@ import Calculator from 'vue-material-design-icons/Calculator.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
+import ChevronDown from 'vue-material-design-icons/ChevronDown.vue'
+import ChevronUp from 'vue-material-design-icons/ChevronUp.vue'
 import axios from '@nextcloud/axios'
 import { showError } from '@nextcloud/dialogs'
 import PaginationComponent from '../../components/PaginationComponent.vue'
@@ -339,6 +367,7 @@ export default {
 		NcActions,
 		NcActionButton,
 		NcCheckboxRadioSwitch,
+		NcButton,
 		DatabaseOutline,
 		FileCodeOutline,
 		DotsHorizontal,
@@ -352,12 +381,16 @@ export default {
 		Refresh,
 		Plus,
 		InformationOutline,
+		ChevronDown,
+		ChevronUp,
 		PaginationComponent,
 	},
 	data() {
 		return {
 			calculating: null,
 			selectedRegisters: [],
+			expandedRegisters: [], // Track which registers are expanded
+			expandedDescriptions: [], // Track which descriptions are expanded
 		}
 	},
 	computed: {
@@ -414,6 +447,86 @@ export default {
 		},
 		onPageSizeChanged(pageSize) {
 			registerStore.setPagination(1, pageSize)
+		},
+
+		/**
+		 * Check if a register is expanded
+		 *
+		 * @param {number} registerId - Register ID
+		 * @return {boolean} True if register is expanded
+		 */
+		isRegisterExpanded(registerId) {
+			return this.expandedRegisters.includes(registerId)
+		},
+
+		/**
+		 * Toggle register expanded state
+		 *
+		 * @param {number} registerId - Register ID
+		 * @return {void}
+		 */
+		toggleRegisterExpanded(registerId) {
+			const index = this.expandedRegisters.indexOf(registerId)
+			if (index > -1) {
+				this.expandedRegisters.splice(index, 1)
+			} else {
+				this.expandedRegisters.push(registerId)
+			}
+		},
+
+		/**
+		 * Check if a description is expanded
+		 *
+		 * @param {number} registerId - Register ID
+		 * @return {boolean} True if description is expanded
+		 */
+		isDescriptionExpanded(registerId) {
+			return this.expandedDescriptions.includes(registerId)
+		},
+
+		/**
+		 * Toggle description expanded state
+		 *
+		 * @param {number} registerId - Register ID
+		 * @return {void}
+		 */
+		toggleDescriptionExpanded(registerId) {
+			const index = this.expandedDescriptions.indexOf(registerId)
+			if (index > -1) {
+				this.expandedDescriptions.splice(index, 1)
+			} else {
+				this.expandedDescriptions.push(registerId)
+			}
+		},
+
+		/**
+		 * Get displayed schemas for a register (first 5 or all if expanded)
+		 *
+		 * @param {object} register - Register object
+		 * @return {Array} Schemas to display
+		 */
+		getDisplayedSchemas(register) {
+			if (!register.schemas || register.schemas.length === 0) {
+				return []
+			}
+			
+			if (this.isRegisterExpanded(register.id)) {
+				return register.schemas
+			}
+			
+			// Show only first 5 schemas
+			return register.schemas.slice(0, 5)
+		},
+
+		/**
+		 * Get count of remaining schemas not displayed
+		 *
+		 * @param {object} register - Register object
+		 * @return {number} Count of remaining schemas
+		 */
+		getRemainingSchemasCount(register) {
+			const total = register.schemas?.length || 0
+			return Math.max(0, total - 5)
 		},
 
 		async calculateSizes(register) {
@@ -493,28 +606,98 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.schemaSize {
-	color: var(--color-text-maxcontrast);
-	font-size: 0.9em;
-	margin-inline-start: 4px;
+/* Register card description */
+.registerDescription {
+	padding: 16px;
+	margin: 12px 0 12px 0;
+	background-color: var(--color-background-hover);
+	color: var(--color-text-lighter);
+	font-size: 0.95em;
+	line-height: 1.5;
+	min-height: 80px;
+	max-height: 100px;
+	overflow: hidden;
+	word-wrap: break-word;
+	overflow-wrap: break-word;
+	word-break: break-word;
+	hyphens: auto;
+	box-sizing: border-box;
+	cursor: pointer;
+	transition: max-height 0.3s ease;
+	display: -webkit-box;
+	-webkit-line-clamp: 4;
+	line-clamp: 4;
+	-webkit-box-orient: vertical;
 }
 
-.schemaCount {
-	color: var(--color-text-maxcontrast);
-	font-size: 0.9em;
+.registerDescription:hover {
+	background-color: var(--color-background-dark);
+}
+
+.registerDescription--expanded {
+	max-height: none !important;
+	display: block;
+	-webkit-line-clamp: unset;
+	line-clamp: unset;
+}
+
+.registerDescription--empty {
+	cursor: default;
 	font-style: italic;
-	margin-top: 0.5rem;
-}
-
-.schemaCount p {
-	margin: 0;
-}
-
-.emptySchemas {
 	color: var(--color-text-maxcontrast);
-	font-size: 0.9em;
+}
+
+.registerDescription--empty:hover {
+	background-color: var(--color-background-hover);
+}
+
+/* View more button container */
+.viewMoreContainer {
+	display: flex;
+	justify-content: stretch;
+	padding: 0;
+}
+
+.viewMoreContainer button {
+	width: 100%;
+	border-radius: 0 0 8px 8px;
+}
+
+/* Empty text styling */
+.emptyText {
+	text-align: center;
+	color: var(--color-text-lighter);
 	font-style: italic;
-	margin-top: 0.5rem;
+	padding: 16px !important;
+}
+
+/* Remove all borders between sections */
+.card .registerSchemas {
+	border-top: none !important;
+	margin-top: 0 !important;
+}
+
+.card .registerSchemas thead {
+	border-top: none !important;
+}
+
+.card .registerSchemas thead tr {
+	border-top: none !important;
+}
+
+.card .registerSchemas thead th {
+	border-top: none !important;
+}
+
+/* Remove border after card header */
+.card .cardHeader {
+	border-bottom: none !important;
+	margin-bottom: 0 !important;
+	padding-bottom: 0 !important;
+}
+
+.card .cardHeader h2 {
+	margin-bottom: 0;
 }
 
 /* So that the actions menu is not overlapped by the sidebar button when it is closed */

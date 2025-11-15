@@ -160,6 +160,8 @@ class FileTextExtractionIntegrationTest extends TestCase
             $this->assertArrayHasKey('pendingFiles', $data, 'Should include pendingFiles');
             $this->assertArrayHasKey('failed', $data, 'Should include failed count');
             $this->assertArrayHasKey('totalChunks', $data, 'Should include totalChunks');
+			$this->assertArrayHasKey('totalObjects', $data, 'Should include totalObjects');
+			$this->assertArrayHasKey('totalEntities', $data, 'Should include totalEntities');
             
             echo "\n✓ Extraction stats: Total={$data['totalFiles']}, Processed={$data['processedFiles']}, Pending={$data['pendingFiles']}, Failed={$data['failed']}, Chunks={$data['totalChunks']}\n";
             
