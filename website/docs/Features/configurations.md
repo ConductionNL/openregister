@@ -294,17 +294,41 @@ OpenRegister provides multiple ways to discover and import configurations from e
 
 ### Discovery from GitHub/GitLab
 
+**OpenRegister uses a two-phase discovery approach** for optimal global discovery and content validation:
+
+**Phase 1: Organization Discovery**
+- Searches globally for any JSON files containing 'openregister' in the filename or path
+- Identifies all organizations/users that have potential OpenRegister files
+- No organization restrictions - searches **all public repositories**
+
+**Phase 2: Content Validation**
+- Searches within discovered organizations for files containing 'x-openregister'
+- Validates that files are actual OpenRegister configurations
+- Filters out false positives automatically
+
+**Benefits:**
+- ✅ Truly global discovery - automatically finds new organizations
+- ✅ Content validation - ensures files are real OpenRegister configs
+- ✅ No hardcoded lists - organizations are dynamically discovered
+- ✅ Flexible naming - works with any JSON filename containing openregister
+
+**Steps:**
 1. Click **Import Configuration**
 2. Select the **Discover** tab
-3. Enter search terms or leave empty to browse
+3. Enter search terms (optional) - searches in filename, repository, title, description
 4. Click **Search GitHub** or **Search GitLab**
-5. Browse discovered configurations
+5. Browse discovered configurations from across GitHub/GitLab
 6. Click **Import** on any configuration
 
-**Note:** Discovery relies on GitHub/GitLab's code search index, which may take several hours to index new files. 
+**How to make your configuration discoverable:**
+1. **Filename**: Include 'openregister' in your JSON filename (e.g., `myapp_openregister.json`, `catalog.openregister.json`)
+2. **Content**: Ensure your JSON file contains the 'x-openregister' property
+3. **Public repository**: File must be in a public GitHub/GitLab repository
 
-**For immediate access while waiting for indexing:**
-- **Import from GitHub tab**: Browse your repository directly and select the file (no search index required)
+**Note on naming:** While any filename containing 'openregister' will be discovered, we recommend the `*_openregister.json` pattern to avoid conflicts with legacy OpenAPI specification files.
+
+**Alternative import methods:**
+- **Import from GitHub tab**: Browse any repository directly and select any JSON file
 - **Import from URL tab**: Use the raw GitHub URL (e.g., `https://raw.githubusercontent.com/owner/repo/branch/path/to/file.json`)
 
 ```mermaid
@@ -319,10 +343,18 @@ sequenceDiagram
     User->>UI: Enter search query
     User->>UI: Click 'Search GitHub'
     UI->>API: /api/configurations/discover?source=github&_search=...
-    API->>GitHub: Search for 'x-openregister'
-    Note over GitHub: Results depend on GitHub's search index<br/>(may take hours to index new files)
-    GitHub-->>API: Return matching files
-    API-->>UI: Return parsed configurations
+    
+    Note over API: Phase 1: Organization Discovery
+    API->>GitHub: Search: openregister.json extension:json in:path
+    GitHub-->>API: Return all repos with 'openregister' files
+    API->>API: Extract unique organizations
+    
+    Note over API: Phase 2: Content Validation
+    API->>GitHub: Search: x-openregister org:OrgA org:OrgB ...
+    Note over GitHub: Content search within discovered organizations<br/>Validates files contain x-openregister
+    GitHub-->>API: Return validated configurations
+    
+    API-->>UI: Return filtered results
     UI-->>User: Display configuration cards
     User->>UI: Click 'Import'
     UI->>API: /api/configurations/import/github
@@ -363,22 +395,34 @@ sequenceDiagram
 
 ## File Naming Conventions for Discoverability
 
-To make your configurations discoverable by others, follow these naming conventions:
+To make your configurations discoverable by others, include 'openregister' in your JSON filename:
 
 ### Recommended File Names
 
-- **General format**: '{app}.openregister.json'
-- **Simple format**: 'openregister.json'
-- **Descriptive**: '{feature}.openregister.json'
+- **Preferred format**: `{app}_openregister.json` (e.g., `myapp_openregister.json`)
+- **Alternative formats**: `{app}.openregister.json`, `openregister.{app}.json`
+- **Simple format**: `openregister.json` (works but less specific)
 
 ### Examples
 
 ```
+# Preferred (with underscore)
+softwarecatalogus_openregister.json
+publication_openregister.json
+customer_management_openregister.json
+
+# Also works (without underscore)
 opencatalogi.openregister.json
 publication-register.openregister.json
 customer-management.openregister.json
 openregister.json
 ```
+
+**Why the underscore (`_`) is preferred:**
+- More explicit pattern for OpenRegister configurations
+- Avoids confusion with legacy OpenAPI specification files
+- Consistent convention across all apps
+- Recommended but not required - all patterns above work!
 
 ### File Location
 
@@ -425,6 +469,12 @@ Ensure your configuration includes proper metadata in the 'x-openregister' secti
 }
 ```
 
+**Key requirements for discoverability:**
+1. **Filename**: Must contain 'openregister' (e.g., `myapp_openregister.json`)
+2. **x-openregister property**: Must be present in the JSON file (triggers Phase 2 validation)
+3. **Public repository**: File must be accessible in a public GitHub/GitLab repository
+4. **Valid JSON**: File must be valid JSON and follow the OpenAPI 3.0 structure
+
 ### Making Configurations Discoverable
 
 For your configuration to be discoverable via GitHub/GitLab search in OpenRegister, follow these requirements:
@@ -460,21 +510,53 @@ Your configuration file MUST be a valid OpenAPI 3.0 document with an 'x-openregi
 }
 ```
 
-#### 2. GitHub Indexing Delay
+#### 2. File Naming Convention for Discovery
 
-**Important:** After pushing your configuration file to GitHub, it may take **several hours** for GitHub to index the file content for code search. 
+**How OpenRegister Discovery Works:**
 
-- Your file will be immediately accessible via direct URL
-- GitHub's code search index updates periodically (not in real-time)
-- Discovery via the OpenRegister configuration store depends on GitHub's search index
-- If your configuration doesn't appear immediately, don't worry - this is normal behavior
+OpenRegister uses a **two-phase discovery approach** for reliable global configuration discovery:
 
-**Can I force GitHub to re-index my file?** Unfortunately, no. GitHub's code search indexing is automatic and there's no official API to trigger it. However, you can try:
-- Making a small commit to the file (e.g., update the version number)
-- Pushing to a recently active branch (main/master branches are indexed more frequently)
-- Waiting 6-24 hours - most files are indexed within this timeframe
+**Phase 1: Organization Discovery (Filename-based)**
+- Searches for JSON files containing 'openregister' in the filename or path
+- Works **globally** across all public repositories (no organization restrictions!)
+- Discovers organizations/users that have potential OpenRegister files
 
-**Workaround for immediate access:** Use the 'Import from URL' or 'Import from GitHub' (by repository) tabs in the OpenRegister interface. These methods fetch the file directly without relying on GitHub's search index, so they work immediately after you push your file.
+**Phase 2: Content Validation**
+- Searches within discovered organizations for files containing 'x-openregister'
+- Validates that files are actual OpenRegister configurations
+- Filters out false positives automatically
+
+**File Naming Requirements:**
+
+Your configuration filename **MUST** contain 'openregister' to be discoverable:
+
+- ✅ **Preferred**: `*_openregister.json` (e.g., `myapp_openregister.json`)
+- ✅ **Also works**: `*.openregister.json`, `openregister.*.json`, `openregister.json`
+
+**Why `_openregister` is preferred:**
+- More explicit pattern for OpenRegister configurations
+- Avoids confusion with legacy OpenAPI specification files
+- Consistent convention recommended across all apps
+- But **any** filename containing 'openregister' works!
+
+**Content Requirements (Phase 2 Validation):**
+- File **MUST** contain an 'x-openregister' property in the JSON
+- This is what validates your file as a real OpenRegister configuration
+- Files without 'x-openregister' will be filtered out even if the filename matches
+
+**Discovery Indexing:**
+
+- New files are typically indexed within **minutes to hours** after pushing to GitHub
+- Renamed files are re-indexed automatically
+- No waiting period or organization approval needed!
+
+**Testing Discovery:**
+
+After pushing your file, test it appears in OpenRegister:
+1. Go to **Import Configuration** → **Discover** tab
+2. Search for keywords from your filename, title, or description
+3. Your configuration should appear in global results
+4. If it doesn't appear immediately, wait a few hours for GitHub to index it
 
 #### 3. Required Fields
 
@@ -552,18 +634,20 @@ Here's a complete, production-ready example:
 
 After publishing your configuration file to GitHub/GitLab:
 
-1. **Wait for indexing**: GitHub/GitLab may take **several hours** to index new files in their code search
-2. In OpenRegister, click **Import Configuration** → **Discover** tab
-3. Search for keywords from your title or description
-4. Your configuration should appear in the results once indexed
-
-**Note:** If your configuration doesn't appear immediately after publishing, this is normal. GitHub's search index updates periodically, not in real-time.
+1. **Verify your filename**: Ensure your file **ends with** `_openregister.json` (e.g., `app_openregister.json`)
+2. **Push to GitHub**: Commit and push your configuration file
+3. **Wait for indexing**: GitHub typically indexes new files within minutes to a few hours
+4. **Test discovery**: In OpenRegister, click **Import Configuration** → **Discover** tab
+5. **Search**: Enter keywords from your filename, title, or description
+6. **Verify**: Your configuration should appear in the global results
 
 **Troubleshooting:**
 - **Not appearing in discovery?** 
-  - **Wait 6-24 hours** for GitHub/GitLab to index the file - this is normal
-  - **Try a small update**: Make a minor change (e.g., bump version) and push again
-  - **Use alternative import methods**: 'Import from URL' or 'Import from GitHub' (by repository) work immediately and don't depend on search indexing
+  - **Check filename**: Does it **end with** `_openregister.json`? (e.g., `myapp_openregister.json`)
+  - **Wrong pattern**: Files named just `openregister.json` (without prefix) won't be discovered
+  - **Wait for indexing**: New files may take a few hours to appear in GitHub's search index
+  - **Test file exists**: Visit your file URL directly on GitHub to confirm it's pushed
+  - **Use alternative import methods**: 'Import from URL' or 'Import from GitHub' (by repository) work immediately for any public repository
 - **Need immediate access?** Use the 'Import from GitHub' tab and browse your repository directly, or use 'Import from URL' with the raw file URL
 - Validate your JSON structure
 - Ensure all required fields are present

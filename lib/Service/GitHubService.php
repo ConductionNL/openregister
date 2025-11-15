@@ -126,39 +126,75 @@ class GitHubService
     public function searchConfigurations(string $search = '', int $page = 1, int $perPage = 30): array
     {
         try {
-            // Build search query
-            // Always search for JSON files containing "x-openregister" in the content
-            // GitHub code search: omit "in:file" to search content (not just filename)
-            // Optionally filter by additional search terms
+            // Two-phase search strategy for optimal results:
+            // Phase 1: Broad filename search to discover organizations
+            // Phase 2: Content search within discovered organizations to validate
+            
+            // PHASE 1: Discover organizations with potential OpenRegister files
+            $this->logger->info('Phase 1: Discovering organizations with OpenRegister files');
+            $discoveryQuery = 'openregister.json extension:json in:path';
             if (!empty($search)) {
-                // Search for user terms AND x-openregister in JSON file content
-                $searchQuery = 'x-openregister ' . $search . ' language:json';
-            } else {
-                // Search for any JSON file containing x-openregister in content
-                $searchQuery = 'x-openregister language:json';
+                $discoveryQuery .= ' ' . $search;
             }
             
-            $this->logger->info('Searching GitHub for OpenRegister configurations', [
-                '_search' => $search,
-                'query' => $searchQuery,
-                'page'  => $page,
-            ]);
-
-            $response = $this->client->request('GET', self::API_BASE . '/search/code', [
+            $discoveryResponse = $this->client->request('GET', self::API_BASE . '/search/code', [
                 'query' => [
-                    'q'        => $searchQuery,
+                    'q'        => $discoveryQuery,
+                    'per_page' => 100, // Get more results to find all orgs
+                ],
+                'headers' => $this->getHeaders(),
+            ]);
+            
+            $discoveryData = json_decode($discoveryResponse->getBody(), true);
+            
+            // Extract unique organizations from discovery results
+            $organizations = [];
+            foreach ($discoveryData['items'] ?? [] as $item) {
+                $org = $item['repository']['owner']['login'];
+                if (!in_array($org, $organizations)) {
+                    $organizations[] = $org;
+                }
+            }
+            
+            $this->logger->info('Phase 1 complete: Discovered organizations', [
+                'count' => count($organizations),
+                'organizations' => $organizations,
+            ]);
+            
+            // PHASE 2: Content search within discovered organizations
+            $this->logger->info('Phase 2: Searching for x-openregister content in discovered organizations');
+            
+            if (empty($organizations)) {
+                // No organizations found, return empty results
+                return [
+                    'total_count' => 0,
+                    'results'     => [],
+                    'page'        => $page,
+                    'per_page'    => $perPage,
+                ];
+            }
+            
+            // Build content search query with organization filters
+            $orgFilters = array_map(function($org) { return "org:$org"; }, $organizations);
+            $contentQuery = 'x-openregister ' . implode(' ', $orgFilters);
+            if (!empty($search)) {
+                $contentQuery .= ' ' . $search;
+            }
+            
+            $contentResponse = $this->client->request('GET', self::API_BASE . '/search/code', [
+                'query' => [
+                    'q'        => $contentQuery,
                     'page'     => $page,
                     'per_page' => $perPage,
                 ],
                 'headers' => $this->getHeaders(),
             ]);
-
-            $data = json_decode($response->getBody(), true);
-
-            // Return search results without fetching file contents
-            // File contents will be fetched only when user selects a specific configuration
+            
+            $contentData = json_decode($contentResponse->getBody(), true);
+            
+            // Process and format results
             $results = [];
-            foreach ($data['items'] ?? [] as $item) {
+            foreach ($contentData['items'] ?? [] as $item) {
                 $results[] = [
                     'repository'  => $item['repository']['full_name'],
                     'owner'       => $item['repository']['owner']['login'],
@@ -178,9 +214,14 @@ class GitHubService
                     ],
                 ];
             }
+            
+            $this->logger->info('Phase 2 complete: Content search finished', [
+                'organizations_searched' => count($organizations),
+                'configurations_found' => count($results),
+            ]);
 
             return [
-                'total_count' => $data['total_count'] ?? 0,
+                'total_count' => $contentData['total_count'] ?? 0,
                 'results'     => $results,
                 'page'        => $page,
                 'per_page'    => $perPage,
@@ -188,8 +229,7 @@ class GitHubService
         } catch (GuzzleException $e) {
             $this->logger->error('GitHub API search failed', [
                 'error' => $e->getMessage(),
-                '_search' => $search,
-                'query' => $searchQuery ?? '',
+                '_search' => $search ?? '',
             ]);
             throw new \Exception('Failed to search GitHub: ' . $e->getMessage());
         }
