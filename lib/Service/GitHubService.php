@@ -114,7 +114,7 @@ class GitHubService
      *
      * Uses GitHub Code Search API to find JSON files containing x-openregister property
      *
-     * @param string $query  Search query (default: searches for x-openregister)
+     * @param string $search  Search terms to filter results (optional)
      * @param int    $page   Page number for pagination
      * @param int    $perPage Results per page (max 100)
      *
@@ -123,14 +123,23 @@ class GitHubService
      *
      * @since 0.2.10
      */
-    public function searchConfigurations(string $query = '', int $page = 1, int $perPage = 30): array
+    public function searchConfigurations(string $search = '', int $page = 1, int $perPage = 30): array
     {
         try {
             // Build search query
-            // Search for files containing "x-openregister" in JSON files
-            $searchQuery = $query ?: 'x-openregister in:file language:json extension:json';
+            // Always search for JSON files containing "x-openregister" in the content
+            // GitHub code search: omit "in:file" to search content (not just filename)
+            // Optionally filter by additional search terms
+            if (!empty($search)) {
+                // Search for user terms AND x-openregister in JSON file content
+                $searchQuery = 'x-openregister ' . $search . ' language:json';
+            } else {
+                // Search for any JSON file containing x-openregister in content
+                $searchQuery = 'x-openregister language:json';
+            }
             
             $this->logger->info('Searching GitHub for OpenRegister configurations', [
+                '_search' => $search,
                 'query' => $searchQuery,
                 'page'  => $page,
             ]);
@@ -144,42 +153,42 @@ class GitHubService
                 'headers' => $this->getHeaders(),
             ]);
 
-            $data = json_decode($response->getBody()->getContents(), true);
+            $data = json_decode($response->getBody(), true);
 
-            // Parse and enrich results
+            // Return search results without fetching file contents
+            // File contents will be fetched only when user selects a specific configuration
             $results = [];
             foreach ($data['items'] ?? [] as $item) {
-                $configData = $this->parseConfigurationFile($item['repository']['owner']['login'], $item['repository']['name'], $item['path']);
-                
-                if ($configData !== null) {
-                    $results[] = [
-                        'repository'  => $item['repository']['full_name'],
-                        'owner'       => $item['repository']['owner']['login'],
-                        'repo'        => $item['repository']['name'],
-                        'path'        => $item['path'],
-                        'url'         => $item['html_url'],
-                        'stars'       => $item['repository']['stargazers_count'] ?? 0,
+                $results[] = [
+                    'repository'  => $item['repository']['full_name'],
+                    'owner'       => $item['repository']['owner']['login'],
+                    'repo'        => $item['repository']['name'],
+                    'path'        => $item['path'],
+                    'url'         => $item['html_url'],
+                    'stars'       => $item['repository']['stargazers_count'] ?? 0,
+                    'description' => $item['repository']['description'] ?? '',
+                    'name'        => basename($item['path'], '.json'),
+                    // Config details will be loaded on-demand when importing
+                    'config'      => [
+                        'title'       => basename($item['path'], '.json'),
                         'description' => $item['repository']['description'] ?? '',
-                        'config'      => [
-                            'title'       => $configData['info']['title'] ?? $configData['x-openregister']['title'] ?? 'Unknown',
-                            'description' => $configData['info']['description'] ?? $configData['x-openregister']['description'] ?? '',
-                            'version'     => $configData['info']['version'] ?? $configData['x-openregister']['version'] ?? '1.0.0',
-                            'app'         => $configData['x-openregister']['app'] ?? null,
-                            'type'        => $configData['x-openregister']['type'] ?? 'manual',
-                        ],
-                    ];
-                }
+                        'version'     => 'unknown',
+                        'app'         => null,
+                        'type'        => 'unknown',
+                    ],
+                ];
             }
 
             return [
                 'total_count' => $data['total_count'] ?? 0,
-                'items'       => $results,
+                'results'     => $results,
                 'page'        => $page,
                 'per_page'    => $perPage,
             ];
         } catch (GuzzleException $e) {
             $this->logger->error('GitHub API search failed', [
                 'error' => $e->getMessage(),
+                '_search' => $search,
                 'query' => $searchQuery ?? '',
             ]);
             throw new \Exception('Failed to search GitHub: ' . $e->getMessage());
@@ -209,7 +218,7 @@ class GitHubService
                 'headers' => $this->getHeaders(),
             ]);
 
-            $branches = json_decode($response->getBody()->getContents(), true);
+            $branches = json_decode($response->getBody(), true);
 
             return array_map(function ($branch) {
                 return [
@@ -256,7 +265,7 @@ class GitHubService
                 'headers' => $this->getHeaders(),
             ]);
 
-            $data = json_decode($response->getBody()->getContents(), true);
+            $data = json_decode($response->getBody(), true);
 
             // Decode base64 content
             if (isset($data['content'])) {
@@ -321,7 +330,7 @@ class GitHubService
                 'headers' => $this->getHeaders(),
             ]);
 
-            $data = json_decode($response->getBody()->getContents(), true);
+            $data = json_decode($response->getBody(), true);
 
             $files = [];
             foreach ($data['items'] ?? [] as $item) {
@@ -390,29 +399,5 @@ class GitHubService
         }
     }
 
-    /**
-     * Get HTTP headers for GitHub API requests
-     *
-     * Includes authentication if token is configured
-     *
-     * @return array HTTP headers
-     *
-     * @since 0.2.10
-     */
-    private function getHeaders(): array
-    {
-        $headers = [
-            'Accept'     => 'application/vnd.github.v3+json',
-            'User-Agent' => 'OpenRegister-Nextcloud',
-        ];
-
-        // Add authentication token if configured
-        $token = $this->config->getSystemValue('github_api_token', '');
-        if (!empty($token)) {
-            $headers['Authorization'] = 'token ' . $token;
-        }
-
-        return $headers;
-    }
 }
 

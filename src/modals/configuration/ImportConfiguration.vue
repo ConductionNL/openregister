@@ -31,10 +31,10 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 					</p>
 
 				<!-- Token Warning -->
-				<NcNoteCard v-if="!hasGithubToken && !hasGitlabToken" type="warning">
+				<NcNoteCard v-if="!hasGithubToken || !hasGitlabToken" type="warning">
 					<p>
-						<strong>API Tokens Not Configured</strong><br>
-						Discovery requires API tokens for GitHub and/or GitLab. Configure your tokens in the settings to enable search.
+						<strong>{{ getTokenWarningTitle() }}</strong><br>
+						{{ getTokenWarningMessage() }}
 					</p>
 					<p style="margin-top: 8px;">
 						<a :href="settingsUrl" target="_blank" style="color: var(--color-primary-element); font-weight: 600;">
@@ -377,6 +377,36 @@ export default {
 				// Assume no tokens if check fails
 				this.hasGithubToken = false
 				this.hasGitlabToken = false
+			}
+		},
+
+		/**
+		 * Get token warning title based on which tokens are missing
+		 *
+		 * @return {string}
+		 */
+		getTokenWarningTitle() {
+			if (!this.hasGithubToken && !this.hasGitlabToken) {
+				return 'API Tokens Not Configured'
+			} else if (!this.hasGithubToken) {
+				return 'GitHub Token Not Configured'
+			} else {
+				return 'GitLab Token Not Configured'
+			}
+		},
+
+		/**
+		 * Get token warning message based on which tokens are missing
+		 *
+		 * @return {string}
+		 */
+		getTokenWarningMessage() {
+			if (!this.hasGithubToken && !this.hasGitlabToken) {
+				return 'Discovery requires API tokens for GitHub and/or GitLab. Configure your tokens in the settings to enable search.'
+			} else if (!this.hasGithubToken) {
+				return 'GitHub token is not configured. Configure your GitHub token in the settings to enable GitHub search.'
+			} else {
+				return 'GitLab token is not configured. Configure your GitLab token in the settings to enable GitLab search.'
 			}
 		},
 

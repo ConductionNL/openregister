@@ -554,75 +554,62 @@ class ConfigurationController extends Controller
 
 
     /**
-     * Discover OpenRegister configurations on GitHub
+     * Discover OpenRegister configurations on GitHub or GitLab
      *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @return JSONResponse Search results from GitHub
+     * @return JSONResponse Search results
      *
      * @since 0.2.10
      */
-    public function discoverGitHub(): JSONResponse
+    public function discover(): JSONResponse
     {
         try {
-            $data  = $this->request->getParams();
-            $query = $data['query'] ?? '';
-            $page  = (int) ($data['page'] ?? 1);
+            $data   = $this->request->getParams();
+            $source = strtolower($data['source'] ?? 'github');
+            $search = $data['_search'] ?? '';
+            $page   = (int) ($data['page'] ?? 1);
             
-            $this->logger->info('Discovering configurations on GitHub', [
-                'query' => $query,
-                'page'  => $page,
+            $this->logger->info('Discovering configurations', [
+                'source' => $source,
+                '_search'  => $search,
+                'page'   => $page,
             ]);
             
-            $results = $this->githubService->searchConfigurations($query, $page);
+            // Validate source
+            if (!in_array($source, ['github', 'gitlab'])) {
+                return new JSONResponse(
+                    ['error' => 'Invalid source. Must be "github" or "gitlab"'],
+                    400
+                );
+            }
+            
+            // Call appropriate service
+            if ($source === 'github') {
+                $this->logger->info('About to call GitHub search service');
+                $results = $this->githubService->searchConfigurations($search, $page);
+                $this->logger->info('GitHub search completed', ['result_count' => count($results['results'] ?? [])]);
+            } else {
+                $this->logger->info('About to call GitLab search service');
+                $results = $this->gitlabService->searchConfigurations($search, $page);
+                $this->logger->info('GitLab search completed', ['result_count' => count($results['results'] ?? [])]);
+            }
             
             return new JSONResponse($results, 200);
         } catch (Exception $e) {
-            $this->logger->error('GitHub discovery failed: ' . $e->getMessage());
+            $this->logger->error('Configuration discovery failed: ' . $e->getMessage(), [
+                'source' => $source ?? 'unknown',
+                'exception' => get_class($e),
+                'trace' => $e->getTraceAsString(),
+            ]);
             
             return new JSONResponse(
                 ['error' => 'Failed to discover configurations: ' . $e->getMessage()],
                 500
             );
         }
-    }//end discoverGitHub()
-
-
-    /**
-     * Discover OpenRegister configurations on GitLab
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse Search results from GitLab
-     *
-     * @since 0.2.10
-     */
-    public function discoverGitLab(): JSONResponse
-    {
-        try {
-            $data  = $this->request->getParams();
-            $query = $data['query'] ?? '';
-            $page  = (int) ($data['page'] ?? 1);
-            
-            $this->logger->info('Discovering configurations on GitLab', [
-                'query' => $query,
-                'page'  => $page,
-            ]);
-            
-            $results = $this->gitlabService->searchConfigurations($query, $page);
-            
-            return new JSONResponse($results, 200);
-        } catch (Exception $e) {
-            $this->logger->error('GitLab discovery failed: ' . $e->getMessage());
-            
-            return new JSONResponse(
-                ['error' => 'Failed to discover configurations: ' . $e->getMessage()],
-                500
-            );
-        }
-    }//end discoverGitLab()
+    }//end discover()
 
 
     /**

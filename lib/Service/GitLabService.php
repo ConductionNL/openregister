@@ -112,7 +112,7 @@ class GitLabService
      *
      * Uses GitLab Global Search API to find files containing x-openregister property
      *
-     * @param string $query  Search query (default: searches for x-openregister)
+     * @param string $search  Search terms to filter results (optional)
      * @param int    $page   Page number for pagination
      * @param int    $perPage Results per page (max 100)
      *
@@ -121,13 +121,19 @@ class GitLabService
      *
      * @since 0.2.10
      */
-    public function searchConfigurations(string $query = '', int $page = 1, int $perPage = 30): array
+    public function searchConfigurations(string $search = '', int $page = 1, int $perPage = 30): array
     {
         try {
             // Build search query
-            $searchQuery = $query ?: 'x-openregister';
+            // Always search for x-openregister, optionally filter by additional terms
+            if (!empty($search)) {
+                $searchQuery = 'x-openregister ' . $search;
+            } else {
+                $searchQuery = 'x-openregister';
+            }
             
             $this->logger->info('Searching GitLab for OpenRegister configurations', [
+                '_search' => $search,
                 'query' => $searchQuery,
                 'page'  => $page,
             ]);
@@ -142,41 +148,42 @@ class GitLabService
                 'headers' => $this->getHeaders(),
             ]);
 
-            $items = json_decode($response->getBody()->getContents(), true);
+            $items = json_decode($response->getBody(), true);
 
-            // Parse and enrich results
+            // Return search results without fetching file contents
+            // File contents will be fetched only when user selects a specific configuration
             $results = [];
             foreach ($items as $item) {
                 // Extract project ID and file path
                 if (isset($item['project_id']) && isset($item['path'])) {
-                    $configData = $this->parseConfigurationFile($item['project_id'], $item['path']);
-                    
-                    if ($configData !== null) {
-                        $results[] = [
-                            'project_id'  => $item['project_id'],
-                            'path'        => $item['path'],
-                            'ref'         => $item['ref'] ?? 'main',
-                            'url'         => $item['data'] ?? '',
-                            'config'      => [
-                                'title'       => $configData['info']['title'] ?? $configData['x-openregister']['title'] ?? 'Unknown',
-                                'description' => $configData['info']['description'] ?? $configData['x-openregister']['description'] ?? '',
-                                'version'     => $configData['info']['version'] ?? $configData['x-openregister']['version'] ?? '1.0.0',
-                                'app'         => $configData['x-openregister']['app'] ?? null,
-                                'type'        => $configData['x-openregister']['type'] ?? 'manual',
-                            ],
-                        ];
-                    }
+                    $results[] = [
+                        'project_id'  => $item['project_id'],
+                        'path'        => $item['path'],
+                        'ref'         => $item['ref'] ?? 'main',
+                        'url'         => $item['data'] ?? '',
+                        'name'        => basename($item['path'], '.json'),
+                        // Config details will be loaded on-demand when importing
+                        'config'      => [
+                            'title'       => basename($item['path'], '.json'),
+                            'description' => '',
+                            'version'     => 'unknown',
+                            'app'         => null,
+                            'type'        => 'unknown',
+                        ],
+                    ];
                 }
             }
 
             return [
-                'items'    => $results,
-                'page'     => $page,
-                'per_page' => $perPage,
+                'total_count' => count($items),
+                'results'     => $results,
+                'page'        => $page,
+                'per_page'    => $perPage,
             ];
         } catch (GuzzleException $e) {
             $this->logger->error('GitLab API search failed', [
                 'error' => $e->getMessage(),
+                '_search' => $search,
                 'query' => $searchQuery ?? '',
             ]);
             throw new \Exception('Failed to search GitLab: ' . $e->getMessage());
@@ -204,7 +211,7 @@ class GitLabService
                 'headers' => $this->getHeaders(),
             ]);
 
-            $branches = json_decode($response->getBody()->getContents(), true);
+            $branches = json_decode($response->getBody(), true);
 
             return array_map(function ($branch) {
                 return [
@@ -252,7 +259,7 @@ class GitLabService
                 'headers' => $this->getHeaders(),
             ]);
 
-            $content = $response->getBody()->getContents();
+            $content = $response->getBody();
             $json = json_decode($content, true);
 
             if (json_last_error() !== JSON_ERROR_NONE) {
@@ -304,7 +311,7 @@ class GitLabService
                 'headers' => $this->getHeaders(),
             ]);
 
-            $tree = json_decode($response->getBody()->getContents(), true);
+            $tree = json_decode($response->getBody(), true);
 
             $files = [];
             foreach ($tree as $item) {
@@ -369,7 +376,7 @@ class GitLabService
                 'headers' => $this->getHeaders(),
             ]);
 
-            return json_decode($response->getBody()->getContents(), true);
+            return json_decode($response->getBody(), true);
         } catch (GuzzleException $e) {
             $this->logger->error('GitLab API get project failed', [
                 'error'     => $e->getMessage(),
@@ -427,30 +434,6 @@ class GitLabService
     }//end getApiBase()
 
 
-    /**
-     * Get HTTP headers for GitLab API requests
-     *
-     * Includes authentication if token is configured
-     *
-     * @return array HTTP headers
-     *
-     * @since 0.2.10
-     */
-    private function getHeaders(): array
-    {
-        $headers = [
-            'Accept'     => 'application/json',
-            'User-Agent' => 'OpenRegister-Nextcloud',
-        ];
-
-        // Add authentication token if configured
-        $token = $this->config->getSystemValue('gitlab_api_token', '');
-        if (!empty($token)) {
-            $headers['PRIVATE-TOKEN'] = $token;
-        }
-
-        return $headers;
-    }
 }
 
 

@@ -277,8 +277,7 @@ return [
         ['name' => 'configuration#export', 'url' => '/api/configurations/{id}/export', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
         
         // Configuration discovery endpoints
-        ['name' => 'configuration#discoverGitHub', 'url' => '/api/configurations/discover/github', 'verb' => 'GET'],
-        ['name' => 'configuration#discoverGitLab', 'url' => '/api/configurations/discover/gitlab', 'verb' => 'GET'],
+        ['name' => 'configuration#discover', 'url' => '/api/configurations/discover', 'verb' => 'GET'],
         ['name' => 'configuration#getGitHubBranches', 'url' => '/api/configurations/github/branches', 'verb' => 'GET'],
         ['name' => 'configuration#getGitHubConfigurations', 'url' => '/api/configurations/github/files', 'verb' => 'GET'],
         ['name' => 'configuration#getGitLabBranches', 'url' => '/api/configurations/gitlab/branches', 'verb' => 'GET'],

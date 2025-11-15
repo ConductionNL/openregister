@@ -301,6 +301,12 @@ OpenRegister provides multiple ways to discover and import configurations from e
 5. Browse discovered configurations
 6. Click **Import** on any configuration
 
+**Note:** Discovery relies on GitHub/GitLab's code search index, which may take several hours to index new files. 
+
+**For immediate access while waiting for indexing:**
+- **Import from GitHub tab**: Browse your repository directly and select the file (no search index required)
+- **Import from URL tab**: Use the raw GitHub URL (e.g., `https://raw.githubusercontent.com/owner/repo/branch/path/to/file.json`)
+
 ```mermaid
 sequenceDiagram
     participant User
@@ -312,8 +318,9 @@ sequenceDiagram
     User->>UI: Select 'Discover' tab
     User->>UI: Enter search query
     User->>UI: Click 'Search GitHub'
-    UI->>API: /api/configurations/discover/github?query=...
+    UI->>API: /api/configurations/discover?source=github&_search=...
     API->>GitHub: Search for 'x-openregister'
+    Note over GitHub: Results depend on GitHub's search index<br/>(may take hours to index new files)
     GitHub-->>API: Return matching files
     API-->>UI: Return parsed configurations
     UI-->>User: Display configuration cards
@@ -345,6 +352,14 @@ sequenceDiagram
    - Enable automatic synchronization
    - Set sync interval (in hours)
 5. Click **Import**
+
+**Getting the raw URL from GitHub:**
+1. Navigate to your file on GitHub
+2. Click the **Raw** button (top right of the file viewer)
+3. Copy the URL from your browser's address bar
+4. Example format: `https://raw.githubusercontent.com/owner/repo/branch/path/to/file.json`
+
+**Tip:** This method works immediately after pushing - no need to wait for GitHub's search index!
 
 ## File Naming Conventions for Discoverability
 
@@ -394,13 +409,13 @@ Ensure your configuration includes proper metadata in the 'x-openregister' secti
     'x-openregister': {
         'type': 'application',
         'app': 'myapp',
-        'sourceType': 'local',
-        'sourceUrl': 'lib/Settings/myapp.openregister.json',
+        'sourceType': 'github',
+        'sourceUrl': 'https://github.com/MyOrg/myapp/blob/main/lib/Settings/myapp_openregister.json',
         'openregister': '^v0.2.10',
         'github': {
             'repo': 'MyOrg/myapp',
             'branch': 'main',
-            'path': 'lib/Settings/myapp.openregister.json'
+            'path': 'lib/Settings/myapp_openregister.json'
         }
     },
     'components': {
@@ -409,6 +424,172 @@ Ensure your configuration includes proper metadata in the 'x-openregister' secti
     }
 }
 ```
+
+### Making Configurations Discoverable
+
+For your configuration to be discoverable via GitHub/GitLab search in OpenRegister, follow these requirements:
+
+#### 1. File Structure
+
+Your configuration file MUST be a valid OpenAPI 3.0 document with an 'x-openregister' extension:
+
+```json
+{
+    'openapi': '3.0.0',
+    'info': {
+        'title': 'Required: Configuration Title',
+        'description': 'Required: Detailed description',
+        'version': 'Required: Semantic version (e.g., 1.0.0)'
+    },
+    'x-openregister': {
+        'type': 'Required: Type of configuration (application/tenant/module)',
+        'app': 'Required: Application identifier',
+        'sourceType': 'Required: github or gitlab',
+        'sourceUrl': 'Required: Full URL to this file',
+        'openregister': 'Optional: Version constraint (e.g., ^v0.2.10)',
+        'github': {
+            'repo': 'Required: owner/repository',
+            'branch': 'Required: branch name',
+            'path': 'Required: path to file in repo'
+        }
+    },
+    'components': {
+        'registers': {},
+        'schemas': {}
+    }
+}
+```
+
+#### 2. GitHub Indexing Delay
+
+**Important:** After pushing your configuration file to GitHub, it may take **several hours** for GitHub to index the file content for code search. 
+
+- Your file will be immediately accessible via direct URL
+- GitHub's code search index updates periodically (not in real-time)
+- Discovery via the OpenRegister configuration store depends on GitHub's search index
+- If your configuration doesn't appear immediately, don't worry - this is normal behavior
+
+**Can I force GitHub to re-index my file?** Unfortunately, no. GitHub's code search indexing is automatic and there's no official API to trigger it. However, you can try:
+- Making a small commit to the file (e.g., update the version number)
+- Pushing to a recently active branch (main/master branches are indexed more frequently)
+- Waiting 6-24 hours - most files are indexed within this timeframe
+
+**Workaround for immediate access:** Use the 'Import from URL' or 'Import from GitHub' (by repository) tabs in the OpenRegister interface. These methods fetch the file directly without relying on GitHub's search index, so they work immediately after you push your file.
+
+#### 3. Required Fields
+
+**info section:**
+- 'title': Short, descriptive name shown in discovery results
+- 'description': Detailed explanation of what the configuration provides
+- 'version': Semantic version number (1.0.0, 2.1.3, etc.)
+
+**x-openregister section:**
+- 'type': Configuration type ('application', 'tenant', 'module', etc.)
+- 'app': Application identifier (lowercase, no spaces)
+- 'sourceType': Must be 'github' or 'gitlab' for discovery
+- 'sourceUrl': Complete HTTPS URL to the file on GitHub/GitLab
+- 'github' or 'gitlab': Object with 'repo', 'branch', and 'path'
+
+**Optional fields:**
+- 'openregister': Minimum OpenRegister version required (Composer notation)
+
+#### 3. File Naming Conventions
+
+For best discoverability, use one of these naming patterns:
+
+- '*_openregister.json' (recommended): 'myapp_openregister.json'
+- 'openregister.json': Generic name
+- '*.openregister.json': 'config.openregister.json'
+
+#### 4. Complete Example
+
+Here's a complete, production-ready example:
+
+```json
+{
+    'openapi': '3.0.0',
+    'info': {
+        'title': 'VNG Software Catalog Register',
+        'description': 'Register containing AMEF and Voorzieningen schemas for the VNG Software Catalog application. This configuration includes schemas for modules, services, organizations, and compliance tracking.',
+        'version': '2.0.1'
+    },
+    'x-openregister': {
+        'type': 'application',
+        'app': 'softwarecatalog',
+        'sourceType': 'github',
+        'sourceUrl': 'https://github.com/ConductionNL/opencatalogi/blob/master/apps-extra/softwarecatalog/lib/Settings/softwarecatalogus_register.json',
+        'openregister': '^v0.2.10',
+        'github': {
+            'repo': 'ConductionNL/opencatalogi',
+            'branch': 'master',
+            'path': 'apps-extra/softwarecatalog/lib/Settings/softwarecatalogus_register.json'
+        }
+    },
+    'components': {
+        'registers': {
+            'products': {
+                'slug': 'products',
+                'title': 'Products',
+                'description': 'Product catalog register',
+                'schemas': ['product']
+            }
+        },
+        'schemas': {
+            'product': {
+                'title': 'Product',
+                'description': 'Product schema',
+                'properties': {
+                    'name': {'type': 'string'},
+                    'price': {'type': 'number'}
+                }
+            }
+        }
+    }
+}
+```
+
+#### 5. Testing Discoverability
+
+After publishing your configuration file to GitHub/GitLab:
+
+1. **Wait for indexing**: GitHub/GitLab may take **several hours** to index new files in their code search
+2. In OpenRegister, click **Import Configuration** → **Discover** tab
+3. Search for keywords from your title or description
+4. Your configuration should appear in the results once indexed
+
+**Note:** If your configuration doesn't appear immediately after publishing, this is normal. GitHub's search index updates periodically, not in real-time.
+
+**Troubleshooting:**
+- **Not appearing in discovery?** 
+  - **Wait 6-24 hours** for GitHub/GitLab to index the file - this is normal
+  - **Try a small update**: Make a minor change (e.g., bump version) and push again
+  - **Use alternative import methods**: 'Import from URL' or 'Import from GitHub' (by repository) work immediately and don't depend on search indexing
+- **Need immediate access?** Use the 'Import from GitHub' tab and browse your repository directly, or use 'Import from URL' with the raw file URL
+- Validate your JSON structure
+- Ensure all required fields are present
+- Check that 'sourceUrl' is accessible publicly
+- Verify the 'x-openregister' extension is at the root level
+- Confirm the file is on a public repository (or you've configured API tokens)
+
+#### 6. API Tokens for Private Repositories
+
+If your configuration is in a private repository:
+
+1. Navigate to **Settings** → **OpenRegister Settings**
+2. Scroll to **API Token Configuration**
+3. Enter your GitHub or GitLab Personal Access Token
+4. Required scopes:
+   - **GitHub**: 'repo' (for full access)
+   - **GitLab**: 'read_api' (discovery only) or 'api' (discovery + publishing)
+
+#### 7. Publishing Updates
+
+When you update your configuration:
+
+1. Increment the 'version' in the 'info' section
+2. Commit and push the changes
+3. External installations with auto-sync will automatically receive updates
+4. Manual imports will see an 'Update Available' badge
 
 ## OpenRegister Version Requirements
 
