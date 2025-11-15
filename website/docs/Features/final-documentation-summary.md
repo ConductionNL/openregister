@@ -1,3 +1,8 @@
+---
+title: Final Documentation Summary
+sidebar_position: 80
+---
+
 # Final Documentation Summary
 
 ## ✅ Documentation Complete!
@@ -38,26 +43,26 @@ Complete, production-ready documentation has been created for:
    - PHP entity classes with docblocks
 
 #### Implementation Planning
-5. **[Enhanced Text Extraction Implementation Plan](ENHANCED_TEXT_EXTRACTION_IMPLEMENTATION_PLAN.md)**
+5. **[Enhanced Text Extraction Implementation Plan](../technical/enhanced-text-extraction-implementation-plan.md)**
    - 11-week phased roadmap
    - Service architecture
    - Configuration UI mockup
 
-6. **[Archiving and Metadata Feature Summary](ARCHIVING_AND_METADATA_FEATURE_SUMMARY.md)** 📝 NEW
+6. **[Archiving and Metadata Feature Summary](./archiving-and-metadata-feature-summary.md)** 📝 NEW
    - Quick overview of new feature
    - Status: Documented but NOT yet implemented
    - 8-10 week implementation estimate
 
 #### Quick References
-7. **[Text Extraction README](TEXT_EXTRACTION_README.md)** (UPDATED)
+7. **[Text Extraction README](../technical/text-extraction-readme.md)** (UPDATED)
    - Quick start guide
    - References to all documentation
    - Updated with archiving feature
 
-8. **[Documentation Summary](DOCUMENTATION_SUMMARY.md)**
+8. **[Documentation Summary](./documentation-summary.md)**
    - Original comprehensive summary
 
-9. **[Complete Feature Documentation Index](COMPLETE_FEATURE_DOCUMENTATION_INDEX.md)** 📝 NEW
+9. **[Complete Feature Documentation Index](./complete-feature-documentation-index.md)** 📝 NEW
    - Master index of all documentation
    - Organized by audience
    - Implementation status
@@ -91,7 +96,7 @@ Entities can now be linked to each other:
 - **Inference**: Derived from existing data
 - **Manual**: User-created relationships
 
-**See**: [ENTITY_RELATIONSHIPS_ADDITION.md](ENTITY_RELATIONSHIPS_ADDITION.md) for complete details
+**See**: [Entity Relationships Addition](../technical/entity-relationships-addition.md) for complete details
 
 ### 2. Multi-Tenancy Added
 
@@ -542,13 +547,13 @@ All with detailed ASCII mockups in documentation!
 ## 📍 Where to Start
 
 ### For Stakeholder Review
-→ **[Complete Feature Documentation Index](COMPLETE_FEATURE_DOCUMENTATION_INDEX.md)**
+→ **[Complete Feature Documentation Index](./complete-feature-documentation-index.md)**
 
 ### For Implementation Planning
-→ **[Enhanced Text Extraction Implementation Plan](ENHANCED_TEXT_EXTRACTION_IMPLEMENTATION_PLAN.md)**
+→ **[Enhanced Text Extraction Implementation Plan](../technical/enhanced-text-extraction-implementation-plan.md)**
 
 ### For Quick Overview
-→ **[Text Extraction README](TEXT_EXTRACTION_README.md)**
+→ **[Text Extraction README](../technical/text-extraction-readme.md)**
 
 ### For Database Design
 → **[Text Extraction Database Entities](website/docs/technical/text-extraction-entities.md)**

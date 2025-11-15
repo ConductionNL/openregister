@@ -27,7 +27,9 @@ use OCA\OpenRegister\Db\FileText;
 use OCA\OpenRegister\Db\FileTextMapper;
 use OCP\Files\IRootFolder;
 use OCP\Files\NotFoundException;
+use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
+use Throwable;
 
 // Document parsing libraries
 use Smalot\PdfParser\Parser as PdfParser;
@@ -72,12 +74,14 @@ class TextExtractionService
      * @param FileMapper         $fileMapper       Mapper for Nextcloud files
      * @param FileTextMapper     $fileTextMapper   Mapper for extracted text records
      * @param IRootFolder        $rootFolder       Nextcloud root folder
+     * @param IDBConnection      $db               Database connection
      * @param LoggerInterface    $logger           Logger
      */
     public function __construct(
         private readonly FileMapper $fileMapper,
         private readonly FileTextMapper $fileTextMapper,
         private readonly IRootFolder $rootFolder,
+        private readonly IDBConnection $db,
         private readonly LoggerInterface $logger
     ) {
     }
@@ -559,6 +563,8 @@ class TextExtractionService
         
         // Calculate total files (tracked + untracked)
         $totalFiles = $stats['total'] + $untrackedCount;
+        $objectCount = $this->getTableCountSafe('openregister_objects');
+        $entityCount = $this->getTableCountSafe('openregister_entities');
         
         return [
             'totalFiles' => $totalFiles,
@@ -567,6 +573,8 @@ class TextExtractionService
             'processedFiles' => $stats['completed'],
             'failedFiles' => $stats['failed'],
             'totalChunks' => $stats['totalChunks'],
+            'totalObjects' => $objectCount,
+            'totalEntities' => $entityCount,
             // Keep original field names for backward compatibility
             'total' => $stats['total'],
             'pending' => $stats['pending'],
@@ -577,6 +585,35 @@ class TextExtractionService
             'vectorized' => $stats['vectorized'],
             'total_text_size' => $stats['total_text_size'],
         ];
+    }
+
+    /**
+     * Safely count rows in a table (returns zero if table is missing)
+     *
+     * @param string $tableName Table name without prefix
+     *
+     * @return int
+     */
+    private function getTableCountSafe(string $tableName): int
+    {
+        try {
+            $qb = $this->db->getQueryBuilder();
+            $qb->selectAlias($qb->createFunction('COUNT(*)'), 'cnt')
+                ->from($tableName);
+
+            $result = $qb->executeQuery();
+            $count = (int) $result->fetchOne();
+            $result->closeCursor();
+
+            return $count;
+        } catch (Throwable $e) {
+            $this->logger->debug('[TextExtractionService] Unable to count table', [
+                'table' => $tableName,
+                'error' => $e->getMessage(),
+            ]);
+
+            return 0;
+        }
     }
 
     /**
