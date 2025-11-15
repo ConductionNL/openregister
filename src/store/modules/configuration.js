@@ -263,23 +263,24 @@ export const useConfigurationStore = defineStore('configuration', {
 				throw error // Pass through the original error message
 			}
 		},
-		async discoverConfigurations(source, query = '') {
-			console.log(`ConfigurationStore: Discovering configurations on ${source}`)
-			const endpoint = `/index.php/apps/openregister/api/configurations/discover/${source}`
-			const params = new URLSearchParams()
-			if (query) params.append('query', query)
+	async discoverConfigurations(source, search = '') {
+		console.log(`ConfigurationStore: Discovering configurations on ${source}`)
+		const endpoint = '/index.php/apps/openregister/api/configurations/discover'
+		const params = new URLSearchParams()
+		params.append('source', source)
+		if (search) params.append('_search', search)
 
-			try {
-				const response = await fetch(`${endpoint}?${params}`, {
-					method: 'GET',
-				})
+		try {
+			const response = await fetch(`${endpoint}?${params}`, {
+				method: 'GET',
+			})
 
-				if (!response.ok) {
-					throw new Error(`HTTP error! status: ${response.status}`)
-				}
+			if (!response.ok) {
+				throw new Error(`HTTP error! status: ${response.status}`)
+			}
 
-				const data = await response.json()
-				return data.items || []
+		const data = await response.json()
+		return data.results || []
 			} catch (error) {
 				console.error('Error discovering configurations:', error)
 				throw error

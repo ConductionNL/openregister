@@ -88,26 +88,22 @@
 			<div class="token-config">
 				<div class="token-field-group">
 					<label for="github-token">GitHub Token</label>
-					<NcPasswordField
-						id="github-token"
-						v-model="githubToken"
-						placeholder="ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-						autocomplete="off"
-						@update:value="updateGitHubToken">
-						<template #trailing-button-icon>
-							<Github :size="20" />
-						</template>
-					</NcPasswordField>
-					<p class="field-hint">
-						<LockOutline :size="16" /> Optional: Required for discovering and publishing configurations to/from GitHub
-					</p>
-				</div>
+					<div class="token-input-row">
+						<NcPasswordField
+							id="github-token"
+							v-model="githubToken"
+							placeholder="ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+							autocomplete="off"
+							@update:value="updateGitHubToken">
+							<template #trailing-button-icon>
+								<Github :size="20" />
+							</template>
+						</NcPasswordField>
 
-				<div class="token-actions">
+						<div class="token-actions">
 					<NcButton
-						v-if="githubToken && githubToken !== originalGithubToken"
 						type="primary"
-						:disabled="saving"
+						:disabled="saving || !githubToken || githubToken === originalGithubToken"
 						@click="saveGitHubToken">
 						<template #icon>
 							<NcLoadingIcon v-if="saving" :size="20" />
@@ -116,9 +112,8 @@
 						Save Token
 					</NcButton>
 					<NcButton
-						v-if="githubToken && githubToken === originalGithubToken"
 						type="secondary"
-						:disabled="testingGithub"
+						:disabled="testingGithub || !githubToken"
 						@click="testGitHubToken">
 						<template #icon>
 							<NcLoadingIcon v-if="testingGithub" :size="20" />
@@ -127,9 +122,8 @@
 						Test Token
 					</NcButton>
 					<NcButton
-						v-if="githubToken"
 						type="error"
-						:disabled="saving"
+						:disabled="saving || !githubToken"
 						@click="clearGitHubToken">
 						<template #icon>
 							<Delete :size="20" />
@@ -145,6 +139,12 @@
 					<span v-if="githubTestResult && !githubTestResult.success" class="test-result-error">
 						<AlertCircle :size="20" /> {{ githubTestResult.message }}
 					</span>
+						</div>
+					</div>
+
+					<p class="field-hint">
+						<LockOutline :size="16" /> Optional: Required for discovering and publishing configurations to/from GitHub
+					</p>
 				</div>
 			</div>
 		</SettingsCard>
@@ -161,26 +161,22 @@
 			<div class="token-config">
 				<div class="token-field-group">
 					<label for="gitlab-token">GitLab Token</label>
-					<NcPasswordField
-						id="gitlab-token"
-						v-model="gitlabToken"
-						placeholder="glpat-xxxxxxxxxxxxxxxxxxxx"
-						autocomplete="off"
-						@update:value="updateGitLabToken">
-						<template #trailing-button-icon>
-							<Gitlab :size="20" />
-						</template>
-					</NcPasswordField>
-					<p class="field-hint">
-						<LockOutline :size="16" /> Optional: Use <code>read_api</code> for discovery, or <code>api</code> for discovery + publishing
-					</p>
-				</div>
+					<div class="token-input-row">
+						<NcPasswordField
+							id="gitlab-token"
+							v-model="gitlabToken"
+							placeholder="glpat-xxxxxxxxxxxxxxxxxxxx"
+							autocomplete="off"
+							@update:value="updateGitLabToken">
+							<template #trailing-button-icon>
+								<Gitlab :size="20" />
+							</template>
+						</NcPasswordField>
 
-				<div class="token-actions">
+						<div class="token-actions">
 					<NcButton
-						v-if="gitlabToken && gitlabToken !== originalGitlabToken"
 						type="primary"
-						:disabled="saving"
+						:disabled="saving || !gitlabToken || gitlabToken === originalGitlabToken"
 						@click="saveGitLabToken">
 						<template #icon>
 							<NcLoadingIcon v-if="saving" :size="20" />
@@ -189,9 +185,8 @@
 						Save Token
 					</NcButton>
 					<NcButton
-						v-if="gitlabToken && gitlabToken === originalGitlabToken"
 						type="secondary"
-						:disabled="testingGitlab"
+						:disabled="testingGitlab || !gitlabToken"
 						@click="testGitLabToken">
 						<template #icon>
 							<NcLoadingIcon v-if="testingGitlab" :size="20" />
@@ -200,9 +195,8 @@
 						Test Token
 					</NcButton>
 					<NcButton
-						v-if="gitlabToken"
 						type="error"
-						:disabled="saving"
+						:disabled="saving || !gitlabToken"
 						@click="clearGitLabToken">
 						<template #icon>
 							<Delete :size="20" />
@@ -218,6 +212,12 @@
 					<span v-if="gitlabTestResult && !gitlabTestResult.success" class="test-result-error">
 						<AlertCircle :size="20" /> {{ gitlabTestResult.message }}
 					</span>
+						</div>
+					</div>
+
+					<p class="field-hint">
+						<LockOutline :size="16" /> Optional: Use <code>read_api</code> for discovery, or <code>api</code> for discovery + publishing
+					</p>
 				</div>
 
 				<!-- GitLab Instance URL -->
@@ -506,7 +506,11 @@ export default {
 			this.testingGithub = true
 			this.githubTestResult = null
 			try {
-				const response = await axios.post(generateUrl('/apps/openregister/api/settings/api-tokens/test/github'))
+				// Send the current token value for testing
+				const response = await axios.post(
+					generateUrl('/apps/openregister/api/settings/api-tokens/test/github'),
+					{ token: this.githubToken }
+				)
 				this.githubTestResult = {
 					success: true,
 					message: response.data.message,
@@ -539,7 +543,11 @@ export default {
 			this.testingGitlab = true
 			this.gitlabTestResult = null
 			try {
-				const response = await axios.post(generateUrl('/apps/openregister/api/settings/api-tokens/test/gitlab'))
+				// Send the current token value for testing
+				const response = await axios.post(
+					generateUrl('/apps/openregister/api/settings/api-tokens/test/gitlab'),
+					{ token: this.gitlabToken, url: this.gitlabUrl }
+				)
 				this.gitlabTestResult = {
 					success: true,
 					message: response.data.message,
@@ -717,7 +725,7 @@ export default {
 .token-config {
 	display: flex;
 	flex-direction: column;
-	gap: 20px;
+	gap: 24px;
 }
 
 .token-field-group {
@@ -730,6 +738,18 @@ export default {
 	color: var(--color-text-maxcontrast);
 	font-weight: 500;
 	font-size: 14px;
+}
+
+.token-input-row {
+	display: flex;
+	align-items: flex-start;
+	gap: 12px;
+	width: 100%;
+}
+
+.token-input-row > :first-child {
+	flex: 0 1 400px;
+	max-width: 400px;
 }
 
 .field-hint {
@@ -753,9 +773,10 @@ export default {
 
 .token-actions {
 	display: flex;
-	align-items: center;
+	align-items: flex-start;
 	gap: 12px;
 	flex-wrap: wrap;
+	flex: 1;
 }
 
 .saved-indicator {
@@ -829,9 +850,19 @@ export default {
 		gap: 16px;
 	}
 
+	.token-input-row {
+		flex-direction: column;
+	}
+
+	.token-input-row > :first-child {
+		flex: 1;
+		max-width: 100%;
+	}
+
 	.token-actions {
 		flex-direction: column;
 		align-items: stretch;
+		width: 100%;
 	}
 }
 </style>

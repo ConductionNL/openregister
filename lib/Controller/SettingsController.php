@@ -4567,9 +4567,9 @@ class SettingsController extends Controller
     public function getApiTokens(): JSONResponse
     {
         try {
-            $githubToken = $this->config->getAppValue('openregister', 'github_api_token', '');
-            $gitlabToken = $this->config->getAppValue('openregister', 'gitlab_api_token', '');
-            $gitlabUrl = $this->config->getAppValue('openregister', 'gitlab_api_url', '');
+            $githubToken = $this->config->getValueString('openregister', 'github_api_token', '');
+            $gitlabToken = $this->config->getValueString('openregister', 'gitlab_api_token', '');
+            $gitlabUrl = $this->config->getValueString('openregister', 'gitlab_api_url', '');
 
             // Mask tokens for security (only show first/last few characters)
             $maskedGithubToken = $githubToken ? $this->maskToken($githubToken) : '';
@@ -4603,19 +4603,19 @@ class SettingsController extends Controller
             if (isset($data['github_token'])) {
                 // Only save if not masked
                 if (!str_contains($data['github_token'], '***')) {
-                    $this->config->setAppValue('openregister', 'github_api_token', $data['github_token']);
+                    $this->config->setValueString('openregister', 'github_api_token', $data['github_token']);
                 }
             }
 
             if (isset($data['gitlab_token'])) {
                 // Only save if not masked
                 if (!str_contains($data['gitlab_token'], '***')) {
-                    $this->config->setAppValue('openregister', 'gitlab_api_token', $data['gitlab_token']);
+                    $this->config->setValueString('openregister', 'gitlab_api_token', $data['gitlab_token']);
                 }
             }
 
             if (isset($data['gitlab_url'])) {
-                $this->config->setAppValue('openregister', 'gitlab_api_url', $data['gitlab_url']);
+                $this->config->setValueString('openregister', 'gitlab_api_url', $data['gitlab_url']);
             }
 
             return new JSONResponse([
@@ -4640,12 +4640,13 @@ class SettingsController extends Controller
     public function testGitHubToken(): JSONResponse
     {
         try {
-            $token = $this->config->getAppValue('openregister', 'github_api_token', '');
+            $data = $this->request->getParams();
+            $token = $data['token'] ?? $this->config->getValueString('openregister', 'github_api_token', '');
             
             if (empty($token)) {
                 return new JSONResponse([
                     'success' => false,
-                    'message' => 'No GitHub token configured'
+                    'message' => 'No GitHub token provided'
                 ], 400);
             }
 
@@ -4686,18 +4687,24 @@ class SettingsController extends Controller
     public function testGitLabToken(): JSONResponse
     {
         try {
-            $token = $this->config->getAppValue('openregister', 'gitlab_api_token', '');
-            $apiUrl = $this->config->getAppValue('openregister', 'gitlab_api_url', 'https://gitlab.com/api/v4');
+            $data = $this->request->getParams();
+            $token = $data['token'] ?? $this->config->getValueString('openregister', 'gitlab_api_token', '');
+            $apiUrl = $data['url'] ?? $this->config->getValueString('openregister', 'gitlab_api_url', 'https://gitlab.com/api/v4');
             
             if (empty($token)) {
                 return new JSONResponse([
                     'success' => false,
-                    'message' => 'No GitLab token configured'
+                    'message' => 'No GitLab token provided'
                 ], 400);
             }
 
             // Ensure API URL doesn't end with slash
             $apiUrl = rtrim($apiUrl, '/');
+            
+            // Default to gitlab.com if no URL provided
+            if (empty($apiUrl)) {
+                $apiUrl = 'https://gitlab.com/api/v4';
+            }
 
             // Test the token by making a simple API call
             $client = \OC::$server->get(\OCP\Http\Client\IClientService::class)->newClient();
