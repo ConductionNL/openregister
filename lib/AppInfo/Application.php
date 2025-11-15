@@ -30,6 +30,10 @@ use OCA\OpenRegister\Db\ViewMapper;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\FileTextMapper;
+use OCA\OpenRegister\Db\ChunkMapper;
+use OCA\OpenRegister\Db\ObjectTextMapper;
+use OCA\OpenRegister\Db\GdprEntityMapper;
+use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OrganisationService;
@@ -150,6 +154,42 @@ class Application extends App implements IBootstrap
                     $container->get('OCP\IDBConnection'),
                     $container->get('OCP\IRequest'),
                     $container->get('OCP\IUserSession')
+                    );
+                }
+                );
+
+        $context->registerService(
+                ObjectTextMapper::class,
+                function ($container) {
+                    return new ObjectTextMapper(
+                    $container->get('OCP\IDBConnection')
+                    );
+                }
+                );
+
+        $context->registerService(
+                ChunkMapper::class,
+                function ($container) {
+                    return new ChunkMapper(
+                    $container->get('OCP\IDBConnection')
+                    );
+                }
+                );
+
+        $context->registerService(
+                GdprEntityMapper::class,
+                function ($container) {
+                    return new GdprEntityMapper(
+                    $container->get('OCP\IDBConnection')
+                    );
+                }
+                );
+
+        $context->registerService(
+                EntityRelationMapper::class,
+                function ($container) {
+                    return new EntityRelationMapper(
+                    $container->get('OCP\IDBConnection')
                     );
                 }
                 );

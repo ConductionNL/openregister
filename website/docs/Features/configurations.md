@@ -296,21 +296,45 @@ OpenRegister provides multiple ways to discover and import configurations from e
 
 **OpenRegister uses a two-phase discovery approach** for optimal global discovery and content validation:
 
-**Phase 1: Organization Discovery**
-- Searches globally for any JSON files containing 'openregister' in the filename or path
-- Identifies all organizations/users that have potential OpenRegister files
+**Phase 1: Organization Discovery (Path-based)**
+- Searches globally for **ANY files** containing 'openregister' in the filename or path
+- Identifies all organizations/users that have OpenRegister-related files
 - No organization restrictions - searches **all public repositories**
+- Discovers via configuration files (`*_openregister.json`) OR documentation files (`openregister.md`)
+- Processes up to 500 files (first 5 pages × 100 results)
+- Limits to top 50 organizations for scalability
 
-**Phase 2: Content Validation**
-- Searches within discovered organizations for files containing 'x-openregister'
+**Phase 2: Content Validation (Batched)**
+- Searches within discovered organizations for JSON files containing 'x-openregister'
 - Validates that files are actual OpenRegister configurations
+- Uses batched searches (10 organizations per batch) to handle query length limits
 - Filters out false positives automatically
+- Results sorted by repository popularity (stars)
+- Proper pagination support
 
 **Benefits:**
 - ✅ Truly global discovery - automatically finds new organizations
 - ✅ Content validation - ensures files are real OpenRegister configs
 - ✅ No hardcoded lists - organizations are dynamically discovered
-- ✅ Flexible naming - works with any JSON filename containing openregister
+- ✅ Very flexible - discovers via config files OR documentation files
+- ✅ Scalable - handles hundreds of organizations via batching
+- ✅ Performant - optimized pagination and result sorting
+- ✅ Rich metadata - provides organization info, raw URLs, and actual configuration details
+- ✅ Automatic enrichment - cards load instantly and enrich details in the background
+- ✅ Zero API rate limit impact - uses raw.githubusercontent.com for enrichment
+
+**Card Display:**
+
+Each discovered configuration is displayed as a card with:
+- **Title**: From `info.title` in the configuration file (or filename as fallback)
+- **Loading State**: Shows 'Obtaining additional information...' with loading icon
+- **Description**: From `info.description` in the configuration file
+- **Repository Link**: Clickable link to the GitHub repository
+- **Organization Link**: Clickable link to the organization/owner page
+- **Stars**: Repository popularity indicator
+- **Actions**: Import and View Source buttons
+
+The card automatically fetches full configuration details when displayed, showing a loading state initially and updating with real data once retrieved.
 
 **Steps:**
 1. Click **Import Configuration**
@@ -321,11 +345,21 @@ OpenRegister provides multiple ways to discover and import configurations from e
 6. Click **Import** on any configuration
 
 **How to make your configuration discoverable:**
-1. **Filename**: Include 'openregister' in your JSON filename (e.g., `myapp_openregister.json`, `catalog.openregister.json`)
+
+**Option 1: Configuration File (Preferred)**
+1. **Filename**: Include 'openregister' in your JSON filename (e.g., `myapp_openregister.json`)
 2. **Content**: Ensure your JSON file contains the 'x-openregister' property
 3. **Public repository**: File must be in a public GitHub/GitLab repository
 
-**Note on naming:** While any filename containing 'openregister' will be discovered, we recommend the `*_openregister.json` pattern to avoid conflicts with legacy OpenAPI specification files.
+**Option 2: Documentation File**
+1. **Add** an `openregister.md` file to your repository
+2. **Still include** your configuration JSON file (e.g., `myapp_openregister.json`)
+3. The `openregister.md` helps discovery, but the JSON file is what gets imported
+
+**Note on naming:** 
+- Configuration files: We recommend `*_openregister.json` pattern (e.g., `myapp_openregister.json`)
+- Documentation files: Use `openregister.md` to make your repository more discoverable
+- Any file with 'openregister' in the path will trigger organization discovery
 
 **Alternative import methods:**
 - **Import from GitHub tab**: Browse any repository directly and select any JSON file
@@ -335,8 +369,10 @@ OpenRegister provides multiple ways to discover and import configurations from e
 sequenceDiagram
     participant User
     participant UI as Import Modal
+    participant Card as Config Card
     participant API as OpenRegister API
     participant GitHub as GitHub API
+    participant Raw as raw.githubusercontent.com
     
     User->>UI: Click 'Import Configuration'
     User->>UI: Select 'Discover' tab
@@ -345,17 +381,36 @@ sequenceDiagram
     UI->>API: /api/configurations/discover?source=github&_search=...
     
     Note over API: Phase 1: Organization Discovery
-    API->>GitHub: Search: openregister.json extension:json in:path
-    GitHub-->>API: Return all repos with 'openregister' files
-    API->>API: Extract unique organizations
+    loop Pages 1-5 (max 500 files)
+        API->>GitHub: Search: openregister in:path
+        GitHub-->>API: Return files with 'openregister' in path
+        API->>API: Extract unique organizations
+        Note over API: Stop at 50 orgs for scalability
+    end
     
-    Note over API: Phase 2: Content Validation
-    API->>GitHub: Search: x-openregister org:OrgA org:OrgB ...
-    Note over GitHub: Content search within discovered organizations<br/>Validates files contain x-openregister
-    GitHub-->>API: Return validated configurations
+    Note over API: Phase 2: Content Validation (Batched)
+    loop For each batch of 10 orgs
+        API->>GitHub: Search: x-openregister extension:json org:Org1 ... org:Org10
+        Note over GitHub: Content search validates x-openregister
+        GitHub-->>API: Return validated configurations
+        API->>API: Collect results + metadata + raw URLs + org info
+    end
     
-    API-->>UI: Return filtered results
-    UI-->>User: Display configuration cards
+    API->>API: Sort by stars, apply pagination
+    API-->>UI: Return filtered & paginated results
+    UI-->>User: Display configuration cards instantly
+    Note over UI,Card: Cards show loading state
+    
+    Note over Card,Raw: Phase 3: Automatic Enrichment
+    loop For each visible card
+        Card->>API: /api/configurations/enrich (auto-triggered)
+        API->>Raw: Fetch raw JSON file (no API rate limit!)
+        Raw-->>API: Return configuration JSON
+        API->>API: Extract title, description, version, app, type
+        API-->>Card: Return enriched details
+        Card->>Card: Update display with real data
+    end
+    
     User->>UI: Click 'Import'
     UI->>API: /api/configurations/import/github
     API-->>UI: Configuration imported
@@ -532,15 +587,23 @@ Your configuration filename **MUST** contain 'openregister' to be discoverable:
 
 - ✅ **Preferred**: `*_openregister.json` (e.g., `myapp_openregister.json`)
 - ✅ **Also works**: `*.openregister.json`, `openregister.*.json`, `openregister.json`
+- ✅ **For discovery boost**: Add `openregister.md` documentation file to your repository
 
-**Why `_openregister` is preferred:**
+**Why `_openregister.json` is preferred:**
 - More explicit pattern for OpenRegister configurations
 - Avoids confusion with legacy OpenAPI specification files
 - Consistent convention recommended across all apps
 - But **any** filename containing 'openregister' works!
 
+**Using `openregister.md` for enhanced discovery:**
+- Adding an `openregister.md` file makes your repository more discoverable
+- Useful for documenting your OpenRegister configuration
+- Phase 1 will find your org via the .md file
+- Phase 2 still validates your .json configuration file
+- Both files working together = maximum discoverability!
+
 **Content Requirements (Phase 2 Validation):**
-- File **MUST** contain an 'x-openregister' property in the JSON
+- Configuration file **MUST** contain an 'x-openregister' property in the JSON
 - This is what validates your file as a real OpenRegister configuration
 - Files without 'x-openregister' will be filtered out even if the filename matches
 

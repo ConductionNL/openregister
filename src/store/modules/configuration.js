@@ -275,17 +275,22 @@ export const useConfigurationStore = defineStore('configuration', {
 				method: 'GET',
 			})
 
+			// Parse the JSON response first to extract error messages
+			const data = await response.json()
+
 			if (!response.ok) {
-				throw new Error(`HTTP error! status: ${response.status}`)
+				// If backend returns an error message, use it
+				const errorMessage = data.error || `HTTP error! status: ${response.status}`
+				throw new Error(errorMessage)
 			}
 
-		const data = await response.json()
-		return data.results || []
-			} catch (error) {
-				console.error('Error discovering configurations:', error)
-				throw error
-			}
-		},
+			return data.results || []
+		} catch (error) {
+			console.error('Error discovering configurations:', error)
+			// Re-throw with the error message (which now contains backend's user-friendly message)
+			throw error
+		}
+	},
 		async getBranches(source, params) {
 			console.log(`ConfigurationStore: Fetching branches from ${source}`)
 			const endpoint = `/index.php/apps/openregister/api/configurations/${source}/branches`
