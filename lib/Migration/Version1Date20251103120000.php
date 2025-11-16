@@ -78,12 +78,17 @@ class Version1Date20251103120000 extends SimpleMigrationStep
                 $newTable->setPrimaryKey($oldTable->getPrimaryKey()->getColumns());
             }
 
-            // Copy indexes
+            // Copy indexes with renamed index names to avoid collisions
+            // Replace 'views_' with 'view_' to reflect singular table name
             foreach ($oldTable->getIndexes() as $index) {
                 if ($index->isPrimary() === false) {
+                    // Rename index: views_* -> view_*
+                    $oldIndexName = $index->getName();
+                    $newIndexName = str_replace('views_', 'view_', $oldIndexName);
+                    
                     $newTable->addIndex(
                         $index->getColumns(),
-                        $index->getName(),
+                        $newIndexName,
                         $index->getFlags(),
                         [
                             'lengths' => $index->getOption('lengths') ?? [],

@@ -634,3 +634,5 @@ By processing both files and objects into a common chunk format, OpenRegister cr
 - [File Processing Details](../Features/files.md)
 - [Object Management](../Features/objects.md)
 
+
+

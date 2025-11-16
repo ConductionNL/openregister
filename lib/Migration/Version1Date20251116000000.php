@@ -336,9 +336,11 @@ class Version1Date20251116000000 extends SimpleMigrationStep
         ]);
         $table->addColumn('entity_id', Types::BIGINT, [
             'notnull' => true,
+            'unsigned' => true,
         ]);
         $table->addColumn('chunk_id', Types::BIGINT, [
             'notnull' => true,
+            'unsigned' => true,
         ]);
         $table->addColumn('role', Types::STRING, [
             'length' => 50,
