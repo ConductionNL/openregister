@@ -459,3 +459,5 @@ The updated entity relationship model provides:
 
 This model is ready for implementation and addresses all the requirements for efficient GDPR entity management in the OpenRegister text extraction system.
 
+
+

@@ -126,13 +126,6 @@ class Schema extends Entity implements JsonSerializable
     protected ?string $source = null;
 
     /**
-     * Schema that this schema extends from
-     *
-     * @var string|null Schema that this schema extends from
-     */
-    protected ?string $extend = null;
-
-    /**
      * Whether hard validation is enabled
      *
      * @var boolean Whether hard validation is enabled
@@ -320,7 +313,6 @@ class Schema extends Entity implements JsonSerializable
         $this->addType(fieldName: 'deleted', type: 'datetime');
         $this->addType(fieldName: 'configuration', type: 'json');
         $this->addType(fieldName: 'groups', type: 'json');
-        $this->addType(fieldName: 'extend', type: 'string');
 
     }//end __construct()
 
