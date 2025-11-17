@@ -773,6 +773,7 @@ export default {
 
 				// Load selected registers by fetching them individually
 				if (item.registers && Array.isArray(item.registers) && item.registers.length > 0) {
+					this.loadingRegisters = true
 					try {
 						const promises = item.registers.map(id =>
 							fetch(`/index.php/apps/openregister/api/registers/${id}`).then(r => r.json()),
@@ -780,11 +781,14 @@ export default {
 						this.selectedRegisters = await Promise.all(promises)
 					} catch (error) {
 						console.error('Error loading selected registers:', error)
+					} finally {
+						this.loadingRegisters = false
 					}
 				}
 
 				// Load selected schemas by fetching them individually
 				if (item.schemas && Array.isArray(item.schemas) && item.schemas.length > 0) {
+					this.loadingSchemas = true
 					try {
 						const promises = item.schemas.map(id =>
 							fetch(`/index.php/apps/openregister/api/schemas/${id}`).then(r => r.json()),
@@ -792,11 +796,14 @@ export default {
 						this.selectedSchemas = await Promise.all(promises)
 					} catch (error) {
 						console.error('Error loading selected schemas:', error)
+					} finally {
+						this.loadingSchemas = false
 					}
 				}
 
 				// Load selected objects by fetching them individually
 				if (item.objects && Array.isArray(item.objects) && item.objects.length > 0) {
+					this.loadingObjects = true
 					try {
 						const promises = item.objects.map(id =>
 							fetch(`/index.php/apps/openregister/api/objects/${id}`).then(r => r.json()),
@@ -804,11 +811,14 @@ export default {
 						this.selectedObjects = await Promise.all(promises)
 					} catch (error) {
 						console.error('Error loading selected objects:', error)
+					} finally {
+						this.loadingObjects = false
 					}
 				}
 
 				// Load selected sources by fetching them individually
 				if (item.sources && Array.isArray(item.sources) && item.sources.length > 0) {
+					this.loadingSources = true
 					try {
 						const promises = item.sources.map(id =>
 							fetch(`/index.php/apps/openregister/api/sources/${id}`).then(r => r.json()),
@@ -816,11 +826,14 @@ export default {
 						this.selectedSources = await Promise.all(promises)
 					} catch (error) {
 						console.error('Error loading selected sources:', error)
+					} finally {
+						this.loadingSources = false
 					}
 				}
 
 				// Load selected agents by fetching them individually
 				if (item.agents && Array.isArray(item.agents) && item.agents.length > 0) {
+					this.loadingAgents = true
 					try {
 						const promises = item.agents.map(id =>
 							fetch(`/index.php/apps/openregister/api/agents/${id}`).then(r => r.json()),
@@ -828,11 +841,14 @@ export default {
 						this.selectedAgents = await Promise.all(promises)
 					} catch (error) {
 						console.error('Error loading selected agents:', error)
+					} finally {
+						this.loadingAgents = false
 					}
 				}
 
 				// Load selected views by fetching them individually
 				if (item.views && Array.isArray(item.views) && item.views.length > 0) {
+					this.loadingViews = true
 					try {
 						const promises = item.views.map(id =>
 							fetch(`/index.php/apps/openregister/api/views/${id}`).then(r => r.json()),
@@ -840,11 +856,14 @@ export default {
 						this.selectedViews = await Promise.all(promises)
 					} catch (error) {
 						console.error('Error loading selected views:', error)
+					} finally {
+						this.loadingViews = false
 					}
 				}
 
 				// Load selected managed applications by fetching them individually
 				if (item.applications && Array.isArray(item.applications) && item.applications.length > 0) {
+					this.loadingApplications = true
 					try {
 						const promises = item.applications.map(id =>
 							fetch(`/index.php/apps/openregister/api/applications/${id}`).then(r => r.json()),
@@ -852,6 +871,8 @@ export default {
 						this.selectedManagedApplications = await Promise.all(promises)
 					} catch (error) {
 						console.error('Error loading selected applications:', error)
+					} finally {
+						this.loadingApplications = false
 					}
 				}
 			}

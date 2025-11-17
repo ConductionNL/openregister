@@ -109,54 +109,58 @@
 				{{ description }}
 			</p>
 			
-			<!-- Meta information for discovered configs -->
-			<div v-if="!isImported && (configuration.repository || configuration.organization)" class="cardMeta">
+			<!-- Meta information footer (organization, repo, stars, versions) -->
+			<div v-if="hasMetadata" class="cardMeta">
+				<!-- Repository link -->
 				<a
-					v-if="configuration.repository"
-					:href="`https://github.com/${configuration.repository}`"
+					v-if="repositoryFullName"
+					:href="repositoryUrl"
 					target="_blank"
 					rel="noopener noreferrer"
 					class="metaItem metaLink">
 					<SourceBranch :size="16" />
-					{{ configuration.repository }}
+					{{ repositoryFullName }}
 				</a>
+				
+				<!-- Organization link -->
 				<a
-					v-if="configuration.organization && configuration.organization.url"
-					:href="configuration.organization.url"
+					v-if="displayConfiguration.organization && displayConfiguration.organization.url"
+					:href="displayConfiguration.organization.url"
 					target="_blank"
 					rel="noopener noreferrer"
 					class="metaItem metaLink">
 					<OfficeBuilding :size="16" />
-					{{ configuration.organization.name }}
+					{{ displayConfiguration.organization.name }}
 				</a>
-				<span v-if="configuration.stars" class="metaItem">
+				
+				<!-- Stars count -->
+				<span v-if="displayConfiguration.stars" class="metaItem">
 					<Star :size="16" />
-					{{ configuration.stars }}
+					{{ displayConfiguration.stars }}
 				</span>
-			</div>
-			
-			<!-- Configuration info for imported configs -->
-			<div v-if="isImported" class="configurationInfo">
-				<div class="configurationInfoItem">
-					<strong>Source:</strong>
-					<span>{{ getSourceTypeLabel(configuration.sourceType) }}</span>
-				</div>
-				<div v-if="configuration.sourceUrl" class="configurationInfoItem">
-					<strong>URL:</strong>
-					<span class="urlText">{{ configuration.sourceUrl }}</span>
-				</div>
-				<div v-if="configuration.localVersion" class="configurationInfoItem">
-					<strong>Local Version:</strong>
-					<span>{{ configuration.localVersion }}</span>
-				</div>
-				<div v-if="configuration.remoteVersion" class="configurationInfoItem">
-					<strong>Remote Version:</strong>
-					<span>{{ configuration.remoteVersion }}</span>
-				</div>
-				<div v-if="configuration.autoUpdate" class="configurationInfoItem">
-					<strong>Auto-Update:</strong>
-					<span class="badge-success">Enabled</span>
-				</div>
+				
+				<!-- App ID badge (fallback if no repo info) -->
+				<span v-if="displayConfiguration.app && !repositoryFullName" class="metaItem">
+					<ApplicationCog :size="16" />
+					{{ displayConfiguration.app }}
+				</span>
+				
+				<!-- Source type (fallback if no repo info) -->
+				<span v-if="displayConfiguration.sourceType && !repositoryFullName" class="metaItem">
+					<Cloud :size="16" />
+					{{ getSourceTypeLabel(displayConfiguration.sourceType) }}
+				</span>
+				
+				<!-- Version info -->
+				<span v-if="displayConfiguration.localVersion" class="metaItem">
+					<Tag :size="16" />
+					v{{ displayConfiguration.localVersion }}
+				</span>
+				
+				<span v-if="displayConfiguration.remoteVersion && displayConfiguration.remoteVersion !== displayConfiguration.localVersion" class="metaItem">
+					<Update :size="16" />
+					v{{ displayConfiguration.remoteVersion }} available
+				</span>
 			</div>
 		</div>
 	</div>
@@ -184,6 +188,7 @@ import SourceBranch from 'vue-material-design-icons/SourceBranch.vue'
 import Star from 'vue-material-design-icons/Star.vue'
 import OfficeBuilding from 'vue-material-design-icons/OfficeBuilding.vue'
 import Magnify from 'vue-material-design-icons/Magnify.vue'
+import Tag from 'vue-material-design-icons/Tag.vue'
 
 import { configurationStore, navigationStore } from '../../store/store.js'
 
@@ -228,6 +233,7 @@ export default {
 		Star,
 		OfficeBuilding,
 		Magnify,
+		Tag,
 	},
 	props: {
 		/**
@@ -240,6 +246,27 @@ export default {
 		},
 	},
 	emits: ['view', 'edit', 'export', 'delete', 'import', 'check-version', 'preview-update'],
+	data() {
+		return {
+			// Track if this discovered config is already imported (fetched from backend)
+			importedConfigId: null,
+			checkingImportStatus: false,
+		}
+	},
+	mounted() {
+		// For discovered configs, check backend to see if already imported
+		if (this.isDiscovered && this.appId) {
+			this.checkIfImported()
+		}
+	},
+	watch: {
+		'configuration.config.app'() {
+			// Re-check if app ID changes
+			if (this.isDiscovered && this.appId) {
+				this.checkIfImported()
+			}
+		},
+	},
 	computed: {
 		/**
 		 * Check if this is a discovered configuration (has config.app structure)
@@ -258,17 +285,15 @@ export default {
 			return this.configuration.app || this.configuration.config?.app || null
 		},
 		/**
-		 * Check if this discovered configuration is already imported locally
+		 * Check if this discovered configuration is already imported
+		 * Uses backend-fetched data, not frontend store (which may be paginated)
 		 *
 		 * @return {boolean}
 		 */
 		isAlreadyImported() {
 			if (!this.isDiscovered) return false
-			if (!this.appId) return false
-
-			return !!configurationStore.configurationList.find(
-				config => config.app === this.appId
-			)
+			// Check if we've fetched and found an imported config ID
+			return this.importedConfigId !== null
 		},
 		/**
 		 * Get the existing local configuration if it's already imported
@@ -276,11 +301,33 @@ export default {
 		 * @return {object|null}
 		 */
 		existingConfiguration() {
-			if (!this.appId) return null
+			if (!this.importedConfigId) return null
 
-			return configurationStore.configurationList.find(
-				config => config.app === this.appId
-			) || null
+			// Try to find in store first (fast)
+			const found = configurationStore.configurationList.find(
+				config => config.id === this.importedConfigId
+			)
+			
+			if (found) return found
+
+			// Not in store, create a minimal config object for display
+			// with properties needed for version checking
+			return {
+				id: this.importedConfigId,
+				app: this.appId,
+				title: this.configuration.config?.title || this.appId,
+				description: this.configuration.config?.description || '',
+				sourceType: 'github', // Assume github for discovered configs
+				isLocal: false,
+				// Version info from discovered config
+				localVersion: this.configuration.config?.version || null,
+				remoteVersion: null, // Will be fetched on check
+				// GitHub sync info
+				githubRepo: this.configuration.repository,
+				githubBranch: this.configuration.branch || 'main',
+				githubPath: this.configuration.path,
+				syncEnabled: true,
+			}
 		},
 		/**
 		 * Get the configuration to display
@@ -293,9 +340,12 @@ export default {
 				// Merge discovered metadata with local configuration
 				return {
 					...this.existingConfiguration,
+					repository: this.configuration.repository, // Full repo name (owner/repo)
 					organization: this.configuration.organization,
 					stars: this.configuration.stars,
 					url: this.configuration.url,
+					owner: this.configuration.owner, // Repository owner
+					repo: this.configuration.repo, // Repository name
 				}
 			}
 			return this.configuration
@@ -336,7 +386,19 @@ export default {
 		 * @return {boolean}
 		 */
 		isRemoteConfiguration() {
-			return this.isImported && this.displayConfiguration.sourceType && this.displayConfiguration.sourceType !== 'local'
+			const result = this.isImported && this.displayConfiguration.sourceType && this.displayConfiguration.sourceType !== 'local'
+			
+			// Debug logging
+			console.log('[ConfigurationCard] isRemoteConfiguration check:', {
+				title: this.displayConfiguration.title || this.displayConfiguration.config?.title,
+				isImported: this.isImported,
+				sourceType: this.displayConfiguration.sourceType,
+				isLocal: this.displayConfiguration.isLocal,
+				result,
+				fullConfig: this.displayConfiguration,
+			})
+			
+			return result
 		},
 		/**
 		 * Check if update is available
@@ -359,8 +421,132 @@ export default {
 			const config = this.displayConfiguration
 			return config.url || config.sourceUrl || null
 		},
+		/**
+		 * Check if configuration has any metadata to display in footer
+		 *
+		 * @return {boolean}
+		 */
+		hasMetadata() {
+			const config = this.displayConfiguration
+			return !!(
+				this.repositoryFullName ||
+				config.organization ||
+				config.stars ||
+				config.app ||
+				config.sourceType ||
+				config.localVersion ||
+				config.remoteVersion
+			)
+		},
+		/**
+		 * Get repository full name (owner/repo)
+		 *
+		 * @return {string|null}
+		 */
+		repositoryFullName() {
+			const config = this.displayConfiguration
+			
+			// From discovered configs
+			if (config.repository) {
+				return config.repository
+			}
+			
+			// From imported configs with github info
+			if (config.githubRepo) {
+				return config.githubRepo
+			}
+			
+			// Try to extract from sourceUrl
+			if (config.sourceUrl) {
+				const githubMatch = config.sourceUrl.match(/github\.com\/([^\/]+\/[^\/]+)/)
+				if (githubMatch) {
+					return githubMatch[1].replace(/\/blob\/.*$/, '')
+				}
+			}
+			
+			return null
+		},
+		/**
+		 * Get repository URL
+		 *
+		 * @return {string|null}
+		 */
+		repositoryUrl() {
+			if (!this.repositoryFullName) return null
+			
+			const config = this.displayConfiguration
+			
+			// Check if it's a GitLab repo
+			if (config.sourceType === 'gitlab' || config.sourceUrl?.includes('gitlab')) {
+				return `https://gitlab.com/${this.repositoryFullName}`
+			}
+			
+			// Default to GitHub
+			return `https://github.com/${this.repositoryFullName}`
+		},
 	},
 	methods: {
+		/**
+		 * Check if this discovered configuration is already imported in the backend
+		 * Makes an API call to check by appId and stores the full config
+		 */
+		async checkIfImported() {
+			if (!this.appId || this.checkingImportStatus) return
+
+			this.checkingImportStatus = true
+			
+			try {
+				const response = await fetch(
+					`/index.php/apps/openregister/api/configurations?app=${encodeURIComponent(this.appId)}`,
+					{
+						method: 'GET',
+						headers: {
+							'Content-Type': 'application/json',
+							'Accept': 'application/json',
+						},
+					}
+				)
+
+				if (response.ok) {
+					const data = await response.json()
+					
+					// Check if we got results
+					if (data.results && data.results.length > 0) {
+						const importedConfig = data.results[0]
+						
+						// Configuration exists! Store the ID and add to store if not present
+						this.importedConfigId = importedConfig.id
+						
+						// Add to store if not already there (for pagination support)
+						const existsInStore = configurationStore.configurationList.find(
+							c => c.id === importedConfig.id
+						)
+						if (!existsInStore) {
+							configurationStore.configurationList.push(importedConfig)
+						}
+						
+						console.log('[ConfigurationCard] Configuration already imported:', {
+							appId: this.appId,
+							configId: this.importedConfigId,
+							sourceType: importedConfig.sourceType,
+							config: importedConfig,
+						})
+					} else {
+						// Not imported
+						this.importedConfigId = null
+						console.log('[ConfigurationCard] Configuration not yet imported:', {
+							appId: this.appId,
+						})
+					}
+				}
+			} catch (error) {
+				console.error('[ConfigurationCard] Failed to check import status:', error)
+				// On error, assume not imported
+				this.importedConfigId = null
+			} finally {
+				this.checkingImportStatus = false
+			}
+		},
 		/**
 		 * Get source type label
 		 *

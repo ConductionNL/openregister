@@ -1,5 +1,5 @@
 <script setup>
-import { configurationStore, navigationStore } from '../../store/store.js'
+import { configurationStore, navigationStore, registerStore, schemaStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -497,7 +497,12 @@ export default {
 
 				this.successMessage = 'Configuration imported successfully!'
 				this.success = true
-				await configurationStore.refreshConfigurationList()
+				// Refresh all lists to show newly imported entities
+				await Promise.all([
+					configurationStore.refreshConfigurationList(),
+					registerStore.refreshRegisterList(),
+					schemaStore.refreshSchemaList(),
+				])
 				setTimeout(() => this.closeModal(), 1500)
 			} catch (error) {
 				// Don't show error if configuration already exists (UI shows this visually)
@@ -505,8 +510,12 @@ export default {
 				if (!errorMessage.includes('already exists')) {
 					this.error = errorMessage
 				}
-				// Always refresh the list to update UI
-				await configurationStore.refreshConfigurationList()
+				// Always refresh all lists to update UI
+				await Promise.all([
+					configurationStore.refreshConfigurationList(),
+					registerStore.refreshRegisterList(),
+					schemaStore.refreshSchemaList(),
+				])
 			} finally {
 				this.loading = false
 			}
@@ -618,7 +627,12 @@ export default {
 			}
 
 				this.success = true
-				await configurationStore.refreshConfigurationList()
+				// Refresh all lists to show newly imported entities
+				await Promise.all([
+					configurationStore.refreshConfigurationList(),
+					registerStore.refreshRegisterList(),
+					schemaStore.refreshSchemaList(),
+				])
 				setTimeout(() => this.closeModal(), 1500)
 			} catch (error) {
 				this.error = error.message || 'Failed to import configuration'
