@@ -1,5 +1,5 @@
 <script setup>
-import { dashboardStore, registerStore, navigationStore } from '../../store/store.js'
+import { dashboardStore, registerStore, navigationStore, configurationStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -97,11 +97,15 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 			<div v-else>
 				<template v-if="registerStore.viewMode === 'cards'">
 					<div class="cardGrid">
-						<div v-for="register in paginatedRegisters" :key="register.id" class="card">
+						<div v-for="register in paginatedRegisters" :key="register.id" class="card" :class="{ 'card--managed': !!getManagingConfiguration(register) }">
 							<div class="cardHeader">
 								<h2 v-tooltip.bottom="register.description">
 									<DatabaseOutline :size="20" />
 									{{ register.title }}
+									<span v-if="getManagingConfiguration(register)" class="managedBadge">
+										<CogOutline :size="16" />
+										{{ t('openregister', 'Managed') }}
+									</span>
 								</h2>
 								<NcActions :primary="true" menu-name="Actions">
 									<template #icon>
@@ -113,10 +117,15 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 										</template>
 										Calculate Sizes
 									</NcActionButton>
-									<NcActionButton close-after-click
+									<NcActionButton 
+										v-tooltip="getManagingConfiguration(register) ? 'Cannot edit: This register is managed by ' + getManagingConfiguration(register).title : ''"
+										close-after-click
+										:disabled="!!getManagingConfiguration(register)"
 										@click="registerStore.setRegisterItem({
 											...register,
-											schemas: register.schemas.map(schema => schema.id)
+											schemas: Array.isArray(register.schemas) 
+												? register.schemas.map(schema => typeof schema === 'object' ? schema.id : schema)
+												: []
 										}); navigationStore.setModal('editRegister')">
 										<template #icon>
 											<Pencil :size="20" />
@@ -235,7 +244,10 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 								<tr v-for="register in paginatedRegisters"
 									:key="register.id"
 									class="viewTableRow"
-									:class="{ viewTableRowSelected: selectedRegisters.includes(register.id) }">
+									:class="{ 
+										viewTableRowSelected: selectedRegisters.includes(register.id),
+										'viewTableRow--managed': !!getManagingConfiguration(register)
+									}">
 									<td class="tableColumnCheckbox">
 										<NcCheckboxRadioSwitch
 											:checked="selectedRegisters.includes(register.id)"
@@ -243,7 +255,13 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 									</td>
 									<td class="tableColumnTitle">
 										<div class="titleContent">
-											<strong>{{ register.title }}</strong>
+											<strong>
+												{{ register.title }}
+												<span v-if="getManagingConfiguration(register)" class="managedBadge">
+													<CogOutline :size="16" />
+													{{ t('openregister', 'Managed') }}
+												</span>
+											</strong>
 											<span v-if="register.description" class="textDescription textEllipsis">{{ register.description }}</span>
 										</div>
 									</td>
@@ -265,10 +283,15 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 												</template>
 												Calculate Sizes
 											</NcActionButton>
-											<NcActionButton close-after-click
+											<NcActionButton 
+												v-tooltip="getManagingConfiguration(register) ? 'Cannot edit: This register is managed by ' + getManagingConfiguration(register).title : ''"
+												close-after-click
+												:disabled="!!getManagingConfiguration(register)"
 												@click="registerStore.setRegisterItem({
 													...register,
-													schemas: register.schemas.map(schema => schema.id)
+													schemas: Array.isArray(register.schemas) 
+														? register.schemas.map(schema => typeof schema === 'object' ? schema.id : schema)
+														: []
 												}); navigationStore.setModal('editRegister')">
 												<template #icon>
 													<Pencil :size="20" />
@@ -354,6 +377,7 @@ import Plus from 'vue-material-design-icons/Plus.vue'
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
 import ChevronDown from 'vue-material-design-icons/ChevronDown.vue'
 import ChevronUp from 'vue-material-design-icons/ChevronUp.vue'
+import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 import axios from '@nextcloud/axios'
 import { showError } from '@nextcloud/dialogs'
 import PaginationComponent from '../../components/PaginationComponent.vue'
@@ -383,6 +407,7 @@ export default {
 		InformationOutline,
 		ChevronDown,
 		ChevronUp,
+		CogOutline,
 		PaginationComponent,
 	},
 	data() {
@@ -436,9 +461,13 @@ export default {
 	},
 	async mounted() {
 		try {
-			await registerStore.refreshRegisterList()
+			// Load registers and configurations in parallel
+			await Promise.all([
+				registerStore.refreshRegisterList(),
+				configurationStore.refreshConfigurationList(),
+			])
 		} catch (error) {
-			console.error('Failed to load registers:', error)
+			console.error('Failed to load data:', error)
 		}
 	},
 	methods: {
@@ -527,6 +556,20 @@ export default {
 		getRemainingSchemasCount(register) {
 			const total = register.schemas?.length || 0
 			return Math.max(0, total - 5)
+		},
+
+		/**
+		 * Get the configuration that manages this register
+		 *
+		 * @param {object} register - Register object
+		 * @return {object|null} Configuration object or null if not managed
+		 */
+		getManagingConfiguration(register) {
+			if (!register || !register.id) return null
+			
+			return configurationStore.configurationList.find(
+				config => config.registers && config.registers.includes(register.id)
+			) || null
 		},
 
 		async calculateSizes(register) {
@@ -703,5 +746,30 @@ export default {
 /* So that the actions menu is not overlapped by the sidebar button when it is closed */
 .sidebar-closed {
 	margin-right: 35px;
+}
+
+/* Card borders for managed registers */
+.card--managed {
+	border: 2px solid var(--color-success);
+}
+
+/* Table row borders for managed registers */
+.viewTableRow--managed {
+	border-left: 4px solid var(--color-success);
+}
+
+/* Managed by Configuration badge */
+.managedBadge {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 4px 8px;
+	background: var(--color-success);
+	color: white;
+	border-radius: 12px;
+	font-size: 0.75rem;
+	font-weight: 600;
+	margin-left: 8px;
+	vertical-align: middle;
 }
 </style>
