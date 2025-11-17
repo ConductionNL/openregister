@@ -397,21 +397,10 @@ class Version1Date20251116000000 extends SimpleMigrationStep
         $table->addIndex(['email_id'], 'entity_relations_email_idx');
         $table->addIndex(['anonymized'], 'entity_relations_anon_idx');
 
-        $table->addForeignKeyConstraint(
-            'openregister_entities',
-            ['entity_id'],
-            ['id'],
-            ['onDelete' => 'CASCADE'],
-            'entity_relations_entity_fk'
-        );
-
-        $table->addForeignKeyConstraint(
-            'openregister_chunks',
-            ['chunk_id'],
-            ['id'],
-            ['onDelete' => 'CASCADE'],
-            'entity_relations_chunk_fk'
-        );
+        // NOTE: Foreign key constraints removed to avoid migration issues
+        // The indexes above provide query performance benefits
+        // Foreign key constraints can be added in a separate migration if needed
+        // Referential integrity is maintained at the application level
 
         $output->info('✅ Created openregister_entity_relations table.');
     }

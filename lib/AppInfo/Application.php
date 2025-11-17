@@ -712,6 +712,7 @@ class Application extends App implements IBootstrap
                     return new \OCA\OpenRegister\Service\GitHubService(
                     $container->get('OCP\Http\Client\IClientService')->newClient(),
                     $container->get('OCP\IConfig'),
+                    $container->get('OCP\ICacheFactory'),
                     $container->get('Psr\Log\LoggerInterface')
                     );
                 }

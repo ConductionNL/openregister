@@ -25,6 +25,8 @@ namespace OCA\OpenRegister\Service;
 use OCP\Http\Client\IClient;
 use GuzzleHttp\Exception\GuzzleException;
 use OCP\IConfig;
+use OCP\ICache;
+use OCP\ICacheFactory;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -72,19 +74,29 @@ class GitHubService
     private LoggerInterface $logger;
 
     /**
+     * Cache instance for storing enriched configuration data
+     *
+     * @var ICache
+     */
+    private ICache $cache;
+
+    /**
      * GitHubService constructor
      *
-     * @param IClient         $client HTTP client
-     * @param IConfig         $config Configuration service
-     * @param LoggerInterface $logger Logger instance
+     * @param IClient         $client       HTTP client
+     * @param IConfig         $config       Configuration service
+     * @param ICacheFactory   $cacheFactory Cache factory for creating cache instances
+     * @param LoggerInterface $logger       Logger instance
      */
     public function __construct(
         IClient $client,
         IConfig $config,
+        ICacheFactory $cacheFactory,
         LoggerInterface $logger
     ) {
         $this->client = $client;
         $this->config = $config;
+        $this->cache = $cacheFactory->createDistributed('openregister_github_configs');
         $this->logger = $logger;
     }
 
@@ -104,6 +116,12 @@ class GitHubService
         $token = $this->config->getAppValue('openregister', 'github_api_token', '');
         if (!empty($token)) {
             $headers['Authorization'] = 'Bearer ' . $token;
+            $this->logger->debug('Using GitHub API token for authentication', [
+                'token_length' => strlen($token),
+                'token_prefix' => substr($token, 0, 8) . '...',
+            ]);
+        } else {
+            $this->logger->warning('No GitHub API token configured - using unauthenticated access (60 requests/hour limit)');
         }
 
         return $headers;
@@ -126,178 +144,84 @@ class GitHubService
     public function searchConfigurations(string $search = '', int $page = 1, int $perPage = 30): array
     {
         try {
-            // Two-phase search strategy for optimal results:
-            // Phase 1: Broad path search to discover organizations
-            // Phase 2: Content search within discovered organizations to validate
+            // Simplified single-phase search strategy to minimize API calls
+            // Search directly for x-openregister content in JSON files
+            // This targets actual config files immediately, avoiding multi-phase searches
             
-            // PHASE 1: Discover organizations with potential OpenRegister files
-            // Search for ANY file containing 'openregister' in its path
-            // This catches: *_openregister.json files, openregister.md docs, etc.
-            $this->logger->info('Phase 1: Discovering organizations with OpenRegister files');
-            $discoveryQuery = 'openregister in:path';
-            if (!empty($search)) {
-                $discoveryQuery .= ' ' . $search;
-            }
-            
-            // Collect organizations from multiple pages to ensure broad coverage
-            $organizations = [];
-            $maxPages = 5; // Limit to first 5 pages (500 results) to avoid excessive API calls
-            $itemsPerPage = 100;
-            
-            for ($currentPage = 1; $currentPage <= $maxPages; $currentPage++) {
-                $discoveryResponse = $this->client->request('GET', self::API_BASE . '/search/code', [
-                    'query' => [
-                        'q'        => $discoveryQuery,
-                        'page'     => $currentPage,
-                        'per_page' => $itemsPerPage,
-                    ],
-                    'headers' => $this->getHeaders(),
-                ]);
-                
-                $discoveryData = json_decode($discoveryResponse->getBody(), true);
-                
-                // Extract unique organizations from this page
-                foreach ($discoveryData['items'] ?? [] as $item) {
-                    $org = $item['repository']['owner']['login'];
-                    if (!in_array($org, $organizations)) {
-                        $organizations[] = $org;
-                    }
-                }
-                
-                // Stop if we've processed all available results
-                $totalCount = $discoveryData['total_count'] ?? 0;
-                if ($currentPage * $itemsPerPage >= $totalCount) {
-                    break;
-                }
-                
-                // Stop if we've found enough organizations (scalability limit)
-                // GitHub search queries have length limits, so cap at ~50 orgs
-                if (count($organizations) >= 50) {
-                    $this->logger->info('Phase 1: Reached organization limit', [
-                        'limit' => 50,
-                        'total_found' => count($organizations),
-                    ]);
-                    break;
-                }
-            }
-            
-            $this->logger->info('Phase 1 complete: Discovered organizations', [
-                'count' => count($organizations),
-                'organizations' => array_slice($organizations, 0, 10), // Log first 10 only
+            $this->logger->info('Searching for OpenRegister configurations', [
+                'search_terms' => $search,
+                'page' => $page,
+                'per_page' => $perPage,
             ]);
             
-            // PHASE 2: Content search within discovered organizations
-            $this->logger->info('Phase 2: Searching for x-openregister content in discovered organizations');
+            // Build search query targeting actual configuration files
+            // Search for "x-openregister" content in JSON files only
+            $searchQuery = 'x-openregister extension:json';
+            if (!empty($search)) {
+                $searchQuery .= ' ' . $search;
+            }
             
-            if (empty($organizations)) {
-                // No organizations found, return empty results
-                return [
-                    'total_count' => 0,
-                    'results'     => [],
-                    'page'        => $page,
-                    'per_page'    => $perPage,
+            // Use GitHub pagination directly (max 100 per page, 1000 results total)
+            // This uses only 1 Code Search API call per search request
+            $response = $this->client->request('GET', self::API_BASE . '/search/code', [
+                'query' => [
+                    'q'        => $searchQuery,
+                    'page'     => $page,
+                    'per_page' => min($perPage, 100), // GitHub max is 100
+                    'sort'     => 'stars', // Sort by repository stars for quality
+                    'order'    => 'desc',
+                ],
+                'headers' => $this->getHeaders(),
+            ]);
+            
+            $data = json_decode($response->getBody(), true);
+            $allResults = [];
+            
+            // Process and format results
+            foreach ($data['items'] ?? [] as $item) {
+                $owner = $item['repository']['owner']['login'];
+                $repo = $item['repository']['name'];
+                $defaultBranch = $item['repository']['default_branch'] ?? 'main';
+                $path = $item['path'];
+                $fileSha = $item['sha'] ?? null;
+                
+                // Get enriched config details (from cache or by fetching from raw.githubusercontent.com)
+                // This doesn't count against API rate limit
+                $configDetails = $this->getEnrichedConfigDetails($owner, $repo, $path, $defaultBranch, $fileSha);
+                
+                $allResults[] = [
+                    'repository'  => $item['repository']['full_name'],
+                    'owner'       => $owner,
+                    'repo'        => $repo,
+                    'path'        => $path,
+                    'url'         => $item['html_url'],
+                    'stars'       => $item['repository']['stargazers_count'] ?? 0,
+                    'description' => $item['repository']['description'] ?? '',
+                    'name'        => basename($path, '.json'),
+                    'branch'      => $defaultBranch,
+                    'raw_url'     => "https://raw.githubusercontent.com/{$owner}/{$repo}/{$defaultBranch}/{$path}",
+                    'sha'         => $fileSha,
+                    // Repository owner/organization info
+                    'organization' => [
+                        'name'        => $owner,
+                        'avatar_url'  => $item['repository']['owner']['avatar_url'] ?? '',
+                        'type'        => $item['repository']['owner']['type'] ?? 'User',
+                        'url'         => $item['repository']['owner']['html_url'] ?? '',
+                    ],
+                    // Config details - enriched from actual file content
+                    'config'      => $configDetails,
                 ];
             }
             
-            // For scalability: if we have many organizations, batch the searches
-            // GitHub search queries have character limits (~256 chars for URL-safe queries)
-            // Each org filter is ~20 chars on average, so batch in groups of 10
-            $batchSize = 10;
-            $orgBatches = array_chunk($organizations, $batchSize);
-            
-            $allResults = [];
-            $totalConfigurations = 0;
-            
-            foreach ($orgBatches as $batchIndex => $orgBatch) {
-                // Build content search query with organization filters for this batch
-                // Only search JSON files to ensure we get actual configuration files
-                $orgFilters = array_map(function($org) { return "org:$org"; }, $orgBatch);
-                $contentQuery = 'x-openregister extension:json ' . implode(' ', $orgFilters);
-                if (!empty($search)) {
-                    $contentQuery .= ' ' . $search;
-                }
-                
-                $this->logger->debug('Phase 2: Searching batch', [
-                    'batch' => $batchIndex + 1,
-                    'total_batches' => count($orgBatches),
-                    'orgs_in_batch' => count($orgBatch),
-                ]);
-                
-                try {
-                    $contentResponse = $this->client->request('GET', self::API_BASE . '/search/code', [
-                        'query' => [
-                            'q'        => $contentQuery,
-                            'page'     => 1, // Always get first page from each batch
-                            'per_page' => 100, // Max per batch
-                        ],
-                        'headers' => $this->getHeaders(),
-                    ]);
-                    
-                    $contentData = json_decode($contentResponse->getBody(), true);
-                    $totalConfigurations += $contentData['total_count'] ?? 0;
-                    
-                    // Process and format results from this batch
-                    foreach ($contentData['items'] ?? [] as $item) {
-                        $owner = $item['repository']['owner']['login'];
-                        $repo = $item['repository']['name'];
-                        $defaultBranch = $item['repository']['default_branch'] ?? 'main';
-                        
-                        $allResults[] = [
-                            'repository'  => $item['repository']['full_name'],
-                            'owner'       => $owner,
-                            'repo'        => $repo,
-                            'path'        => $item['path'],
-                            'url'         => $item['html_url'],
-                            'stars'       => $item['repository']['stargazers_count'] ?? 0,
-                            'description' => $item['repository']['description'] ?? '',
-                            'name'        => basename($item['path'], '.json'),
-                            'branch'      => $defaultBranch,
-                            'raw_url'     => "https://raw.githubusercontent.com/{$owner}/{$repo}/{$defaultBranch}/{$item['path']}",
-                            // Repository owner/organization info
-                            'organization' => [
-                                'name'        => $owner,
-                                'avatar_url'  => $item['repository']['owner']['avatar_url'] ?? '',
-                                'type'        => $item['repository']['owner']['type'] ?? 'User',
-                                'url'         => $item['repository']['owner']['html_url'] ?? '',
-                            ],
-                            // Config details - use filename as fallback, will be enriched by frontend
-                            'config'      => [
-                                'title'       => basename($item['path'], '.json'),
-                                'description' => $item['repository']['description'] ?? '',
-                                'version'     => 'v.unknown',
-                                'app'         => null,
-                                'type'        => 'unknown',
-                            ],
-                        ];
-                    }
-                } catch (\Exception $e) {
-                    $this->logger->warning('Phase 2: Batch search failed', [
-                        'batch' => $batchIndex + 1,
-                        'error' => $e->getMessage(),
-                    ]);
-                    // Continue with other batches
-                }
-            }
-            
-            // Sort by stars (popularity) and apply pagination
-            usort($allResults, function($a, $b) {
-                return $b['stars'] - $a['stars'];
-            });
-            
-            // Apply user-requested pagination
-            $offset = ($page - 1) * $perPage;
-            $paginatedResults = array_slice($allResults, $offset, $perPage);
-            
-            $this->logger->info('Phase 2 complete: Content search finished', [
-                'organizations_searched' => count($organizations),
-                'batches_processed' => count($orgBatches),
-                'total_configurations' => count($allResults),
-                'returned_after_pagination' => count($paginatedResults),
+            $this->logger->info('Search complete', [
+                'total_found' => $data['total_count'] ?? 0,
+                'returned_in_page' => count($allResults),
+                'api_calls_used' => 1, // Only 1 Code Search API call
             ]);
 
             return [
-                'total_count' => count($allResults), // Total unique results found
-                'results'     => $paginatedResults,
+                'total_count' => $data['total_count'] ?? 0, // GitHub's total count
+                'results'     => $allResults,
                 'page'        => $page,
                 'per_page'    => $perPage,
             ];
@@ -337,7 +261,12 @@ class GitHubService
         switch ($statusCode) {
             case 403:
                 if (stripos($rawError, 'rate limit') !== false) {
-                    return 'GitHub API rate limit exceeded. Please wait a few minutes before trying again, or configure a GitHub API token in Settings to increase your rate limit from 60 to 5,000 requests per hour.';
+                    $token = $this->config->getAppValue('openregister', 'github_api_token', '');
+                    if (empty($token)) {
+                        return 'GitHub API rate limit exceeded (60 requests/hour for unauthenticated). Please configure a GitHub API token in Settings to increase to 5,000 requests/hour (30/minute for Code Search).';
+                    } else {
+                        return 'GitHub Code Search API rate limit exceeded (30 requests per minute). Please wait a few minutes before trying again. The discovery search makes multiple API calls to find configurations.';
+                    }
                 }
                 return 'Access forbidden. Please check your GitHub API token permissions in Settings.';
                 
@@ -361,6 +290,64 @@ class GitHubService
                 }
                 return 'GitHub API request failed. Please try again or check your API token configuration in Settings.';
         }
+    }
+
+    /**
+     * Get enriched configuration details from cache or fetch if not cached
+     *
+     * Uses file SHA as cache key to automatically invalidate when file changes.
+     * Falls back to fetching without caching if SHA is not available.
+     *
+     * @param string      $owner   Repository owner
+     * @param string      $repo    Repository name
+     * @param string      $path    File path
+     * @param string      $branch  Branch name
+     * @param string|null $fileSha File SHA for cache invalidation
+     *
+     * @return array Configuration details
+     *
+     * @since 0.2.11
+     */
+    private function getEnrichedConfigDetails(string $owner, string $repo, string $path, string $branch, ?string $fileSha): array
+    {
+        // Default fallback config
+        $fallbackConfig = [
+            'title'       => basename($path, '.json'),
+            'description' => '',
+            'version'     => 'v.unknown',
+            'app'         => null,
+            'type'        => 'unknown',
+        ];
+
+        // If we have a SHA, use it as cache key
+        if ($fileSha !== null) {
+            $cacheKey = "config_{$owner}_{$repo}_{$fileSha}";
+            
+            // Try to get from cache
+            $cached = $this->cache->get($cacheKey);
+            if ($cached !== null) {
+                $this->logger->debug('Using cached config details', ['cache_key' => $cacheKey]);
+                return $cached;
+            }
+        }
+
+        // Not in cache or no SHA available, fetch from GitHub
+        $enriched = $this->enrichConfigurationDetails($owner, $repo, $path, $branch);
+        
+        if ($enriched === null) {
+            // Enrichment failed, return fallback
+            return $fallbackConfig;
+        }
+
+        // Cache the enriched data (if we have a SHA)
+        if ($fileSha !== null) {
+            $cacheKey = "config_{$owner}_{$repo}_{$fileSha}";
+            // Cache for 7 days (file content won't change as long as SHA is the same)
+            $this->cache->set($cacheKey, $enriched, 7 * 24 * 60 * 60);
+            $this->logger->debug('Cached config details', ['cache_key' => $cacheKey]);
+        }
+
+        return $enriched;
     }
 
     /**

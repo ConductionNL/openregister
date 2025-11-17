@@ -86,13 +86,17 @@ class Version1Date20251103120000 extends SimpleMigrationStep
                     $oldIndexName = $index->getName();
                     $newIndexName = str_replace('views_', 'view_', $oldIndexName);
                     
+                    // Build options array only with available options
+                    $options = [];
+                    if ($index->hasOption('lengths')) {
+                        $options['lengths'] = $index->getOption('lengths');
+                    }
+                    
                     $newTable->addIndex(
                         $index->getColumns(),
                         $newIndexName,
                         $index->getFlags(),
-                        [
-                            'lengths' => $index->getOption('lengths') ?? [],
-                        ]
+                        $options
                     );
                 }
             }//end foreach

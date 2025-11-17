@@ -1287,9 +1287,9 @@ class ConfigurationService
                 $existingConfiguration->setVersion($version);
 
                 // Merge with existing IDs to avoid losing previously imported entities
-                $existingRegisterIds = $existingConfiguration->getRegisters();
-                $existingSchemaIds   = $existingConfiguration->getSchemas();
-                $existingObjectIds   = $existingConfiguration->getObjects();
+                $existingRegisterIds = $existingConfiguration->getRegisters() ?? [];
+                $existingSchemaIds   = $existingConfiguration->getSchemas() ?? [];
+                $existingObjectIds   = $existingConfiguration->getObjects() ?? [];
 
                 $existingConfiguration->setRegisters(array_unique(array_merge($existingRegisterIds, $registerIds)));
                 $existingConfiguration->setSchemas(array_unique(array_merge($existingSchemaIds, $schemaIds)));

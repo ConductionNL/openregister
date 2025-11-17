@@ -93,13 +93,14 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 						<p>{{ searchError }}</p>
 					</NcNoteCard>
 
-					<div v-else-if="searchResults.length > 0" class="resultsGrid">
-						<DiscoveredConfigurationCard
-							v-for="(result, index) in searchResults"
-							:key="index"
-							:configuration="result"
-							@import="importDiscoveredConfiguration(result)" />
-					</div>
+				<div v-else-if="searchResults.length > 0" class="resultsGrid">
+					<ConfigurationCard
+						v-for="(result, index) in searchResults"
+						:key="index"
+						:configuration="result"
+						@import="importDiscoveredConfiguration(result)"
+						@check-version="handleCheckVersion" />
+				</div>
 
 					<NcEmptyContent v-else-if="hasSearched"
 						name="No configurations found"
@@ -268,10 +269,11 @@ import Gitlab from 'vue-material-design-icons/Gitlab.vue'
 import SourceBranch from 'vue-material-design-icons/SourceBranch.vue'
 import LinkVariant from 'vue-material-design-icons/LinkVariant.vue'
 
-import DiscoveredConfigurationCard from '../../components/DiscoveredConfigurationCard.vue'
+import ConfigurationCard from '../../components/cards/ConfigurationCard.vue'
 
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
+import { showError, showSuccess } from '@nextcloud/dialogs'
 
 export default {
 	name: 'ImportConfiguration',
@@ -286,7 +288,7 @@ export default {
 	NcTextField,
 	NcSelect,
 	NcEmptyContent,
-	DiscoveredConfigurationCard,
+	ConfigurationCard,
 		// Icons
 		Cancel,
 		Import,
@@ -498,7 +500,13 @@ export default {
 				await configurationStore.refreshConfigurationList()
 				setTimeout(() => this.closeModal(), 1500)
 			} catch (error) {
-				this.error = error.message || 'Failed to import configuration'
+				// Don't show error if configuration already exists (UI shows this visually)
+				const errorMessage = error.message || 'Failed to import configuration'
+				if (!errorMessage.includes('already exists')) {
+					this.error = errorMessage
+				}
+				// Always refresh the list to update UI
+				await configurationStore.refreshConfigurationList()
 			} finally {
 				this.loading = false
 			}
@@ -616,6 +624,28 @@ export default {
 				this.error = error.message || 'Failed to import configuration'
 			} finally {
 				this.loading = false
+			}
+		},
+		async handleCheckVersion(configuration) {
+			// Handle check version for already imported configurations
+			try {
+				const response = await axios.post(
+					generateUrl(`/apps/openregister/api/configurations/${configuration.id}/check-version`),
+				)
+
+				if (response.data.hasUpdate) {
+					showSuccess(
+						`Update available: ${response.data.localVersion} → ${response.data.remoteVersion}`,
+					)
+				} else {
+					showSuccess('Configuration is up to date')
+				}
+
+				// Refresh the list to show updated version info
+				await configurationStore.refreshConfigurationList()
+			} catch (error) {
+				console.error('Failed to check version:', error)
+				showError('Failed to check version: ' + (error.response?.data?.error || error.message))
 			}
 		},
 	},
