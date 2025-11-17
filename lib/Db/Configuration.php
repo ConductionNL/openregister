@@ -358,6 +358,12 @@ class Configuration extends Entity implements JsonSerializable
         $this->addType('githubRepo', 'string');
         $this->addType('githubBranch', 'string');
         $this->addType('githubPath', 'string');
+        $this->addType('isLocal', 'boolean');
+        $this->addType('syncEnabled', 'boolean');
+        $this->addType('syncInterval', 'integer');
+        $this->addType('lastSyncDate', 'datetime');
+        $this->addType('syncStatus', 'string');
+        $this->addType('openregister', 'string');
         $this->addType('registers', 'json');
         $this->addType('schemas', 'json');
         $this->addType('objects', 'json');
