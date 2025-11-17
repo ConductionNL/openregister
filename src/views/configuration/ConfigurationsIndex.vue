@@ -94,107 +94,16 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 			<div v-else>
 				<template v-if="viewMode === 'cards'">
 					<div class="cardGrid">
-						<div v-for="configuration in paginatedConfigurations" :key="configuration.id" class="card">
-							<div class="cardHeader">
-								<h2 v-tooltip.bottom="configuration.description">
-									<CogOutline :size="20" />
-									{{ configuration.title }}
-									<template v-if="configuration.isLocal">
-										<span class="configBadge configBadge--local">
-											<CheckCircle :size="16" />
-											Local
-										</span>
-										<span v-if="configuration.app" class="configBadge configBadge--app">
-											<ApplicationCog :size="16" />
-											{{ configuration.app }}
-										</span>
-									</template>
-									<span v-else class="configBadge configBadge--external">
-										<Cloud :size="16" />
-										External
-									</span>
-									<span v-if="!configuration.isLocal && configuration.syncEnabled" class="configBadge" :class="'configBadge--sync-' + configuration.syncStatus">
-										<Sync v-if="configuration.syncStatus === 'success'" :size="16" />
-										<AlertCircle v-else-if="configuration.syncStatus === 'failed'" :size="16" />
-										<ClockOutline v-else :size="16" />
-										{{ getSyncStatusText(configuration) }}
-									</span>
-									<span v-if="hasUpdateAvailable(configuration)" class="configBadge configBadge--update">
-										<Update :size="16" />
-										Update Available
-									</span>
-								</h2>
-								<NcActions :primary="true" menu-name="Actions">
-									<template #icon>
-										<DotsHorizontal :size="20" />
-									</template>
-									<NcActionButton close-after-click @click="configurationStore.setConfigurationItem(configuration); navigationStore.setModal('viewConfiguration')">
-										<template #icon>
-											<Eye :size="20" />
-										</template>
-										View
-									</NcActionButton>
-									<NcActionButton close-after-click @click="configurationStore.setConfigurationItem(configuration); navigationStore.setModal('editConfiguration')">
-										<template #icon>
-											<Pencil :size="20" />
-										</template>
-										Edit
-									</NcActionButton>
-									<NcActionButton v-if="isRemoteConfiguration(configuration)" close-after-click @click="checkVersion(configuration)">
-										<template #icon>
-											<Sync :size="20" />
-										</template>
-										Check Version
-									</NcActionButton>
-									<NcActionButton v-if="hasUpdateAvailable(configuration)" close-after-click @click="previewUpdate(configuration)">
-										<template #icon>
-											<EyeOutline :size="20" />
-										</template>
-										Preview Update
-									</NcActionButton>
-									<NcActionButton close-after-click @click="configurationStore.setConfigurationItem(configuration); navigationStore.setModal('exportConfiguration')">
-										<template #icon>
-											<Download :size="20" />
-										</template>
-										Export
-									</NcActionButton>
-									<NcActionButton close-after-click @click="configurationStore.setConfigurationItem(configuration); navigationStore.setDialog('deleteConfiguration')">
-										<template #icon>
-											<TrashCanOutline :size="20" />
-										</template>
-										Delete
-									</NcActionButton>
-								</NcActions>
-							</div>
-							<!-- Configuration Details -->
-							<div class="configurationDetails">
-								<p v-if="configuration.description" class="configurationDescription">
-									{{ configuration.description }}
-								</p>
-								<div class="configurationInfo">
-									<div class="configurationInfoItem">
-										<strong>{{ t('openregister', 'Source') }}:</strong>
-										<span>{{ getSourceTypeLabel(configuration.sourceType) }}</span>
-									</div>
-									<div v-if="configuration.sourceUrl" class="configurationInfoItem">
-										<strong>{{ t('openregister', 'URL') }}:</strong>
-										<span class="urlText">{{ configuration.sourceUrl }}</span>
-									</div>
-									<div v-if="configuration.localVersion" class="configurationInfoItem">
-										<strong>{{ t('openregister', 'Local Version') }}:</strong>
-										<span>{{ configuration.localVersion }}</span>
-									</div>
-									<div v-if="configuration.remoteVersion" class="configurationInfoItem">
-										<strong>{{ t('openregister', 'Remote Version') }}:</strong>
-										<span>{{ configuration.remoteVersion }}</span>
-									</div>
-									<div v-if="configuration.autoUpdate" class="configurationInfoItem">
-										<strong>{{ t('openregister', 'Auto-Update') }}:</strong>
-										<span class="badge-success">Enabled</span>
-									</div>
-								</div>
-							</div>
-						</div>
+				<ConfigurationCard
+					v-for="configuration in paginatedConfigurations"
+					:key="configuration.id"
+					:configuration="configuration"
+					@view="handleView(configuration)"
+					@edit="handleEdit(configuration)"
+					@export="handleExport(configuration)"
+					@delete="handleDelete(configuration)"
+					@check-version="checkVersion(configuration)"
+					@preview-update="previewUpdate(configuration)" />
 					</div>
 				</template>
 				<template v-else>
@@ -352,6 +261,7 @@ import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
 import ClockOutline from 'vue-material-design-icons/ClockOutline.vue'
 import ApplicationCog from 'vue-material-design-icons/ApplicationCog.vue'
 
+import ConfigurationCard from '../../components/cards/ConfigurationCard.vue'
 import PaginationComponent from '../../components/PaginationComponent.vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
@@ -365,6 +275,7 @@ export default {
 		NcActions,
 		NcActionButton,
 		NcCheckboxRadioSwitch,
+		ConfigurationCard,
 		CogOutline,
 		DotsHorizontal,
 		Pencil,
@@ -496,6 +407,22 @@ export default {
 				showError('Failed to check version: ' + (error.response?.data?.error || error.message))
 			}
 		},
+		handleView(configuration) {
+			configurationStore.setConfigurationItem(configuration)
+			navigationStore.setModal('viewConfiguration')
+		},
+		handleEdit(configuration) {
+			configurationStore.setConfigurationItem(configuration)
+			navigationStore.setModal('editConfiguration')
+		},
+		handleExport(configuration) {
+			configurationStore.setConfigurationItem(configuration)
+			navigationStore.setModal('exportConfiguration')
+		},
+		handleDelete(configuration) {
+			configurationStore.setConfigurationItem(configuration)
+			navigationStore.setDialog('deleteConfiguration')
+		},
 		previewUpdate(configuration) {
 			// Set the configuration and open preview modal
 			configurationStore.setConfigurationItem(configuration)
@@ -528,48 +455,7 @@ export default {
 </script>
 
 <style scoped>
-.configurationDetails {
-	margin-top: 1rem;
-}
-
-.configurationDescription {
-	color: var(--color-text-lighter);
-	margin-bottom: 1rem;
-}
-
-.configurationInfo {
-	display: flex;
-	flex-direction: column;
-	gap: 0.5rem;
-}
-
-.configurationInfoItem {
-	display: flex;
-	gap: 0.5rem;
-}
-
-.configurationInfoItem strong {
-	min-width: 120px;
-}
-
-.urlText {
-	font-family: monospace;
-	font-size: 0.9em;
-	color: var(--color-primary);
-	word-break: break-all;
-}
-
-.badge-success {
-	display: inline-block;
-	padding: 2px 8px;
-	border-radius: 10px;
-	background-color: var(--color-success);
-	color: white;
-	font-size: 0.85em;
-	font-weight: 500;
-}
-
-/* Configuration Badges */
+/* Badge styles for table view only (card view uses ConfigurationCard styles) */
 .configBadge {
 	display: inline-flex;
 	align-items: center;
@@ -578,7 +464,6 @@ export default {
 	border-radius: 12px;
 	font-size: 0.85em;
 	font-weight: 600;
-	margin-left: 8px;
 	vertical-align: middle;
 }
 

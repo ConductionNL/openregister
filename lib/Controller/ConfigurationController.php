@@ -864,7 +864,10 @@ class ConfigurationController extends Controller
     /**
      * Import configuration from GitHub
      *
+     * This method creates a Configuration entity and then imports it using the standard import flow.
+     *
      * @NoAdminRequired
+     * @NoCSRFRequired
      *
      * @return JSONResponse Import result
      *
@@ -895,52 +898,85 @@ class ConfigurationController extends Controller
                 'branch' => $branch,
             ]);
             
-            // Get file content from GitHub
+            // Step 1: Get file content from GitHub
             $configData = $this->githubService->getFileContent($owner, $repo, $path, $branch);
             
-            // Build GitHub URL for sourceUrl
-            $sourceUrl = "https://github.com/{$owner}/{$repo}/blob/{$branch}/{$path}";
+            // Extract metadata from config
+            $info = $configData['info'] ?? [];
+            $xOpenregister = $configData['x-openregister'] ?? [];
+            $appId = $xOpenregister['app'] ?? 'imported';
+            $version = $info['version'] ?? $xOpenregister['version'] ?? '1.0.0';
+            $title = $info['title'] ?? $xOpenregister['title'] ?? "Configuration from {$owner}/{$repo}";
+            $description = $info['description'] ?? $xOpenregister['description'] ?? "Imported from GitHub: {$owner}/{$repo}/{$path}";
             
-            // Set x-openregister properties for external configuration
-            if (!isset($configData['x-openregister'])) {
-                $configData['x-openregister'] = [];
+            // Check if configuration already exists for this app
+            $existingConfigurations = $this->configurationMapper->findByApp($appId);
+            if (count($existingConfigurations) > 0) {
+                return new JSONResponse(
+                    [
+                        'error' => "Configuration for app '{$appId}' already exists. Please update the existing configuration instead.",
+                        'existingConfigurationId' => $existingConfigurations[0]->getId(),
+                    ],
+                    409
+                );
             }
-            $configData['x-openregister']['sourceType'] = 'github';
-            $configData['x-openregister']['sourceUrl']  = $sourceUrl;
-            $configData['x-openregister']['github']     = [
-                'repo'   => "{$owner}/{$repo}",
-                'branch' => $branch,
-                'path'   => $path,
-            ];
             
-            // Get app ID and version from config
-            $appId   = $configData['x-openregister']['app'] ?? 'imported';
-            $version = $configData['info']['version'] ?? $configData['x-openregister']['version'] ?? '1.0.0';
+            // Step 2: Create Configuration entity
+            $configuration = new Configuration();
+            $configuration->setTitle($title);
+            $configuration->setDescription($description);
+            $configuration->setType($xOpenregister['type'] ?? 'github');
+            $configuration->setSourceType('github');
+            $configuration->setSourceUrl("https://github.com/{$owner}/{$repo}/blob/{$branch}/{$path}");
+            $configuration->setApp($appId);
+            $configuration->setVersion($version);
+            $configuration->setLocalVersion(null); // Will be set after import
+            $configuration->setIsLocal(false);
+            $configuration->setGithubRepo("{$owner}/{$repo}");
+            $configuration->setGithubBranch($branch);
+            $configuration->setGithubPath($path);
+            $configuration->setSyncEnabled($syncEnabled);
+            $configuration->setSyncInterval($syncInterval);
+            $configuration->setAutoUpdate(false);
+            $configuration->setRegisters([]);
+            $configuration->setSchemas([]);
+            $configuration->setObjects([]);
             
-            // Import the configuration
-            $result = $this->configurationService->importFromApp(
-                appId: $appId,
+            $configuration = $this->configurationMapper->insert($configuration);
+            
+            $this->logger->info("Created configuration entity with ID {$configuration->getId()} for app {$appId}");
+            
+            // Step 3: Import using the standard flow with the configuration entity
+            $result = $this->configurationService->importFromJson(
                 data: $configData,
+                configuration: $configuration,
+                owner: $appId,
+                appId: $appId,
                 version: $version,
                 force: false
             );
             
-            // Update the configuration to mark it as external and configure sync
-            if (isset($result['configuration'])) {
-                $configuration = $result['configuration'];
-                $configuration->setIsLocal(false);
-                $configuration->setSyncEnabled($syncEnabled);
-                $configuration->setSyncInterval($syncInterval);
-                $configuration->setSyncStatus('success');
-                $configuration->setLastSyncDate(new \DateTime());
-                $this->configurationMapper->update($configuration);
-            }
+            // Step 4: Update configuration with sync status and imported entity IDs
+            $configuration->setLocalVersion($version);
+            $configuration->setSyncStatus('success');
+            $configuration->setLastSyncDate(new \DateTime());
+            
+            // The importFromJson already updates the configuration with entity IDs via createOrUpdateConfiguration
+            // but we need to save the sync status
+            $this->configurationMapper->update($configuration);
+            
+            $this->logger->info("Successfully imported configuration {$configuration->getTitle()} from GitHub");
             
             return new JSONResponse([
                 'success' => true,
                 'message' => 'Configuration imported successfully from GitHub',
-                'result'  => $result,
-            ], 200);
+                'configurationId' => $configuration->getId(),
+                'result'  => [
+                    'registersCount' => count($result['registers']),
+                    'schemasCount' => count($result['schemas']),
+                    'objectsCount' => count($result['objects']),
+                ],
+            ], 201);
         } catch (Exception $e) {
             $this->logger->error('Failed to import from GitHub: ' . $e->getMessage());
             
@@ -955,7 +991,10 @@ class ConfigurationController extends Controller
     /**
      * Import configuration from GitLab
      *
+     * This method creates a Configuration entity and then imports it using the standard import flow.
+     *
      * @NoAdminRequired
+     * @NoCSRFRequired
      *
      * @return JSONResponse Import result
      *
@@ -991,7 +1030,7 @@ class ConfigurationController extends Controller
                 'ref'        => $ref,
             ]);
             
-            // Get file content from GitLab
+            // Step 1: Get file content from GitLab
             $configData = $this->gitlabService->getFileContent($projectId, $path, $ref);
             
             // Build GitLab URL for sourceUrl
@@ -999,41 +1038,79 @@ class ConfigurationController extends Controller
             $webBase    = str_replace('/api/v4', '', $gitlabBase);
             $sourceUrl  = "{$webBase}/{$namespace}/{$project}/-/blob/{$ref}/{$path}";
             
-            // Set x-openregister properties for external configuration
-            if (!isset($configData['x-openregister'])) {
-                $configData['x-openregister'] = [];
+            // Extract metadata from config
+            $info = $configData['info'] ?? [];
+            $xOpenregister = $configData['x-openregister'] ?? [];
+            $appId = $xOpenregister['app'] ?? 'imported';
+            $version = $info['version'] ?? $xOpenregister['version'] ?? '1.0.0';
+            $title = $info['title'] ?? $xOpenregister['title'] ?? "Configuration from {$namespace}/{$project}";
+            $description = $info['description'] ?? $xOpenregister['description'] ?? "Imported from GitLab: {$namespace}/{$project}/{$path}";
+            
+            // Check if configuration already exists for this app
+            $existingConfigurations = $this->configurationMapper->findByApp($appId);
+            if (count($existingConfigurations) > 0) {
+                return new JSONResponse(
+                    [
+                        'error' => "Configuration for app '{$appId}' already exists. Please update the existing configuration instead.",
+                        'existingConfigurationId' => $existingConfigurations[0]->getId(),
+                    ],
+                    409
+                );
             }
-            $configData['x-openregister']['sourceType'] = 'gitlab';
-            $configData['x-openregister']['sourceUrl']  = $sourceUrl;
             
-            // Get app ID and version from config
-            $appId   = $configData['x-openregister']['app'] ?? 'imported';
-            $version = $configData['info']['version'] ?? $configData['x-openregister']['version'] ?? '1.0.0';
+            // Step 2: Create Configuration entity
+            $configuration = new Configuration();
+            $configuration->setTitle($title);
+            $configuration->setDescription($description);
+            $configuration->setType($xOpenregister['type'] ?? 'gitlab');
+            $configuration->setSourceType('gitlab');
+            $configuration->setSourceUrl($sourceUrl);
+            $configuration->setApp($appId);
+            $configuration->setVersion($version);
+            $configuration->setLocalVersion(null); // Will be set after import
+            $configuration->setIsLocal(false);
+            $configuration->setSyncEnabled($syncEnabled);
+            $configuration->setSyncInterval($syncInterval);
+            $configuration->setAutoUpdate(false);
+            $configuration->setRegisters([]);
+            $configuration->setSchemas([]);
+            $configuration->setObjects([]);
             
-            // Import the configuration
-            $result = $this->configurationService->importFromApp(
-                appId: $appId,
+            $configuration = $this->configurationMapper->insert($configuration);
+            
+            $this->logger->info("Created configuration entity with ID {$configuration->getId()} for app {$appId}");
+            
+            // Step 3: Import using the standard flow with the configuration entity
+            $result = $this->configurationService->importFromJson(
                 data: $configData,
+                configuration: $configuration,
+                owner: $appId,
+                appId: $appId,
                 version: $version,
                 force: false
             );
             
-            // Update the configuration to mark it as external and configure sync
-            if (isset($result['configuration'])) {
-                $configuration = $result['configuration'];
-                $configuration->setIsLocal(false);
-                $configuration->setSyncEnabled($syncEnabled);
-                $configuration->setSyncInterval($syncInterval);
-                $configuration->setSyncStatus('success');
-                $configuration->setLastSyncDate(new \DateTime());
-                $this->configurationMapper->update($configuration);
-            }
+            // Step 4: Update configuration with sync status and imported entity IDs
+            $configuration->setLocalVersion($version);
+            $configuration->setSyncStatus('success');
+            $configuration->setLastSyncDate(new \DateTime());
+            
+            // The importFromJson already updates the configuration with entity IDs via createOrUpdateConfiguration
+            // but we need to save the sync status
+            $this->configurationMapper->update($configuration);
+            
+            $this->logger->info("Successfully imported configuration {$configuration->getTitle()} from GitLab");
             
             return new JSONResponse([
                 'success' => true,
                 'message' => 'Configuration imported successfully from GitLab',
-                'result'  => $result,
-            ], 200);
+                'configurationId' => $configuration->getId(),
+                'result'  => [
+                    'registersCount' => count($result['registers']),
+                    'schemasCount' => count($result['schemas']),
+                    'objectsCount' => count($result['objects']),
+                ],
+            ], 201);
         } catch (Exception $e) {
             $this->logger->error('Failed to import from GitLab: ' . $e->getMessage());
             
@@ -1048,7 +1125,10 @@ class ConfigurationController extends Controller
     /**
      * Import configuration from URL
      *
+     * This method creates a Configuration entity and then imports it using the standard import flow.
+     *
      * @NoAdminRequired
+     * @NoCSRFRequired
      *
      * @return JSONResponse Import result
      *
@@ -1081,7 +1161,7 @@ class ConfigurationController extends Controller
                 'url' => $url,
             ]);
             
-            // Fetch content from URL
+            // Step 1: Fetch content from URL
             $client  = new \GuzzleHttp\Client();
             $response = $client->request('GET', $url);
             $content = $response->getBody()->getContents();
@@ -1091,41 +1171,79 @@ class ConfigurationController extends Controller
                 throw new Exception('Invalid JSON in URL response: ' . json_last_error_msg());
             }
             
-            // Set x-openregister properties for external configuration
-            if (!isset($configData['x-openregister'])) {
-                $configData['x-openregister'] = [];
+            // Extract metadata from config
+            $info = $configData['info'] ?? [];
+            $xOpenregister = $configData['x-openregister'] ?? [];
+            $appId = $xOpenregister['app'] ?? 'imported';
+            $version = $info['version'] ?? $xOpenregister['version'] ?? '1.0.0';
+            $title = $info['title'] ?? $xOpenregister['title'] ?? "Configuration from URL";
+            $description = $info['description'] ?? $xOpenregister['description'] ?? "Imported from URL: {$url}";
+            
+            // Check if configuration already exists for this app
+            $existingConfigurations = $this->configurationMapper->findByApp($appId);
+            if (count($existingConfigurations) > 0) {
+                return new JSONResponse(
+                    [
+                        'error' => "Configuration for app '{$appId}' already exists. Please update the existing configuration instead.",
+                        'existingConfigurationId' => $existingConfigurations[0]->getId(),
+                    ],
+                    409
+                );
             }
-            $configData['x-openregister']['sourceType'] = 'url';
-            $configData['x-openregister']['sourceUrl']  = $url;
             
-            // Get app ID and version from config
-            $appId   = $configData['x-openregister']['app'] ?? 'imported';
-            $version = $configData['info']['version'] ?? $configData['x-openregister']['version'] ?? '1.0.0';
+            // Step 2: Create Configuration entity
+            $configuration = new Configuration();
+            $configuration->setTitle($title);
+            $configuration->setDescription($description);
+            $configuration->setType($xOpenregister['type'] ?? 'url');
+            $configuration->setSourceType('url');
+            $configuration->setSourceUrl($url);
+            $configuration->setApp($appId);
+            $configuration->setVersion($version);
+            $configuration->setLocalVersion(null); // Will be set after import
+            $configuration->setIsLocal(false);
+            $configuration->setSyncEnabled($syncEnabled);
+            $configuration->setSyncInterval($syncInterval);
+            $configuration->setAutoUpdate(false);
+            $configuration->setRegisters([]);
+            $configuration->setSchemas([]);
+            $configuration->setObjects([]);
             
-            // Import the configuration
-            $result = $this->configurationService->importFromApp(
-                appId: $appId,
+            $configuration = $this->configurationMapper->insert($configuration);
+            
+            $this->logger->info("Created configuration entity with ID {$configuration->getId()} for app {$appId}");
+            
+            // Step 3: Import using the standard flow with the configuration entity
+            $result = $this->configurationService->importFromJson(
                 data: $configData,
+                configuration: $configuration,
+                owner: $appId,
+                appId: $appId,
                 version: $version,
                 force: false
             );
             
-            // Update the configuration to mark it as external and configure sync
-            if (isset($result['configuration'])) {
-                $configuration = $result['configuration'];
-                $configuration->setIsLocal(false);
-                $configuration->setSyncEnabled($syncEnabled);
-                $configuration->setSyncInterval($syncInterval);
-                $configuration->setSyncStatus('success');
-                $configuration->setLastSyncDate(new \DateTime());
-                $this->configurationMapper->update($configuration);
-            }
+            // Step 4: Update configuration with sync status and imported entity IDs
+            $configuration->setLocalVersion($version);
+            $configuration->setSyncStatus('success');
+            $configuration->setLastSyncDate(new \DateTime());
+            
+            // The importFromJson already updates the configuration with entity IDs via createOrUpdateConfiguration
+            // but we need to save the sync status
+            $this->configurationMapper->update($configuration);
+            
+            $this->logger->info("Successfully imported configuration {$configuration->getTitle()} from URL");
             
             return new JSONResponse([
                 'success' => true,
                 'message' => 'Configuration imported successfully from URL',
-                'result'  => $result,
-            ], 200);
+                'configurationId' => $configuration->getId(),
+                'result'  => [
+                    'registersCount' => count($result['registers']),
+                    'schemasCount' => count($result['schemas']),
+                    'objectsCount' => count($result['objects']),
+                ],
+            ], 201);
         } catch (Exception $e) {
             $this->logger->error('Failed to import from URL: ' . $e->getMessage());
             

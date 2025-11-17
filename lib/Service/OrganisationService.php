@@ -234,22 +234,26 @@ class OrganisationService
                         'uuid' => $defaultOrgUuid,
                     ]);
                     // UUID in settings doesn't exist, create new default
-                    $defaultOrg = $this->organisationMapper->createDefault();
+                    $defaultOrg = $this->createOrganisation('Default Organisation', 'Auto-generated default organisation', false);
                     
                     // Update settings with new UUID
                     if ($this->settingsService !== null) {
                         $this->settingsService->setDefaultOrganisationUuid($defaultOrg->getUuid());
                     }
+                    
+                    $this->setDefaultOrganisationId($defaultOrg->getUuid());
                 }
             } else {
                 // No UUID in settings, create a new default organisation
                 $this->logger->info('No default organisation found in settings, creating new one');
-                $defaultOrg = $this->organisationMapper->createDefault();
+                $defaultOrg = $this->createOrganisation('Default Organisation', 'Auto-generated default organisation', false);
                 
                 // Store in settings
                 if ($this->settingsService !== null) {
                     $this->settingsService->setDefaultOrganisationUuid($defaultOrg->getUuid());
                 }
+                
+                $this->setDefaultOrganisationId($defaultOrg->getUuid());
             }
 
             // Ensure admin users are added to existing default organisation
