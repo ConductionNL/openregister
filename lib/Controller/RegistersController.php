@@ -170,6 +170,26 @@ class RegistersController extends Controller
         
         $registers    = $this->registerService->findAll($limit, $offset, $filters, [], [], []);
         $registersArr = array_map(fn($register) => $register->jsonSerialize(), $registers);
+        
+        // If 'schemas' is requested in _extend, expand schema IDs to full schema objects
+        if (in_array('schemas', $extend, true)) {
+            foreach ($registersArr as &$register) {
+                if (isset($register['schemas']) && is_array($register['schemas'])) {
+                    $expandedSchemas = [];
+                    foreach ($register['schemas'] as $schemaId) {
+                        try {
+                            $schema = $this->schemaMapper->find($schemaId);
+                            $expandedSchemas[] = $schema->jsonSerialize();
+                        } catch (DoesNotExistException $e) {
+                            // Schema not found, skip it
+                            $this->logger->warning('Schema not found for expansion', ['schemaId' => $schemaId]);
+                        }
+                    }
+                    $register['schemas'] = $expandedSchemas;
+                }
+            }
+        }
+        
         // If '@self.stats' is requested, attach statistics to each register
         if (in_array('@self.stats', $extend, true)) {
             foreach ($registersArr as &$register) {

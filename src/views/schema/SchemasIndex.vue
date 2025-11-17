@@ -1,5 +1,5 @@
 <script setup>
-import { schemaStore, navigationStore } from '../../store/store.js'
+import { schemaStore, navigationStore, configurationStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -90,7 +90,7 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 							class="card"
 							:class="{
 								'card--in-use': hasObjects(schema),
-								'card--configuration': isInConfiguration(schema)
+								'card--configuration': !!getManagingConfiguration(schema)
 							}">
 							<div class="cardHeader">
 								<h2>
@@ -102,15 +102,19 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 									<span v-if="hasObjects(schema)" class="statusPill statusPill--success">
 										{{ t('openregister', 'In use') }}
 									</span>
-									<span v-if="isInConfiguration(schema)" class="statusPill statusPill--danger">
-										{{ t('openregister', 'Configuration') }}
+									<span v-if="getManagingConfiguration(schema)" class="statusPill statusPill--success">
+										{{ t('openregister', 'Managed') }}
 									</span>
 								</h2>
 							<NcActions :primary="true" menu-name="Actions">
 								<template #icon>
 									<DotsHorizontal :size="20" />
 								</template>
-								<NcActionButton close-after-click @click="schemaStore.setSchemaItem(schema); navigationStore.setModal('editSchema')">
+								<NcActionButton 
+									v-tooltip="getManagingConfiguration(schema) ? 'Cannot edit: This schema is managed by ' + getManagingConfiguration(schema).title : ''"
+									close-after-click
+									:disabled="!!getManagingConfiguration(schema)"
+									@click="schemaStore.setSchemaItem(schema); navigationStore.setModal('editSchema')">
 									<template #icon>
 										<Pencil :size="20" />
 									</template>
@@ -201,7 +205,7 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 									:class="{
 										viewTableRowSelected: selectedSchemas.includes(schema.id),
 										'viewTableRow--in-use': hasObjects(schema),
-										'viewTableRow--configuration': isInConfiguration(schema)
+										'viewTableRow--configuration': !!getManagingConfiguration(schema)
 									}">
 									<td class="tableColumnCheckbox">
 										<NcCheckboxRadioSwitch
@@ -218,8 +222,8 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 												<span v-if="hasObjects(schema)" class="statusPill statusPill--success">
 													{{ t('openregister', 'In use') }}
 												</span>
-												<span v-if="isInConfiguration(schema)" class="statusPill statusPill--danger">
-													{{ t('openregister', 'Configuration') }}
+												<span v-if="getManagingConfiguration(schema)" class="statusPill statusPill--success">
+													{{ t('openregister', 'Managed') }}
 												</span>
 											</div>
 											<span v-if="schema.description" class="textDescription textEllipsis">{{ schema.description }}</span>
@@ -233,7 +237,11 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 										<template #icon>
 											<DotsHorizontal :size="20" />
 										</template>
-										<NcActionButton close-after-click @click="schemaStore.setSchemaItem(schema); navigationStore.setModal('editSchema')">
+										<NcActionButton 
+											v-tooltip="getManagingConfiguration(schema) ? 'Cannot edit: This schema is managed by ' + getManagingConfiguration(schema).title : ''"
+											close-after-click
+											:disabled="!!getManagingConfiguration(schema)"
+											@click="schemaStore.setSchemaItem(schema); navigationStore.setModal('editSchema')">
 											<template #icon>
 												<Pencil :size="20" />
 											</template>
@@ -451,9 +459,24 @@ export default {
 		 * @return {boolean} True if schema is part of configuration
 		 */
 		isInConfiguration(schema) {
-			// Check if schema has configuration references
-			// You can customize this logic based on your data structure
-			return schema.configurations && schema.configurations.length > 0
+			if (!schema || !schema.id) return false
+			
+			return configurationStore.configurationList.some(
+				config => config.schemas && config.schemas.includes(schema.id)
+			)
+		},
+		/**
+		 * Get the configuration that manages this schema
+		 *
+		 * @param {object} schema - Schema object
+		 * @return {object|null} Configuration object or null if not managed
+		 */
+		getManagingConfiguration(schema) {
+			if (!schema || !schema.id) return null
+			
+			return configurationStore.configurationList.find(
+				config => config.schemas && config.schemas.includes(schema.id)
+			) || null
 		},
 		toggleSelectAll(checked) {
 			if (checked) {
@@ -476,6 +499,17 @@ export default {
 		onPageSizeChanged(pageSize) {
 			schemaStore.setPagination(1, pageSize)
 		},
+	},
+	async mounted() {
+		try {
+			// Load schemas and configurations in parallel
+			await Promise.all([
+				schemaStore.refreshSchemaList(),
+				configurationStore.refreshConfigurationList(),
+			])
+		} catch (error) {
+			console.error('Failed to load data:', error)
+		}
 	},
 }
 </script>
@@ -528,7 +562,7 @@ export default {
 }
 
 .card--configuration {
-	border: 2px solid var(--color-error);
+	border: 2px solid var(--color-success);
 }
 
 /* Table row borders based on status */
@@ -537,7 +571,7 @@ export default {
 }
 
 .viewTableRow--configuration {
-	border-left: 4px solid var(--color-error);
+	border-left: 4px solid var(--color-success);
 }
 
 /* Adjust card header to accommodate pills */
