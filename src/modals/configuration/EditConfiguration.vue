@@ -85,7 +85,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 								label="title"
 								track-by="id"
 								:label-outside="true"
-								:filterable="false"
+								:filterable="true"
 								placeholder="Search registers..."
 								:close-on-select="false"
 								@search-change="searchRegisters"
@@ -117,7 +117,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 								label="title"
 								track-by="id"
 								:label-outside="true"
-								:filterable="false"
+								:filterable="true"
 								placeholder="Search schemas..."
 								:close-on-select="false"
 								@search-change="searchSchemas"
@@ -149,7 +149,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 								label="title"
 								track-by="id"
 								:label-outside="true"
-								:filterable="false"
+								:filterable="true"
 								placeholder="Search objects..."
 								:close-on-select="false"
 								:disabled="selectedRegisters.length === 0 && selectedSchemas.length === 0"
@@ -184,7 +184,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 								label="title"
 								track-by="id"
 								:label-outside="true"
-								:filterable="false"
+								:filterable="true"
 								placeholder="Search data sources..."
 								:close-on-select="false"
 								@search-change="searchSources"
@@ -216,7 +216,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 								label="name"
 								track-by="id"
 								:label-outside="true"
-								:filterable="false"
+								:filterable="true"
 								placeholder="Search agents..."
 								:close-on-select="false"
 								@search-change="searchAgents"
@@ -248,7 +248,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 								label="name"
 								track-by="id"
 								:label-outside="true"
-								:filterable="false"
+								:filterable="true"
 								placeholder="Search views..."
 								:close-on-select="false"
 								@search-change="searchViews"
@@ -280,7 +280,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 								label="name"
 								track-by="id"
 								:label-outside="true"
-								:filterable="false"
+								:filterable="true"
 								placeholder="Search applications..."
 								:close-on-select="false"
 								@search-change="searchApplications"
@@ -463,6 +463,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 <script>
 import {
 	NcButton,
+	NcCheckboxRadioSwitch,
 	NcDialog,
 	NcLoadingIcon,
 	NcNoteCard,
@@ -484,6 +485,7 @@ export default {
 	components: {
 		NcDialog,
 		NcButton,
+		NcCheckboxRadioSwitch,
 		NcLoadingIcon,
 		NcNoteCard,
 		NcSelect,
@@ -596,6 +598,7 @@ export default {
 				views: [],
 				// Management tab defaults
 				sourceType: 'local',
+				isLocal: true, // New configurations are local by default
 				sourceUrl: null,
 				localVersion: '1.0.0',
 				remoteVersion: null,

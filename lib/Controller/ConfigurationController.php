@@ -719,6 +719,40 @@ class ConfigurationController extends Controller
 
 
     /**
+     * Get repositories that the authenticated user has access to
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse List of repositories
+     */
+    public function getGitHubRepositories(): JSONResponse
+    {
+        try {
+            $data = $this->request->getParams();
+            $page = isset($data['page']) ? (int) $data['page'] : 1;
+            $perPage = isset($data['per_page']) ? (int) $data['per_page'] : 100;
+
+            $this->logger->info('Fetching GitHub repositories', [
+                'page' => $page,
+                'per_page' => $perPage,
+            ]);
+
+            $repositories = $this->githubService->getRepositories($page, $perPage);
+
+            return new JSONResponse(['repositories' => $repositories], 200);
+        } catch (Exception $e) {
+            $this->logger->error('Failed to get GitHub repositories: ' . $e->getMessage());
+            
+            return new JSONResponse(
+                ['error' => 'Failed to fetch repositories: ' . $e->getMessage()],
+                500
+            );
+        }
+    }//end getGitHubRepositories()
+
+
+    /**
      * Get configuration files from a GitHub repository
      *
      * @NoAdminRequired
@@ -1253,6 +1287,108 @@ class ConfigurationController extends Controller
             );
         }
     }//end importFromUrl()
+
+
+    /**
+     * Publish a local configuration to GitHub
+     *
+     * Exports the configuration and publishes it to the specified GitHub repository.
+     * Updates the configuration with GitHub source information.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @param int $id Configuration ID
+     *
+     * @return JSONResponse Publish result
+     */
+    public function publishToGitHub(int $id): JSONResponse
+    {
+        try {
+            $configuration = $this->configurationMapper->find($id);
+            
+            // Only allow publishing local configurations
+            if ($configuration->getIsLocal() !== true) {
+                return new JSONResponse(
+                    ['error' => 'Only local configurations can be published'],
+                    400
+                );
+            }
+
+            $data = $this->request->getParams();
+            $owner = $data['owner'] ?? '';
+            $repo = $data['repo'] ?? '';
+            $path = $data['path'] ?? '';
+            $branch = $data['branch'] ?? 'main';
+            $commitMessage = $data['commitMessage'] ?? "Update configuration: {$configuration->getTitle()}";
+
+            if (empty($owner) || empty($repo) || empty($path)) {
+                return new JSONResponse(
+                    ['error' => 'Owner, repo, and path parameters are required'],
+                    400
+                );
+            }
+
+            $this->logger->info('Publishing configuration to GitHub', [
+                'configuration_id' => $id,
+                'owner' => $owner,
+                'repo' => $repo,
+                'path' => $path,
+                'branch' => $branch,
+            ]);
+
+            // Export configuration to JSON
+            $configData = $this->configurationService->exportConfig($configuration, false);
+            $jsonContent = json_encode($configData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+
+            // Check if file already exists (for updates)
+            $fileSha = null;
+            try {
+                $fileSha = $this->githubService->getFileSha($owner, $repo, $path, $branch);
+            } catch (\Exception $e) {
+                // File doesn't exist, which is fine for new files
+                $this->logger->debug('File does not exist, will create new file', ['path' => $path]);
+            }
+
+            // Publish to GitHub
+            $result = $this->githubService->publishConfiguration(
+                $owner,
+                $repo,
+                $path,
+                $branch,
+                $jsonContent,
+                $commitMessage,
+                $fileSha
+            );
+
+            // Update configuration with GitHub source information
+            // Keep it as local but add GitHub publishing info
+            $configuration->setGithubRepo("{$owner}/{$repo}");
+            $configuration->setGithubBranch($branch);
+            $configuration->setGithubPath($path);
+            $configuration->setSourceUrl("https://github.com/{$owner}/{$repo}/blob/{$branch}/{$path}");
+            // Don't change isLocal - it stays local, but now has a published source
+            $this->configurationMapper->update($configuration);
+
+            $this->logger->info("Successfully published configuration {$configuration->getTitle()} to GitHub");
+
+            return new JSONResponse([
+                'success' => true,
+                'message' => 'Configuration published successfully to GitHub',
+                'configurationId' => $configuration->getId(),
+                'commit_sha' => $result['commit_sha'],
+                'commit_url' => $result['commit_url'],
+                'file_url' => $result['file_url'],
+            ], 200);
+        } catch (Exception $e) {
+            $this->logger->error('Failed to publish to GitHub: ' . $e->getMessage());
+            
+            return new JSONResponse(
+                ['error' => 'Failed to publish configuration: ' . $e->getMessage()],
+                500
+            );
+        }
+    }//end publishToGitHub()
 
 
 }//end class

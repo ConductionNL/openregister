@@ -13,6 +13,7 @@ import { navigationStore } from '../store/store.js'
 		<DeleteConfiguration v-if="navigationStore.dialog === 'deleteConfiguration'" />
 		<ImportConfiguration />
 		<ExportConfiguration />
+		<PublishConfiguration />
 		<EditSchema v-if="navigationStore.modal === 'editSchema'" />
 		<ExploreSchema v-if="navigationStore.modal === 'exploreSchema'" />
 		<DeleteSchema />
@@ -62,6 +63,7 @@ import EditConfiguration from './configuration/EditConfiguration.vue'
 import DeleteConfiguration from './configuration/DeleteConfiguration.vue'
 import ImportConfiguration from './configuration/ImportConfiguration.vue'
 import ExportConfiguration from './configuration/ExportConfiguration.vue'
+import PublishConfiguration from './configuration/PublishConfiguration.vue'
 import EditSchema from './schema/EditSchema.vue'
 import ExploreSchema from './schema/ExploreSchema.vue'
 import DeleteSchema from './schema/DeleteSchema.vue'
@@ -109,6 +111,7 @@ export default {
 		DeleteConfiguration,
 		ImportConfiguration,
 		ExportConfiguration,
+		PublishConfiguration,
 		EditSchema,
 		ExploreSchema,
 		DeleteSchema,

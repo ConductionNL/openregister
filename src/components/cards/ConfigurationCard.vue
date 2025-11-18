@@ -1,34 +1,42 @@
 <template>
-	<div class="configurationCard" :class="{ 'configurationCard--imported': isImported, 'configurationCard--external': isExternal }">
+	<div class="configurationCard" :class="{ 
+		'configurationCard--imported': isImported, 
+		'configurationCard--local': isImported && isLocalConfiguration,
+		'configurationCard--external': isImported && !isLocalConfiguration
+	}">
 		<div class="cardHeader">
 			<h2 v-tooltip.bottom="configuration.description || configuration.config?.description">
 				<CogOutline :size="20" />
 				{{ configuration.title || configuration.config?.title }}
 				<!-- Status Badges -->
 				<template v-if="isImported">
-					<template v-if="configuration.isLocal">
+					<template v-if="isLocalConfiguration">
 						<span class="configBadge configBadge--local">
 							<CheckCircle :size="16" />
 							Local
 						</span>
-						<span v-if="configuration.app" class="configBadge configBadge--app">
+						<span v-if="displayConfiguration.app" class="configBadge configBadge--app">
 							<ApplicationCog :size="16" />
-							{{ configuration.app }}
+							{{ displayConfiguration.app }}
 						</span>
 					</template>
 					<span v-else class="configBadge configBadge--external">
 						<Cloud :size="16" />
 						External
 					</span>
-					<span v-if="!configuration.isLocal && configuration.syncEnabled" class="configBadge" :class="'configBadge--sync-' + configuration.syncStatus">
-						<Sync v-if="configuration.syncStatus === 'success'" :size="16" />
-						<AlertCircle v-else-if="configuration.syncStatus === 'failed'" :size="16" />
+					<span v-if="!isLocalConfiguration && displayConfiguration.syncEnabled" class="configBadge" :class="'configBadge--sync-' + displayConfiguration.syncStatus">
+						<Sync v-if="displayConfiguration.syncStatus === 'success'" :size="16" />
+						<AlertCircle v-else-if="displayConfiguration.syncStatus === 'failed'" :size="16" />
 						<ClockOutline v-else :size="16" />
-						{{ getSyncStatusText(configuration) }}
+						{{ getSyncStatusText(displayConfiguration) }}
 					</span>
 					<span v-if="hasUpdateAvailable" class="configBadge configBadge--update">
 						<Update :size="16" />
 						Update Available
+					</span>
+					<span v-if="isPublished" class="configBadge configBadge--published">
+						<CloudUploadOutline :size="16" />
+						Published
 					</span>
 				</template>
 				<template v-else>
@@ -77,6 +85,18 @@
 							<Download :size="20" />
 						</template>
 						Export
+					</NcActionButton>
+					<NcActionButton v-if="isLocalConfiguration && !isPublished" close-after-click @click="handlePublish">
+						<template #icon>
+							<CloudUploadOutline :size="20" />
+						</template>
+						Publish
+					</NcActionButton>
+					<NcActionButton v-if="isPublished" close-after-click @click="handlePublish">
+						<template #icon>
+							<CloudUploadOutline :size="20" />
+						</template>
+						Update Published
 					</NcActionButton>
 					<NcActionButton close-after-click @click="handleDelete">
 						<template #icon>
@@ -176,6 +196,7 @@ import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import Download from 'vue-material-design-icons/Download.vue'
 import CloudUpload from 'vue-material-design-icons/CloudUpload.vue'
+import CloudUploadOutline from 'vue-material-design-icons/CloudUploadOutline.vue'
 import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
 import Update from 'vue-material-design-icons/Update.vue'
 import Sync from 'vue-material-design-icons/Sync.vue'
@@ -221,6 +242,7 @@ export default {
 		TrashCanOutline,
 		Download,
 		CloudUpload,
+		CloudUploadOutline,
 		OpenInNew,
 		Update,
 		Sync,
@@ -346,9 +368,19 @@ export default {
 					url: this.configuration.url,
 					owner: this.configuration.owner, // Repository owner
 					repo: this.configuration.repo, // Repository name
+					// Ensure isLocal and sourceType are preserved
+					isLocal: this.existingConfiguration.isLocal ?? this.configuration.isLocal,
+					sourceType: this.existingConfiguration.sourceType ?? this.configuration.sourceType,
 				}
 			}
-			return this.configuration
+			// For imported configurations, ensure we have the properties
+			const config = this.configuration || {}
+			return {
+				...config,
+				// Ensure isLocal and sourceType are explicitly included
+				isLocal: config.isLocal,
+				sourceType: config.sourceType,
+			}
 		},
 		/**
 		 * Check if this is an imported configuration
@@ -373,12 +405,41 @@ export default {
 			return config.description || config.config?.description || ''
 		},
 		/**
+		 * Check if configuration is local
+		 *
+		 * @return {boolean}
+		 */
+		isLocalConfiguration() {
+			// Check both displayConfiguration and original configuration prop
+			const displayConfig = this.displayConfiguration
+			const originalConfig = this.configuration
+			
+			// Debug logging
+			console.log('[ConfigurationCard] isLocalConfiguration check:', {
+				title: displayConfig.title || originalConfig.title,
+				displayConfig_isLocal: displayConfig.isLocal,
+				displayConfig_sourceType: displayConfig.sourceType,
+				originalConfig_isLocal: originalConfig.isLocal,
+				originalConfig_sourceType: originalConfig.sourceType,
+			})
+			
+			// Check isLocal property from either source (boolean true or string 'true')
+			const isLocal = displayConfig.isLocal ?? originalConfig.isLocal
+			if (isLocal === true || isLocal === 'true') {
+				return true
+			}
+			
+			// Fallback: check sourceType from either source
+			const sourceType = displayConfig.sourceType ?? originalConfig.sourceType
+			return sourceType === 'local' || sourceType === 'manual'
+		},
+		/**
 		 * Check if configuration is external (not local)
 		 *
 		 * @return {boolean}
 		 */
 		isExternal() {
-			return !this.isImported || (this.displayConfiguration.sourceType && this.displayConfiguration.sourceType !== 'local')
+			return !this.isImported || !this.isLocalConfiguration
 		},
 		/**
 		 * Check if configuration is remote
@@ -411,6 +472,16 @@ export default {
 				return false
 			}
 			return config.remoteVersion !== config.localVersion
+		},
+		/**
+		 * Check if configuration is published (local and has GitHub repo info)
+		 *
+		 * @return {boolean}
+		 */
+		isPublished() {
+			const config = this.displayConfiguration
+			// Published if: isLocal=true AND has githubRepo (or sourceType is github/gitlab with repo info)
+			return this.isLocalConfiguration && (config.githubRepo || (config.sourceType === 'github' && config.githubRepo))
 		},
 		/**
 		 * Get view source URL
@@ -636,6 +707,14 @@ export default {
 			}
 		},
 		/**
+		 * Handle publish action
+		 */
+		handlePublish() {
+			const config = this.existingConfiguration || this.displayConfiguration
+			configurationStore.setConfigurationItem(config)
+			navigationStore.setModal('publishConfiguration')
+		},
+		/**
 		 * Handle delete action
 		 */
 		handleDelete() {
@@ -688,17 +767,29 @@ export default {
 }
 
 .configurationCard--imported {
+	/* Base imported style - will be overridden by local/external */
+}
+
+/* Local configuration card (orange border) */
+.configurationCard--local {
+	border-color: var(--color-warning);
+	background-color: rgba(var(--color-warning-rgb), 0.05);
+}
+
+.configurationCard--local:hover {
+	border-color: var(--color-warning);
+	box-shadow: 0 2px 8px rgba(var(--color-warning-rgb), 0.2);
+}
+
+/* External configuration card (green border) */
+.configurationCard--external {
 	border-color: var(--color-success);
 	background-color: rgba(var(--color-success-rgb), 0.05);
 }
 
-.configurationCard--imported:hover {
+.configurationCard--external:hover {
 	border-color: var(--color-success);
 	box-shadow: 0 2px 8px rgba(var(--color-success-rgb), 0.2);
-}
-
-.configurationCard--external {
-	border-color: var(--color-primary-element-light);
 }
 
 .cardHeader {
@@ -800,16 +891,16 @@ export default {
 	vertical-align: middle;
 }
 
-/* Local configuration badge (green/success) */
+/* Local configuration badge (orange/warning) */
 .configBadge--local {
-	background-color: var(--color-success-light);
-	color: var(--color-success-dark);
+	background-color: var(--color-warning);
+	color: var(--color-main-background);
 }
 
-/* External configuration badge (blue/primary) */
+/* External configuration badge (green/success) */
 .configBadge--external {
-	background-color: var(--color-primary-element-light);
-	color: var(--color-primary-element-text);
+	background-color: var(--color-success);
+	color: white;
 }
 
 /* App source badge (gray/secondary) */
@@ -847,5 +938,12 @@ export default {
 	background-color: var(--color-warning);
 	color: var(--color-main-text);
 }
+
+/* Published badge (red/error) */
+.configBadge--published {
+	background-color: var(--color-error);
+	color: white;
+}
 </style>
+
 

@@ -10,6 +10,19 @@ export type TConfiguration = {
 	schemas?: number[]
 	created: string
 	updated: string
+	isLocal?: boolean
+	sourceType?: string
+	sourceUrl?: string | null
+	localVersion?: string | null
+	remoteVersion?: string | null
+	syncEnabled?: boolean
+	syncInterval?: number
+	syncStatus?: string
+	lastSyncDate?: string | null
+	githubRepo?: string | null
+	githubBranch?: string | null
+	githubPath?: string | null
+	app?: string
 }
 
 export type TConfigurationPath = {
