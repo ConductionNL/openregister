@@ -615,5 +615,190 @@ class GitHubService
         }
     }
 
+    /**
+     * Get repositories that the authenticated user has access to
+     *
+     * @param int $page Page number (default: 1)
+     * @param int $perPage Items per page (default: 100, max: 100)
+     *
+     * @return array List of repositories with name, full_name, owner, etc.
+     * @throws \Exception If API request fails
+     */
+    public function getRepositories(int $page = 1, int $perPage = 100): array
+    {
+        try {
+            $this->logger->info('Fetching repositories from GitHub', [
+                'page'    => $page,
+                'per_page' => $perPage,
+            ]);
+
+            $response = $this->client->request('GET', self::API_BASE . '/user/repos', [
+                'query' => [
+                    'type'     => 'all', // all, owner, member
+                    'sort'     => 'updated',
+                    'direction' => 'desc',
+                    'page'     => $page,
+                    'per_page' => min($perPage, 100), // GitHub max is 100
+                ],
+                'headers' => $this->getHeaders(),
+            ]);
+
+            $repos = json_decode($response->getBody(), true);
+
+            return array_map(function ($repo) {
+                return [
+                    'id'          => $repo['id'],
+                    'name'        => $repo['name'],
+                    'full_name'   => $repo['full_name'],
+                    'owner'       => $repo['owner']['login'],
+                    'owner_type'  => $repo['owner']['type'], // User or Organization
+                    'private'     => $repo['private'],
+                    'description' => $repo['description'] ?? '',
+                    'default_branch' => $repo['default_branch'] ?? 'main',
+                    'url'         => $repo['html_url'],
+                    'api_url'     => $repo['url'],
+                ];
+            }, $repos);
+        } catch (GuzzleException $e) {
+            $this->logger->error('GitHub API get repositories failed', [
+                'error' => $e->getMessage(),
+            ]);
+            throw new \Exception('Failed to fetch repositories: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Publish a configuration file to GitHub
+     *
+     * Creates or updates a file in the specified repository, branch, and path.
+     * Uses the GitHub Contents API which requires the file SHA for updates.
+     *
+     * @param string $owner       Repository owner
+     * @param string $repo        Repository name
+     * @param string $path        File path in repository (e.g., 'lib/Settings/config.json')
+     * @param string $branch      Branch name (default: main)
+     * @param string $content     File content (JSON string)
+     * @param string $commitMessage Commit message
+     * @param string|null $fileSha SHA of existing file (required for updates, null for new files)
+     *
+     * @return array Response with commit SHA, file SHA, and commit info
+     * @throws \Exception If publish fails
+     */
+    public function publishConfiguration(
+        string $owner,
+        string $repo,
+        string $path,
+        string $branch,
+        string $content,
+        string $commitMessage,
+        ?string $fileSha = null
+    ): array {
+        try {
+            $this->logger->info('Publishing configuration to GitHub', [
+                'owner' => $owner,
+                'repo'  => $repo,
+                'path'  => $path,
+                'branch' => $branch,
+                'is_update' => $fileSha !== null,
+            ]);
+
+            // Base64 encode the content (GitHub API requires base64)
+            $encodedContent = base64_encode($content);
+
+            $payload = [
+                'message' => $commitMessage,
+                'content' => $encodedContent,
+                'branch'  => $branch,
+            ];
+
+            // If updating existing file, include SHA
+            if ($fileSha !== null) {
+                $payload['sha'] = $fileSha;
+            }
+
+            $response = $this->client->request('PUT', self::API_BASE . "/repos/{$owner}/{$repo}/contents/{$path}", [
+                'headers' => $this->getHeaders(),
+                'json'    => $payload,
+            ]);
+
+            $result = json_decode($response->getBody(), true);
+
+            $this->logger->info('Configuration published successfully', [
+                'commit_sha' => $result['commit']['sha'] ?? null,
+                'file_sha'  => $result['content']['sha'] ?? null,
+            ]);
+
+            return [
+                'success'    => true,
+                'commit_sha' => $result['commit']['sha'] ?? null,
+                'file_sha'   => $result['content']['sha'] ?? null,
+                'commit_url' => $result['commit']['html_url'] ?? null,
+                'file_url'   => $result['content']['html_url'] ?? null,
+            ];
+        } catch (GuzzleException $e) {
+            $errorMessage = $e->getMessage();
+            $statusCode = null;
+
+            if ($e->hasResponse()) {
+                $statusCode = $e->getResponse()->getStatusCode();
+                $responseBody = $e->getResponse()->getBody()->getContents();
+                $errorData = json_decode($responseBody, true);
+                
+                if (isset($errorData['message'])) {
+                    $errorMessage = $errorData['message'];
+                }
+            }
+
+            $this->logger->error('GitHub API publish failed', [
+                'error'      => $errorMessage,
+                'status_code' => $statusCode,
+                'owner'      => $owner,
+                'repo'       => $repo,
+                'path'       => $path,
+            ]);
+
+            throw new \Exception('Failed to publish configuration: ' . $errorMessage);
+        }
+    }
+
+    /**
+     * Get file SHA for a specific file (needed for updates)
+     *
+     * @param string $owner Repository owner
+     * @param string $repo  Repository name
+     * @param string $path  File path in repository
+     * @param string $branch Branch name (default: main)
+     *
+     * @return string|null File SHA or null if file doesn't exist
+     * @throws \Exception If API request fails
+     */
+    public function getFileSha(string $owner, string $repo, string $path, string $branch = 'main'): ?string
+    {
+        try {
+            $response = $this->client->request('GET', self::API_BASE . "/repos/{$owner}/{$repo}/contents/{$path}", [
+                'query' => [
+                    'ref' => $branch,
+                ],
+                'headers' => $this->getHeaders(),
+            ]);
+
+            $fileInfo = json_decode($response->getBody(), true);
+            return $fileInfo['sha'] ?? null;
+        } catch (GuzzleException $e) {
+            // File doesn't exist or other error
+            if ($e->hasResponse() && $e->getResponse()->getStatusCode() === 404) {
+                return null; // File doesn't exist, which is fine for new files
+            }
+            
+            $this->logger->error('GitHub API get file SHA failed', [
+                'error' => $e->getMessage(),
+                'owner' => $owner,
+                'repo'  => $repo,
+                'path'  => $path,
+            ]);
+            throw new \Exception('Failed to get file SHA: ' . $e->getMessage());
+        }
+    }
+
 }
 

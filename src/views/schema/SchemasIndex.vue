@@ -90,7 +90,8 @@ import { schemaStore, navigationStore, configurationStore } from '../../store/st
 							class="card"
 							:class="{
 								'card--in-use': hasObjects(schema),
-								'card--configuration': !!getManagingConfiguration(schema)
+								'card--configuration': isManagedByExternalConfig(schema),
+								'card--local': isManagedByLocalConfig(schema)
 							}">
 							<div class="cardHeader">
 								<h2>
@@ -102,8 +103,13 @@ import { schemaStore, navigationStore, configurationStore } from '../../store/st
 									<span v-if="hasObjects(schema)" class="statusPill statusPill--success">
 										{{ t('openregister', 'In use') }}
 									</span>
-									<span v-if="getManagingConfiguration(schema)" class="statusPill statusPill--success">
+									<span v-if="isManagedByExternalConfig(schema)" class="managedBadge managedBadge--external">
+										<CogOutline :size="16" />
 										{{ t('openregister', 'Managed') }}
+									</span>
+									<span v-else-if="isManagedByLocalConfig(schema)" class="managedBadge managedBadge--local">
+										<CogOutline :size="16" />
+										{{ t('openregister', 'Local') }}
 									</span>
 								</h2>
 							<NcActions :primary="true" menu-name="Actions">
@@ -111,9 +117,9 @@ import { schemaStore, navigationStore, configurationStore } from '../../store/st
 									<DotsHorizontal :size="20" />
 								</template>
 								<NcActionButton 
-									v-tooltip="getManagingConfiguration(schema) ? 'Cannot edit: This schema is managed by ' + getManagingConfiguration(schema).title : ''"
+									v-tooltip="isManagedByExternalConfig(schema) ? 'Cannot edit: This schema is managed by external configuration ' + getManagingConfiguration(schema).title : ''"
 									close-after-click
-									:disabled="!!getManagingConfiguration(schema)"
+									:disabled="isManagedByExternalConfig(schema)"
 									@click="schemaStore.setSchemaItem(schema); navigationStore.setModal('editSchema')">
 									<template #icon>
 										<Pencil :size="20" />
@@ -205,7 +211,8 @@ import { schemaStore, navigationStore, configurationStore } from '../../store/st
 									:class="{
 										viewTableRowSelected: selectedSchemas.includes(schema.id),
 										'viewTableRow--in-use': hasObjects(schema),
-										'viewTableRow--configuration': !!getManagingConfiguration(schema)
+										'viewTableRow--configuration': isManagedByExternalConfig(schema),
+										'viewTableRow--local': isManagedByLocalConfig(schema)
 									}">
 									<td class="tableColumnCheckbox">
 										<NcCheckboxRadioSwitch
@@ -222,8 +229,13 @@ import { schemaStore, navigationStore, configurationStore } from '../../store/st
 												<span v-if="hasObjects(schema)" class="statusPill statusPill--success">
 													{{ t('openregister', 'In use') }}
 												</span>
-												<span v-if="getManagingConfiguration(schema)" class="statusPill statusPill--success">
+												<span v-if="isManagedByExternalConfig(schema)" class="managedBadge managedBadge--external">
+													<CogOutline :size="16" />
 													{{ t('openregister', 'Managed') }}
+												</span>
+												<span v-else-if="isManagedByLocalConfig(schema)" class="managedBadge managedBadge--local">
+													<CogOutline :size="16" />
+													{{ t('openregister', 'Local') }}
 												</span>
 											</div>
 											<span v-if="schema.description" class="textDescription textEllipsis">{{ schema.description }}</span>
@@ -238,9 +250,9 @@ import { schemaStore, navigationStore, configurationStore } from '../../store/st
 											<DotsHorizontal :size="20" />
 										</template>
 										<NcActionButton 
-											v-tooltip="getManagingConfiguration(schema) ? 'Cannot edit: This schema is managed by ' + getManagingConfiguration(schema).title : ''"
+											v-tooltip="isManagedByExternalConfig(schema) ? 'Cannot edit: This schema is managed by external configuration ' + getManagingConfiguration(schema).title : ''"
 											close-after-click
-											:disabled="!!getManagingConfiguration(schema)"
+											:disabled="isManagedByExternalConfig(schema)"
 											@click="schemaStore.setSchemaItem(schema); navigationStore.setModal('editSchema')">
 											<template #icon>
 												<Pencil :size="20" />
@@ -289,6 +301,7 @@ import Refresh from 'vue-material-design-icons/Refresh.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import ChevronDown from 'vue-material-design-icons/ChevronDown.vue'
 import ChevronUp from 'vue-material-design-icons/ChevronUp.vue'
+import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 
 import PaginationComponent from '../../components/PaginationComponent.vue'
 
@@ -309,6 +322,7 @@ export default {
 		Plus,
 		ChevronDown,
 		ChevronUp,
+		CogOutline,
 		PaginationComponent,
 	},
 	data() {
@@ -478,6 +492,34 @@ export default {
 				config => config.schemas && config.schemas.includes(schema.id)
 			) || null
 		},
+		/**
+		 * Check if schema is managed by an external (imported) configuration
+		 * External configurations are locked and cannot be edited
+		 *
+		 * @param {object} schema - Schema object
+		 * @return {boolean} True if managed by external configuration
+		 */
+		isManagedByExternalConfig(schema) {
+			const config = this.getManagingConfiguration(schema)
+			if (!config) return false
+			
+			// External configurations: github, gitlab, url sources, or isLocal === false
+			return (config.sourceType && ['github', 'gitlab', 'url'].includes(config.sourceType)) || config.isLocal === false
+		},
+		/**
+		 * Check if schema is managed by a local configuration
+		 * Local configurations are editable
+		 *
+		 * @param {object} schema - Schema object
+		 * @return {boolean} True if managed by local configuration
+		 */
+		isManagedByLocalConfig(schema) {
+			const config = this.getManagingConfiguration(schema)
+			if (!config) return false
+			
+			// Local configurations: sourceType === 'local' or 'manual', or isLocal === true
+			return config.sourceType === 'local' || config.sourceType === 'manual' || config.isLocal === true
+		},
 		toggleSelectAll(checked) {
 			if (checked) {
 				this.selectedSchemas = schemaStore.schemaList.map(schema => schema.id)
@@ -547,6 +589,11 @@ export default {
 	color: white;
 }
 
+.statusPill--warning {
+	background-color: var(--color-warning);
+	color: var(--color-main-background);
+}
+
 /* Title with badges layout */
 .titleWithBadges {
 	display: flex;
@@ -565,6 +612,10 @@ export default {
 	border: 2px solid var(--color-success);
 }
 
+.card--local {
+	border: 2px solid var(--color-warning);
+}
+
 /* Table row borders based on status */
 .viewTableRow--in-use {
 	border-left: 4px solid var(--color-success);
@@ -572,6 +623,10 @@ export default {
 
 .viewTableRow--configuration {
 	border-left: 4px solid var(--color-success);
+}
+
+.viewTableRow--local {
+	border-left: 4px solid var(--color-warning);
 }
 
 /* Adjust card header to accommodate pills */
@@ -674,6 +729,31 @@ export default {
 
 .card .cardHeader h2 {
 	margin-bottom: 0;
+}
+
+/* Managed by Configuration badge */
+.managedBadge {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 4px 8px;
+	border-radius: 12px;
+	font-size: 0.75rem;
+	font-weight: 600;
+	margin-left: 8px;
+	vertical-align: middle;
+}
+
+/* External (managed) badge - green */
+.managedBadge--external {
+	background: var(--color-success);
+	color: white;
+}
+
+/* Local configuration badge - orange */
+.managedBadge--local {
+	background: var(--color-warning);
+	color: var(--color-main-background);
 }
 
 /* No component-specific table styles needed - all styles are now generic in main.css */

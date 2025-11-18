@@ -97,14 +97,21 @@ import { dashboardStore, registerStore, navigationStore, configurationStore } fr
 			<div v-else>
 				<template v-if="registerStore.viewMode === 'cards'">
 					<div class="cardGrid">
-						<div v-for="register in paginatedRegisters" :key="register.id" class="card" :class="{ 'card--managed': !!getManagingConfiguration(register) }">
+						<div v-for="register in paginatedRegisters" :key="register.id" class="card" :class="{ 
+							'card--managed': isManagedByExternalConfig(register),
+							'card--local': isManagedByLocalConfig(register)
+						}">
 							<div class="cardHeader">
 								<h2 v-tooltip.bottom="register.description">
 									<DatabaseOutline :size="20" />
 									{{ register.title }}
-									<span v-if="getManagingConfiguration(register)" class="managedBadge">
+									<span v-if="isManagedByExternalConfig(register)" class="managedBadge managedBadge--external">
 										<CogOutline :size="16" />
 										{{ t('openregister', 'Managed') }}
+									</span>
+									<span v-else-if="isManagedByLocalConfig(register)" class="managedBadge managedBadge--local">
+										<CogOutline :size="16" />
+										{{ t('openregister', 'Local') }}
 									</span>
 								</h2>
 								<NcActions :primary="true" menu-name="Actions">
@@ -118,9 +125,9 @@ import { dashboardStore, registerStore, navigationStore, configurationStore } fr
 										Calculate Sizes
 									</NcActionButton>
 									<NcActionButton 
-										v-tooltip="getManagingConfiguration(register) ? 'Cannot edit: This register is managed by ' + getManagingConfiguration(register).title : ''"
+										v-tooltip="isManagedByExternalConfig(register) ? 'Cannot edit: This register is managed by external configuration ' + getManagingConfiguration(register).title : ''"
 										close-after-click
-										:disabled="!!getManagingConfiguration(register)"
+										:disabled="isManagedByExternalConfig(register)"
 										@click="registerStore.setRegisterItem({
 											...register,
 											schemas: Array.isArray(register.schemas) 
@@ -246,7 +253,8 @@ import { dashboardStore, registerStore, navigationStore, configurationStore } fr
 									class="viewTableRow"
 									:class="{ 
 										viewTableRowSelected: selectedRegisters.includes(register.id),
-										'viewTableRow--managed': !!getManagingConfiguration(register)
+										'viewTableRow--managed': isManagedByExternalConfig(register),
+										'viewTableRow--local': isManagedByLocalConfig(register)
 									}">
 									<td class="tableColumnCheckbox">
 										<NcCheckboxRadioSwitch
@@ -257,9 +265,13 @@ import { dashboardStore, registerStore, navigationStore, configurationStore } fr
 										<div class="titleContent">
 											<strong>
 												{{ register.title }}
-												<span v-if="getManagingConfiguration(register)" class="managedBadge">
+												<span v-if="isManagedByExternalConfig(register)" class="managedBadge managedBadge--external">
 													<CogOutline :size="16" />
 													{{ t('openregister', 'Managed') }}
+												</span>
+												<span v-else-if="isManagedByLocalConfig(register)" class="managedBadge managedBadge--local">
+													<CogOutline :size="16" />
+													{{ t('openregister', 'Local') }}
 												</span>
 											</strong>
 											<span v-if="register.description" class="textDescription textEllipsis">{{ register.description }}</span>
@@ -284,9 +296,9 @@ import { dashboardStore, registerStore, navigationStore, configurationStore } fr
 												Calculate Sizes
 											</NcActionButton>
 											<NcActionButton 
-												v-tooltip="getManagingConfiguration(register) ? 'Cannot edit: This register is managed by ' + getManagingConfiguration(register).title : ''"
+												v-tooltip="isManagedByExternalConfig(register) ? 'Cannot edit: This register is managed by external configuration ' + getManagingConfiguration(register).title : ''"
 												close-after-click
-												:disabled="!!getManagingConfiguration(register)"
+												:disabled="isManagedByExternalConfig(register)"
 												@click="registerStore.setRegisterItem({
 													...register,
 													schemas: Array.isArray(register.schemas) 
@@ -571,6 +583,34 @@ export default {
 				config => config.registers && config.registers.includes(register.id)
 			) || null
 		},
+		/**
+		 * Check if register is managed by an external (imported) configuration
+		 * External configurations are locked and cannot be edited
+		 *
+		 * @param {object} register - Register object
+		 * @return {boolean} True if managed by external configuration
+		 */
+		isManagedByExternalConfig(register) {
+			const config = this.getManagingConfiguration(register)
+			if (!config) return false
+			
+			// External configurations: github, gitlab, url sources, or isLocal === false
+			return (config.sourceType && ['github', 'gitlab', 'url'].includes(config.sourceType)) || config.isLocal === false
+		},
+		/**
+		 * Check if register is managed by a local configuration
+		 * Local configurations are editable
+		 *
+		 * @param {object} register - Register object
+		 * @return {boolean} True if managed by local configuration
+		 */
+		isManagedByLocalConfig(register) {
+			const config = this.getManagingConfiguration(register)
+			if (!config) return false
+			
+			// Local configurations: sourceType === 'local' or 'manual', or isLocal === true
+			return config.sourceType === 'local' || config.sourceType === 'manual' || config.isLocal === true
+		},
 
 		async calculateSizes(register) {
 			// Set the active register in the store
@@ -748,14 +788,24 @@ export default {
 	margin-right: 35px;
 }
 
-/* Card borders for managed registers */
+/* Card borders for managed registers (external - green) */
 .card--managed {
 	border: 2px solid var(--color-success);
 }
 
-/* Table row borders for managed registers */
+/* Card borders for local configurations (orange) */
+.card--local {
+	border: 2px solid var(--color-warning);
+}
+
+/* Table row borders for managed registers (external - green) */
 .viewTableRow--managed {
 	border-left: 4px solid var(--color-success);
+}
+
+/* Table row borders for local configurations (orange) */
+.viewTableRow--local {
+	border-left: 4px solid var(--color-warning);
 }
 
 /* Managed by Configuration badge */
@@ -764,12 +814,22 @@ export default {
 	align-items: center;
 	gap: 4px;
 	padding: 4px 8px;
-	background: var(--color-success);
-	color: white;
 	border-radius: 12px;
 	font-size: 0.75rem;
 	font-weight: 600;
 	margin-left: 8px;
 	vertical-align: middle;
+}
+
+/* External (managed) badge - green */
+.managedBadge--external {
+	background: var(--color-success);
+	color: white;
+}
+
+/* Local configuration badge - orange */
+.managedBadge--local {
+	background: var(--color-warning);
+	color: var(--color-main-background);
 }
 </style>

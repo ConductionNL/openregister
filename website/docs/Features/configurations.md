@@ -720,14 +720,33 @@ After publishing your configuration file to GitHub/GitLab:
 
 #### 6. API Tokens for Private Repositories
 
-If your configuration is in a private repository:
+**You can use private repositories** for your configurations as long as your GitHub/GitLab Personal Access Token has access to them. This allows you to:
+
+- **Publish configurations** to private repositories
+- **Import configurations** from private repositories
+- **Discover configurations** in private repositories (if your token has access)
+
+**Setting up API Tokens:**
 
 1. Navigate to **Settings** → **OpenRegister Settings**
 2. Scroll to **API Token Configuration**
 3. Enter your GitHub or GitLab Personal Access Token
 4. Required scopes:
-   - **GitHub**: 'repo' (for full access)
+   - **GitHub**: 'repo' (for full access to public and private repositories)
    - **GitLab**: 'read_api' (discovery only) or 'api' (discovery + publishing)
+
+**How Private Repositories Work:**
+
+- **Repository Access**: Your token must have access to the repository (you must be a collaborator or have access through organization membership)
+- **Discovery**: Private repositories will appear in search/discovery results only if your token has access to them
+- **Publishing**: You can publish to any repository (public or private) that your token has write access to
+- **Importing**: You can import from any repository (public or private) that your token has read access to
+- **Token Scope**: The 'repo' scope for GitHub provides access to both public and private repositories you have access to
+
+**Note**: Each user must configure their own token. If you want to share a private repository configuration with others, they need to:
+1. Have access to the repository on GitHub/GitLab
+2. Configure their own API token with access to that repository
+3. The repository will then appear in their discovery/search results
 
 #### 7. Publishing Updates
 
@@ -842,11 +861,123 @@ Recommended intervals based on use case:
 - **Development**: 1-6 hours
 - **Testing**: 1-2 hours
 
-## Uploading Local Configurations for Sharing
+## Publishing Local Configurations
 
-To share your local configurations with others:
+OpenRegister allows you to publish your local configurations directly to GitHub repositories. This makes it easy to share configurations with others and keep them synchronized across installations.
 
-### Option 1: Upload to GitHub
+### Publishing to GitHub
+
+You can publish local configurations directly to GitHub from within OpenRegister:
+
+1. Navigate to **Configurations**
+2. Find the local configuration you want to publish
+3. Click **Actions** → **Publish** (or **Update Published** if already published)
+4. In the publish dialog:
+   - **Select Repository**: Choose from repositories your GitHub token has access to
+   - **Select Branch**: Choose the branch to publish to (e.g., 'main', 'develop')
+   - **File Path**: Enter the path where the configuration file should be saved (e.g., `lib/Settings/config.json`)
+   - **Commit Message**: Enter a descriptive commit message
+5. Click **Publish**
+
+The configuration will be exported and committed to the selected repository. Once published, the configuration will show a red 'Published' badge.
+
+**File structure example:**
+```
+my-repository/
+├── lib/
+│   └── Settings/
+│       └── myapp_openregister.json
+└── README.md
+```
+
+### Private Repositories
+
+**You can publish to private repositories** as long as your GitHub Personal Access Token has access to them:
+
+1. **Configure GitHub Token**: 
+   - Navigate to **Settings** → **OpenRegister Settings**
+   - Scroll to **API Token Configuration**
+   - Enter your GitHub Personal Access Token with 'repo' scope
+   
+2. **Token Permissions**:
+   - The token must have 'repo' scope for full access (read and write)
+   - This allows access to both public and private repositories you have access to
+   - Private repositories will appear in the repository selector if your token has access
+
+3. **Publishing to Private Repos**:
+   - Private repositories will appear in the repository dropdown
+   - They are marked with '(Private)' in the list
+   - Publishing works the same way as public repositories
+   - Only users with access to the repository (via their token) can import from it
+
+**Note**: When importing from private repositories, users must also configure their GitHub token with access to that repository. The repository will only appear in discovery/search results if the user's token has access to it.
+
+### Updating Published Configurations
+
+If a configuration is already published:
+
+1. Make your changes locally
+2. Click **Actions** → **Update Published**
+3. The same dialog opens with pre-filled values
+4. Update the commit message if needed
+5. Click **Publish** to update the remote file
+
+The system automatically detects if the file already exists and updates it, or creates a new file if it doesn't exist.
+
+### Publishing to Feature Branches for CI/CD
+
+**You can publish configurations to non-main branches** (e.g., feature branches, develop, staging) for CI/CD and testing purposes:
+
+**Why use feature branches?**
+
+- **Testing before merge**: Test your configuration changes in a feature branch before merging to main
+- **CI/CD integration**: Your CI/CD pipeline can import and test configurations from feature branches
+- **Safe experimentation**: Make changes without affecting the main branch configuration
+- **Review workflows**: Create pull requests and have configurations reviewed before merging
+
+**Important limitation:**
+
+- **Configuration discovery only searches main/master**: The global configuration discovery feature only searches the `main` or `master` branches
+- **Feature branches won't appear in discovery**: Configurations published to feature branches will not appear in the "Discover" tab search results
+- **Manual import still works**: You can still import configurations from feature branches using:
+  - **Import from GitHub** tab: Browse the repository and select the feature branch
+  - **Import from URL** tab: Use the raw GitHub URL pointing to the feature branch
+
+**Example workflow:**
+
+1. **Create a feature branch**: `git checkout -b feature/new-configuration`
+2. **Publish to feature branch**: 
+   - Select your repository
+   - Choose the feature branch (e.g., `feature/new-configuration`)
+   - Set the file path (e.g., `lib/Settings/config.json`)
+   - Publish the configuration
+3. **Test in CI/CD**: Your CI/CD pipeline can import from the feature branch URL
+4. **Review and merge**: Create a pull request, review changes, then merge to main
+5. **Publish to main**: After merging, publish the configuration to the main branch so it appears in discovery
+
+**Raw URL format for feature branches:**
+
+```
+https://raw.githubusercontent.com/owner/repo/feature/new-configuration/lib/Settings/config.json
+```
+
+**Best practices:**
+
+- Use feature branches for development and testing
+- Publish to `main` or `master` for production configurations
+- Document branch naming conventions in your team
+- Use descriptive commit messages when publishing to feature branches
+
+### Publishing Status
+
+Published configurations display:
+- **Red 'Published' badge**: Indicates the configuration is published to GitHub
+- **Repository information**: Shows the repository, branch, and path in the configuration card
+- **Update Published action**: Available in the actions menu for already-published configurations
+
+### Alternative: Manual Upload to GitHub
+
+If you prefer to upload manually:
 
 1. Export your configuration (JSON file)
 2. Create or navigate to your GitHub repository
@@ -854,14 +985,6 @@ To share your local configurations with others:
 4. Upload your configuration file
 5. Commit with descriptive message
 6. Others can now import using your repository URL
-
-**File structure:**
-```
-my-repository/
-├── config/
-│   └── myapp.openregister.json
-└── README.md
-```
 
 ### Option 2: Upload to GitLab
 
