@@ -26,6 +26,7 @@ use OCA\OpenRegister\Service\ConfigurationService;
 use OCA\OpenRegister\Service\GitHubService;
 use OCA\OpenRegister\Service\GitLabService;
 use OCA\OpenRegister\Service\NotificationService;
+use OCP\App\IAppManager;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -83,6 +84,13 @@ class ConfigurationController extends Controller
      */
     private LoggerInterface $logger;
 
+    /**
+     * App manager instance.
+     *
+     * @var IAppManager The app manager instance.
+     */
+    private IAppManager $appManager;
+
 
     /**
      * Constructor
@@ -94,6 +102,7 @@ class ConfigurationController extends Controller
      * @param NotificationService  $notificationService  Notification service
      * @param GitHubService        $githubService        GitHub service
      * @param GitLabService        $gitlabService        GitLab service
+     * @param IAppManager          $appManager          App manager
      * @param LoggerInterface      $logger               Logger
      */
     public function __construct(
@@ -104,6 +113,7 @@ class ConfigurationController extends Controller
         NotificationService $notificationService,
         GitHubService $githubService,
         GitLabService $gitlabService,
+        IAppManager $appManager,
         LoggerInterface $logger
     ) {
         parent::__construct($appName, $request);
@@ -113,6 +123,7 @@ class ConfigurationController extends Controller
         $this->notificationService  = $notificationService;
         $this->githubService        = $githubService;
         $this->gitlabService        = $gitlabService;
+        $this->appManager           = $appManager;
         $this->logger               = $logger;
 
     }//end __construct()
@@ -260,8 +271,14 @@ class ConfigurationController extends Controller
             $configuration->setSourceType($data['sourceType'] ?? 'local');
             $configuration->setSourceUrl($data['sourceUrl'] ?? null);
             $configuration->setApp($data['app'] ?? null);
-            $configuration->setVersion($data['version'] ?? '1.0.0');
-            $configuration->setLocalVersion($data['localVersion'] ?? null);
+            $version = $data['version'] ?? '1.0.0';
+            $configuration->setVersion($version);
+            // For local configurations, sync version to localVersion
+            if ($configuration->getIsLocal() === true) {
+                $configuration->setLocalVersion($data['localVersion'] ?? $version);
+            } else {
+                $configuration->setLocalVersion($data['localVersion'] ?? null);
+            }
             $configuration->setRegisters($data['registers'] ?? []);
             $configuration->setSchemas($data['schemas'] ?? []);
             $configuration->setObjects($data['objects'] ?? []);
@@ -331,6 +348,10 @@ class ConfigurationController extends Controller
 
             if (isset($data['version']) === true) {
                 $configuration->setVersion($data['version']);
+                // For local configurations, sync version to localVersion
+                if ($configuration->getIsLocal() === true) {
+                    $configuration->setLocalVersion($data['version']);
+                }
             }
 
             if (isset($data['localVersion']) === true) {
@@ -1322,11 +1343,23 @@ class ConfigurationController extends Controller
             $branch = $data['branch'] ?? 'main';
             $commitMessage = $data['commitMessage'] ?? "Update configuration: {$configuration->getTitle()}";
 
-            if (empty($owner) || empty($repo) || empty($path)) {
+            if (empty($owner) || empty($repo)) {
                 return new JSONResponse(
-                    ['error' => 'Owner, repo, and path parameters are required'],
+                    ['error' => 'Owner and repo parameters are required'],
                     400
                 );
+            }
+
+            // Strip leading slash from path (GitHub API doesn't allow paths starting with /)
+            // Allow / for root, which becomes empty string
+            $path = ltrim($path, '/');
+            
+            // If path is empty after stripping (user entered just "/"), use a default filename
+            // Generate filename from configuration title in snake_case format
+            if (empty($path)) {
+                $title = $configuration->getTitle();
+                $snakeCaseTitle = $this->toSnakeCase($title);
+                $path = $snakeCaseTitle . '_openregister.json';
             }
 
             $this->logger->info('Publishing configuration to GitHub', [
@@ -1339,6 +1372,31 @@ class ConfigurationController extends Controller
 
             // Export configuration to JSON
             $configData = $this->configurationService->exportConfig($configuration, false);
+            
+            // Update x-openregister section with GitHub publishing information
+            // When publishing online, we don't set sourceType or sourceUrl
+            // Instead, we set the openregister version and GitHub info
+            $githubRepo = "{$owner}/{$repo}";
+            
+            if (!isset($configData['x-openregister'])) {
+                $configData['x-openregister'] = [];
+            }
+            
+            // Get current OpenRegister app version
+            $openregisterVersion = $this->appManager->getAppVersion('openregister');
+            
+            // Remove sourceType and sourceUrl (not set when publishing online)
+            unset($configData['x-openregister']['sourceType']);
+            unset($configData['x-openregister']['sourceUrl']);
+            
+            // Set openregister version and GitHub info
+            $configData['x-openregister']['openregister'] = $openregisterVersion;
+            $configData['x-openregister']['github'] = [
+                'repo' => $githubRepo,
+                'branch' => $branch,
+                'path' => $path,
+            ];
+            
             $jsonContent = json_encode($configData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
 
             // Check if file already exists (for updates)
@@ -1370,15 +1428,47 @@ class ConfigurationController extends Controller
             // Don't change isLocal - it stays local, but now has a published source
             $this->configurationMapper->update($configuration);
 
-            $this->logger->info("Successfully published configuration {$configuration->getTitle()} to GitHub");
+            $this->logger->info("Successfully published configuration {$configuration->getTitle()} to GitHub", [
+                'owner' => $owner,
+                'repo' => $repo,
+                'branch' => $branch,
+                'path' => $path,
+                'file_url' => $result['file_url'] ?? null,
+            ]);
+
+            // Check if published to default branch (required for Code Search indexing)
+            $defaultBranch = null;
+            try {
+                $repoInfo = $this->githubService->getRepositoryInfo($owner, $repo);
+                $defaultBranch = $repoInfo['default_branch'] ?? 'main';
+            } catch (\Exception $e) {
+                $this->logger->warning('Could not fetch repository default branch', [
+                    'owner' => $owner,
+                    'repo' => $repo,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
+            $message = 'Configuration published successfully to GitHub';
+            if ($defaultBranch && $branch !== $defaultBranch) {
+                $message .= ". Note: Published to branch '{$branch}' (default is '{$defaultBranch}'). " .
+                           "GitHub Code Search primarily indexes the default branch, so this configuration may not appear in search results immediately.";
+            } else {
+                $message .= ". Note: GitHub Code Search may take a few minutes to index new files.";
+            }
 
             return new JSONResponse([
                 'success' => true,
-                'message' => 'Configuration published successfully to GitHub',
+                'message' => $message,
                 'configurationId' => $configuration->getId(),
                 'commit_sha' => $result['commit_sha'],
                 'commit_url' => $result['commit_url'],
                 'file_url' => $result['file_url'],
+                'branch' => $branch,
+                'default_branch' => $defaultBranch,
+                'indexing_note' => $defaultBranch && $branch !== $defaultBranch 
+                    ? "Published to non-default branch. For discovery, publish to '{$defaultBranch}' branch."
+                    : "File published successfully. GitHub Code Search indexing may take a few minutes.",
             ], 200);
         } catch (Exception $e) {
             $this->logger->error('Failed to publish to GitHub: ' . $e->getMessage());
@@ -1390,6 +1480,31 @@ class ConfigurationController extends Controller
         }
     }//end publishToGitHub()
 
+    /**
+     * Convert a string to snake_case
+     *
+     * @param string $string The string to convert
+     * @return string The snake_case version
+     */
+    private function toSnakeCase(string $string): string
+    {
+        // Convert to lowercase
+        $string = strtolower($string);
+        
+        // Replace spaces and hyphens with underscores
+        $string = preg_replace('/[\s\-]+/', '_', $string);
+        
+        // Remove any non-alphanumeric characters except underscores
+        $string = preg_replace('/[^a-z0-9_]/', '', $string);
+        
+        // Remove multiple consecutive underscores
+        $string = preg_replace('/_+/', '_', $string);
+        
+        // Trim underscores from start and end
+        $string = trim($string, '_');
+        
+        return $string;
+    }//end toSnakeCase()
 
 }//end class
 

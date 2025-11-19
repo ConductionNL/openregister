@@ -37,30 +37,37 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 							@update:value="updateDescription" />
 
 						<div class="selectField">
-							<label for="application-select">Owner Application</label>
+							<label for="type-select">Type</label>
 							<NcSelect
-								id="application-select"
-								v-model="selectedApplication"
-								:options="applicationOptions"
-								label="name"
-								track-by="id"
+								id="type-select"
+								v-model="selectedType"
+								:options="typeOptions"
+								label="label"
+								track-by="value"
 								:label-outside="true"
-								placeholder="Select owner application (optional)..."
-								@input="updateApplication">
-								<template #option="{ name, description }">
+								placeholder="Select configuration type..."
+								@input="updateType">
+								<template #option="{ label, description }">
 									<div class="option-content">
-										<span class="option-title">{{ name }}</span>
+										<span class="option-title">{{ label }}</span>
 										<span v-if="description" class="option-description">{{ description }}</span>
 									</div>
 								</template>
 							</NcSelect>
-							<p v-if="selectedApplication" class="field-hint">
-								Owner: {{ selectedApplication.name }}
-							</p>
-							<p v-else class="field-hint">
-								The application that owns this configuration (optional)
+							<p class="field-hint">
+								Configuration type (default, application, etc.)
 							</p>
 						</div>
+
+						<NcTextField
+							label="App ID"
+							placeholder="myapp"
+							:value="configurationStore.configurationItem?.app || ''"
+							@update:value="updateApp">
+							<template #helper-text-message>
+								<p>Application identifier for this configuration (optional)</p>
+							</template>
+						</NcTextField>
 
 						<!-- Organisation is automatically set to active organisation by backend -->
 					</div>
@@ -346,6 +353,42 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 						</NcTextField>
 
 						<NcTextField
+							label="Version"
+							placeholder="1.0.0"
+							:value="configurationStore.configurationItem?.version || ''"
+							@update:value="updateVersion">
+							<template #helper-text-message>
+								<p>Semantic version (e.g., 1.0.0, 2.1.3)</p>
+							</template>
+						</NcTextField>
+
+						<div class="selectField">
+							<label for="application-select">Owner Application</label>
+							<NcSelect
+								id="application-select"
+								v-model="selectedApplication"
+								:options="applicationOptions"
+								label="name"
+								track-by="id"
+								:label-outside="true"
+								placeholder="Select owner application (optional)..."
+								@input="updateApplication">
+								<template #option="{ name, description }">
+									<div class="option-content">
+										<span class="option-title">{{ name }}</span>
+										<span v-if="description" class="option-description">{{ description }}</span>
+									</div>
+								</template>
+							</NcSelect>
+							<p v-if="selectedApplication" class="field-hint">
+								Owner: {{ selectedApplication.name }}
+							</p>
+							<p v-else class="field-hint">
+								The application that owns this configuration (optional)
+							</p>
+						</div>
+
+						<NcTextField
 							label="Local Version"
 							placeholder="1.0.0"
 							:value="configurationStore.configurationItem?.localVersion || ''"
@@ -513,6 +556,7 @@ export default {
 			selectedViews: [],
 			selectedManagedApplications: [],
 			selectedApplication: null,
+			selectedType: null,
 			// Management tab selections
 			selectedSourceType: null,
 			selectedNotificationGroups: [],
@@ -555,6 +599,13 @@ export default {
 				{ value: 'url', label: 'URL', description: 'Configuration from any URL' },
 			]
 		},
+		typeOptions() {
+			return [
+				{ value: 'default', label: 'Default', description: 'Standard configuration type' },
+				{ value: 'application', label: 'Application', description: 'Application-specific configuration' },
+				{ value: 'manual', label: 'Manual', description: 'Manually created configuration' },
+			]
+		},
 		notificationGroupOptions() {
 			// In a real implementation, this would fetch from Nextcloud groups API
 			// For now, return common groups
@@ -587,6 +638,9 @@ export default {
 			configurationStore.configurationItem = {
 				title: '',
 				description: null,
+				type: 'default',
+				app: '',
+				version: '1.0.0', // Default semantic version
 				application: '',
 				owner: '',
 				organisation: null,
@@ -615,6 +669,7 @@ export default {
 			this.selectedAgents = []
 			this.selectedViews = []
 			this.selectedApplication = null
+			this.selectedType = this.typeOptions[0] // 'default'
 			// Management tab defaults
 			this.selectedSourceType = this.sourceTypeOptions[0] // 'local'
 			this.selectedNotificationGroups = []
@@ -635,6 +690,25 @@ export default {
 				configurationStore.configurationItem = {}
 			}
 			configurationStore.configurationItem.description = value
+		},
+		updateVersion(value) {
+			if (!configurationStore.configurationItem) {
+				configurationStore.configurationItem = {}
+			}
+			configurationStore.configurationItem.version = value
+		},
+		updateType(value) {
+			if (!configurationStore.configurationItem) {
+				configurationStore.configurationItem = {}
+			}
+			configurationStore.configurationItem.type = value ? value.value : 'default'
+			this.selectedType = value
+		},
+		updateApp(value) {
+			if (!configurationStore.configurationItem) {
+				configurationStore.configurationItem = {}
+			}
+			configurationStore.configurationItem.app = value || ''
 		},
 		updateApplication(value) {
 			if (!configurationStore.configurationItem) {
@@ -761,6 +835,15 @@ export default {
 					) || null
 				}
 				// Organisation is automatically set by backend based on active organisation
+
+				// Load Settings tab selections
+				if (item.type) {
+					this.selectedType = this.typeOptions.find(
+						t => t.value === item.type,
+					) || this.typeOptions[0] // Default to 'default'
+				} else {
+					this.selectedType = this.typeOptions[0] // Default to 'default'
+				}
 
 				// Load Management tab selections
 				if (item.sourceType) {

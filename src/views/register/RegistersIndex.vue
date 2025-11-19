@@ -145,6 +145,12 @@ import { dashboardStore, registerStore, navigationStore, configurationStore } fr
 										</template>
 										Export
 									</NcActionButton>
+									<NcActionButton close-after-click @click="registerStore.setRegisterItem(register); navigationStore.setModal('publishRegister')">
+										<template #icon>
+											<CloudUploadOutline :size="20" />
+										</template>
+										Publish OAS
+									</NcActionButton>
 									<NcActionButton close-after-click @click="registerStore.setRegisterItem(register); navigationStore.setModal('importRegister')">
 										<template #icon>
 											<Upload :size="20" />
@@ -316,6 +322,12 @@ import { dashboardStore, registerStore, navigationStore, configurationStore } fr
 												</template>
 												Export
 											</NcActionButton>
+											<NcActionButton close-after-click @click="registerStore.setRegisterItem(register); navigationStore.setModal('publishRegister')">
+												<template #icon>
+													<CloudUploadOutline :size="20" />
+												</template>
+												Publish OAS
+											</NcActionButton>
 											<NcActionButton close-after-click @click="registerStore.setRegisterItem(register); navigationStore.setModal('importRegister')">
 												<template #icon>
 													<Upload :size="20" />
@@ -390,6 +402,7 @@ import InformationOutline from 'vue-material-design-icons/InformationOutline.vue
 import ChevronDown from 'vue-material-design-icons/ChevronDown.vue'
 import ChevronUp from 'vue-material-design-icons/ChevronUp.vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
+import CloudUploadOutline from 'vue-material-design-icons/CloudUploadOutline.vue'
 import axios from '@nextcloud/axios'
 import { showError } from '@nextcloud/dialogs'
 import PaginationComponent from '../../components/PaginationComponent.vue'
@@ -420,6 +433,7 @@ export default {
 		ChevronDown,
 		ChevronUp,
 		CogOutline,
+		CloudUploadOutline,
 		PaginationComponent,
 	},
 	data() {

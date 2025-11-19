@@ -1,11 +1,11 @@
 <script setup>
-import { configurationStore, navigationStore } from '../../store/store.js'
+import { registerStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog v-if="navigationStore.modal === 'publishConfiguration'"
-		name="publishConfiguration"
-		title="Publish Configuration to GitHub"
+	<NcDialog v-if="navigationStore.modal === 'publishRegister'"
+		name="publishRegister"
+		title="Publish Register OAS to GitHub"
 		size="large"
 		:can-close="!loading"
 		@update:open="closeModal">
@@ -18,11 +18,11 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 			<p>{{ error }}</p>
 		</NcNoteCard>
 		
-		<div v-if="configuration" class="publishForm">
+		<div v-if="register" class="publishForm">
 			<div class="formRow">
-				<div class="formSection formSection--inline formSection--config">
-					<h3>{{ t('openregister', 'Configuration') }}</h3>
-					<p class="formDescription">{{ configuration.title }}</p>
+				<div class="formSection formSection--inline formSection--register">
+					<h3>{{ t('openregister', 'Register') }}</h3>
+					<p class="formDescription">{{ register.title }}</p>
 				</div>
 				
 				<div class="formSection formSection--inline">
@@ -61,18 +61,18 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 			<div v-if="selectedBranch" class="formSection">
 				<h3>{{ t('openregister', 'File Path') }}</h3>
 				<NcTextField
-					:value.sync="filePath"
-					:placeholder="t('openregister', 'e.g., lib/Settings/config.json')"
+					v-model="filePath"
+					:placeholder="t('openregister', 'e.g., lib/Settings/register.json')"
 					:disabled="loading"
 					:label="t('openregister', 'Path in repository')" />
-				<p class="formHint">{{ t('openregister', 'Path where the configuration file will be saved in the repository') }}</p>
+				<p class="formHint">{{ t('openregister', 'Path where the register OAS file will be saved in the repository') }}</p>
 			</div>
 			
 			<div v-if="filePath" class="formSection">
 				<h3>{{ t('openregister', 'Commit Message') }}</h3>
 				<NcTextField
-					:value.sync="commitMessage"
-					:placeholder="t('openregister', 'Update configuration: ...')"
+					v-model="commitMessage"
+					:placeholder="t('openregister', 'Update register OAS: ...')"
 					:disabled="loading"
 					:label="t('openregister', 'Commit message')" />
 			</div>
@@ -81,7 +81,7 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 				<NcButton
 					type="primary"
 					:disabled="!canPublish || loading"
-					@click="publishConfiguration">
+					@click="publishRegister">
 					<template #icon>
 						<CloudUploadOutline :size="20" />
 					</template>
@@ -99,11 +99,11 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 
 <script>
 import { NcDialog, NcButton, NcTextField, NcSelect, NcNoteCard, NcLoadingIcon } from '@nextcloud/vue'
-import { configurationStore, navigationStore } from '../../store/store.js'
+import { registerStore, navigationStore } from '../../store/store.js'
 import CloudUploadOutline from 'vue-material-design-icons/CloudUploadOutline.vue'
 
 export default {
-	name: 'PublishConfiguration',
+	name: 'PublishRegister',
 	components: {
 		NcDialog,
 		NcButton,
@@ -134,8 +134,8 @@ export default {
 		}
 	},
 	computed: {
-		configuration() {
-			return configurationStore.configurationItem
+		register() {
+			return registerStore.registerItem
 		},
 		canPublish() {
 			return this.selectedRepository && this.selectedBranch && this.filePath.trim() !== ''
@@ -171,9 +171,13 @@ export default {
 	async mounted() {
 		await this.loadRepositories()
 		
-		// Set default commit message
-		if (this.configuration) {
-			this.commitMessage = `Update configuration: ${this.configuration.title}`
+		// Set default commit message and file path
+		if (this.register) {
+			this.commitMessage = `Update register OAS: ${this.register.title}`
+			// Default filename based on register slug
+			if (!this.filePath && this.register.slug) {
+				this.filePath = `${this.register.slug}_openregister.json`
+			}
 		}
 	},
 	methods: {
@@ -203,24 +207,6 @@ export default {
 				
 				const data = await response.json()
 				this.repositories = data.repositories || []
-				
-				// Pre-select existing GitHub repo if configuration is already published
-				if (this.configuration?.githubRepo) {
-					const existingRepo = this.repositories.find(r => r.full_name === this.configuration.githubRepo)
-					if (existingRepo) {
-						this.selectedRepository = existingRepo.full_name
-						// Load branches for this repo
-						await this.loadBranches(existingRepo.owner, existingRepo.name)
-						// Pre-select existing branch
-						if (this.configuration?.githubBranch) {
-							this.selectedBranch = this.configuration.githubBranch
-						}
-						// Pre-fill path
-						if (this.configuration?.githubPath) {
-							this.filePath = this.configuration.githubPath
-						}
-					}
-				}
 			} catch (e) {
 				this.error = e.message || 'Failed to load repositories'
 				console.error('Failed to load repositories:', e)
@@ -279,8 +265,8 @@ export default {
 				}
 			}
 		},
-		async publishConfiguration() {
-			if (!this.canPublish || !this.configuration) return
+		async publishRegister() {
+			if (!this.canPublish || !this.register) return
 			
 			this.loading = true
 			this.error = null
@@ -312,7 +298,7 @@ export default {
 					throw new Error('Branch not selected')
 				}
 				
-				const response = await fetch(`/index.php/apps/openregister/api/configurations/${this.configuration.id}/publish/github`, {
+				const response = await fetch(`/index.php/apps/openregister/api/registers/${this.register.id}/publish/github`, {
 					method: 'POST',
 					headers: {
 						'Content-Type': 'application/json',
@@ -322,34 +308,34 @@ export default {
 						repo: repoName,
 						path: this.filePath.trim(),
 						branch: branchValue,
-						commitMessage: this.commitMessage || `Update configuration: ${this.configuration.title}`,
+						commitMessage: this.commitMessage || `Update register OAS: ${this.register.title}`,
 					}),
 				})
 				
 				if (!response.ok) {
 					const errorData = await response.json()
-					throw new Error(errorData.error || 'Failed to publish configuration')
+					throw new Error(errorData.error || 'Failed to publish register OAS')
 				}
 				
 				const data = await response.json()
 				
 				this.success = true
-				let message = `Configuration published successfully! Commit: ${data.commit_sha?.substring(0, 7) || 'N/A'}`
+				let message = `Register OAS published successfully! Commit: ${data.commit_sha?.substring(0, 7) || 'N/A'}`
 				if (data.indexing_note) {
 					message += `\n\n${data.indexing_note}`
 				}
 				this.successMessage = message
 				
-				// Refresh configuration list
-				await configurationStore.refreshConfigurationList()
+				// Refresh register list
+				await registerStore.refreshRegisterList()
 				
 				// Close modal after 4 seconds (longer to read the indexing note)
 				setTimeout(() => {
 					this.closeModal()
 				}, 4000)
 			} catch (e) {
-				this.error = e.message || 'Failed to publish configuration'
-				console.error('Failed to publish configuration:', e)
+				this.error = e.message || 'Failed to publish register OAS'
+				console.error('Failed to publish register OAS:', e)
 			} finally {
 				this.loading = false
 			}
@@ -380,8 +366,8 @@ export default {
 	min-width: 0; /* Allow flex items to shrink below content size */
 }
 
-.formSection--config {
-	flex: 0 0 auto; /* Configuration name doesn't need to grow */
+.formSection--register {
+	flex: 0 0 auto; /* Register name doesn't need to grow */
 	min-width: 150px; /* But give it a minimum width */
 	max-width: 250px; /* Limit maximum width */
 }
@@ -412,3 +398,4 @@ export default {
 	border-top: 1px solid var(--color-border);
 }
 </style>
+
