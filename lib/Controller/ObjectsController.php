@@ -368,27 +368,27 @@ class ObjectsController extends Controller
 
         // Build search query with resolved numeric IDs
         $query = $objectService->buildSearchQuery($this->request->getParams(), $resolved['register'], $resolved['schema']);
-        
+
         // Extract filtering parameters from request
         $params = $this->request->getParams();
         $rbac = filter_var($params['rbac'] ?? true, FILTER_VALIDATE_BOOLEAN);
         $multi = filter_var($params['multi'] ?? true, FILTER_VALIDATE_BOOLEAN);
         $published = filter_var($params['_published'] ?? false, FILTER_VALIDATE_BOOLEAN);
         $deleted = filter_var($params['deleted'] ?? false, FILTER_VALIDATE_BOOLEAN);
-        
+
         // **INTELLIGENT SOURCE SELECTION**: ObjectService automatically chooses optimal source
         $result = $objectService->searchObjectsPaginated($query, $rbac, $multi, $published, $deleted);
-        
-        
+
+
         // **SUB-SECOND OPTIMIZATION**: Enable response compression for large payloads
         $response = new JSONResponse($result);
-        
+
         // Enable gzip compression for responses > 1KB
         if (isset($result['results']) && count($result['results']) > 10) {
             $response->addHeader('Content-Encoding', 'gzip');
             $response->addHeader('Vary', 'Accept-Encoding');
         }
-        
+
         return $response;
 
     }//end index()
@@ -490,7 +490,7 @@ class ObjectsController extends Controller
             $fields = explode(',', $fields);
         }
 
-        // Convert filter to array if it's a string 
+        // Convert filter to array if it's a string
         if (is_string($filter)) {
             $filter = explode(',', $filter);
         }
@@ -1024,20 +1024,20 @@ class ObjectsController extends Controller
         // Build search query using ObjectService searchObjectsPaginated directly
         $queryParams = $this->request->getParams();
         $searchQuery = $queryParams;
-        
+
         // Clean up unwanted parameters
         unset($searchQuery['id'], $searchQuery['_route']);
-        
+
         // Use ObjectService searchObjectsPaginated directly - pass ids as named parameter
         $result = $objectService->searchObjectsPaginated(
-            query: $searchQuery, 
-            rbac: true, 
-            multi: true, 
-            published: true, 
+            query: $searchQuery,
+            rbac: true,
+            multi: true,
+            published: true,
             deleted: false,
             ids: $relations
         );
-        
+
         // Add relations being searched for debugging
         $result['relations'] = $relations;
 
@@ -1072,20 +1072,20 @@ class ObjectsController extends Controller
         // Build search query using ObjectService searchObjectsPaginated directly
         $queryParams = $this->request->getParams();
         $searchQuery = $queryParams;
-        
+
         // Clean up unwanted parameters
         unset($searchQuery['id'], $searchQuery['_route']);
-        
+
         // Use ObjectService searchObjectsPaginated directly - pass uses as named parameter
         $result = $objectService->searchObjectsPaginated(
-            query: $searchQuery, 
-            rbac: true, 
-            multi: true, 
-            published: true, 
+            query: $searchQuery,
+            rbac: true,
+            multi: true,
+            published: true,
             deleted: false,
             uses: $id
         );
-        
+
         // Add what we're searching for in debugging
         $result['uses'] = $id;
 
@@ -1781,7 +1781,7 @@ class ObjectsController extends Controller
 
             // Get ObjectService from container for view-aware counting
             $objectService = $this->container->get(\OCA\OpenRegister\Service\ObjectService::class);
-            
+
             // Count objects with view filter support
             $totalObjects = $objectService->searchObjects(
                 query: [

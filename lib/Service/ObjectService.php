@@ -1918,10 +1918,10 @@ class ObjectService
 
                 // Apply search terms
                 if (!empty($viewQuery['searchTerms'])) {
-                    $searchTerms = is_array($viewQuery['searchTerms']) 
-                        ? implode(' ', $viewQuery['searchTerms']) 
+                    $searchTerms = is_array($viewQuery['searchTerms'])
+                        ? implode(' ', $viewQuery['searchTerms'])
                         : $viewQuery['searchTerms'];
-                    
+
                     $existingSearch = $query['_search'] ?? '';
                     $query['_search'] = trim($existingSearch . ' ' . $searchTerms);
                 }
@@ -2048,6 +2048,8 @@ class ObjectService
                 // **ULTRA-FAST**: Get object data and add minimal @self metadata
                 $objectData = $object->getObject();
 
+
+
                 // Add essential @self metadata without additional database queries
                 $objectData['@self'] = [
                     'id' => $object->getId(),
@@ -2072,8 +2074,12 @@ class ObjectService
                     $objectData['@self']['depublished'] = $object->getDepublished()->format('Y-m-d\TH:i:s\Z');
                 }
 
+                $objectData = $this->renderHandler->sortObjectData(objectData: $objectData, objectEntity: $object);
+
                 $object->setObject($objectData);
                 $objects[$key] = $object;
+
+
             }
 
             $simpleRenderTime = round((microtime(true) - $startSimpleRender) * 1000, 2);
@@ -2086,7 +2092,6 @@ class ObjectService
 
             return $objects;
         }
-
         // **COMPLEX RENDERING PATH**: Full operations for requests needing extensions/filtering
         $this->logger->debug('Complex rendering path - loading additional context', [
             'objectCount' => count($objects),
@@ -4051,98 +4056,6 @@ class ObjectService
 
         return $text;
     }//end createSlugHelper()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    /**
-     * Handle post-save writeBack operations for inverse relations
-     *
-     * This method processes writeBack operations after objects have been saved to the database.
-     * It uses the SaveObject handler's writeBack functionality for properties that have
-     * both inversedBy and writeBack enabled.
-     *
-     * @param array $savedObjects Array of saved ObjectEntity objects
-     * @param array $schemaCache  Cached schemas indexed by schema ID
-     *
-     * @return void
-     */
-    private function handlePostSaveInverseRelations(array $savedObjects, array $schemaCache): void
-    {
-        $writeBackCount = 0;
-        $bulkWriteBackUpdates = []; // PERFORMANCE OPTIMIZATION: Collect updates for bulk processing
-
-        foreach ($savedObjects as $savedObject) {
-            $objectData = $savedObject->getObject();
-            $schemaId   = $savedObject->getSchema();
-
-            if (!isset($schemaCache[$schemaId])) {
-                continue;
-            }
-
-            $schema           = $schemaCache[$schemaId];
-            $schemaProperties = $schema->getProperties();
-
-            foreach ($objectData as $property => $value) {
-                if (!isset($schemaProperties[$property])) {
-                    continue;
-                }
-
-                $propertyConfig = $schemaProperties[$property];
-                $items          = $propertyConfig['items'] ?? [];
-
-                // Check for writeBack enabled properties
-                $writeBack  = $propertyConfig['writeBack'] ?? ($items['writeBack'] ?? false);
-                $inversedBy = $propertyConfig['inversedBy'] ?? ($items['inversedBy'] ?? null);
-
-                if ($writeBack && $inversedBy && !empty($value)) {
-                    // Use SaveObject handler's writeBack functionality
-                    try {
-                        // Create a temporary object data array for writeBack processing
-                        $writeBackData = [$property => $value];
-                        $this->saveHandler->handleInverseRelationsWriteBack($savedObject, $schema, $writeBackData);
-                        $writeBackCount++;
-
-                        // After writeBack, update the source object's property with the current value
-                        // This ensures the source object reflects the relationship
-                        $currentObjectData = $savedObject->getObject();
-                        if (!isset($currentObjectData[$property]) || $currentObjectData[$property] !== $value) {
-                            $currentObjectData[$property] = $value;
-                            $savedObject->setObject($currentObjectData);
-
-                            // PERFORMANCE OPTIMIZATION: Collect for bulk update instead of individual UPDATE
-                            $objectUuid = $savedObject->getUuid();
-                            if (!isset($bulkWriteBackUpdates[$objectUuid])) {
-                                $bulkWriteBackUpdates[$objectUuid] = $savedObject;
-                            }
-                        }
-                    } catch (\Exception $e) {
-                    }
-                }//end if
-            }//end foreach
-        }//end foreach
-
-        // PERFORMANCE OPTIMIZATION: Execute all writeBack updates in a single bulk operation
-        if (!empty($bulkWriteBackUpdates)) {
-            $this->performBulkWriteBackUpdates(array_values($bulkWriteBackUpdates));
-        }
-
-
-    }//end handlePostSaveInverseRelations()
-
-
-
-
 
     /**
      * Filter objects based on RBAC and multi-organization permissions

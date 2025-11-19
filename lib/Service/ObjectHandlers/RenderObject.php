@@ -83,7 +83,7 @@ class RenderObject
 
     /**
      * Ultra-aggressive preload cache for sub-second performance
-     * 
+     *
      * Contains ALL relationship objects preloaded in a single query
      * for instant access during rendering without any additional database calls.
      *
@@ -132,11 +132,11 @@ class RenderObject
      * @param array $extend  Array of properties to extend
      *
      * @return array Array of preloaded objects indexed by ID/UUID
-     * 
+     *
      * @phpstan-param array<ObjectEntity> $objects
      * @phpstan-param array<string> $extend
      * @phpstan-return array<string, ObjectEntity>
-     * @psalm-param array<ObjectEntity> $objects  
+     * @psalm-param array<ObjectEntity> $objects
      * @psalm-param array<string> $extend
      * @psalm-return array<string, ObjectEntity>
      */
@@ -155,7 +155,7 @@ class RenderObject
             }
 
             $objectData = $object->getObject();
-            
+
             foreach ($extend as $extendField) {
                 // Skip special fields
                 if (str_starts_with($extendField, '@')) {
@@ -163,7 +163,7 @@ class RenderObject
                 }
 
                 $value = $objectData[$extendField] ?? null;
-                
+
                 if (is_array($value)) {
                     // Multiple relationships
                     foreach ($value as $relatedId) {
@@ -180,7 +180,7 @@ class RenderObject
 
         // Step 2: Remove duplicates and empty values
         $uniqueIds = array_filter(array_unique($allRelatedIds), fn($id) => !empty($id));
-        
+
         if (empty($uniqueIds)) {
             return [];
         }
@@ -190,13 +190,13 @@ class RenderObject
             $preloadStart = microtime(true);
             $relatedObjects = $this->objectCacheService->preloadObjects($uniqueIds);
             $preloadTime = round((microtime(true) - $preloadStart) * 1000, 2);
-            
+
             $this->logger->debug('ObjectCache preload completed', [
                 'preloadTime' => $preloadTime . 'ms',
                 'requestedIds' => count($uniqueIds),
                 'foundObjects' => count($relatedObjects)
             ]);
-            
+
             // Step 4: Index by both ID and UUID for quick lookup
             $indexedObjects = [];
             foreach ($relatedObjects as $relatedObject) {
@@ -207,12 +207,12 @@ class RenderObject
                     }
                 }
             }
-            
+
             // Step 5: Add to local cache for backward compatibility
             $this->objectsCache = array_merge($this->objectsCache, $indexedObjects);
-            
+
             return $indexedObjects;
-            
+
         } catch (\Exception $e) {
             // Log error but don't break the process
             $this->logger->error('Bulk preloading failed', [
@@ -244,7 +244,7 @@ class RenderObject
         $this->logger->debug('Ultra preload cache set', [
             'cachedObjectCount' => count($ultraPreloadCache)
         ]);
-        
+
     }//end setUltraPreloadCache()
 
 
@@ -256,7 +256,7 @@ class RenderObject
     public function getUltraCacheSize(): int
     {
         return count($this->ultraPreloadCache);
-        
+
     }//end getUltraCacheSize()
 
 
@@ -334,7 +334,7 @@ class RenderObject
 
         // Use cache service for optimized loading (only if not in ultra cache)
         $object = $this->objectCacheService->getObject($id);
-        
+
         // Update local cache for backward compatibility
         if ($object !== null) {
             $this->objectsCache[$id] = $object;
@@ -342,7 +342,7 @@ class RenderObject
                 $this->objectsCache[$object->getUuid()] = $object;
             }
         }
-        
+
         return $object;
 
     }//end getObject()
@@ -584,7 +584,7 @@ class RenderObject
             foreach ($schemaProperties as $propertyName => $propertyConfig) {
                 if ($this->isFilePropertyConfig($propertyConfig)) {
                     $isArrayProperty = ($propertyConfig['type'] ?? '') === 'array';
-                    
+
                     // If it's an array property and not set, initialize it as empty array
                     if ($isArrayProperty && !isset($objectData[$propertyName])) {
                         $objectData[$propertyName] = [];
@@ -712,7 +712,7 @@ class RenderObject
 
     /**
      * Hydrates metadata (@self) from file properties after they've been converted to file objects.
-     * 
+     *
      * This method extracts metadata like image URLs from file properties that have been
      * hydrated with accessUrl, downloadUrl, etc.
      *
@@ -735,10 +735,10 @@ class RenderObject
             // Check if objectImageField is configured
             if (!empty($config['objectImageField'])) {
                 $imageField = $config['objectImageField'];
-                
+
                 // Get the value from the configured field
                 $value = $this->getValueFromPath($objectData, $imageField);
-                
+
                 // Check if the value is a file object (has downloadUrl or accessUrl)
                 if (is_array($value) && (isset($value['downloadUrl']) || isset($value['accessUrl']))) {
                     // Set the image URL on the entity itself (not in object data)
@@ -836,6 +836,48 @@ class RenderObject
 
     }//end getFileObject()
 
+
+    public function sortObjectData(array $objectData, ObjectEntity $objectEntity): array
+    {
+        $schema = $this->schemasCache[$objectEntity->getSchema()];
+
+        if($schema === null) {
+            $schema = $this->schemaMapper->find($objectEntity->getSchema());
+        }
+
+        uksort($objectData, function ($a, $b) use ($schema) {
+            if($b === '@self') {
+                return 1;
+            } else if ($a === '@self') {
+                return -1;
+            }
+
+            $properties = $schema->getProperties();
+
+            if(array_key_exists($a, $properties) && array_key_exists($b, $properties)) {
+
+                if ($properties[$a]['order'] === null) {
+                    return 1;
+                } else if ($properties[$b]['order'] === null) {
+                    return -1;
+                }
+
+                return $properties[$a]['order'] < $properties[$b]['order'] ? -1 : 1;
+            } else if (array_key_exists($a, $properties)) {
+                return -1;
+            } else if ($a === 'id') {
+                return -1;
+            } else if ($b === 'id') {
+                return 1;
+            } else {
+
+                return 1;
+            }
+        });
+
+        return $objectData;
+
+    }
 
     /**
      * Renders an entity with optional extensions and filters.
@@ -987,6 +1029,8 @@ class RenderObject
         if (empty($extend) === false && $depth < 10) {
             $objectData = $this->extendObject($entity, $extend, $objectData, $depth, $filter, $fields, $unset, $visitedIds);
         }
+
+        $objectData = $this->sortObjectData(objectData: $objectData, objectEntity: $entity);
 
         $entity->setObject($objectData);
 
