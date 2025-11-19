@@ -31,6 +31,9 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\ImportService;
+use OCA\OpenRegister\Service\GitHubService;
+use OCA\OpenRegister\Service\OasService;
+use OCP\App\IAppManager;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
@@ -91,6 +94,27 @@ class RegistersController extends Controller
      */
     private readonly RegisterMapper $registerMapper;
 
+    /**
+     * GitHub service for publishing to GitHub
+     *
+     * @var GitHubService
+     */
+    private readonly GitHubService $githubService;
+
+    /**
+     * App manager for getting app version
+     *
+     * @var IAppManager
+     */
+    private readonly IAppManager $appManager;
+
+    /**
+     * OAS service for generating OpenAPI specifications
+     *
+     * @var OasService
+     */
+    private readonly OasService $oasService;
+
 
     /**
      * Constructor for the RegistersController
@@ -107,6 +131,9 @@ class RegistersController extends Controller
      * @param ImportService        $importService        The import service
      * @param SchemaMapper         $schemaMapper         The schema mapper
      * @param RegisterMapper       $registerMapper       The register mapper
+     * @param GitHubService        $githubService        GitHub service
+     * @param IAppManager          $appManager           App manager
+     * @param OasService           $oasService           OAS service
      *
      * @return void
      */
@@ -123,7 +150,10 @@ class RegistersController extends Controller
         ExportService $exportService,
         ImportService $importService,
         SchemaMapper $schemaMapper,
-        RegisterMapper $registerMapper
+        RegisterMapper $registerMapper,
+        GitHubService $githubService,
+        IAppManager $appManager,
+        OasService $oasService
     ) {
         parent::__construct($appName, $request);
         $this->configurationService = $configurationService;
@@ -132,6 +162,9 @@ class RegistersController extends Controller
         $this->importService        = $importService;
         $this->schemaMapper         = $schemaMapper;
         $this->registerMapper       = $registerMapper;
+        $this->githubService        = $githubService;
+        $this->appManager           = $appManager;
+        $this->oasService           = $oasService;
 
     }//end __construct()
 
@@ -518,6 +551,140 @@ class RegistersController extends Controller
         }//end try
 
     }//end export()
+
+
+    /**
+     * Publish register OAS specification to GitHub
+     *
+     * Exports the register as OpenAPI Specification and publishes it to a GitHub repository.
+     *
+     * @param int $id The ID of the register to publish
+     *
+     * @return JSONResponse Publish result with commit info
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function publishToGitHub(int $id): JSONResponse
+    {
+        try {
+            $register = $this->registerMapper->find($id);
+
+            $data = $this->request->getParams();
+            $owner = $data['owner'] ?? '';
+            $repo = $data['repo'] ?? '';
+            $path = $data['path'] ?? '';
+            $branch = $data['branch'] ?? 'main';
+            $commitMessage = $data['commitMessage'] ?? "Update register OAS: {$register->getTitle()}";
+
+            if (empty($owner) || empty($repo)) {
+                return new JSONResponse(
+                    ['error' => 'Owner and repo parameters are required'],
+                    400
+                );
+            }
+
+            // Strip leading slash from path
+            $path = ltrim($path, '/');
+            
+            // If path is empty, use a default filename based on register slug
+            if (empty($path)) {
+                $slug = $register->getSlug();
+                $path = $slug . '_openregister.json';
+            }
+
+            $this->logger->info('Publishing register OAS to GitHub', [
+                'register_id' => $id,
+                'register_slug' => $register->getSlug(),
+                'owner' => $owner,
+                'repo' => $repo,
+                'path' => $path,
+                'branch' => $branch,
+            ]);
+
+            // Generate real OAS (OpenAPI Specification) for the register
+            // Do NOT add x-openregister metadata - this is a pure OAS file, not a configuration file
+            $oasData = $this->oasService->createOas((string)$register->getId());
+            
+            $jsonContent = json_encode($oasData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+
+            // Check if file already exists (for updates)
+            $fileSha = null;
+            try {
+                $fileSha = $this->githubService->getFileSha($owner, $repo, $path, $branch);
+            } catch (\Exception $e) {
+                // File doesn't exist, which is fine for new files
+                $this->logger->debug('File does not exist, will create new file', ['path' => $path]);
+            }
+
+            // Publish to GitHub
+            $result = $this->githubService->publishConfiguration(
+                $owner,
+                $repo,
+                $path,
+                $branch,
+                $jsonContent,
+                $commitMessage,
+                $fileSha
+            );
+
+            $this->logger->info("Successfully published register OAS {$register->getTitle()} to GitHub", [
+                'owner' => $owner,
+                'repo' => $repo,
+                'branch' => $branch,
+                'path' => $path,
+                'file_url' => $result['file_url'] ?? null,
+            ]);
+
+            // Check if published to default branch (required for Code Search indexing)
+            $defaultBranch = null;
+            try {
+                $repoInfo = $this->githubService->getRepositoryInfo($owner, $repo);
+                $defaultBranch = $repoInfo['default_branch'] ?? 'main';
+            } catch (\Exception $e) {
+                $this->logger->warning('Could not fetch repository default branch', [
+                    'owner' => $owner,
+                    'repo' => $repo,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
+            $message = 'Register OAS published successfully to GitHub';
+            if ($defaultBranch && $branch !== $defaultBranch) {
+                $message .= ". Note: Published to branch '{$branch}' (default is '{$defaultBranch}'). " .
+                           "GitHub Code Search primarily indexes the default branch, so this may not appear in search results immediately.";
+            } else {
+                $message .= ". Note: GitHub Code Search may take a few minutes to index new files.";
+            }
+
+            return new JSONResponse([
+                'success' => true,
+                'message' => $message,
+                'registerId' => $register->getId(),
+                'commit_sha' => $result['commit_sha'],
+                'commit_url' => $result['commit_url'],
+                'file_url' => $result['file_url'],
+                'branch' => $branch,
+                'default_branch' => $defaultBranch,
+                'indexing_note' => $defaultBranch && $branch !== $defaultBranch 
+                    ? "Published to non-default branch. For discovery, publish to '{$defaultBranch}' branch."
+                    : "File published successfully. GitHub Code Search indexing may take a few minutes.",
+            ], 200);
+        } catch (DoesNotExistException $e) {
+            $this->logger->error('Register not found for publishing', ['register_id' => $id]);
+            return new JSONResponse(
+                ['error' => 'Register not found'],
+                404
+            );
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to publish register OAS to GitHub: ' . $e->getMessage());
+            
+            return new JSONResponse(
+                ['error' => 'Failed to publish register OAS: ' . $e->getMessage()],
+                500
+            );
+        }
+    }//end publishToGitHub()
 
 
     /**

@@ -2,6 +2,7 @@ export type TConfiguration = {
 	id: string
 	title: string
 	description: string | null
+	version?: string | null
 	type: string
 	application: string
 	owner: string

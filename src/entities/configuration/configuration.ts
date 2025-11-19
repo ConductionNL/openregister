@@ -9,6 +9,7 @@ export class ConfigurationEntity implements TConfiguration {
 	id: string
 	title: string
 	description: string | null
+	version?: string | null
 	type: string
 	application: string
 	owner: string
@@ -35,6 +36,7 @@ export class ConfigurationEntity implements TConfiguration {
 		this.id = configuration.id || ''
 		this.title = configuration.title || ''
 		this.description = configuration.description || null
+		this.version = configuration.version ?? null
 		this.type = configuration.type || ''
 		this.application = configuration.application || ''
 		this.owner = configuration.owner || ''

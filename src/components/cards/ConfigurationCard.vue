@@ -172,12 +172,12 @@
 				</span>
 				
 				<!-- Version info -->
-				<span v-if="displayConfiguration.localVersion" class="metaItem">
+				<span v-if="displayConfiguration.version || displayConfiguration.localVersion" class="metaItem">
 					<Tag :size="16" />
-					v{{ displayConfiguration.localVersion }}
+					v{{ displayConfiguration.version || displayConfiguration.localVersion }}
 				</span>
 				
-				<span v-if="displayConfiguration.remoteVersion && displayConfiguration.remoteVersion !== displayConfiguration.localVersion" class="metaItem">
+				<span v-if="displayConfiguration.remoteVersion && displayConfiguration.remoteVersion !== (displayConfiguration.version || displayConfiguration.localVersion)" class="metaItem">
 					<Update :size="16" />
 					v{{ displayConfiguration.remoteVersion }} available
 				</span>
@@ -468,10 +468,11 @@ export default {
 		 */
 		hasUpdateAvailable() {
 			const config = this.displayConfiguration
-			if (!this.isImported || !config.localVersion || !config.remoteVersion) {
+			const currentVersion = config.version || config.localVersion
+			if (!this.isImported || !currentVersion || !config.remoteVersion) {
 				return false
 			}
-			return config.remoteVersion !== config.localVersion
+			return config.remoteVersion !== currentVersion
 		},
 		/**
 		 * Check if configuration is published (local and has GitHub repo info)

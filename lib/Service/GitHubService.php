@@ -155,11 +155,22 @@ class GitHubService
             ]);
             
             // Build search query targeting actual configuration files
-            // Search for "x-openregister" content in JSON files only
-            $searchQuery = 'x-openregister extension:json';
+            // Search for "x-openregister" content in JSON files
+            // GitHub Code Search looks for exact text matches in file content
+            // We search for the exact property name that should appear in JSON files
+            $searchQuery = '"x-openregister" extension:json';
             if (!empty($search)) {
+                // If search term is provided, add it to the query
+                // GitHub Code Search supports searching in specific repos: repo:owner/repo
+                // Or we can add the search term as additional filter
                 $searchQuery .= ' ' . $search;
             }
+            
+            $this->logger->debug('GitHub Code Search query', [
+                'query' => $searchQuery,
+                'page' => $page,
+                'per_page' => min($perPage, 100),
+            ]);
             
             // Use GitHub pagination directly (max 100 per page, 1000 results total)
             // This uses only 1 Code Search API call per search request
@@ -175,6 +186,12 @@ class GitHubService
             ]);
             
             $data = json_decode($response->getBody(), true);
+            
+            $this->logger->debug('GitHub Code Search response', [
+                'total_count' => $data['total_count'] ?? 0,
+                'items_count' => count($data['items'] ?? []),
+                'incomplete_results' => $data['incomplete_results'] ?? false,
+            ]);
             $allResults = [];
             
             // Process and format results
@@ -668,6 +685,46 @@ class GitHubService
     }
 
     /**
+     * Get repository information including default branch
+     *
+     * @param string $owner Repository owner
+     * @param string $repo  Repository name
+     *
+     * @return array Repository info with default_branch
+     * @throws \Exception If API request fails
+     *
+     * @since 0.2.10
+     */
+    public function getRepositoryInfo(string $owner, string $repo): array
+    {
+        try {
+            $response = $this->client->request('GET', self::API_BASE . "/repos/{$owner}/{$repo}", [
+                'headers' => $this->getHeaders(),
+            ]);
+
+            $repoData = json_decode($response->getBody(), true);
+
+            return [
+                'id'            => $repoData['id'] ?? null,
+                'name'          => $repoData['name'] ?? $repo,
+                'full_name'     => $repoData['full_name'] ?? "{$owner}/{$repo}",
+                'owner'         => $repoData['owner']['login'] ?? $owner,
+                'private'       => $repoData['private'] ?? false,
+                'description'   => $repoData['description'] ?? '',
+                'default_branch' => $repoData['default_branch'] ?? 'main',
+                'url'           => $repoData['html_url'] ?? '',
+            ];
+        } catch (GuzzleException $e) {
+            $this->logger->error('GitHub API get repository info failed', [
+                'error' => $e->getMessage(),
+                'owner' => $owner,
+                'repo'  => $repo,
+            ]);
+            throw new \Exception('Failed to fetch repository info: ' . $e->getMessage());
+        }
+    }
+
+    /**
      * Publish a configuration file to GitHub
      *
      * Creates or updates a file in the specified repository, branch, and path.
@@ -716,7 +773,23 @@ class GitHubService
                 $payload['sha'] = $fileSha;
             }
 
-            $response = $this->client->request('PUT', self::API_BASE . "/repos/{$owner}/{$repo}/contents/{$path}", [
+            // URL encode the path for the GitHub API (path may contain slashes, spaces, etc.)
+            // GitHub API expects path segments to be encoded, but slashes should remain as slashes
+            // So we encode each segment separately
+            $pathSegments = explode('/', $path);
+            $encodedPathSegments = array_map('rawurlencode', $pathSegments);
+            $encodedPath = implode('/', $encodedPathSegments);
+            
+            $apiUrl = self::API_BASE . "/repos/{$owner}/{$repo}/contents/{$encodedPath}";
+            
+            $this->logger->debug('GitHub API publish request', [
+                'url' => $apiUrl,
+                'path' => $path,
+                'encoded_path' => $encodedPath,
+                'branch' => $branch,
+            ]);
+            
+            $response = $this->client->request('PUT', $apiUrl, [
                 'headers' => $this->getHeaders(),
                 'json'    => $payload,
             ]);
@@ -746,6 +819,15 @@ class GitHubService
                 
                 if (isset($errorData['message'])) {
                     $errorMessage = $errorData['message'];
+                    
+                    // Provide more context for common errors
+                    if ($statusCode === 404) {
+                        $errorMessage = "Not Found - Repository '{$owner}/{$repo}', branch '{$branch}', or path '{$path}' may not exist or you may not have access";
+                    } elseif ($statusCode === 403) {
+                        $errorMessage = "Forbidden - You may not have write access to repository '{$owner}/{$repo}' or the branch '{$branch}' is protected";
+                    } elseif ($statusCode === 422) {
+                        $errorMessage = "Validation Error - {$errorMessage}. Check that the branch '{$branch}' exists and the path '{$path}' is valid";
+                    }
                 }
             }
 
@@ -755,6 +837,7 @@ class GitHubService
                 'owner'      => $owner,
                 'repo'       => $repo,
                 'path'       => $path,
+                'branch'     => $branch,
             ]);
 
             throw new \Exception('Failed to publish configuration: ' . $errorMessage);
@@ -775,7 +858,12 @@ class GitHubService
     public function getFileSha(string $owner, string $repo, string $path, string $branch = 'main'): ?string
     {
         try {
-            $response = $this->client->request('GET', self::API_BASE . "/repos/{$owner}/{$repo}/contents/{$path}", [
+            // URL encode the path for the GitHub API (path may contain slashes, spaces, etc.)
+            $pathSegments = explode('/', $path);
+            $encodedPathSegments = array_map('rawurlencode', $pathSegments);
+            $encodedPath = implode('/', $encodedPathSegments);
+            
+            $response = $this->client->request('GET', self::API_BASE . "/repos/{$owner}/{$repo}/contents/{$encodedPath}", [
                 'query' => [
                     'ref' => $branch,
                 ],
