@@ -410,26 +410,10 @@ class AgentTool extends AbstractTool implements ToolInterface
      */
     public function executeFunction(string $functionName, array $parameters, ?string $userId = null): array
     {
-        return match ($functionName) {
-            'list_agents' => $this->listAgents(
-                $parameters['limit'] ?? 50,
-                $parameters['offset'] ?? 0
-            ),
-            'get_agent' => $this->getAgent($parameters['uuid']),
-            'create_agent' => $this->createAgent(
-                $parameters['name'],
-                $parameters['description'] ?? null,
-                $parameters['type'] ?? null,
-                $parameters['systemPrompt'] ?? null
-            ),
-            'update_agent' => $this->updateAgent(
-                $parameters['uuid'],
-                $parameters['name'] ?? null,
-                $parameters['description'] ?? null,
-                $parameters['systemPrompt'] ?? null
-            ),
-            'delete_agent' => $this->deleteAgent($parameters['uuid']),
-            default => $this->formatError("Unknown function: {$functionName}"),
-        };
+        // Convert snake_case to camelCase for PSR compliance
+        $methodName = lcfirst(str_replace('_', '', ucwords($functionName, '_')));
+        
+        // Call the method directly (LLPhant-compatible)
+        return $this->$methodName(...array_values($parameters));
     }
 }

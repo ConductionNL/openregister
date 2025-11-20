@@ -228,19 +228,11 @@ class MagicOrganizationHandler
     private function getSystemDefaultOrganizationUuid(): ?string
     {
         try {
-            $qb = $this->db->getQueryBuilder();
-            $qb->select('uuid')
-                ->from('openregister_organisations')
-                ->where($qb->expr()->eq('is_default', $qb->createNamedParameter(1)))
-                ->setMaxResults(1);
-
-            $result = $qb->executeQuery();
-            $defaultUuid = $result->fetchColumn();
-            $result->closeCursor();
-
-            return $defaultUuid ?: null;
+            // Get default organisation UUID from configuration (not deprecated is_default column)
+            $defaultUuid = $this->appConfig->getValueString('openregister', 'defaultOrganisation', '');
+            return $defaultUuid !== '' ? $defaultUuid : null;
         } catch (\Exception $e) {
-            $this->logger->error('Failed to get system default organization', [
+            $this->logger->error('Failed to get system default organization from configuration', [
                 'error' => $e->getMessage()
             ]);
             return null;

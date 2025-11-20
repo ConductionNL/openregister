@@ -77,7 +77,7 @@ export const useConversationStore = defineStore('conversation', {
 		/**
 		 * Set active conversation
 		 *
-		 * @param {TConversation | null} conversation - The conversation to set as active
+		 * @param {object | null} conversation - The conversation to set as active
 		 */
 		setActiveConversation(conversation: TConversation | null) {
 			this.activeConversation = conversation ? new Conversation(conversation) : null
@@ -87,7 +87,7 @@ export const useConversationStore = defineStore('conversation', {
 		/**
 		 * Set messages for active conversation
 		 *
-		 * @param {TMessage[]} messages - Array of messages
+		 * @param {Array} messages - Array of messages
 		 */
 		setActiveMessages(messages: TMessage[]) {
 			this.activeConversationMessages = messages.map((msg) => new Message(msg))
@@ -97,7 +97,7 @@ export const useConversationStore = defineStore('conversation', {
 		/**
 		 * Add a message to the active conversation
 		 *
-		 * @param {TMessage} message - Message to add
+		 * @param {object} message - Message to add
 		 */
 		addMessage(message: TMessage) {
 			const newMessage = new Message(message)
@@ -108,7 +108,7 @@ export const useConversationStore = defineStore('conversation', {
 		/**
 		 * Set conversation list
 		 *
-		 * @param {TConversation[]} conversations - Array of conversations
+		 * @param {Array} conversations - Array of conversations
 		 */
 		setConversationList(conversations: TConversation[]) {
 			this.conversationList = conversations.map((conv) => new Conversation(conv))
@@ -353,7 +353,7 @@ export const useConversationStore = defineStore('conversation', {
 		 * Update a conversation
 		 *
 		 * @param {string} uuid - Conversation UUID
-		 * @param {Partial<TConversation>} updates - Fields to update
+		 * @param {object} updates - Fields to update
 		 * @return {Promise} Promise with updated conversation data
 		 */
 		async updateConversation(uuid: string, updates: Partial<TConversation>) {
@@ -536,10 +536,33 @@ export const useConversationStore = defineStore('conversation', {
 		 * @param {string} content - Message content
 		 * @param {string} conversationUuid - Optional conversation UUID (creates new if not provided)
 		 * @param {string} agentUuid - Optional agent UUID (required if creating new conversation)
+		 * @param {Array<string>} selectedViews - Array of selected view UUIDs for RAG context
+		 * @param {Array<string>} selectedTools - Array of selected tool UUIDs for agent capabilities
+		 * @param {object} ragSettings - RAG (Retrieval Augmented Generation) configuration settings
+		 * @param {boolean} ragSettings.includeObjects - Whether to include objects in RAG context
+		 * @param {boolean} ragSettings.includeFiles - Whether to include files in RAG context
+		 * @param {number} ragSettings.numSourcesFiles - Number of file sources to retrieve
+		 * @param {number} ragSettings.numSourcesObjects - Number of object sources to retrieve
 		 * @return {Promise} Promise with response data
 		 */
-		async sendMessage(content: string, conversationUuid?: string, agentUuid?: string) {
-			console.log('ConversationStore: Sending message')
+		async sendMessage(
+			content: string,
+			conversationUuid?: string,
+			agentUuid?: string,
+			selectedViews?: string[],
+			selectedTools?: string[],
+			ragSettings?: {
+				includeObjects?: boolean,
+				includeFiles?: boolean,
+				numSourcesFiles?: number,
+				numSourcesObjects?: number
+			}
+		) {
+			console.log('ConversationStore: Sending message', {
+				views: selectedViews?.length || 0,
+				tools: selectedTools?.length || 0,
+				ragSettings,
+			})
 
 			this.loading = true
 			this.error = null
@@ -572,6 +595,30 @@ export const useConversationStore = defineStore('conversation', {
 				} else if (agentUuid) {
 					// Only send agentUuid if we don't have a conversation yet
 					payload.agentUuid = agentUuid
+				}
+
+				// Include selected views and tools if provided
+				if (selectedViews && selectedViews.length > 0) {
+					payload.views = selectedViews
+				}
+				if (selectedTools && selectedTools.length > 0) {
+					payload.tools = selectedTools
+				}
+
+				// Include RAG settings if provided
+				if (ragSettings) {
+					if (ragSettings.includeObjects !== undefined) {
+						payload.includeObjects = ragSettings.includeObjects
+					}
+					if (ragSettings.includeFiles !== undefined) {
+						payload.includeFiles = ragSettings.includeFiles
+					}
+					if (ragSettings.numSourcesFiles !== undefined) {
+						payload.numSourcesFiles = ragSettings.numSourcesFiles
+					}
+					if (ragSettings.numSourcesObjects !== undefined) {
+						payload.numSourcesObjects = ragSettings.numSourcesObjects
+					}
 				}
 
 				const response = await fetch(endpoint, {

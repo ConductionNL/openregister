@@ -2,7 +2,8 @@
 	<NcSettingsSection
 		:name="name"
 		:description="description"
-		:doc-url="docUrl">
+		:doc-url="docUrl"
+		v-bind="$attrs">
 		<!-- Action buttons positioned top-right -->
 		<div v-if="$slots.actions" class="action-buttons">
 			<slot name="actions" />
@@ -82,6 +83,8 @@ export default {
 		Refresh,
 		InformationOutline,
 	},
+
+	inheritAttrs: false,
 
 	props: {
 		/**

@@ -34,8 +34,14 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 					<NcTextField :disabled="loading"
 						label="Title *"
 						:value.sync="schemaItem.title" />
-					<span v-if="schemaItem.extend" class="statusPill statusPill--alert">
-						{{ t('openregister', 'Extended') }}
+					<span v-if="schemaItem.allOf && schemaItem.allOf.length > 0" class="statusPill statusPill--success">
+						{{ t('openregister', 'allOf') }}
+					</span>
+					<span v-if="schemaItem.oneOf && schemaItem.oneOf.length > 0" class="statusPill statusPill--info">
+						{{ t('openregister', 'oneOf') }}
+					</span>
+					<span v-if="schemaItem.anyOf && schemaItem.anyOf.length > 0" class="statusPill statusPill--info">
+						{{ t('openregister', 'anyOf') }}
 					</span>
 				</div>
 				<div v-if="schemaItem.created" class="detail-item">
@@ -662,34 +668,92 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 							<NcTextField :disabled="loading"
 								label="Slug"
 								:value.sync="schemaItem.slug" />
-							<NcSelect
-								v-model="schemaItem.extend"
-								:disabled="loading"
-								:options="availableSchemas"
-								:clearable="true"
-								label="title"
-								track-by="id"
-								input-label="Extends Schema"
-								placeholder="Select a schema to extend (optional)">
-								<template #option="{ title, description }">
-									<div class="schema-option">
-										<span class="schema-title">{{ title }}</span>
-										<span v-if="description" class="schema-description">{{ description }}</span>
+
+							<!-- Schema Composition Section -->
+							<div class="schema-composition-section">
+								<h3>Schema Composition (JSON Schema)</h3>
+
+								<!-- allOf - Multiple Inheritance (Recommended) -->
+								<NcSelect
+									v-model="schemaItem.allOf"
+									:disabled="loading"
+									:options="availableSchemas"
+									:multiple="true"
+									:clearable="true"
+									:close-on-select="false"
+									label="title"
+									track-by="id"
+									input-label="allOf - Inherits from ALL schemas (Recommended)"
+									placeholder="Select schemas to inherit from (supports multiple parents)">
+									<template #option="{ title, description }">
+										<div class="schema-option">
+											<span class="schema-title">{{ title }}</span>
+											<span v-if="description" class="schema-description">{{ description }}</span>
+										</div>
+									</template>
+								</NcSelect>
+								<NcNoteCard v-if="schemaItem.allOf && schemaItem.allOf.length > 0" type="info" class="composition-info">
+									<p><strong>{{ t('openregister', 'allOf - Multiple Inheritance') }}</strong></p>
+									<p>{{ t('openregister', 'Instance must validate against ALL selected schemas. Properties from all parent schemas are merged. This is the recommended pattern for schema extension and multiple inheritance.') }}</p>
+									<p><strong>{{ t('openregister', 'Important:') }}</strong> {{ t('openregister', 'Child schemas can only ADD constraints, never relax them (Liskov Substitution Principle). Metadata (title, description, order) can be overridden.') }}</p>
+									<div v-if="allOfSchemaNames.length > 0" class="parent-schemas-list">
+										<strong>{{ t('openregister', 'Parent Schemas:') }}</strong>
+										<ul>
+											<li v-for="name in allOfSchemaNames" :key="name">
+												{{ name }}
+											</li>
+										</ul>
 									</div>
-								</template>
-							</NcSelect>
-							<NcNoteCard v-if="schemaItem.extend" type="info" class="extend-info">
-								<p><strong>{{ t('openregister', 'Schema Extension') }}</strong></p>
-								<p v-if="parentSchemaName">
-									{{ t('openregister', 'This schema extends "{parent}" and inherits its properties. Only the differences (delta) are stored. When retrieved, properties from the parent schema will be merged with this schema\'s properties.', { parent: parentSchemaName }) }}
-								</p>
-								<p v-else>
-									{{ t('openregister', 'This schema extends another schema and inherits its properties. Only the differences (delta) are stored. When retrieved, properties from the parent schema will be merged with this schema\'s properties.') }}
-								</p>
-								<div v-if="parentSchemaName" class="parent-schema-link">
-									<strong>{{ t('openregister', 'Parent Schema:') }}</strong> {{ parentSchemaName }}
-								</div>
-							</NcNoteCard>
+								</NcNoteCard>
+
+								<!-- oneOf - Mutually Exclusive Options -->
+								<NcSelect
+									v-model="schemaItem.oneOf"
+									:disabled="loading"
+									:options="availableSchemas"
+									:multiple="true"
+									:clearable="true"
+									:close-on-select="false"
+									label="title"
+									track-by="id"
+									input-label="oneOf - Exactly ONE schema must match"
+									placeholder="Select schemas (instance must match exactly one)">
+									<template #option="{ title, description }">
+										<div class="schema-option">
+											<span class="schema-title">{{ title }}</span>
+											<span v-if="description" class="schema-description">{{ description }}</span>
+										</div>
+									</template>
+								</NcSelect>
+								<NcNoteCard v-if="schemaItem.oneOf && schemaItem.oneOf.length > 0" type="info" class="composition-info">
+									<p><strong>{{ t('openregister', 'oneOf - Mutually Exclusive') }}</strong></p>
+									<p>{{ t('openregister', 'Instance must validate against EXACTLY ONE of the selected schemas. Properties are NOT merged. Use for discriminated unions or type variants.') }}</p>
+								</NcNoteCard>
+
+								<!-- anyOf - Flexible Composition -->
+								<NcSelect
+									v-model="schemaItem.anyOf"
+									:disabled="loading"
+									:options="availableSchemas"
+									:multiple="true"
+									:clearable="true"
+									:close-on-select="false"
+									label="title"
+									track-by="id"
+									input-label="anyOf - At least ONE schema must match"
+									placeholder="Select schemas (instance must match at least one)">
+									<template #option="{ title, description }">
+										<div class="schema-option">
+											<span class="schema-title">{{ title }}</span>
+											<span v-if="description" class="schema-description">{{ description }}</span>
+										</div>
+									</template>
+								</NcSelect>
+								<NcNoteCard v-if="schemaItem.anyOf && schemaItem.anyOf.length > 0" type="info" class="composition-info">
+									<p><strong>{{ t('openregister', 'anyOf - Flexible Composition') }}</strong></p>
+									<p>{{ t('openregister', 'Instance must validate against AT LEAST ONE of the selected schemas. Properties are NOT merged. More permissive than oneOf.') }}</p>
+								</NcNoteCard>
+							</div>
 							<NcSelect
 								v-model="schemaItem.configuration.objectNameField"
 								:disabled="loading"
@@ -925,6 +989,63 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 				</template>
 				{{ success ? 'Close' : 'Cancel' }}
 			</NcButton>
+
+			<!-- Additional Actions for Existing Schemas -->
+			<template v-if="schemaStore.schemaItem?.id && !success">
+				<NcButton
+					:disabled="loading"
+					@click="extendSchema()">
+					<template #icon>
+						<CallSplit :size="20" />
+					</template>
+					{{ t('openregister', 'Extend Schema') }}
+				</NcButton>
+				<NcButton
+					:disabled="loading"
+					@click="analyzeProperties()">
+					<template #icon>
+						<DatabaseSearch :size="20" />
+					</template>
+					{{ t('openregister', 'Analyze Properties') }}
+				</NcButton>
+				<NcButton
+					:disabled="loading"
+					@click="validateObjects()">
+					<template #icon>
+						<CheckCircle :size="20" />
+					</template>
+					{{ t('openregister', 'Validate Objects') }}
+				</NcButton>
+				<NcButton
+					v-tooltip="schemaItem.stats?.objects?.total > 0 ? t('openregister', 'Delete all objects in this schema') : t('openregister', 'No objects to delete')"
+					:disabled="loading || schemaItem.stats?.objects?.total === 0"
+					@click="deleteObjects()">
+					<template #icon>
+						<DeleteSweep :size="20" />
+					</template>
+					{{ t('openregister', 'Delete Objects') }}
+				</NcButton>
+				<NcButton
+					v-tooltip="schemaItem.stats?.objects?.total > 0 ? t('openregister', 'Publish all objects in this schema') : t('openregister', 'No objects to publish')"
+					:disabled="loading || schemaItem.stats?.objects?.total === 0"
+					@click="publishObjects()">
+					<template #icon>
+						<Upload :size="20" />
+					</template>
+					{{ t('openregister', 'Publish Objects') }}
+				</NcButton>
+				<NcButton
+					v-tooltip="schemaItem.stats?.objects?.total > 0 ? t('openregister', 'Cannot delete: objects are still attached') : ''"
+					:disabled="loading || schemaItem.stats?.objects?.total > 0"
+					type="error"
+					@click="deleteSchema()">
+					<template #icon>
+						<TrashCanOutline :size="20" />
+					</template>
+					{{ t('openregister', 'Delete') }}
+				</NcButton>
+			</template>
+
 			<NcButton v-if="createAnother ||!success"
 				:disabled="loading || !schemaItem.title"
 				type="primary"
@@ -968,6 +1089,11 @@ import Check from 'vue-material-design-icons/Check.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import AlertOutline from 'vue-material-design-icons/AlertOutline.vue'
 import Close from 'vue-material-design-icons/Close.vue'
+import CallSplit from 'vue-material-design-icons/CallSplit.vue'
+import DatabaseSearch from 'vue-material-design-icons/DatabaseSearch.vue'
+import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
+import DeleteSweep from 'vue-material-design-icons/DeleteSweep.vue'
+import Upload from 'vue-material-design-icons/Upload.vue'
 
 export default {
 	name: 'EditSchema',
@@ -998,6 +1124,11 @@ export default {
 		TrashCanOutline,
 		AlertOutline,
 		Close,
+		CallSplit,
+		DatabaseSearch,
+		CheckCircle,
+		DeleteSweep,
+		Upload,
 	},
 	data() {
 		return {
@@ -1162,23 +1293,30 @@ export default {
 			}))
 		},
 		/**
-		 * Get the parent schema name if this schema extends another
+		 * Get the names of all schemas in allOf composition
 		 *
-		 * @return {string|null} Parent schema title or null
+		 * @return {Array} Array of schema titles
 		 */
-		parentSchemaName() {
-			if (!this.schemaItem.extend) {
-				return null
+		allOfSchemaNames() {
+			if (!this.schemaItem.allOf || !Array.isArray(this.schemaItem.allOf) || this.schemaItem.allOf.length === 0) {
+				return []
 			}
 
-			// Find the parent schema by ID, UUID, or slug
-			const parentSchema = schemaStore.schemaList.find(schema =>
-				schema.id === this.schemaItem.extend
-				|| schema.uuid === this.schemaItem.extend
-				|| schema.slug === this.schemaItem.extend,
-			)
+			return this.schemaItem.allOf
+				.map(ref => {
+					// ref could be an ID, UUID, slug, or an object with id property
+					const schemaId = typeof ref === 'object' ? ref.id : ref
 
-			return parentSchema ? (parentSchema.title || parentSchema.name || `Schema ${parentSchema.id}`) : null
+					// Find the schema by ID, UUID, or slug
+					const schema = schemaStore.schemaList.find(s =>
+						s.id === schemaId
+						|| s.uuid === schemaId
+						|| s.slug === schemaId,
+					)
+
+					return schema ? (schema.title || schema.name || `Schema ${schema.id}`) : schemaId
+				})
+				.filter(name => name) // Remove any null/undefined values
 		},
 	},
 	watch: {
@@ -3012,6 +3150,76 @@ export default {
 			}
 
 			this.checkPropertiesModified()
+		},
+
+		/**
+		 * Create an extended schema based on the current schema
+		 *
+		 * @return {void}
+		 */
+		extendSchema() {
+		// Create a new schema that extends the current schema
+			const newSchema = {
+				title: `Extended ${this.schemaItem.title}`,
+				description: `Schema extending ${this.schemaItem.title}`,
+				extend: this.schemaItem.id, // Set the parent schema ID
+				properties: {}, // Start with empty properties (will inherit from parent)
+				required: [],
+			}
+			// Set the new schema and keep the modal open with new schema
+			schemaStore.setSchemaItem(newSchema)
+			// Reset the form state
+			this.initializeSchemaItem()
+		},
+
+		/**
+		 * Open the Analyze Properties modal
+		 *
+		 * @return {void}
+		 */
+		analyzeProperties() {
+		// The current schema is already set in schemaStore, just open the modal
+			navigationStore.setModal('exploreSchema')
+		},
+
+		/**
+		 * Open the Validate Objects modal
+		 *
+		 * @return {void}
+		 */
+		validateObjects() {
+		// The current schema is already set in schemaStore, just open the modal
+			navigationStore.setModal('validateSchema')
+		},
+
+		/**
+		 * Open the Delete Objects modal
+		 *
+		 * @return {void}
+		 */
+		deleteObjects() {
+		// The current schema is already set in schemaStore, just open the modal
+			navigationStore.setModal('deleteSchemaObjects')
+		},
+
+		/**
+		 * Open the Publish Objects modal
+		 *
+		 * @return {void}
+		 */
+		publishObjects() {
+		// The current schema is already set in schemaStore, just open the modal
+			navigationStore.setModal('publishSchemaObjects')
+		},
+
+		/**
+		 * Delete the current schema
+		 *
+		 * @return {void}
+		 */
+		deleteSchema() {
+		// The current schema is already set in schemaStore, just open the dialog
+			navigationStore.setDialog('deleteSchema')
 		},
 	},
 }

@@ -25,6 +25,7 @@
 						v-model="selectedEmbeddingProvider"
 						:options="embeddingProviderOptions"
 						label="name"
+						:input-label="t('openregister', 'Embedding Provider')"
 						:placeholder="t('openregister', 'Select provider')"
 						@input="handleEmbeddingProviderChange">
 						<template #option="{ name, description }">
@@ -47,6 +48,7 @@
 						v-model="selectedChatProvider"
 						:options="chatProviderOptions"
 						label="name"
+						:input-label="t('openregister', 'Chat Provider')"
 						:placeholder="t('openregister', 'Select provider')">
 						<template #option="{ name, description }">
 							<div class="provider-option">
@@ -286,6 +288,49 @@
 				</div>
 			</div>
 
+			<!-- Vector Search Backend -->
+			<div class="config-section">
+				<h3>{{ t('openregister', 'Vector Search Backend') }}</h3>
+				<p class="section-description">
+					{{ t('openregister', 'Choose how vector similarity calculations are performed for semantic search') }}
+				</p>
+
+				<div class="form-group">
+					<label for="vector-backend">{{ t('openregister', 'Search Method') }}</label>
+					<NcSelect
+						v-model="selectedVectorBackend"
+						:options="vectorBackendOptions"
+						label="name"
+						:placeholder="t('openregister', 'Select backend')"
+						:disabled="loadingBackends">
+						<template #option="{ name, description, performance, available }">
+							<div class="backend-option" :class="{'backend-disabled': !available}">
+								<div class="backend-header">
+									<strong>{{ name }}</strong>
+									<span v-if="performance" :class="'badge badge-' + performance">
+										{{ performance === 'slow' ? '🐌 Slow' : performance === 'fast' ? '⚡ Fast' : '🚀 Very Fast' }}
+									</span>
+								</div>
+								<small>{{ description }}</small>
+								<small v-if="!available" class="warning-text">⚠️ Not available</small>
+							</div>
+						</template>
+					</NcSelect>
+					<small v-if="selectedVectorBackend && selectedVectorBackend.performanceNote" class="help-text">
+						{{ selectedVectorBackend.performanceNote }}
+					</small>
+				</div>
+
+				<!-- Solr Configuration (only if Solr backend selected) -->
+				<div v-if="selectedVectorBackend && selectedVectorBackend.id === 'solr'" class="solr-config">
+					<div class="info-box">
+						<p>{{ t('openregister', 'Vectors will be stored in your existing object and file collections') }}</p>
+						<p>{{ t('openregister', 'Files → fileCollection, Objects → objectCollection') }}</p>
+						<p><strong>{{ t('openregister', 'Vector field: _embedding_') }}</strong></p>
+					</div>
+				</div>
+			</div>
+
 			<!-- AI Features -->
 			<div class="config-section">
 				<h3>{{ t('openregister', '✨ AI Features') }}</h3>
@@ -332,6 +377,18 @@
 					{{ testingChat ? t('openregister', 'Testing...') : t('openregister', 'Test Chat') }}
 				</NcButton>
 
+				<!-- Clear All Embeddings -->
+				<NcButton
+					type="error"
+					:disabled="clearingEmbeddings"
+					@click="confirmClearEmbeddings">
+					<template #icon>
+						<NcLoadingIcon v-if="clearingEmbeddings" :size="20" />
+						<Delete v-else :size="20" />
+					</template>
+					{{ clearingEmbeddings ? t('openregister', 'Clearing...') : t('openregister', 'Clear All Embeddings') }}
+				</NcButton>
+
 				<!-- Test Results -->
 				<div v-if="embeddingTestResult" class="test-result-inline" :class="embeddingTestResult.success ? 'success' : 'error'">
 					{{ embeddingTestResult.success ? '✅' : '❌' }} Embedding: {{ embeddingTestResult.message }}
@@ -365,6 +422,7 @@ import { NcDialog, NcButton, NcLoadingIcon, NcSelect, NcCheckboxRadioSwitch } fr
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
 import TestTube from 'vue-material-design-icons/TestTube.vue'
 import ContentSave from 'vue-material-design-icons/ContentSave.vue'
+import Delete from 'vue-material-design-icons/Delete.vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { showSuccess, showError } from '@nextcloud/dialogs'
@@ -381,6 +439,7 @@ export default {
 		InformationOutline,
 		TestTube,
 		ContentSave,
+		Delete,
 	},
 
 	props: {
@@ -396,6 +455,7 @@ export default {
 			saving: false,
 			testingEmbedding: false,
 			testingChat: false,
+			clearingEmbeddings: false,
 			embeddingTestResult: null,
 			chatTestResult: null,
 
@@ -429,17 +489,18 @@ export default {
 			],
 
 			ollamaModelOptions: [
-				{ id: 'llama2', name: 'llama2', description: 'Meta\'s Llama 2 model' },
-				{ id: 'llama3', name: 'llama3', description: 'Meta\'s Llama 3 model' },
-				{ id: 'mistral', name: 'mistral', description: 'Mistral 7B model' },
-				{ id: 'mixtral', name: 'mixtral', description: 'Mistral\'s Mixtral 8x7B model' },
-				{ id: 'phi', name: 'phi', description: 'Microsoft\'s Phi model' },
-				{ id: 'codellama', name: 'codellama', description: 'Code-specialized Llama model' },
-				{ id: 'gemma', name: 'gemma', description: 'Google\'s Gemma model' },
-				{ id: 'neural-chat', name: 'neural-chat', description: 'Intel\'s Neural Chat model' },
-				{ id: 'starling-lm', name: 'starling-lm', description: 'Starling language model' },
-				{ id: 'orca-mini', name: 'orca-mini', description: 'Microsoft\'s Orca Mini' },
+				{ id: 'llama3.2:latest', name: 'llama3.2:latest', description: 'Meta\'s Llama 3.2 (latest)' },
+				{ id: 'llama3.1:latest', name: 'llama3.1:latest', description: 'Meta\'s Llama 3.1' },
+				{ id: 'llama3:latest', name: 'llama3:latest', description: 'Meta\'s Llama 3' },
+				{ id: 'llama2:latest', name: 'llama2:latest', description: 'Meta\'s Llama 2' },
+				{ id: 'mistral:7b', name: 'mistral:7b', description: 'Mistral 7B model' },
+				{ id: 'mixtral:8x7b', name: 'mixtral:8x7b', description: 'Mistral\'s Mixtral 8x7B model' },
+				{ id: 'phi3:mini', name: 'phi3:mini', description: 'Microsoft\'s Phi-3 model' },
+				{ id: 'codellama:latest', name: 'codellama:latest', description: 'Code-specialized Llama' },
+				{ id: 'gemma2:latest', name: 'gemma2:latest', description: 'Google\'s Gemma 2' },
+				{ id: 'nomic-embed-text:latest', name: 'nomic-embed-text:latest', description: 'Nomic embeddings' },
 			],
+			loadingOllamaModels: false,
 
 			chatProviderOptions: [
 				{ id: 'openai', name: 'OpenAI ChatGPT', description: 'GPT-4, GPT-3.5 models' },
@@ -475,6 +536,11 @@ export default {
 				{ id: 'accounts/fireworks/models/deepseek-r1', name: 'DeepSeek R1', contextWindow: '163K', cost: '$3/1M' },
 				{ id: 'accounts/fireworks/models/mixtral-8x22b-instruct', name: 'Mixtral 8x22B', contextWindow: '64K', cost: '$1.2/1M' },
 			],
+
+			// Vector Search Backend
+			loadingBackends: false,
+			selectedVectorBackend: null,
+			vectorBackendOptions: [],
 
 			aiFeatures: [
 				{ id: 'text_generation', label: 'Text Generation', icon: '✍️', enabled: true },
@@ -517,8 +583,29 @@ export default {
 		},
 	},
 
+	watch: {
+		// Fetch Ollama models when Ollama is selected
+		selectedEmbeddingProvider(newVal) {
+			if (newVal?.id === 'ollama' && this.ollamaConfig.url) {
+				this.fetchOllamaModels()
+			}
+		},
+		selectedChatProvider(newVal) {
+			if (newVal?.id === 'ollama' && this.ollamaConfig.url) {
+				this.fetchOllamaModels()
+			}
+		},
+		// Refetch models when URL changes
+		'ollamaConfig.url'(newVal) {
+			if (newVal && (this.selectedEmbeddingProvider?.id === 'ollama' || this.selectedChatProvider?.id === 'ollama')) {
+				this.fetchOllamaModels()
+			}
+		},
+	},
+
 	mounted() {
 		this.loadConfiguration()
+		this.loadAvailableBackends()
 	},
 
 	methods: {
@@ -601,6 +688,11 @@ export default {
 				}
 
 				console.info('LLM configuration loaded', llmSettings)
+
+				// Fetch Ollama models if Ollama is selected
+				if ((this.selectedEmbeddingProvider?.id === 'ollama' || this.selectedChatProvider?.id === 'ollama') && this.ollamaConfig.url) {
+					this.fetchOllamaModels()
+				}
 			} catch (error) {
 				console.error('Failed to load LLM configuration:', error)
 				showError(this.t('openregister', 'Failed to load LLM configuration'))
@@ -734,6 +826,10 @@ export default {
 						chatModel: this.fireworksConfig.chatModel?.id || this.fireworksConfig.chatModel,
 						baseUrl: this.fireworksConfig.baseUrl,
 					},
+					vectorConfig: {
+						backend: this.selectedVectorBackend?.id || 'php',
+						solrField: '_embedding_', // Reserved field in Solr schema
+					},
 					enabledFeatures: this.aiFeatures
 						.filter(f => f.enabled)
 						.map(f => f.id),
@@ -748,6 +844,153 @@ export default {
 				showError(this.t('openregister', 'Failed to save configuration: {error}', { error: error.response?.data?.error || error.message }))
 			} finally {
 				this.saving = false
+			}
+		},
+
+		async fetchOllamaModels() {
+			if (!this.ollamaConfig.url || this.loadingOllamaModels) {
+				return
+			}
+
+			this.loadingOllamaModels = true
+
+			try {
+				const response = await axios.get(generateUrl('/apps/openregister/api/llm/ollama-models'))
+
+				if (response.data.success && response.data.models && response.data.models.length > 0) {
+				// Replace the hardcoded list with fetched models
+					this.ollamaModelOptions = response.data.models
+
+				// Loaded models from Ollama API successfully
+				} else {
+				// Keep fallback list if API returns empty or fails
+				// Using fallback model list
+				}
+			} catch (error) {
+			// Silently fail and keep using the hardcoded fallback list
+			// Error fetching Ollama models, using fallback
+			} finally {
+				this.loadingOllamaModels = false
+			}
+		},
+
+		confirmClearEmbeddings() {
+			// Use native browser confirm to avoid focus-trap conflicts with nested modals
+			const message = this.t('openregister', 'This will permanently delete ALL embeddings (vectors) from the database. You will need to re-vectorize all objects and files. This action cannot be undone.\n\nAre you sure you want to continue?')
+
+			if (confirm(message)) {
+				this.clearAllEmbeddings()
+			}
+		},
+
+		async clearAllEmbeddings() {
+			this.clearingEmbeddings = true
+
+			try {
+				const response = await axios.delete(generateUrl('/apps/openregister/api/vectors/clear-all'))
+
+				if (response.data.success) {
+					showSuccess(this.t('openregister', 'Successfully deleted {count} embeddings. Please re-vectorize your data.', { count: response.data.deleted }))
+
+					// Emit event to parent to refresh stats
+					this.$emit('embeddings-cleared')
+				} else {
+					showError(this.t('openregister', 'Failed to clear embeddings: {error}', { error: response.data.error || 'Unknown error' }))
+				}
+			} catch (error) {
+				showError(this.t('openregister', 'Failed to clear embeddings: {error}', { error: error.response?.data?.error || error.message }))
+			} finally {
+				this.clearingEmbeddings = false
+			}
+		},
+
+		/**
+		 * Load available vector search backends
+		 */
+		async loadAvailableBackends() {
+			this.loadingBackends = true
+
+			try {
+				// Get database info
+				const dbResponse = await axios.get(generateUrl('/apps/openregister/api/settings/database'))
+
+				// Build backend options
+				const backends = []
+
+				// PHP backend (always available)
+				backends.push({
+					id: 'php',
+					name: 'PHP Cosine Similarity',
+					description: 'Always available, but slow for large datasets (>500 vectors)',
+					performance: 'slow',
+					available: true,
+					performanceNote: 'Calculates similarity in PHP. Suitable for small datasets.',
+				})
+
+				// Database backend (PostgreSQL + pgvector)
+				if (dbResponse.data.success && dbResponse.data.database) {
+					const db = dbResponse.data.database
+					backends.push({
+						id: 'database',
+						name: db.type + ' + pgvector',
+						description: db.vectorSupport ? 'Fast database-level vector search (Recommended)' : 'PostgreSQL with pgvector extension required',
+						performance: db.vectorSupport ? 'fast' : null,
+						available: db.vectorSupport,
+						performanceNote: db.performanceNote,
+					})
+				}
+
+				// Solr backend (check if Solr is available)
+				let solrAvailable = false
+				let solrNote = 'Not connected'
+				try {
+					const solrResponse = await axios.get(generateUrl('/apps/openregister/api/settings/solr-info'))
+					if (solrResponse.data.success && solrResponse.data.solr) {
+						const solr = solrResponse.data.solr
+						solrAvailable = solr.available || false
+
+						if (solrAvailable) {
+							solrNote = 'Very fast distributed vector search using KNN/HNSW indexing. Vectors stored in existing file and object collections.'
+						} else {
+							solrNote = solr.error || 'SOLR not connected. Enable in Search Configuration.'
+						}
+					}
+				} catch (error) {
+					console.error('Failed to fetch Solr info:', error)
+					solrNote = 'Failed to check Solr status'
+				}
+
+				backends.push({
+					id: 'solr',
+					name: 'Solr 9+ Dense Vector',
+					description: solrAvailable
+						? 'Very fast distributed vector search (connected ✓)'
+						: 'Very fast distributed vector search (not connected)',
+					performance: solrAvailable ? 'very_fast' : null,
+					available: solrAvailable,
+					performanceNote: solrNote,
+				})
+
+				this.vectorBackendOptions = backends
+
+				// Load current backend setting from LLM settings
+				const llmResponse = await axios.get(generateUrl('/apps/openregister/api/settings/llm'))
+				const vectorBackend = llmResponse.data.vectorConfig?.backend || 'php'
+				this.selectedVectorBackend = backends.find(b => b.id === vectorBackend) || backends[0]
+
+			} catch (error) {
+				console.error('Failed to load vector backends:', error)
+				// Fallback to PHP only
+				this.vectorBackendOptions = [{
+					id: 'php',
+					name: 'PHP Cosine Similarity',
+					description: 'Always available fallback',
+					performance: 'slow',
+					available: true,
+				}]
+				this.selectedVectorBackend = this.vectorBackendOptions[0]
+			} finally {
+				this.loadingBackends = false
 			}
 		},
 	},
@@ -868,6 +1111,70 @@ export default {
 		color: var(--color-text-maxcontrast);
 		font-size: 12px;
 	}
+}
+
+.backend-option {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	padding: 4px 0;
+
+	&.backend-disabled {
+		opacity: 0.5;
+	}
+
+	.backend-header {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.badge {
+		padding: 2px 8px;
+		border-radius: 12px;
+		font-size: 11px;
+		font-weight: 500;
+
+		&.badge-slow {
+			background: var(--color-warning);
+			color: white;
+		}
+
+		&.badge-fast {
+			background: var(--color-success);
+			color: white;
+		}
+
+		&.badge-very_fast {
+			background: var(--color-primary-element);
+			color: white;
+		}
+	}
+
+	small {
+		color: var(--color-text-maxcontrast);
+		font-size: 12px;
+
+		&.warning-text {
+			color: var(--color-warning);
+			font-weight: 500;
+		}
+	}
+}
+
+.help-text {
+	margin-top: 4px;
+	font-size: 12px;
+	color: var(--color-text-maxcontrast);
+	font-style: italic;
+}
+
+.solr-config {
+	margin-top: 16px;
+	padding: 16px;
+	background: var(--color-background-hover);
+	border-radius: 8px;
+	border: 1px solid var(--color-border);
 }
 
 .test-result {

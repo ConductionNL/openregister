@@ -30,6 +30,10 @@ use OCA\OpenRegister\Db\ViewMapper;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\FileTextMapper;
+use OCA\OpenRegister\Db\ChunkMapper;
+use OCA\OpenRegister\Db\ObjectTextMapper;
+use OCA\OpenRegister\Db\GdprEntityMapper;
+use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OrganisationService;
@@ -155,6 +159,42 @@ class Application extends App implements IBootstrap
                 );
 
         $context->registerService(
+                ObjectTextMapper::class,
+                function ($container) {
+                    return new ObjectTextMapper(
+                    $container->get('OCP\IDBConnection')
+                    );
+                }
+                );
+
+        $context->registerService(
+                ChunkMapper::class,
+                function ($container) {
+                    return new ChunkMapper(
+                    $container->get('OCP\IDBConnection')
+                    );
+                }
+                );
+
+        $context->registerService(
+                GdprEntityMapper::class,
+                function ($container) {
+                    return new GdprEntityMapper(
+                    $container->get('OCP\IDBConnection')
+                    );
+                }
+                );
+
+        $context->registerService(
+                EntityRelationMapper::class,
+                function ($container) {
+                    return new EntityRelationMapper(
+                    $container->get('OCP\IDBConnection')
+                    );
+                }
+                );
+
+        $context->registerService(
                 SearchTrailService::class,
                 function ($container) {
                     return new SearchTrailService(
@@ -185,10 +225,11 @@ class Application extends App implements IBootstrap
                     $container->get('OCP\IUserManager'),
                     $container->get('OCP\IAppConfig'),
                     $container->get('Psr\Log\LoggerInterface'),
+                    $container->get(OrganisationService::class),
                     null // AuthorizationExceptionService
                     );
                 }
-                );
+        );
 
         // Register SolrService for advanced search capabilities (disabled due to performance issues)
         // Issue: Even with lazy loading, DI registration causes performance problems
@@ -533,6 +574,7 @@ class Application extends App implements IBootstrap
                     return new VectorEmbeddingService(
                     $container->get('OCP\IDBConnection'),
                     $container->get(SettingsService::class),
+                    $container->get(GuzzleSolrService::class),
                     $container->get('Psr\Log\LoggerInterface')
                     );
                 }
@@ -658,6 +700,31 @@ class Application extends App implements IBootstrap
                 function ($container) {
                     return new \OCA\OpenRegister\Service\ToolRegistry(
                     $container->get('OCP\EventDispatcher\IEventDispatcher'),
+                    $container->get('Psr\Log\LoggerInterface')
+                    );
+                }
+                );
+
+        // Register GitHubService for GitHub API operations
+        $context->registerService(
+                \OCA\OpenRegister\Service\GitHubService::class,
+                function ($container) {
+                    return new \OCA\OpenRegister\Service\GitHubService(
+                    $container->get('OCP\Http\Client\IClientService')->newClient(),
+                    $container->get('OCP\IConfig'),
+                    $container->get('OCP\ICacheFactory'),
+                    $container->get('Psr\Log\LoggerInterface')
+                    );
+                }
+                );
+
+        // Register GitLabService for GitLab API operations
+        $context->registerService(
+                \OCA\OpenRegister\Service\GitLabService::class,
+                function ($container) {
+                    return new \OCA\OpenRegister\Service\GitLabService(
+                    $container->get('OCP\Http\Client\IClientService')->newClient(),
+                    $container->get('OCP\IConfig'),
                     $container->get('Psr\Log\LoggerInterface')
                     );
                 }

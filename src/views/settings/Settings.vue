@@ -43,6 +43,9 @@
 		<!-- File Configuration Section -->
 		<FileConfiguration />
 
+		<!-- API Token Configuration Section -->
+		<ApiTokenConfiguration />
+
 		<!-- Dialogs -->
 		<Dialogs />
 	</div>
@@ -64,6 +67,7 @@ import MultitenancyConfiguration from './sections/MultitenancyConfiguration.vue'
 import RetentionConfiguration from './sections/RetentionConfiguration.vue'
 import LlmConfiguration from './sections/LlmConfiguration.vue'
 import FileConfiguration from './sections/FileConfiguration.vue'
+import ApiTokenConfiguration from './sections/ApiTokenConfiguration.vue'
 import Dialogs from '../../dialogs/Dialogs.vue'
 
 /**
@@ -85,6 +89,7 @@ export default {
 		RetentionConfiguration,
 		LlmConfiguration,
 		FileConfiguration,
+		ApiTokenConfiguration,
 		Dialogs,
 	},
 

@@ -352,6 +352,15 @@ Click **Save** to apply your settings.
 
 **Installation Options:**
 
+*Docker Compose (Development - Recommended for Testing):*
+
+If you're using the OpenRegister docker-compose setup, Ollama is already included and pre-configured!
+
+1. Ollama container is automatically started with docker-compose
+2. Pre-configured URL: `http://ollama:11434` (for container communication)
+3. Skip to [Download Models](#download-models) section below
+4. See [Docker Development Setup Guide](../../Development/docker-setup.md) for full details
+
 *Local Installation (Your Computer):*
 1. Download from [ollama.com](https://ollama.com)
 2. Install for your OS (Windows, Mac, Linux)
@@ -365,13 +374,33 @@ Click **Save** to apply your settings.
 
 **Download Models:**
 
-*For Embedding:*
+*For Docker Compose Setup:*
 ```bash
-ollama pull nomic-embed-text
+# For Embedding
+docker exec openregister-ollama ollama pull nomic-embed-text
+
+# For Chat (choose based on your needs)
+
+# Recommended: Meta Llama (function calling support)
+docker exec openregister-ollama ollama pull llama3.1
+
+# Ethical: Mistral (European AI)
+docker exec openregister-ollama ollama pull mistral
+
+# Small/Efficient: Phi-3
+docker exec openregister-ollama ollama pull phi3
+
+# High Quality (requires powerful hardware)
+docker exec openregister-ollama ollama pull llama3.1:70b
 ```
 
-*For Chat (choose based on your needs):*
+*For Local or Server Installation:*
 ```bash
+# For Embedding
+ollama pull nomic-embed-text
+
+# For Chat (choose based on your needs)
+
 # Recommended: Meta Llama (function calling support)
 ollama pull llama3.1
 
@@ -386,6 +415,7 @@ ollama pull llama3.1:70b
 ```
 
 **Configuration in OpenRegister:**
+- **Docker Compose:** Use `http://ollama:11434` (container-to-container communication)
 - **Local:** Use `http://localhost:11434`
 - **Server:** Use `http://your-server:11434` or `http://ollama.yourdomain.com:11434`
 
@@ -470,6 +500,79 @@ When you ask "What is the return policy?", AI finds the specific chunk (paragrap
 **📚 Learn more:** See your system's file extraction documentation for details on how chunks are created from different file types.
 
 ![img_5.png](img_5.png)
+
+#### Vector Storage Backends
+
+OpenRegister supports multiple vector storage backends for optimal performance:
+
+| Backend | Speed | Best For | Requirements |
+|---------|-------|----------|--------------|
+| **Solr 9+ Dense Vector** | ⚡⚡⚡ Very Fast (100-1000x faster than PHP) | Production, large datasets | Solr 9.0+, configured collections |
+| **PostgreSQL + pgvector** | ⚡⚡ Fast (native DB queries) | Production, PostgreSQL users | PostgreSQL with pgvector extension |
+| **PHP (MariaDB/MySQL)** | ⚡ Slower (in-memory comparison) | Development, small datasets | No special requirements |
+
+**Configure Vector Storage:**
+
+1. Navigate to **Settings → AI → LLM Configuration**
+2. Click **Configure LLM**
+3. Scroll to **Vector Search Backend** section
+4. Select your preferred backend:
+   - **PHP** - Default, works everywhere, but slow for large datasets
+   - **Database** - Fast if you have PostgreSQL + pgvector
+   - **Solr 9+ Dense Vector** - Fastest, uses KNN (K-Nearest Neighbors) search
+
+**Solr Vector Search Configuration:**
+
+If you select Solr as your vector backend:
+
+1. **Ensure Solr Schema is Configured:**
+   - Run: `docker exec -u 33 master-nextcloud-1 php occ openregister:solr:manage setup`
+   - This adds the required `knn_vector` field type to your Solr collections
+   - Embeddings are stored in existing object and file collections
+
+2. **How it Works:**
+   - Vectors are stored in the `_embedding_` field of Solr documents
+   - Uses Solr's native dense vector search (HNSW algorithm)
+   - Searches both object and file collections automatically
+   - Returns full document metadata along with similarity scores
+
+3. **Performance:**
+   - KNN search completes in milliseconds
+   - 100-1000x faster than PHP cosine similarity
+   - Scales well with dataset size
+
+**💡 Recommendation:** Use Solr for production with more than 100 vectors, PHP for development/testing.
+
+**📊 Statistics:** The Vector Statistics cards show counts from your active backend (Solr or database).
+
+#### Performance Notes: Local Ollama
+
+When using Ollama locally (in Docker or on your machine), be aware of embedding generation performance:
+
+**Embedding Generation:**
+- **Time per embedding:** ~0.3-0.5 seconds (local Docker)
+- **With GPU:** ~0.1-0.2 seconds (much faster!)
+- **Batch of 100 objects:** ~30-50 seconds
+- **Large file (200 chunks):** ~1-2 minutes
+
+**Why it Takes Time:**
+- Ollama models run on YOUR hardware
+- Each chunk/object needs separate embedding generation
+- CPU-only is slower than GPU-accelerated
+
+**Tips for Better Performance:**
+1. **Enable GPU:** See [GPU Setup Guide](../../OLLAMA.md#gpu-support) for 3-5x speedup
+2. **Use Serial Mode:** Safer for stability, processes one at a time
+3. **Batch Wisely:** Don't vectorize everything at once - do it in stages
+4. **Smaller Models:** Use `nomic-embed-text` (fast) vs `mxbai-embed-large` (accurate but slower)
+5. **Schedule Off-Peak:** Run vectorization during low-usage hours
+
+**Comparison: Cloud vs Local:**
+- **OpenAI API:** ~0.01-0.05 seconds per embedding (very fast)
+- **Ollama CPU:** ~0.3-0.5 seconds per embedding
+- **Ollama GPU:** ~0.1-0.2 seconds per embedding
+
+**Trade-off:** Local Ollama is slower but gives you complete data sovereignty and zero API costs. For production with many vectorization jobs, consider GPU acceleration or using OpenAI for embeddings only.
 
 ---
 

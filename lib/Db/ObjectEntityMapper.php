@@ -37,6 +37,7 @@ use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Service\IDatabaseJsonService;
 use OCA\OpenRegister\Service\MySQLJsonService;
 use OCA\OpenRegister\Service\AuthorizationExceptionService;
+use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -56,6 +57,14 @@ use Symfony\Component\Uid\Uuid;
  */
 class ObjectEntityMapper extends QBMapper
 {
+    use MultiTenancyTrait;
+
+    /**
+     * Organisation service for multi-tenancy
+     *
+     * @var OrganisationService
+     */
+    private OrganisationService $organisationService;
 
     /**
      * Database JSON service instance
@@ -168,6 +177,7 @@ class ObjectEntityMapper extends QBMapper
      * @param IUserManager                       $userManager                   The user manager
      * @param IAppConfig                         $appConfig                     The app configuration
      * @param LoggerInterface                    $logger                        The logger
+     * @param OrganisationService                $organisationService           The organisation service for multi-tenancy
      * @param AuthorizationExceptionService|null $authorizationExceptionService Optional authorization exception service
      */
     public function __construct(
@@ -180,6 +190,7 @@ class ObjectEntityMapper extends QBMapper
         IUserManager $userManager,
         IAppConfig $appConfig,
         LoggerInterface $logger,
+        OrganisationService $organisationService,
         ?AuthorizationExceptionService $authorizationExceptionService = null
     ) {
         parent::__construct($db, 'openregister_objects');
@@ -198,6 +209,7 @@ class ObjectEntityMapper extends QBMapper
         $this->userManager     = $userManager;
         $this->appConfig       = $appConfig;
         $this->logger          = $logger;
+        $this->organisationService = $organisationService;
         $this->authorizationExceptionService = $authorizationExceptionService;
 
         // Try to get max_allowed_packet from database configuration
@@ -772,19 +784,14 @@ class ObjectEntityMapper extends QBMapper
             return;
         }
 
-        // Check if this is the system-wide default organization (move this check up)
-        $defaultOrgQb = $this->db->getQueryBuilder();
-        $defaultOrgQb->select('uuid')
-                     ->from('openregister_organisations')
-                     ->where($defaultOrgQb->expr()->eq('is_default', $defaultOrgQb->createNamedParameter(1)))
-                     ->setMaxResults(1);
-
-        $defaultResult = $defaultOrgQb->executeQuery();
-        $systemDefaultOrgUuid = $defaultResult->fetchColumn();
-        $defaultResult->closeCursor();
+        // Check if this is the system-wide default organization
+        // Get default organisation UUID from configuration (not deprecated is_default column)
+        $systemDefaultOrgUuid = $this->organisationService->getDefaultOrganisationId();
 
         // Check if one of the active organisations is the system default (for backwards compatibility)
-        $isSystemDefaultOrg = $activeOrganisationUuids !== null && in_array($systemDefaultOrgUuid, $activeOrganisationUuids);
+        $isSystemDefaultOrg = $activeOrganisationUuids !== null && 
+                             $systemDefaultOrgUuid !== null && 
+                             in_array($systemDefaultOrgUuid, $activeOrganisationUuids);
 
         if ($user !== null) {
             $userGroups = $this->groupManager->getUserGroupIds($user);
@@ -1646,7 +1653,14 @@ class ObjectEntityMapper extends QBMapper
 
             // **PERFORMANCE TIMING**: Organization filtering (suspected bottleneck)
             $orgStart = microtime(true);
-//            $this->applyOrganizationFilters($queryBuilder, 'o', $activeOrganisationUuid, $multi);
+            // Use enhanced MultiTenancyTrait method with published object bypass
+            $this->applyOrganisationFilter(
+                qb: $queryBuilder,
+                columnName: 'organisation',
+                allowNullOrg: true,      // Admins can see legacy NULL org objects
+                tableAlias: 'o',
+                enablePublished: true    // Enable published object bypass for objects table
+            );
             $perfTimings['org_filtering'] = round((microtime(true) - $orgStart) * 1000, 2);
 
             $this->logger->info('🏢 ORG FILTERING COMPLETED', [
@@ -1863,7 +1877,13 @@ class ObjectEntityMapper extends QBMapper
         $this->applyBasicFilters($queryBuilder, $includeDeleted, $published, $basicRegister, $basicSchema, 'o', $bypassPublishedFilter);
 
         // Apply organization filtering for multi-tenancy (no RBAC in count queries due to no schema join)
-//        $this->applyOrganizationFilters($queryBuilder, 'o', $activeOrganisationUuid, $multi);
+        $this->applyOrganisationFilter(
+            qb: $queryBuilder,
+            columnName: 'organisation',
+            allowNullOrg: true,
+            tableAlias: 'o',
+            enablePublished: true
+        );
 
         // Handle filtering by IDs/UUIDs if provided (same as searchObjects)
         if ($ids !== null && empty($ids) === false) {
@@ -1962,7 +1982,14 @@ class ObjectEntityMapper extends QBMapper
 
             $bypassPublishedFilter = $this->shouldPublishedObjectsBypassMultiTenancy();
             $this->applyBasicFilters($queryBuilder, $includeDeleted, $published, $register, $schema, '', $bypassPublishedFilter);
-//            $this->applyOrganizationFilters($queryBuilder, '', null, $multi);
+            // Apply organization filtering with empty table alias (no alias used in this query)
+            $this->applyOrganisationFilter(
+                qb: $queryBuilder,
+                columnName: 'organisation',
+                allowNullOrg: true,
+                tableAlias: '',          // No table alias in this query
+                enablePublished: true
+            );
 
             $result = $queryBuilder->executeQuery();
             $size = $result->fetchOne();
@@ -1983,7 +2010,13 @@ class ObjectEntityMapper extends QBMapper
         $this->applyBasicFilters($queryBuilder, $includeDeleted, $published, $basicRegister, $basicSchema, 'o', $bypassPublishedFilter);
 
         // Apply organization filtering for multi-tenancy
-//        $this->applyOrganizationFilters($queryBuilder, 'o', $activeOrganisationUuid, $multi);
+        $this->applyOrganisationFilter(
+            qb: $queryBuilder,
+            columnName: 'organisation',
+            allowNullOrg: true,
+            tableAlias: 'o',
+            enablePublished: true
+        );
 
         // Handle filtering by IDs/UUIDs if provided
         if ($ids !== null && empty($ids) === false) {

@@ -58,13 +58,13 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 							<template #icon>
 								<Plus :size="20" />
 							</template>
-							Add Configuration
+							Create Configuration
 						</NcActionButton>
 						<NcActionButton
 							close-after-click
 							@click="navigationStore.setModal('importConfiguration')">
 							<template #icon>
-								<Upload :size="20" />
+								<CloudUpload :size="20" />
 							</template>
 							Import Configuration
 						</NcActionButton>
@@ -94,90 +94,16 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 			<div v-else>
 				<template v-if="viewMode === 'cards'">
 					<div class="cardGrid">
-						<div v-for="configuration in paginatedConfigurations" :key="configuration.id" class="card">
-							<div class="cardHeader">
-								<h2 v-tooltip.bottom="configuration.description">
-									<CogOutline :size="20" />
-									{{ configuration.title }}
-									<span v-if="hasUpdateAvailable(configuration)" class="updatePill">
-										<Update :size="16" />
-										Update Available
-									</span>
-									<span v-else-if="isManualConfiguration(configuration)" class="manualPill">
-										Manual
-									</span>
-								</h2>
-								<NcActions :primary="true" menu-name="Actions">
-									<template #icon>
-										<DotsHorizontal :size="20" />
-									</template>
-									<NcActionButton close-after-click @click="configurationStore.setConfigurationItem(configuration); navigationStore.setModal('viewConfiguration')">
-										<template #icon>
-											<Eye :size="20" />
-										</template>
-										View
-									</NcActionButton>
-									<NcActionButton close-after-click @click="configurationStore.setConfigurationItem(configuration); navigationStore.setModal('editConfiguration')">
-										<template #icon>
-											<Pencil :size="20" />
-										</template>
-										Edit
-									</NcActionButton>
-									<NcActionButton v-if="isRemoteConfiguration(configuration)" close-after-click @click="checkVersion(configuration)">
-										<template #icon>
-											<Sync :size="20" />
-										</template>
-										Check Version
-									</NcActionButton>
-									<NcActionButton v-if="hasUpdateAvailable(configuration)" close-after-click @click="previewUpdate(configuration)">
-										<template #icon>
-											<EyeOutline :size="20" />
-										</template>
-										Preview Update
-									</NcActionButton>
-									<NcActionButton close-after-click @click="configurationStore.setConfigurationItem(configuration); navigationStore.setModal('exportConfiguration')">
-										<template #icon>
-											<Download :size="20" />
-										</template>
-										Export
-									</NcActionButton>
-									<NcActionButton close-after-click @click="configurationStore.setConfigurationItem(configuration); navigationStore.setDialog('deleteConfiguration')">
-										<template #icon>
-											<TrashCanOutline :size="20" />
-										</template>
-										Delete
-									</NcActionButton>
-								</NcActions>
-							</div>
-							<!-- Configuration Details -->
-							<div class="configurationDetails">
-								<p v-if="configuration.description" class="configurationDescription">
-									{{ configuration.description }}
-								</p>
-								<div class="configurationInfo">
-									<div class="configurationInfoItem">
-										<strong>{{ t('openregister', 'Source') }}:</strong>
-										<span>{{ getSourceTypeLabel(configuration.sourceType) }}</span>
-									</div>
-									<div v-if="configuration.sourceUrl" class="configurationInfoItem">
-										<strong>{{ t('openregister', 'URL') }}:</strong>
-										<span class="urlText">{{ configuration.sourceUrl }}</span>
-									</div>
-									<div v-if="configuration.localVersion" class="configurationInfoItem">
-										<strong>{{ t('openregister', 'Local Version') }}:</strong>
-										<span>{{ configuration.localVersion }}</span>
-									</div>
-									<div v-if="configuration.remoteVersion" class="configurationInfoItem">
-										<strong>{{ t('openregister', 'Remote Version') }}:</strong>
-										<span>{{ configuration.remoteVersion }}</span>
-									</div>
-									<div v-if="configuration.autoUpdate" class="configurationInfoItem">
-										<strong>{{ t('openregister', 'Auto-Update') }}:</strong>
-										<span class="badge-success">Enabled</span>
-									</div>
-								</div>
-							</div>
-						</div>
+						<ConfigurationCard
+							v-for="configuration in paginatedConfigurations"
+							:key="configuration.id"
+							:configuration="configuration"
+							@view="handleView(configuration)"
+							@edit="handleEdit(configuration)"
+							@export="handleExport(configuration)"
+							@delete="handleDelete(configuration)"
+							@check-version="checkVersion(configuration)"
+							@preview-update="previewUpdate(configuration)" />
 					</div>
 				</template>
 				<template v-else>
@@ -222,19 +148,32 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 									<td>{{ configuration.localVersion || '-' }}</td>
 									<td>{{ configuration.remoteVersion || '-' }}</td>
 									<td>
-										<span v-if="hasUpdateAvailable(configuration)" class="tablePill tablePill-warning">
-											<Update :size="16" />
-											Update Available
-										</span>
-										<span v-else-if="configuration.autoUpdate" class="tablePill tablePill-success">
-											Auto-Update
-										</span>
-										<span v-else-if="isManualConfiguration(configuration)" class="tablePill tablePill-default">
-											Manual
-										</span>
-										<span v-else class="tablePill tablePill-success">
-											Up to Date
-										</span>
+										<div class="statusPillsContainer">
+											<template v-if="configuration.isLocal">
+												<span class="configBadge configBadge--local">
+													<CheckCircle :size="16" />
+													Local
+												</span>
+												<span v-if="configuration.app" class="configBadge configBadge--app">
+													<ApplicationCog :size="16" />
+													{{ configuration.app }}
+												</span>
+											</template>
+											<span v-else class="configBadge configBadge--external">
+												<Cloud :size="16" />
+												External
+											</span>
+											<span v-if="!configuration.isLocal && configuration.syncEnabled" class="configBadge" :class="'configBadge--sync-' + configuration.syncStatus">
+												<Sync v-if="configuration.syncStatus === 'success'" :size="16" />
+												<AlertCircle v-else-if="configuration.syncStatus === 'failed'" :size="16" />
+												<ClockOutline v-else :size="16" />
+												{{ getSyncStatusText(configuration) }}
+											</span>
+											<span v-if="hasUpdateAvailable(configuration)" class="configBadge configBadge--update">
+												<Update :size="16" />
+												Update Available
+											</span>
+										</div>
 									</td>
 									<td>{{ configuration.updated ? new Date(configuration.updated).toLocaleDateString({day: '2-digit', month: '2-digit', year: 'numeric'}) + ', ' + new Date(configuration.updated).toLocaleTimeString({hour: '2-digit', minute: '2-digit', second: '2-digit'}) : '-' }}</td>
 									<td class="tableColumnActions">
@@ -309,14 +248,20 @@ import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import Download from 'vue-material-design-icons/Download.vue'
-import Upload from 'vue-material-design-icons/Upload.vue'
+import CloudUpload from 'vue-material-design-icons/CloudUpload.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
 import EyeOutline from 'vue-material-design-icons/EyeOutline.vue'
 import Update from 'vue-material-design-icons/Update.vue'
 import Sync from 'vue-material-design-icons/Sync.vue'
+import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
+import Cloud from 'vue-material-design-icons/Cloud.vue'
+import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
+import ClockOutline from 'vue-material-design-icons/ClockOutline.vue'
+import ApplicationCog from 'vue-material-design-icons/ApplicationCog.vue'
 
+import ConfigurationCard from '../../components/cards/ConfigurationCard.vue'
 import PaginationComponent from '../../components/PaginationComponent.vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
@@ -330,18 +275,24 @@ export default {
 		NcActions,
 		NcActionButton,
 		NcCheckboxRadioSwitch,
+		ConfigurationCard,
 		CogOutline,
 		DotsHorizontal,
 		Pencil,
 		TrashCanOutline,
 		Download,
-		Upload,
+		CloudUpload,
 		Refresh,
 		Plus,
 		Eye,
 		EyeOutline,
 		Update,
 		Sync,
+		CheckCircle,
+		Cloud,
+		AlertCircle,
+		ClockOutline,
+		ApplicationCog,
 		PaginationComponent,
 	},
 	data() {
@@ -456,105 +407,112 @@ export default {
 				showError('Failed to check version: ' + (error.response?.data?.error || error.message))
 			}
 		},
+		handleView(configuration) {
+			configurationStore.setConfigurationItem(configuration)
+			navigationStore.setModal('viewConfiguration')
+		},
+		handleEdit(configuration) {
+			configurationStore.setConfigurationItem(configuration)
+			navigationStore.setModal('editConfiguration')
+		},
+		handleExport(configuration) {
+			configurationStore.setConfigurationItem(configuration)
+			navigationStore.setModal('exportConfiguration')
+		},
+		handleDelete(configuration) {
+			configurationStore.setConfigurationItem(configuration)
+			navigationStore.setDialog('deleteConfiguration')
+		},
 		previewUpdate(configuration) {
 			// Set the configuration and open preview modal
 			configurationStore.setConfigurationItem(configuration)
 			navigationStore.setModal('previewConfiguration')
+		},
+		getSyncStatusText(configuration) {
+			if (configuration.syncStatus === 'success' && configuration.lastSyncDate) {
+				const now = new Date()
+				const lastSync = new Date(configuration.lastSyncDate)
+				const diffInHours = Math.floor((now - lastSync) / (1000 * 60 * 60))
+
+				if (diffInHours < 1) {
+					return 'Synced just now'
+				} else if (diffInHours < 24) {
+					return `Synced ${diffInHours}h ago`
+				} else {
+					const diffInDays = Math.floor(diffInHours / 24)
+					return `Synced ${diffInDays}d ago`
+				}
+			} else if (configuration.syncStatus === 'failed') {
+				return 'Sync failed'
+			} else if (configuration.syncStatus === 'pending') {
+				return 'Sync pending'
+			} else {
+				return 'Never synced'
+			}
 		},
 	},
 }
 </script>
 
 <style scoped>
-.configurationDetails {
-	margin-top: 1rem;
-}
-
-.configurationDescription {
-	color: var(--color-text-lighter);
-	margin-bottom: 1rem;
-}
-
-.configurationInfo {
-	display: flex;
-	flex-direction: column;
-	gap: 0.5rem;
-}
-
-.configurationInfoItem {
-	display: flex;
-	gap: 0.5rem;
-}
-
-.configurationInfoItem strong {
-	min-width: 120px;
-}
-
-.urlText {
-	font-family: monospace;
-	font-size: 0.9em;
-	color: var(--color-primary);
-	word-break: break-all;
-}
-
-.badge-success {
-	display: inline-block;
-	padding: 2px 8px;
-	border-radius: 10px;
-	background-color: var(--color-success);
-	color: white;
-	font-size: 0.85em;
-	font-weight: 500;
-}
-
-/* Pills for cards */
-.updatePill,
-.manualPill {
+/* Badge styles for table view only (card view uses ConfigurationCard styles) */
+.configBadge {
 	display: inline-flex;
 	align-items: center;
 	gap: 4px;
-	padding: 4px 12px;
+	padding: 2px 8px;
 	border-radius: 12px;
 	font-size: 0.85em;
-	font-weight: 500;
-	margin-left: 12px;
+	font-weight: 600;
 	vertical-align: middle;
 }
 
-.updatePill {
-	background-color: var(--color-warning);
-	color: var(--color-main-text);
+/* Local configuration badge (green/success) */
+.configBadge--local {
+	background-color: var(--color-success-light);
+	color: var(--color-success-dark);
 }
 
-.manualPill {
+/* External configuration badge (blue/primary) */
+.configBadge--external {
+	background-color: var(--color-primary-element-light);
+	color: var(--color-primary-element-text);
+}
+
+/* App source badge (gray/secondary) */
+.configBadge--app {
 	background-color: var(--color-background-dark);
 	color: var(--color-text-lighter);
 }
 
-/* Pills for table */
-.tablePill {
-	display: inline-flex;
+/* Sync status badges */
+.configBadge--sync-success {
+	background-color: var(--color-success-light);
+	color: var(--color-success-dark);
+}
+
+.configBadge--sync-failed {
+	background-color: var(--color-error-light);
+	color: var(--color-error-dark);
+}
+
+.configBadge--sync-pending,
+.configBadge--sync-never {
+	background-color: var(--color-background-dark);
+	color: var(--color-text-lighter);
+}
+
+/* Update available badge */
+.configBadge--update {
+	background-color: var(--color-warning);
+	color: var(--color-main-text);
+}
+
+/* Badge container for table view */
+.statusPillsContainer {
+	display: flex;
+	gap: 6px;
+	flex-wrap: wrap;
 	align-items: center;
-	gap: 4px;
-	padding: 4px 10px;
-	border-radius: 10px;
-	font-size: 0.8em;
-	font-weight: 500;
-	white-space: nowrap;
-}
-
-.tablePill-warning {
-	background-color: var(--color-warning);
-	color: var(--color-main-text);
-}
-
-.tablePill-success {
-	background-color: var(--color-success);
-	color: white;
-}
-
-.tablePill-default {
-	background-color: var(--color-background-dark);
-	color: var(--color-text-lighter);
 }
 </style>

@@ -36,8 +36,13 @@ use OCA\OpenRegister\Tool\ObjectsTool;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 use LLPhant\Chat\OpenAIChat;
+use LLPhant\Chat\OllamaChat;
 use LLPhant\Chat\Message as LLPhantMessage;
+use LLPhant\Chat\Enums\ChatRole;
+use LLPhant\Chat\FunctionInfo\FunctionInfo;
+use LLPhant\Chat\FunctionInfo\Parameter;
 use LLPhant\OpenAIConfig;
+use LLPhant\OllamaConfig;
 use OpenAI\Exceptions\ErrorException as OpenAIErrorException;
 use DateTime;
 use Symfony\Component\Uid\Uuid;
@@ -237,20 +242,32 @@ class ChatService
     /**
      * Process a chat message within a conversation
      *
-     * @param int    $conversationId Conversation ID
-     * @param string $userId         User ID
-     * @param string $userMessage    User message
+     * @param int    $conversationId  Conversation ID
+     * @param string $userId          User ID
+     * @param string $userMessage     User message
+     * @param array  $selectedViews   Array of view UUIDs to use (empty = use all agent views)
+     * @param array  $selectedTools   Array of tool UUIDs to use (empty = use all agent tools)
+     * @param array  $ragSettings     RAG configuration settings (includeObjects, includeFiles, numSources)
      *
      * @return array Response data with 'message', 'sources', 'title'
      *
      * @throws \Exception If processing fails
      */
-    public function processMessage(int $conversationId, string $userId, string $userMessage): array
-    {
+    public function processMessage(
+        int $conversationId, 
+        string $userId, 
+        string $userMessage,
+        array $selectedViews = [],
+        array $selectedTools = [],
+        array $ragSettings = []
+    ): array {
         $this->logger->info('[ChatService] Processing message', [
             'conversationId' => $conversationId,
             'userId' => $userId,
             'messageLength' => strlen($userMessage),
+            'selectedViews' => count($selectedViews),
+            'selectedTools' => count($selectedTools),
+            'ragSettings' => $ragSettings,
         ]);
 
         try {
@@ -278,19 +295,26 @@ class ChatService
             // Check if we need to summarize (token limit reached)
             $this->checkAndSummarize($conversation);
 
-            // Retrieve context using agent settings
-            $context = $this->retrieveContext($userMessage, $agent);
+            // Retrieve context using agent settings, selected views, and RAG settings
+            $contextStartTime = microtime(true);
+            $context = $this->retrieveContext($userMessage, $agent, $selectedViews, $ragSettings);
+            $contextTime = microtime(true) - $contextStartTime;
 
             // Get recent conversation history for context
+            $historyStartTime = microtime(true);
             $messageHistory = $this->buildMessageHistory($conversationId);
+            $historyTime = microtime(true) - $historyStartTime;
 
-            // Generate response using LLM
+            // Generate response using LLM with selected tools
+            $llmStartTime = microtime(true);
             $aiResponse = $this->generateResponse(
                 $userMessage,
                 $context,
                 $messageHistory,
-                $agent
+                $agent,
+                $selectedTools
             );
+            $llmTotalTime = microtime(true) - $llmStartTime;
 
             // Store AI response
             $aiMsgEntity = $this->storeMessage(
@@ -344,6 +368,19 @@ class ChatService
             $conversation->setUpdated(new DateTime());
             $this->conversationMapper->update($conversation);
 
+            // Log overall performance
+            $this->logger->info('[ChatService] Message processed - OVERALL PERFORMANCE', [
+                'conversationId' => $conversationId,
+                'timings' => [
+                    'contextRetrieval' => round($contextTime, 2) . 's',
+                    'historyBuilding' => round($historyTime, 3) . 's',
+                    'llmGeneration' => round($llmTotalTime, 2) . 's',
+                ],
+                'contextSize' => strlen($context['text']),
+                'historyMessages' => count($messageHistory),
+                'responseLength' => strlen($aiResponse),
+            ]);
+
             return [
                 'message' => $aiMsgEntity->jsonSerialize(),
                 // Note: sources are already included in message->sources
@@ -364,30 +401,57 @@ class ChatService
     /**
      * Retrieve relevant context for a query using agent settings
      *
-     * @param string     $query User query
-     * @param Agent|null $agent Optional agent with search configuration
+     * @param string     $query         User query
+     * @param Agent|null $agent         Optional agent with search configuration
+     * @param array      $selectedViews Array of view UUIDs to search (empty = all agent views)
+     * @param array      $ragSettings   RAG configuration overrides
      *
      * @return array Context data with 'text' and 'sources'
      */
-    private function retrieveContext(string $query, ?Agent $agent): array
+    private function retrieveContext(string $query, ?Agent $agent, array $selectedViews = [], array $ragSettings = []): array
     {
         $this->logger->info('[ChatService] Retrieving context', [
             'query' => substr($query, 0, 100),
             'hasAgent' => $agent !== null,
+            'ragSettings' => $ragSettings,
         ]);
 
-        // Get search settings from agent or use defaults
+        // Get search settings from agent or use defaults, then apply RAG settings overrides
         $searchMode = $agent?->getRagSearchMode() ?? 'hybrid';
         $numSources = $agent?->getRagNumSources() ?? 5;
-        $includeFiles = $agent?->getSearchFiles() ?? true;
-        $includeObjects = $agent?->getSearchObjects() ?? true;
+        $includeFiles = $ragSettings['includeFiles'] ?? ($agent?->getSearchFiles() ?? true);
+        $includeObjects = $ragSettings['includeObjects'] ?? ($agent?->getSearchObjects() ?? true);
+        $numSourcesFiles = $ragSettings['numSourcesFiles'] ?? $numSources;
+        $numSourcesObjects = $ragSettings['numSourcesObjects'] ?? $numSources;
+        
+        // Calculate total sources needed (will be filtered by type later)
+        $totalSources = max($numSourcesFiles, $numSourcesObjects);
 
         // Get view filters if agent has views configured
         $viewFilters = [];
         if ($agent !== null && $agent->getViews() !== null && !empty($agent->getViews())) {
-            $viewFilters = $agent->getViews();
-            $this->logger->info('[ChatService] Using view-based filtering', [
-                'views' => $viewFilters,
+            $agentViews = $agent->getViews();
+            
+            // If selectedViews provided, filter to only those views
+            if (!empty($selectedViews)) {
+                $viewFilters = array_intersect($agentViews, $selectedViews);
+                $this->logger->info('[ChatService] Using filtered views', [
+                    'agentViews' => count($agentViews),
+                    'selectedViews' => count($selectedViews),
+                    'filteredViews' => count($viewFilters),
+                ]);
+            } else {
+                // Use all agent views
+                $viewFilters = $agentViews;
+                $this->logger->info('[ChatService] Using all agent views', [
+                    'views' => count($viewFilters),
+                ]);
+            }
+        } else if (!empty($selectedViews)) {
+            // User selected views but agent has no views configured - use selected ones
+            $viewFilters = $selectedViews;
+            $this->logger->info('[ChatService] Using user-selected views (agent has none)', [
+                'views' => count($viewFilters),
             ]);
         }
 
@@ -412,24 +476,26 @@ class ChatService
                 $vectorFilters['entity_type'] = $entityTypes;
             }
             
-            // Determine search method
+            // Determine search method - fetch more results than needed for filtering
+            $fetchLimit = $totalSources * 2;
+            
             if ($searchMode === 'semantic') {
                 $results = $this->vectorService->semanticSearch(
                     $query,
-                    $numSources * 2,
+                    $fetchLimit,
                     $vectorFilters  // Pass filters array instead of 0.7
                 );
             } elseif ($searchMode === 'hybrid') {
                 $hybridResponse = $this->vectorService->hybridSearch(
                     $query,
                     ['vector_filters' => $vectorFilters], // Pass filters in SOLR filters array
-                    $numSources * 2 // Limit parameter
+                    $fetchLimit // Limit parameter
                 );
                 // Extract results array from hybrid search response
                 $results = $hybridResponse['results'] ?? [];
             } else {
                 // Keyword search
-                $results = $this->searchKeywordOnly($query, $numSources * 2);
+                $results = $this->searchKeywordOnly($query, $fetchLimit);
             }
 
             // Ensure results is an array
@@ -442,7 +508,10 @@ class ChatService
                 $results = [];
             }
 
-            // Filter and build context
+            // Filter and build context - track file and object counts separately
+            $fileSourceCount = 0;
+            $objectSourceCount = 0;
+            
             foreach ($results as $result) {
                 // Skip if result is not an array
                 if (!is_array($result)) {
@@ -460,13 +529,16 @@ class ChatService
                     continue;
                 }
 
+                // Check if we've reached the limit for this source type
+                if ($isFile && $fileSourceCount >= $numSourcesFiles) {
+                    continue;
+                }
+                if ($isObject && $objectSourceCount >= $numSourcesObjects) {
+                    continue;
+                }
+
                 // TODO: Apply view filters here when view filtering is implemented
                 // For now, we'll skip view filtering and implement it later
-
-                // Stop if we have enough sources
-                if (count($sources) >= $numSources) {
-                    break;
-                }
 
                 // Extract source information
                 $source = [
@@ -499,18 +571,35 @@ class ChatService
                 }
 
                 $sources[] = $source;
+                
+                // Increment the appropriate counter
+                if ($isFile) {
+                    $fileSourceCount++;
+                } elseif ($isObject) {
+                    $objectSourceCount++;
+                }
 
                 // Add to context text
                 $contextText .= "Source: {$source['name']}\n";
                 $contextText .= "{$source['text']}\n\n";
+                
+                // Stop if we've reached limits for both types
+                if ((!$includeFiles || $fileSourceCount >= $numSourcesFiles) && 
+                    (!$includeObjects || $objectSourceCount >= $numSourcesObjects)) {
+                    break;
+                }
             }
 
             $this->logger->info('[ChatService] Context retrieved', [
                 'numSources' => count($sources),
+                'fileSources' => $fileSourceCount,
+                'objectSources' => $objectSourceCount,
                 'contextLength' => strlen($contextText),
                 'searchMode' => $searchMode,
                 'includeObjects' => $includeObjects,
                 'includeFiles' => $includeFiles,
+                'numSourcesFiles' => $numSourcesFiles,
+                'numSourcesObjects' => $numSourcesObjects,
                 'rawResultsCount' => is_array($results) ? count($results) : gettype($results),
             ]);
             
@@ -698,6 +787,7 @@ class ChatService
      * @param array      $context        Context data
      * @param array      $messageHistory Message history
      * @param Agent|null $agent          Optional agent
+     * @param array      $selectedTools  Array of tool UUIDs to use (empty = all agent tools)
      *
      * @return string Generated response
      *
@@ -707,16 +797,22 @@ class ChatService
         string $userMessage,
         array $context,
         array $messageHistory,
-        ?Agent $agent
+        ?Agent $agent,
+        array $selectedTools = []
     ): string {
+        $startTime = microtime(true);
+        
         $this->logger->info('[ChatService] Generating response', [
             'messageLength' => strlen($userMessage),
             'contextLength' => strlen($context['text']),
             'historyCount' => count($messageHistory),
+            'selectedTools' => count($selectedTools),
         ]);
 
-        // Get enabled tools for agent
-        $tools = $this->getAgentTools($agent);
+        // Get enabled tools for agent, filtered by selectedTools
+        $toolsStartTime = microtime(true);
+        $tools = $this->getAgentTools($agent, $selectedTools);
+        $toolsTime = microtime(true) - $toolsStartTime;
         if (!empty($tools)) {
             $this->logger->info('[ChatService] Agent has tools enabled', [
                 'toolCount' => count($tools),
@@ -742,53 +838,65 @@ class ChatService
 
         try {
             // Configure LLM client based on provider
-            $config = new OpenAIConfig();
-            
-            if ($chatProvider === 'openai') {
-                $openaiConfig = $llmConfig['openaiConfig'] ?? [];
-                if (empty($openaiConfig['apiKey'])) {
-                    throw new \Exception('OpenAI API key is not configured');
-                }
-                $config->apiKey = $openaiConfig['apiKey'];
-                // Use agent model if set and not empty, otherwise fallback to global config
-                $agentModel = $agent?->getModel();
-                $config->model = (!empty($agentModel)) ? $agentModel : ($openaiConfig['chatModel'] ?? 'gpt-4o-mini');
-                
-                if (!empty($openaiConfig['organizationId'])) {
-                    $config->organizationId = $openaiConfig['organizationId'];
-                }
-            } elseif ($chatProvider === 'fireworks') {
-                $fireworksConfig = $llmConfig['fireworksConfig'] ?? [];
-                if (empty($fireworksConfig['apiKey'])) {
-                    throw new \Exception('Fireworks AI API key is not configured');
-                }
-                $config->apiKey = $fireworksConfig['apiKey'];
-                // Use agent model if set and not empty, otherwise fallback to global config
-                $agentModel = $agent?->getModel();
-                $config->model = (!empty($agentModel)) ? $agentModel : ($fireworksConfig['chatModel'] ?? 'accounts/fireworks/models/llama-v3p1-8b-instruct');
-                
-                // Fireworks AI uses OpenAI-compatible API
-                $baseUrl = rtrim($fireworksConfig['baseUrl'] ?? 'https://api.fireworks.ai/inference/v1', '/');
-                if (!str_ends_with($baseUrl, '/v1')) {
-                    $baseUrl .= '/v1';
-                }
-                $config->url = $baseUrl;
-            } elseif ($chatProvider === 'ollama') {
+            // Ollama uses its own native config and chat class
+            if ($chatProvider === 'ollama') {
                 $ollamaConfig = $llmConfig['ollamaConfig'] ?? [];
                 if (empty($ollamaConfig['url'])) {
                     throw new \Exception('Ollama URL is not configured');
                 }
-                $config->url = rtrim($ollamaConfig['url'], '/');
+                
+                // Use native Ollama configuration
+                $config = new OllamaConfig();
+                $config->url = rtrim($ollamaConfig['url'], '/') . '/api/';
                 // Use agent model if set and not empty, otherwise fallback to global config
                 $agentModel = $agent?->getModel();
                 $config->model = (!empty($agentModel)) ? $agentModel : ($ollamaConfig['chatModel'] ?? 'llama2');
+                
+                // Set temperature from agent or default
+                if ($agent?->getTemperature() !== null) {
+                    $config->modelOptions['temperature'] = $agent->getTemperature();
+                }
             } else {
-                throw new \Exception("Unsupported chat provider: {$chatProvider}");
-            }
+                // OpenAI and Fireworks use OpenAIConfig
+                $config = new OpenAIConfig();
+                
+                if ($chatProvider === 'openai') {
+                    $openaiConfig = $llmConfig['openaiConfig'] ?? [];
+                    if (empty($openaiConfig['apiKey'])) {
+                        throw new \Exception('OpenAI API key is not configured');
+                    }
+                    $config->apiKey = $openaiConfig['apiKey'];
+                    // Use agent model if set and not empty, otherwise fallback to global config
+                    $agentModel = $agent?->getModel();
+                    $config->model = (!empty($agentModel)) ? $agentModel : ($openaiConfig['chatModel'] ?? 'gpt-4o-mini');
+                    
+                    if (!empty($openaiConfig['organizationId'])) {
+                        $config->organizationId = $openaiConfig['organizationId'];
+                    }
+                } elseif ($chatProvider === 'fireworks') {
+                    $fireworksConfig = $llmConfig['fireworksConfig'] ?? [];
+                    if (empty($fireworksConfig['apiKey'])) {
+                        throw new \Exception('Fireworks AI API key is not configured');
+                    }
+                    $config->apiKey = $fireworksConfig['apiKey'];
+                    // Use agent model if set and not empty, otherwise fallback to global config
+                    $agentModel = $agent?->getModel();
+                    $config->model = (!empty($agentModel)) ? $agentModel : ($fireworksConfig['chatModel'] ?? 'accounts/fireworks/models/llama-v3p1-8b-instruct');
+                    
+                    // Fireworks AI uses OpenAI-compatible API
+                    $baseUrl = rtrim($fireworksConfig['baseUrl'] ?? 'https://api.fireworks.ai/inference/v1', '/');
+                    if (!str_ends_with($baseUrl, '/v1')) {
+                        $baseUrl .= '/v1';
+                    }
+                    $config->url = $baseUrl;
+                } else {
+                    throw new \Exception("Unsupported chat provider: {$chatProvider}");
+                }
 
-            // Set temperature from agent or default
-            if ($agent?->getTemperature() !== null) {
-                $config->temperature = $agent->getTemperature();
+                // Set temperature from agent or default (OpenAI/Fireworks)
+                if ($agent?->getTemperature() !== null) {
+                    $config->temperature = $agent->getTemperature();
+                }
             }
 
             // Build system prompt
@@ -812,14 +920,11 @@ class ChatService
             $functions = [];
             if (!empty($tools)) {
                 $functions = $this->convertToolsToFunctions($tools);
-                $this->logger->info('[ChatService] Prepared functions for LLM', [
-                    'functionCount' => count($functions),
-                    'functionNames' => array_map(fn($f) => $f->name, $functions),
-                ]);
             }
 
-            // For Fireworks, use direct HTTP to avoid OpenAI library error handling bugs
+            // Create chat instance based on provider
             if ($chatProvider === 'fireworks') {
+                // For Fireworks, use direct HTTP to avoid OpenAI library error handling bugs
                 $response = $this->callFireworksChatAPIWithHistory(
                     $config->apiKey,
                     $config->model,
@@ -827,22 +932,50 @@ class ChatService
                     $messageHistory,
                     $functions  // Pass functions
                 );
+            } elseif ($chatProvider === 'ollama') {
+                // Use native Ollama chat with LLPhant's built-in tool support
+                $chat = new OllamaChat($config);
+                
+                // Add functions if available - Ollama supports tools via LLPhant!
+                if (!empty($functions)) {
+                    // Convert array-based function definitions to FunctionInfo objects
+                    $functionInfoObjects = $this->convertFunctionsToFunctionInfo($functions, $tools);
+                    $chat->setTools($functionInfoObjects);
+                }
+                
+                // Use generateChat() for message arrays
+                $llmStartTime = microtime(true);
+                $response = $chat->generateChat($messageHistory);
+                $llmTime = microtime(true) - $llmStartTime;
             } else {
-                // Create chat instance
+                // OpenAI chat
                 $chat = new OpenAIChat($config);
                 
                 // Add functions if available
                 if (!empty($functions)) {
-                    $chat->setTools($functions);
+                    // Convert array-based function definitions to FunctionInfo objects
+                    $functionInfoObjects = $this->convertFunctionsToFunctionInfo($functions, $tools);
+                    $chat->setTools($functionInfoObjects);
                 }
                 
-                $response = $chat->generateText($messageHistory);
+                // Use generateChat() for message arrays, which properly handles tools/functions
+                $llmStartTime = microtime(true);
+                $response = $chat->generateChat($messageHistory);
+                $llmTime = microtime(true) - $llmStartTime;
             }
 
-            $this->logger->info('[ChatService] Response generated', [
+            $totalTime = microtime(true) - $startTime;
+            
+            $this->logger->info('[ChatService] Response generated - PERFORMANCE', [
                 'provider' => $chatProvider,
                 'model' => $config->model,
                 'responseLength' => strlen($response),
+                'timings' => [
+                    'total' => round($totalTime, 2) . 's',
+                    'toolsLoading' => round($toolsTime, 3) . 's',
+                    'llmGeneration' => round($llmTime, 2) . 's',
+                    'overhead' => round($totalTime - $llmTime - $toolsTime, 3) . 's',
+                ],
             ]);
 
             return $response;
@@ -880,54 +1013,68 @@ class ChatService
             }
 
             // Configure LLM based on provider
-            $config = new OpenAIConfig();
-            
-            if ($chatProvider === 'openai') {
-                $openaiConfig = $llmConfig['openaiConfig'] ?? [];
-                if (empty($openaiConfig['apiKey'])) {
-                    return $this->generateFallbackTitle($firstMessage);
-                }
-                $config->apiKey = $openaiConfig['apiKey'];
-                $config->model = 'gpt-4o-mini'; // Use fast model for titles
-            } elseif ($chatProvider === 'fireworks') {
-                $fireworksConfig = $llmConfig['fireworksConfig'] ?? [];
-                if (empty($fireworksConfig['apiKey'])) {
-                    return $this->generateFallbackTitle($firstMessage);
-                }
-                $config->apiKey = $fireworksConfig['apiKey'];
-                $config->model = 'accounts/fireworks/models/llama-v3p1-8b-instruct';
-                $baseUrl = rtrim($fireworksConfig['baseUrl'] ?? 'https://api.fireworks.ai/inference/v1', '/');
-                if (!str_ends_with($baseUrl, '/v1')) {
-                    $baseUrl .= '/v1';
-                }
-                $config->url = $baseUrl;
-            } elseif ($chatProvider === 'ollama') {
+            // Ollama uses its own native config
+            if ($chatProvider === 'ollama') {
                 $ollamaConfig = $llmConfig['ollamaConfig'] ?? [];
                 if (empty($ollamaConfig['url'])) {
                     return $this->generateFallbackTitle($firstMessage);
                 }
-                $config->url = rtrim($ollamaConfig['url'], '/');
+                
+                // Use native Ollama configuration
+                $config = new OllamaConfig();
+                $config->url = rtrim($ollamaConfig['url'], '/') . '/api/';
                 $config->model = $ollamaConfig['chatModel'] ?? 'llama2';
+                $config->modelOptions['temperature'] = 0.7;
             } else {
-                return $this->generateFallbackTitle($firstMessage);
+                // OpenAI and Fireworks use OpenAIConfig
+                $config = new OpenAIConfig();
+                
+                if ($chatProvider === 'openai') {
+                    $openaiConfig = $llmConfig['openaiConfig'] ?? [];
+                    if (empty($openaiConfig['apiKey'])) {
+                        return $this->generateFallbackTitle($firstMessage);
+                    }
+                    $config->apiKey = $openaiConfig['apiKey'];
+                    $config->model = 'gpt-4o-mini'; // Use fast model for titles
+                } elseif ($chatProvider === 'fireworks') {
+                    $fireworksConfig = $llmConfig['fireworksConfig'] ?? [];
+                    if (empty($fireworksConfig['apiKey'])) {
+                        return $this->generateFallbackTitle($firstMessage);
+                    }
+                    $config->apiKey = $fireworksConfig['apiKey'];
+                    $config->model = 'accounts/fireworks/models/llama-v3p1-8b-instruct';
+                    $baseUrl = rtrim($fireworksConfig['baseUrl'] ?? 'https://api.fireworks.ai/inference/v1', '/');
+                    if (!str_ends_with($baseUrl, '/v1')) {
+                        $baseUrl .= '/v1';
+                    }
+                    $config->url = $baseUrl;
+                } else {
+                    return $this->generateFallbackTitle($firstMessage);
+                }
+                
+                $config->temperature = 0.7;
             }
-            
-            $config->temperature = 0.7;
 
             // Generate title
             $prompt = "Generate a short, descriptive title (max 60 characters) for a conversation that starts with this message:\n\n";
             $prompt .= "\"{$firstMessage}\"\n\n";
             $prompt .= "Title:";
 
-            // Use direct HTTP for Fireworks to avoid OpenAI library issues
+            // Generate title based on provider
             if ($chatProvider === 'fireworks') {
+                // Use direct HTTP for Fireworks to avoid OpenAI library issues
                 $title = $this->callFireworksChatAPI(
                     $config->apiKey,
                     $config->model,
                     $config->url,
                     $prompt
                 );
+            } elseif ($chatProvider === 'ollama') {
+                // Use native Ollama chat
+                $chat = new OllamaChat($config);
+                $title = $chat->generateText($prompt);
             } else {
+                // OpenAI chat
                 $chat = new OpenAIChat($config);
                 $title = $chat->generateText($prompt);
             }
@@ -1069,55 +1216,80 @@ class ChatService
             }
 
             // Configure LLM client based on provider
-            $llphantConfig = new OpenAIConfig();
-            
-            if ($provider === 'openai') {
-                if (empty($config['apiKey'])) {
-                    throw new \Exception('OpenAI API key is required');
-                }
-                $llphantConfig->apiKey = $config['apiKey'];
-                $llphantConfig->model = $config['chatModel'] ?? $config['model'] ?? 'gpt-4o-mini';
-                
-                if (!empty($config['organizationId'])) {
-                    $llphantConfig->organizationId = $config['organizationId'];
-                }
-            } elseif ($provider === 'fireworks') {
-                if (empty($config['apiKey'])) {
-                    throw new \Exception('Fireworks AI API key is required');
-                }
-                $llphantConfig->apiKey = $config['apiKey'];
-                $llphantConfig->model = $config['chatModel'] ?? $config['model'] ?? 'accounts/fireworks/models/llama-v3p1-8b-instruct';
-                
-                // Fireworks AI uses OpenAI-compatible API but needs specific URL format
-                $baseUrl = rtrim($config['baseUrl'] ?? 'https://api.fireworks.ai/inference/v1', '/');
-                // Ensure the URL ends with /v1 for compatibility
-                if (!str_ends_with($baseUrl, '/v1')) {
-                    $baseUrl .= '/v1';
-                }
-                $llphantConfig->url = $baseUrl;
-            } elseif ($provider === 'ollama') {
+            // Ollama uses its own native config
+            if ($provider === 'ollama') {
                 if (empty($config['url'])) {
                     throw new \Exception('Ollama URL is required');
                 }
-                $llphantConfig->url = rtrim($config['url'], '/');
+                
+                // Use native Ollama configuration
+                $llphantConfig = new OllamaConfig();
+                $llphantConfig->url = rtrim($config['url'], '/') . '/api/';
                 $llphantConfig->model = $config['chatModel'] ?? $config['model'] ?? 'llama2';
+                
+                // Set temperature if provided
+                if (isset($config['temperature'])) {
+                    $llphantConfig->modelOptions['temperature'] = (float) $config['temperature'];
+                }
+            } else {
+                // OpenAI and Fireworks use OpenAIConfig
+                $llphantConfig = new OpenAIConfig();
+                
+                if ($provider === 'openai') {
+                    if (empty($config['apiKey'])) {
+                        throw new \Exception('OpenAI API key is required');
+                    }
+                    $llphantConfig->apiKey = $config['apiKey'];
+                    $llphantConfig->model = $config['chatModel'] ?? $config['model'] ?? 'gpt-4o-mini';
+                    
+                    if (!empty($config['organizationId'])) {
+                        $llphantConfig->organizationId = $config['organizationId'];
+                    }
+                } elseif ($provider === 'fireworks') {
+                    if (empty($config['apiKey'])) {
+                        throw new \Exception('Fireworks AI API key is required');
+                    }
+                    $llphantConfig->apiKey = $config['apiKey'];
+                    $llphantConfig->model = $config['chatModel'] ?? $config['model'] ?? 'accounts/fireworks/models/llama-v3p1-8b-instruct';
+                    
+                    // Fireworks AI uses OpenAI-compatible API but needs specific URL format
+                    $baseUrl = rtrim($config['baseUrl'] ?? 'https://api.fireworks.ai/inference/v1', '/');
+                    // Ensure the URL ends with /v1 for compatibility
+                    if (!str_ends_with($baseUrl, '/v1')) {
+                        $baseUrl .= '/v1';
+                    }
+                    $llphantConfig->url = $baseUrl;
+                }
+
+                // Set temperature if provided
+                if (isset($config['temperature'])) {
+                    $llphantConfig->temperature = (float) $config['temperature'];
+                }
             }
 
-            // Set temperature if provided
-            if (isset($config['temperature'])) {
-                $llphantConfig->temperature = (float) $config['temperature'];
-            }
-
-            // For Fireworks, use direct HTTP to avoid OpenAI library error handling bugs
+            // Generate test response based on provider
             if ($provider === 'fireworks') {
+                // For Fireworks, use direct HTTP to avoid OpenAI library error handling bugs
                 $response = $this->callFireworksChatAPI(
                     $llphantConfig->apiKey,
                     $llphantConfig->model,
                     $llphantConfig->url,
                     $testMessage
                 );
+            } elseif ($provider === 'ollama') {
+                // Use native Ollama chat
+                $chat = new OllamaChat($llphantConfig);
+
+                // Generate response
+                $this->logger->debug('[ChatService] Sending test message to Ollama', [
+                    'provider' => $provider,
+                    'model' => $llphantConfig->model,
+                    'url' => $llphantConfig->url ?? 'default',
+                ]);
+                
+                $response = $chat->generateText($testMessage);
             } else {
-                // Use OpenAI client for OpenAI and Ollama
+                // Use OpenAI chat
                 $chat = new OpenAIChat($llphantConfig);
 
                 // Generate response
@@ -1471,34 +1643,41 @@ class ChatService
         }
 
         // Configure LLM based on provider
-        $config = new OpenAIConfig();
-        
-        if ($chatProvider === 'openai') {
-            $openaiConfig = $llmConfig['openaiConfig'] ?? [];
-            if (empty($openaiConfig['apiKey'])) {
-                throw new \Exception('OpenAI API key not configured');
-            }
-            $config->apiKey = $openaiConfig['apiKey'];
-            $config->model = 'gpt-4o-mini';
-        } elseif ($chatProvider === 'fireworks') {
-            $fireworksConfig = $llmConfig['fireworksConfig'] ?? [];
-            if (empty($fireworksConfig['apiKey'])) {
-                throw new \Exception('Fireworks AI API key not configured');
-            }
-            $config->apiKey = $fireworksConfig['apiKey'];
-            $config->model = 'accounts/fireworks/models/llama-v3p1-8b-instruct';
-            $baseUrl = rtrim($fireworksConfig['baseUrl'] ?? 'https://api.fireworks.ai/inference/v1', '/');
-            if (!str_ends_with($baseUrl, '/v1')) {
-                $baseUrl .= '/v1';
-            }
-            $config->url = $baseUrl;
-        } elseif ($chatProvider === 'ollama') {
+        // Ollama uses its own native config
+        if ($chatProvider === 'ollama') {
             $ollamaConfig = $llmConfig['ollamaConfig'] ?? [];
             if (empty($ollamaConfig['url'])) {
                 throw new \Exception('Ollama URL not configured');
             }
-            $config->url = rtrim($ollamaConfig['url'], '/');
+            
+            // Use native Ollama configuration
+            $config = new OllamaConfig();
+            $config->url = rtrim($ollamaConfig['url'], '/') . '/api/';
             $config->model = $ollamaConfig['chatModel'] ?? 'llama2';
+        } else {
+            // OpenAI and Fireworks use OpenAIConfig
+            $config = new OpenAIConfig();
+            
+            if ($chatProvider === 'openai') {
+                $openaiConfig = $llmConfig['openaiConfig'] ?? [];
+                if (empty($openaiConfig['apiKey'])) {
+                    throw new \Exception('OpenAI API key not configured');
+                }
+                $config->apiKey = $openaiConfig['apiKey'];
+                $config->model = 'gpt-4o-mini';
+            } elseif ($chatProvider === 'fireworks') {
+                $fireworksConfig = $llmConfig['fireworksConfig'] ?? [];
+                if (empty($fireworksConfig['apiKey'])) {
+                    throw new \Exception('Fireworks AI API key not configured');
+                }
+                $config->apiKey = $fireworksConfig['apiKey'];
+                $config->model = 'accounts/fireworks/models/llama-v3p1-8b-instruct';
+                $baseUrl = rtrim($fireworksConfig['baseUrl'] ?? 'https://api.fireworks.ai/inference/v1', '/');
+                if (!str_ends_with($baseUrl, '/v1')) {
+                    $baseUrl .= '/v1';
+                }
+                $config->url = $baseUrl;
+            }
         }
 
         // Generate summary
@@ -1506,15 +1685,21 @@ class ChatService
         $prompt .= $conversationText;
         $prompt .= "\n\nSummary:";
 
-        // Use direct HTTP for Fireworks to avoid OpenAI library issues
+        // Generate summary based on provider
         if ($chatProvider === 'fireworks') {
+            // Use direct HTTP for Fireworks to avoid OpenAI library issues
             return $this->callFireworksChatAPI(
                 $config->apiKey,
                 $config->model,
                 $config->url,
                 $prompt
             );
+        } elseif ($chatProvider === 'ollama') {
+            // Use native Ollama chat
+            $chat = new OllamaChat($config);
+            return $chat->generateText($prompt);
         } else {
+            // OpenAI chat
             $chat = new OpenAIChat($config);
             return $chat->generateText($prompt);
         }
@@ -1561,7 +1746,15 @@ class ChatService
      *
      * @return array Array of ToolInterface instances
      */
-    private function getAgentTools(?Agent $agent): array
+    /**
+     * Get agent tools, optionally filtered by selected tool UUIDs
+     *
+     * @param Agent|null $agent         Agent with tools configuration
+     * @param array      $selectedTools Array of tool UUIDs to filter by (empty = all agent tools)
+     *
+     * @return array Array of ToolInterface instances
+     */
+    private function getAgentTools(?Agent $agent, array $selectedTools = []): array
     {
         if ($agent === null) {
             return [];
@@ -1570,6 +1763,16 @@ class ChatService
         $enabledToolIds = $agent->getTools();
         if ($enabledToolIds === null || empty($enabledToolIds)) {
             return [];
+        }
+
+        // If selectedTools provided, filter enabled tools
+        if (!empty($selectedTools)) {
+            $enabledToolIds = array_intersect($enabledToolIds, $selectedTools);
+            $this->logger->info('[ChatService] Filtering tools', [
+                'agentTools' => count($agent->getTools()),
+                'selectedTools' => count($selectedTools),
+                'filteredTools' => count($enabledToolIds),
+            ]);
         }
 
         $tools = [];
@@ -1616,6 +1819,84 @@ class ChatService
 
         return $functions;
     }//end convertToolsToFunctions()
+
+
+    /**
+     * Convert array-based function definitions to FunctionInfo objects
+     *
+     * Converts the array format returned by our Tool classes into
+     * FunctionInfo objects that LLPhant expects for setTools().
+     * Now includes the tool instance so LLPhant can call methods directly.
+     *
+     * @param array $functions Array of function definitions
+     * @param array $tools     Tool instances that have the methods
+     *
+     * @return array Array of FunctionInfo objects
+     */
+    private function convertFunctionsToFunctionInfo(array $functions, array $tools): array
+    {
+        $functionInfoObjects = [];
+
+        foreach ($functions as $func) {
+            // Create parameters array
+            $parameters = [];
+            $required = [];
+            
+            if (isset($func['parameters']['properties'])) {
+                foreach ($func['parameters']['properties'] as $paramName => $paramDef) {
+                    // Determine parameter type from definition
+                    $type = $paramDef['type'] ?? 'string';
+                    $description = $paramDef['description'] ?? '';
+                    $enum = $paramDef['enum'] ?? [];
+                    $format = $paramDef['format'] ?? null;
+                    $itemsOrProperties = null;
+                    
+                    // Handle nested object/array types
+                    if ($type === 'object') {
+                        // For object types, pass the properties definition (empty array if not specified)
+                        $itemsOrProperties = $paramDef['properties'] ?? [];
+                    } elseif ($type === 'array') {
+                        // For array types, pass the items definition (empty array if not specified)
+                        $itemsOrProperties = $paramDef['items'] ?? [];
+                    }
+                    
+                    // Create parameter using constructor
+                    // Constructor: __construct(string $name, string $type, string $description, array $enum = [], ?string $format = null, array|string|null $itemsOrProperties = null)
+                    $parameters[] = new Parameter($paramName, $type, $description, $enum, $format, $itemsOrProperties);
+                }
+            }
+            
+            if (isset($func['parameters']['required'])) {
+                $required = $func['parameters']['required'];
+            }
+
+            // Find the tool instance that has this function
+            $toolInstance = null;
+            foreach ($tools as $tool) {
+                $toolFunctions = $tool->getFunctions();
+                foreach ($toolFunctions as $toolFunc) {
+                    if ($toolFunc['name'] === $func['name']) {
+                        $toolInstance = $tool;
+                        break 2;
+                    }
+                }
+            }
+
+            // Create FunctionInfo object with the tool instance
+            // LLPhant will call $toolInstance->{$func['name']}(...$args)
+            $functionInfo = new FunctionInfo(
+                $func['name'],
+                $toolInstance, // Pass the tool instance
+                $func['description'] ?? '',
+                $parameters,
+                $required
+            );
+
+            $functionInfoObjects[] = $functionInfo;
+        }
+
+        return $functionInfoObjects;
+    }//end convertFunctionsToFunctionInfo()
 
 
     /**
