@@ -1,5 +1,23 @@
 <?php
 
+/**
+ * OpenRegister Performance and Usage Metrics Table Migration
+ *
+ * This migration creates the openregister_metrics table to store
+ * performance and usage metrics.
+ *
+ * @category Migration
+ * @package  OCA\OpenRegister\Migration
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenRegister.nl
+ */
+
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Migration;
@@ -23,23 +41,24 @@ class Version002005000Date20251013000000 extends SimpleMigrationStep
 
 
     /**
-     * @param IOutput $output
-     * @param Closure $schemaClosure The `\Closure` returns a `ISchemaWrapper`
-     * @param array   $options
+     * Create metrics table for performance and usage tracking.
      *
-     * @return null|ISchemaWrapper
+     * @param IOutput $output        Output interface for logging
+     * @param Closure $schemaClosure Schema retrieval closure
+     * @param array   $options       Migration options
+     *
+     * @return null|ISchemaWrapper Modified schema or null
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
         /*
-         *
-         *
          * @var ISchemaWrapper $schema
          */
+
         $schema = $schemaClosure();
 
         // Create openregister_metrics table for tracking operational metrics.
-        if (!$schema->hasTable('openregister_metrics')) {
+        if ($schema->hasTable('openregister_metrics') === false) {
             $table = $schema->createTable('openregister_metrics');
 
             // Primary key.
@@ -164,13 +183,13 @@ class Version002005000Date20251013000000 extends SimpleMigrationStep
 
 
     /**
-     * Rollback migration
+     * Rollback migration.
      *
-     * @param IOutput $output
-     * @param Closure $schemaClosure
-     * @param array   $options
+     * @param IOutput $output        Output interface for logging
+     * @param Closure $schemaClosure Schema retrieval closure
+     * @param array   $options       Migration options
      *
-     * @return null|ISchemaWrapper
+     * @return null|ISchemaWrapper Modified schema or null
      */
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {

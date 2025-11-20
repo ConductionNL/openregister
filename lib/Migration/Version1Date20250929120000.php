@@ -1,8 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
-/*
+/**
  * OpenRegister Schema Searchable Property Migration
  *
  * This migration adds a 'searchable' boolean column to the schemas table
@@ -20,6 +18,8 @@ declare(strict_types=1);
  *
  * @link https://www.OpenRegister.nl
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Migration;
 
@@ -54,14 +54,15 @@ class Version1Date20250929120000 extends SimpleMigrationStep
         /*
          * @var ISchemaWrapper $schema
          */
+
         $schema = $schemaClosure();
 
         $output->info('🔧 Adding searchable column to schemas table...');
 
-        if ($schema->hasTable('openregister_schemas')) {
+        if ($schema->hasTable('openregister_schemas') === true) {
             $table = $schema->getTable('openregister_schemas');
 
-            if (!$table->hasColumn('searchable')) {
+            if ($table->hasColumn('searchable') === false) {
                 $table->addColumn(
                         'searchable',
                         Types::BOOLEAN,

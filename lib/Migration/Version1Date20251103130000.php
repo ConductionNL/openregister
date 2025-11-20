@@ -1,8 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
-/*
+/**
  * Add authorization column to organisations and applications
  *
  * This migration adds the authorization column (JSON type) to both
@@ -11,10 +9,15 @@ declare(strict_types=1);
  *
  * @category Migration
  * @package  OCA\OpenRegister\Migration
- * @author   Conduction Development Team <dev@conduction.nl>
- * @license  AGPL-3.0-or-later
- * @link     https://www.openregister.nl
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @version   GIT: <git-id>
+ * @link      https://www.openregister.nl
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Migration;
 
@@ -48,6 +51,7 @@ class Version1Date20251103130000 extends SimpleMigrationStep
         /*
          * @var ISchemaWrapper $schema
          */
+
         $schema  = $schemaClosure();
         $updated = false;
 
@@ -87,7 +91,11 @@ class Version1Date20251103130000 extends SimpleMigrationStep
             }
         }//end if
 
-        return $updated === true ? $schema : null;
+        if ($updated === true) {
+            return $schema;
+        }
+
+        return null;
 
     }//end changeSchema()
 

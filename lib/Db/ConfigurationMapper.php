@@ -19,12 +19,16 @@
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
+use OCA\OpenRegister\Event\ConfigurationCreatedEvent;
+use OCA\OpenRegister\Event\ConfigurationDeletedEvent;
+use OCA\OpenRegister\Event\ConfigurationUpdatedEvent;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 use OCP\IGroupManager;
 use OCP\ISession;
@@ -83,6 +87,13 @@ class ConfigurationMapper extends QBMapper
     private ISession $session;
 
     /**
+     * Event dispatcher for dispatching configuration events
+     *
+     * @var IEventDispatcher
+     */
+    private IEventDispatcher $eventDispatcher;
+
+    /**
      * Session key prefix for storing configurations
      *
      * @var string
@@ -98,19 +109,22 @@ class ConfigurationMapper extends QBMapper
      * @param IUserSession        $userSession         User session
      * @param IGroupManager       $groupManager        Group manager for RBAC
      * @param ISession            $session             Session for caching
+     * @param IEventDispatcher    $eventDispatcher     Event dispatcher
      */
     public function __construct(
         IDBConnection $db,
         OrganisationService $organisationService,
         IUserSession $userSession,
         IGroupManager $groupManager,
-        ISession $session
+        ISession $session,
+        IEventDispatcher $eventDispatcher
     ) {
         parent::__construct($db, 'openregister_configurations', Configuration::class);
         $this->organisationService = $organisationService;
         $this->userSession         = $userSession;
         $this->groupManager        = $groupManager;
-        $this->session = $session;
+        $this->session         = $session;
+        $this->eventDispatcher = $eventDispatcher;
 
     }//end __construct()
 
@@ -361,17 +375,17 @@ class ConfigurationMapper extends QBMapper
 
         if ($entity instanceof Configuration) {
             // Generate UUID if not set.
-            if (empty($entity->getUuid())) {
+            if (empty($entity->getUuid()) === true) {
                 $entity->setUuid(\Symfony\Component\Uid\Uuid::v4()->toRfc4122());
             }
 
             // Set default type if not provided (required by database).
-            if (empty($entity->getType())) {
+            if (empty($entity->getType()) === true) {
                 $entity->setType('default');
             }
 
             // Auto-set owner to current user if not already set.
-            if (empty($entity->getOwner())) {
+            if (empty($entity->getOwner()) === true) {
                 $currentUserId = $this->getCurrentUserId();
                 if ($currentUserId !== null) {
                     $entity->setOwner($currentUserId);
@@ -389,6 +403,9 @@ class ConfigurationMapper extends QBMapper
 
         // Invalidate configuration cache.
         $this->invalidateConfigurationCache();
+
+        // Dispatch creation event.
+        $this->eventDispatcher->dispatchTyped(new ConfigurationCreatedEvent($result));
 
         return $result;
 
@@ -411,6 +428,9 @@ class ConfigurationMapper extends QBMapper
         // Verify user has access to this organisation.
         $this->verifyOrganisationAccess($entity);
 
+        // Get old state before update.
+        $oldEntity = $this->find($entity->getId());
+
         if ($entity instanceof Configuration) {
             $entity->setUpdated(new DateTime());
         }
@@ -419,6 +439,9 @@ class ConfigurationMapper extends QBMapper
 
         // Invalidate configuration cache.
         $this->invalidateConfigurationCache();
+
+        // Dispatch update event.
+        $this->eventDispatcher->dispatchTyped(new ConfigurationUpdatedEvent($result, $oldEntity));
 
         return $result;
 
@@ -445,6 +468,9 @@ class ConfigurationMapper extends QBMapper
 
         // Invalidate configuration cache.
         $this->invalidateConfigurationCache();
+
+        // Dispatch deletion event.
+        $this->eventDispatcher->dispatchTyped(new ConfigurationDeletedEvent($result));
 
         return $result;
 

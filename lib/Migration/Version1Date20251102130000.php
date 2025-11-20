@@ -1,8 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
-/*
+/**
  * OpenRegister Applications Groups Column Migration
  *
  * This migration adds the 'groups' column to the openregister_applications table
@@ -19,6 +17,8 @@ declare(strict_types=1);
  *
  * @link https://www.OpenRegister.nl
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Migration;
 
@@ -54,15 +54,16 @@ class Version1Date20251102130000 extends SimpleMigrationStep
         /*
          * @var ISchemaWrapper $schema
          */
+
         $schema = $schemaClosure();
 
         $output->info('🔧 Adding groups column to applications table...');
 
-        if ($schema->hasTable('openregister_applications')) {
+        if ($schema->hasTable('openregister_applications') === true) {
             $table = $schema->getTable('openregister_applications');
 
             // Add groups column if it doesn't exist.
-            if (!$table->hasColumn('groups')) {
+            if ($table->hasColumn('groups') === false) {
                 $table->addColumn(
                         'groups',
                         Types::JSON,

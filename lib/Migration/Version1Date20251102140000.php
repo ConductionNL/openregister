@@ -1,8 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
-/*
+/**
  * OpenRegister Views Table Migration
  *
  * This migration creates the 'openregister_views' table
@@ -19,6 +17,8 @@ declare(strict_types=1);
  *
  * @link https://www.OpenRegister.nl
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Migration;
 
@@ -55,11 +55,12 @@ class Version1Date20251102140000 extends SimpleMigrationStep
         /*
          * @var ISchemaWrapper $schema
          */
+
         $schema = $schemaClosure();
 
         $output->info('🔧 Creating views table...');
 
-        if (!$schema->hasTable('openregister_views')) {
+        if ($schema->hasTable('openregister_views') === false) {
             $table = $schema->createTable('openregister_views');
 
             // Primary key.

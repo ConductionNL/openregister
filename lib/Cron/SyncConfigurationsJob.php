@@ -178,7 +178,7 @@ class SyncConfigurationsJob extends TimedJob
             }//end foreach
 
             $this->logger->info(
-                "Configuration sync job completed: "."{$synced} synced, {$skipped} skipped, {$failed} failed"
+                "Configuration sync job completed: {$synced} synced, {$skipped} skipped, {$failed} failed"
             );
         } catch (Exception $e) {
             $this->logger->error('Configuration sync job failed: '.$e->getMessage());
@@ -265,7 +265,7 @@ class SyncConfigurationsJob extends TimedJob
         $githubBranch = $configuration->getGithubBranch() ?? 'main';
         $githubPath   = $configuration->getGithubPath();
 
-        if (empty($githubRepo) || empty($githubPath)) {
+        if (empty($githubRepo) === true || empty($githubPath) === true) {
             throw new Exception('GitHub repository and path are required');
         }
 
@@ -309,13 +309,13 @@ class SyncConfigurationsJob extends TimedJob
     {
         $sourceUrl = $configuration->getSourceUrl();
 
-        if (empty($sourceUrl)) {
+        if (empty($sourceUrl) === true) {
             throw new Exception('Source URL is required for GitLab sync');
         }
 
         // Parse GitLab URL to extract namespace, project, ref, and path.
         // Format: https://gitlab.com/namespace/project/-/blob/branch/path/to/file.json.
-        if (preg_match('#gitlab\.com/([^/]+)/([^/]+)/-/blob/([^/]+)/(.+)$#', $sourceUrl, $matches)) {
+        if (preg_match('#gitlab\.com/([^/]+)/([^/]+)/-/blob/([^/]+)/(.+)$#', $sourceUrl, $matches) === 1) {
             $namespace = $matches[1];
             $project   = $matches[2];
             $ref       = $matches[3];
@@ -365,7 +365,7 @@ class SyncConfigurationsJob extends TimedJob
     {
         $sourceUrl = $configuration->getSourceUrl();
 
-        if (empty($sourceUrl)) {
+        if (empty($sourceUrl) === true) {
             throw new Exception('Source URL is required');
         }
 
@@ -412,7 +412,7 @@ class SyncConfigurationsJob extends TimedJob
     {
         $sourceUrl = $configuration->getSourceUrl();
 
-        if (empty($sourceUrl)) {
+        if (empty($sourceUrl) === true) {
             throw new Exception('Source URL (file path) is required for local sync');
         }
 

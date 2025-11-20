@@ -1,5 +1,18 @@
 <?php
 
+/**
+ * Create feedback table for storing user feedback on AI messages
+ *
+ * @category Migration
+ * @package  OCA\OpenRegister\Migration
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version   GIT: <git-id>
+ * @link      https://www.OpenRegister.nl
+ */
+
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Migration;
@@ -18,20 +31,23 @@ class Version1Date20251107150000 extends SimpleMigrationStep
 
 
     /**
-     * @param IOutput $output
-     * @param Closure $schemaClosure The `\Closure` returns a `ISchemaWrapper`
-     * @param array   $options
+     * Create feedback table for storing user feedback on AI messages
      *
-     * @return null|ISchemaWrapper
+     * @param IOutput       $output        Migration output interface
+     * @param Closure       $schemaClosure Schema closure that returns ISchemaWrapper
+     * @param array<string> $options       Migration options
+     *
+     * @return null|ISchemaWrapper Updated schema or null
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
         /*
          * @var ISchemaWrapper $schema
          */
+
         $schema = $schemaClosure();
 
-        if (!$schema->hasTable('openregister_feedback')) {
+        if ($schema->hasTable('openregister_feedback') === false) {
             $table = $schema->createTable('openregister_feedback');
 
             $table->addColumn(

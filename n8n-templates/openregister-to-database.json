@@ -1,0 +1,159 @@
+{
+  "name": "OpenRegister to Database",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "openregister-to-db",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "webhook-db",
+      "name": "Webhook - Object Events",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ],
+      "webhookId": "openregister-to-db"
+    },
+    {
+      "parameters": {
+        "url": "=http://master-nextcloud-1/apps/openregister/api/objects/{{$json.body.data.object.uuid}}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": true
+            }
+          }
+        }
+      },
+      "id": "get-object",
+      "name": "Get Object Details",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        460,
+        300
+      ],
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "1",
+          "name": "OpenRegister API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract and transform object data for database insertion.\nconst object = $input.item.json;\nconst event = $input.item.json.body?.event || 'unknown';\n\n// Determine operation type.\nlet operation = 'insert';\nif (event.includes('Updated')) {\n  operation = 'update';\n} else if (event.includes('Deleted')) {\n  operation = 'delete';\n}\n\nreturn {\n  operation: operation,\n  uuid: object.uuid,\n  register_name: object.register,\n  schema_name: object.schema,\n  title: object.data?.title || null,\n  description: object.data?.description || null,\n  data_json: JSON.stringify(object.data),\n  organisation: object.organisation || null,\n  created_at: object.created,\n  updated_at: object.updated,\n  metadata: {\n    source: 'OpenRegister',\n    synced_at: new Date().toISOString()\n  }\n};"
+      },
+      "id": "transform-db",
+      "name": "Transform for Database",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=INSERT INTO openregister_objects \n  (uuid, register_name, schema_name, title, description, data_json, organisation, created_at, updated_at, synced_at)\nVALUES \n  ('{{$json.uuid}}', '{{$json.register_name}}', '{{$json.schema_name}}', '{{$json.title}}', '{{$json.description}}', '{{$json.data_json}}', '{{$json.organisation}}', '{{$json.created_at}}', '{{$json.updated_at}}', NOW())\nON DUPLICATE KEY UPDATE\n  title = '{{$json.title}}',\n  description = '{{$json.description}}',\n  data_json = '{{$json.data_json}}',\n  updated_at = '{{$json.updated_at}}',\n  synced_at = NOW()"
+      },
+      "id": "insert-db",
+      "name": "Insert/Update Database",
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2,
+      "position": [
+        900,
+        300
+      ],
+      "credentials": {
+        "mySql": {
+          "id": "3",
+          "name": "External MySQL Database"
+        }
+      },
+      "notes": "Configure with your MySQL/MariaDB credentials.\nAdjust the table schema as needed."
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineAll"
+      },
+      "id": "merge-results",
+      "name": "Prepare Response",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2.1,
+      "position": [
+        1120,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook - Object Events": {
+      "main": [
+        [
+          {
+            "node": "Get Object Details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Object Details": {
+      "main": [
+        [
+          {
+            "node": "Transform for Database",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transform for Database": {
+      "main": [
+        [
+          {
+            "node": "Insert/Update Database",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert/Update Database": {
+      "main": [
+        [
+          {
+            "node": "Prepare Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {},
+  "staticData": null,
+  "tags": [
+    {
+      "name": "OpenRegister",
+      "id": "1"
+    },
+    {
+      "name": "Database",
+      "id": "2"
+    }
+  ],
+  "pinData": {},
+  "versionId": "1"
+}
+

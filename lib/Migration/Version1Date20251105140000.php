@@ -1,19 +1,24 @@
 <?php
 
-declare(strict_types=1);
-
-/*
- * Add configuration management columns
+/**
+ * OpenRegister Migration - Add Configuration Management Columns
  *
  * This migration adds columns to support remote configuration management,
  * version tracking, GitHub integration, and notification features.
  *
  * @category Migration
  * @package  OCA\OpenRegister\Migration
- * @author   Conduction Development Team <dev@conduction.nl>
- * @license  AGPL-3.0-or-later
- * @link     https://www.openregister.nl
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenRegister.nl
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Migration;
 
@@ -47,6 +52,7 @@ class Version1Date20251105140000 extends SimpleMigrationStep
         /*
          * @var ISchemaWrapper $schema
          */
+
         $schema  = $schemaClosure();
         $updated = false;
 
@@ -286,7 +292,11 @@ class Version1Date20251105140000 extends SimpleMigrationStep
             }
         }//end if
 
-        return $updated === true ? $schema : null;
+        if ($updated === true) {
+            return $schema;
+        }
+
+        return null;
 
     }//end changeSchema()
 

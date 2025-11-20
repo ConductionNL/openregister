@@ -1,8 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
-/*
+/**
  * Add missing columns to agents table
  *
  * This migration adds request_quota, token_quota, and groups columns
@@ -19,6 +17,8 @@ declare(strict_types=1);
  *
  * @link https://www.OpenRegister.nl
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Migration;
 
@@ -52,16 +52,17 @@ class Version1Date20251106000001 extends SimpleMigrationStep
         /*
          * @var ISchemaWrapper $schema
          */
+
         $schema = $schemaClosure();
 
         $output->info('🔧 Adding missing columns to agents table...');
 
-        if ($schema->hasTable('openregister_agents')) {
+        if ($schema->hasTable('openregister_agents') === true) {
             $table   = $schema->getTable('openregister_agents');
             $updated = false;
 
             // Add request_quota column if missing.
-            if (!$table->hasColumn('request_quota')) {
+            if ($table->hasColumn('request_quota') === false) {
                 $table->addColumn(
                         'request_quota',
                         Types::INTEGER,
@@ -76,7 +77,7 @@ class Version1Date20251106000001 extends SimpleMigrationStep
             }
 
             // Add token_quota column if missing.
-            if (!$table->hasColumn('token_quota')) {
+            if ($table->hasColumn('token_quota') === false) {
                 $table->addColumn(
                         'token_quota',
                         Types::INTEGER,
@@ -91,7 +92,7 @@ class Version1Date20251106000001 extends SimpleMigrationStep
             }
 
             // Add groups column if missing.
-            if (!$table->hasColumn('groups')) {
+            if ($table->hasColumn('groups') === false) {
                 $table->addColumn(
                         'groups',
                         Types::JSON,

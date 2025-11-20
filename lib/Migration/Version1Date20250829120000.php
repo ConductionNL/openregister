@@ -211,6 +211,7 @@ class Version1Date20250829120000 extends SimpleMigrationStep
         /*
          * @var ISchemaWrapper $schema
          */
+
         $schema = $schemaClosure();
 
         // 1. Add image column to openregister_objects table.

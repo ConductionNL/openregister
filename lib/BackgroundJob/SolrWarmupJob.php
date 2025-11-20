@@ -1,21 +1,25 @@
 <?php
 
-declare(strict_types=1);
-
-/*
- * SOLR Index Warmup Background Job
+/**
+ * OpenRegister SOLR Index Warmup Background Job
  *
  * One-time background job that warms up the SOLR index after data imports.
  * This job is scheduled automatically after import operations complete to
  * ensure optimal search performance without slowing down the import process.
  *
- * @category  BackgroundJob
- * @package   OCA\OpenRegister\BackgroundJob
- * @author    OpenRegister Team
- * @copyright 2024 OpenRegister
- * @license   AGPL-3.0-or-later
- * @link      https://github.com/OpenRegister/OpenRegister
+ * @category BackgroundJob
+ * @package  OCA\OpenRegister\BackgroundJob
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenRegister.nl
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
@@ -53,13 +57,15 @@ class SolrWarmupJob extends QueuedJob
 
 
     /**
-     * Execute the SOLR warmup job
+     * Execute the SOLR warmup job.
      *
      * @param array $arguments Job arguments containing warmup parameters
      *                         - maxObjects: Maximum number of objects to index (default: 5000)
      *                         - mode: Warmup mode - 'serial', 'parallel', or 'hyper' (default: 'serial')
      *                         - collectErrors: Whether to collect detailed errors (default: false)
      *                         - triggeredBy: What triggered this warmup (default: 'unknown')
+     *
+     * @return void
      */
     protected function run($arguments): void
     {
@@ -74,6 +80,7 @@ class SolrWarmupJob extends QueuedJob
         /*
          * @var LoggerInterface $logger
          */
+
         $logger = \OC::$server->get(LoggerInterface::class);
 
         $logger->info(
@@ -88,19 +95,18 @@ class SolrWarmupJob extends QueuedJob
                 );
 
         try {
-            // Get required services.
             /*
+             * Get required services.
+             *
              * @var GuzzleSolrService $solrService
-             */
-            $solrService = \OC::$server->get(GuzzleSolrService::class);
-
-            /*
              * @var SchemaMapper $schemaMapper
              */
+
+            $solrService  = \OC::$server->get(GuzzleSolrService::class);
             $schemaMapper = \OC::$server->get(SchemaMapper::class);
 
             // Check if SOLR is available before proceeding.
-            if (!$this->isSolrAvailable($solrService, $logger)) {
+            if ($this->isSolrAvailable($solrService, $logger) === false) {
                 $logger->warning(
                         'SOLR Warmup Job skipped - SOLR not available',
                         [
@@ -184,10 +190,11 @@ class SolrWarmupJob extends QueuedJob
 
 
     /**
-     * Check if SOLR is available for warmup
+     * Check if SOLR is available for warmup.
      *
-     * @param  GuzzleSolrService $solrService The SOLR service
-     * @param  LoggerInterface   $logger      The logger
+     * @param GuzzleSolrService $solrService The SOLR service
+     * @param LoggerInterface   $logger      The logger
+     *
      * @return bool True if SOLR is available
      */
     private function isSolrAvailable(GuzzleSolrService $solrService, LoggerInterface $logger): bool
@@ -222,10 +229,11 @@ class SolrWarmupJob extends QueuedJob
 
 
     /**
-     * Calculate objects per second performance metric
+     * Calculate objects per second performance metric.
      *
-     * @param  array $result        Warmup result
-     * @param  float $executionTime Total execution time in seconds
+     * @param array $result        Warmup result
+     * @param float $executionTime Total execution time in seconds
+     *
      * @return float Objects indexed per second
      */
     private function calculateObjectsPerSecond(array $result, float $executionTime): float

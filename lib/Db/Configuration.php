@@ -433,7 +433,7 @@ class Configuration extends Entity implements JsonSerializable
         $jsonFields = $this->getJsonFields();
 
         // Map 'application' to 'app' for frontend compatibility.
-        if (isset($object['application']) && !isset($object['app'])) {
+        if (isset($object['application']) === true && isset($object['app']) === false) {
             $object['app'] = $object['application'];
         }
 
@@ -482,7 +482,7 @@ class Configuration extends Entity implements JsonSerializable
             'sourceUrl'          => $this->sourceUrl,
             'localVersion'       => $this->localVersion,
             'remoteVersion'      => $this->remoteVersion,
-            'lastChecked'        => ($this->lastChecked !== null) ? $this->lastChecked->format('c') : null,
+            'lastChecked'        => $this->getLastCheckedFormatted(),
             'autoUpdate'         => $this->autoUpdate,
             'notificationGroups' => $this->notificationGroups,
             'githubRepo'         => $this->githubRepo,
@@ -491,7 +491,7 @@ class Configuration extends Entity implements JsonSerializable
             'isLocal'            => $this->isLocal,
             'syncEnabled'        => $this->syncEnabled,
             'syncInterval'       => $this->syncInterval,
-            'lastSyncDate'       => ($this->lastSyncDate !== null) ? $this->lastSyncDate->format('c') : null,
+            'lastSyncDate'       => $this->getLastSyncDateFormatted(),
             'syncStatus'         => $this->syncStatus,
             'openregister'       => $this->openregister,
             'organisation'       => $this->organisation,
@@ -503,8 +503,8 @@ class Configuration extends Entity implements JsonSerializable
             'agents'             => $this->agents,
             'sources'            => $this->sources,
             'applications'       => $this->applications,
-            'created'            => ($this->created !== null) ? $this->created->format('c') : null,
-            'updated'            => ($this->updated !== null) ? $this->updated->format('c') : null,
+            'created'            => $this->getCreatedFormatted(),
+            'updated'            => $this->getUpdatedFormatted(),
         ];
 
     }//end jsonSerialize()
@@ -593,6 +593,70 @@ class Configuration extends Entity implements JsonSerializable
         return 'Configuration';
 
     }//end __toString()
+
+
+    /**
+     * Get lastChecked date formatted as ISO 8601 string or null
+     *
+     * @return string|null Formatted date or null
+     */
+    private function getLastCheckedFormatted(): ?string
+    {
+        if ($this->lastChecked !== null) {
+            return $this->lastChecked->format('c');
+        }
+
+        return null;
+
+    }//end getLastCheckedFormatted()
+
+
+    /**
+     * Get lastSyncDate formatted as ISO 8601 string or null
+     *
+     * @return string|null Formatted date or null
+     */
+    private function getLastSyncDateFormatted(): ?string
+    {
+        if ($this->lastSyncDate !== null) {
+            return $this->lastSyncDate->format('c');
+        }
+
+        return null;
+
+    }//end getLastSyncDateFormatted()
+
+
+    /**
+     * Get created date formatted as ISO 8601 string or null
+     *
+     * @return string|null Formatted date or null
+     */
+    private function getCreatedFormatted(): ?string
+    {
+        if ($this->created !== null) {
+            return $this->created->format('c');
+        }
+
+        return null;
+
+    }//end getCreatedFormatted()
+
+
+    /**
+     * Get updated date formatted as ISO 8601 string or null
+     *
+     * @return string|null Formatted date or null
+     */
+    private function getUpdatedFormatted(): ?string
+    {
+        if ($this->updated !== null) {
+            return $this->updated->format('c');
+        }
+
+        return null;
+
+    }//end getUpdatedFormatted()
 
 
 }//end class

@@ -1,8 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
-/*
+/**
  * OpenRegister Schema Composition Migration
  *
  * This migration adds 'allOf', 'oneOf', and 'anyOf' columns to the schemas table
@@ -20,6 +18,8 @@ declare(strict_types=1);
  *
  * @link https://www.OpenRegister.nl
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Migration;
 
@@ -57,20 +57,19 @@ class Version1Date20251114120000 extends SimpleMigrationStep
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
         /*
-         *
-         *
          * @var ISchemaWrapper $schema
          */
+
         $schema = $schemaClosure();
 
         $output->info('🔧 Adding JSON Schema composition support...');
 
         // Add allOf, oneOf, anyOf fields to schemas table.
-        if ($schema->hasTable('openregister_schemas')) {
+        if ($schema->hasTable('openregister_schemas') === true) {
             $table = $schema->getTable('openregister_schemas');
 
             // Add allOf field (array of schema identifiers - must validate against ALL).
-            if (!$table->hasColumn('all_of')) {
+            if ($table->hasColumn('all_of') === false) {
                 $table->addColumn(
                         'all_of',
                         Types::TEXT,
@@ -87,7 +86,7 @@ class Version1Date20251114120000 extends SimpleMigrationStep
             }
 
             // Add oneOf field (array of schema identifiers - must validate against EXACTLY ONE).
-            if (!$table->hasColumn('one_of')) {
+            if ($table->hasColumn('one_of') === false) {
                 $table->addColumn(
                         'one_of',
                         Types::TEXT,
@@ -104,7 +103,7 @@ class Version1Date20251114120000 extends SimpleMigrationStep
             }
 
             // Add anyOf field (array of schema identifiers - must validate against AT LEAST ONE).
-            if (!$table->hasColumn('any_of')) {
+            if ($table->hasColumn('any_of') === false) {
                 $table->addColumn(
                         'any_of',
                         Types::TEXT,

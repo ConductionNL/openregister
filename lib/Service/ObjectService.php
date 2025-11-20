@@ -96,20 +96,20 @@ use Symfony\Component\Uid\Uuid;
  * - ObjectService = High-level orchestration and bulk operations
  * - SaveObject = Individual object save/create/update logic with relations handling
  *
- * @category   Service
- * @package    OCA\OpenRegister\Service
+ * @category Service
+ * @package  OCA\OpenRegister\Service
  *
- * @author     Conduction Development Team <info@conduction.nl>
- * @copyright  2024 Conduction B.V.
- * @license    EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @author   Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version    GIT: <git_id>
+ * @version GIT: <git_id>
  *
- * @link       https://www.OpenRegister.app
+ * @link https://www.OpenRegister.app
  *
- * @since      1.0.0 Initial ObjectService implementation
- * @since      1.5.0 Added bulk operations and performance optimizations
- * @since      2.0.0 Added comprehensive schema analysis and memory optimization
+ * @since 1.0.0 Initial ObjectService implementation
+ * @since 1.5.0 Added bulk operations and performance optimizations
+ * @since 2.0.0 Added comprehensive schema analysis and memory optimization
  */
 class ObjectService
 {
@@ -153,27 +153,31 @@ class ObjectService
     /**
      * Constructor for ObjectService.
      *
-     * @param DeleteObject        $deleteHandler       Handler for object deletion.
-     * @param GetObject           $getHandler          Handler for object retrieval.
-     * @param RenderObject        $renderHandler       Handler for object rendering.
-     * @param SaveObject          $saveHandler         Handler for individual object saving.
-     * @param SaveObjects         $saveObjectsHandler  Handler for bulk object saving operations.
-     * @param ValidateObject      $validateHandler     Handler for object validation.
-     * @param PublishObject       $publishHandler      Handler for object publication.
-     * @param DepublishObject     $depublishHandler    Handler for object depublication.
-     * @param RegisterMapper      $registerMapper      Mapper for register operations.
-     * @param SchemaMapper        $schemaMapper        Mapper for schema operations.
-     * @param ObjectEntityMapper  $objectEntityMapper  Mapper for object entity operations.
-     * @param FileService         $fileService         Service for file operations.
-     * @param IUserSession        $userSession         User session for getting current user.
-     * @param SearchTrailService  $searchTrailService  Service for search trail operations.
-     * @param IGroupManager       $groupManager        Group manager for checking user groups.
-     * @param IUserManager        $userManager         User manager for getting user objects.
-     * @param OrganisationService $organisationService Service for organisation operations.
-     * @param LoggerInterface           $logger                    Logger for performance monitoring.
-     * @param ObjectCacheService        $objectCacheService        Object cache service for entity and query caching.
-     * @param SchemaCacheService        $schemaCacheService        Schema cache service for schema entity caching.
-     * @param SchemaFacetCacheService   $schemaFacetCacheService   Schema facet cache service for facet caching.
+     * @param DeleteObject            $deleteHandler            Handler for object deletion.
+     * @param GetObject               $getHandler              Handler for object retrieval.
+     * @param RenderObject            $renderHandler           Handler for object rendering.
+     * @param SaveObject              $saveHandler             Handler for individual object saving.
+     * @param SaveObjects             $saveObjectsHandler      Handler for bulk object saving operations.
+     * @param ValidateObject          $validateHandler        Handler for object validation.
+     * @param PublishObject           $publishHandler         Handler for object publication.
+     * @param DepublishObject         $depublishHandler        Handler for object depublication.
+     * @param RegisterMapper          $registerMapper          Mapper for register operations.
+     * @param SchemaMapper            $schemaMapper            Mapper for schema operations.
+     * @param ViewMapper              $viewMapper              Mapper for view operations.
+     * @param ObjectEntityMapper      $objectEntityMapper      Mapper for object entity operations.
+     * @param FileService             $fileService             Service for file operations.
+     * @param IUserSession            $userSession             User session for getting current user.
+     * @param SearchTrailService      $searchTrailService      Service for search trail operations.
+     * @param IGroupManager           $groupManager            Group manager for checking user groups.
+     * @param IUserManager            $userManager             User manager for getting user objects.
+     * @param OrganisationService     $organisationService     Service for organisation operations.
+     * @param LoggerInterface         $logger                  Logger for performance monitoring.
+     * @param FacetService            $facetService            Service for facet operations.
+     * @param ObjectCacheService      $objectCacheService      Object cache service for entity and query caching.
+     * @param SchemaCacheService      $schemaCacheService      Schema cache service for schema entity caching.
+     * @param SchemaFacetCacheService $schemaFacetCacheService Schema facet cache service for facet caching.
+     * @param SettingsService         $settingsService         Service for settings operations.
+     * @param IAppContainer           $container               Application container.
      */
     public function __construct(
         private readonly DeleteObject $deleteHandler,
@@ -203,7 +207,6 @@ class ObjectService
         private readonly IAppContainer $container
     ) {
         // **REMOVED**: Cache initialization removed since SOLR is now our index.
-
     }//end __construct()
 
 
@@ -234,11 +237,14 @@ class ObjectService
     {
         $this->externalAppId = $appId;
 
-        $this->logger->debug('External app context set for cache isolation', [
-            'appId' => $appId,
-            'cacheNamespace' => "external_app_{$appId}",
-            'benefit' => 'improved_cache_performance'
-        ]);
+        $this->logger->debug(
+            'External app context set for cache isolation',
+            [
+                'appId'         => $appId,
+                'cacheNamespace' => "external_app_{$appId}",
+                'benefit'       => 'improved_cache_performance'
+            ]
+        );
 
         return $this;
 
@@ -320,14 +326,20 @@ class ObjectService
         $userGroups = $this->groupManager->getUserGroupIds($userObj);
 
         // Check if user is admin (admin group always has all permissions).
-        if (in_array('admin', $userGroups)) {
+        if (in_array('admin', $userGroups) === true) {
             return true;
         }
 
         // Object owner permission check is now handled in schema->hasPermission() call below.
         // Check schema permissions for each user group.
         foreach ($userGroups as $groupId) {
-            if ($schema->hasPermission($groupId, $action, $userId, in_array('admin', $userGroups) ? 'admin' : null, $objectOwner)) {
+            $isAdmin = in_array('admin', $userGroups) === true;
+            $adminGroup = null;
+            if ($isAdmin === true) {
+                $adminGroup = 'admin';
+            }
+
+            if ($schema->hasPermission($groupId, $action, $userId, $adminGroup, $objectOwner) === true) {
                 return true;
             }
         }
@@ -349,11 +361,27 @@ class ObjectService
      *
      * @return void
      */
+    /**
+     * Check permission and throw exception if not granted
+     *
+     * @param Schema      $schema      Schema to check permissions for
+     * @param string      $action      Action to check permission for
+     * @param string|null $userId      User ID to check permissions for
+     * @param string|null $objectOwner Object owner ID
+     * @param bool        $rbac        Whether to enforce RBAC checks
+     *
+     * @return void
+     * @throws \Exception If permission is not granted
+     */
     private function checkPermission(Schema $schema, string $action, ?string $userId=null, ?string $objectOwner=null, bool $rbac=true): void
     {
-        if (!$this->hasPermission($schema, $action, $userId, $objectOwner, $rbac)) {
-            $user     = $this->userSession->getUser();
-            $userName = $user ? $user->getDisplayName() : 'Anonymous';
+        if ($this->hasPermission($schema, $action, $userId, $objectOwner, $rbac) === false) {
+            $user = $this->userSession->getUser();
+            $userName = 'Anonymous';
+            if ($user !== null) {
+                $userName = $user->getDisplayName();
+            }
+
             throw new \Exception("User '{$userName}' does not have permission to '{$action}' objects in schema '{$schema->getTitle()}'");
         }
 
@@ -378,7 +406,8 @@ class ObjectService
         $folderProperty = $entity->getFolder();
 
         // Check if folder needs to be created (null, empty string, or legacy string path).
-        if ($folderProperty === null || $folderProperty === '' || is_string($folderProperty)) {
+        $isString = is_string($folderProperty) === true;
+        if ($folderProperty === null || $folderProperty === '' || $isString === true) {
             try {
                 // Create folder and get the folder node.
                 $folderNode = $this->fileService->createEntityFolder($entity);
@@ -425,7 +454,9 @@ class ObjectService
             $registers = $this->getCachedEntities('register', [$register], function($ids) {
                 return [$this->registerMapper->find($ids[0])];
             });
-            if (isset($registers[0]) && $registers[0] instanceof Register) {
+            $registerExists = isset($registers[0]) === true;
+            $isRegisterInstance = $registerExists === true && $registers[0] instanceof Register;
+            if ($isRegisterInstance === true) {
                 $register = $registers[0];
             } else {
                 // Fallback to direct database lookup if cache fails.
@@ -453,7 +484,9 @@ class ObjectService
             $schemas = $this->getCachedEntities('schema', [$schema], function($ids) {
                 return [$this->schemaMapper->find($ids[0])];
             });
-            if (isset($schemas[0]) && $schemas[0] instanceof Schema) {
+            $schemaExists = isset($schemas[0]) === true;
+            $isSchemaInstance = $schemaExists === true && $schemas[0] instanceof Schema;
+            if ($isSchemaInstance === true) {
                 $schema = $schemas[0];
             } else {
                 // Fallback to direct database lookup if cache fails.
@@ -694,11 +727,16 @@ class ObjectService
 
         // Check if an ID is provided in the object data before generating new UUID.
         $providedId = null;
-        if (is_array($object)) {
+        if (is_array($object) === true) {
             $providedId = $object['@self']['id'] ?? $object['id'] ?? null;
         }
 
-        if ($providedId && !empty(trim($providedId))) {
+        $providedIdTrimmed = null;
+        if ($providedId !== null) {
+            $providedIdTrimmed = trim($providedId);
+        }
+
+        if ($providedId !== null && empty($providedIdTrimmed) === false) {
             // Use provided ID as UUID.
             $tempObject->setUuid($providedId);
         } else {
@@ -718,11 +756,11 @@ class ObjectService
             // Log error but continue - object can function without folder.
         }
 
-        if($register === null) {
+        if ($register === null) {
             $register = $this->currentRegister;
         }
 
-        if($schema === null) {
+        if ($schema === null) {
             $schema = $this->currentSchema;
         }
 
@@ -815,7 +853,9 @@ class ObjectService
         // Skip validation here - let saveObject handle the proper order of pre-validation cascading then validation.
         // Create folder before saving if object doesn't have one.
         $folderId = null;
-        if ($existingObject->getFolder() === null || $existingObject->getFolder() === '' || is_string($existingObject->getFolder())) {
+        $folder = $existingObject->getFolder();
+        $isString = is_string($folder) === true;
+        if ($folder === null || $folder === '' || $isString === true) {
             try {
                 $folderId = $this->fileService->createObjectFolderWithoutUpdate($existingObject);
             } catch (\Exception $e) {
@@ -823,11 +863,11 @@ class ObjectService
             }
         }
 
-        if($register === null) {
+        if ($register === null) {
             $register = $this->currentRegister;
         }
 
-        if($schema === null) {
+        if ($schema === null) {
             $schema = $this->currentSchema;
         }
 
@@ -1154,9 +1194,14 @@ class ObjectService
         }
 
         // Check if an ID is provided in the object data and use it as UUID if no UUID was explicitly passed.
-        if ($uuid === null && is_array($object)) {
+        if ($uuid === null && is_array($object) === true) {
             $providedId = $object['@self']['id'] ?? $object['id'] ?? null;
-            if ($providedId && !empty(trim($providedId))) {
+            $providedIdTrimmed = null;
+            if ($providedId !== null) {
+                $providedIdTrimmed = trim($providedId);
+            }
+
+            if ($providedId !== null && empty($providedIdTrimmed) === false) {
                 $uuid = $providedId;
             }
         }
@@ -1214,7 +1259,9 @@ class ObjectService
             // For existing objects or objects with specific UUIDs, check if folder needs to be created.
             try {
                 $existingObject = $this->objectEntityMapper->find($uuid);
-                if ($existingObject->getFolder() === null || $existingObject->getFolder() === '' || is_string($existingObject->getFolder())) {
+                $folder = $existingObject->getFolder();
+                $isString = is_string($folder) === true;
+                if ($folder === null || $folder === '' || $isString === true) {
                     try {
                         $folderId = $this->fileService->createObjectFolderWithoutUpdate($existingObject);
                     } catch (\Exception $e) {
@@ -1344,7 +1391,9 @@ class ObjectService
                 $registerArray['schemas'] = array_map(
                     function ($schemaId) {
                         // Only expand if it's an int or string (ID/UUID/slug).
-                        if (is_int($schemaId) || is_string($schemaId)) {
+                        $isInt = is_int($schemaId) === true;
+                        $isString = is_string($schemaId) === true;
+                        if ($isInt === true || $isString === true) {
                             try {
                                 return $this->schemaMapper->find($schemaId)->jsonSerialize();
                             } catch (Exception $e) {
@@ -1388,7 +1437,7 @@ class ObjectService
         $filterKeysWithSub = array_filter(
                 array_keys($filters),
                 function ($filter) {
-                    if (str_contains($filter, '_')) {
+                    if (str_contains($filter, '_') === true) {
                         return true;
                     }
 
@@ -1398,7 +1447,7 @@ class ObjectService
 
         $filtersWithSub = array_intersect_key($filters, array_flip($filterKeysWithSub));
 
-        if (empty($filtersWithSub)) {
+        if (empty($filtersWithSub) === true) {
             return [];
         }
 
@@ -1673,8 +1722,11 @@ class ObjectService
     private function getCurrentUserId(): ?string
     {
         $user = $this->userSession->getUser();
-        return $user ? $user->getUID() : null;
+        if ($user !== null) {
+            return $user->getUID();
+        }
 
+        return null;
     }//end getCurrentUserId()
 
 

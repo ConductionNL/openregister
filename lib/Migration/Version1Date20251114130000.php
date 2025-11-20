@@ -1,8 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
-/*
+/**
  * OpenRegister Schema Extend Column Removal Migration
  *
  * This migration removes the deprecated 'extend' column from the schemas table.
@@ -20,6 +18,8 @@ declare(strict_types=1);
  *
  * @link https://www.OpenRegister.nl
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Migration;
 
@@ -85,7 +85,7 @@ class Version1Date20251114130000 extends SimpleMigrationStep
         $result        = $qb->executeQuery();
         $migratedCount = 0;
 
-        while ($row = $result->fetch()) {
+        while (($row = $result->fetch()) !== false) {
             $id     = $row['id'];
             $extend = $row['extend'];
 
@@ -125,20 +125,19 @@ class Version1Date20251114130000 extends SimpleMigrationStep
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
         /*
-         *
-         *
          * @var ISchemaWrapper $schema
          */
+
         $schema = $schemaClosure();
 
         $output->info('🔧 Removing deprecated extend column...');
 
         // Remove extend field from schemas table.
-        if ($schema->hasTable('openregister_schemas')) {
+        if ($schema->hasTable('openregister_schemas') === true) {
             $table = $schema->getTable('openregister_schemas');
 
             // Remove extend column if it exists.
-            if ($table->hasColumn('extend')) {
+            if ($table->hasColumn('extend') === true) {
                 $table->dropColumn('extend');
 
                 $output->info('   ✓ Removed extend column from schemas table');

@@ -19,11 +19,15 @@
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
+use OCA\OpenRegister\Event\ConversationCreatedEvent;
+use OCA\OpenRegister\Event\ConversationDeletedEvent;
+use OCA\OpenRegister\Event\ConversationUpdatedEvent;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 
 /**
@@ -47,15 +51,24 @@ use OCP\IDBConnection;
 class ConversationMapper extends QBMapper
 {
 
+    /**
+     * Event dispatcher for dispatching conversation events
+     *
+     * @var IEventDispatcher
+     */
+    private IEventDispatcher $eventDispatcher;
+
 
     /**
      * ConversationMapper constructor.
      *
-     * @param IDBConnection $db Database connection instance
+     * @param IDBConnection    $db              Database connection instance
+     * @param IEventDispatcher $eventDispatcher Event dispatcher
      */
-    public function __construct(IDBConnection $db)
+    public function __construct(IDBConnection $db, IEventDispatcher $eventDispatcher)
     {
         parent::__construct($db, 'openregister_conversations', Conversation::class);
+        $this->eventDispatcher = $eventDispatcher;
 
     }//end __construct()
 
@@ -74,7 +87,7 @@ class ConversationMapper extends QBMapper
         if ($entity instanceof Conversation) {
             // Ensure UUID is set.
             $uuid = $entity->getUuid();
-            if (!$uuid || trim($uuid) === '') {
+            if (($uuid === null || $uuid === '') || trim($uuid) === '') {
                 $newUuid = \Symfony\Component\Uid\Uuid::v4()->toRfc4122();
                 $entity->setUuid($newUuid);
             }
@@ -89,7 +102,12 @@ class ConversationMapper extends QBMapper
             }
         }
 
-        return parent::insert($entity);
+        $entity = parent::insert($entity);
+
+        // Dispatch creation event.
+        $this->eventDispatcher->dispatchTyped(new ConversationCreatedEvent($entity));
+
+        return $entity;
 
     }//end insert()
 
@@ -105,14 +123,41 @@ class ConversationMapper extends QBMapper
      */
     public function update(Entity $entity): Entity
     {
+        // Get old state before update.
+        $oldEntity = $this->find($entity->getId());
+
         if ($entity instanceof Conversation) {
             // Always update the updated timestamp.
             $entity->setUpdated(new \DateTime());
         }
 
-        return parent::update($entity);
+        $entity = parent::update($entity);
+
+        // Dispatch update event.
+        $this->eventDispatcher->dispatchTyped(new ConversationUpdatedEvent($entity, $oldEntity));
+
+        return $entity;
 
     }//end update()
+
+
+    /**
+     * Delete a conversation entity
+     *
+     * @param Entity $entity The conversation entity to delete
+     *
+     * @return Entity The deleted conversation entity
+     */
+    public function delete(Entity $entity): Entity
+    {
+        $entity = parent::delete($entity);
+
+        // Dispatch deletion event.
+        $this->eventDispatcher->dispatchTyped(new ConversationDeletedEvent($entity));
+
+        return $entity;
+
+    }//end delete()
 
 
     /**
@@ -305,7 +350,7 @@ class ConversationMapper extends QBMapper
         $result = $qb->executeQuery();
         $titles = [];
 
-        while ($row = $result->fetch()) {
+        while (($row = $result->fetch()) !== false) {
             if ($row['title'] !== null) {
                 $titles[] = $row['title'];
             }

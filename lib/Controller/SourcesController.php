@@ -72,9 +72,9 @@ class SourcesController extends Controller
         $params = $this->request->getParams();
 
         // Extract pagination and search parameters.
-        $limit  = isset($params['_limit']) ? (int) $params['_limit'] : null;
-        $offset = isset($params['_offset']) ? (int) $params['_offset'] : null;
-        $page   = isset($params['_page']) ? (int) $params['_page'] : null;
+        $limit  = $this->getIntParam($params, '_limit');
+        $offset = $this->getIntParam($params, '_offset');
+        $page   = $this->getIntParam($params, '_page');
         $search = $params['_search'] ?? '';
 
         // Convert page to offset if provided.
@@ -200,12 +200,12 @@ class SourcesController extends Controller
     /**
      * Patch (partially update) a source
      *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
      * @param int $id The ID of the source to patch
      *
      * @return JSONResponse The updated source data
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
      */
     public function patch(int $id): JSONResponse
     {
@@ -238,6 +238,25 @@ class SourcesController extends Controller
         return new JSONResponse([]);
 
     }//end destroy()
+
+
+    /**
+     * Get integer parameter from params array or return null
+     *
+     * @param array<string, mixed> $params Parameters array
+     * @param string               $key    Parameter key
+     *
+     * @return int|null Integer value or null
+     */
+    private function getIntParam(array $params, string $key): ?int
+    {
+        if (isset($params[$key]) === true) {
+            return (int) $params[$key];
+        }
+
+        return null;
+
+    }//end getIntParam()
 
 
 }//end class

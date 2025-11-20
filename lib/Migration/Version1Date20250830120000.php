@@ -50,6 +50,7 @@ class Version1Date20250830120000 extends SimpleMigrationStep
         /*
          * @var ISchemaWrapper $schema
          */
+
         $schema = $schemaClosure();
 
         // Check if the configurations table exists.
@@ -117,6 +118,7 @@ class Version1Date20250830120000 extends SimpleMigrationStep
         /*
          * @var ISchemaWrapper $schema
          */
+
         $schema = $schemaClosure();
 
         // Check if the configurations table exists.

@@ -1,9 +1,7 @@
 <?php
 
-declare(strict_types=1);
-
-/*
- * Add tools and user columns to agents table
+/**
+ * OpenRegister Migration - Add Tools and User Columns to Agents Table
  *
  * This migration adds support for LLphant function tools that agents can use
  * to interact with OpenRegister data (registers, schemas, objects).
@@ -12,14 +10,16 @@ declare(strict_types=1);
  * @category Migration
  * @package  OCA\OpenRegister\Migration
  *
- * @author    Conduction Development Team <dev@conduction.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version GIT: <git-id>
+ * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.nl
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Migration;
 
@@ -57,14 +57,15 @@ class Version1Date20251107180000 extends SimpleMigrationStep
         /*
          * @var ISchemaWrapper $schema
          */
+
         $schema  = $schemaClosure();
         $updated = false;
 
-        if ($schema->hasTable('openregister_agents')) {
+        if ($schema->hasTable('openregister_agents') === true) {
             $table = $schema->getTable('openregister_agents');
 
             // Add tools column (JSON array of enabled tool names).
-            if (!$table->hasColumn('tools')) {
+            if ($table->hasColumn('tools') === false) {
                 $table->addColumn(
                         'tools',
                         Types::TEXT,
@@ -81,7 +82,7 @@ class Version1Date20251107180000 extends SimpleMigrationStep
             }
 
             // Add user column (for cron/background job scenarios).
-            if (!$table->hasColumn('user')) {
+            if ($table->hasColumn('user') === false) {
                 $table->addColumn(
                         'user',
                         Types::STRING,
@@ -101,7 +102,11 @@ class Version1Date20251107180000 extends SimpleMigrationStep
             $output->warning('⚠️  openregister_agents table does not exist');
         }//end if
 
-        return $updated ? $schema : null;
+        if ($updated === true) {
+            return $schema;
+        }
+
+        return null;
 
     }//end changeSchema()
 

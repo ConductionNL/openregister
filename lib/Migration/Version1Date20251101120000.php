@@ -1,8 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
-/*
+/**
  * OpenRegister Applications Table Migration
  *
  * This migration creates the openregister_applications table to store
@@ -19,6 +17,8 @@ declare(strict_types=1);
  *
  * @link https://www.OpenRegister.nl
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Migration;
 
@@ -54,11 +54,12 @@ class Version1Date20251101120000 extends SimpleMigrationStep
         /*
          * @var ISchemaWrapper $schema
          */
+
         $schema = $schemaClosure();
 
         $output->info('🔧 Creating applications table...');
 
-        if (!$schema->hasTable('openregister_applications')) {
+        if ($schema->hasTable('openregister_applications') === false) {
             $table = $schema->createTable('openregister_applications');
 
             // Primary key.

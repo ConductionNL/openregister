@@ -1,9 +1,7 @@
 <?php
 
-declare(strict_types=1);
-
-/*
- * FilesController
+/**
+ * OpenRegister File Extraction Controller
  *
  * This controller handles file operations and text extraction endpoints.
  * Provides core file extraction functionality accessible via API.
@@ -11,12 +9,16 @@ declare(strict_types=1);
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
- * @author    Conduction Development Team <dev@conduction.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @version   GIT: <git-id>
- * @link      https://www.OpenRegister.nl
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenRegister.nl
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
@@ -65,10 +67,7 @@ class FileExtractionController extends Controller
 
 
     /**
-     * Get all files tracked in the extraction system
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
+     * Get all files tracked in the extraction system.
      *
      * @param int|null    $limit  Maximum number of files to return
      * @param int|null    $offset Offset for pagination
@@ -76,6 +75,9 @@ class FileExtractionController extends Controller
      * @param string|null $search Search by file name or path
      *
      * @return JSONResponse List of files with extraction information
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
      */
     public function index(?int $limit=100, ?int $offset=0, ?string $status=null, ?string $search=null): JSONResponse
     {
@@ -124,14 +126,14 @@ class FileExtractionController extends Controller
 
 
     /**
-     * Get a single file's extraction information by ID
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
+     * Get a single file's extraction information by ID.
      *
      * @param int $id Nextcloud file ID from oc_filecache
      *
      * @return JSONResponse File extraction information
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
      */
     public function show(int $id): JSONResponse
     {
@@ -159,18 +161,18 @@ class FileExtractionController extends Controller
 
 
     /**
-     * Extract text from a specific file by Nextcloud file ID
+     * Extract text from a specific file by Nextcloud file ID.
      *
      * If the file doesn't exist in the OpenRegister file_texts table,
      * it will be looked up in Nextcloud's oc_filecache and added.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
      *
      * @param int  $id             Nextcloud file ID from oc_filecache
      * @param bool $forceReExtract Force re-extraction even if file hasn't changed
      *
      * @return JSONResponse Extraction result
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
      */
     public function extract(int $id, bool $forceReExtract=false): JSONResponse
     {
@@ -208,17 +210,17 @@ class FileExtractionController extends Controller
 
 
     /**
-     * Discover files in Nextcloud that aren't tracked yet
+     * Discover files in Nextcloud that aren't tracked yet.
      *
      * This finds new files and stages them with status='pending'.
      * Does NOT perform actual text extraction.
      *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
      * @param int $limit Maximum number of files to discover
      *
      * @return JSONResponse Discovery statistics
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
      */
     public function discover(int $limit=100): JSONResponse
     {
@@ -247,17 +249,17 @@ class FileExtractionController extends Controller
 
 
     /**
-     * Extract text from all pending files (files already tracked with status='pending')
+     * Extract text from all pending files (files already tracked with status='pending').
      *
      * This processes files already staged for extraction. Use discover() first
      * to find and stage new files from Nextcloud.
      *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
      * @param int $limit Maximum number of files to process
      *
      * @return JSONResponse Extraction statistics
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
      */
     public function extractAll(int $limit=100): JSONResponse
     {
@@ -286,14 +288,14 @@ class FileExtractionController extends Controller
 
 
     /**
-     * Retry failed file extractions
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
+     * Retry failed file extractions.
      *
      * @param int $limit Maximum number of files to retry
      *
      * @return JSONResponse Retry statistics
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
      */
     public function retryFailed(int $limit=50): JSONResponse
     {

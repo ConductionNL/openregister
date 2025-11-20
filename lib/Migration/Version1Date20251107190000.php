@@ -1,8 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
-/*
+/**
  * Remove is_default column from organisations table
  *
  * This migration removes the is_default column from the organisations table
@@ -20,6 +18,8 @@ declare(strict_types=1);
  *
  * @link https://www.OpenRegister.nl
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Migration;
 
@@ -52,14 +52,15 @@ class Version1Date20251107190000 extends SimpleMigrationStep
         /*
          * @var ISchemaWrapper $schema
          */
+
         $schema  = $schemaClosure();
         $updated = false;
 
-        if ($schema->hasTable('openregister_organisations')) {
+        if ($schema->hasTable('openregister_organisations') === true) {
             $table = $schema->getTable('openregister_organisations');
 
             // Remove is_default column if it exists.
-            if ($table->hasColumn('is_default')) {
+            if ($table->hasColumn('is_default') === true) {
                 $table->dropColumn('is_default');
                 $output->info('✅ Removed is_default column from organisations table');
                 $updated = true;
@@ -70,7 +71,11 @@ class Version1Date20251107190000 extends SimpleMigrationStep
             $output->warning('⚠️  openregister_organisations table does not exist');
         }
 
-        return $updated ? $schema : null;
+        if ($updated === true) {
+            return $schema;
+        }
+
+        return null;
 
     }//end changeSchema()
 

@@ -124,7 +124,7 @@ class UserSettingsController extends Controller
                     [
                         'hasToken' => true,
                         'isValid'  => $isValid,
-                        'message'  => $isValid === true ? 'Token is valid' : 'Token is invalid or expired',
+                        'message'  => $this->getTokenValidationMessage($isValid),
                     ],
                     200
                     );
@@ -241,6 +241,24 @@ class UserSettingsController extends Controller
         }//end try
 
     }//end removeGitHubToken()
+
+
+    /**
+     * Get token validation message
+     *
+     * @param bool $isValid Whether token is valid
+     *
+     * @return string Validation message
+     */
+    private function getTokenValidationMessage(bool $isValid): string
+    {
+        if ($isValid === true) {
+            return 'Token is valid';
+        }
+
+        return 'Token is invalid or expired';
+
+    }//end getTokenValidationMessage()
 
 
 }//end class

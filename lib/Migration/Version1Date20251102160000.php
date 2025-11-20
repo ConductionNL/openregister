@@ -1,8 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
-/*
+/**
  * OpenRegister Agents Table Migration
  *
  * This migration creates the agents table for storing AI agent configurations
@@ -19,6 +17,8 @@ declare(strict_types=1);
  *
  * @link https://www.OpenRegister.nl
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Migration;
 
@@ -42,7 +42,7 @@ class Version1Date20251102160000 extends SimpleMigrationStep
 
 
     /**
-     * Create agents table
+     * Create agents table for AI agent configurations.
      *
      * @param IOutput $output        Migration output interface
      * @param Closure $schemaClosure Schema closure
@@ -55,11 +55,12 @@ class Version1Date20251102160000 extends SimpleMigrationStep
         /*
          * @var ISchemaWrapper $schema
          */
+
         $schema = $schemaClosure();
 
         $output->info('🤖 Creating agents table...');
 
-        if (!$schema->hasTable('openregister_agents')) {
+        if ($schema->hasTable('openregister_agents') === false) {
             $table = $schema->createTable('openregister_agents');
 
             // Primary key.

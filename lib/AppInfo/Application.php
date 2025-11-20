@@ -232,21 +232,22 @@ class Application extends App implements IBootstrap
                 }
         );
 
-        // Register SolrService for advanced search capabilities (disabled due to performance issues).
-        // Issue: Even with lazy loading, DI registration causes performance problems.
         /*
-            $context->registerService(
-                SolrService::class,
-                function ($container) {
-                    return new SolrService(
-                    $container->get(SettingsService::class),
-                    $container->get('Psr\Log\LoggerInterface'),
-                    $container->get(ObjectEntityMapper::class),
-                    $container->get('OCP\IConfig')
-                    );
-                }
-                );
-        */
+         * Register SolrService for advanced search capabilities (disabled due to performance issues).
+         * Issue: Even with lazy loading, DI registration causes performance problems.
+         *
+         * $context->registerService(
+         *     SolrService::class,
+         *     function ($container) {
+         *         return new SolrService(
+         *             $container->get(SettingsService::class),
+         *             $container->get('Psr\Log\LoggerInterface'),
+         *             $container->get(ObjectEntityMapper::class),
+         *             $container->get('OCP\IConfig')
+         *         );
+         *     }
+         * );
+         */
 
         // Register ObjectCacheService for performance optimization with lightweight SOLR.
         $context->registerService(

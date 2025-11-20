@@ -110,7 +110,7 @@ class ToolRegistrationListener implements IEventListener
      */
     public function handle(Event $event): void
     {
-        if (!($event instanceof ToolRegistrationEvent)) {
+        if (($event instanceof ToolRegistrationEvent) === false) {
             return;
         }
 

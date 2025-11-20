@@ -35,10 +35,10 @@ class TagsController extends Controller
     /**
      * TagsController constructor.
      *
-     * @param string        $appName
-     * @param IRequest      $request
-     * @param ObjectService $objectService
-     * @param FileService   $fileService
+     * @param string        $appName       Application name
+     * @param IRequest      $request       Request object
+     * @param ObjectService $objectService Object service instance
+     * @param FileService   $fileService   File service instance
      */
     public function __construct(
         $appName,

@@ -48,6 +48,7 @@ class Version1Date20250830130000 extends SimpleMigrationStep
         /*
          * @var ISchemaWrapper $schema
          */
+
         $schema = $schemaClosure();
 
         // Check if the objects table exists.

@@ -41,19 +41,20 @@ class Version1Date20250828120000 extends SimpleMigrationStep
 
 
     /**
-     * Apply database schema changes for faceting performance
+     * Apply database schema changes for faceting performance.
      *
-     * @param IOutput $output
-     * @param Closure $schemaClosure The `\Closure` returns a `ISchemaWrapper`
-     * @param array   $options
+     * @param IOutput $output        Output interface for logging
+     * @param Closure $schemaClosure Schema retrieval closure
+     * @param array   $options       Migration options
      *
-     * @return null|ISchemaWrapper
+     * @return null|ISchemaWrapper Modified schema or null
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
         /*
          * @var ISchemaWrapper $schema
          */
+
         $schema = $schemaClosure();
 
         if ($schema->hasTable('openregister_objects') === false) {
@@ -74,7 +75,7 @@ class Version1Date20250828120000 extends SimpleMigrationStep
         ];
 
         foreach ($singleIndexes as $column => $indexName) {
-            if ($table->hasColumn($column) && !$table->hasIndex($indexName)) {
+            if ($table->hasColumn($column) === true && $table->hasIndex($indexName) === false) {
                 $table->addIndex([$column], $indexName);
                 $output->info("Added index {$indexName} on column {$column}");
             }
@@ -106,7 +107,7 @@ class Version1Date20250828120000 extends SimpleMigrationStep
 
         foreach ($compositeIndexes as $indexName => $columns) {
             // Check if index already exists.
-            if ($table->hasIndex($indexName)) {
+            if ($table->hasIndex($indexName) === true) {
                 continue;
             }
 
@@ -120,7 +121,7 @@ class Version1Date20250828120000 extends SimpleMigrationStep
 
             $allColumnsExist = true;
             foreach ($baseColumns as $column) {
-                if (!$table->hasColumn($column)) {
+                if ($table->hasColumn($column) === false) {
                     $allColumnsExist = false;
                     break;
                 }

@@ -1,11 +1,20 @@
 <?php
 
-declare(strict_types=1);
-
-/*
+/**
  * SPDX-FileCopyrightText: 2024 Nextcloud GmbH and Nextcloud contributors
  * SPDX-License-Identifier: AGPL-3.0-or-later
+ *
+ * @category Migration
+ * @package  OCA\OpenRegister\Migration
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ *
+ * @link https://www.OpenRegister.nl
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Migration;
 
@@ -46,14 +55,13 @@ class Version002003000Date20251013000000 extends SimpleMigrationStep
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
         /*
-         *
-         *
          * @var ISchemaWrapper $schema
          */
+
         $schema = $schemaClosure();
 
         // Check if table already exists.
-        if (!$schema->hasTable('openregister_vectors')) {
+        if ($schema->hasTable('openregister_vectors') === false) {
             $table = $schema->createTable('openregister_vectors');
 
             // Primary key.

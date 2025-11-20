@@ -1,15 +1,16 @@
 <?php
 
-declare(strict_types=1);
-
-/*
+/**
  * Migration to create object text, chunk, and GDPR entity tables.
  *
  * @category Migration
  * @package  OCA\OpenRegister\Migration
  *
- * @author  Conduction Development Team
- * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version   GIT: <git-id>
+ * @link      https://www.OpenRegister.nl
  */
 
 namespace OCA\OpenRegister\Migration;
@@ -41,6 +42,7 @@ class Version1Date20251116000000 extends SimpleMigrationStep
         /*
          * @var ISchemaWrapper $schema
          */
+
         $schema = $schemaClosure();
 
         $this->createObjectTextTable($output, $schema);

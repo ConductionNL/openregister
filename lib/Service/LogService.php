@@ -267,7 +267,7 @@ class LogService
 
         try {
             // If specific IDs are provided, use those.
-            if (!empty($config['ids']) && is_array($config['ids'])) {
+            if (empty($config['ids']) === false && is_array($config['ids']) === true) {
                 foreach ($config['ids'] as $id) {
                     try {
                         $log = $this->auditTrailMapper->find($id);
@@ -338,8 +338,8 @@ class LogService
             ];
 
             // Include changes if requested.
-            if ($includeChanges && !empty($logData['changed'])) {
-                $exportRow['changes'] = is_array($logData['changed']) ? json_encode($logData['changed']) : $logData['changed'];
+            if ($includeChanges === true && empty($logData['changed']) === false) {
+                $exportRow['changes'] = $this->getChangesFormatted($logData['changed']);
             }
 
             // Include metadata if requested.
@@ -367,7 +367,7 @@ class LogService
      */
     private function exportToCsv(array $data): array
     {
-        if (empty($data)) {
+        if (empty($data) === true) {
             return [
                 'content'     => '',
                 'filename'    => 'audit_trails_'.date('Y-m-d_H-i-s').'.csv',
@@ -475,6 +475,24 @@ class LogService
         ];
 
     }//end exportToTxt()
+
+
+    /**
+     * Get changes formatted as JSON string or original value
+     *
+     * @param mixed $changed Changed data
+     *
+     * @return string Formatted changes
+     */
+    private function getChangesFormatted($changed): string
+    {
+        if (is_array($changed) === true) {
+            return json_encode($changed);
+        }
+
+        return (string) $changed;
+
+    }//end getChangesFormatted()
 
 
 }//end class

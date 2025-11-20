@@ -1,8 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
-/*
+/**
  * Vector Embedding Model Tracking Migration
  *
  * This migration adds embedding_model column to track which model was used
@@ -30,6 +28,8 @@ declare(strict_types=1);
  *
  * @link https://www.OpenRegister.nl
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Migration;
 
@@ -65,10 +65,9 @@ class Version1Date20251111000000 extends SimpleMigrationStep
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
         /*
-         *
-         *
          * @var ISchemaWrapper $schema
          */
+
         $schema  = $schemaClosure();
         $updated = false;
 
@@ -77,10 +76,10 @@ class Version1Date20251111000000 extends SimpleMigrationStep
         // ============================================================.
         // Add embedding_model to openregister_vectors.
         // ============================================================.
-        if ($schema->hasTable('openregister_vectors')) {
+        if ($schema->hasTable('openregister_vectors') === true) {
             $table = $schema->getTable('openregister_vectors');
 
-            if (!$table->hasColumn('embedding_model')) {
+            if ($table->hasColumn('embedding_model') === false) {
                 $output->info('  📝 Adding vectors.embedding_model column');
 
                 $table->addColumn(
@@ -101,7 +100,7 @@ class Version1Date20251111000000 extends SimpleMigrationStep
             }
 
             // Add index for filtering by model.
-            if (!$table->hasIndex('embedding_model_idx')) {
+            if ($table->hasIndex('embedding_model_idx') === false) {
                 $output->info('  📝 Adding index on embedding_model column');
 
                 $table->addIndex(['embedding_model'], 'embedding_model_idx');
@@ -139,7 +138,11 @@ class Version1Date20251111000000 extends SimpleMigrationStep
             $output->info('ℹ️  No changes needed - embedding model tracking already configured');
         }//end if
 
-        return $updated === true ? $schema : null;
+        if ($updated === true) {
+            return $schema;
+        }
+
+        return null;
 
     }//end changeSchema()
 

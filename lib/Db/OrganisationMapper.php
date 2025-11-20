@@ -20,6 +20,10 @@
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Event\OrganisationCreatedEvent;
+use OCA\OpenRegister\Event\OrganisationDeletedEvent;
+use OCA\OpenRegister\Event\OrganisationUpdatedEvent;
+use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
@@ -27,6 +31,7 @@ use OCP\IDBConnection;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 
 
+use OCP\EventDispatcher\IEventDispatcher;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 
@@ -55,15 +60,93 @@ class OrganisationMapper extends QBMapper
     /**
      * OrganisationMapper constructor
      *
-     * @param IDBConnection $db Database connection
+     * @param IDBConnection      $db              Database connection
+     * @param LoggerInterface    $logger          Logger interface
+     * @param IEventDispatcher   $eventDispatcher Event dispatcher
      */
     public function __construct(
         IDBConnection $db,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly IEventDispatcher $eventDispatcher
     ) {
         parent::__construct($db, 'openregister_organisations', Organisation::class);
 
     }//end __construct()
+
+
+    /**
+     * Insert a new organisation
+     *
+     * @param Entity $entity Organisation entity to insert
+     *
+     * @return Organisation The inserted organisation with updated ID
+     */
+    public function insert(Entity $entity): Entity
+    {
+        if ($entity instanceof Organisation) {
+            // Generate UUID if not set.
+            if (empty($entity->getUuid()) === true) {
+                $entity->setUuid(Uuid::v4()->toRfc4122());
+            }
+
+            // Set timestamps.
+            $entity->setCreated(new \DateTime());
+            $entity->setUpdated(new \DateTime());
+        }
+
+        $entity = parent::insert($entity);
+
+        // Dispatch creation event.
+        $this->eventDispatcher->dispatchTyped(new OrganisationCreatedEvent($entity));
+
+        return $entity;
+
+    }//end insert()
+
+
+    /**
+     * Update an existing organisation
+     *
+     * @param Entity $entity Organisation entity to update
+     *
+     * @return Organisation The updated organisation
+     */
+    public function update(Entity $entity): Entity
+    {
+        // Get old state before update.
+        $oldEntity = $this->find($entity->getId());
+
+        if ($entity instanceof Organisation) {
+            $entity->setUpdated(new \DateTime());
+        }
+
+        $entity = parent::update($entity);
+
+        // Dispatch update event.
+        $this->eventDispatcher->dispatchTyped(new OrganisationUpdatedEvent($entity, $oldEntity));
+
+        return $entity;
+
+    }//end update()
+
+
+    /**
+     * Delete an organisation
+     *
+     * @param Entity $entity Organisation entity to delete
+     *
+     * @return Organisation The deleted organisation
+     */
+    public function delete(Entity $entity): Entity
+    {
+        $entity = parent::delete($entity);
+
+        // Dispatch deletion event.
+        $this->eventDispatcher->dispatchTyped(new OrganisationDeletedEvent($entity));
+
+        return $entity;
+
+    }//end delete()
 
 
     /**

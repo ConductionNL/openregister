@@ -1,8 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
-/*
+/**
  * TextExtractionService
  *
  * This service handles all text extraction logic for files in the system.
@@ -17,6 +15,8 @@ declare(strict_types=1);
  * @version   GIT: <git-id>
  * @link      https://www.OpenRegister.nl
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 

@@ -455,7 +455,7 @@ class DashboardService
                 try {
                     $schema = $this->schemaMapper->find($schemaId);
                     // Verify schema belongs to register if both are provided.
-                    if ($register !== null && !in_array($schema->getId(), $register->getSchemas())) {
+                    if ($register !== null && in_array($schema->getId(), $register->getSchemas()) === false) {
                         throw new \Exception('Schema does not belong to the specified register');
                     }
                 } catch (\Exception $e) {
@@ -471,20 +471,14 @@ class DashboardService
                 'status'    => 'success',
                 'timestamp' => (new \DateTime())->format('c'),
                 'scope'     => [
-                    'register' => $register ? [
-                        'id'    => $register->getId(),
-                        'title' => $register->getTitle(),
-                    ] : null,
-                    'schema'   => $schema ? [
-                        'id'    => $schema->getId(),
-                        'title' => $schema->getTitle(),
-                    ] : null,
+                    'register' => $this->buildRegisterScope($register),
+                    'schema'   => $this->buildSchemaScope($schema),
                 ],
                 'results'   => $results,
                 'summary'   => [
                     'total_processed' => $results['total']['processed'],
                     'total_failed'    => $results['total']['failed'],
-                    'success_rate'    => $results['total']['processed'] + $results['total']['failed'] > 0 ? round(($results['total']['processed'] / ($results['total']['processed'] + $results['total']['failed'])) * 100, 2) : 0,
+                    'success_rate'    => $this->calculateSuccessRate($results),
                 ],
             ];
 
