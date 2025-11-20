@@ -70,7 +70,7 @@ class FileSearchController extends Controller
             $offset    = (int) $this->request->getParam('offset', 0);
             $fileTypes = $this->request->getParam('file_types', []);
 
-            if (empty($query)) {
+            if (empty($query) === true) {
                 return new JSONResponse(
                         [
                             'success' => false,
@@ -103,7 +103,7 @@ class FileSearchController extends Controller
             ];
 
             // Add file type filter if specified.
-            if (!empty($fileTypes)) {
+            if (empty($fileTypes) === false) {
                 $typeFilter      = implode(' OR ', array_map(fn($t) => "mime_type:\"$t\"", $fileTypes));
                 $solrQuery['fq'] = $typeFilter;
             }
@@ -118,7 +118,7 @@ class FileSearchController extends Controller
             ];
 
             // Add authentication.
-            if (!empty($solrConfig['username']) && !empty($solrConfig['password'])) {
+            if (empty($solrConfig['username']) === false && empty($solrConfig['password']) === false) {
                 $requestOptions['auth'] = [$solrConfig['username'], $solrConfig['password']];
             }
 
@@ -133,7 +133,7 @@ class FileSearchController extends Controller
             $groupedResults = [];
             foreach ($results as $doc) {
                 $fileId = $doc['file_id'];
-                if (!isset($groupedResults[$fileId])) {
+                if (isset($groupedResults[$fileId]) === false) {
                     $groupedResults[$fileId] = [
                         'file_id'   => $fileId,
                         'file_name' => $doc['file_name'] ?? '',
@@ -194,7 +194,7 @@ class FileSearchController extends Controller
             $query = $this->request->getParam('query', '');
             $limit = (int) $this->request->getParam('limit', 10);
 
-            if (empty($query)) {
+            if (empty($query) === true) {
                 return new JSONResponse(
                         [
                             'success' => false,
@@ -256,7 +256,7 @@ class FileSearchController extends Controller
             $keywordWeight  = (float) $this->request->getParam('keyword_weight', 0.5);
             $semanticWeight = (float) $this->request->getParam('semantic_weight', 0.5);
 
-            if (empty($query)) {
+            if (empty($query) === true) {
                 return new JSONResponse(
                         [
                             'success' => false,

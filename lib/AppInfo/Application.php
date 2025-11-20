@@ -784,7 +784,7 @@ class Application extends App implements IBootstrap
             $jobList = $container->get('OCP\BackgroundJob\IJobList');
 
             // Check if the nightly warmup job is already registered.
-            if (!$jobList->has(SolrNightlyWarmupJob::class, null)) {
+            if ($jobList->has(SolrNightlyWarmupJob::class, null) === false) {
                 $jobList->add(SolrNightlyWarmupJob::class);
                 $logger->info(
                         '🌙 SOLR Nightly Warmup Job registered successfully',

@@ -50,6 +50,7 @@ class FileTextExtractionJob extends QueuedJob
      * @param ITimeFactory    $timeFactory     Time factory for job scheduling
      * @param FileTextService $fileTextService File text extraction service
      * @param LoggerInterface $logger          Logger instance
+     * @param IAppConfig      $config          Application configuration
      */
     public function __construct(
         ITimeFactory $timeFactory,
@@ -74,7 +75,9 @@ class FileTextExtractionJob extends QueuedJob
      */
     protected function run($argument): void
     {
-        if ($this->config->hasKey(app: 'openregister', key: 'fileManagement') === false || json_decode($this->config->getValueString(app: 'openregister', key: 'fileManagement'), true)['extractionScope'] === 'none') {
+        if ($this->config->hasKey(app: 'openregister', key: 'fileManagement') === false
+            || json_decode($this->config->getValueString(app: 'openregister', key: 'fileManagement'), true)['extractionScope'] === 'none'
+        ) {
             $this->logger->info('[FileTextExtractionJob] File extraction is disabled. Not extracting text from files.');
             return;
         }
