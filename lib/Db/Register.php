@@ -251,11 +251,16 @@ class Register extends Entity implements JsonSerializable
      */
     public function setSchemas($schemas): self
     {
-        if (is_string($schemas)) {
-            $schemas = json_decode($schemas, true) ?: [];
+        if (is_string($schemas) === true) {
+            $decoded = json_decode($schemas, true);
+            if ($decoded === null) {
+                $schemas = [];
+            } else {
+                $schemas = $decoded;
+            }
         }
 
-        if (!is_array($schemas)) {
+        if (is_array($schemas) === false) {
             $schemas = [];
         }
 

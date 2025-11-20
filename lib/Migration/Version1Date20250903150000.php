@@ -6,7 +6,7 @@
  * This migration creates the authorization exceptions table for handling
  * authorization inclusions and exclusions in the OpenRegister application.
  *
- * @category Database
+ * @category Migration
  * @package  OCA\OpenRegister\Migration
  *
  * @author    Conduction Development Team <info@conduction.nl>
@@ -17,6 +17,8 @@
  *
  * @link https://www.OpenRegister.app
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Migration;
 
@@ -46,13 +48,11 @@ class Version1Date20250903150000 extends SimpleMigrationStep
 
 
     /**
-     * Perform the migration
+     * Perform the migration.
      *
-     * @param         IOutput $output        The output interface for logging
-     * @param         Closure $schemaClosure Closure that returns the current schema
-     * @param         array   $options       Migration options
-     * @phpstan-param array<string, mixed> $options
-     * @psalm-param   array<string, mixed> $options
+     * @param IOutput $output        The output interface for logging
+     * @param Closure $schemaClosure Closure that returns the current schema
+     * @param array   $options       Migration options
      *
      * @return ISchemaWrapper|null The new schema or null if no changes
      */
@@ -61,6 +61,7 @@ class Version1Date20250903150000 extends SimpleMigrationStep
         /*
          * @var ISchemaWrapper $schema
          */
+
         $schema = $schemaClosure();
 
         // Skip if table already exists.

@@ -1,11 +1,23 @@
 <?php
 
-declare(strict_types=1);
-
-/*
- * SPDX-FileCopyrightText: 2024 Nextcloud GmbH and Nextcloud contributors
- * SPDX-License-Identifier: AGPL-3.0-or-later
+/**
+ * OpenRegister File Change Listener
+ *
+ * Listens for file creation and update events to queue asynchronous text extraction.
+ *
+ * @category Listener
+ * @package  OCA\OpenRegister\Listener
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenRegister.nl
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
@@ -63,14 +75,16 @@ class FileChangeListener implements IEventListener
     public function handle(Event $event): void
     {
         // Only handle NodeCreatedEvent and NodeWrittenEvent.
-        if (!$event instanceof NodeCreatedEvent && !$event instanceof NodeWrittenEvent) {
+        if (($event instanceof NodeCreatedEvent) === false
+            && ($event instanceof NodeWrittenEvent) === false
+        ) {
             return;
         }
 
         $node = $event->getNode();
 
         // Only process files, not folders.
-        if (!$node instanceof File) {
+        if (($node instanceof File) === false) {
             return;
         }
 
@@ -106,7 +120,7 @@ class FileChangeListener implements IEventListener
         // Queue background job for text extraction (non-blocking).
         try {
             // Check if extraction is needed (to avoid unnecessary background jobs).
-            if ($this->fileTextService->needsExtraction($fileId)) {
+            if ($this->fileTextService->needsExtraction($fileId) === true) {
                 $this->logger->info(
                         '[FileChangeListener] Queueing text extraction job',
                         [

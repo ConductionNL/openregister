@@ -1,8 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
-/*
+/**
  * Organisation Hierarchy Migration
  *
  * This migration adds parent-child relationship support to organisations,
@@ -30,6 +28,8 @@ declare(strict_types=1);
  *
  * @link https://www.OpenRegister.nl
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Migration;
 
@@ -66,6 +66,7 @@ class Version1Date20251110000000 extends SimpleMigrationStep
         /*
          * @var ISchemaWrapper $schema
          */
+
         $schema  = $schemaClosure();
         $updated = false;
 
@@ -74,10 +75,10 @@ class Version1Date20251110000000 extends SimpleMigrationStep
         // ============================================================.
         // Add parent column to openregister_organisations.
         // ============================================================.
-        if ($schema->hasTable('openregister_organisations')) {
+        if ($schema->hasTable('openregister_organisations') === true) {
             $table = $schema->getTable('openregister_organisations');
 
-            if (!$table->hasColumn('parent')) {
+            if ($table->hasColumn('parent') === false) {
                 $output->info('  📝 Adding organisations.parent column for hierarchy support');
 
                 $table->addColumn(
@@ -98,7 +99,7 @@ class Version1Date20251110000000 extends SimpleMigrationStep
             }
 
             // Add index for fast parent lookups (used in recursive queries).
-            if (!$table->hasIndex('parent_organisation_idx')) {
+            if ($table->hasIndex('parent_organisation_idx') === false) {
                 $output->info('  📝 Adding index on parent column');
 
                 $table->addIndex(['parent'], 'parent_organisation_idx');
@@ -136,7 +137,11 @@ class Version1Date20251110000000 extends SimpleMigrationStep
             $output->info('ℹ️  No changes needed - organisation hierarchy already configured');
         }//end if
 
-        return $updated === true ? $schema : null;
+        if ($updated === true) {
+            return $schema;
+        }
+
+        return null;
 
     }//end changeSchema()
 

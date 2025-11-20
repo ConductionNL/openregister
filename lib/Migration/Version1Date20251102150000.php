@@ -1,8 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
-/*
+/**
  * OpenRegister Views Table Update Migration
  *
  * This migration updates the views table to use 'query' instead of 'configuration'
@@ -19,6 +17,8 @@ declare(strict_types=1);
  *
  * @link https://www.OpenRegister.nl
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Migration;
 
@@ -54,22 +54,23 @@ class Version1Date20251102150000 extends SimpleMigrationStep
         /*
          * @var ISchemaWrapper $schema
          */
+
         $schema = $schemaClosure();
 
         $output->info('🔧 Updating views table structure...');
 
-        if ($schema->hasTable('openregister_views')) {
+        if ($schema->hasTable('openregister_views') === true) {
             $table = $schema->getTable('openregister_views');
 
             // Check if we still have old 'configuration' column.
-            if ($table->hasColumn('configuration')) {
+            if ($table->hasColumn('configuration') === true) {
                 // Drop old configuration column.
                 $table->dropColumn('configuration');
                 $output->info('   ✓ Dropped old configuration column');
             }
 
             // Add query column if it doesn't exist.
-            if (!$table->hasColumn('query')) {
+            if ($table->hasColumn('query') === false) {
                 $table->addColumn(
                         'query',
                         Types::JSON,
@@ -82,7 +83,7 @@ class Version1Date20251102150000 extends SimpleMigrationStep
             }
 
             // Add favored_by column if it doesn't exist.
-            if (!$table->hasColumn('favored_by')) {
+            if ($table->hasColumn('favored_by') === false) {
                 $table->addColumn(
                         'favored_by',
                         Types::JSON,

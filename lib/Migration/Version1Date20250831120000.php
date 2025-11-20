@@ -40,17 +40,20 @@ class Version1Date20250831120000 extends SimpleMigrationStep
 
 
     /**
-     * @param IOutput $output
-     * @param Closure $schemaClosure The `\Closure` returns a `ISchemaWrapper`
-     * @param array   $options
+     * Add size column to search trails table.
      *
-     * @return null|ISchemaWrapper
+     * @param IOutput $output        Output interface for logging
+     * @param Closure $schemaClosure Schema retrieval closure
+     * @param array   $options       Migration options
+     *
+     * @return null|ISchemaWrapper Modified schema or null
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
         /*
          * @var ISchemaWrapper $schema
          */
+
         $schema = $schemaClosure();
 
         // Check if the search trails table exists.

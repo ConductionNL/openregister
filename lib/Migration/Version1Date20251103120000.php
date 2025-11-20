@@ -1,8 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
-/*
+/**
  * Rename views table to view (singular)
  *
  * This migration renames the openregister_views table to openregister_view
@@ -10,10 +8,15 @@ declare(strict_types=1);
  *
  * @category Migration
  * @package  OCA\OpenRegister\Migration
- * @author   Conduction Development Team <dev@conduction.nl>
- * @license  AGPL-3.0-or-later
- * @link     https://www.openregister.nl
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ *
+ * @link https://www.openregister.nl
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Migration;
 
@@ -46,6 +49,7 @@ class Version1Date20251103120000 extends SimpleMigrationStep
         /*
          * @var ISchemaWrapper $schema
          */
+
         $schema = $schemaClosure();
 
         // Check if old table exists and new table doesn't.
@@ -90,7 +94,7 @@ class Version1Date20251103120000 extends SimpleMigrationStep
 
                     // Build options array only with available options.
                     $options = [];
-                    if ($index->hasOption('lengths')) {
+                    if ($index->hasOption('lengths') === true) {
                         $options['lengths'] = $index->getOption('lengths');
                     }
 
@@ -127,6 +131,7 @@ class Version1Date20251103120000 extends SimpleMigrationStep
         /*
          * @var ISchemaWrapper $schema
          */
+
         $schema = $schemaClosure();
 
         if ($schema->hasTable('openregister_views') === true && $schema->hasTable('openregister_view') === true) {

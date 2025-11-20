@@ -1,11 +1,10 @@
 <?php
 
-declare(strict_types=1);
-
-/*
- * NamesController - Ultra-fast object name lookup endpoints
+/**
+ * OpenRegister Names Controller
  *
- * This controller provides optimized endpoints for frontend name resolution:
+ * Ultra-fast object name lookup endpoints for frontend name resolution.
+ * Provides optimized endpoints:
  * - GET /names - Get all object names or specific IDs via query parameter
  * - GET /names/{id} - Get name for specific object ID
  *
@@ -23,6 +22,8 @@ declare(strict_types=1);
  *
  * @link https://www.OpenRegister.app
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
@@ -54,7 +55,7 @@ class NamesController extends Controller
 
 
     /**
-     * Constructor for NamesController
+     * Constructor for NamesController.
      *
      * @param string             $appName            Application name
      * @param IRequest           $request            HTTP request object
@@ -117,14 +118,14 @@ class NamesController extends Controller
             // Handle different input formats for IDs.
             if ($requestedIds !== null) {
                 // Parse IDs from different possible formats.
-                if (is_string($requestedIds)) {
+                if (is_string($requestedIds) === true) {
                     // Handle comma-separated string or JSON array string.
-                    if (str_starts_with($requestedIds, '[')) {
+                    if (str_starts_with($requestedIds, '[') === true) {
                         $requestedIds = json_decode($requestedIds, true) ?? [];
                     } else {
                         $requestedIds = array_map('trim', explode(',', $requestedIds));
                     }
-                } else if (!is_array($requestedIds)) {
+                } else if (is_array($requestedIds) === false) {
                     $requestedIds = [(string) $requestedIds];
                 }
 
@@ -232,7 +233,7 @@ class NamesController extends Controller
             // Support both 'ids' in JSON body and form data.
             $requestedIds = $inputData['ids'] ?? null;
 
-            if (!$requestedIds || !is_array($requestedIds)) {
+            if ($requestedIds === null || is_array($requestedIds) === false) {
                 return new JSONResponse(
                         [
                             'error'   => 'Invalid request: ids array is required in request body',
@@ -245,7 +246,7 @@ class NamesController extends Controller
             // Filter and validate IDs.
             $requestedIds = array_filter(array_map('trim', $requestedIds));
 
-            if (empty($requestedIds)) {
+            if (empty($requestedIds) === true) {
                 return new JSONResponse(
                         [
                             'error' => 'No valid IDs provided in request',
@@ -313,15 +314,15 @@ class NamesController extends Controller
      * }
      * ```
      *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     * @PublicPage
-     *
      * @param string $id Object ID or UUID to get name for
      *
      * @return JSONResponse Object name with performance metadata
      *
      * @throws \Exception If name lookup fails
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     * @PublicPage
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]

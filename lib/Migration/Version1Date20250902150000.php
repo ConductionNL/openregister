@@ -61,7 +61,7 @@ class Version1Date20250902150000 extends SimpleMigrationStep
         $table = $schema->getTable('openregister_schemas');
 
         // Add facets column for pre-computed facet configurations.
-        if (!$table->hasColumn('facets')) {
+        if ($table->hasColumn('facets') === false) {
             $table->addColumn(
                     'facets',
                     Types::JSON,

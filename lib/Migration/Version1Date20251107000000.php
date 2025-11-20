@@ -1,8 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
-/*
+/**
  * OpenRegister Remove Roles Column Migration
  *
  * This migration removes the deprecated 'roles' column from the organisations table.
@@ -19,6 +17,8 @@ declare(strict_types=1);
  *
  * @link https://www.OpenRegister.nl
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Migration;
 
@@ -51,13 +51,14 @@ class Version1Date20251107000000 extends SimpleMigrationStep
         /*
          * @var ISchemaWrapper $schema
          */
+
         $schema = $schemaClosure();
 
-        if ($schema->hasTable('openregister_organisations')) {
+        if ($schema->hasTable('openregister_organisations') === true) {
             $table = $schema->getTable('openregister_organisations');
 
             // Check if roles column still exists.
-            if ($table->hasColumn('roles')) {
+            if ($table->hasColumn('roles') === true) {
                 $output->info('🗑️  Removing deprecated roles column from organisations table...');
 
                 $table->dropColumn('roles');

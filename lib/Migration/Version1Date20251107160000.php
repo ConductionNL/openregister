@@ -1,9 +1,7 @@
 <?php
 
-declare(strict_types=1);
-
-/*
- * Add UUID column to file_texts table
+/**
+ * OpenRegister Migration - Add UUID Column to File Texts Table
  *
  * This migration adds a UUID column to oc_openregister_file_texts for
  * external referencing and API integrations.
@@ -19,6 +17,8 @@ declare(strict_types=1);
  *
  * @link https://www.OpenRegister.nl
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Migration;
 
@@ -55,16 +55,17 @@ class Version1Date20251107160000 extends SimpleMigrationStep
         /*
          * @var ISchemaWrapper $schema
          */
+
         $schema  = $schemaClosure();
         $updated = false;
 
         $output->info('📄 Adding UUID column to file_texts table...');
 
-        if ($schema->hasTable('openregister_file_texts')) {
+        if ($schema->hasTable('openregister_file_texts') === true) {
             $table = $schema->getTable('openregister_file_texts');
 
             // Add UUID column if it doesn't exist.
-            if (!$table->hasColumn('uuid')) {
+            if ($table->hasColumn('uuid') === false) {
                 $table->addColumn(
                         'uuid',
                         Types::STRING,
@@ -76,7 +77,7 @@ class Version1Date20251107160000 extends SimpleMigrationStep
                         );
 
                 // Add index for UUID lookups.
-                if (!$table->hasIndex('file_texts_uuid_idx')) {
+                if ($table->hasIndex('file_texts_uuid_idx') === false) {
                     $table->addIndex(['uuid'], 'file_texts_uuid_idx');
                 }
 
@@ -87,7 +88,11 @@ class Version1Date20251107160000 extends SimpleMigrationStep
             }//end if
         }//end if
 
-        return $updated ? $schema : null;
+        if ($updated === true) {
+            return $schema;
+        }
+
+        return null;
 
     }//end changeSchema()
 

@@ -52,13 +52,11 @@ class Version1Date20250903170000 extends SimpleMigrationStep
 
 
     /**
-     * Perform the migration to add comprehensive performance indexes
+     * Perform the migration to add comprehensive performance indexes.
      *
-     * @param         IOutput $output        The output interface for logging
-     * @param         Closure $schemaClosure Closure that returns the current schema
-     * @param         array   $options       Migration options
-     * @phpstan-param array<string, mixed> $options
-     * @psalm-param   array<string, mixed> $options
+     * @param IOutput $output        The output interface for logging
+     * @param Closure $schemaClosure Closure that returns the current schema
+     * @param array   $options       Migration options
      *
      * @return ISchemaWrapper|null The new schema or null if no changes
      */
@@ -67,6 +65,7 @@ class Version1Date20250903170000 extends SimpleMigrationStep
         /*
          * @var ISchemaWrapper $schema
          */
+
         $schema = $schemaClosure();
 
         // Skip if table doesn't exist.
@@ -92,7 +91,7 @@ class Version1Date20250903170000 extends SimpleMigrationStep
         ];
 
         foreach ($singleColumnIndexes as $column => $config) {
-            if ($table->hasColumn($column) && !$table->hasIndex($config['name'])) {
+            if ($table->hasColumn($column) === true && $table->hasIndex($config['name']) === false) {
                 // Only add indexes for columns that won't exceed key size limits.
                 if ($config['length'] === null) {
                     $table->addIndex([$column], $config['name']);
@@ -124,7 +123,11 @@ class Version1Date20250903170000 extends SimpleMigrationStep
             $output->info('=== All Performance Indexes Already Exist ===');
         }
 
-        return $changed ? $schema : null;
+        if ($changed === true) {
+            return $schema;
+        }
+
+        return null;
 
     }//end changeSchema()
 

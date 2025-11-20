@@ -1,8 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
-/*
+/**
  * OpenRegister UUID Unique Constraint Migration
  *
  * This migration adds a UNIQUE constraint on the uuid field of the openregister_objects
@@ -20,6 +18,8 @@ declare(strict_types=1);
  *
  * @link https://www.OpenRegister.nl
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Migration;
 
@@ -54,18 +54,19 @@ class Version1Date20250908174500 extends SimpleMigrationStep
         /*
          * @var ISchemaWrapper $schema
          */
+
         $schema = $schemaClosure();
 
         // Get the objects table to add UUID unique constraint.
-        if ($schema->hasTable('openregister_objects')) {
+        if ($schema->hasTable('openregister_objects') === true) {
             $table = $schema->getTable('openregister_objects');
 
             $output->info('🔧 Adding UNIQUE constraint on UUID field...');
 
             // Check if uuid column exists before adding constraint.
-            if ($table->hasColumn('uuid')) {
+            if ($table->hasColumn('uuid') === true) {
                 // Check if unique constraint already exists.
-                if (!$table->hasIndex('unique_uuid')) {
+                if ($table->hasIndex('unique_uuid') === false) {
                     try {
                         // Add unique constraint on uuid field.
                         $table->addUniqueIndex(['uuid'], 'unique_uuid');

@@ -1,21 +1,22 @@
 <?php
 
-declare(strict_types=1);
-
-/*
+/**
  * Add chunks_json column to file_texts table
  *
  * This migration adds a column to store text chunks as JSON for independent
  * text extraction that doesn't depend on SOLR indexing.
  *
- * @category  Migration
- * @package   OCA\OpenRegister\Migration
+ * @category Migration
+ * @package  OCA\OpenRegister\Migration
+ *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @version   GIT: <git-id>
  * @link      https://www.OpenRegister.nl
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Migration;
 
@@ -49,13 +50,14 @@ class Version1Date20251107170000 extends SimpleMigrationStep
         /*
          * @var ISchemaWrapper $schema
          */
+
         $schema  = $schemaClosure();
         $updated = false;
 
-        if ($schema->hasTable('openregister_file_texts')) {
+        if ($schema->hasTable('openregister_file_texts') === true) {
             $table = $schema->getTable('openregister_file_texts');
 
-            if (!$table->hasColumn('chunks_json')) {
+            if ($table->hasColumn('chunks_json') === false) {
                 $table->addColumn(
                         'chunks_json',
                         Types::TEXT,
@@ -74,7 +76,11 @@ class Version1Date20251107170000 extends SimpleMigrationStep
             $output->warning('⚠️  openregister_file_texts table does not exist');
         }//end if
 
-        return $updated ? $schema : null;
+        if ($updated === true) {
+            return $schema;
+        }
+
+        return null;
 
     }//end changeSchema()
 

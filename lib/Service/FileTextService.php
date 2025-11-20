@@ -1,11 +1,23 @@
 <?php
 
-declare(strict_types=1);
-
-/*
- * SPDX-FileCopyrightText: 2024 Nextcloud GmbH and Nextcloud contributors
- * SPDX-License-Identifier: AGPL-3.0-or-later
+/**
+ * OpenRegister File Text Service
+ *
+ * Service for managing file text extraction and storage.
+ *
+ * @category Service
+ * @package  OCA\OpenRegister\Service
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenRegister.nl
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
@@ -32,6 +44,8 @@ use Psr\Log\LoggerInterface;
 class FileTextService
 {
     /**
+     * Supported text extraction file types.
+     *
      * @var array<string> Supported text extraction file types
      */
     private const SUPPORTED_MIME_TYPES = [
@@ -108,7 +122,7 @@ class FileTextService
 
             // Check MIME type.
             $mimeType = $file->getMimeType();
-            if (!$this->isSupportedMimeType($mimeType)) {
+            if ($this->isSupportedMimeType($mimeType) === false) {
                 $this->logger->info(
                         '[FileTextService] Unsupported MIME type',
                         [
@@ -177,7 +191,7 @@ class FileTextService
             $this->logger->debug('[FileTextService] Extracting text from file', ['file_id' => $fileId]);
 
             // Get local path for extraction.
-            // Note: This service is now called via background job, so the file is guaranteed to be available
+            // Note: This service is now called via background job, so the file is guaranteed to be available.
             $storage      = $file->getStorage();
             $internalPath = $file->getInternalPath();
             $localPath    = $storage->getLocalFile($internalPath);
@@ -225,7 +239,7 @@ class FileTextService
                     );
 
             // Update status to failed if we have a record.
-            if (isset($fileText)) {
+            if (isset($fileText) === true) {
                 $fileText->setExtractionStatus('failed');
                 $fileText->setExtractionError($e->getMessage());
                 $fileText->setUpdatedAt(new DateTime());
@@ -362,7 +376,7 @@ class FileTextService
             $result = $this->extractAndStoreFileText($fileText->getFileId());
             $processed++;
 
-            if ($result['success']) {
+            if ($result['success'] === true) {
                 $succeeded++;
             } else {
                 $failed++;
@@ -426,7 +440,7 @@ class FileTextService
     {
         try {
             $files = $this->rootFolder->getById($fileId);
-            if (empty($files)) {
+            if (empty($files) === true) {
                 return null;
             }
 

@@ -262,7 +262,7 @@ class MySQLJsonService implements IDatabaseJsonService
 
         foreach ($filters as $filter => $value) {
             // Handle special @self.deleted filters.
-            if (str_starts_with($filter, '@self.deleted')) {
+            if (str_starts_with($filter, '@self.deleted') === true) {
                 $builder = $this->handleSelfDeletedFilter($builder, $filter, $value);
                 continue;
             }
@@ -276,10 +276,14 @@ class MySQLJsonService implements IDatabaseJsonService
             );
 
             if ($value === 'IS NULL') {
-                $builder->andWhere("json_unquote(json_extract(object, :path$filter)) = 'null' OR json_unquote(json_extract(object, :path$filter)) IS NULL");
+                $builder->andWhere(
+                    "json_unquote(json_extract(object, :path$filter)) = 'null' OR json_unquote(json_extract(object, :path$filter)) IS NULL"
+                );
                 continue;
-            } else if ($value == 'IS NOT NULL') {
-                $builder->andWhere("json_unquote(json_extract(object, :path$filter)) != 'null' AND json_unquote(json_extract(object, :path$filter)) IS NOT NULL");
+            } else if ($value === 'IS NOT NULL') {
+                $builder->andWhere(
+                    "json_unquote(json_extract(object, :path$filter)) != 'null' AND json_unquote(json_extract(object, :path$filter)) IS NOT NULL"
+                );
                 continue;
             }
 
@@ -371,7 +375,7 @@ class MySQLJsonService implements IDatabaseJsonService
                     )
                 )
             );
-        } else if (is_array($value)) {
+        } else if (is_array($value) === true) {
             // Handle array filters for deleted properties.
             if (array_is_list($value) === false) {
                 // Handle complex filters (after/before) for deleted properties.

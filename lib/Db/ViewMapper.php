@@ -19,11 +19,15 @@
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Event\ViewCreatedEvent;
+use OCA\OpenRegister\Event\ViewDeletedEvent;
+use OCA\OpenRegister\Event\ViewUpdatedEvent;
 use OCA\OpenRegister\Service\ConfigurationCacheService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 use OCP\IGroupManager;
 use OCP\IUserSession;
@@ -77,6 +81,13 @@ class ViewMapper extends QBMapper
      */
     private ConfigurationCacheService $configurationCacheService;
 
+    /**
+     * Event dispatcher for dispatching view events
+     *
+     * @var IEventDispatcher
+     */
+    private IEventDispatcher $eventDispatcher;
+
 
     /**
      * Constructor for ViewMapper
@@ -86,6 +97,7 @@ class ViewMapper extends QBMapper
      * @param IUserSession              $userSession               User session
      * @param IGroupManager             $groupManager              Group manager for RBAC
      * @param ConfigurationCacheService $configurationCacheService Configuration cache service
+     * @param IEventDispatcher          $eventDispatcher           Event dispatcher
      *
      * @return void
      */
@@ -94,13 +106,15 @@ class ViewMapper extends QBMapper
         OrganisationService $organisationService,
         IUserSession $userSession,
         IGroupManager $groupManager,
-        ConfigurationCacheService $configurationCacheService
+        ConfigurationCacheService $configurationCacheService,
+        IEventDispatcher $eventDispatcher
     ) {
         parent::__construct($db, 'openregister_view');
         $this->organisationService = $organisationService;
         $this->userSession         = $userSession;
         $this->groupManager        = $groupManager;
         $this->configurationCacheService = $configurationCacheService;
+        $this->eventDispatcher           = $eventDispatcher;
 
     }//end __construct()
 
@@ -213,7 +227,12 @@ class ViewMapper extends QBMapper
         // Auto-set organisation from active session.
         $this->setOrganisationOnCreate($entity);
 
-        return parent::insert(entity: $entity);
+        $entity = parent::insert(entity: $entity);
+
+        // Dispatch creation event.
+        $this->eventDispatcher->dispatchTyped(new ViewCreatedEvent($entity));
+
+        return $entity;
 
     }//end insert()
 
@@ -234,10 +253,18 @@ class ViewMapper extends QBMapper
         // Verify user has access to this organisation.
         $this->verifyOrganisationAccess($entity);
 
+        // Get old state before update.
+        $oldEntity = $this->find($entity->getId());
+
         // Update timestamp.
         $entity->setUpdated(new \DateTime());
 
-        return parent::update(entity: $entity);
+        $entity = parent::update(entity: $entity);
+
+        // Dispatch update event.
+        $this->eventDispatcher->dispatchTyped(new ViewUpdatedEvent($entity, $oldEntity));
+
+        return $entity;
 
     }//end update()
 
@@ -258,7 +285,12 @@ class ViewMapper extends QBMapper
         // Verify user has access to this organisation.
         $this->verifyOrganisationAccess($entity);
 
-        return parent::delete($entity);
+        $entity = parent::delete($entity);
+
+        // Dispatch deletion event.
+        $this->eventDispatcher->dispatchTyped(new ViewDeletedEvent($entity));
+
+        return $entity;
 
     }//end delete()
 

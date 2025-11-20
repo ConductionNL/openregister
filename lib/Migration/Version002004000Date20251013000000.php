@@ -1,5 +1,23 @@
 <?php
 
+/**
+ * OpenRegister Chat Conversation History Table Migration
+ *
+ * This migration creates the openregister_conversations table to store
+ * AI chat conversation history.
+ *
+ * @category Migration
+ * @package  OCA\OpenRegister\Migration
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenRegister.nl
+ */
+
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Migration;
@@ -9,37 +27,29 @@ use OCP\DB\ISchemaWrapper;
 use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
 
-/**
- * Create table for AI chat conversation history
- *
- * @category Migration
- * @package  OCA\OpenRegister\Migration
- * @author   Conduction <info@conduction.nl>
- * @license  EUPL-1.2 https://opensource.org/licenses/EUPL-1.2
- * @link     https://www.conduction.nl
- */
 class Version002004000Date20251013000000 extends SimpleMigrationStep
 {
 
 
     /**
-     * @param IOutput $output
-     * @param Closure $schemaClosure The `\Closure` returns a `ISchemaWrapper`
-     * @param array   $options
+     * Create conversations table for AI chat history.
      *
-     * @return null|ISchemaWrapper
+     * @param IOutput $output        Output interface for logging
+     * @param Closure $schemaClosure Schema retrieval closure
+     * @param array   $options       Migration options
+     *
+     * @return null|ISchemaWrapper Modified schema or null
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
         /*
-         *
-         *
          * @var ISchemaWrapper $schema
          */
+
         $schema = $schemaClosure();
 
         // Create openregister_chat_history table for conversation storage.
-        if (!$schema->hasTable('openregister_chat_history')) {
+        if ($schema->hasTable('openregister_chat_history') === false) {
             $table = $schema->createTable('openregister_chat_history');
 
             // Primary key.
@@ -127,13 +137,13 @@ class Version002004000Date20251013000000 extends SimpleMigrationStep
 
 
     /**
-     * Rollback migration
+     * Rollback migration.
      *
-     * @param IOutput $output
-     * @param Closure $schemaClosure
-     * @param array   $options
+     * @param IOutput $output        Output interface for logging
+     * @param Closure $schemaClosure Schema retrieval closure
+     * @param array   $options       Migration options
      *
-     * @return null|ISchemaWrapper
+     * @return null|ISchemaWrapper Modified schema or null
      */
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {

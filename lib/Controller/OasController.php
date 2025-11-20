@@ -32,17 +32,19 @@ class OasController extends Controller
 {
 
     /**
+     * OAS service instance
+     *
      * @var OasService
      */
     private readonly OasService $oasService;
 
 
     /**
-     * OasController constructor.
+     * OasController constructor
      *
-     * @param string     $appName
-     * @param IRequest   $request
-     * @param OasService $oasService
+     * @param string     $appName    Application name
+     * @param IRequest   $request    Request object
+     * @param OasService $oasService OAS service instance
      */
     public function __construct(
         string $appName,
@@ -80,13 +82,13 @@ class OasController extends Controller
     /**
      * Generate OAS for a specific register
      *
+     * @param string $id The register slug or identifier
+     *
+     * @return JSONResponse OAS data for the register
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
      * @PublicPage
-     *
-     * @param string $register The register slug or identifier
-     *
-     * @return JSONResponse
      */
     public function generate(string $id): JSONResponse
     {

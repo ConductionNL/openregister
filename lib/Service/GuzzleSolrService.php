@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * GuzzleSolrService - Lightweight SOLR Integration using HTTP calls
  *
  * This service provides SOLR integration using direct HTTP calls via Guzzle,
@@ -276,6 +276,7 @@ class GuzzleSolrService
         } else {
             $port = null;
         }
+
         // Don't default port here
         // Normalize port - convert string '0' to null, handle empty strings.
         if ($port === '0' || $port === '' || $port === null) {
@@ -1376,8 +1377,7 @@ class GuzzleSolrService
             $objectId = $object->getId();
             $schemaId = $object->getSchema();
             throw new \RuntimeException(
-                'Schema mapper is not available. Cannot create SOLR document without schema validation. '.
-                'Object ID: '.$objectId.', Schema ID: '.$schemaId
+                'Schema mapper is not available. Cannot create SOLR document without schema validation. '.'Object ID: '.$objectId.', Schema ID: '.$schemaId
             );
         }
 
@@ -1385,10 +1385,9 @@ class GuzzleSolrService
         $schema = $this->schemaMapper->find($object->getSchema());
 
         if (($schema instanceof Schema) === false) {
-            $objectId      = $object->getId();
-            $schemaId      = $object->getSchema();
-            $errorMessage  = 'Schema not found for object. Cannot create SOLR document without valid schema. '.
-                'Object ID: '.$objectId.', Schema ID: '.$schemaId;
+            $objectId     = $object->getId();
+            $schemaId     = $object->getSchema();
+            $errorMessage = 'Schema not found for object. Cannot create SOLR document without valid schema. '.'Object ID: '.$objectId.', Schema ID: '.$schemaId;
             throw new \RuntimeException($errorMessage);
         }
 
@@ -1411,8 +1410,7 @@ class GuzzleSolrService
                 $schemaName = $schema->getSlug();
             }//end if
 
-            $errorMessage = 'Schema is not searchable. Objects of this schema are excluded from SOLR indexing. '.
-                'Object ID: '.$objectId.', Schema: '.$schemaName;
+            $errorMessage = 'Schema is not searchable. Objects of this schema are excluded from SOLR indexing. '.'Object ID: '.$objectId.', Schema: '.$schemaName;
             throw new \RuntimeException($errorMessage);
         }//end if
 
@@ -1460,11 +1458,9 @@ class GuzzleSolrService
                     ]
                     );
 
-            $objectId      = $object->getId();
-            $schemaId      = $object->getSchema();
-            $errorMessage  = 'Schema-aware mapping failed for object. Schemaless fallback is disabled to prevent inconsistent documents. '.
-                'Object ID: '.$objectId.', Schema ID: '.$schemaId.'. '.
-                'Original error: '.$e->getMessage();
+            $objectId     = $object->getId();
+            $schemaId     = $object->getSchema();
+            $errorMessage = 'Schema-aware mapping failed for object. Schemaless fallback is disabled to prevent inconsistent documents. '.'Object ID: '.$objectId.', Schema ID: '.$schemaId.'. '.'Original error: '.$e->getMessage();
             throw new \RuntimeException($errorMessage, 0, $e);
         }//end try
 
@@ -1510,7 +1506,7 @@ class GuzzleSolrService
             $extractedArrays = $this->extractArraysFromRelations($relations);
             foreach ($extractedArrays as $fieldName => $arrayValues) {
                 // Only enrich if the field is empty or doesn't exist in object data.
-                $fieldExists = isset($objectData[$fieldName]) === true;
+                $fieldExists       = isset($objectData[$fieldName]) === true;
                 $fieldIsEmptyArray = $fieldExists === true && is_array($objectData[$fieldName]) === true && empty($objectData[$fieldName]) === true;
                 if ($fieldExists === false || $fieldIsEmptyArray === true) {
                     $objectData[$fieldName] = $arrayValues;
@@ -3205,11 +3201,11 @@ class GuzzleSolrService
                         }
                     }
                 }
-            } elseif (is_bool($value) === true) {
+            } else if (is_bool($value) === true) {
                 $fields[$fieldName.'_b'] = $value;
-            } elseif (is_int($value) === true) {
+            } else if (is_int($value) === true) {
                 $fields[$fieldName.'_i'] = $value;
-            } elseif (is_float($value) === true) {
+            } else if (is_float($value) === true) {
                 $fields[$fieldName.'_f'] = $value;
             } else {
                 $fields[$fieldName.'_s'] = (string) $value;
@@ -3248,6 +3244,7 @@ class GuzzleSolrService
 
     }//end escapeSolrValue()
 
+
     /**
      * Get URI value from object or null
      *
@@ -3263,7 +3260,9 @@ class GuzzleSolrService
         }
 
         return null;
+
     }//end getUriValue()
+
 
     /**
      * Get version value from object or null
@@ -3280,7 +3279,9 @@ class GuzzleSolrService
         }
 
         return null;
+
     }//end getVersionValue()
+
 
     /**
      * Get size value from object or null
@@ -3297,7 +3298,9 @@ class GuzzleSolrService
         }
 
         return null;
+
     }//end getSizeValue()
+
 
     /**
      * Get folder value from object or null
@@ -3314,7 +3317,9 @@ class GuzzleSolrService
         }
 
         return null;
+
     }//end getFolderValue()
+
 
     /**
      * Get self relations count from document
@@ -3330,6 +3335,7 @@ class GuzzleSolrService
         }
 
         return 'NOT_ARRAY';
+
     }//end getSelfRelationsCount()
 
 

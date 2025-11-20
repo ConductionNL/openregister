@@ -243,7 +243,12 @@ class SearchTrailController extends Controller
                 // Also handle legacy 'page' parameter.
                 $nextUrl = preg_replace('/([?&])page=\d+/', '$1_page='.$nextPage, $nextUrl);
                 if (strpos($nextUrl, '_page=') === false) {
-                    $nextUrl .= (strpos($nextUrl, '?') === false ? '?' : '&').'_page='.$nextPage;
+                    $separator = '?';
+                    if (strpos($nextUrl, '?') !== false) {
+                        $separator = '&';
+                    }
+
+                    $nextUrl .= $separator.'_page='.$nextPage;
                 }
             }
 
@@ -258,7 +263,12 @@ class SearchTrailController extends Controller
                 // Also handle legacy 'page' parameter.
                 $prevUrl = preg_replace('/([?&])page=\d+/', '$1_page='.$prevPage, $prevUrl);
                 if (strpos($prevUrl, '_page=') === false) {
-                    $prevUrl .= (strpos($prevUrl, '?') === false ? '?' : '&').'_page='.$prevPage;
+                    $separator = '?';
+                    if (strpos($prevUrl, '?') !== false) {
+                        $separator = '&';
+                    }
+
+                    $prevUrl .= $separator.'_page='.$prevPage;
                 }
             }
 
@@ -478,7 +488,8 @@ class SearchTrailController extends Controller
 
             // Use pagination format for the statistics array.
             // Prioritize underscore-prefixed limit parameter.
-            $limit          = $this->request->getParam('_limit', $this->request->getParam('limit', 20));
+            $defaultLimit   = $this->request->getParam('limit', 20);
+            $limit          = $this->request->getParam('_limit', $defaultLimit);
             $page           = $params['page'] ?? 1;
             $offset         = $params['offset'] ?? 0;
             $paginatedStats = $this->paginate($statistics, $totalCombinations, $limit, $offset, $page);
@@ -521,7 +532,7 @@ class SearchTrailController extends Controller
             );
 
             // Check if service result is a structured array with nested data.
-            if (isset($serviceResult['user_agents'])) {
+            if (isset($serviceResult['user_agents']) === true) {
                 // Extract the user agents array and metadata from structured response.
                 $userAgents        = $serviceResult['user_agents'] ?? [];
                 $totalUniqueAgents = $serviceResult['total_unique_agents'] ?? 0;
@@ -537,7 +548,7 @@ class SearchTrailController extends Controller
                 // Add the additional metadata from the service.
                 $paginatedUserAgents['total_searches'] = $totalSearches;
                 $paginatedUserAgents['period']         = $period;
-                if ($browserStats !== null && !empty($browserStats)) {
+                if ($browserStats !== null && empty($browserStats) === false) {
                     $paginatedUserAgents['browser_breakdown'] = $browserStats;
                 }
 
@@ -661,7 +672,7 @@ class SearchTrailController extends Controller
                     'updated'        => $trail->getUpdated(),
                 ];
 
-                if ($exportConfig['includeMetadata']) {
+                if ($exportConfig['includeMetadata'] === true) {
                     $row['search_parameters'] = $trail->getSearchParameters();
                     $row['result_metadata']   = $trail->getResultMetadata();
                 }
@@ -800,7 +811,7 @@ class SearchTrailController extends Controller
      */
     private function arrayToCsv(array $data): string
     {
-        if (empty($data)) {
+        if (empty($data) === true) {
             return '';
         }
 

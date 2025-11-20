@@ -40,17 +40,20 @@ class Version1Date20250813140000 extends SimpleMigrationStep
 
 
     /**
-     * @param IOutput $output
-     * @param Closure $schemaClosure The `\Closure` returns a `ISchemaWrapper`
-     * @param array   $options
+     * Add slug column to objects table
      *
-     * @return null|ISchemaWrapper
+     * @param IOutput       $output        Migration output interface
+     * @param Closure       $schemaClosure Schema closure that returns ISchemaWrapper
+     * @param array<string> $options       Migration options
+     *
+     * @return null|ISchemaWrapper Updated schema or null
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
         /*
          * @var ISchemaWrapper $schema
          */
+
         $schema = $schemaClosure();
 
         // Check if the objects table exists.

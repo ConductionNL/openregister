@@ -19,6 +19,9 @@
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
+use OCA\OpenRegister\Event\AgentCreatedEvent;
+use OCA\OpenRegister\Event\AgentDeletedEvent;
+use OCA\OpenRegister\Event\AgentUpdatedEvent;
 use OCA\OpenRegister\Service\ConfigurationCacheService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -26,6 +29,7 @@ use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 use OCP\IGroupManager;
 use OCP\IUserSession;
@@ -76,6 +80,13 @@ class AgentMapper extends QBMapper
      */
     private IGroupManager $groupManager;
 
+    /**
+     * Event dispatcher for dispatching agent events
+     *
+     * @var IEventDispatcher
+     */
+    private IEventDispatcher $eventDispatcher;
+
 
     /**
      * AgentMapper constructor.
@@ -84,17 +95,20 @@ class AgentMapper extends QBMapper
      * @param OrganisationService $organisationService Organisation service for multi-tenancy
      * @param IUserSession        $userSession         User session
      * @param IGroupManager       $groupManager        Group manager for RBAC
+     * @param IEventDispatcher    $eventDispatcher     Event dispatcher
      */
     public function __construct(
         IDBConnection $db,
         OrganisationService $organisationService,
         IUserSession $userSession,
-        IGroupManager $groupManager
+        IGroupManager $groupManager,
+        IEventDispatcher $eventDispatcher
     ) {
         parent::__construct($db, 'openregister_agents', Agent::class);
         $this->organisationService = $organisationService;
         $this->userSession         = $userSession;
         $this->groupManager        = $groupManager;
+        $this->eventDispatcher     = $eventDispatcher;
 
     }//end __construct()
 
@@ -215,7 +229,7 @@ class AgentMapper extends QBMapper
         $accessible = [];
 
         foreach ($agents as $agent) {
-            if ($this->canUserAccessAgent($agent, $userId)) {
+            if ($this->canUserAccessAgent($agent, $userId) === true) {
                 $accessible[] = $agent;
             }
         }
@@ -250,7 +264,7 @@ class AgentMapper extends QBMapper
         }
 
         // Check if user is invited.
-        if ($agent->hasInvitedUser($userId)) {
+        if ($agent->hasInvitedUser($userId) === true) {
             return true;
         }
 
@@ -363,12 +377,12 @@ class AgentMapper extends QBMapper
             ->from($this->tableName);
 
         // Apply filters.
-        if (!empty($filters)) {
+        if (empty($filters) === false) {
             foreach ($filters as $field => $value) {
                 if ($value !== null && $field !== '_route') {
                     if ($field === 'active') {
                         $qb->andWhere($qb->expr()->eq($field, $qb->createNamedParameter((bool) $value, IQueryBuilder::PARAM_BOOL)));
-                    } else if (is_array($value)) {
+                    } else if (is_array($value) === true) {
                         $qb->andWhere($qb->expr()->in($field, $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY)));
                     } else {
                         $qb->andWhere($qb->expr()->eq($field, $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR)));
@@ -378,7 +392,7 @@ class AgentMapper extends QBMapper
         }
 
         // Apply ordering.
-        if (!empty($order)) {
+        if (empty($order) === false) {
             foreach ($order as $field => $direction) {
                 $qb->addOrderBy($field, $direction);
             }
@@ -419,7 +433,7 @@ class AgentMapper extends QBMapper
         if ($entity instanceof Agent) {
             // Ensure UUID is set.
             $uuid = $entity->getUuid();
-            if (!$uuid || trim($uuid) === '') {
+            if ($uuid === null || $uuid === '' || trim($uuid) === '') {
                 $newUuid = \Symfony\Component\Uid\Uuid::v4()->toRfc4122();
                 $entity->setUuid($newUuid);
             }
@@ -437,7 +451,12 @@ class AgentMapper extends QBMapper
         // Auto-set organisation from active session.
         $this->setOrganisationOnCreate($entity);
 
-        return parent::insert($entity);
+        $entity = parent::insert($entity);
+
+        // Dispatch creation event.
+        $this->eventDispatcher->dispatchTyped(new AgentCreatedEvent($entity));
+
+        return $entity;
 
     }//end insert()
 
@@ -458,11 +477,19 @@ class AgentMapper extends QBMapper
         // Verify user has access to this organisation.
         $this->verifyOrganisationAccess($entity);
 
+        // Get old state before update.
+        $oldEntity = $this->find($entity->getId());
+
         if ($entity instanceof Agent) {
             $entity->setUpdated(new DateTime());
         }
 
-        return parent::update($entity);
+        $entity = parent::update($entity);
+
+        // Dispatch update event.
+        $this->eventDispatcher->dispatchTyped(new AgentUpdatedEvent($entity, $oldEntity));
+
+        return $entity;
 
     }//end update()
 
@@ -483,7 +510,12 @@ class AgentMapper extends QBMapper
         // Verify user has access to this organisation.
         $this->verifyOrganisationAccess($entity);
 
-        return parent::delete($entity);
+        $entity = parent::delete($entity);
+
+        // Dispatch deletion event.
+        $this->eventDispatcher->dispatchTyped(new AgentDeletedEvent($entity));
+
+        return $entity;
 
     }//end delete()
 
@@ -524,12 +556,12 @@ class AgentMapper extends QBMapper
             ->from($this->tableName);
 
         // Apply filters.
-        if (!empty($filters)) {
+        if (empty($filters) === false) {
             foreach ($filters as $field => $value) {
                 if ($value !== null && $field !== '_route') {
                     if ($field === 'active') {
                         $qb->andWhere($qb->expr()->eq($field, $qb->createNamedParameter((bool) $value, IQueryBuilder::PARAM_BOOL)));
-                    } else if (is_array($value)) {
+                    } else if (is_array($value) === true) {
                         $qb->andWhere($qb->expr()->in($field, $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY)));
                     } else {
                         $qb->andWhere($qb->expr()->eq($field, $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR)));

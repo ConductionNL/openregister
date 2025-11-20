@@ -65,30 +65,30 @@ class Version1Date20250902140000 extends SimpleMigrationStep
         $output->info('Skipping complex index creation to avoid MySQL key length issues');
 
         // Multi-tenancy organization filtering (critical for performance).
-        if (!$table->hasIndex('objects_organisation_idx')) {
+        if ($table->hasIndex('objects_organisation_idx') === false) {
             $table->addIndex(['organisation'], 'objects_organisation_idx');
             $output->info('Added index objects_organisation_idx for multi-tenancy performance');
         }
 
         // Publication status filtering.
-        if (!$table->hasIndex('objects_published_idx')) {
+        if ($table->hasIndex('objects_published_idx') === false) {
             $table->addIndex(['published'], 'objects_published_idx');
             $output->info('Added index objects_published_idx for publication filtering');
         }
 
-        if (!$table->hasIndex('objects_depublished_idx')) {
+        if ($table->hasIndex('objects_depublished_idx') === false) {
             $table->addIndex(['depublished'], 'objects_depublished_idx');
             $output->info('Added index objects_depublished_idx for depublication filtering');
         }
 
         // Owner filtering for RBAC.
-        if (!$table->hasIndex('objects_owner_idx')) {
+        if ($table->hasIndex('objects_owner_idx') === false) {
             $table->addIndex(['owner'], 'objects_owner_idx');
             $output->info('Added index objects_owner_idx for RBAC owner filtering');
         }
 
         // Soft delete filtering.
-        if (!$table->hasIndex('objects_deleted_idx')) {
+        if ($table->hasIndex('objects_deleted_idx') === false) {
             $table->addIndex(['deleted'], 'objects_deleted_idx');
             $output->info('Added index objects_deleted_idx for soft delete filtering');
         }

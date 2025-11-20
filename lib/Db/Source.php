@@ -255,11 +255,7 @@ class Source extends Entity implements JsonSerializable
             'organisation'           => $this->organisation,
             'updated'                => $updated,
             'created'                => $created,
-            'managedByConfiguration' => $this->managedByConfiguration !== null ? [
-                'id'    => $this->managedByConfiguration->getId(),
-                'uuid'  => $this->managedByConfiguration->getUuid(),
-                'title' => $this->managedByConfiguration->getTitle(),
-            ] : null,
+            'managedByConfiguration' => $this->getManagedByConfigurationData(),
         ];
 
     }//end jsonSerialize()
@@ -381,6 +377,26 @@ class Source extends Entity implements JsonSerializable
         return null;
 
     }//end getManagedByConfiguration()
+
+
+    /**
+     * Get managed by configuration data as array or null
+     *
+     * @return array<string, mixed>|null Configuration data or null
+     */
+    private function getManagedByConfigurationData(): ?array
+    {
+        if ($this->managedByConfiguration !== null) {
+            return [
+                'id'    => $this->managedByConfiguration->getId(),
+                'uuid'  => $this->managedByConfiguration->getUuid(),
+                'title' => $this->managedByConfiguration->getTitle(),
+            ];
+        }
+
+        return null;
+
+    }//end getManagedByConfigurationData()
 
 
 }//end class

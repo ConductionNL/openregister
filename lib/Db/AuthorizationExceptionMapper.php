@@ -443,27 +443,27 @@ class AuthorizationExceptionMapper extends QBMapper
             ->from($this->getTableName());
 
         // Apply criteria filters.
-        if (isset($criteria['type']) && $criteria['type'] !== '') {
+        if (isset($criteria['type']) === true && $criteria['type'] !== '') {
             $qb->andWhere($qb->expr()->eq('type', $qb->createNamedParameter($criteria['type'])));
         }
 
-        if (isset($criteria['subject_type']) && $criteria['subject_type'] !== '') {
+        if (isset($criteria['subject_type']) === true && $criteria['subject_type'] !== '') {
             $qb->andWhere($qb->expr()->eq('subject_type', $qb->createNamedParameter($criteria['subject_type'])));
         }
 
-        if (isset($criteria['subject_id']) && $criteria['subject_id'] !== '') {
+        if (isset($criteria['subject_id']) === true && $criteria['subject_id'] !== '') {
             $qb->andWhere($qb->expr()->eq('subject_id', $qb->createNamedParameter($criteria['subject_id'])));
         }
 
-        if (isset($criteria['action']) && $criteria['action'] !== '') {
+        if (isset($criteria['action']) === true && $criteria['action'] !== '') {
             $qb->andWhere($qb->expr()->eq('action', $qb->createNamedParameter($criteria['action'])));
         }
 
-        if (isset($criteria['schema_uuid']) && $criteria['schema_uuid'] !== '') {
+        if (isset($criteria['schema_uuid']) === true && $criteria['schema_uuid'] !== '') {
             $qb->andWhere($qb->expr()->eq('schema_uuid', $qb->createNamedParameter($criteria['schema_uuid'])));
         }
 
-        if (isset($criteria['active']) && is_bool($criteria['active'])) {
+        if (isset($criteria['active']) === true && is_bool($criteria['active']) === true) {
             $qb->andWhere($qb->expr()->eq('active', $qb->createNamedParameter($criteria['active'], IQueryBuilder::PARAM_BOOL)));
         }
 

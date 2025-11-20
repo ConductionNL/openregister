@@ -1,8 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
-/*
+/**
  * FileSearchController
  *
  * Controller for file search operations.
@@ -14,6 +12,8 @@ declare(strict_types=1);
  * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  * @link      https://github.com/nextcloud/server
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 

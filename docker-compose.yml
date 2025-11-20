@@ -8,6 +8,7 @@ volumes:
   zookeeper:
   ollama:
   presidio-models:
+  n8n:
 
 services:
   db:
@@ -133,6 +134,47 @@ services:
       retries: 3
       start_period: 30s
 
+  # n8n Workflow Automation
+  # Integrates with OpenRegister via Nextcloud webhooks
+  # Access at: http://localhost:5678
+  # Default credentials: admin / admin (change in production!)
+  # Documentation: https://docs.n8n.io
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: openregister-n8n
+    restart: always
+    ports:
+      - "5678:5678"
+    volumes:
+      - n8n:/home/node/.n8n
+    environment:
+      # Basic authentication
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=admin
+      - N8N_BASIC_AUTH_PASSWORD=admin
+      # Host configuration
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - WEBHOOK_URL=http://localhost:5678/
+      # Timezone
+      - GENERIC_TIMEZONE=Europe/Amsterdam
+      - TZ=Europe/Amsterdam
+      # Enable execution data saving for debugging
+      - EXECUTIONS_DATA_SAVE_ON_ERROR=all
+      - EXECUTIONS_DATA_SAVE_ON_SUCCESS=all
+      - EXECUTIONS_DATA_SAVE_MANUAL_EXECUTIONS=true
+    links:
+      - nextcloud
+    depends_on:
+      - nextcloud
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:5678/healthz || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
   # init-ubuntu:
   #   image: ubuntu
   #   command: sh /home/ubuntu/docker/init-ubuntu.sh
@@ -153,6 +195,7 @@ services:
       - solr
       - ollama
       - presidio-analyzer
+      - n8n
     volumes:
       - nextcloud:/var/www/html:rw
       - ./custom_apps:/var/www/html/custom_apps

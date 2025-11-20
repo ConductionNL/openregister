@@ -576,13 +576,14 @@ class MetaDataFacetHandler
                         break;
 
                     case 'or':
-                        $values = is_string($operatorValue) ? array_map('trim', explode(',', $operatorValue)) : $operatorValue;
+                        $values       = is_string($operatorValue) ? array_map('trim', explode(',', $operatorValue)) : $operatorValue;
                         $orConditions = $queryBuilder->expr()->orX();
                         foreach ($values as $val) {
                             $orConditions->add(
                                 $queryBuilder->expr()->eq($field, $queryBuilder->createNamedParameter($val))
                             );
                         }
+
                         $queryBuilder->andWhere($orConditions);
                         break;
                     default:

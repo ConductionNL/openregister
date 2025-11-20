@@ -19,10 +19,14 @@
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Event\SourceCreatedEvent;
+use OCA\OpenRegister\Event\SourceDeletedEvent;
+use OCA\OpenRegister\Event\SourceUpdatedEvent;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 use OCP\IGroupManager;
 use OCP\IUserSession;
@@ -69,6 +73,13 @@ class SourceMapper extends QBMapper
      */
     private IGroupManager $groupManager;
 
+    /**
+     * Event dispatcher for dispatching source events
+     *
+     * @var IEventDispatcher
+     */
+    private IEventDispatcher $eventDispatcher;
+
 
     /**
      * Constructor for the SourceMapper
@@ -77,17 +88,20 @@ class SourceMapper extends QBMapper
      * @param OrganisationService $organisationService Organisation service for multi-tenancy
      * @param IUserSession        $userSession         User session
      * @param IGroupManager       $groupManager        Group manager for RBAC
+     * @param IEventDispatcher    $eventDispatcher     Event dispatcher
      */
     public function __construct(
         IDBConnection $db,
         OrganisationService $organisationService,
         IUserSession $userSession,
-        IGroupManager $groupManager
+        IGroupManager $groupManager,
+        IEventDispatcher $eventDispatcher
     ) {
         parent::__construct($db, 'openregister_sources');
         $this->organisationService = $organisationService;
         $this->userSession         = $userSession;
         $this->groupManager        = $groupManager;
+        $this->eventDispatcher     = $eventDispatcher;
 
     }//end __construct()
 
@@ -190,7 +204,7 @@ class SourceMapper extends QBMapper
 
         if ($entity instanceof Source) {
             // Generate UUID if not set.
-            if (empty($entity->getUuid())) {
+            if (empty($entity->getUuid()) === true) {
                 $entity->setUuid(Uuid::v4());
             }
 
@@ -201,7 +215,12 @@ class SourceMapper extends QBMapper
         // Auto-set organisation from active session.
         $this->setOrganisationOnCreate($entity);
 
-        return parent::insert($entity);
+        $entity = parent::insert($entity);
+
+        // Dispatch creation event.
+        $this->eventDispatcher->dispatchTyped(new SourceCreatedEvent($entity));
+
+        return $entity;
 
     }//end insert()
 
@@ -222,11 +241,19 @@ class SourceMapper extends QBMapper
         // Verify user has access to this organisation.
         $this->verifyOrganisationAccess($entity);
 
+        // Get old state before update.
+        $oldEntity = $this->find($entity->getId());
+
         if ($entity instanceof Source) {
             $entity->setUpdated(new \DateTime());
         }
 
-        return parent::update($entity);
+        $entity = parent::update($entity);
+
+        // Dispatch update event.
+        $this->eventDispatcher->dispatchTyped(new SourceUpdatedEvent($entity, $oldEntity));
+
+        return $entity;
 
     }//end update()
 
@@ -247,7 +274,12 @@ class SourceMapper extends QBMapper
         // Verify user has access to this organisation.
         $this->verifyOrganisationAccess($entity);
 
-        return parent::delete($entity);
+        $entity = parent::delete($entity);
+
+        // Dispatch deletion event.
+        $this->eventDispatcher->dispatchTyped(new SourceDeletedEvent($entity));
+
+        return $entity;
 
     }//end delete()
 

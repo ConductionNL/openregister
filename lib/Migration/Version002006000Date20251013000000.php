@@ -1,11 +1,25 @@
 <?php
 
-declare(strict_types=1);
-
-/*
- * SPDX-FileCopyrightText: 2024 Nextcloud GmbH and Nextcloud contributors
- * SPDX-License-Identifier: AGPL-3.0-or-later
+/**
+ * OpenRegister File Texts Table Migration
+ *
+ * This migration creates the oc_openregister_file_texts table to store
+ * extracted text content from files for fast full-text search in SOLR,
+ * text chunking for AI/ML processing, and avoiding repeated file parsing.
+ *
+ * @category Migration
+ * @package  OCA\OpenRegister\Migration
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenRegister.nl
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Migration;
 
@@ -14,40 +28,28 @@ use OCP\DB\ISchemaWrapper;
 use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
 
-/**
- * Migration to create oc_openregister_file_texts table
- *
- * This table stores extracted text content from files for:
- * - Fast full-text search in SOLR
- * - Text chunking for AI/ML processing
- * - Avoiding repeated file parsing
- * - Supporting large file content (LONGTEXT)
- *
- * @category Migration
- * @package  OCA\OpenRegister\Migration
- * @author   OpenRegister Team
- * @license  AGPL-3.0-or-later
- */
 class Version002006000Date20251013000000 extends SimpleMigrationStep
 {
 
 
     /**
-     * @param  IOutput $output
-     * @param  Closure $schemaClosure The `\Closure` returns a `ISchemaWrapper`
-     * @param  array   $options
-     * @return null|ISchemaWrapper
+     * Create file texts table for storing extracted text content.
+     *
+     * @param IOutput $output        Output interface for logging
+     * @param Closure $schemaClosure Schema retrieval closure
+     * @param array   $options       Migration options
+     *
+     * @return null|ISchemaWrapper Modified schema or null
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
         /*
-         *
-         *
          * @var ISchemaWrapper $schema
          */
+
         $schema = $schemaClosure();
 
-        if (!$schema->hasTable('openregister_file_texts')) {
+        if ($schema->hasTable('openregister_file_texts') === false) {
             $table = $schema->createTable('openregister_file_texts');
 
             // Primary key.
@@ -272,9 +274,13 @@ class Version002006000Date20251013000000 extends SimpleMigrationStep
 
 
     /**
-     * @param IOutput $output
-     * @param Closure $schemaClosure The `\Closure` returns a `ISchemaWrapper`
-     * @param array   $options
+     * Post-schema change hook for logging.
+     *
+     * @param IOutput $output        Output interface for logging
+     * @param Closure $schemaClosure Schema retrieval closure
+     * @param array   $options       Migration options
+     *
+     * @return void
      */
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {

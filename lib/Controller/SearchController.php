@@ -35,12 +35,16 @@ class SearchController extends Controller
 {
 
     /**
-     * @var ISearch The Nextcloud search service
+     * The Nextcloud search service
+     *
+     * @var ISearch
      */
     private readonly ISearch $searchService;
 
     /**
-     * @var SolrService The SOLR search service
+     * The SOLR search service
+     *
+     * @var SolrService
      */
     private readonly SolrService $solrService;
 

@@ -266,7 +266,7 @@ class Organisation extends Entity implements JsonSerializable
             $this->users = [];
         }
 
-        if (!in_array($userId, $this->users)) {
+        if (in_array($userId, $this->users) === false) {
             $this->users[] = $userId;
             $this->markFieldUpdated('users');
         }
@@ -728,8 +728,8 @@ class Organisation extends Entity implements JsonSerializable
                 'groups'    => count($groups),
             ],
             'authorization' => $this->authorization ?? $this->getDefaultAuthorization(),
-            'created'       => $this->created ? $this->created->format('c') : null,
-            'updated'       => $this->updated ? $this->updated->format('c') : null,
+            'created'       => $this->getCreatedFormatted(),
+            'updated'       => $this->getUpdatedFormatted(),
         ];
 
     }//end jsonSerialize()
@@ -754,6 +754,38 @@ class Organisation extends Entity implements JsonSerializable
         return $this->uuid;
 
     }//end __toString()
+
+
+    /**
+     * Get created date formatted as ISO 8601 string or null
+     *
+     * @return string|null Formatted date or null
+     */
+    private function getCreatedFormatted(): ?string
+    {
+        if ($this->created !== null) {
+            return $this->created->format('c');
+        }
+
+        return null;
+
+    }//end getCreatedFormatted()
+
+
+    /**
+     * Get updated date formatted as ISO 8601 string or null
+     *
+     * @return string|null Formatted date or null
+     */
+    private function getUpdatedFormatted(): ?string
+    {
+        if ($this->updated !== null) {
+            return $this->updated->format('c');
+        }
+
+        return null;
+
+    }//end getUpdatedFormatted()
 
 
 }//end class

@@ -91,8 +91,13 @@ class ExportService
      * @param IGroupManager      $groupManager       The group manager
      * @param ObjectService      $objectService      The object service
      */
-    public function __construct(ObjectEntityMapper $objectEntityMapper, RegisterMapper $registerMapper, IUserManager $userManager, IGroupManager $groupManager, ObjectService $objectService)
-    {
+    public function __construct(
+        ObjectEntityMapper $objectEntityMapper,
+        RegisterMapper $registerMapper,
+        IUserManager $userManager,
+        IGroupManager $groupManager,
+        ObjectService $objectService
+    ) {
         $this->objectEntityMapper = $objectEntityMapper;
         $this->registerMapper     = $registerMapper;
         $this->userManager        = $userManager;
@@ -156,9 +161,10 @@ class ExportService
     /**
      * Export data to Excel format
      *
-     * @param Register|null $register Optional register to export
-     * @param Schema|null   $schema   Optional schema to export
-     * @param array         $filters  Optional filters to apply
+     * @param Register|null $register    Optional register to export
+     * @param Schema|null   $schema      Optional schema to export
+     * @param array         $filters     Optional filters to apply
+     * @param IUser|null    $currentUser Current user for permission checks
      *
      * @return Spreadsheet
      */
@@ -214,9 +220,10 @@ class ExportService
     /**
      * Export data to CSV format
      *
-     * @param Register|null $register Optional register to export
-     * @param Schema|null   $schema   Optional schema to export
-     * @param array         $filters  Optional filters to apply
+     * @param Register|null $register    Optional register to export
+     * @param Schema|null   $schema      Optional schema to export
+     * @param array         $filters     Optional filters to apply
+     * @param IUser|null    $currentUser Current user for permission checks
      *
      * @return string CSV content
      *
@@ -245,6 +252,7 @@ class ExportService
      * @param Register|null $register    Optional register to export
      * @param Schema|null   $schema      Optional schema to export
      * @param array         $filters     Optional filters to apply
+     * @param IUser|null    $currentUser Current user for permission checks
      *
      * @return void
      */
@@ -287,7 +295,7 @@ class ExportService
 
         // Apply additional filters.
         foreach ($filters as $key => $value) {
-            if (!str_starts_with($key, '@self.')) {
+            if (str_starts_with($key, '@self.') === false) {
                 // These are JSON object property filters - not supported by findAll.
                 // For now, we'll skip them to get basic functionality working.
                 // TODO: Add support for JSON property filtering in ObjectEntityMapper.
@@ -335,8 +343,9 @@ class ExportService
     /**
      * Get headers for export
      *
-     * @param Register|null $register Optional register to export
-     * @param Schema|null   $schema   Optional schema to export
+     * @param Register|null $register    Optional register to export
+     * @param Schema|null   $schema      Optional schema to export
+     * @param IUser|null    $currentUser Current user for permission checks
      *
      * @return array Headers indexed by column letter with property key as value
      */
@@ -368,7 +377,7 @@ class ExportService
         }
 
         // REQUIREMENT: Add @self metadata fields only if user is admin.
-        if ($this->isUserAdmin($currentUser)) {
+        if ($this->isUserAdmin($currentUser) === true) {
             $metadataFields = [
                 'created',
                 'updated',
