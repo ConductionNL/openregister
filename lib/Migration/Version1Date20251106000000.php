@@ -34,13 +34,13 @@ class Version1Date20251106000000 extends SimpleMigrationStep
         $schema  = $schemaClosure();
         $updated = false;
 
-        // Fix openregister_agents table
+        // Fix openregister_agents table.
         if ($schema->hasTable('openregister_agents')) {
             $table = $schema->getTable('openregister_agents');
             if ($table->hasColumn('organisation')) {
                 $column = $table->getColumn('organisation');
 
-                // Change from BIGINT to VARCHAR(36) for UUID
+                // Change from BIGINT to VARCHAR(36) for UUID.
                 $column->setType(\Doctrine\DBAL\Types\Type::getType(Types::STRING));
                 $column->setLength(36);
                 $column->setNotnull(false);
@@ -52,13 +52,13 @@ class Version1Date20251106000000 extends SimpleMigrationStep
             }
         }
 
-        // Fix openregister_applications table
+        // Fix openregister_applications table.
         if ($schema->hasTable('openregister_applications')) {
             $table = $schema->getTable('openregister_applications');
             if ($table->hasColumn('organisation')) {
                 $column = $table->getColumn('organisation');
 
-                // Change from BIGINT to VARCHAR(36) for UUID
+                // Change from BIGINT to VARCHAR(36) for UUID.
                 $column->setType(\Doctrine\DBAL\Types\Type::getType(Types::STRING));
                 $column->setLength(36);
                 $column->setNotnull(false);
@@ -70,13 +70,13 @@ class Version1Date20251106000000 extends SimpleMigrationStep
             }
         }
 
-        // Fix openregister_views table (if it has BIGINT)
+        // Fix openregister_views table (if it has BIGINT).
         if ($schema->hasTable('openregister_views')) {
             $table = $schema->getTable('openregister_views');
             if ($table->hasColumn('organisation')) {
                 $column = $table->getColumn('organisation');
 
-                // Ensure it's VARCHAR(36) for UUID
+                // Ensure it's VARCHAR(36) for UUID.
                 if ($column->getLength() !== 36) {
                     $column->setType(\Doctrine\DBAL\Types\Type::getType(Types::STRING));
                     $column->setLength(36);
@@ -90,13 +90,13 @@ class Version1Date20251106000000 extends SimpleMigrationStep
             }
         }
 
-        // Fix openregister_sources table (if it has BIGINT)
+        // Fix openregister_sources table (if it has BIGINT).
         if ($schema->hasTable('openregister_sources')) {
             $table = $schema->getTable('openregister_sources');
             if ($table->hasColumn('organisation')) {
                 $column = $table->getColumn('organisation');
 
-                // Ensure it's VARCHAR(36) for UUID
+                // Ensure it's VARCHAR(36) for UUID.
                 if ($column->getLength() !== 36) {
                     $column->setType(\Doctrine\DBAL\Types\Type::getType(Types::STRING));
                     $column->setLength(36);
@@ -110,12 +110,12 @@ class Version1Date20251106000000 extends SimpleMigrationStep
             }
         }
 
-        // Fix openregister_configurations table (add organisation column if missing)
+        // Fix openregister_configurations table (add organisation column if missing).
         if ($schema->hasTable('openregister_configurations')) {
             $table = $schema->getTable('openregister_configurations');
 
             if (!$table->hasColumn('organisation')) {
-                // Add organisation column if it doesn't exist
+                // Add organisation column if it doesn't exist.
                 $table->addColumn(
                         'organisation',
                         Types::STRING,
@@ -130,7 +130,7 @@ class Version1Date20251106000000 extends SimpleMigrationStep
                 $output->info('✅ Added openregister_configurations.organisation column (VARCHAR(36))');
                 $updated = true;
             } else {
-                // Ensure existing column is VARCHAR(36) for UUID
+                // Ensure existing column is VARCHAR(36) for UUID.
                 $column = $table->getColumn('organisation');
                 $column->setType(\Doctrine\DBAL\Types\Type::getType(Types::STRING));
                 $column->setLength(36);

@@ -62,7 +62,7 @@ class Version1Date20251102140000 extends SimpleMigrationStep
         if (!$schema->hasTable('openregister_views')) {
             $table = $schema->createTable('openregister_views');
 
-            // Primary key
+            // Primary key.
             $table->addColumn(
                     'id',
                     Types::INTEGER,
@@ -74,7 +74,7 @@ class Version1Date20251102140000 extends SimpleMigrationStep
                     ]
                     );
 
-            // UUID for external references
+            // UUID for external references.
             $table->addColumn(
                     'uuid',
                     Types::STRING,
@@ -85,7 +85,7 @@ class Version1Date20251102140000 extends SimpleMigrationStep
                     ]
                     );
 
-            // View name
+            // View name.
             $table->addColumn(
                     'name',
                     Types::STRING,
@@ -96,7 +96,7 @@ class Version1Date20251102140000 extends SimpleMigrationStep
                     ]
                     );
 
-            // Description
+            // Description.
             $table->addColumn(
                     'description',
                     Types::TEXT,
@@ -106,7 +106,7 @@ class Version1Date20251102140000 extends SimpleMigrationStep
                     ]
                     );
 
-            // Owner
+            // Owner.
             $table->addColumn(
                     'owner',
                     Types::STRING,
@@ -117,7 +117,7 @@ class Version1Date20251102140000 extends SimpleMigrationStep
                     ]
                     );
 
-            // Public flag
+            // Public flag.
             $table->addColumn(
                     'is_public',
                     Types::BOOLEAN,
@@ -128,7 +128,7 @@ class Version1Date20251102140000 extends SimpleMigrationStep
                     ]
                     );
 
-            // Default flag
+            // Default flag.
             $table->addColumn(
                     'is_default',
                     Types::BOOLEAN,
@@ -139,7 +139,7 @@ class Version1Date20251102140000 extends SimpleMigrationStep
                     ]
                     );
 
-            // Query parameters as JSON
+            // Query parameters as JSON.
             $table->addColumn(
                     'query',
                     Types::JSON,
@@ -149,7 +149,7 @@ class Version1Date20251102140000 extends SimpleMigrationStep
                     ]
                     );
 
-            // Favorited by users
+            // Favorited by users.
             $table->addColumn(
                     'favored_by',
                     Types::JSON,
@@ -160,7 +160,7 @@ class Version1Date20251102140000 extends SimpleMigrationStep
                     ]
                     );
 
-            // Timestamps
+            // Timestamps.
             $table->addColumn(
                     'created',
                     Types::DATETIME,
@@ -179,10 +179,10 @@ class Version1Date20251102140000 extends SimpleMigrationStep
                     ]
                     );
 
-            // Set primary key
+            // Set primary key.
             $table->setPrimaryKey(['id']);
 
-            // Add indexes
+            // Add indexes.
             $table->addIndex(['uuid'], 'views_uuid_index');
             $table->addIndex(['owner'], 'views_owner_index');
             $table->addIndex(['is_public'], 'views_public_index');

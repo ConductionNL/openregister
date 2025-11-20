@@ -92,7 +92,7 @@ class ApplicationHandler
         try {
             unset($data['id'], $data['uuid']);
 
-            // Check if application already exists by name
+            // Check if application already exists by name.
             $existingApplications = $this->applicationMapper->findAll();
             $existingApplication  = null;
             foreach ($existingApplications as $application) {
@@ -103,7 +103,7 @@ class ApplicationHandler
             }
 
             if ($existingApplication !== null) {
-                // Update existing application
+                // Update existing application.
                 $existingApplication->hydrate($data);
                 if ($owner !== null) {
                     $existingApplication->setOwner($owner);
@@ -112,7 +112,7 @@ class ApplicationHandler
                 return $this->applicationMapper->update($existingApplication);
             }
 
-            // Create new application
+            // Create new application.
             $application = new Application();
             $application->hydrate($data);
             if ($owner !== null) {

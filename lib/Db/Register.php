@@ -259,7 +259,7 @@ class Register extends Entity implements JsonSerializable
             $schemas = [];
         }
 
-        // Only keep IDs (int or string)
+        // Only keep IDs (int or string).
         $schemas = array_filter(
                 $schemas,
                 function ($item) {
@@ -355,7 +355,7 @@ class Register extends Entity implements JsonSerializable
             $deleted = $this->deleted->format('c');
         }
 
-        // Always return schemas as array of IDs (int/string)
+        // Always return schemas as array of IDs (int/string).
         $schemas = array_filter(
                 $this->schemas ?? [],
                 function ($item) {
@@ -385,25 +385,25 @@ class Register extends Entity implements JsonSerializable
             'groups'        => $groups,
             'quota'         => [
                 'storage'   => null,
-        // To be set via admin configuration
+        // To be set via admin configuration.
                 'bandwidth' => null,
-        // To be set via admin configuration
+        // To be set via admin configuration.
                 'requests'  => null,
-        // To be set via admin configuration
+        // To be set via admin configuration.
                 'users'     => null,
-        // To be set via admin configuration
+        // To be set via admin configuration.
                 'groups'    => null,
-        // To be set via admin configuration
+        // To be set via admin configuration.
             ],
             'usage'         => [
                 'storage'   => 0,
-            // To be calculated from actual usage
+            // To be calculated from actual usage.
                 'bandwidth' => 0,
-            // To be calculated from actual usage
+            // To be calculated from actual usage.
                 'requests'  => 0,
-            // To be calculated from actual usage
+            // To be calculated from actual usage.
                 'users'     => 0,
-            // Registers don't have direct users
+            // Registers don't have direct users.
                 'groups'    => count($groups),
             ],
             'deleted'       => $deleted,
@@ -422,17 +422,17 @@ class Register extends Entity implements JsonSerializable
      */
     public function __toString(): string
     {
-        // Return the register title if available, otherwise return a descriptive string
+        // Return the register title if available, otherwise return a descriptive string.
         if ($this->title !== null && $this->title !== '') {
             return $this->title;
         }
 
-        // Fallback to slug if title is not available
+        // Fallback to slug if title is not available.
         if ($this->slug !== null && $this->slug !== '') {
             return $this->slug;
         }
 
-        // Final fallback with ID
+        // Final fallback with ID.
         return 'Register #'.($this->id ?? 'unknown');
 
     }//end __toString()

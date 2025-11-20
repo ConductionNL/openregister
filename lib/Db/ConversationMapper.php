@@ -34,7 +34,6 @@ use OCP\IDBConnection;
  * @template-extends QBMapper<Conversation>
  *
  * @psalm-suppress MissingTemplateParam
- */
  *
  * @method Conversation insert(Entity $entity)
  * @method Conversation update(Entity $entity)
@@ -73,14 +72,14 @@ class ConversationMapper extends QBMapper
     public function insert(Entity $entity): Entity
     {
         if ($entity instanceof Conversation) {
-            // Ensure UUID is set
+            // Ensure UUID is set.
             $uuid = $entity->getUuid();
             if (!$uuid || trim($uuid) === '') {
                 $newUuid = \Symfony\Component\Uid\Uuid::v4()->toRfc4122();
                 $entity->setUuid($newUuid);
             }
 
-            // Set timestamps if not already set
+            // Set timestamps if not already set.
             if ($entity->getCreated() === null) {
                 $entity->setCreated(new \DateTime());
             }
@@ -107,7 +106,7 @@ class ConversationMapper extends QBMapper
     public function update(Entity $entity): Entity
     {
         if ($entity instanceof Conversation) {
-            // Always update the updated timestamp
+            // Always update the updated timestamp.
             $entity->setUpdated(new \DateTime());
         }
 
@@ -186,7 +185,7 @@ class ConversationMapper extends QBMapper
             ->from($this->tableName)
             ->where($qb->expr()->eq('user_id', $qb->createNamedParameter($userId, IQueryBuilder::PARAM_STR)));
 
-        // Filter by organisation if provided
+        // Filter by organisation if provided.
         if ($organisation !== null) {
             $qb->andWhere($qb->expr()->eq('organisation', $qb->createNamedParameter($organisation, IQueryBuilder::PARAM_STR)));
         }
@@ -228,7 +227,7 @@ class ConversationMapper extends QBMapper
             ->where($qb->expr()->eq('user_id', $qb->createNamedParameter($userId, IQueryBuilder::PARAM_STR)))
             ->andWhere($qb->expr()->isNotNull('deleted_at'));
 
-        // Filter by organisation if provided
+        // Filter by organisation if provided.
         if ($organisation !== null) {
             $qb->andWhere($qb->expr()->eq('organisation', $qb->createNamedParameter($organisation, IQueryBuilder::PARAM_STR)));
         }
@@ -302,7 +301,7 @@ class ConversationMapper extends QBMapper
             ->andWhere($qb->expr()->eq('agent_id', $qb->createNamedParameter($agentId, IQueryBuilder::PARAM_INT)))
             ->andWhere($qb->expr()->like('title', $qb->createNamedParameter($titlePattern, IQueryBuilder::PARAM_STR)))
             ->andWhere($qb->expr()->isNull('deleted_at'));
-        // Only active conversations
+        // Only active conversations.
         $result = $qb->executeQuery();
         $titles = [];
 
@@ -375,7 +374,7 @@ class ConversationMapper extends QBMapper
             ->from($this->tableName)
             ->where($qb->expr()->eq('user_id', $qb->createNamedParameter($userId, IQueryBuilder::PARAM_STR)));
 
-        // Filter by organisation if provided
+        // Filter by organisation if provided.
         if ($organisation !== null) {
             $qb->andWhere($qb->expr()->eq('organisation', $qb->createNamedParameter($organisation, IQueryBuilder::PARAM_STR)));
         }
@@ -413,7 +412,7 @@ class ConversationMapper extends QBMapper
             ->where($qb->expr()->eq('user_id', $qb->createNamedParameter($userId, IQueryBuilder::PARAM_STR)))
             ->andWhere($qb->expr()->isNotNull('deleted_at'));
 
-        // Filter by organisation if provided
+        // Filter by organisation if provided.
         if ($organisation !== null) {
             $qb->andWhere($qb->expr()->eq('organisation', $qb->createNamedParameter($organisation, IQueryBuilder::PARAM_STR)));
         }
@@ -514,12 +513,12 @@ class ConversationMapper extends QBMapper
      */
     public function canUserAccessConversation(Conversation $conversation, string $userId, ?string $organisationUuid=null): bool
     {
-        // User must be the owner
+        // User must be the owner.
         if ($conversation->getUserId() !== $userId) {
             return false;
         }
 
-        // If organisation is provided, conversation must belong to it
+        // If organisation is provided, conversation must belong to it.
         if ($organisationUuid !== null && $conversation->getOrganisation() !== $organisationUuid) {
             return false;
         }

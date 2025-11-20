@@ -153,7 +153,7 @@ class FileService
         private readonly VersionManager $versionManager,
         private readonly FileMapper $fileMapper
     ) {
-        // Dependency injection confirmed working - debug logging removed
+        // Dependency injection confirmed working - debug logging removed.
     }//end __construct()
 
     /**
@@ -174,11 +174,11 @@ class FileService
      */
     private function extractFileNameFromPath(string $filePath): array
     {
-        // Clean and decode the file path
+        // Clean and decode the file path.
         $cleanPath = trim(string: $filePath, characters: '/');
         $cleanPath = urldecode($cleanPath);
 
-        // Extract just the filename if the path contains a folder ID prefix (like "8010/filename.ext")
+        // Extract just the filename if the path contains a folder ID prefix (like "8010/filename.ext").
         $fileName = $cleanPath;
         if (str_contains($cleanPath, '/')) {
             $pathParts = explode('/', $cleanPath);
@@ -201,7 +201,7 @@ class FileService
      */
     public function createNewVersion(File $file, ?string $filename=null): File
     {
-        // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues
+        // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues.
         $this->checkOwnership($file);
 
         $this->versionManager->createVersion(user: $this->userManager->get(self::APP_USER), file: $file);
@@ -227,7 +227,7 @@ class FileService
             return $file;
         }
 
-        // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues
+        // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues.
         $this->checkOwnership($file);
 
         return $this->versionManager->getVersionFile($this->userManager->get(self::APP_USER), $file, $version);
@@ -386,7 +386,7 @@ class FileService
      */
     public function createEntityFolder(Register | ObjectEntity $entity): ?Node
     {
-        // Get the current user for sharing
+        // Get the current user for sharing.
         $currentUser = $this->getCurrentUser();
 
         try {
@@ -422,7 +422,7 @@ class FileService
     {
         $folderProperty = $register->getFolder();
 
-        // Check if folder ID is already set and valid (not legacy string)
+        // Check if folder ID is already set and valid (not legacy string).
         if ($folderProperty !== null && $folderProperty !== '' && !is_string($folderProperty)) {
             try {
                 $existingFolder = $this->getNodeById((int) $folderProperty);
@@ -435,23 +435,23 @@ class FileService
             }
         }
 
-        // Create the folder path and node
+        // Create the folder path and node.
         $registerFolderName = $this->getRegisterFolderName($register);
         $folderPath = self::ROOT_FOLDER . '/' . $registerFolderName;
 
         $folderNode = $this->createFolderPath($folderPath);
 
         if ($folderNode !== null) {
-            // Store the folder ID instead of the path
+            // Store the folder ID instead of the path.
             $register->setFolder((string) $folderNode->getId());
             $this->registerMapper->update($register);
 
             $this->logger->info("Created register folder with ID: " . $folderNode->getId());
 
-            // Transfer ownership to OpenRegister and share with current user if needed
+            // Transfer ownership to OpenRegister and share with current user if needed.
             $this->transferFolderOwnershipIfNeeded($folderNode);
 
-            // Share the folder with the currently active user if there is one
+            // Share the folder with the currently active user if there is one.
             if ($currentUser !== null && $currentUser->getUID() !== $this->getUser()->getUID()) {
                 $this->shareFolderWithUser($folderNode, $currentUser->getUID());
             }
@@ -482,7 +482,7 @@ class FileService
             $folderProperty = $objectEntity->getFolder();
         }
 
-        // Check if folder ID is already set and valid (not legacy string)
+        // Check if folder ID is already set and valid (not legacy string).
         if ($folderProperty !== null && $folderProperty !== '' && !is_string($folderProperty)) {
             try {
                 $existingFolder = $this->getNodeById((int) $folderProperty);
@@ -495,7 +495,7 @@ class FileService
             }
         }
 
-        // Ensure register folder exists first
+        // Ensure register folder exists first.
         $register = null;
         if ($objectEntity instanceof ObjectEntity === true) {
             $register = $this->registerMapper->find($objectEntity->getRegister());
@@ -519,20 +519,20 @@ class FileService
             throw new Exception("Failed to create or access register folder");
         }
 
-        // Create object folder within the register folder
+        // Create object folder within the register folder.
         $objectFolderName = $this->getObjectFolderName($objectEntity);
 
         try {
-            // Try to get existing folder first
+            // Try to get existing folder first.
             $objectFolder = $registerFolder->get($objectFolderName);
             $this->logger->info("Object folder already exists: " . $objectFolderName);
         } catch (NotFoundException) {
-            // Create new folder if it doesn't exist
+            // Create new folder if it doesn't exist.
             $objectFolder = $registerFolder->newFolder($objectFolderName);
             $this->logger->info("Created object folder: " . $objectFolderName);
         }
 
-        // Store the folder ID
+        // Store the folder ID.
         if ($objectEntity instanceof ObjectEntity === true) {
             $objectEntity->setFolder((string) $objectFolder->getId());
             $this->objectEntityMapper->update($objectEntity);
@@ -540,10 +540,10 @@ class FileService
 
         $this->logger->info("Created object folder with ID: " . $objectFolder->getId());
 
-        // Transfer ownership to OpenRegister and share with current user if needed
+        // Transfer ownership to OpenRegister and share with current user if needed.
         $this->transferFolderOwnershipIfNeeded($objectFolder);
 
-        // Share the folder with the currently active user if there is one
+        // Share the folder with the currently active user if there is one.
         if ($currentUser !== null && $currentUser->getUID() !== $this->getUser()->getUID()) {
             $this->shareFolderWithUser($objectFolder, $currentUser->getUID());
         }
@@ -654,20 +654,20 @@ class FileService
     {
         $folderProperty = $register->getFolder();
 
-        // Handle legacy cases where folder might be null, empty string, or a string path
+        // Handle legacy cases where folder might be null, empty string, or a string path.
         if ($folderProperty === null || $folderProperty === '' || is_string($folderProperty)) {
             $this->logger->info("Register {$register->getId()} has legacy folder property, creating new folder");
             return $this->createRegisterFolderById($register);
         }
 
-        // Try to get folder by ID
+        // Try to get folder by ID.
         $folder = $this->getNodeById((int) $folderProperty);
 
         if ($folder instanceof Folder) {
             return $folder;
         }
 
-        // If stored ID is invalid, recreate the folder
+        // If stored ID is invalid, recreate the folder.
         $this->logger->warning("Register {$register->getId()} has invalid folder ID, recreating folder");
         return $this->createRegisterFolderById($register);
     }//end getRegisterFolderById()
@@ -690,24 +690,24 @@ class FileService
             $folderProperty = $objectEntity->getFolder();
         }
 
-        // Handle legacy cases where folder might be null, empty string, or a non-numeric string path
+        // Handle legacy cases where folder might be null, empty string, or a non-numeric string path.
         if ($folderProperty === null || $folderProperty === '' || (is_string($folderProperty) && !is_numeric($folderProperty))) {
             $objectEntityId = ($objectEntity instanceof ObjectEntity ? $objectEntity->getId() : $objectEntity);
             $this->logger->info("Object $objectEntityId has legacy folder property, creating new folder");
             return $this->createObjectFolderById(objectEntity: $objectEntity, registerId: $registerId);
         }
 
-        // Convert string numeric ID to integer
+        // Convert string numeric ID to integer.
         $folderId = is_string($folderProperty) ? (int) $folderProperty : (int) $folderProperty;
 
-        // Try to get folder by ID
+        // Try to get folder by ID.
         $folder = $this->getNodeById($folderId);
 
         if ($folder instanceof Folder) {
             return $folder;
         }
 
-        // If stored ID is invalid, recreate the folder
+        // If stored ID is invalid, recreate the folder.
         $this->logger->warning("Object {$objectEntity->getId()} has invalid folder ID, recreating folder");
 
         return $this->createObjectFolderById(objectEntity: $objectEntity);
@@ -753,16 +753,16 @@ class FileService
             }
 
             try {
-                // Try to get the folder if it already exists
+                // Try to get the folder if it already exists.
                 $node = $userFolder->get(path: $folderPath);
                 $this->logger->info("This folder already exists: $folderPath");
                 return $node;
             } catch (NotFoundException) {
-                // Folder does not exist, create it
+                // Folder does not exist, create it.
                 $node = $userFolder->newFolder(path: $folderPath);
                 $this->logger->info("Created folder: $folderPath");
 
-                // Transfer ownership to OpenRegister and share with current user if needed
+                // Transfer ownership to OpenRegister and share with current user if needed.
                 $this->transferFolderOwnershipIfNeeded($node);
 
                 return $node;
@@ -915,18 +915,18 @@ class FileService
     private function checkOwnership(Node $file): void
     {
         try {
-            // Try to read the file to trigger any potential access issues
+            // Try to read the file to trigger any potential access issues.
             if ($file instanceof File) {
                 $file->getContent();
             } else {
-                // For folders, try to list contents
+                // For folders, try to list contents.
                 $file->getDirectoryListing();
             }
 
-            // If we get here, the file is accessible
+            // If we get here, the file is accessible.
             $this->logger->debug("checkOwnership: File {$file->getName()} (ID: {$file->getId()}) is accessible, no ownership fix needed");
         } catch (NotFoundException $e) {
-            // File exists but we can't access it - likely an ownership issue
+            // File exists but we can't access it - likely an ownership issue.
             $this->logger->warning("checkOwnership: File {$file->getName()} (ID: {$file->getId()}) exists but not accessible, checking ownership");
 
             try {
@@ -953,7 +953,7 @@ class FileService
                 throw new Exception("Ownership check failed for file: " . $file->getName());
             }
         } catch (NotPermittedException $e) {
-            // Permission denied - likely an ownership issue
+            // Permission denied - likely an ownership issue.
             $this->logger->warning("checkOwnership: Permission denied for file {$file->getName()} (ID: {$file->getId()}), attempting ownership fix");
 
             try {
@@ -970,7 +970,7 @@ class FileService
                 throw new Exception("Ownership fix failed after permission error: " . $file->getName());
             }
         } catch (Exception $e) {
-            // Other exceptions - log but don't necessarily fix ownership
+            // Other exceptions - log but don't necessarily fix ownership.
             $this->logger->debug("checkOwnership: Other exception while checking file {$file->getName()}: " . $e->getMessage());
         }
     }//end checkOwnership()
@@ -988,7 +988,7 @@ class FileService
             $userFolder = $this->getOpenRegisterUserFolder();
             $node = $userFolder->get(path: $path);
 
-            // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues
+            // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues.
             $this->checkOwnership($node);
 
             return $node;
@@ -1010,7 +1010,7 @@ class FileService
      */
     public function formatFile(Node $file): array
     {
-        // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues
+        // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues.
         $this->checkOwnership($file);
 
         // IShare documentation see https://nextcloud-server.netlify.app/classes/ocp-share-ishare.
@@ -1037,7 +1037,7 @@ class FileService
         // Exclude labels starting with 'object:' as they are internal system labels.
         $remainingLabels = [];
         foreach ($metadata['labels'] as $label) {
-            // Skip internal object labels - these should not be exposed in the API
+            // Skip internal object labels - these should not be exposed in the API.
             if (str_starts_with($label, 'object:')) {
                 continue;
             }
@@ -1111,7 +1111,7 @@ class FileService
      */
     public function formatFiles(array $files, ?array $requestParams=[]): array
     {
-        // Extract pagination parameters
+        // Extract pagination parameters.
         $limit = $requestParams['limit'] ?? $requestParams['_limit'] ?? 20;
         $offset = $requestParams['offset'] ?? $requestParams['_offset'] ?? 0;
         $order = $requestParams['order'] ?? $requestParams['_order'] ?? [];
@@ -1124,7 +1124,7 @@ class FileService
             $offset = $limit * ($page - 1);
         }
 
-        // Ensure order and extend are arrays
+        // Ensure order and extend are arrays.
         if (is_string($order) === true) {
             $order = array_map('trim', explode(',', $order));
         }
@@ -1132,25 +1132,25 @@ class FileService
             $extend = array_map('trim', explode(',', $extend));
         }
 
-        // Extract filter parameters
+        // Extract filter parameters.
         $filters = $this->extractFilterParameters($requestParams);
 
-        // Format ALL files first (before filtering and pagination)
+        // Format ALL files first (before filtering and pagination).
         $formattedFiles = [];
         foreach ($files as $file) {
             $formattedFiles[] = $this->formatFile($file);
         }
 
-        // Apply filters to formatted files
+        // Apply filters to formatted files.
         $filteredFiles = $this->applyFileFilters($formattedFiles, $filters);
 
-        // Count total after filtering but before pagination
+        // Count total after filtering but before pagination.
         $totalFiltered = count($filteredFiles);
 
-        // Apply pagination to filtered results
+        // Apply pagination to filtered results.
         $paginatedFiles = array_slice($filteredFiles, $offset, $limit);
 
-        // Calculate pages based on filtered total
+        // Calculate pages based on filtered total.
         $pages = $limit !== null ? ceil($totalFiltered / $limit) : 1;
 
         return [
@@ -1191,7 +1191,7 @@ class FileService
     {
         $filters = [];
 
-        // Labels filtering (business logic filters prefixed with underscore)
+        // Labels filtering (business logic filters prefixed with underscore).
         if (isset($requestParams['_hasLabels'])) {
             $filters['_hasLabels'] = (bool) $requestParams['_hasLabels'];
         }
@@ -1209,7 +1209,7 @@ class FileService
             }
         }
 
-        // Extension filtering
+        // Extension filtering.
         if (isset($requestParams['extension'])) {
             $filters['extension'] = trim($requestParams['extension']);
         }
@@ -1223,7 +1223,7 @@ class FileService
             }
         }
 
-        // Size filtering
+        // Size filtering.
         if (isset($requestParams['minSize'])) {
             $filters['minSize'] = (int) $requestParams['minSize'];
         }
@@ -1232,7 +1232,7 @@ class FileService
             $filters['maxSize'] = (int) $requestParams['maxSize'];
         }
 
-        // Title/search filtering
+        // Title/search filtering.
         if (isset($requestParams['title'])) {
             $filters['title'] = trim($requestParams['title']);
         }
@@ -1270,7 +1270,7 @@ class FileService
         }
 
         return array_filter($formattedFiles, function (array $file) use ($filters): bool {
-            // Filter by label presence (business logic filter)
+            // Filter by label presence (business logic filter).
             if (isset($filters['_hasLabels'])) {
                 $hasLabels = !empty($file['labels']);
                 if ($filters['_hasLabels'] !== $hasLabels) {
@@ -1286,7 +1286,7 @@ class FileService
                 }
             }
 
-            // Filter by specific labels
+            // Filter by specific labels.
             if (isset($filters['labels']) && !empty($filters['labels'])) {
                 $fileLabels = $file['labels'] ?? [];
                 $hasMatchingLabel = false;
@@ -1303,7 +1303,7 @@ class FileService
                 }
             }
 
-            // Filter by single extension
+            // Filter by single extension.
             if (isset($filters['extension'])) {
                 $fileExtension = $file['extension'] ?? '';
                 if (strcasecmp($fileExtension, $filters['extension']) !== 0) {
@@ -1311,7 +1311,7 @@ class FileService
                 }
             }
 
-            // Filter by multiple extensions
+            // Filter by multiple extensions.
             if (isset($filters['extensions']) && !empty($filters['extensions'])) {
                 $fileExtension = $file['extension'] ?? '';
                 $hasMatchingExtension = false;
@@ -1328,7 +1328,7 @@ class FileService
                 }
             }
 
-            // Filter by file size range
+            // Filter by file size range.
             if (isset($filters['minSize'])) {
                 $fileSize = $file['size'] ?? 0;
                 if ($fileSize < $filters['minSize']) {
@@ -1343,7 +1343,7 @@ class FileService
                 }
             }
 
-            // Filter by title/filename content
+            // Filter by title/filename content.
             if (isset($filters['title']) && !empty($filters['title'])) {
                 $fileTitle = $file['title'] ?? '';
                 if (stripos($fileTitle, $filters['title']) === false) {
@@ -1351,7 +1351,7 @@ class FileService
                 }
             }
 
-            // Filter by search term (searches in title)
+            // Filter by search term (searches in title).
             if (isset($filters['search']) && !empty($filters['search'])) {
                 $fileTitle = $file['title'] ?? '';
                 if (stripos($fileTitle, $filters['search']) === false) {
@@ -1359,7 +1359,7 @@ class FileService
                 }
             }
 
-            // File passed all filters
+            // File passed all filters.
             return true;
         });
     }//end applyFileFilters()
@@ -1373,8 +1373,8 @@ class FileService
      */
     private function getFileTags(string $fileId): array
     {
-        // @TODO: This method takes a file ID instead of a Node, so we can't check ownership here
-        // @TODO: The ownership check should be done on the Node before calling this method
+        // @TODO: This method takes a file ID instead of a Node, so we can't check ownership here.
+        // @TODO: The ownership check should be done on the Node before calling this method.
 
         $tagIds = $this->systemTagMapper->getTagIdsForObjects(
             objIds: [$fileId],
@@ -1403,11 +1403,11 @@ class FileService
      */
     public function findShares(Node $file, int $shareType=3): array
     {
-        // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues
+        // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues.
         $this->checkOwnership($file);
 
-        // Use the OpenRegister system user instead of current user session
-        // This ensures we can find shares created by the OpenRegister system user
+        // Use the OpenRegister system user instead of current user session.
+        // This ensures we can find shares created by the OpenRegister system user.
         $userId = $this->getUser()->getUID();
 
         return $this->shareManager->getSharesBy(userId: $userId, shareType: $shareType, path: $file, reshares: true);
@@ -1424,7 +1424,7 @@ class FileService
     public function findShare(string $path, ?int $shareType=3): ?IShare
     {
         $path = trim(string: $path, characters: '/');
-        // Use the OpenRegister system user for consistency
+        // Use the OpenRegister system user for consistency.
         $userId = $this->getUser()->getUID();
 
         try {
@@ -1443,7 +1443,7 @@ class FileService
         }
 
         if ($file instanceof File) {
-            // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues
+            // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues.
             $this->checkOwnership($file);
 
             $shares = $this->shareManager->getSharesBy(userId: $userId, shareType: $shareType, path: $file, reshares: true);
@@ -1521,13 +1521,13 @@ class FileService
     private function shareFolderWithUser(Node $folder, string $userId, int $permissions = 31): ?IShare
     {
         try {
-            // Check if user exists
+            // Check if user exists.
             if (!$this->userManager->userExists($userId)) {
                 $this->logger->warning("Cannot share folder with user '$userId' - user does not exist");
                 return null;
             }
 
-            // Create the share
+            // Create the share.
             $share = $this->createShare([
                 'path'        => ltrim($folder->getPath(), '/'),
                 'nodeId'      => $folder->getId(),
@@ -1577,25 +1577,25 @@ class FileService
     private function transferFileOwnershipIfNeeded(File $file): void
     {
         try {
-            // Get current user
+            // Get current user.
             $currentUser = $this->getCurrentUser();
             if ($currentUser === null) {
-                // No user logged in, nothing to do
+                // No user logged in, nothing to do.
                 return;
             }
 
             $currentUserId = $currentUser->getUID();
 
-            // Get OpenRegister system user
+            // Get OpenRegister system user.
             $openRegisterUser = $this->getUser();
             $openRegisterUserId = $openRegisterUser->getUID();
 
-            // If current user is already the OpenRegister user, nothing to do
+            // If current user is already the OpenRegister user, nothing to do.
             if ($currentUserId === $openRegisterUserId) {
                 return;
             }
 
-            // Get file owner
+            // Get file owner.
             $fileOwner = $file->getOwner();
             if ($fileOwner === null) {
                 $this->logger->warning("File {$file->getName()} has no owner, skipping ownership transfer");
@@ -1604,22 +1604,22 @@ class FileService
 
             $fileOwnerId = $fileOwner->getUID();
 
-            // Check if current user is the owner and is not OpenRegister
+            // Check if current user is the owner and is not OpenRegister.
             if ($fileOwnerId === $currentUserId && $currentUserId !== $openRegisterUserId) {
                 $this->logger->info("Transferring ownership of file {$file->getName()} from {$currentUserId} to {$openRegisterUserId}");
 
-                // Change file ownership to OpenRegister user
+                // Change file ownership to OpenRegister user.
                 $file->getStorage()->chown($file->getInternalPath(), $openRegisterUserId);
 
-                // Create a share with the current user to maintain access
+                // Create a share with the current user to maintain access.
                 $this->shareFileWithUser($file, $currentUserId);
 
                 $this->logger->info("Successfully transferred ownership and shared file {$file->getName()} with {$currentUserId}");
             }
         } catch (\Exception $e) {
             $this->logger->error("Failed to transfer file ownership for {$file->getName()}: " . $e->getMessage());
-            // Don't throw the exception to avoid breaking file operations
-            // The file operation should succeed even if ownership transfer fails
+            // Don't throw the exception to avoid breaking file operations.
+            // The file operation should succeed even if ownership transfer fails.
         }
     }//end transferFileOwnershipIfNeeded()
 
@@ -1637,7 +1637,7 @@ class FileService
     private function shareFileWithUser(File $file, string $userId, int $permissions = 31): void
     {
         try {
-            // Check if a share already exists with this user
+            // Check if a share already exists with this user.
             $existingShares = $this->shareManager->getSharesBy(
                 sharedBy: $this->getUser()->getUID(),
                 shareType: \OCP\Share\IShare::TYPE_USER,
@@ -1651,7 +1651,7 @@ class FileService
                 }
             }
 
-            // Create new share
+            // Create new share.
             $share = $this->shareManager->newShare();
             $share->setNode($file);
             $share->setShareType(\OCP\Share\IShare::TYPE_USER);
@@ -1684,25 +1684,25 @@ class FileService
     private function transferFolderOwnershipIfNeeded(Node $folder): void
     {
         try {
-            // Get current user
+            // Get current user.
             $currentUser = $this->getCurrentUser();
             if ($currentUser === null) {
-                // No user logged in, nothing to do
+                // No user logged in, nothing to do.
                 return;
             }
 
             $currentUserId = $currentUser->getUID();
 
-            // Get OpenRegister system user
+            // Get OpenRegister system user.
             $openRegisterUser = $this->getUser();
             $openRegisterUserId = $openRegisterUser->getUID();
 
-            // If current user is already the OpenRegister user, nothing to do
+            // If current user is already the OpenRegister user, nothing to do.
             if ($currentUserId === $openRegisterUserId) {
                 return;
             }
 
-            // Get folder owner
+            // Get folder owner.
             $folderOwner = $folder->getOwner();
             if ($folderOwner === null) {
                 $this->logger->warning("Folder {$folder->getName()} has no owner, skipping ownership transfer");
@@ -1711,22 +1711,22 @@ class FileService
 
             $folderOwnerId = $folderOwner->getUID();
 
-            // Check if current user is the owner and is not OpenRegister
+            // Check if current user is the owner and is not OpenRegister.
             if ($folderOwnerId === $currentUserId && $currentUserId !== $openRegisterUserId) {
                 $this->logger->info("Transferring ownership of folder {$folder->getName()} from {$currentUserId} to {$openRegisterUserId}");
 
-                // Change folder ownership to OpenRegister user
+                // Change folder ownership to OpenRegister user.
                 $folder->getStorage()->chown($folder->getInternalPath(), $openRegisterUserId);
 
-                // Create a share with the current user to maintain access
+                // Create a share with the current user to maintain access.
                 $this->shareFolderWithUser($folder, $currentUserId);
 
                 $this->logger->info("Successfully transferred ownership and shared folder {$folder->getName()} with {$currentUserId}");
             }
         } catch (\Exception $e) {
             $this->logger->error("Failed to transfer folder ownership for {$folder->getName()}: " . $e->getMessage());
-            // Don't throw the exception to avoid breaking folder operations
-            // The folder operation should succeed even if ownership transfer fails
+            // Don't throw the exception to avoid breaking folder operations.
+            // The folder operation should succeed even if ownership transfer fails.
         }
     }//end transferFolderOwnershipIfNeeded()
 
@@ -1770,7 +1770,7 @@ class FileService
             return 'File not found at '.$path;
         }
 
-        // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues
+        // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues.
         $this->checkOwnership($file);
 
         try {
@@ -1798,7 +1798,7 @@ class FileService
      */
     public function deleteShareLinks(Node $file): Node
     {
-        // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues
+        // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues.
         $this->checkOwnership($file);
 
         // IShare documentation see https://nextcloud-server.netlify.app/classes/ocp-share-ishare.
@@ -1856,16 +1856,16 @@ class FileService
             }
 
             try {
-                // Try to get the folder if it already exists
+                // Try to get the folder if it already exists.
                 $node = $userFolder->get(path: $folderPath);
                 $this->logger->info("This folder already exists: $folderPath");
                 return $node;
             } catch (NotFoundException) {
-                // Folder does not exist, create it
+                // Folder does not exist, create it.
                 $node = $userFolder->newFolder(path: $folderPath);
                 $this->logger->info("Created folder: $folderPath");
 
-                // Transfer ownership to OpenRegister and share with current user if needed
+                // Transfer ownership to OpenRegister and share with current user if needed.
                 $this->transferFolderOwnershipIfNeeded($node);
 
                 return $node;
@@ -1896,18 +1896,18 @@ class FileService
      */
     public function updateFile(string|int $filePath, mixed $content=null, array $tags=[], ?ObjectEntity $object = null): File
     {
-        // Debug logging - original file path
+        // Debug logging - original file path.
         $originalFilePath = $filePath;
         $this->logger->info("updateFile: Original file path received: '$originalFilePath'");
 
         $file = null;
 
-        // If $filePath is an integer (file ID), try to find the file directly by ID
+        // If $filePath is an integer (file ID), try to find the file directly by ID.
         if (is_int($filePath)) {
             $this->logger->info("updateFile: File ID provided: $filePath");
 
             if ($object !== null) {
-                // Try to find the file in the object's folder by ID
+                // Try to find the file in the object's folder by ID.
                 $file = $this->getFile($object, $filePath);
                 if ($file !== null) {
                     $this->logger->info("updateFile: Found file by ID in object folder: " . $file->getName() . " (ID: " . $file->getId() . ")");
@@ -1915,7 +1915,7 @@ class FileService
             }
 
             if ($file === null) {
-                // Try to find the file in the user folder by ID
+                // Try to find the file in the user folder by ID.
                 try {
                     $userFolder = $this->getOpenRegisterUserFolder();
                     $nodes = $userFolder->getById($filePath);
@@ -1932,8 +1932,8 @@ class FileService
                 }
             }
         } else {
-            // Handle string file paths (existing logic)
-            // Clean file path and extract filename using utility method
+            // Handle string file paths (existing logic).
+            // Clean file path and extract filename using utility method.
             $pathInfo = $this->extractFileNameFromPath((string)$filePath);
             $filePath = $pathInfo['cleanPath'];
             $fileName = $pathInfo['fileName'];
@@ -1944,9 +1944,9 @@ class FileService
             }
         }
 
-        // Skip the existing object/user folder search logic for file IDs since we already found the file
+        // Skip the existing object/user folder search logic for file IDs since we already found the file.
         if ($file === null) {
-            // If object is provided, try to find the file in the object folder first
+            // If object is provided, try to find the file in the object folder first.
         if ($object !== null) {
             try {
                 $objectFolder = $this->getObjectFolder($object);
@@ -1955,7 +1955,7 @@ class FileService
                     $this->logger->info("updateFile: Object folder path: " . $objectFolder->getPath());
                     $this->logger->info("updateFile: Object folder ID: " . $objectFolder->getId());
 
-                    // List all files in the object folder for debugging
+                    // List all files in the object folder for debugging.
                     try {
                         $folderFiles = $objectFolder->getDirectoryListing();
                         $fileNames = array_map(fn($f) => $f->getName(), $folderFiles);
@@ -1964,14 +1964,14 @@ class FileService
                         $this->logger->warning("updateFile: Could not list folder contents: " . $e->getMessage());
                     }
 
-                    // Try to get the file from object folder using just the filename
+                    // Try to get the file from object folder using just the filename.
                     try {
                         $file = $objectFolder->get($fileName);
                         $this->logger->info("updateFile: Found file in object folder: " . $file->getName() . " (ID: " . $file->getId() . ")");
                     } catch (NotFoundException) {
                         $this->logger->warning("updateFile: File '$fileName' not found in object folder.");
 
-                        // Also try with the full path in case it's nested
+                        // Also try with the full path in case it's nested.
                         try {
                             $file = $objectFolder->get($filePath);
                             $this->logger->info("updateFile: Found file using full path in object folder: " . $file->getName());
@@ -1989,7 +1989,7 @@ class FileService
             $this->logger->info("updateFile: No object provided, will search in user folder");
         }
 
-        // If object wasn't provided or file wasn't found in object folder, try user folder
+        // If object wasn't provided or file wasn't found in object folder, try user folder.
         if ($file === null) {
             $this->logger->info("updateFile: Trying user folder approach with path: '$filePath'");
             try {
@@ -1999,7 +1999,7 @@ class FileService
             } catch (NotFoundException $e) {
                 $this->logger->error("updateFile: File $filePath not found in user folder either.");
 
-                // Try to find the file by ID if the path starts with a number
+                // Try to find the file by ID if the path starts with a number.
                 if (preg_match('/^(\d+)\//', $filePath, $matches)) {
                     $fileId = (int) $matches[1];
                     $this->logger->info("updateFile: Attempting to find file by ID: $fileId");
@@ -2030,21 +2030,21 @@ class FileService
         // Update the file content if provided and content is not equal to the current content.
         if ($content !== null && $file->hash(type: 'md5') !== md5(string: $content)) {
                 try {
-					// Check if the content is base64 encoded and decode it if necessary
+					// Check if the content is base64 encoded and decode it if necessary.
 					if (base64_encode(base64_decode($content, true)) === $content) {
 						$content = base64_decode($content);
 					}
 
-                // Security: Block executable files
+                // Security: Block executable files.
                 $this->blockExecutableFile($file->getName(), $content);
 
-                // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues
+                // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues.
                 $this->checkOwnership($file);
 
                 $file->putContent(data: $content);
                 $this->logger->info("updateFile: Successfully updated file content: " . $file->getName());
 
-                // Transfer ownership to OpenRegister and share with current user if needed
+                // Transfer ownership to OpenRegister and share with current user if needed.
                 $this->transferFileOwnershipIfNeeded($file);
             } catch (NotPermittedException $e) {
                 $this->logger->error("updateFile: Can't write content to file: ".$e->getMessage());
@@ -2052,15 +2052,15 @@ class FileService
             }
         }
 
-        // Update tags if provided
+        // Update tags if provided.
         if (empty($tags) === false) {
-            // Get existing object tags to preserve them
+            // Get existing object tags to preserve them.
             $existingTags = $this->getFileTags(fileId: $file->getId());
             $objectTags = array_filter($existingTags, static function (string $tag): bool {
                 return str_starts_with($tag, 'object:');
             });
 
-            // Combine object tags with new tags, avoiding duplicates
+            // Combine object tags with new tags, avoiding duplicates.
             $allTags = array_unique(array_merge($objectTags, $tags));
 
             $this->attachTagsToFile(fileId: $file->getId(), tags: $allTags);
@@ -2122,7 +2122,7 @@ class FileService
             return false;
         }
 
-        // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues
+        // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues.
         $this->checkOwnership($file);
 
         try {
@@ -2154,7 +2154,7 @@ class FileService
     private function updateObjectFilesArray(ObjectEntity $object, string $deletedFilePath): void
     {
         try {
-            // Get the current files array from the object
+            // Get the current files array from the object.
             $objectFiles = $object->getFiles() ?? [];
 
             if (empty($objectFiles)) {
@@ -2165,16 +2165,16 @@ class FileService
             $originalCount = count($objectFiles);
             $updatedFiles = [];
 
-            // Extract just the filename from the deleted file path for comparison
+            // Extract just the filename from the deleted file path for comparison.
             $deletedFileName = basename($deletedFilePath);
 
-            // Filter out any files that match the deleted file
+            // Filter out any files that match the deleted file.
             foreach ($objectFiles as $fileEntry) {
                 $shouldKeep = true;
 
-                // Handle different possible structures of file entries
+                // Handle different possible structures of file entries.
                 if (is_array($fileEntry)) {
-                    // Check various possible path fields in the file entry
+                    // Check various possible path fields in the file entry.
                     $pathFields = ['path', 'title', 'name', 'filename', 'accessUrl', 'downloadUrl'];
 
                     foreach ($pathFields as $field) {
@@ -2182,7 +2182,7 @@ class FileService
                             $entryPath = $fileEntry[$field];
                             $entryFileName = basename($entryPath);
 
-                            // Check if this entry references the deleted file
+                            // Check if this entry references the deleted file.
                             if ($entryPath === $deletedFilePath ||
                                 $entryFileName === $deletedFileName ||
                                 str_ends_with($entryPath, $deletedFilePath)) {
@@ -2193,7 +2193,7 @@ class FileService
                         }
                     }
                 } else if (is_string($fileEntry)) {
-                    // Handle simple string entries
+                    // Handle simple string entries.
                     $entryFileName = basename($fileEntry);
                     if ($fileEntry === $deletedFilePath ||
                         $entryFileName === $deletedFileName ||
@@ -2208,7 +2208,7 @@ class FileService
                 }
             }
 
-            // Only update the object if files were actually removed
+            // Only update the object if files were actually removed.
             if (count($updatedFiles) < $originalCount) {
                 $removedCount = $originalCount - count($updatedFiles);
                 $this->logger->info("Removed $removedCount file reference(s) from object {$object->getId()}");
@@ -2300,7 +2300,7 @@ class FileService
 			return 'object:'.$objectEntity;
 		}
 
-        // Use UUID if available, otherwise fall back to the numeric ID
+        // Use UUID if available, otherwise fall back to the numeric ID.
         $identifier = $objectEntity->getUuid() ?? (string) $objectEntity->getId();
         return 'object:' . $identifier;
     }//end generateObjectTag()
@@ -2331,29 +2331,29 @@ class FileService
     public function addFile(ObjectEntity | string $objectEntity, string $fileName, string $content, bool $share = false, array $tags = [], int | string | Schema | null $schema = null, int | string | Register | null $register = null, int|string|null $registerId = null): File
     {
 		try {
-			// Ensure we have an ObjectEntity instance
+			// Ensure we have an ObjectEntity instance.
 			if (is_string($objectEntity)) {
                 try {
 				    $objectEntity = $this->objectEntityMapper->find($objectEntity);
                 } catch (DoesNotExistException) {
-                    // In this case it is a possibility the object gets created later in a process (for example: synchronization) so we create the file for a given uuid
+                    // In this case it is a possibility the object gets created later in a process (for example: synchronization) so we create the file for a given uuid.
                 }
 			}
 
-			// Use the new ID-based folder approach
+			// Use the new ID-based folder approach.
             $folder = $this->getObjectFolder(objectEntity: $objectEntity, registerId: $registerId);
 
-            // Check if the content is base64 encoded and decode it if necessary
+            // Check if the content is base64 encoded and decode it if necessary.
             if (base64_encode(base64_decode($content, true)) === $content) {
                 $content = base64_decode($content);
             }
 
-            // Check if the file name is empty
+            // Check if the file name is empty.
             if (empty($fileName) === true) {
                 throw new Exception("Failed to create file because no filename has been provided for object " . $objectEntity->getId());
             }
 
-            // Security: Block executable files
+            // Security: Block executable files.
             $this->blockExecutableFile($fileName, $content);
 
             /**
@@ -2361,30 +2361,30 @@ class FileService
              */
             $file = $folder->newFile($fileName);
 
-            // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues
+            // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues.
             $this->checkOwnership($file);
 
-            // Write content to the file
+            // Write content to the file.
             $file->putContent($content);
 
-            // Transfer ownership to OpenRegister and share with current user if needed
+            // Transfer ownership to OpenRegister and share with current user if needed.
             $this->transferFileOwnershipIfNeeded($file);
 
-            // Create a share link for the file if requested
+            // Create a share link for the file if requested.
             if ($share === true) {
                 $this->createShareLink(path: $file->getPath());
             }
 
-            // Automatically add object tag with the object's UUID
+            // Automatically add object tag with the object's UUID.
             $objectTag = $this->generateObjectTag($objectEntity);
             $allTags = array_merge([$objectTag], $tags);
 
-            // Add tags to the file (including the automatic object tag)
+            // Add tags to the file (including the automatic object tag).
             if (empty($allTags) === false) {
                 $this->attachTagsToFile(fileId: $file->getId(), tags: $allTags);
             }
 
-            //@TODO: This sets the file array of an object, but we should check why this array is not added elsewhere
+            // @TODO: This sets the file array of an object, but we should check why this array is not added elsewhere.
 //                $objectFiles = $objectEntity->getFiles();
 //
 //                $objectFiles[] = $this->formatFile($file);
@@ -2395,11 +2395,11 @@ class FileService
             return $file;
 
         } catch (NotPermittedException $e) {
-            // Log permission error and rethrow exception
+            // Log permission error and rethrow exception.
             $this->logger->error("Permission denied creating file $fileName: ".$e->getMessage());
             throw new NotPermittedException("Cannot create file $fileName: ".$e->getMessage());
         } catch (\Exception $e) {
-            // Log general error and rethrow exception
+            // Log general error and rethrow exception.
             $this->logger->error("Failed to create file $fileName: ".$e->getMessage());
             throw new \Exception("Failed to create file $fileName: ".$e->getMessage());
         }
@@ -2430,17 +2430,17 @@ class FileService
     public function saveFile(ObjectEntity $objectEntity, string $fileName, string $content, bool $share = false, array $tags = []): File
     {
 		try {
-            // Check if the file already exists for this object
+            // Check if the file already exists for this object.
             $existingFile = $this->getFile(
                 object: $objectEntity,
                 file: $fileName
             );
 
             if ($existingFile !== null) {
-                // File exists, update it
+                // File exists, update it.
                 $this->logger->info("File $fileName already exists for object {$objectEntity->getId()}, updating...");
 
-                // Update the existing file - pass the object so updateFile can find it in the object folder
+                // Update the existing file - pass the object so updateFile can find it in the object folder.
                 return $this->updateFile(
                     filePath: $fileName,  // Just pass the filename, not the full path
                     content: $content,
@@ -2448,7 +2448,7 @@ class FileService
                     object: $objectEntity  // Pass the object so updateFile can locate the file
                 );
             } else {
-                // File doesn't exist, create it
+                // File doesn't exist, create it.
                 $this->logger->info("File $fileName doesn't exist for object {$objectEntity->getId()}, creating...");
 
                 return $this->addFile(
@@ -2460,11 +2460,11 @@ class FileService
                 );
             }
         } catch (NotPermittedException $e) {
-            // Log permission error and rethrow exception
+            // Log permission error and rethrow exception.
             $this->logger->error("Permission denied saving file $fileName: ".$e->getMessage());
             throw new NotPermittedException("Cannot save file $fileName: ".$e->getMessage());
         } catch (\Exception $e) {
-            // Log general error and rethrow exception
+            // Log general error and rethrow exception.
             $this->logger->error("Failed to save file $fileName: ".$e->getMessage());
             throw new \Exception("Failed to save file $fileName: ".$e->getMessage());
         }
@@ -2487,10 +2487,10 @@ class FileService
     public function getAllTags(): array
     {
         try {
-            // Get all tags that are visible and assignable by users
+            // Get all tags that are visible and assignable by users.
             $tags = $this->systemTagManager->getAllTags(visibilityFilter: true);
 
-            // Extract just the tag names and filter out those starting with 'object:'
+            // Extract just the tag names and filter out those starting with 'object:'.
             $tagNames = array_filter(
                 array_map(static function ($tag) {
                     return $tag->getName();
@@ -2500,7 +2500,7 @@ class FileService
                 }
             );
 
-            // Return sorted array of tag names
+            // Return sorted array of tag names.
             sort($tagNames);
             return array_values($tagNames);
         } catch (\Exception $e) {
@@ -2527,12 +2527,12 @@ class FileService
      */
     public function getFiles(ObjectEntity | string $object, ?bool $sharedFilesOnly = false): array
     {
-        // If string ID provided, try to find the object entity
+        // If string ID provided, try to find the object entity.
         if (is_string($object) === true) {
             $object = $this->objectEntityMapper->find($object);
         }
 
-        // Use the new ID-based folder approach
+        // Use the new ID-based folder approach.
         return $this->getFilesForEntity($object, $sharedFilesOnly);
     }
 
@@ -2563,23 +2563,23 @@ class FileService
     public function getFile(ObjectEntity|string|null $object = null, string|int $file = ''): ?File
     {
 
-        // If string ID provided for object, try to find the object entity
+        // If string ID provided for object, try to find the object entity.
         if (is_string($object) === true && !empty($object)) {
             $object = $this->objectEntityMapper->find($object);
         }
 
-        // Use the new ID-based folder approach
+        // Use the new ID-based folder approach.
         $folder = $this->getObjectFolder($object);
 
-        // If $file is an integer or a string that is an integer, treat as file ID
+        // If $file is an integer or a string that is an integer, treat as file ID.
         if (is_int($file) || (is_string($file) && ctype_digit($file))) {
 
-            // Try to get the file by ID
+            // Try to get the file by ID.
             try {
                 $nodes = $folder->getById((int)$file);
                 if (!empty($nodes) && $nodes[0] instanceof File) {
                     $fileNode = $nodes[0];
-                    // Check ownership for NextCloud rights issues
+                    // Check ownership for NextCloud rights issues.
                     $this->checkOwnership($fileNode);
                     return $fileNode;
                 }
@@ -2587,38 +2587,38 @@ class FileService
                 $this->logger->error('getFile: Error finding file by ID ' . $file . ': ' . $e->getMessage());
                 return null;
             }
-            // If not found by ID, return null
+            // If not found by ID, return null.
             return null;
         }
 
-        // Clean file path and extract filename using utility method
+        // Clean file path and extract filename using utility method.
         $originalFile = $file;
         $pathInfo = $this->extractFileNameFromPath((string)$file);
         $filePath = $pathInfo['cleanPath'];
         $fileName = $pathInfo['fileName'];
 
 
-        // Check if folder exists and get the file
+        // Check if folder exists and get the file.
         if ($folder instanceof Folder === true) {
             try {
-                // First try with just the filename
+                // First try with just the filename.
                 $fileNode = $folder->get($fileName);
 
-                // Check ownership for NextCloud rights issues
+                // Check ownership for NextCloud rights issues.
                 $this->checkOwnership($fileNode);
 
                 return $fileNode;
             } catch (NotFoundException) {
                 try {
-                    // If that fails, try with the full path
+                    // If that fails, try with the full path.
                     $fileNode = $folder->get($filePath);
 
-                    // Check ownership for NextCloud rights issues
+                    // Check ownership for NextCloud rights issues.
                     $this->checkOwnership($fileNode);
 
                     return $fileNode;
                 } catch (NotFoundException) {
-                    // File not found
+                    // File not found.
                     return null;
                 }
             }
@@ -2646,22 +2646,22 @@ class FileService
     public function getFileById(int $fileId): ?File
     {
         try {
-            // Use root folder to search for file by ID
+            // Use root folder to search for file by ID.
             $nodes = $this->rootFolder->getById($fileId);
             
             if (empty($nodes)) {
                 return null;
             }
             
-            // Get the first node (file IDs are unique)
+            // Get the first node (file IDs are unique).
             $node = $nodes[0];
             
-            // Ensure it's a file, not a folder
+            // Ensure it's a file, not a folder.
             if (!($node instanceof File)) {
                 return null;
             }
             
-            // Check ownership for NextCloud rights issues
+            // Check ownership for NextCloud rights issues.
             $this->checkOwnership($node);
             
             return $node;
@@ -2688,10 +2688,10 @@ class FileService
      */
     public function streamFile(File $file): \OCP\AppFramework\Http\StreamResponse
     {
-        // Create a stream response with the file content
+        // Create a stream response with the file content.
         $response = new \OCP\AppFramework\Http\StreamResponse($file->fopen('r'));
         
-        // Set appropriate headers
+        // Set appropriate headers.
         $response->addHeader('Content-Type', $file->getMimeType());
         $response->addHeader('Content-Disposition', 'attachment; filename="' . $file->getName() . '"');
         $response->addHeader('Content-Length', (string) $file->getSize());
@@ -2718,22 +2718,22 @@ class FileService
      */
     public function publishFile(ObjectEntity | string $object, string | int $file): File
     {
-        // If string ID provided, try to find the object entity
+        // If string ID provided, try to find the object entity.
         if (is_string($object) === true) {
             $object = $this->objectEntityMapper->find($object);
         }
 
-        // Debug logging - original file parameter
+        // Debug logging - original file parameter.
         $originalFile = $file;
         $this->logger->info("publishFile: Original file parameter received: '$originalFile'");
 
         $fileNode = null;
 
-        // If $file is an integer (file ID), try to find the file directly by ID
+        // If $file is an integer (file ID), try to find the file directly by ID.
         if (is_int($file)) {
             $this->logger->info("publishFile: File ID provided: $file");
 
-            // Try to find the file in the object's folder by ID
+            // Try to find the file in the object's folder by ID.
             $fileNode = $this->getFile($object, $file);
             if ($fileNode !== null) {
                 $this->logger->info("publishFile: Found file by ID: " . $fileNode->getName() . " (ID: " . $fileNode->getId() . ")");
@@ -2742,8 +2742,8 @@ class FileService
                 throw new Exception("File with ID $file does not exist");
             }
         } else {
-            // Handle string file paths (existing logic)
-            // Clean file path and extract filename using utility method
+            // Handle string file paths (existing logic).
+            // Clean file path and extract filename using utility method.
             $pathInfo = $this->extractFileNameFromPath((string)$file);
             $filePath = $pathInfo['cleanPath'];
             $fileName = $pathInfo['fileName'];
@@ -2753,7 +2753,7 @@ class FileService
                 $this->logger->info("publishFile: Extracted filename from path: '$fileName' (from '$filePath')");
             }
 
-            // Get the object folder (this is where the files actually are)
+            // Get the object folder (this is where the files actually are).
             $objectFolder = $this->getObjectFolder($object);
 
             if ($objectFolder === null) {
@@ -2763,7 +2763,7 @@ class FileService
 
             $this->logger->info("publishFile: Object folder path: " . $objectFolder->getPath());
 
-            // Debug: List all files in the object folder
+            // Debug: List all files in the object folder.
             try {
                 $objectFiles = $objectFolder->getDirectoryListing();
                 $objectFileNames = array_map(function($file) { return $file->getName(); }, $objectFiles);
@@ -2777,7 +2777,7 @@ class FileService
                 $fileNode = $objectFolder->get($fileName);
                 $this->logger->info("publishFile: Successfully found file: " . $fileNode->getName() . " at " . $fileNode->getPath());
             } catch (NotFoundException $e) {
-                // Try with full path if filename didn't work
+                // Try with full path if filename didn't work.
                 try {
                     $this->logger->info("publishFile: Attempting to get file '$filePath' (full path) from object folder");
                     $fileNode = $objectFolder->get($filePath);
@@ -2792,18 +2792,18 @@ class FileService
             }
         }
 
-        // Verify file exists and is a File instance
+        // Verify file exists and is a File instance.
         if ($fileNode instanceof File === false) {
             $this->logger->error("publishFile: Found node is not a File instance, it's a: " . get_class($fileNode));
             throw new Exception('File not found.');
         }
 
-        // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues
+        // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues.
         $this->checkOwnership($fileNode);
 
         $this->logger->info("publishFile: Creating share link for file: " . $fileNode->getPath());
 
-        // Use FileMapper to create the share directly in the database
+        // Use FileMapper to create the share directly in the database.
         try {
             $openRegisterUser = $this->getUser();
             $shareInfo = $this->fileMapper->publishFile(
@@ -2840,22 +2840,22 @@ class FileService
      */
     public function unpublishFile(ObjectEntity | string $object, string|int $filePath): File
     {
-        // If string ID provided, try to find the object entity
+        // If string ID provided, try to find the object entity.
         if (is_string($object) === true) {
             $object = $this->objectEntityMapper->find($object);
         }
 
-        // Debug logging - original file path
+        // Debug logging - original file path.
         $originalFilePath = $filePath;
         $this->logger->info("unpublishFile: Original file path received: '$originalFilePath'");
 
         $file = null;
 
-        // If $filePath is an integer (file ID), try to find the file directly by ID
+        // If $filePath is an integer (file ID), try to find the file directly by ID.
         if (is_int($filePath)) {
             $this->logger->info("unpublishFile: File ID provided: $filePath");
 
-            // Try to find the file in the object's folder by ID
+            // Try to find the file in the object's folder by ID.
             $file = $this->getFile($object, $filePath);
             if ($file !== null) {
                 $this->logger->info("unpublishFile: Found file by ID: " . $file->getName() . " (ID: " . $file->getId() . ")");
@@ -2864,8 +2864,8 @@ class FileService
                 throw new Exception("File with ID $filePath does not exist");
             }
         } else {
-            // Handle string file paths (existing logic)
-            // Clean file path and extract filename using utility method
+            // Handle string file paths (existing logic).
+            // Clean file path and extract filename using utility method.
             $pathInfo = $this->extractFileNameFromPath((string)$filePath);
             $filePath = $pathInfo['cleanPath'];
             $fileName = $pathInfo['fileName'];
@@ -2875,7 +2875,7 @@ class FileService
                 $this->logger->info("unpublishFile: Extracted filename from path: '$fileName' (from '$filePath')");
             }
 
-            // Get the object folder (this is where the files actually are)
+            // Get the object folder (this is where the files actually are).
             $objectFolder = $this->getObjectFolder($object);
 
             if ($objectFolder === null) {
@@ -2885,7 +2885,7 @@ class FileService
 
             $this->logger->info("unpublishFile: Object folder path: " . $objectFolder->getPath());
 
-            // Debug: List all files in the object folder
+            // Debug: List all files in the object folder.
             try {
                 $objectFiles = $objectFolder->getDirectoryListing();
                 $objectFileNames = array_map(function($file) { return $file->getName(); }, $objectFiles);
@@ -2899,7 +2899,7 @@ class FileService
                 $file = $objectFolder->get($fileName);
                 $this->logger->info("unpublishFile: Successfully found file: " . $file->getName() . " at " . $file->getPath());
             } catch (NotFoundException $e) {
-                // Try with full path if filename didn't work
+                // Try with full path if filename didn't work.
                 try {
                     $this->logger->info("unpublishFile: Attempting to get file '$filePath' (full path) from object folder");
                     $file = $objectFolder->get($filePath);
@@ -2914,18 +2914,18 @@ class FileService
             }
         }
 
-        // Verify file exists and is a File instance
+        // Verify file exists and is a File instance.
         if ($file instanceof File === false) {
             $this->logger->error("unpublishFile: Found node is not a File instance, it's a: " . get_class($file));
             throw new Exception('File not found.');
         }
 
-        // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues
+        // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues.
         $this->checkOwnership($file);
 
         $this->logger->info("unpublishFile: Removing share links for file: " . $file->getPath());
 
-        // Use FileMapper to remove all public shares directly from the database
+        // Use FileMapper to remove all public shares directly from the database.
         try {
             $deletionInfo = $this->fileMapper->depublishFile($file->getId());
 
@@ -2969,7 +2969,7 @@ class FileService
      */
     public function createObjectFilesZip(ObjectEntity | string $object, ?string $zipName = null): array
     {
-        // If string ID provided, try to find the object entity
+        // If string ID provided, try to find the object entity.
         if (is_string($object) === true) {
             try {
                 $object = $this->objectEntityMapper->find($object);
@@ -2980,12 +2980,12 @@ class FileService
 
         $this->logger->info("Creating ZIP archive for object: " . $object->getId());
 
-        // Check if ZipArchive extension is available
+        // Check if ZipArchive extension is available.
         if (class_exists('ZipArchive') === false) {
             throw new Exception('PHP ZipArchive extension is not available');
         }
 
-        // Get all files for the object
+        // Get all files for the object.
         $files = $this->getFiles($object);
 
         if (empty($files) === true) {
@@ -2994,7 +2994,7 @@ class FileService
 
         $this->logger->info("Found " . count($files) . " files for object " . $object->getId());
 
-        // Generate ZIP filename
+        // Generate ZIP filename.
         if ($zipName === null) {
             $objectIdentifier = $object->getUuid() ?? (string) $object->getId();
             $zipName = 'object_' . $objectIdentifier . '_files_' . date('Y-m-d_H-i-s') . '.zip';
@@ -3002,10 +3002,10 @@ class FileService
             $zipName .= '.zip';
         }
 
-        // Create temporary file for the ZIP
+        // Create temporary file for the ZIP.
         $tempZipPath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $zipName;
 
-        // Create new ZIP archive
+        // Create new ZIP archive.
         $zip = new \ZipArchive();
         $result = $zip->open($tempZipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
 
@@ -3016,7 +3016,7 @@ class FileService
         $addedFiles = 0;
         $skippedFiles = 0;
 
-        // Add each file to the ZIP archive
+        // Add each file to the ZIP archive.
         foreach ($files as $file) {
             try {
                 if ($file instanceof \OCP\Files\File === false) {
@@ -3025,14 +3025,14 @@ class FileService
                     continue;
                 }
 
-                // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues
+                // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues.
                 $this->checkOwnership($file);
 
-                // Get file content
+                // Get file content.
                 $fileContent = $file->getContent();
                 $fileName = $file->getName();
 
-                // Add file to ZIP with its original name
+                // Add file to ZIP with its original name.
                 $added = $zip->addFromString($fileName, $fileContent);
 
                 if ($added === false) {
@@ -3051,7 +3051,7 @@ class FileService
             }
         }
 
-        // Close the ZIP archive
+        // Close the ZIP archive.
         $closeResult = $zip->close();
         if ($closeResult === false) {
             throw new Exception("Failed to finalize ZIP archive");
@@ -3059,7 +3059,7 @@ class FileService
 
         $this->logger->info("ZIP creation completed. Added: $addedFiles files, Skipped: $skippedFiles files");
 
-        // Check if ZIP file was created successfully
+        // Check if ZIP file was created successfully.
         if (file_exists($tempZipPath) === false) {
             throw new Exception("ZIP file was not created successfully");
         }
@@ -3136,13 +3136,13 @@ class FileService
     public function findFilesByObjectId(string $objectIdentifier): array
     {
         try {
-            // Create the object tag we're looking for
+            // Create the object tag we're looking for.
             $objectTag = 'object:' . $objectIdentifier;
 
-            // Get the tag object
+            // Get the tag object.
             $tag = $this->systemTagManager->getTag(tagName: $objectTag, userVisible: true, userAssignable: true);
 
-            // Get all file IDs that have this tag
+            // Get all file IDs that have this tag.
             $fileIds = $this->systemTagMapper->getObjectIdsForTags(
                 tagIds: [$tag->getId()],
                 objectType: self::FILE_TAG_TYPE
@@ -3150,10 +3150,10 @@ class FileService
 
             $files = [];
             if (empty($fileIds) === false) {
-                // Get the user folder to resolve file paths
+                // Get the user folder to resolve file paths.
                 $userFolder = $this->getOpenRegisterUserFolder();
 
-                // Convert file IDs to actual file nodes
+                // Convert file IDs to actual file nodes.
                 foreach ($fileIds as $fileId) {
                     try {
                         $file = $userFolder->getById($fileId);
@@ -3161,7 +3161,7 @@ class FileService
                             $files = array_merge($files, $file);
                         }
                     } catch (NotFoundException) {
-                        // File might have been deleted, skip it
+                        // File might have been deleted, skip it.
                         continue;
                     }
                 }
@@ -3271,7 +3271,7 @@ class FileService
             'tests' => []
         ];
 
-        // Test 1: Find file by ID in OpenRegister folder
+        // Test 1: Find file by ID in OpenRegister folder.
         $this->logger->info("testFileLookup: Testing file ID lookup for file $fileId");
         $fileInfo = $this->debugFindFileById($fileId);
         $results['tests']['find_by_id'] = [
@@ -3279,7 +3279,7 @@ class FileService
             'file_info' => $fileInfo
         ];
 
-        // Test 2: If object provided, test object folder listing
+        // Test 2: If object provided, test object folder listing.
         if ($object !== null) {
             $this->logger->info("testFileLookup: Testing object folder listing for object " . $object->getId());
             $objectFiles = $this->debugListObjectFiles($object);
@@ -3289,7 +3289,7 @@ class FileService
                 'files' => $objectFiles
             ];
 
-            // Test 3: Check if the file ID is in the object's folder
+            // Test 3: Check if the file ID is in the object's folder.
             $fileInObjectFolder = false;
             foreach ($objectFiles as $file) {
                 if ($file['id'] === $fileId) {
@@ -3303,22 +3303,22 @@ class FileService
             ];
         }
 
-        // Test 4: Test updateFile with file ID path format
+        // Test 4: Test updateFile with file ID path format.
         if ($fileInfo !== null) {
             $testPath = $fileId . '/' . $fileInfo['name'];
             $this->logger->info("testFileLookup: Testing updateFile with path: $testPath");
 
             try {
-                // Don't actually update, just test the lookup logic
+                // Don't actually update, just test the lookup logic.
                 $userFolder = $this->getOpenRegisterUserFolder();
 
-                // Simulate the updateFile logic
+                // Simulate the updateFile logic.
                 $fileName = $fileInfo['name'];
                 $foundByFilename = false;
                 $foundByPath = false;
                 $foundById = false;
 
-                // Test object folder lookup if object provided
+                // Test object folder lookup if object provided.
                 if ($object !== null) {
                     try {
                         $objectFolder = $this->getObjectFolder($object);
@@ -3327,30 +3327,30 @@ class FileService
                                 $file = $objectFolder->get($fileName);
                                 $foundByFilename = true;
                             } catch (\Exception $e) {
-                                // Not found by filename
+                                // Not found by filename.
                             }
                         }
                     } catch (\Exception $e) {
-                        // Object folder error
+                        // Object folder error.
                     }
                 }
 
-                // Test user folder path lookup
+                // Test user folder path lookup.
                 try {
                     $file = $userFolder->get($testPath);
                     $foundByPath = true;
                 } catch (\Exception $e) {
-                    // Not found by path
+                    // Not found by path.
                 }
 
-                // Test user folder ID lookup
+                // Test user folder ID lookup.
                 try {
                     $nodes = $userFolder->getById($fileId);
                     if (!empty($nodes)) {
                         $foundById = true;
                     }
                 } catch (\Exception $e) {
-                    // Not found by ID
+                    // Not found by ID.
                 }
 
                 $results['tests']['updateFile_simulation'] = [
@@ -3388,29 +3388,29 @@ class FileService
      */
     private function blockExecutableFile(string $fileName, string $fileContent): void
     {
-        // List of dangerous executable extensions
+        // List of dangerous executable extensions.
         $dangerousExtensions = [
-            // Windows executables
+            // Windows executables.
             'exe', 'bat', 'cmd', 'com', 'msi', 'scr', 'vbs', 'vbe', 'js', 'jse', 'wsf', 'wsh', 'ps1', 'dll',
-            // Unix/Linux executables
+            // Unix/Linux executables.
             'sh', 'bash', 'csh', 'ksh', 'zsh', 'run', 'bin', 'app', 'deb', 'rpm',
-            // Scripts and code
+            // Scripts and code.
             'php', 'phtml', 'php3', 'php4', 'php5', 'phps', 'phar',
             'py', 'pyc', 'pyo', 'pyw',
             'pl', 'pm', 'cgi',
             'rb', 'rbw',
             'jar', 'war', 'ear', 'class',
-            // Containers and packages
+            // Containers and packages.
             'appimage', 'snap', 'flatpak',
-            // MacOS
+            // MacOS.
             'dmg', 'pkg', 'command',
-            // Android
+            // Android.
             'apk',
-            // Other dangerous
+            // Other dangerous.
             'elf', 'out', 'o', 'so', 'dylib',
         ];
 
-        // Check file extension
+        // Check file extension.
         $extension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
         if (in_array($extension, $dangerousExtensions, true)) {
             $this->logger->warning('Executable file upload blocked', [
@@ -3426,7 +3426,7 @@ class FileService
             );
         }
 
-        // Check magic bytes (file signatures) in content
+        // Check magic bytes (file signatures) in content.
         if (!empty($fileContent)) {
             $this->detectExecutableMagicBytes($fileContent, $fileName);
         }
@@ -3448,7 +3448,7 @@ class FileService
      */
     private function detectExecutableMagicBytes(string $content, string $fileName): void
     {
-        // Common executable magic bytes
+        // Common executable magic bytes.
         $magicBytes = [
             'MZ' => 'Windows executable (PE/EXE)',
             "\x7FELF" => 'Linux/Unix executable (ELF)',
@@ -3474,7 +3474,7 @@ class FileService
             }
         }
 
-        // Check for script shebangs anywhere in first 4 lines
+        // Check for script shebangs anywhere in first 4 lines.
         $firstLines = substr($content, 0, 1024);
         if (preg_match('/^#!.*\/(sh|bash|zsh|ksh|csh|python|perl|ruby|php|node)/m', $firstLines)) {
             throw new Exception(
@@ -3483,7 +3483,7 @@ class FileService
             );
         }
 
-        // Check for embedded PHP tags
+        // Check for embedded PHP tags.
         if (preg_match('/<\?php|<\?=|<script\s+language\s*=\s*["\']php/i', $firstLines)) {
             throw new Exception(
                 "File '$fileName' contains PHP code. "
@@ -3514,7 +3514,7 @@ class FileService
      */
     public function createObjectFolderWithoutUpdate(ObjectEntity $objectEntity, ?IUser $currentUser = null): ?int
     {
-        // Ensure register folder exists first
+        // Ensure register folder exists first.
         $register = $this->registerMapper->find($objectEntity->getRegister());
         $registerFolder = $this->createRegisterFolderById($register, $currentUser);
 
@@ -3522,25 +3522,25 @@ class FileService
             throw new Exception("Failed to create or access register folder");
         }
 
-        // Create object folder within the register folder
+        // Create object folder within the register folder.
         $objectFolderName = $this->getObjectFolderName($objectEntity);
 
         try {
-            // Try to get existing folder first
+            // Try to get existing folder first.
             $objectFolder = $registerFolder->get($objectFolderName);
             $this->logger->info("Object folder already exists: " . $objectFolderName);
         } catch (NotFoundException) {
-            // Create new folder if it doesn't exist
+            // Create new folder if it doesn't exist.
             $objectFolder = $registerFolder->newFolder($objectFolderName);
             $this->logger->info("Created object folder: " . $objectFolderName);
         }
 
         $this->logger->info("Created object folder with ID: " . $objectFolder->getId());
 
-        // Transfer ownership to OpenRegister and share with current user if needed
+        // Transfer ownership to OpenRegister and share with current user if needed.
         $this->transferFolderOwnershipIfNeeded($objectFolder);
 
-        // Share the folder with the currently active user if there is one
+        // Share the folder with the currently active user if there is one.
         if ($currentUser !== null && $currentUser->getUID() !== $this->getUser()->getUID()) {
             $this->shareFolderWithUser($objectFolder, $currentUser->getUID());
         }

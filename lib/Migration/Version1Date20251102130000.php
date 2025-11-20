@@ -61,7 +61,7 @@ class Version1Date20251102130000 extends SimpleMigrationStep
         if ($schema->hasTable('openregister_applications')) {
             $table = $schema->getTable('openregister_applications');
 
-            // Add groups column if it doesn't exist
+            // Add groups column if it doesn't exist.
             if (!$table->hasColumn('groups')) {
                 $table->addColumn(
                         'groups',

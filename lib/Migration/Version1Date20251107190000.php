@@ -58,7 +58,7 @@ class Version1Date20251107190000 extends SimpleMigrationStep
         if ($schema->hasTable('openregister_organisations')) {
             $table = $schema->getTable('openregister_organisations');
 
-            // Remove is_default column if it exists
+            // Remove is_default column if it exists.
             if ($table->hasColumn('is_default')) {
                 $table->dropColumn('is_default');
                 $output->info('✅ Removed is_default column from organisations table');

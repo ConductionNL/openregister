@@ -70,13 +70,13 @@ class LogCleanUpTask extends TimedJob
         $this->auditTrailMapper = $auditTrailMapper;
         $this->logger           = $logger;
 
-        // Run every hour (3600 seconds)
+        // Run every hour (3600 seconds).
         $this->setInterval(3600);
 
-        // Delay until low-load time
+        // Delay until low-load time.
         $this->setTimeSensitivity(IJob::TIME_INSENSITIVE);
 
-        // Only run one instance of this job at a time
+        // Only run one instance of this job at a time.
         $this->setAllowParallelRuns(false);
 
     }//end __construct()
@@ -95,10 +95,10 @@ class LogCleanUpTask extends TimedJob
     public function run(mixed $argument): void
     {
         try {
-            // Attempt to clear expired logs
+            // Attempt to clear expired logs.
             $logsCleared = $this->auditTrailMapper->clearLogs();
 
-            // Log the result for monitoring purposes
+            // Log the result for monitoring purposes.
             if ($logsCleared === true) {
                 $this->logger->info(
                 'Successfully cleared expired audit trail logs',
@@ -115,7 +115,7 @@ class LogCleanUpTask extends TimedJob
                 );
             }
         } catch (\Exception $e) {
-            // Log any errors that occur during cleanup
+            // Log any errors that occur during cleanup.
             $this->logger->error(
             'Failed to clear expired audit trail logs: '.$e->getMessage(),
             [

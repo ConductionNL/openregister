@@ -153,13 +153,13 @@ class SchemaFacetCacheService
     {
         $cacheKey = "facetable_fields_{$schemaId}";
 
-        // Check in-memory cache
+        // Check in-memory cache.
         if (isset(self::$facetConfigCache[$cacheKey])) {
             $this->logger->debug('Facetable fields cache hit (memory)', ['schemaId' => $schemaId]);
             return self::$facetConfigCache[$cacheKey];
         }
 
-        // Check if we have cached facet configuration
+        // Check if we have cached facet configuration.
         $cachedConfig = $this->getCachedFacetData($schemaId, 'facetable_fields');
         if ($cachedConfig !== null) {
             self::$facetConfigCache[$cacheKey] = $cachedConfig;
@@ -167,7 +167,7 @@ class SchemaFacetCacheService
             return $cachedConfig;
         }
 
-        // Generate facetable fields from schema and cache
+        // Generate facetable fields from schema and cache.
         $facetableFields = $this->generateFacetableFieldsFromSchema($schemaId);
         $this->cacheFacetableFields($schemaId, $facetableFields);
 
@@ -250,7 +250,7 @@ class SchemaFacetCacheService
     {
         $this->setCachedFacetData($schemaId, 'facetable_fields', 'config', 'facetable_fields', [], $facetableFields, $ttl);
 
-        // Store in memory cache
+        // Store in memory cache.
         $cacheKey = "facetable_fields_{$schemaId}";
         self::$facetConfigCache[$cacheKey] = $facetableFields;
 
@@ -284,15 +284,15 @@ class SchemaFacetCacheService
         $startTime    = microtime(true);
         $deletedCount = 0;
 
-        // Remove from database cache (if table exists)
+        // Remove from database cache (if table exists).
         try {
             $qb = $this->db->getQueryBuilder();
             $qb->delete(self::FACET_CACHE_TABLE)
                 ->where($qb->expr()->eq('schema_id', $qb->createNamedParameter($schemaId)));
             $deletedCount = $qb->executeStatement();
         } catch (\Exception $e) {
-            // If the cache table doesn't exist yet, just log a debug message and continue
-            // This allows the app to work even if the migration hasn't been run yet
+            // If the cache table doesn't exist yet, just log a debug message and continue.
+            // This allows the app to work even if the migration hasn't been run yet.
             $this->logger->debug(
                     'Schema facet cache table does not exist yet, skipping database cache invalidation',
                     [
@@ -302,7 +302,7 @@ class SchemaFacetCacheService
                     );
         }
 
-        // Remove from memory cache (always safe to do)
+        // Remove from memory cache (always safe to do).
         $memoryClearedCount = 0;
         $cacheKeys          = array_keys(self::$facetConfigCache);
         foreach ($cacheKeys as $key) {
@@ -357,12 +357,12 @@ class SchemaFacetCacheService
     {
         $startTime = microtime(true);
 
-        // Clear database cache
+        // Clear database cache.
         $qb = $this->db->getQueryBuilder();
         $qb->delete(self::FACET_CACHE_TABLE);
         $deletedCount = $qb->executeStatement();
 
-        // Clear memory cache
+        // Clear memory cache.
         $memoryCacheSize        = count(self::$facetConfigCache);
         self::$facetConfigCache = [];
 
@@ -527,7 +527,7 @@ class SchemaFacetCacheService
             'object_fields' => [],
         ];
 
-        // Analyze schema properties for facetable fields
+        // Analyze schema properties for facetable fields.
         $properties = $schema->getProperties();
         if (is_array($properties)) {
             foreach ($properties as $propertyName => $property) {
@@ -616,23 +616,23 @@ class SchemaFacetCacheService
      */
     private function isPropertyFacetable(array $property): bool
     {
-        // Check for explicit facetable flag
+        // Check for explicit facetable flag.
         if (isset($property['facetable']) && $property['facetable'] === true) {
             return true;
         }
 
-        // Auto-detect facetable properties based on type
+        // Auto-detect facetable properties based on type.
         $type   = $property['type'] ?? '';
         $format = $property['format'] ?? '';
 
-        // Facetable types
+        // Facetable types.
         $facetableTypes = ['string', 'integer', 'number', 'boolean', 'date', 'datetime'];
 
         if (in_array($type, $facetableTypes)) {
             return true;
         }
 
-        // Check for enum properties (always facetable)
+        // Check for enum properties (always facetable).
         if (isset($property['enum']) && is_array($property['enum'])) {
             return true;
         }
@@ -661,12 +661,12 @@ class SchemaFacetCacheService
             'description' => $property['description'] ?? "Facet for {$propertyKey}",
         ];
 
-        // Add enum values if available
+        // Add enum values if available.
         if (isset($property['enum']) && is_array($property['enum'])) {
             $config['enum_values'] = $property['enum'];
         }
 
-        // Add range information for numeric types
+        // Add range information for numeric types.
         if (in_array($type, ['integer', 'number'])) {
             if (isset($property['minimum'])) {
                 $config['minimum'] = $property['minimum'];
@@ -754,11 +754,11 @@ class SchemaFacetCacheService
             return null;
         }
 
-        // Check if expired
+        // Check if expired.
         if ($result['expires'] !== null) {
             $expires = new \DateTime($result['expires']);
             if ($expires <= new \DateTime()) {
-                // Cache expired, remove it
+                // Cache expired, remove it.
                 $this->removeCachedFacetData($schemaId, $cacheKey);
                 return null;
             }
@@ -793,16 +793,16 @@ class SchemaFacetCacheService
         mixed $data,
         int $ttl
     ): void {
-        // Enforce maximum cache TTL for office environments
+        // Enforce maximum cache TTL for office environments.
         $ttl = min($ttl, self::MAX_CACHE_TTL);
 
         $now     = new \DateTime();
         $expires = $ttl > 0 ? (clone $now)->add(new \DateInterval("PT{$ttl}S")) : null;
 
-        // Use INSERT ... ON DUPLICATE KEY UPDATE pattern
+        // Use INSERT ... ON DUPLICATE KEY UPDATE pattern.
         $qb = $this->db->getQueryBuilder();
 
-        // Try update first
+        // Try update first.
         $qb->update(self::FACET_CACHE_TABLE)
             ->set('cache_data', $qb->createNamedParameter(json_encode($data)))
             ->set('updated', $qb->createNamedParameter($now, 'datetime'))
@@ -812,7 +812,7 @@ class SchemaFacetCacheService
 
         $updated = $qb->executeStatement();
 
-        // If no rows updated, insert new record
+        // If no rows updated, insert new record.
         if ($updated === 0) {
             $qb = $this->db->getQueryBuilder();
             $qb->insert(self::FACET_CACHE_TABLE)

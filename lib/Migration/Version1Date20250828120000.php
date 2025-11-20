@@ -62,7 +62,7 @@ class Version1Date20250828120000 extends SimpleMigrationStep
 
         $table = $schema->getTable('openregister_objects');
 
-        // 1. Critical single-column indexes for common faceting fields
+        // 1. Critical single-column indexes for common faceting fields.
         $singleIndexes = [
             'deleted'      => 'objects_deleted_idx',
             'published'    => 'objects_published_idx',
@@ -80,37 +80,37 @@ class Version1Date20250828120000 extends SimpleMigrationStep
             }
         }
 
-        // 2. Critical composite indexes for common filter combinations
+        // 2. Critical composite indexes for common filter combinations.
         // Note: Using raw SQL for composite indexes to handle MySQL key length limits
         $connection  = \OC::$server->getDatabaseConnection();
         $tablePrefix = \OC::$server->getConfig()->getSystemValue('dbtableprefix', 'oc_');
         $tableName   = $tablePrefix.'openregister_objects';
 
         $compositeIndexes = [
-            // For base filtering (deleted + published state)
+            // For base filtering (deleted + published state).
             'objects_deleted_published_idx'       => ['deleted', 'published'],
             'objects_lifecycle_idx'               => ['deleted', 'published', 'depublished'],
 
-            // For register/schema filtering with lifecycle (with length prefixes for text columns)
+            // For register/schema filtering with lifecycle (with length prefixes for text columns).
             'objects_register_schema_deleted_idx' => ['register(20)', 'schema(20)', 'deleted'],
             'objects_register_lifecycle_idx'      => ['register(20)', 'deleted', 'published'],
             'objects_schema_lifecycle_idx'        => ['schema(20)', 'deleted', 'published'],
 
-            // For organisation-based filtering (with length prefix for text column)
+            // For organisation-based filtering (with length prefix for text column).
             'objects_org_lifecycle_idx'           => ['organisation(20)', 'deleted', 'published'],
 
-            // For date range queries on faceting
+            // For date range queries on faceting.
             'objects_created_deleted_idx'         => ['created', 'deleted'],
             'objects_updated_deleted_idx'         => ['updated', 'deleted'],
         ];
 
         foreach ($compositeIndexes as $indexName => $columns) {
-            // Check if index already exists
+            // Check if index already exists.
             if ($table->hasIndex($indexName)) {
                 continue;
             }
 
-            // Check all base columns exist (without length prefixes)
+            // Check all base columns exist (without length prefixes).
             $baseColumns = array_map(
                     function ($col) {
                         return preg_replace('/\(\d+\)/', '', $col);

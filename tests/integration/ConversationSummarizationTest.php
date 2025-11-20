@@ -38,7 +38,7 @@ class ConversationSummarizationTest extends TestCase
         $this->messageMapper = new MessageMapper($this->db, \OC::$server->get(ITimeFactory::class));
         $this->agentMapper = new AgentMapper($this->db);
 
-        // Create test agent
+        // Create test agent.
         $this->testAgent = new Agent();
         $this->testAgent->setUuid('test-agent-summary-' . uniqid());
         $this->testAgent->setName('Summary Test Agent');
@@ -47,7 +47,7 @@ class ConversationSummarizationTest extends TestCase
         $this->testAgent->setOrganisation(1);
         $this->testAgent = $this->agentMapper->insert($this->testAgent);
 
-        // Create test conversation
+        // Create test conversation.
         $this->testConversation = new Conversation();
         $this->testConversation->setUuid('test-conv-summary-' . uniqid());
         $this->testConversation->setTitle('Long Conversation');
@@ -67,7 +67,7 @@ class ConversationSummarizationTest extends TestCase
                 $this->agentMapper->delete($this->testAgent);
             }
         } catch (\Exception $e) {
-            // Ignore cleanup errors
+            // Ignore cleanup errors.
         }
 
         parent::tearDown();
@@ -94,7 +94,7 @@ class ConversationSummarizationTest extends TestCase
 
     public function testMultipleSummaryUpdates(): void
     {
-        // First summary after 20 messages
+        // First summary after 20 messages.
         $this->testConversation->setMetadata([
             'summary' => 'Initial discussion about authentication.',
             'summarized_at' => date('Y-m-d H:i:s'),
@@ -103,7 +103,7 @@ class ConversationSummarizationTest extends TestCase
         ]);
         $updated1 = $this->conversationMapper->update($this->testConversation);
 
-        // Second summary after 40 messages (conversation continued)
+        // Second summary after 40 messages (conversation continued).
         $updated1->setMetadata([
             'summary' => 'Extended discussion about authentication and authorization, including LDAP integration.',
             'summarized_at' => date('Y-m-d H:i:s'),
@@ -128,7 +128,7 @@ class ConversationSummarizationTest extends TestCase
 
     public function testSummaryTriggeredByMessageCount(): void
     {
-        // Create many messages to simulate a long conversation
+        // Create many messages to simulate a long conversation.
         $messages = [];
         for ($i = 1; $i <= 25; $i++) {
             $msg = new Message();
@@ -139,11 +139,11 @@ class ConversationSummarizationTest extends TestCase
             $messages[] = $this->messageMapper->insert($msg);
         }
 
-        // Count messages
+        // Count messages.
         $messageCount = count($this->messageMapper->findByConversation($this->testConversation->getId()));
         $this->assertGreaterThanOrEqual(25, $messageCount);
 
-        // Simulate summary generation when count > 20
+        // Simulate summary generation when count > 20.
         if ($messageCount > 20) {
             $this->testConversation->setMetadata([
                 'summary' => 'Long conversation with 25+ messages about various topics.',
@@ -158,7 +158,7 @@ class ConversationSummarizationTest extends TestCase
             $this->assertGreaterThan(20, $metadata['messages_count_at_summary']);
         }
 
-        // Cleanup
+        // Cleanup.
         foreach ($messages as $msg) {
             $this->messageMapper->delete($msg);
         }
@@ -166,7 +166,7 @@ class ConversationSummarizationTest extends TestCase
 
     public function testSummaryTriggeredByTokenCount(): void
     {
-        // Simulate a conversation with high token count
+        // Simulate a conversation with high token count.
         $this->testConversation->setMetadata([
             'total_tokens' => 15000, // Exceeds typical context window
             'summary' => 'Comprehensive discussion summarized due to token limit.',
@@ -184,7 +184,7 @@ class ConversationSummarizationTest extends TestCase
 
     public function testRetrieveSummaryForContext(): void
     {
-        // Store summary
+        // Store summary.
         $summary = 'User asked about API integration. Agent explained REST endpoints and authentication.';
         $this->testConversation->setMetadata([
             'summary' => $summary,
@@ -192,25 +192,25 @@ class ConversationSummarizationTest extends TestCase
         ]);
         $updated = $this->conversationMapper->update($this->testConversation);
 
-        // Retrieve conversation
+        // Retrieve conversation.
         $found = $this->conversationMapper->find($updated->getId());
         $metadata = $found->getMetadata();
 
-        // Summary should be available for context injection
+        // Summary should be available for context injection.
         $this->assertArrayHasKey('summary', $metadata);
         $this->assertEquals($summary, $metadata['summary']);
     }
 
     public function testCombineSummaryWithRecentMessages(): void
     {
-        // Store summary of older messages
+        // Store summary of older messages.
         $this->testConversation->setMetadata([
             'summary' => 'Early conversation about basic setup and configuration.',
             'messages_count_at_summary' => 20,
         ]);
         $updated = $this->conversationMapper->update($this->testConversation);
 
-        // Add new messages after summarization
+        // Add new messages after summarization.
         $recentMessages = [];
         for ($i = 21; $i <= 25; $i++) {
             $msg = new Message();
@@ -221,15 +221,15 @@ class ConversationSummarizationTest extends TestCase
             $recentMessages[] = $this->messageMapper->insert($msg);
         }
 
-        // Get recent messages (e.g., last 10)
+        // Get recent messages (e.g., last 10).
         $recent = $this->messageMapper->getRecentMessagesForConversation($updated->getId(), 10);
 
-        // Context should include: summary + recent messages
+        // Context should include: summary + recent messages.
         $metadata = $updated->getMetadata();
         $this->assertArrayHasKey('summary', $metadata);
         $this->assertGreaterThan(0, count($recent));
 
-        // Cleanup
+        // Cleanup.
         foreach ($recentMessages as $msg) {
             $this->messageMapper->delete($msg);
         }
@@ -237,7 +237,7 @@ class ConversationSummarizationTest extends TestCase
 
     public function testSummaryPreservesKeyInformation(): void
     {
-        // Summary should preserve critical information
+        // Summary should preserve critical information.
         $keyInfo = [
             'topics' => ['authentication', 'authorization', 'LDAP'],
             'decisions' => ['Use OAuth 2.0', 'Enable SSO'],
@@ -261,7 +261,7 @@ class ConversationSummarizationTest extends TestCase
 
     public function testSummaryMetrics(): void
     {
-        // Track metrics about summarization
+        // Track metrics about summarization.
         $this->testConversation->setMetadata([
             'summary' => 'Conversation summary.',
             'summarized_at' => date('Y-m-d H:i:s'),

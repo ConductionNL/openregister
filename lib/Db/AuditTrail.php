@@ -412,22 +412,22 @@ class AuditTrail extends Entity implements JsonSerializable
      */
     public function __toString(): string
     {
-        // Return the UUID if available, otherwise return a descriptive string
+        // Return the UUID if available, otherwise return a descriptive string.
         if ($this->uuid !== null && $this->uuid !== '') {
             return $this->uuid;
         }
 
-        // Fallback to action if available
+        // Fallback to action if available.
         if ($this->action !== null && $this->action !== '') {
             return 'Audit: '.$this->action;
         }
 
-        // Fallback to ID if available
+        // Fallback to ID if available.
         if ($this->id !== null) {
             return 'AuditTrail #'.$this->id;
         }
 
-        // Final fallback
+        // Final fallback.
         return 'Audit Trail';
 
     }//end __toString()

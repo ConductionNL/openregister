@@ -66,18 +66,18 @@ class MariaDbFacetHandler
      */
     public function getTermsFacet(string $field, array $baseQuery=[]): array
     {
-        // Build JSON path for the field
+        // Build JSON path for the field.
         $jsonPath = '$.'.$field;
 
-        // First, check if this field commonly contains arrays
+        // First, check if this field commonly contains arrays.
         if ($this->fieldContainsArrays($field, $baseQuery)) {
             return $this->getTermsFacetForArrayField($field, $baseQuery);
         }
 
-        // For non-array fields, use the standard approach
+        // For non-array fields, use the standard approach.
         $queryBuilder = $this->db->getQueryBuilder();
 
-        // Build aggregation query for JSON field
+        // Build aggregation query for JSON field.
         $queryBuilder->selectAlias(
                 $queryBuilder->createFunction("JSON_UNQUOTE(JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath)."))"),
                 'field_value'
@@ -92,7 +92,7 @@ class MariaDbFacetHandler
             ->groupBy('field_value')
             ->orderBy('doc_count', 'DESC');
         // Note: Still using doc_count in ORDER BY as it's the SQL alias
-        // Apply base filters
+        // Apply base filters.
         $this->applyBaseFilters($queryBuilder, $baseQuery);
 
         $result  = $queryBuilder->executeQuery();
@@ -139,7 +139,7 @@ class MariaDbFacetHandler
         $queryBuilder = $this->db->getQueryBuilder();
         $jsonPath     = '$.'.$field;
 
-        // Sample a few objects to check if the field contains arrays
+        // Sample a few objects to check if the field contains arrays.
         $queryBuilder->select('object')
             ->from('openregister_objects')
             ->where(
@@ -149,7 +149,7 @@ class MariaDbFacetHandler
                     )
             ->setMaxResults(10);
 
-        // Apply base filters
+        // Apply base filters.
         $this->applyBaseFilters($queryBuilder, $baseQuery);
 
         $result     = $queryBuilder->executeQuery();
@@ -166,7 +166,7 @@ class MariaDbFacetHandler
             }
         }
 
-        // If more than 50% of sampled objects have arrays for this field, treat it as an array field
+        // If more than 50% of sampled objects have arrays for this field, treat it as an array field.
         return $totalCount > 0 && ($arrayCount / $totalCount) > 0.5;
 
     }//end fieldContainsArrays()
@@ -192,7 +192,7 @@ class MariaDbFacetHandler
      */
     private function getTermsFacetForArrayField(string $field, array $baseQuery): array
     {
-        // Get all objects that have this field
+        // Get all objects that have this field.
         $queryBuilder = $this->db->getQueryBuilder();
         $jsonPath     = '$.'.$field;
 
@@ -204,21 +204,21 @@ class MariaDbFacetHandler
             )
                     );
 
-        // Apply base filters
+        // Apply base filters.
         $this->applyBaseFilters($queryBuilder, $baseQuery);
 
         $result      = $queryBuilder->executeQuery();
         $valueCounts = [];
 
-        // Process each object to extract individual array values
+        // Process each object to extract individual array values.
         while ($row = $result->fetch()) {
             $objectData = json_decode($row['object'], true);
             if ($objectData && isset($objectData[$field])) {
                 $fieldValue = $objectData[$field];
 
-                // Handle both arrays and single values
+                // Handle both arrays and single values.
                 if (is_array($fieldValue)) {
-                    // For arrays, count each element separately
+                    // For arrays, count each element separately.
                     foreach ($fieldValue as $value) {
                         $stringValue = $this->normalizeValue($value);
                         if ($stringValue !== null && $stringValue !== '') {
@@ -230,7 +230,7 @@ class MariaDbFacetHandler
                         }
                     }
                 } else {
-                    // For single values, count normally
+                    // For single values, count normally.
                     $stringValue = $this->normalizeValue($fieldValue);
                     if ($stringValue !== null && $stringValue !== '') {
                         if (!isset($valueCounts[$stringValue])) {
@@ -243,10 +243,10 @@ class MariaDbFacetHandler
             }//end if
         }//end while
 
-        // Sort by count descending
+        // Sort by count descending.
         arsort($valueCounts);
 
-        // Convert to buckets format
+        // Convert to buckets format.
         $buckets = [];
         foreach ($valueCounts as $key => $count) {
             $buckets[] = [
@@ -290,7 +290,7 @@ class MariaDbFacetHandler
             return trim((string) $value);
         }
 
-        // Skip complex types (objects, nested arrays)
+        // Skip complex types (objects, nested arrays).
         return null;
 
     }//end normalizeValue()
@@ -340,7 +340,7 @@ class MariaDbFacetHandler
             ->groupBy('date_key')
             ->orderBy('date_key', 'ASC');
 
-        // Apply base filters
+        // Apply base filters.
         $this->applyBaseFilters($queryBuilder, $baseQuery);
 
         $result  = $queryBuilder->executeQuery();
@@ -401,7 +401,7 @@ class MariaDbFacetHandler
                 )
                         );
 
-            // Apply range conditions
+            // Apply range conditions.
             if (isset($range['from'])) {
                 $queryBuilder->andWhere(
                     $queryBuilder->createFunction(
@@ -418,13 +418,13 @@ class MariaDbFacetHandler
                 );
             }
 
-            // Apply base filters
+            // Apply base filters.
             $this->applyBaseFilters($queryBuilder, $baseQuery);
 
             $result = $queryBuilder->executeQuery();
             $count  = (int) $result->fetchOne();
 
-            // Generate range key
+            // Generate range key.
             $key = $this->generateRangeKey($range);
 
             $bucket = [
@@ -476,12 +476,12 @@ class MariaDbFacetHandler
         $search         = $baseQuery['_search'] ?? null;
         $ids            = $baseQuery['_ids'] ?? null;
 
-        // By default, only include objects where 'deleted' is NULL unless $includeDeleted is true
+        // By default, only include objects where 'deleted' is NULL unless $includeDeleted is true.
         if ($includeDeleted === false) {
             $queryBuilder->andWhere($queryBuilder->expr()->isNull('deleted'));
         }
 
-        // If published filter is set, only include objects that are currently published
+        // If published filter is set, only include objects that are currently published.
         if ($published === true) {
             $now = (new \DateTime())->format('Y-m-d H:i:s');
             $queryBuilder->andWhere(
@@ -496,22 +496,22 @@ class MariaDbFacetHandler
             );
         }
 
-        // Apply full-text search if provided
+        // Apply full-text search if provided.
         if ($search !== null && trim($search) !== '') {
             $this->applyFullTextSearch($queryBuilder, trim($search));
         }
 
-        // Apply IDs filter if provided
+        // Apply IDs filter if provided.
         if ($ids !== null && is_array($ids) && !empty($ids)) {
             $this->applyIdsFilter($queryBuilder, $ids);
         }
 
-        // Apply metadata filters from @self
+        // Apply metadata filters from @self.
         if (isset($baseQuery['@self']) && is_array($baseQuery['@self'])) {
             $this->applyMetadataFilters($queryBuilder, $baseQuery['@self']);
         }
 
-        // Apply JSON object field filters (non-@self filters)
+        // Apply JSON object field filters (non-@self filters).
         $objectFilters = array_filter(
                 $baseQuery,
                 function ($key) {
@@ -546,7 +546,7 @@ class MariaDbFacetHandler
      */
     private function applyFullTextSearch(IQueryBuilder $queryBuilder, string $searchTerm): void
     {
-        // Split search terms by ' OR ' to handle multiple search words
+        // Split search terms by ' OR ' to handle multiple search words.
         $searchTerms = array_filter(
             array_map('trim', explode(' OR ', $searchTerm)),
             function ($term) {
@@ -554,26 +554,26 @@ class MariaDbFacetHandler
             }
         );
 
-        // If no valid search terms, return without modifying the query
+        // If no valid search terms, return without modifying the query.
         if (empty($searchTerms) === true) {
             return;
         }
 
-        // Create OR conditions for each search term
+        // Create OR conditions for each search term.
         $orConditions = $queryBuilder->expr()->orX();
 
         foreach ($searchTerms as $term) {
-            // Clean the search term - remove wildcards and convert to lowercase
+            // Clean the search term - remove wildcards and convert to lowercase.
             $cleanTerm = strtolower(trim($term));
             $cleanTerm = str_replace(['*', '%'], '', $cleanTerm);
 
-            // Skip empty terms after cleaning
+            // Skip empty terms after cleaning.
             if (empty($cleanTerm) === true) {
                 continue;
             }
 
-            // Use case-insensitive JSON_SEARCH with partial matching
-            // This ensures the search is case-insensitive and supports partial matches
+            // Use case-insensitive JSON_SEARCH with partial matching.
+            // This ensures the search is case-insensitive and supports partial matches.
             $searchFunction = "JSON_SEARCH(LOWER(`object`), 'all', ".$queryBuilder->createNamedParameter('%'.$cleanTerm.'%').")";
 
             $orConditions->add(
@@ -583,7 +583,7 @@ class MariaDbFacetHandler
             );
         }
 
-        // Add the OR conditions to the query if we have any valid terms
+        // Add the OR conditions to the query if we have any valid terms.
         if ($orConditions->count() > 0) {
             $queryBuilder->andWhere($orConditions);
         }
@@ -613,7 +613,7 @@ class MariaDbFacetHandler
         $integerIds = [];
         $stringIds  = [];
 
-        // Separate integer IDs from string UUIDs
+        // Separate integer IDs from string UUIDs.
         foreach ($ids as $id) {
             if (is_numeric($id)) {
                 $integerIds[] = (int) $id;
@@ -622,10 +622,10 @@ class MariaDbFacetHandler
             }
         }
 
-        // Create OR condition for ID or UUID matching
+        // Create OR condition for ID or UUID matching.
         $orConditions = $queryBuilder->expr()->orX();
 
-        // Add integer ID condition if we have any
+        // Add integer ID condition if we have any.
         if (!empty($integerIds)) {
             $orConditions->add(
                 $queryBuilder->expr()->in(
@@ -635,7 +635,7 @@ class MariaDbFacetHandler
             );
         }
 
-        // Add UUID condition if we have any
+        // Add UUID condition if we have any.
         if (!empty($stringIds)) {
             $orConditions->add(
                 $queryBuilder->expr()->in(
@@ -645,7 +645,7 @@ class MariaDbFacetHandler
             );
         }
 
-        // Apply the OR condition if we have any IDs to filter by
+        // Apply the OR condition if we have any IDs to filter by.
         if ($orConditions->count() > 0) {
             $queryBuilder->andWhere($orConditions);
         }
@@ -673,28 +673,28 @@ class MariaDbFacetHandler
     private function applyMetadataFilters(IQueryBuilder $queryBuilder, array $metadataFilters): void
     {
         foreach ($metadataFilters as $field => $value) {
-            // Handle simple values (backwards compatibility)
+            // Handle simple values (backwards compatibility).
             if (!is_array($value)) {
                 if ($value === 'IS NOT NULL') {
                     $queryBuilder->andWhere($queryBuilder->expr()->isNotNull($field));
                 } else if ($value === 'IS NULL') {
                     $queryBuilder->andWhere($queryBuilder->expr()->isNull($field));
                 } else {
-                    // Simple equals (case insensitive for strings)
+                    // Simple equals (case insensitive for strings).
                     $queryBuilder->andWhere($queryBuilder->expr()->eq($field, $queryBuilder->createNamedParameter($value)));
                 }
 
                 continue;
             }
 
-            // Handle array of values (OR condition)
+            // Handle array of values (OR condition).
             if (isset($value[0]) && !is_string($value[0])) {
-                // This is an array of values, not operators
+                // This is an array of values, not operators.
                 $queryBuilder->andWhere($queryBuilder->expr()->in($field, $queryBuilder->createNamedParameter($value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
                 continue;
             }
 
-            // Handle operator-based filters
+            // Handle operator-based filters.
             foreach ($value as $operator => $operatorValue) {
                 switch ($operator) {
                     case 'gt':
@@ -713,19 +713,19 @@ class MariaDbFacetHandler
                         $queryBuilder->andWhere($queryBuilder->expr()->neq($field, $queryBuilder->createNamedParameter($operatorValue)));
                         break;
                     case '~':
-                        // Contains (case insensitive)
+                        // Contains (case insensitive).
                         $queryBuilder->andWhere($queryBuilder->expr()->like($field, $queryBuilder->createNamedParameter('%'.$operatorValue.'%')));
                         break;
                     case '^':
-                        // Starts with (case insensitive)
+                        // Starts with (case insensitive).
                         $queryBuilder->andWhere($queryBuilder->expr()->like($field, $queryBuilder->createNamedParameter($operatorValue.'%')));
                         break;
                     case '$':
-                        // Ends with (case insensitive)
+                        // Ends with (case insensitive).
                         $queryBuilder->andWhere($queryBuilder->expr()->like($field, $queryBuilder->createNamedParameter('%'.$operatorValue)));
                         break;
                     case '===':
-                        // Exact match (case sensitive)
+                        // Exact match (case sensitive).
                         $queryBuilder->andWhere($queryBuilder->expr()->eq($field, $queryBuilder->createNamedParameter($operatorValue)));
                         break;
                     case 'exists':
@@ -760,7 +760,7 @@ class MariaDbFacetHandler
                         }
                         break;
                     default:
-                        // Default to equals for unknown operators
+                        // Default to equals for unknown operators.
                         $queryBuilder->andWhere($queryBuilder->expr()->eq($field, $queryBuilder->createNamedParameter($operatorValue)));
                         break;
                 }//end switch
@@ -792,7 +792,7 @@ class MariaDbFacetHandler
         foreach ($objectFilters as $field => $value) {
             $jsonPath = '$.'.$field;
 
-            // Handle simple values (backwards compatibility)
+            // Handle simple values (backwards compatibility).
             if (!is_array($value)) {
                 if ($value === 'IS NOT NULL') {
                     $queryBuilder->andWhere(
@@ -807,16 +807,16 @@ class MariaDbFacetHandler
                         )
                     );
                 } else {
-                    // Simple equals with both exact match and array containment
+                    // Simple equals with both exact match and array containment.
                     $this->applySimpleObjectFieldFilter($queryBuilder, $jsonPath, $value);
                 }
 
                 continue;
             }
 
-            // Handle array of values (OR condition) - backwards compatibility
+            // Handle array of values (OR condition) - backwards compatibility.
             if (isset($value[0]) && !is_string($value[0])) {
-                // This is an array of values, not operators
+                // This is an array of values, not operators.
                 $orConditions = $queryBuilder->expr()->orX();
                 foreach ($value as $val) {
                     $this->addObjectFieldValueCondition($queryBuilder, $orConditions, $jsonPath, $val);
@@ -826,7 +826,7 @@ class MariaDbFacetHandler
                 continue;
             }
 
-            // Handle operator-based filters
+            // Handle operator-based filters.
             foreach ($value as $operator => $operatorValue) {
                 $this->applyObjectFieldOperator($queryBuilder, $jsonPath, $operator, $operatorValue);
             }
@@ -883,7 +883,7 @@ class MariaDbFacetHandler
      */
     private function addObjectFieldValueCondition(IQueryBuilder $queryBuilder, mixed $conditions, string $jsonPath, mixed $value): void
     {
-                // Check for exact match (single value)
+                // Check for exact match (single value).
         $conditions->add(
                     $queryBuilder->expr()->eq(
                 $queryBuilder->createFunction("JSON_UNQUOTE(JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath)."))"),
@@ -891,7 +891,7 @@ class MariaDbFacetHandler
                     )
                 );
 
-                // Check if the value exists within an array using JSON_CONTAINS
+                // Check if the value exists within an array using JSON_CONTAINS.
         $conditions->add(
                     $queryBuilder->expr()->eq(
                 $queryBuilder->createFunction("JSON_CONTAINS(JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath)."), ".$queryBuilder->createNamedParameter(json_encode($value)).")"),
@@ -943,19 +943,19 @@ class MariaDbFacetHandler
                 $queryBuilder->andWhere($queryBuilder->expr()->neq($jsonExtract, $queryBuilder->createNamedParameter($operatorValue)));
                 break;
             case '~':
-                // Contains (case insensitive)
+                // Contains (case insensitive).
                 $queryBuilder->andWhere($queryBuilder->expr()->like($jsonExtract, $queryBuilder->createNamedParameter('%'.$operatorValue.'%')));
                 break;
             case '^':
-                // Starts with (case insensitive)
+                // Starts with (case insensitive).
                 $queryBuilder->andWhere($queryBuilder->expr()->like($jsonExtract, $queryBuilder->createNamedParameter($operatorValue.'%')));
                 break;
             case '$':
-                // Ends with (case insensitive)
+                // Ends with (case insensitive).
                 $queryBuilder->andWhere($queryBuilder->expr()->like($jsonExtract, $queryBuilder->createNamedParameter('%'.$operatorValue)));
                 break;
             case '===':
-                // Exact match (case sensitive)
+                // Exact match (case sensitive).
                 $queryBuilder->andWhere($queryBuilder->expr()->eq($jsonExtract, $queryBuilder->createNamedParameter($operatorValue)));
                 break;
             case 'exists':
@@ -1010,7 +1010,7 @@ class MariaDbFacetHandler
                 }
                 break;
             default:
-                // Default to simple filter for unknown operators
+                // Default to simple filter for unknown operators.
                 $this->applySimpleObjectFieldFilter($queryBuilder, $jsonPath, $operatorValue);
                 break;
         }//end switch
@@ -1095,25 +1095,25 @@ class MariaDbFacetHandler
      */
     public function getFacetableFields(array $baseQuery=[], int $sampleSize=100): array
     {
-        // Get sample objects to analyze
+        // Get sample objects to analyze.
         $sampleObjects = $this->getSampleObjects($baseQuery, $sampleSize);
 
         if (empty($sampleObjects)) {
             return [];
         }
 
-        // Analyze fields across all sample objects
+        // Analyze fields across all sample objects.
         $fieldAnalysis = [];
 
         foreach ($sampleObjects as $objectData) {
             $this->analyzeObjectFields($objectData, $fieldAnalysis);
         }
 
-        // Convert analysis to facetable field configuration
+        // Convert analysis to facetable field configuration.
         $facetableFields = [];
 
         foreach ($fieldAnalysis as $fieldPath => $analysis) {
-            // Only include fields that appear in at least 10% of objects
+            // Only include fields that appear in at least 10% of objects.
             $appearanceRate = $analysis['count'] / count($sampleObjects);
             if ($appearanceRate >= 0.1) {
                 $fieldConfig = $this->determineFieldConfiguration($fieldPath, $analysis);
@@ -1153,7 +1153,7 @@ class MariaDbFacetHandler
             ->where($queryBuilder->expr()->isNotNull('object'))
             ->setMaxResults($sampleSize);
 
-        // Apply base filters
+        // Apply base filters.
         $this->applyBaseFilters($queryBuilder, $baseQuery);
 
         $result  = $queryBuilder->executeQuery();
@@ -1193,7 +1193,7 @@ class MariaDbFacetHandler
      */
     private function analyzeObjectFields(array $objectData, array &$fieldAnalysis, string $prefix='', int $depth=0): void
     {
-        // Limit recursion depth to avoid infinite loops and performance issues
+        // Limit recursion depth to avoid infinite loops and performance issues.
         if ($depth > 2) {
             return;
         }
@@ -1201,12 +1201,12 @@ class MariaDbFacetHandler
         foreach ($objectData as $key => $value) {
             $fieldPath = $prefix === '' ? $key : $prefix.'.'.$key;
 
-            // Skip system fields
+            // Skip system fields.
             if (str_starts_with($key, '@') || str_starts_with($key, '_')) {
                 continue;
             }
 
-            // Initialize field analysis if not exists
+            // Initialize field analysis if not exists.
             if (!isset($fieldAnalysis[$fieldPath])) {
                 $fieldAnalysis[$fieldPath] = [
                     'count'         => 0,
@@ -1220,19 +1220,19 @@ class MariaDbFacetHandler
 
             $fieldAnalysis[$fieldPath]['count']++;
 
-            // Analyze value type and characteristics
+            // Analyze value type and characteristics.
             if (is_array($value)) {
                 $fieldAnalysis[$fieldPath]['is_array'] = true;
 
-                // Check if it's an array of objects (nested structure)
+                // Check if it's an array of objects (nested structure).
                 if (!empty($value) && is_array($value[0])) {
                     $fieldAnalysis[$fieldPath]['is_nested'] = true;
-                    // Recursively analyze nested objects
+                    // Recursively analyze nested objects.
                     if (is_array($value[0])) {
                         $this->analyzeObjectFields($value[0], $fieldAnalysis, $fieldPath, $depth + 1);
                     }
                 } else {
-                    // Array of simple values - not nested
+                    // Array of simple values - not nested.
                     foreach ($value as $item) {
                         $this->recordValueType($fieldAnalysis[$fieldPath], $item);
                         $this->recordSampleValue($fieldAnalysis[$fieldPath], $item);
@@ -1240,12 +1240,12 @@ class MariaDbFacetHandler
                 }
             } else if (is_object($value)) {
                 $fieldAnalysis[$fieldPath]['is_nested'] = true;
-                // Recursively analyze nested object
+                // Recursively analyze nested object.
                 if (is_array($value)) {
                     $this->analyzeObjectFields($value, $fieldAnalysis, $fieldPath, $depth + 1);
                 }
             } else {
-                // Simple value
+                // Simple value.
                 $this->recordValueType($fieldAnalysis[$fieldPath], $value);
                 $this->recordSampleValue($fieldAnalysis[$fieldPath], $value);
             }//end if
@@ -1297,7 +1297,7 @@ class MariaDbFacetHandler
      */
     private function recordSampleValue(array &$fieldAnalysis, mixed $value): void
     {
-        // Convert value to string for storage
+        // Convert value to string for storage.
         $stringValue = $this->valueToString($value);
 
         if (!in_array($stringValue, $fieldAnalysis['sample_values']) && count($fieldAnalysis['sample_values']) < 20) {
@@ -1337,12 +1337,12 @@ class MariaDbFacetHandler
         }
 
         if (is_string($value)) {
-            // Check if it looks like a date
+            // Check if it looks like a date.
             if ($this->looksLikeDate($value)) {
                 return 'date';
             }
 
-            // Check if it's numeric
+            // Check if it's numeric.
             if (is_numeric($value)) {
                 return 'numeric_string';
             }
@@ -1368,18 +1368,18 @@ class MariaDbFacetHandler
      */
     private function looksLikeDate(string $value): bool
     {
-        // Common date patterns
+        // Common date patterns.
         $datePatterns = [
             '/^\d{4}-\d{2}-\d{2}$/',
-        // YYYY-MM-DD
+        // YYYY-MM-DD.
             '/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/',
-        // ISO 8601
+        // ISO 8601.
             '/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/',
-        // YYYY-MM-DD HH:MM:SS
+        // YYYY-MM-DD HH:MM:SS.
             '/^\d{2}\/\d{2}\/\d{4}$/',
-        // MM/DD/YYYY
+        // MM/DD/YYYY.
             '/^\d{2}-\d{2}-\d{4}$/',
-        // MM-DD-YYYY
+        // MM-DD-YYYY.
         ];
 
         foreach ($datePatterns as $pattern) {
@@ -1439,12 +1439,12 @@ class MariaDbFacetHandler
      */
     private function determineFieldConfiguration(string $fieldPath, array $analysis): ?array
     {
-        // Skip nested objects and arrays of objects, but allow arrays of simple values
+        // Skip nested objects and arrays of objects, but allow arrays of simple values.
         if ($analysis['is_nested'] && !$this->isArrayOfSimpleValues($analysis)) {
             return null;
         }
 
-        // Determine primary type
+        // Determine primary type.
         $primaryType = $this->getPrimaryType($analysis['types']);
 
         if ($primaryType === null) {
@@ -1459,16 +1459,16 @@ class MariaDbFacetHandler
             'is_array'        => $analysis['is_array'] ?? false,
         ];
 
-        // Configure facet types based on field type
+        // Configure facet types based on field type.
         switch ($primaryType) {
             case 'string':
                 $uniqueValueCount = count($analysis['sample_values']);
                 if ($uniqueValueCount <= 50) {
-                    // Low cardinality - good for terms facet
+                    // Low cardinality - good for terms facet.
                     $config['facet_types'] = ['terms'];
                     $config['cardinality'] = 'low';
                 } else {
-                    // High cardinality - not suitable for faceting
+                    // High cardinality - not suitable for faceting.
                     return null;
                 }
                 break;
@@ -1512,16 +1512,16 @@ class MariaDbFacetHandler
      */
     private function isArrayOfSimpleValues(array $analysis): bool
     {
-        // If it's not an array, it's not an array of simple values
+        // If it's not an array, it's not an array of simple values.
         if (!($analysis['is_array'] ?? false)) {
             return false;
         }
 
-        // If it's nested, check if the types are simple
+        // If it's nested, check if the types are simple.
         if ($analysis['is_nested'] ?? false) {
             $types = $analysis['types'] ?? [];
 
-            // Check if all types are simple (string, integer, float, boolean, numeric_string, date)
+            // Check if all types are simple (string, integer, float, boolean, numeric_string, date).
             $simpleTypes = ['string', 'integer', 'float', 'boolean', 'numeric_string', 'date'];
 
             foreach (array_keys($types) as $type) {
@@ -1555,14 +1555,14 @@ class MariaDbFacetHandler
             return null;
         }
 
-        // Sort by count descending
+        // Sort by count descending.
         arsort($types);
 
         $totalCount   = array_sum($types);
         $primaryType  = array_key_first($types);
         $primaryCount = $types[$primaryType];
 
-        // Primary type should represent at least 70% of values
+        // Primary type should represent at least 70% of values.
         if ($primaryCount / $totalCount >= 0.7) {
             return $primaryType;
         }

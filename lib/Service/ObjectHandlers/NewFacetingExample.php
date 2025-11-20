@@ -152,21 +152,21 @@ class NewFacetingExample
     public function ecommerceFaceting(): array
     {
         $query = [
-            // Base filters
+            // Base filters.
             '@self'      => [
                 'register' => 1,
-        // Products register
+        // Products register.
                 'schema'   => 2,
-        // Product schema
+        // Product schema.
             ],
             'category'   => 'electronics',
             'in_stock'   => true,
             '_published' => true,
             '_search'    => 'smartphone',
 
-            // Comprehensive faceting
+            // Comprehensive faceting.
             '_facets'    => [
-                // Metadata facets
+                // Metadata facets.
                 '@self'        => [
                     'register' => ['type' => 'terms'],
                     'schema'   => ['type' => 'terms'],
@@ -176,7 +176,7 @@ class NewFacetingExample
                     ],
                 ],
 
-                // Product attribute facets
+                // Product attribute facets.
                 'category'     => ['type' => 'terms'],
                 'brand'        => ['type' => 'terms'],
                 'color'        => ['type' => 'terms'],
@@ -184,7 +184,7 @@ class NewFacetingExample
                 'condition'    => ['type' => 'terms'],
                 'availability' => ['type' => 'terms'],
 
-                // Price range facets
+                // Price range facets.
                 'price'        => [
                     'type'   => 'range',
                     'ranges' => [
@@ -196,7 +196,7 @@ class NewFacetingExample
                     ],
                 ],
 
-                // Rating range facets
+                // Rating range facets.
                 'rating'       => [
                     'type'   => 'range',
                     'ranges' => [
@@ -247,7 +247,7 @@ class NewFacetingExample
             ],
         ];
 
-        // This returns: results, total, page, pages, limit, offset, facets, next, prev
+        // This returns: results, total, page, pages, limit, offset, facets, next, prev.
         return $this->objectService->searchObjectsPaginated($query);
 
     }//end paginatedSearchWithFacets()
@@ -262,9 +262,9 @@ class NewFacetingExample
      */
     public function migrationExample(): array
     {
-        // OLD WAY (deprecated - don't use):
+        // OLD WAY (deprecated - don't use):.
         // $oldFacets = $objectService->getFacets(['status' => 'active'], 'search term');
-        // NEW WAY (current approach):
+        // NEW WAY (current approach):.
         $newQuery = [
             '@self'   => [
                 'register' => $this->objectService->getRegister(),
@@ -311,30 +311,30 @@ class NewFacetingExample
     public function advancedFilteringWithFacets(): array
     {
         $query = [
-            // Complex metadata filters
+            // Complex metadata filters.
             '@self'        => [
                 'register'     => [1, 2, 3],
-        // Multiple registers
+        // Multiple registers.
                 'organisation' => 'IS NOT NULL',
-        // Has organisation
+        // Has organisation.
                 'owner'        => 'user123',
-        // Specific owner
+        // Specific owner.
             ],
 
-            // Complex object field filters
+            // Complex object field filters.
             'status'       => ['active', 'pending'],
-            // Multiple statuses
+            // Multiple statuses.
             'priority'     => 'high',
-            // Single priority
+            // Single priority.
             'address.city' => 'Amsterdam',
-            // Nested field
+            // Nested field.
             'tags'         => ['vip', 'customer'],
-            // Array search
-            // Search and options
+            // Array search.
+            // Search and options.
             '_search'      => 'important project',
             '_published'   => true,
 
-            // Comprehensive faceting
+            // Comprehensive faceting.
             '_facets'      => [
                 '@self'        => [
                     'register'     => ['type' => 'terms'],
@@ -376,30 +376,30 @@ class NewFacetingExample
     public function performanceOptimizedFaceting(): array
     {
         $query = [
-            // Use specific filters to reduce dataset
+            // Use specific filters to reduce dataset.
             '@self'      => [
                 'register' => 1,
-        // Single register for better performance
+        // Single register for better performance.
                 'schema'   => 2,
-        // Single schema for better performance
+        // Single schema for better performance.
             ],
             'status'     => 'active',
-            // Pre-filter to reduce dataset
+            // Pre-filter to reduce dataset.
             '_published' => true,
-            // Only published objects
-            // Focused faceting - only what's needed
+            // Only published objects.
+            // Focused faceting - only what's needed.
             '_facets'    => [
-                // Only essential metadata facets
+                // Only essential metadata facets.
                 '@self'    => [
                     'schema' => ['type' => 'terms'],
-            // Only schema facet needed
+            // Only schema facet needed.
                 ],
 
-                // Only essential object field facets
+                // Only essential object field facets.
                 'category' => ['type' => 'terms'],
-                // Main category filter
+                // Main category filter.
                 'priority' => ['type' => 'terms'],
-                // Priority filter
+                // Priority filter.
                 // Note: Avoid too many facets as they impact performance
                 // Note: Date histograms and ranges are more expensive than terms
             ],

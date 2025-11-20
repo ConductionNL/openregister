@@ -96,17 +96,17 @@ class RbacTest extends TestCase
      */
     public function testSchemaHasPermissionOpenAccess(): void
     {
-        // Create schema with no authorization (open access)
+        // Create schema with no authorization (open access).
         $schema = new Schema();
         $schema->setAuthorization([]);
 
-        // Test all CRUD operations for different user types
+        // Test all CRUD operations for different user types.
         $this->assertTrue($schema->hasPermission('viewers', 'read'));
         $this->assertTrue($schema->hasPermission('editors', 'create'));
         $this->assertTrue($schema->hasPermission('managers', 'delete'));
         $this->assertTrue($schema->hasPermission('public', 'read'));
         
-        // Test with null authorization (also open access)
+        // Test with null authorization (also open access).
         $schema->setAuthorization(null);
         $this->assertTrue($schema->hasPermission('anyone', 'update'));
     }
@@ -117,7 +117,7 @@ class RbacTest extends TestCase
      */
     public function testSchemaHasPermissionAdminOverride(): void
     {
-        // Create restrictive schema (staff only)
+        // Create restrictive schema (staff only).
         $schema = new Schema();
         $schema->setAuthorization([
             'create' => ['staff'],
@@ -126,13 +126,13 @@ class RbacTest extends TestCase
             'delete' => ['staff']
         ]);
 
-        // Admin group should bypass all restrictions
+        // Admin group should bypass all restrictions.
         $this->assertTrue($schema->hasPermission('admin', 'create'));
         $this->assertTrue($schema->hasPermission('admin', 'read'));
         $this->assertTrue($schema->hasPermission('admin', 'update'));
         $this->assertTrue($schema->hasPermission('admin', 'delete'));
 
-        // Admin userGroup parameter should also work
+        // Admin userGroup parameter should also work.
         $this->assertTrue($schema->hasPermission('other', 'create', 'user123', 'admin'));
     }
 
@@ -142,7 +142,7 @@ class RbacTest extends TestCase
      */
     public function testSchemaHasPermissionOwnerOverride(): void
     {
-        // Create restrictive schema
+        // Create restrictive schema.
         $schema = new Schema();
         $schema->setAuthorization([
             'create' => ['staff'],
@@ -151,15 +151,15 @@ class RbacTest extends TestCase
             'delete' => ['managers']
         ]);
 
-        // User not in authorized groups should be blocked normally
+        // User not in authorized groups should be blocked normally.
         $this->assertFalse($schema->hasPermission('editors', 'read', 'user123'));
         
-        // Same user should have access when they own the object
+        // Same user should have access when they own the object.
         $this->assertTrue($schema->hasPermission('editors', 'read', 'user123', null, 'user123'));
         $this->assertTrue($schema->hasPermission('editors', 'update', 'user123', null, 'user123'));
         $this->assertTrue($schema->hasPermission('editors', 'delete', 'user123', null, 'user123'));
         
-        // Different owner should not grant access
+        // Different owner should not grant access.
         $this->assertFalse($schema->hasPermission('editors', 'read', 'user123', null, 'user456'));
     }
 
@@ -168,7 +168,7 @@ class RbacTest extends TestCase
      */
     public function testSchemaHasPermissionGroupAuthorizationPositive(): void
     {
-        // Create collaborative schema with specific permissions
+        // Create collaborative schema with specific permissions.
         $schema = new Schema();
         $schema->setAuthorization([
             'create' => ['editors', 'managers'],
@@ -177,7 +177,7 @@ class RbacTest extends TestCase
             'delete' => ['managers']
         ]);
 
-        // Test authorized groups can perform allowed actions
+        // Test authorized groups can perform allowed actions.
         $this->assertTrue($schema->hasPermission('viewers', 'read'));
         $this->assertTrue($schema->hasPermission('editors', 'read'));
         $this->assertTrue($schema->hasPermission('editors', 'create'));
@@ -193,7 +193,7 @@ class RbacTest extends TestCase
      */
     public function testSchemaHasPermissionGroupAuthorizationNegative(): void
     {
-        // Create collaborative schema with specific permissions
+        // Create collaborative schema with specific permissions.
         $schema = new Schema();
         $schema->setAuthorization([
             'create' => ['editors', 'managers'],
@@ -202,7 +202,7 @@ class RbacTest extends TestCase
             'delete' => ['managers']
         ]);
 
-        // Test unauthorized groups are blocked from restricted actions
+        // Test unauthorized groups are blocked from restricted actions.
         $this->assertFalse($schema->hasPermission('viewers', 'create'));
         $this->assertFalse($schema->hasPermission('viewers', 'update'));
         $this->assertFalse($schema->hasPermission('viewers', 'delete'));
@@ -217,19 +217,19 @@ class RbacTest extends TestCase
      */
     public function testSchemaHasPermissionMissingAction(): void
     {
-        // Create schema with partial authorization
+        // Create schema with partial authorization.
         $schema = new Schema();
         $schema->setAuthorization([
             'create' => ['editors'],
             'delete' => ['managers']
-            // read and update not specified
+            // read and update not specified.
         ]);
 
-        // Unspecified actions should be open to all
+        // Unspecified actions should be open to all.
         $this->assertTrue($schema->hasPermission('anyone', 'read'));
         $this->assertTrue($schema->hasPermission('viewers', 'update'));
         
-        // Specified actions should respect restrictions
+        // Specified actions should respect restrictions.
         $this->assertTrue($schema->hasPermission('editors', 'create'));
         $this->assertFalse($schema->hasPermission('viewers', 'create'));
         $this->assertTrue($schema->hasPermission('managers', 'delete'));
@@ -241,7 +241,7 @@ class RbacTest extends TestCase
      */
     public function testSchemaHasPermissionPublicAccess(): void
     {
-        // Create schema with public read access
+        // Create schema with public read access.
         $schema = new Schema();
         $schema->setAuthorization([
             'create' => ['editors'],
@@ -250,10 +250,10 @@ class RbacTest extends TestCase
             'delete' => ['managers']
         ]);
 
-        // Public should have read access
+        // Public should have read access.
         $this->assertTrue($schema->hasPermission('public', 'read'));
         
-        // Public should not have other permissions
+        // Public should not have other permissions.
         $this->assertFalse($schema->hasPermission('public', 'create'));
         $this->assertFalse($schema->hasPermission('public', 'update'));
         $this->assertFalse($schema->hasPermission('public', 'delete'));
@@ -264,12 +264,12 @@ class RbacTest extends TestCase
      */
     public function testSchemaGetAuthorizedGroups(): void
     {
-        // Test open access schema
+        // Test open access schema.
         $schema = new Schema();
         $schema->setAuthorization([]);
         $this->assertEmpty($schema->getAuthorizedGroups('read'));
         
-        // Test schema with specific permissions
+        // Test schema with specific permissions.
         $schema->setAuthorization([
             'create' => ['editors', 'managers'],
             'read' => ['viewers', 'editors', 'managers'],
@@ -297,19 +297,19 @@ class RbacTest extends TestCase
             'delete' => ['managers', 'staff']
         ]);
 
-        // Staff should have full access except delete needs managers too
+        // Staff should have full access except delete needs managers too.
         $this->assertTrue($schema->hasPermission('staff', 'create'));
         $this->assertTrue($schema->hasPermission('staff', 'read'));
         $this->assertTrue($schema->hasPermission('staff', 'update'));
         $this->assertTrue($schema->hasPermission('staff', 'delete'));
         
-        // Managers should only have delete access
+        // Managers should only have delete access.
         $this->assertFalse($schema->hasPermission('managers', 'create'));
         $this->assertFalse($schema->hasPermission('managers', 'read'));
         $this->assertFalse($schema->hasPermission('managers', 'update'));
         $this->assertTrue($schema->hasPermission('managers', 'delete'));
         
-        // Other groups should have no access
+        // Other groups should have no access.
         $this->assertFalse($schema->hasPermission('editors', 'read'));
         $this->assertFalse($schema->hasPermission('viewers', 'read'));
         $this->assertFalse($schema->hasPermission('public', 'read'));
@@ -328,25 +328,25 @@ class RbacTest extends TestCase
             'delete' => ['managers']
         ]);
 
-        // Public should only have read access
+        // Public should only have read access.
         $this->assertTrue($schema->hasPermission('public', 'read'));
         $this->assertFalse($schema->hasPermission('public', 'create'));
         $this->assertFalse($schema->hasPermission('public', 'update'));
         $this->assertFalse($schema->hasPermission('public', 'delete'));
         
-        // Editors should have create, read, update
+        // Editors should have create, read, update.
         $this->assertTrue($schema->hasPermission('editors', 'create'));
         $this->assertTrue($schema->hasPermission('editors', 'read'));
         $this->assertTrue($schema->hasPermission('editors', 'update'));
         $this->assertFalse($schema->hasPermission('editors', 'delete'));
         
-        // Managers should have full access  
+        // Managers should have full access.  
         $this->assertTrue($schema->hasPermission('managers', 'create'));
         $this->assertTrue($schema->hasPermission('managers', 'read'));
         $this->assertTrue($schema->hasPermission('managers', 'update'));
         $this->assertTrue($schema->hasPermission('managers', 'delete'));
         
-        // Viewers should have no access (not included in any groups)
+        // Viewers should have no access (not included in any groups).
         $this->assertFalse($schema->hasPermission('viewers', 'create'));
         $this->assertFalse($schema->hasPermission('viewers', 'read'));
         $this->assertFalse($schema->hasPermission('viewers', 'update'));
@@ -363,16 +363,16 @@ class RbacTest extends TestCase
             'read' => ['editors']
         ]);
 
-        // Empty group ID should be denied
+        // Empty group ID should be denied.
         $this->assertFalse($schema->hasPermission('', 'read'));
         
-        // Empty action should be allowed (default behavior - unspecified actions are open)
+        // Empty action should be allowed (default behavior - unspecified actions are open).
         $this->assertTrue($schema->hasPermission('editors', ''));
         
-        // User in authorized group should still have access regardless of object owner
+        // User in authorized group should still have access regardless of object owner.
         $this->assertTrue($schema->hasPermission('editors', 'read', 'user1', null, 'user2'));
         
-        // User NOT in authorized group should be denied access when different from object owner
+        // User NOT in authorized group should be denied access when different from object owner.
         $this->assertFalse($schema->hasPermission('viewers', 'read', 'user1', null, 'user2'));
     }
 
@@ -389,20 +389,20 @@ class RbacTest extends TestCase
             'delete' => ['editors']
         ]);
 
-        // Test combinations of conditions
+        // Test combinations of conditions.
         
-        // Regular user in authorized group
+        // Regular user in authorized group.
         $this->assertTrue($schema->hasPermission('editors', 'create', 'user1'));
         $this->assertTrue($schema->hasPermission('viewers', 'read', 'user2'));
         
-        // User not in authorized group but is object owner
+        // User not in authorized group but is object owner.
         $this->assertFalse($schema->hasPermission('staff', 'read', 'user3'));
         $this->assertTrue($schema->hasPermission('staff', 'read', 'user3', null, 'user3'));
         
-        // Admin user overrides everything
+        // Admin user overrides everything.
         $this->assertTrue($schema->hasPermission('any-group', 'delete', 'admin-user', 'admin'));
         
-        // Multiple scenarios combined
+        // Multiple scenarios combined.
         $this->assertTrue($schema->hasPermission('contributors', 'create', 'user4', null, 'user5')); // authorized group
         $this->assertTrue($schema->hasPermission('staff', 'delete', 'user4', null, 'user4')); // object owner
         $this->assertTrue($schema->hasPermission('random', 'update', 'admin', 'admin')); // admin override
@@ -413,7 +413,7 @@ class RbacTest extends TestCase
      */
     public function testSchemaAuthorizationValidation(): void
     {
-        // Test valid authorization structure
+        // Test valid authorization structure.
         $schema = new Schema();
         $schema->setAuthorization([
             'create' => ['editors'],
@@ -424,7 +424,7 @@ class RbacTest extends TestCase
         
         $this->assertTrue($schema->validateAuthorization());
         
-        // Test invalid action should throw exception
+        // Test invalid action should throw exception.
         $schema2 = new Schema();
         $schema2->setAuthorization([
             'invalid-action' => ['editors'] // invalid CRUD action
@@ -440,7 +440,7 @@ class RbacTest extends TestCase
      */
     public function testSchemaAuthorizationValidationEdgeCases(): void
     {
-        // Test non-array groups should throw exception
+        // Test non-array groups should throw exception.
         $schema = new Schema();
         $schema->setAuthorization([
             'create' => 'not-an-array' // should be array

@@ -74,9 +74,9 @@ class Version1Date20251111000000 extends SimpleMigrationStep
 
         $output->info('🏗️  Adding embedding model tracking to vectors...');
 
-        // ============================================================
-        // Add embedding_model to openregister_vectors
-        // ============================================================
+        // ============================================================.
+        // Add embedding_model to openregister_vectors.
+        // ============================================================.
         if ($schema->hasTable('openregister_vectors')) {
             $table = $schema->getTable('openregister_vectors');
 
@@ -100,7 +100,7 @@ class Version1Date20251111000000 extends SimpleMigrationStep
                 $output->info('  ℹ️  vectors.embedding_model column already exists');
             }
 
-            // Add index for filtering by model
+            // Add index for filtering by model.
             if (!$table->hasIndex('embedding_model_idx')) {
                 $output->info('  📝 Adding index on embedding_model column');
 

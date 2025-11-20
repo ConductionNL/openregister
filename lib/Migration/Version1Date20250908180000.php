@@ -53,8 +53,8 @@ class Version1Date20250908180000 extends SimpleMigrationStep
         /** @var ISchemaWrapper $schema */
         $schema = $schemaClosure();
 
-        // This migration requires raw SQL as Nextcloud's schema wrapper doesn't
-        // support the ON UPDATE CURRENT_TIMESTAMP syntax directly
+        // This migration requires raw SQL as Nextcloud's schema wrapper doesn't.
+        // support the ON UPDATE CURRENT_TIMESTAMP syntax directly.
         $output->info('🔧 This migration requires manual SQL execution for ON UPDATE functionality');
         $output->info('ℹ️  Nextcloud schema wrapper has limited support for MySQL-specific timestamp features');
         
@@ -74,11 +74,11 @@ class Version1Date20250908180000 extends SimpleMigrationStep
     {
         $output->info('🔧 Modifying updated column to auto-update on row changes...');
         
-        // Use direct database connection for MySQL-specific syntax
+        // Use direct database connection for MySQL-specific syntax.
         $connection = \OC::$server->getDatabaseConnection();
         
         try {
-            // Modify the updated column to include ON UPDATE CURRENT_TIMESTAMP
+            // Modify the updated column to include ON UPDATE CURRENT_TIMESTAMP.
             $sql = "ALTER TABLE `oc_openregister_objects` 
                     MODIFY COLUMN `updated` datetime NOT NULL 
                     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP";

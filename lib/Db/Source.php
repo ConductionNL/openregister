@@ -275,22 +275,22 @@ class Source extends Entity implements JsonSerializable
      */
     public function __toString(): string
     {
-        // Return the title if available, otherwise return a descriptive string
+        // Return the title if available, otherwise return a descriptive string.
         if ($this->title !== null && $this->title !== '') {
             return $this->title;
         }
 
-        // Fallback to UUID if available
+        // Fallback to UUID if available.
         if ($this->uuid !== null && $this->uuid !== '') {
             return $this->uuid;
         }
 
-        // Fallback to ID if available
+        // Fallback to ID if available.
         if ($this->id !== null) {
             return 'Source #'.$this->id;
         }
 
-        // Final fallback
+        // Final fallback.
         return 'Source';
 
     }//end __toString()

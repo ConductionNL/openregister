@@ -60,7 +60,7 @@ class Version1Date20250902150000 extends SimpleMigrationStep
 
         $table = $schema->getTable('openregister_schemas');
 
-        // Add facets column for pre-computed facet configurations
+        // Add facets column for pre-computed facet configurations.
         if (!$table->hasColumn('facets')) {
             $table->addColumn(
                     'facets',
@@ -91,7 +91,7 @@ class Version1Date20250902150000 extends SimpleMigrationStep
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
         // Note: We'll regenerate facets via an OCC command rather than in migration
-        // to avoid dependency injection issues during migration
+        // to avoid dependency injection issues during migration.
         $output->info('Facets column added. Run `occ openregister:regenerate-facets` to populate facet data for existing schemas.');
 
     }//end postSchemaChange()

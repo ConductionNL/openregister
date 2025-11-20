@@ -227,10 +227,10 @@ class SchemaTool extends AbstractTool
         }
 
         try {
-            // Convert snake_case to camelCase for PSR compliance
+            // Convert snake_case to camelCase for PSR compliance.
             $methodName = lcfirst(str_replace('_', '', ucwords($functionName, '_')));
 
-            // Call the method directly (LLPhant-compatible)
+            // Call the method directly (LLPhant-compatible).
             return $this->$methodName(...array_values($parameters));
         } catch (\Exception $e) {
             $this->log($functionName, $parameters, 'error', $e->getMessage());

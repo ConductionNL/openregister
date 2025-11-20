@@ -63,7 +63,7 @@ class Version1Date20251115000000 extends SimpleMigrationStep
         if ($schema->hasTable('openregister_configurations')) {
             $table = $schema->getTable('openregister_configurations');
 
-            // Add isLocal field (boolean) - true = maintained locally, false = imported externally
+            // Add isLocal field (boolean) - true = maintained locally, false = imported externally.
             if (!$table->hasColumn('is_local')) {
                 $table->addColumn(
                         'is_local',
@@ -80,7 +80,7 @@ class Version1Date20251115000000 extends SimpleMigrationStep
                 $output->info('   ⚠️  is_local column already exists');
             }
 
-            // Add syncEnabled field (boolean) - whether auto-sync is enabled
+            // Add syncEnabled field (boolean) - whether auto-sync is enabled.
             if (!$table->hasColumn('sync_enabled')) {
                 $table->addColumn(
                         'sync_enabled',
@@ -97,7 +97,7 @@ class Version1Date20251115000000 extends SimpleMigrationStep
                 $output->info('   ⚠️  sync_enabled column already exists');
             }
 
-            // Add syncInterval field (integer) - sync interval in hours
+            // Add syncInterval field (integer) - sync interval in hours.
             if (!$table->hasColumn('sync_interval')) {
                 $table->addColumn(
                         'sync_interval',
@@ -114,7 +114,7 @@ class Version1Date20251115000000 extends SimpleMigrationStep
                 $output->info('   ⚠️  sync_interval column already exists');
             }
 
-            // Add lastSyncDate field (datetime) - last synchronization timestamp
+            // Add lastSyncDate field (datetime) - last synchronization timestamp.
             if (!$table->hasColumn('last_sync_date')) {
                 $table->addColumn(
                         'last_sync_date',
@@ -131,7 +131,7 @@ class Version1Date20251115000000 extends SimpleMigrationStep
                 $output->info('   ⚠️  last_sync_date column already exists');
             }
 
-            // Add syncStatus field (string) - status of last sync
+            // Add syncStatus field (string) - status of last sync.
             if (!$table->hasColumn('sync_status')) {
                 $table->addColumn(
                         'sync_status',
@@ -149,7 +149,7 @@ class Version1Date20251115000000 extends SimpleMigrationStep
                 $output->info('   ⚠️  sync_status column already exists');
             }
 
-            // Add openregister field (string) - required OpenRegister version
+            // Add openregister field (string) - required OpenRegister version.
             if (!$table->hasColumn('openregister')) {
                 $table->addColumn(
                         'openregister',

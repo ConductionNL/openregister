@@ -60,7 +60,7 @@ class Version1Date20251106000001 extends SimpleMigrationStep
             $table   = $schema->getTable('openregister_agents');
             $updated = false;
 
-            // Add request_quota column if missing
+            // Add request_quota column if missing.
             if (!$table->hasColumn('request_quota')) {
                 $table->addColumn(
                         'request_quota',
@@ -75,7 +75,7 @@ class Version1Date20251106000001 extends SimpleMigrationStep
                 $updated = true;
             }
 
-            // Add token_quota column if missing
+            // Add token_quota column if missing.
             if (!$table->hasColumn('token_quota')) {
                 $table->addColumn(
                         'token_quota',
@@ -90,7 +90,7 @@ class Version1Date20251106000001 extends SimpleMigrationStep
                 $updated = true;
             }
 
-            // Add groups column if missing
+            // Add groups column if missing.
             if (!$table->hasColumn('groups')) {
                 $table->addColumn(
                         'groups',

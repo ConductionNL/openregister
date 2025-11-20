@@ -61,14 +61,14 @@ class Version1Date20251102150000 extends SimpleMigrationStep
         if ($schema->hasTable('openregister_views')) {
             $table = $schema->getTable('openregister_views');
 
-            // Check if we still have old 'configuration' column
+            // Check if we still have old 'configuration' column.
             if ($table->hasColumn('configuration')) {
-                // Drop old configuration column
+                // Drop old configuration column.
                 $table->dropColumn('configuration');
                 $output->info('   ✓ Dropped old configuration column');
             }
 
-            // Add query column if it doesn't exist
+            // Add query column if it doesn't exist.
             if (!$table->hasColumn('query')) {
                 $table->addColumn(
                         'query',
@@ -81,7 +81,7 @@ class Version1Date20251102150000 extends SimpleMigrationStep
                 $output->info('   ✓ Added query column');
             }
 
-            // Add favored_by column if it doesn't exist
+            // Add favored_by column if it doesn't exist.
             if (!$table->hasColumn('favored_by')) {
                 $table->addColumn(
                         'favored_by',

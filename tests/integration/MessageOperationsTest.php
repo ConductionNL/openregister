@@ -35,7 +35,7 @@ class MessageOperationsTest extends TestCase
         $this->messageMapper = new MessageMapper($this->db, \OC::$server->get(ITimeFactory::class));
         $this->agentMapper = new AgentMapper($this->db);
 
-        // Create test agent
+        // Create test agent.
         $this->testAgent = new Agent();
         $this->testAgent->setUuid('test-agent-msg-' . uniqid());
         $this->testAgent->setName('Test Agent');
@@ -44,7 +44,7 @@ class MessageOperationsTest extends TestCase
         $this->testAgent->setOrganisation(1);
         $this->testAgent = $this->agentMapper->insert($this->testAgent);
 
-        // Create test conversation
+        // Create test conversation.
         $this->testConversation = new Conversation();
         $this->testConversation->setUuid('test-conv-msg-' . uniqid());
         $this->testConversation->setTitle('Test Messages');
@@ -56,7 +56,7 @@ class MessageOperationsTest extends TestCase
 
     protected function tearDown(): void
     {
-        // Clean up test data
+        // Clean up test data.
         try {
             if (isset($this->testConversation)) {
                 $this->conversationMapper->delete($this->testConversation);
@@ -65,7 +65,7 @@ class MessageOperationsTest extends TestCase
                 $this->agentMapper->delete($this->testAgent);
             }
         } catch (\Exception $e) {
-            // Ignore cleanup errors
+            // Ignore cleanup errors.
         }
 
         parent::tearDown();
@@ -87,7 +87,7 @@ class MessageOperationsTest extends TestCase
         $this->assertEquals('Hello, how can you help?', $created->getContent());
         $this->assertEquals($this->testConversation->getId(), $created->getConversationId());
 
-        // Cleanup
+        // Cleanup.
         $this->messageMapper->delete($created);
     }
 
@@ -121,13 +121,13 @@ class MessageOperationsTest extends TestCase
         $this->assertEquals($sources, $created->getSources());
         $this->assertCount(2, $created->getSources());
 
-        // Cleanup
+        // Cleanup.
         $this->messageMapper->delete($created);
     }
 
     public function testFindMessagesByConversation(): void
     {
-        // Create multiple messages
+        // Create multiple messages.
         $msg1 = new Message();
         $msg1->setUuid('test-msg-find-1-' . uniqid());
         $msg1->setConversationId($this->testConversation->getId());
@@ -150,7 +150,7 @@ class MessageOperationsTest extends TestCase
         $created2 = $this->messageMapper->insert($msg2);
         $created3 = $this->messageMapper->insert($msg3);
 
-        // Find all messages
+        // Find all messages.
         $messages = $this->messageMapper->findByConversation($this->testConversation->getId());
 
         $this->assertGreaterThanOrEqual(3, count($messages));
@@ -160,7 +160,7 @@ class MessageOperationsTest extends TestCase
         $this->assertContains($created2->getUuid(), $uuids);
         $this->assertContains($created3->getUuid(), $uuids);
 
-        // Verify order (should be chronological)
+        // Verify order (should be chronological).
         $contents = array_map(fn($m) => $m->getContent(), $messages);
         $firstIdx = array_search('First message', $contents);
         $responseIdx = array_search('Response to first message', $contents);
@@ -169,7 +169,7 @@ class MessageOperationsTest extends TestCase
         $this->assertLessThan($responseIdx, $firstIdx);
         $this->assertLessThan($followUpIdx, $responseIdx);
 
-        // Cleanup
+        // Cleanup.
         $this->messageMapper->delete($created1);
         $this->messageMapper->delete($created2);
         $this->messageMapper->delete($created3);
@@ -177,7 +177,7 @@ class MessageOperationsTest extends TestCase
 
     public function testGetRecentMessages(): void
     {
-        // Create 5 messages
+        // Create 5 messages.
         $messages = [];
         for ($i = 1; $i <= 5; $i++) {
             $msg = new Message();
@@ -189,7 +189,7 @@ class MessageOperationsTest extends TestCase
             usleep(10000); // Small delay to ensure different timestamps
         }
 
-        // Get recent 3 messages
+        // Get recent 3 messages.
         $recent = $this->messageMapper->getRecentMessagesForConversation(
             $this->testConversation->getId(),
             3
@@ -197,13 +197,13 @@ class MessageOperationsTest extends TestCase
 
         $this->assertCount(3, $recent);
         
-        // Should be the last 3 messages
+        // Should be the last 3 messages.
         $contents = array_map(fn($m) => $m->getContent(), $recent);
         $this->assertContains('Message 3', $contents);
         $this->assertContains('Message 4', $contents);
         $this->assertContains('Message 5', $contents);
 
-        // Cleanup
+        // Cleanup.
         foreach ($messages as $msg) {
             $this->messageMapper->delete($msg);
         }
@@ -211,7 +211,7 @@ class MessageOperationsTest extends TestCase
 
     public function testDeleteMessagesByConversation(): void
     {
-        // Create messages
+        // Create messages.
         $msg1 = new Message();
         $msg1->setUuid('test-msg-del-1-' . uniqid());
         $msg1->setConversationId($this->testConversation->getId());
@@ -227,10 +227,10 @@ class MessageOperationsTest extends TestCase
         $created1 = $this->messageMapper->insert($msg1);
         $created2 = $this->messageMapper->insert($msg2);
 
-        // Delete all messages for conversation
+        // Delete all messages for conversation.
         $this->messageMapper->deleteByConversation($this->testConversation->getId());
 
-        // Verify deleted
+        // Verify deleted.
         $remaining = $this->messageMapper->findByConversation($this->testConversation->getId());
         $this->assertCount(0, $remaining);
     }
@@ -256,7 +256,7 @@ class MessageOperationsTest extends TestCase
             $this->assertContains($role, $foundRoles);
         }
 
-        // Cleanup
+        // Cleanup.
         foreach ($createdMessages as $msg) {
             $this->messageMapper->delete($msg);
         }

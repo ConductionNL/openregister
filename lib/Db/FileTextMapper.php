@@ -27,7 +27,6 @@ use OCP\IDBConnection;
  * @license  AGPL-3.0-or-later
  *
  * @template-extends QBMapper<FileText>
- */
  *
  * @method FileText insert(Entity $entity)
  * @method FileText update(Entity $entity)
@@ -105,7 +104,7 @@ class FileTextMapper extends QBMapper
     public function insert(Entity $entity): Entity
     {
         if ($entity instanceof FileText) {
-            // Generate UUID if not set
+            // Generate UUID if not set.
             if (empty($entity->getUuid())) {
                 $entity->setUuid(
                         \OC::$server->get(\OCP\Security\ISecureRandom::class)->generate(
@@ -323,7 +322,7 @@ class FileTextMapper extends QBMapper
     {
         $qb = $this->db->getQueryBuilder();
 
-        // Total count
+        // Total count.
         $qb->select($qb->createFunction('COUNT(*) as total'))
             ->from($this->getTableName());
         $result = $qb->execute();
@@ -539,7 +538,7 @@ class FileTextMapper extends QBMapper
             'non_user_storage' => 0,
         ];
 
-        // Find entries where file doesn't exist in filecache
+        // Find entries where file doesn't exist in filecache.
         $qb = $this->db->getQueryBuilder();
         $qb->select('ft.id', 'ft.file_id')
             ->from($this->getTableName(), 'ft')
@@ -555,7 +554,7 @@ class FileTextMapper extends QBMapper
 
         $result->closeCursor();
 
-        // Find entries that are directories
+        // Find entries that are directories.
         $qb = $this->db->getQueryBuilder();
         $qb->select('ft.id')
             ->from($this->getTableName(), 'ft')
@@ -573,7 +572,7 @@ class FileTextMapper extends QBMapper
 
         $result->closeCursor();
 
-        // Find entries from non-user storages or system paths
+        // Find entries from non-user storages or system paths.
         $qb = $this->db->getQueryBuilder();
         $qb->select('ft.id')
             ->from($this->getTableName(), 'ft')
@@ -600,9 +599,9 @@ class FileTextMapper extends QBMapper
 
         $result->closeCursor();
 
-        // Delete all collected IDs
+        // Delete all collected IDs.
         if (!empty($idsToDelete)) {
-            // Delete in batches of 1000 to avoid query size limits
+            // Delete in batches of 1000 to avoid query size limits.
             $chunks = array_chunk($idsToDelete, 1000);
             foreach ($chunks as $chunk) {
                 $qb = $this->db->getQueryBuilder();

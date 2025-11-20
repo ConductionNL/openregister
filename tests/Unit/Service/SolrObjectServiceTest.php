@@ -50,7 +50,7 @@ class SolrObjectServiceTest extends TestCase
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 		
-		// Mock settings to return a default object collection
+		// Mock settings to return a default object collection.
 		$this->settingsService
 			->method('getSolrSettingsOnly')
 			->willReturn(['objectCollection' => 'test_objects']);
@@ -220,7 +220,7 @@ class SolrObjectServiceTest extends TestCase
 	
 	public function testConvertObjectToTextHandlesRecursionDepth()
 	{
-		// Create deeply nested structure
+		// Create deeply nested structure.
 		$deepData = ['level0' => []];
 		$current = &$deepData['level0'];
 		for ($i = 1; $i <= 15; $i++) {
@@ -235,7 +235,7 @@ class SolrObjectServiceTest extends TestCase
 		
 		$text = $this->service->convertObjectToText($object);
 		
-		// Should stop at max depth (10 by default)
+		// Should stop at max depth (10 by default).
 		$this->assertIsString($text);
 	}
 	

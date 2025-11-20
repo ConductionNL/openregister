@@ -38,7 +38,7 @@ class SchemaMapperTest extends TestCase
      */
     public function testGetRegisterCountPerSchemaEmpty(): void
     {
-        // Mock the DB connection and query builder
+        // Mock the DB connection and query builder.
         $db = $this->createMock(IDBConnection::class);
         $qb = $this->createMock(\OCP\DB\QueryBuilder\IQueryBuilder::class);
         $db->method('getQueryBuilder')->willReturn($qb);
@@ -65,7 +65,7 @@ class SchemaMapperTest extends TestCase
      */
     public function testGetRegisterCountPerSchemaMultiple(): void
     {
-        // Simulate DB returning two schemas with counts
+        // Simulate DB returning two schemas with counts.
         $db = $this->createMock(IDBConnection::class);
         $qb = $this->createMock(\OCP\DB\QueryBuilder\IQueryBuilder::class);
         $db->method('getQueryBuilder')->willReturn($qb);
@@ -96,7 +96,7 @@ class SchemaMapperTest extends TestCase
      */
     public function testGetRegisterCountPerSchemaZeroForUnreferenced(): void
     {
-        // Simulate DB returning only one schema
+        // Simulate DB returning only one schema.
         $db = $this->createMock(IDBConnection::class);
         $qb = $this->createMock(\OCP\DB\QueryBuilder\IQueryBuilder::class);
         $db->method('getQueryBuilder')->willReturn($qb);

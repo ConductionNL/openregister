@@ -128,11 +128,11 @@ class VectorizationService
                 ]
                 );
 
-        // Get strategy for entity type
+        // Get strategy for entity type.
         $strategy = $this->getStrategy($entityType);
 
         try {
-            // Strategy fetches entities to process
+            // Strategy fetches entities to process.
             $entities = $strategy->fetchEntities($options);
 
             if (empty($entities)) {
@@ -155,7 +155,7 @@ class VectorizationService
                     ]
                     );
 
-            // Process each entity
+            // Process each entity.
             $totalItems = 0;
             $vectorized = 0;
             $failed     = 0;
@@ -239,9 +239,9 @@ class VectorizationService
     {
         $entityId = $strategy->getEntityIdentifier($entity);
 
-        // Strategy extracts vectorization items from entity
-        // For objects: usually 1 item (serialized object)
-        // For files: N items (one per chunk)
+        // Strategy extracts vectorization items from entity.
+        // For objects: usually 1 item (serialized object).
+        // For files: N items (one per chunk).
         $items = $strategy->extractVectorizationItems($entity);
 
         if (empty($items)) {
@@ -260,7 +260,7 @@ class VectorizationService
         $mode      = $options['mode'] ?? 'serial';
         $batchSize = $options['batch_size'] ?? 50;
 
-        // Batch processing for efficiency
+        // Batch processing for efficiency.
         if ($mode === 'parallel' && $batchSize > 1 && count($items) > 1) {
             $itemBatches = array_chunk($items, $batchSize);
 
@@ -296,7 +296,7 @@ class VectorizationService
                 }//end try
             }//end foreach
         } else {
-            // Serial processing
+            // Serial processing.
             foreach ($items as $index => $item) {
                 try {
                     $embeddingData = $this->vectorService->generateEmbedding($item['text']);

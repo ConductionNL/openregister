@@ -272,16 +272,16 @@ class AuditTrailController extends Controller
      */
     public function export(): JSONResponse
     {
-        // Extract request parameters
+        // Extract request parameters.
         $params = $this->extractRequestParameters();
 
-        // Get export specific parameters
+        // Get export specific parameters.
         $format          = $this->request->getParam('format', 'csv');
         $includeChanges  = $this->request->getParam('includeChanges', true);
         $includeMetadata = $this->request->getParam('includeMetadata', false);
 
         try {
-            // Build export configuration
+            // Build export configuration.
             $exportConfig = [
                 'filters'         => $params['filters'],
                 'search'          => $params['search'],
@@ -289,10 +289,10 @@ class AuditTrailController extends Controller
                 'includeMetadata' => filter_var($includeMetadata, FILTER_VALIDATE_BOOLEAN),
             ];
 
-            // Export logs using service
+            // Export logs using service.
             $exportResult = $this->logService->exportLogs($format, $exportConfig);
 
-            // Return export data
+            // Return export data.
             return new JSONResponse(
                     [
                         'success' => true,
@@ -382,22 +382,22 @@ class AuditTrailController extends Controller
      */
     public function destroyMultiple(): JSONResponse
     {
-        // Extract request parameters
+        // Extract request parameters.
         $params = $this->extractRequestParameters();
 
-        // Get specific parameters for mass deletion
+        // Get specific parameters for mass deletion.
         $ids = $this->request->getParam('ids', null);
 
         try {
-            // Build deletion configuration
+            // Build deletion configuration.
             $deleteConfig = [
                 'filters' => $params['filters'],
                 'search'  => $params['search'],
             ];
 
-            // Add specific IDs if provided
+            // Add specific IDs if provided.
             if ($ids !== null) {
-                // Handle both comma-separated string and array
+                // Handle both comma-separated string and array.
                 if (is_string($ids)) {
                     $deleteConfig['ids'] = array_map('intval', explode(',', $ids));
                 } else if (is_array($ids)) {
@@ -405,7 +405,7 @@ class AuditTrailController extends Controller
                 }
             }
 
-            // Delete logs using service
+            // Delete logs using service.
             $result = $this->logService->deleteLogs($deleteConfig);
 
             return new JSONResponse(
@@ -442,7 +442,7 @@ class AuditTrailController extends Controller
     public function clearAll(): JSONResponse
     {
         try {
-            // Get the audit trail mapper from the container
+            // Get the audit trail mapper from the container.
             $auditTrailMapper = \OC::$server->get('OCA\OpenRegister\Db\AuditTrailMapper');
 
                     // Use the clearAllLogs method from the mapper.

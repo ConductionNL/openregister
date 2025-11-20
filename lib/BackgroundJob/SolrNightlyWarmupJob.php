@@ -70,10 +70,10 @@ class SolrNightlyWarmupJob extends TimedJob
     {
         parent::__construct($time);
 
-        // Set interval to 24 hours (daily execution)
+        // Set interval to 24 hours (daily execution).
         $this->setInterval(self::DEFAULT_INTERVAL);
 
-        // Set the job to run at 00:00 UTC by default
+        // Set the job to run at 00:00 UTC by default.
         // Note: Nextcloud will handle timezone conversion based on server settings
         $this->setTimeSensitivity(\OCP\BackgroundJob\IJob::TIME_SENSITIVE);
 
@@ -104,7 +104,7 @@ class SolrNightlyWarmupJob extends TimedJob
                 );
 
         try {
-            // Get required services
+            // Get required services.
             /*
              * @var GuzzleSolrService $solrService
              */
@@ -120,16 +120,16 @@ class SolrNightlyWarmupJob extends TimedJob
              */
             $schemaMapper = \OC::$server->get(SchemaMapper::class);
 
-            // Check if SOLR is enabled and available
+            // Check if SOLR is enabled and available.
             if (!$this->isSolrEnabledAndAvailable($solrService, $settingsService, $logger)) {
                 $logger->info('SOLR Nightly Warmup Job skipped - SOLR not enabled or available');
                 return;
             }
 
-            // Get warmup configuration from settings
+            // Get warmup configuration from settings.
             $config = $this->getWarmupConfiguration($settingsService, $logger);
 
-            // Get all schemas for comprehensive warmup
+            // Get all schemas for comprehensive warmup.
             $schemas = $schemaMapper->findAll();
 
             $logger->info(
@@ -142,7 +142,7 @@ class SolrNightlyWarmupJob extends TimedJob
                     ]
                     );
 
-            // Execute the comprehensive nightly warmup
+            // Execute the comprehensive nightly warmup.
             $result = $solrService->warmupIndex(
                 schemas: $schemas,
                 maxObjects: $config['maxObjects'],
@@ -171,7 +171,7 @@ class SolrNightlyWarmupJob extends TimedJob
                         ]
                         );
 
-                // Log performance statistics for monitoring
+                // Log performance statistics for monitoring.
                 $this->logPerformanceStats($result, $executionTime, $logger);
             } else {
                 $logger->error(
@@ -200,7 +200,7 @@ class SolrNightlyWarmupJob extends TimedJob
                     ]
                     );
 
-            // Don't re-throw for recurring jobs - let them retry next time
+            // Don't re-throw for recurring jobs - let them retry next time.
         }//end try
 
     }//end run()
@@ -220,7 +220,7 @@ class SolrNightlyWarmupJob extends TimedJob
         LoggerInterface $logger
     ): bool {
         try {
-            // Check if SOLR is enabled in settings
+            // Check if SOLR is enabled in settings.
             $solrSettings = $settingsService->getSolrSettings();
 
             if (!($solrSettings['enabled'] ?? false)) {
@@ -228,7 +228,7 @@ class SolrNightlyWarmupJob extends TimedJob
                 return false;
             }
 
-            // Test SOLR connection
+            // Test SOLR connection.
             $connectionTest = $solrService->testConnection();
 
             if ($connectionTest['success'] ?? false) {
@@ -269,12 +269,12 @@ class SolrNightlyWarmupJob extends TimedJob
         try {
             $solrSettings = $settingsService->getSolrSettings();
 
-            // Get nightly warmup specific settings with defaults
+            // Get nightly warmup specific settings with defaults.
             $config = [
                 'maxObjects'    => $solrSettings['nightly_warmup_max_objects'] ?? self::DEFAULT_NIGHTLY_MAX_OBJECTS,
                 'mode'          => $solrSettings['nightly_warmup_mode'] ?? self::DEFAULT_NIGHTLY_MODE,
                 'collectErrors' => $solrSettings['nightly_warmup_collect_errors'] ?? true,
-            // More detailed logging for nightly runs
+            // More detailed logging for nightly runs.
             ];
 
             $logger->debug('Nightly warmup configuration loaded', $config);

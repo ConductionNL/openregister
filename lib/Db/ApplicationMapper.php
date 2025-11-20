@@ -106,7 +106,7 @@ class ApplicationMapper extends QBMapper
      */
     public function find(int $id): Application
     {
-        // Verify RBAC permission to read
+        // Verify RBAC permission to read.
         $this->verifyRbacPermission('read', 'application');
 
         $qb = $this->db->getQueryBuilder();
@@ -115,7 +115,7 @@ class ApplicationMapper extends QBMapper
             ->from($this->tableName)
             ->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
 
-        // Apply organisation filter (all users including admins must have active org)
+        // Apply organisation filter (all users including admins must have active org).
         $this->applyOrganisationFilter($qb);
 
         return $this->findEntity($qb);
@@ -136,7 +136,7 @@ class ApplicationMapper extends QBMapper
      */
     public function findByUuid(string $uuid): Application
     {
-        // Verify RBAC permission to read
+        // Verify RBAC permission to read.
         $this->verifyRbacPermission('read', 'application');
 
         $qb = $this->db->getQueryBuilder();
@@ -145,7 +145,7 @@ class ApplicationMapper extends QBMapper
             ->from($this->tableName)
             ->where($qb->expr()->eq('uuid', $qb->createNamedParameter($uuid, IQueryBuilder::PARAM_STR)));
 
-        // Apply organisation filter
+        // Apply organisation filter.
         $this->applyOrganisationFilter($qb);
 
         return $this->findEntity($qb);
@@ -165,7 +165,7 @@ class ApplicationMapper extends QBMapper
      */
     public function findByOrganisation(string $organisationUuid, int $limit=50, int $offset=0): array
     {
-        // Verify RBAC permission to read
+        // Verify RBAC permission to read.
         $this->verifyRbacPermission('read', 'application');
 
         $qb = $this->db->getQueryBuilder();
@@ -196,7 +196,7 @@ class ApplicationMapper extends QBMapper
      */
     public function findAll(?int $limit=null, ?int $offset=null, array $filters=[], array $searchConditions=[], array $searchParams=[]): array
     {
-        // Verify RBAC permission to read
+        // Verify RBAC permission to read.
         $this->verifyRbacPermission('read', 'application');
 
         $qb = $this->db->getQueryBuilder();
@@ -207,12 +207,12 @@ class ApplicationMapper extends QBMapper
             ->setFirstResult($offset)
             ->orderBy('created', 'DESC');
 
-        // Apply filters
+        // Apply filters.
         foreach ($filters as $key => $value) {
             $qb->andWhere($qb->expr()->eq($key, $qb->createNamedParameter($value)));
         }
 
-        // Apply search conditions
+        // Apply search conditions.
         if (!empty($searchConditions)) {
             $qb->andWhere($qb->expr()->orX(...$searchConditions));
             foreach ($searchParams as $key => $value) {
@@ -220,7 +220,7 @@ class ApplicationMapper extends QBMapper
             }
         }
 
-        // Apply organisation filter (all users including admins must have active org)
+        // Apply organisation filter (all users including admins must have active org).
         $this->applyOrganisationFilter($qb);
 
         return $this->findEntities($qb);
@@ -238,11 +238,11 @@ class ApplicationMapper extends QBMapper
      */
     public function insert(Entity $entity): Entity
     {
-        // Verify RBAC permission to create
+        // Verify RBAC permission to create.
         $this->verifyRbacPermission('create', 'application');
 
         if ($entity instanceof Application) {
-            // Generate UUID if not set
+            // Generate UUID if not set.
             if (empty($entity->getUuid())) {
                 $entity->setUuid(\Symfony\Component\Uid\Uuid::v4()->toRfc4122());
             }
@@ -251,7 +251,7 @@ class ApplicationMapper extends QBMapper
             $entity->setUpdated(new DateTime());
         }
 
-        // Auto-set organisation from active session
+        // Auto-set organisation from active session.
         $this->setOrganisationOnCreate($entity);
 
         return parent::insert($entity);
@@ -269,10 +269,10 @@ class ApplicationMapper extends QBMapper
      */
     public function update(Entity $entity): Entity
     {
-        // Verify RBAC permission to update
+        // Verify RBAC permission to update.
         $this->verifyRbacPermission('update', 'application');
 
-        // Verify user has access to this organisation
+        // Verify user has access to this organisation.
         $this->verifyOrganisationAccess($entity);
 
         if ($entity instanceof Application) {
@@ -294,10 +294,10 @@ class ApplicationMapper extends QBMapper
      */
     public function delete(Entity $entity): Entity
     {
-        // Verify RBAC permission to delete
+        // Verify RBAC permission to delete.
         $this->verifyRbacPermission('delete', 'application');
 
-        // Verify user has access to this organisation
+        // Verify user has access to this organisation.
         $this->verifyOrganisationAccess($entity);
 
         return parent::delete($entity);
@@ -351,7 +351,7 @@ class ApplicationMapper extends QBMapper
      */
     public function countByOrganisation(string $organisationUuid): int
     {
-        // Verify RBAC permission to read
+        // Verify RBAC permission to read.
         $this->verifyRbacPermission('read', 'application');
 
         $qb = $this->db->getQueryBuilder();
@@ -377,7 +377,7 @@ class ApplicationMapper extends QBMapper
      */
     public function countAll(): int
     {
-        // Verify RBAC permission to read
+        // Verify RBAC permission to read.
         $this->verifyRbacPermission('read', 'application');
 
         $qb = $this->db->getQueryBuilder();
@@ -385,7 +385,7 @@ class ApplicationMapper extends QBMapper
         $qb->select($qb->createFunction('COUNT(*)'))
             ->from($this->tableName);
 
-        // Apply organisation filter (all users including admins must have active org)
+        // Apply organisation filter (all users including admins must have active org).
         $this->applyOrganisationFilter($qb);
 
         $result = $qb->executeQuery();

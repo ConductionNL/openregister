@@ -299,7 +299,7 @@ class Organisation extends Entity implements JsonSerializable
                 )
                 );
 
-        // Only mark as updated if a user was actually removed
+        // Only mark as updated if a user was actually removed.
         if (count($this->users) !== $originalCount) {
             $this->markFieldUpdated('users');
         }
@@ -348,7 +348,7 @@ class Organisation extends Entity implements JsonSerializable
             $this->roles = [];
         }
 
-        // Check if role with same ID already exists
+        // Check if role with same ID already exists.
         $roleId = $role['id'] ?? $role['name'] ?? null;
         if ($roleId !== null) {
             $exists = false;
@@ -497,10 +497,10 @@ class Organisation extends Entity implements JsonSerializable
      */
     public function setActive(mixed $active): self
     {
-        // Handle various input types defensively (including empty strings from API)
+        // Handle various input types defensively (including empty strings from API).
         if ($active === '' || $active === null) {
             parent::setActive(true);
-            // Default to true for organisations
+            // Default to true for organisations.
         } else {
             parent::setActive((bool) $active);
         }
@@ -713,17 +713,17 @@ class Organisation extends Entity implements JsonSerializable
                 'bandwidth' => $this->bandwidthQuota,
                 'requests'  => $this->requestQuota,
                 'users'     => null,
-        // To be set via admin configuration
+        // To be set via admin configuration.
                 'groups'    => null,
-        // To be set via admin configuration
+        // To be set via admin configuration.
             ],
             'usage'         => [
                 'storage'   => 0,
-            // To be calculated from actual usage
+            // To be calculated from actual usage.
                 'bandwidth' => 0,
-            // To be calculated from actual usage
+            // To be calculated from actual usage.
                 'requests'  => 0,
-            // To be calculated from actual usage
+            // To be calculated from actual usage.
                 'users'     => count($users),
                 'groups'    => count($groups),
             ],
@@ -746,7 +746,7 @@ class Organisation extends Entity implements JsonSerializable
      */
     public function __toString(): string
     {
-        // Generate new UUID if none exists or is empty
+        // Generate new UUID if none exists or is empty.
         if ($this->uuid === null || $this->uuid === '') {
             $this->uuid = Uuid::v4()->toRfc4122();
         }

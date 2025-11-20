@@ -66,7 +66,7 @@ class ViewService
     {
         $view = $this->viewMapper->find($id);
 
-        // Check if user has access to this view
+        // Check if user has access to this view.
         if ($view->getOwner() !== $owner && $view->getIsPublic() === false) {
             throw new \OCP\AppFramework\Db\DoesNotExistException('View not found or access denied');
         }
@@ -113,7 +113,7 @@ class ViewService
         array $query
     ): View {
         try {
-            // If this is set as default, unset any existing default for this user
+            // If this is set as default, unset any existing default for this user.
             if ($isDefault === true) {
                 $this->clearDefaultForUser($owner);
             }
@@ -164,7 +164,7 @@ class ViewService
         try {
             $view = $this->find($id, $owner);
 
-            // If this is set as default, unset any existing default for this user
+            // If this is set as default, unset any existing default for this user.
             if ($isDefault === true && $view->getIsDefault() === false) {
                 $this->clearDefaultForUser($owner);
             }
@@ -175,7 +175,7 @@ class ViewService
             $view->setIsDefault($isDefault);
             $view->setQuery($query);
 
-            // Update favoredBy if provided
+            // Update favoredBy if provided.
             if ($favoredBy !== null) {
                 $view->setFavoredBy($favoredBy);
             }
@@ -230,12 +230,12 @@ class ViewService
             $favoredBy = $view->getFavoredBy() ?? [];
 
             if ($favor === true) {
-                // Add user to favoredBy if not already there
+                // Add user to favoredBy if not already there.
                 if (!in_array($owner, $favoredBy)) {
                     $favoredBy[] = $owner;
                 }
             } else {
-                // Remove user from favoredBy
+                // Remove user from favoredBy.
                 $favoredBy = array_values(array_filter($favoredBy, fn($userId) => $userId !== $owner));
             }
 

@@ -61,7 +61,7 @@ class Version1Date20251101120000 extends SimpleMigrationStep
         if (!$schema->hasTable('openregister_applications')) {
             $table = $schema->createTable('openregister_applications');
 
-            // Primary key
+            // Primary key.
             $table->addColumn(
                     'id',
                     Types::BIGINT,
@@ -72,7 +72,7 @@ class Version1Date20251101120000 extends SimpleMigrationStep
                     ]
                     );
 
-            // Unique identifier
+            // Unique identifier.
             $table->addColumn(
                     'uuid',
                     Types::STRING,
@@ -83,7 +83,7 @@ class Version1Date20251101120000 extends SimpleMigrationStep
                     ]
                     );
 
-            // Basic information
+            // Basic information.
             $table->addColumn(
                     'name',
                     Types::STRING,
@@ -113,7 +113,7 @@ class Version1Date20251101120000 extends SimpleMigrationStep
                     ]
                     );
 
-            // Organisation link
+            // Organisation link.
             $table->addColumn(
                     'organisation',
                     Types::BIGINT,
@@ -123,7 +123,7 @@ class Version1Date20251101120000 extends SimpleMigrationStep
                     ]
                     );
 
-            // Status
+            // Status.
             $table->addColumn(
                     'active',
                     Types::BOOLEAN,
@@ -134,7 +134,7 @@ class Version1Date20251101120000 extends SimpleMigrationStep
                     ]
                     );
 
-            // Relations (stored as JSON arrays of IDs)
+            // Relations (stored as JSON arrays of IDs).
             $table->addColumn(
                     'configurations',
                     Types::JSON,
@@ -162,7 +162,7 @@ class Version1Date20251101120000 extends SimpleMigrationStep
                     ]
                     );
 
-            // Resource allocation quotas
+            // Resource allocation quotas.
             $table->addColumn(
                     'storage_quota',
                     Types::BIGINT,
@@ -190,7 +190,7 @@ class Version1Date20251101120000 extends SimpleMigrationStep
                     ]
                     );
 
-            // Ownership
+            // Ownership.
             $table->addColumn(
                     'owner',
                     Types::STRING,
@@ -201,7 +201,7 @@ class Version1Date20251101120000 extends SimpleMigrationStep
                     ]
                     );
 
-            // Timestamps
+            // Timestamps.
             $table->addColumn(
                     'created',
                     Types::DATETIME,
@@ -220,10 +220,10 @@ class Version1Date20251101120000 extends SimpleMigrationStep
                     ]
                     );
 
-            // Set primary key
+            // Set primary key.
             $table->setPrimaryKey(['id']);
 
-            // Add indexes for common queries
+            // Add indexes for common queries.
             $table->addIndex(['uuid'], 'applications_uuid_index');
             $table->addIndex(['name'], 'applications_name_index');
             $table->addIndex(['organisation'], 'applications_organisation_index');

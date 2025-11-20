@@ -35,7 +35,6 @@ use Symfony\Component\Uid\Uuid;
  * Mapper for View entities with multi-tenancy and RBAC support.
  *
  * @package OCA\OpenRegister\Db
- */
  *
  * @method View insert(Entity $entity)
  * @method View update(Entity $entity)
@@ -118,7 +117,7 @@ class ViewMapper extends QBMapper
      */
     public function find($id): View
     {
-        // Verify RBAC permission to read
+        // Verify RBAC permission to read.
         $this->verifyRbacPermission('read', 'view');
 
         $qb = $this->db->getQueryBuilder();
@@ -132,12 +131,12 @@ class ViewMapper extends QBMapper
                 )
             );
 
-        // Apply organisation filter (all users including admins must have active org)
+        // Apply organisation filter (all users including admins must have active org).
         $this->applyOrganisationFilter($qb);
 
         $entity = $this->findEntity(query: $qb);
 
-        // Enrich with configuration management info
+        // Enrich with configuration management info.
         $this->enrichWithConfigurationInfo($entity);
 
         return $entity;
@@ -155,7 +154,7 @@ class ViewMapper extends QBMapper
      */
     public function findAll(?string $owner=null): array
     {
-        // Verify RBAC permission to read
+        // Verify RBAC permission to read.
         $this->verifyRbacPermission('read', 'view');
 
         $qb = $this->db->getQueryBuilder();
@@ -174,12 +173,12 @@ class ViewMapper extends QBMapper
 
         $qb->orderBy('created', 'DESC');
 
-        // Apply organisation filter (all users including admins must have active org)
+        // Apply organisation filter (all users including admins must have active org).
         $this->applyOrganisationFilter($qb);
 
         $entities = $this->findEntities(query: $qb);
 
-        // Enrich all entities with configuration management info
+        // Enrich all entities with configuration management info.
         foreach ($entities as $entity) {
             $this->enrichWithConfigurationInfo($entity);
         }
@@ -199,19 +198,19 @@ class ViewMapper extends QBMapper
      */
     public function insert(Entity $entity): View
     {
-        // Verify RBAC permission to create
+        // Verify RBAC permission to create.
         $this->verifyRbacPermission('create', 'view');
 
-        // Generate UUID if not present
+        // Generate UUID if not present.
         if (empty($entity->getUuid()) === true) {
             $entity->setUuid(Uuid::v4());
         }
 
-        // Set timestamps
+        // Set timestamps.
         $entity->setCreated(new \DateTime());
         $entity->setUpdated(new \DateTime());
 
-        // Auto-set organisation from active session
+        // Auto-set organisation from active session.
         $this->setOrganisationOnCreate($entity);
 
         return parent::insert(entity: $entity);
@@ -229,13 +228,13 @@ class ViewMapper extends QBMapper
      */
     public function update(Entity $entity): View
     {
-        // Verify RBAC permission to update
+        // Verify RBAC permission to update.
         $this->verifyRbacPermission('update', 'view');
 
-        // Verify user has access to this organisation
+        // Verify user has access to this organisation.
         $this->verifyOrganisationAccess($entity);
 
-        // Update timestamp
+        // Update timestamp.
         $entity->setUpdated(new \DateTime());
 
         return parent::update(entity: $entity);
@@ -253,10 +252,10 @@ class ViewMapper extends QBMapper
      */
     public function delete(Entity $entity): Entity
     {
-        // Verify RBAC permission to delete
+        // Verify RBAC permission to delete.
         $this->verifyRbacPermission('delete', 'view');
 
-        // Verify user has access to this organisation
+        // Verify user has access to this organisation.
         $this->verifyOrganisationAccess($entity);
 
         return parent::delete($entity);
@@ -295,10 +294,10 @@ class ViewMapper extends QBMapper
      */
     private function enrichWithConfigurationInfo(View $view): void
     {
-        // Get configurations from cache for the active organisation
+        // Get configurations from cache for the active organisation.
         $configurations = $this->configurationCacheService->getConfigurationsForActiveOrganisation();
 
-        // Check if this view is managed by any configuration
+        // Check if this view is managed by any configuration.
         $managedBy = $view->getManagedByConfiguration($configurations);
         if ($managedBy !== null) {
             $view->setManagedByConfigurationEntity($managedBy);

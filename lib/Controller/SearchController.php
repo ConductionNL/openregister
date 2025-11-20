@@ -34,10 +34,10 @@ use OCA\OpenRegister\Service\SolrService;
 class SearchController extends Controller
 {
 
-    // phpcs:ignore Squiz.Commenting.VariableComment.Missing
+    // phpcs:ignore Squiz.Commenting.VariableComment.Missing.
     private readonly ISearch $searchService;
 
-    // phpcs:ignore Squiz.Commenting.VariableComment.Missing
+    // phpcs:ignore Squiz.Commenting.VariableComment.Missing.
     private readonly SolrService $solrService;
 
 
@@ -78,7 +78,7 @@ class SearchController extends Controller
         // Get the search query from the request parameters.
         $query = $this->request->getParam('query', '');
 
-        // Process the search query to handle multiple search words
+        // Process the search query to handle multiple search words.
         $processedQuery = $this->processSearchQuery($query);
 
         // Perform the search using the search service.
@@ -118,16 +118,16 @@ class SearchController extends Controller
      */
     private function processSearchQuery(string $query): string
     {
-        // Handle array parameters (_search[])
+        // Handle array parameters (_search[]).
         $searchArray = $this->request->getParam('_search', []);
         if (is_array($searchArray) === true && empty($searchArray) === false) {
-            // Combine array values with the main query
+            // Combine array values with the main query.
             $searchTerms = array_merge(
                 [$query],
                 $searchArray
             );
         } else {
-            // Handle comma-separated values in the main query
+            // Handle comma-separated values in the main query.
             $searchTerms = array_filter(
                 array_map('trim', explode(',', $query)),
                 function ($term) {
@@ -136,18 +136,18 @@ class SearchController extends Controller
             );
         }
 
-        // If no search terms found, return the original query
+        // If no search terms found, return the original query.
         if (empty($searchTerms) === true) {
             return $query;
         }
 
-        // Process each search term to make them case-insensitive and support partial matches
+        // Process each search term to make them case-insensitive and support partial matches.
         $processedTerms = [];
         foreach ($searchTerms as $term) {
-            // Convert to lowercase for case-insensitive matching
+            // Convert to lowercase for case-insensitive matching.
             $lowerTerm = strtolower(trim($term));
 
-            // Add wildcards for partial matching if not already present
+            // Add wildcards for partial matching if not already present.
             if (str_starts_with($lowerTerm, '*') === false && str_starts_with($lowerTerm, '%') === false) {
                 $lowerTerm = '*'.$lowerTerm;
             }
@@ -159,7 +159,7 @@ class SearchController extends Controller
             $processedTerms[] = $lowerTerm;
         }
 
-        // Join multiple terms with OR logic (any term can match)
+        // Join multiple terms with OR logic (any term can match).
         return implode(' OR ', $processedTerms);
 
     }//end processSearchQuery()

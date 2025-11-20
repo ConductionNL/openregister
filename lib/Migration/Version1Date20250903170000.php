@@ -69,7 +69,7 @@ class Version1Date20250903170000 extends SimpleMigrationStep
          */
         $schema = $schemaClosure();
 
-        // Skip if table doesn't exist
+        // Skip if table doesn't exist.
         if ($schema->hasTable('openregister_objects') === false) {
             return null;
         }
@@ -79,7 +79,7 @@ class Version1Date20250903170000 extends SimpleMigrationStep
 
         $output->info('=== OpenRegister Performance Index Migration ===');
 
-        // **CRITICAL SINGLE-COLUMN INDEXES** for direct lookups
+        // **CRITICAL SINGLE-COLUMN INDEXES** for direct lookups.
         // Note: Using column length limits to avoid MySQL 3072 byte key limit
         $singleColumnIndexes = [
             'uuid'        => ['name' => 'objects_uuid_perf_idx', 'length' => null],
@@ -93,7 +93,7 @@ class Version1Date20250903170000 extends SimpleMigrationStep
 
         foreach ($singleColumnIndexes as $column => $config) {
             if ($table->hasColumn($column) && !$table->hasIndex($config['name'])) {
-                // Only add indexes for columns that won't exceed key size limits
+                // Only add indexes for columns that won't exceed key size limits.
                 if ($config['length'] === null) {
                     $table->addIndex([$column], $config['name']);
                     $output->info("Added performance index: {$config['name']} on column '{$column}'");
@@ -104,14 +104,14 @@ class Version1Date20250903170000 extends SimpleMigrationStep
             }
         }
 
-        // Skip problematic text field indexes that would exceed key size limit
+        // Skip problematic text field indexes that would exceed key size limit.
         $output->info("Skipping 'name', 'summary', 'description' indexes due to MySQL key size limits");
 
-        // Skip complex index creation for now to avoid MySQL key length issues
+        // Skip complex index creation for now to avoid MySQL key length issues.
         // TODO: Add indexes after app is enabled
         $output->info('Skipping complex index creation to avoid MySQL key length issues');
 
-        // Skip other complex indexes that may cause key size issues
+        // Skip other complex indexes that may cause key size issues.
         $output->info('Skipping complex multi-column indexes to avoid MySQL key size limits');
         $output->info('Focus on basic indexes that provide maximum performance benefit');
 

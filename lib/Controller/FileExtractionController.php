@@ -80,14 +80,14 @@ class FileExtractionController extends Controller
     public function index(?int $limit=100, ?int $offset=0, ?string $status=null, ?string $search=null): JSONResponse
     {
         try {
-            // Apply filters based on parameters
+            // Apply filters based on parameters.
             if ($status !== null) {
                 $files = $this->fileTextMapper->findByStatus($status, $limit ?? 100, $offset ?? 0);
             } else {
                 $files = $this->fileTextMapper->findAll($limit, $offset);
             }
 
-            // Apply search filter if provided (post-query filtering for simplicity)
+            // Apply search filter if provided (post-query filtering for simplicity).
             if ($search !== null && trim($search) !== '') {
                 $searchLower = strtolower(trim($search));
                 $files       = array_filter(
@@ -99,7 +99,7 @@ class FileExtractionController extends Controller
                             || strpos($filePathLower, $searchLower) !== false;
                         }
                         );
-                // Re-index array after filtering
+                // Re-index array after filtering.
                 $files = array_values($files);
             }
 
@@ -447,7 +447,7 @@ class FileExtractionController extends Controller
             $batchSize = (int) ($data['batch_size'] ?? 50);
             $fileTypes = $data['file_types'] ?? [];
 
-            // Use unified vectorization service with 'file' entity type
+            // Use unified vectorization service with 'file' entity type.
             $result = $this->vectorizationService->vectorizeBatch(
                     'file',
                     [

@@ -455,7 +455,7 @@ class ObjectEntity extends Entity implements JsonSerializable
      */
     protected function getter(string $name): mixed
     {
-        // Array fields that should return [] instead of null when unset
+        // Array fields that should return [] instead of null when unset.
         $arrayFieldsWithEmptyDefault = [
             'files',
             'relations',
@@ -467,12 +467,12 @@ class ObjectEntity extends Entity implements JsonSerializable
             'retention',
         ];
 
-        // If this is an array field and it's null, return empty array
+        // If this is an array field and it's null, return empty array.
         if (in_array($name, $arrayFieldsWithEmptyDefault) && property_exists($this, $name)) {
             return $this->$name ?? [];
         }
 
-        // Otherwise, delegate to parent's standard getter behavior
+        // Otherwise, delegate to parent's standard getter behavior.
         return parent::getter($name);
 
     }//end getter()
@@ -488,10 +488,10 @@ class ObjectEntity extends Entity implements JsonSerializable
      */
     public function getObject(): array
     {
-        // Initialize the object data with an empty array if null
+        // Initialize the object data with an empty array if null.
         $objectData = $this->object ?? [];
 
-        // Ensure 'id' is the first field by setting it before merging with object data
+        // Ensure 'id' is the first field by setting it before merging with object data.
         $objectData = array_merge(['id' => $this->uuid], $objectData);
 
         return $objectData;
@@ -561,15 +561,15 @@ class ObjectEntity extends Entity implements JsonSerializable
      */
     public function hydrateObject(array $object): self
     {
-        // Lets grap the metadata fields and remove them from the object
+        // Lets grap the metadata fields and remove them from the object.
         $metaDataFields = $object['@self'];
         unset($object['@self']);
 
-        // Hydrate the entity with the metadata fields
+        // Hydrate the entity with the metadata fields.
         $this->hydrate($metaDataFields);
         $this->setObject($object);
 
-        // Return the hydrated entity
+        // Return the hydrated entity.
         return $this;
 
     }//end hydrateObject()
@@ -590,7 +590,7 @@ class ObjectEntity extends Entity implements JsonSerializable
         // Default to an empty array if $this->object is null.
         $object['@self'] = $this->getObjectArray($object);
 
-        // Check if name is empty and set uuid as fallback
+        // Check if name is empty and set uuid as fallback.
         if (empty($object['@self']['name'])) {
             $object['@self']['name'] = $this->uuid;
         }
@@ -609,7 +609,7 @@ class ObjectEntity extends Entity implements JsonSerializable
     public function getObjectArray(array $object=[]): array
     {
         // Initialize the object array with default properties.
-        // Use getters to ensure our custom getter logic is applied (e.g., [] for null arrays)
+        // Use getters to ensure our custom getter logic is applied (e.g., [] for null arrays).
         $objectArray = [
             'id'            => $this->uuid,
             'slug'          => $this->slug,
@@ -904,17 +904,17 @@ class ObjectEntity extends Entity implements JsonSerializable
      */
     public function __toString(): string
     {
-        // Return the UUID if available, otherwise return a descriptive string
+        // Return the UUID if available, otherwise return a descriptive string.
         if ($this->uuid !== null && $this->uuid !== '') {
             return $this->uuid;
         }
 
-        // Fallback to ID if UUID is not available
+        // Fallback to ID if UUID is not available.
         if ($this->id !== null) {
             return 'Object #'.$this->id;
         }
 
-        // Final fallback
+        // Final fallback.
         return 'Object Entity';
 
     }//end __toString()

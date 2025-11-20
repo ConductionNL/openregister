@@ -71,18 +71,18 @@ class SourcesController extends Controller
         // Get request parameters for filtering and searching.
         $params = $this->request->getParams();
 
-        // Extract pagination and search parameters
+        // Extract pagination and search parameters.
         $limit  = isset($params['_limit']) ? (int) $params['_limit'] : null;
         $offset = isset($params['_offset']) ? (int) $params['_offset'] : null;
         $page   = isset($params['_page']) ? (int) $params['_page'] : null;
         $search = $params['_search'] ?? '';
 
-        // Convert page to offset if provided
+        // Convert page to offset if provided.
         if ($page !== null && $limit !== null) {
             $offset = ($page - 1) * $limit;
         }
 
-        // Remove special query params from filters
+        // Remove special query params from filters.
         $filters = $params;
         unset($filters['_limit'], $filters['_offset'], $filters['_page'], $filters['_search'], $filters['_route']);
 
@@ -185,7 +185,7 @@ class SourcesController extends Controller
             }
         }
 
-        // Remove immutable fields to prevent tampering
+        // Remove immutable fields to prevent tampering.
         unset($data['id']);
         unset($data['organisation']);
         unset($data['owner']);

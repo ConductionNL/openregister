@@ -87,10 +87,10 @@ class FileVectorizationStrategy implements VectorizationStrategyInterface
                 ]
                 );
 
-        // Get files with completed extraction
+        // Get files with completed extraction.
         $files = $this->fileTextMapper->findByStatus('completed', $maxFiles > 0 ? $maxFiles : 1000);
 
-        // Filter by file types if specified
+        // Filter by file types if specified.
         if (!empty($fileTypes)) {
             $files = array_filter(
                     $files,
@@ -100,7 +100,7 @@ class FileVectorizationStrategy implements VectorizationStrategyInterface
                     );
         }
 
-        // Filter files that have chunks
+        // Filter files that have chunks.
         $files = array_filter(
                 $files,
                 function ($file) {
@@ -108,7 +108,7 @@ class FileVectorizationStrategy implements VectorizationStrategyInterface
                 }
                 );
 
-        // Apply max files limit
+        // Apply max files limit.
         if ($maxFiles > 0 && count($files) > $maxFiles) {
             $files = array_slice($files, 0, $maxFiles);
         }
@@ -151,7 +151,7 @@ class FileVectorizationStrategy implements VectorizationStrategyInterface
             return [];
         }
 
-        // Add index to each chunk for tracking
+        // Add index to each chunk for tracking.
         $items = [];
         foreach ($chunks as $index => $chunk) {
             $items[] = [
@@ -186,7 +186,7 @@ class FileVectorizationStrategy implements VectorizationStrategyInterface
             'chunk_index'         => $item['index'],
             'total_chunks'        => $totalChunks,
             'chunk_text'          => substr($item['text'], 0, 500),
-        // Preview
+        // Preview.
             'additional_metadata' => [
                 'file_id'      => $entity->getFileId(),
                 'file_name'    => $entity->getFileName(),

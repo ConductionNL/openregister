@@ -107,18 +107,18 @@ abstract class AbstractTool implements ToolInterface
      */
     protected function getUserId(?string $explicitUserId=null): ?string
     {
-        // Use explicit user ID if provided
+        // Use explicit user ID if provided.
         if ($explicitUserId !== null) {
             return $explicitUserId;
         }
 
-        // Try to get from session
+        // Try to get from session.
         $user = $this->userSession->getUser();
         if ($user !== null) {
             return $user->getUID();
         }
 
-        // Fall back to agent's user (for cron scenarios)
+        // Fall back to agent's user (for cron scenarios).
         if ($this->agent !== null && $this->agent->getUser() !== null) {
             return $this->agent->getUser();
         }
@@ -164,8 +164,8 @@ abstract class AbstractTool implements ToolInterface
         }
 
         // TODO: Implement view filtering in mappers
-        // View filtering allows agents to only see data filtered by predefined views
-        // For now, this is disabled as the mappers don't have a 'views' column yet
+        // View filtering allows agents to only see data filtered by predefined views.
+        // For now, this is disabled as the mappers don't have a 'views' column yet.
         // $params['_views'] = $views;
         return $params;
 
@@ -293,35 +293,35 @@ abstract class AbstractTool implements ToolInterface
      */
     public function __call(string $name, array $arguments)
     {
-        // Convert snake_case to camelCase
+        // Convert snake_case to camelCase.
         $camelCaseMethod = lcfirst(str_replace('_', '', ucwords($name, '_')));
 
         if (method_exists($this, $camelCaseMethod)) {
-            // Get method reflection to understand parameter types
+            // Get method reflection to understand parameter types.
             $reflection = new \ReflectionMethod($this, $camelCaseMethod);
             $parameters = $reflection->getParameters();
 
-            // Type-cast arguments based on method signature
-            // Handle both positional and named arguments from LLPhant
+            // Type-cast arguments based on method signature.
+            // Handle both positional and named arguments from LLPhant.
             $isAssociative = array_keys($arguments) !== range(0, count($arguments) - 1);
 
             $typedArguments = [];
             foreach ($parameters as $index => $param) {
                 $paramName = $param->getName();
 
-                // Get value from either named argument or positional argument
+                // Get value from either named argument or positional argument.
                 if ($isAssociative && isset($arguments[$paramName])) {
                     $value = $arguments[$paramName];
                 } else {
                     $value = $arguments[$index] ?? null;
                 }
 
-                // Handle string 'null' from LLM
+                // Handle string 'null' from LLM.
                 if ($value === 'null' || $value === null) {
-                    // Use default value if available, otherwise null
+                    // Use default value if available, otherwise null.
                     $value = $param->isDefaultValueAvailable() ? $param->getDefaultValue() : null;
                 } else if ($param->hasType()) {
-                    // Cast to the expected type
+                    // Cast to the expected type.
                     $type = $param->getType();
                     if ($type && $type instanceof \ReflectionNamedType) {
                         $typeName = $type->getName();
@@ -344,8 +344,8 @@ abstract class AbstractTool implements ToolInterface
 
             $result = $this->$camelCaseMethod(...$typedArguments);
 
-            // LLPhant expects tool results to be JSON strings, not arrays
-            // Convert array results to JSON for LLM consumption
+            // LLPhant expects tool results to be JSON strings, not arrays.
+            // Convert array results to JSON for LLM consumption.
             if (is_array($result)) {
                 return json_encode($result);
             }

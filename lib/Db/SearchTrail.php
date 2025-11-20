@@ -541,22 +541,22 @@ class SearchTrail extends Entity implements JsonSerializable
      */
     public function __toString(): string
     {
-        // Return the UUID if available, otherwise return a descriptive string
+        // Return the UUID if available, otherwise return a descriptive string.
         if ($this->uuid !== null && $this->uuid !== '') {
             return $this->uuid;
         }
 
-        // Fallback to search term if available
+        // Fallback to search term if available.
         if ($this->searchTerm !== null && $this->searchTerm !== '') {
             return 'Search: '.$this->searchTerm;
         }
 
-        // Fallback to ID if available
+        // Fallback to ID if available.
         if ($this->id !== null) {
             return 'SearchTrail #'.$this->id;
         }
 
-        // Final fallback
+        // Final fallback.
         return 'Search Trail';
 
     }//end __toString()

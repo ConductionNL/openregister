@@ -125,7 +125,7 @@ class DeleteObject
             $this->fileService->deleteFile(file: $file->getName(), object: $objectEntity);
         }
 
-        // Delete the object folder if it exists (for hard deletes)
+        // Delete the object folder if it exists (for hard deletes).
         $this->deleteObjectFolder($objectEntity);
 
         // Delete the object from database.
@@ -141,7 +141,7 @@ class DeleteObject
             );
         }
 
-        // Create audit trail for delete if audit trails are enabled
+        // Create audit trail for delete if audit trails are enabled.
         if ($this->isAuditTrailsEnabled()) {
             $log = $this->auditTrailMapper->createAuditTrail(old: $objectEntity, new: null, action: 'delete');
             // $result->setLastLog($log->jsonSerialize());
@@ -245,7 +245,7 @@ class DeleteObject
                 $this->logger->info('Deleted object folder for hard deleted object: '.$objectEntity->getId());
             }
         } catch (\Exception $e) {
-            // Log error but don't fail the deletion process
+            // Log error but don't fail the deletion process.
             $this->logger->warning('Failed to delete object folder for object '.$objectEntity->getId().': '.$e->getMessage());
         }
 
@@ -263,7 +263,7 @@ class DeleteObject
             $retentionSettings = $this->settingsService->getRetentionSettingsOnly();
             return $retentionSettings['auditTrailsEnabled'] ?? true;
         } catch (\Exception $e) {
-            // If we can't get settings, default to enabled for safety
+            // If we can't get settings, default to enabled for safety.
             $this->logger->warning('Failed to check audit trails setting, defaulting to enabled', ['error' => $e->getMessage()]);
             return true;
         }

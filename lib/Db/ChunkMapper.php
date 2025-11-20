@@ -17,7 +17,6 @@ use OCP\IDBConnection;
 
 /**
  * Class ChunkMapper
- */
  *
  * @method Chunk insert(Entity $entity)
  * @method Chunk update(Entity $entity)

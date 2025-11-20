@@ -107,17 +107,17 @@ class FileTextExtractionIntegrationTest extends TestCase
     {
         parent::setUp();
 
-        // Ensure a logged-in user for service calls
+        // Ensure a logged-in user for service calls.
         self::loginAsUser($this->testUserId);
 
-        // Get service instances
+        // Get service instances.
         $this->objectService = \OC::$server->get(ObjectService::class);
         $this->fileService = \OC::$server->get(FileService::class);
         $this->fileTextMapper = \OC::$server->get(FileTextMapper::class);
         $this->registerService = \OC::$server->get(RegisterService::class);
         $this->schemaMapper = \OC::$server->get(SchemaMapper::class);
 
-        // Set up Guzzle HTTP client for API testing
+        // Set up Guzzle HTTP client for API testing.
         $this->baseUrl = 'http://nextcloud.local/index.php/apps/openregister';
         $this->httpClient = new Client([
             'base_uri' => $this->baseUrl,
@@ -208,7 +208,7 @@ class FileTextExtractionIntegrationTest extends TestCase
      */
     public function testExtractSpecificFile(): void
     {
-        // Create test object and file
+        // Create test object and file.
         $object = $this->createTestObject();
         $fileName = 'api-test-extract.txt';
         $fileContent = 'This file is used to test the POST /api/files/{id}/extract endpoint.';
@@ -225,10 +225,10 @@ class FileTextExtractionIntegrationTest extends TestCase
         $this->assertNotNull($fileId, 'File should be created');
 
         try {
-            // Call the extract endpoint
+            // Call the extract endpoint.
             $response = $this->httpClient->post("/api/files/{$fileId}/extract");
             
-            // Accept both 200 (extracted) and 404 (not yet in file_texts table)
+            // Accept both 200 (extracted) and 404 (not yet in file_texts table).
             $statusCode = $response->getStatusCode();
             $this->assertTrue(
                 in_array($statusCode, [200, 404, 500]),
@@ -250,7 +250,7 @@ class FileTextExtractionIntegrationTest extends TestCase
             echo "\n⚠ API request failed (expected during development): " . $e->getMessage() . "\n";
         }
 
-        // Clean up
+        // Clean up.
         $this->cleanupTestFile($file);
         $this->cleanupTestObject($object);
     }
@@ -330,7 +330,7 @@ class FileTextExtractionIntegrationTest extends TestCase
      */
     public function testGetSingleFileInfo(): void
     {
-        // Create test object and file
+        // Create test object and file.
         $object = $this->createTestObject();
         $fileName = 'api-test-info.txt';
         $fileContent = 'Test file for GET endpoint';
@@ -369,7 +369,7 @@ class FileTextExtractionIntegrationTest extends TestCase
             echo "\n⚠ API request failed (expected during development): " . $e->getMessage() . "\n";
         }
 
-        // Clean up
+        // Clean up.
         $this->cleanupTestFile($file);
         $this->cleanupTestObject($object);
     }
@@ -381,7 +381,7 @@ class FileTextExtractionIntegrationTest extends TestCase
      */
     private function createTestObject(): ObjectEntity
     {
-        // Ensure a register and schema exist for this object
+        // Ensure a register and schema exist for this object.
         $unique = uniqid('t', true);
 
         $registerName = 'Test Register ' . $unique;
@@ -406,7 +406,7 @@ class FileTextExtractionIntegrationTest extends TestCase
             ],
         ]);
 
-        // Persist object via the service to ensure folders and metadata are set
+        // Persist object via the service to ensure folders and metadata are set.
         /** @var ObjectEntity $object */
         $object = $this->objectService->createFromArray(
             object: [
@@ -437,7 +437,7 @@ class FileTextExtractionIntegrationTest extends TestCase
                 $file->delete();
             }
         } catch (\Exception $e) {
-            // Ignore cleanup errors
+            // Ignore cleanup errors.
         }
     }
 
@@ -455,7 +455,7 @@ class FileTextExtractionIntegrationTest extends TestCase
                 $this->objectService->deleteObject($object->getUuid());
             }
         } catch (\Exception $e) {
-            // Ignore cleanup errors
+            // Ignore cleanup errors.
         }
     }
 }

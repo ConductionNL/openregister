@@ -29,7 +29,7 @@ class MetricsService
      */
     private LoggerInterface $logger;
 
-    // Metric types
+    // Metric types.
     public const METRIC_FILE_PROCESSED      = 'file_processed';
     public const METRIC_OBJECT_VECTORIZED   = 'object_vectorized';
     public const METRIC_EMBEDDING_GENERATED = 'embedding_generated';
@@ -159,7 +159,7 @@ class MetricsService
 
         $startTime = time() - ($days * 86400);
 
-        // Get total embeddings
+        // Get total embeddings.
         $qb->select($qb->func()->count('*', 'total'))
             ->selectAlias($qb->createFunction('SUM(CASE WHEN status = \'success\' THEN 1 ELSE 0 END)'), 'successful')
             ->from('openregister_metrics')
@@ -175,8 +175,8 @@ class MetricsService
         $failed      = $total - $successful;
         $successRate = $total > 0 ? ($successful / $total) * 100 : 0;
 
-        // Calculate estimated costs (based on OpenAI pricing)
-        // text-embedding-3-large: $0.00013 per 1K tokens, avg 500 tokens per embedding
+        // Calculate estimated costs (based on OpenAI pricing).
+        // text-embedding-3-large: $0.00013 per 1K tokens, avg 500 tokens per embedding.
         $estimatedCost = $successful * 0.000065;
         // $0.00013 * 0.5
         return [
@@ -249,7 +249,7 @@ class MetricsService
      */
     public function getStorageGrowth(int $days=30): array
     {
-        // Get daily vector counts
+        // Get daily vector counts.
         $qb = $this->db->getQueryBuilder();
 
         $startTime = time() - ($days * 86400);
@@ -265,7 +265,7 @@ class MetricsService
         $rows   = $result->fetchAll();
         $result->closeCursor();
 
-        // Get current total size
+        // Get current total size.
         $qb2 = $this->db->getQueryBuilder();
         $qb2->select($qb2->func()->sum($qb2->func()->length('embedding')), 'total_bytes')
             ->from('openregister_vectors');

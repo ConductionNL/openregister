@@ -109,7 +109,7 @@ class RegisterMapper extends QBMapper
         $this->eventDispatcher    = $eventDispatcher;
         $this->objectEntityMapper = $objectEntityMapper;
 
-        // Initialize multi-tenancy trait dependencies
+        // Initialize multi-tenancy trait dependencies.
         $this->organisationService = $organisationService;
         $this->userSession         = $userSession;
         $this->groupManager        = $groupManager;
@@ -131,7 +131,7 @@ class RegisterMapper extends QBMapper
      */
     public function find(string | int $id, ?array $extend=[]): Register
     {
-        // Verify RBAC permission to read registers
+        // Verify RBAC permission to read registers.
         $this->verifyRbacPermission('read', 'register');
 
         $qb = $this->db->getQueryBuilder();
@@ -145,7 +145,7 @@ class RegisterMapper extends QBMapper
                 )
             );
 
-        // Apply organisation filter (all users including admins must have active org)
+        // Apply organisation filter (all users including admins must have active org).
         $this->applyOrganisationFilter($qb);
 
         // Just return the entity; do not attach stats here
@@ -239,7 +239,7 @@ class RegisterMapper extends QBMapper
         ?array $searchParams=[],
         ?array $extend=[]
     ): array {
-        // Verify RBAC permission to read registers
+        // Verify RBAC permission to read registers.
         $this->verifyRbacPermission('read', 'register');
 
         $qb = $this->db->getQueryBuilder();
@@ -248,7 +248,7 @@ class RegisterMapper extends QBMapper
             ->setMaxResults($limit)
             ->setFirstResult($offset);
 
-        // Apply organisation filter (all users including admins must have active org)
+        // Apply organisation filter (all users including admins must have active org).
         $this->applyOrganisationFilter($qb);
 
         foreach ($filters as $filter => $value) {
@@ -287,10 +287,10 @@ class RegisterMapper extends QBMapper
      */
     public function insert(Entity $entity): Entity
     {
-        // Verify RBAC permission to create registers
+        // Verify RBAC permission to create registers.
         $this->verifyRbacPermission('create', 'register');
 
-        // Auto-set organisation from active session
+        // Auto-set organisation from active session.
         $this->setOrganisationOnCreate($entity);
 
         $entity = parent::insert($entity);
@@ -376,13 +376,13 @@ class RegisterMapper extends QBMapper
      */
     public function update(Entity $entity): Entity
     {
-        // Verify RBAC permission to update registers
+        // Verify RBAC permission to update registers.
         $this->verifyRbacPermission('update', 'register');
 
-        // Verify entity belongs to active organisation
+        // Verify entity belongs to active organisation.
         $this->verifyOrganisationAccess($entity);
 
-        // Fetch old entity directly without organisation filter for event comparison
+        // Fetch old entity directly without organisation filter for event comparison.
         $qb = $this->db->getQueryBuilder();
         $qb->select('*')
             ->from('openregister_registers')
@@ -444,20 +444,20 @@ class RegisterMapper extends QBMapper
      */
     public function delete(Entity $entity): Register
     {
-        // Verify RBAC permission to delete registers
+        // Verify RBAC permission to delete registers.
         $this->verifyRbacPermission('delete', 'register');
 
-        // Verify entity belongs to active organisation
+        // Verify entity belongs to active organisation.
         $this->verifyOrganisationAccess($entity);
 
-        // Check for attached objects before deleting
+        // Check for attached objects before deleting.
         $registerId = method_exists($entity, 'getId') ? $entity->getId() : $entity->id;
         $stats      = $this->objectEntityMapper->getStatistics($registerId, null);
         if (($stats['total'] ?? 0) > 0) {
             throw new \OCA\OpenRegister\Exception\ValidationException('Cannot delete register: objects are still attached.');
         }
 
-        // Proceed with deletion if no objects are attached
+        // Proceed with deletion if no objects are attached.
         $result = parent::delete($entity);
 
         // Dispatch deletion event.
@@ -509,7 +509,7 @@ class RegisterMapper extends QBMapper
     {
         $qb = $this->db->getQueryBuilder();
 
-        // REGEXP: match number with optional whitespace and newlines
+        // REGEXP: match number with optional whitespace and newlines.
         $pattern = '[[:<:]]'.$schemaId.'[[:>:]]';
 
         $qb->select('id')

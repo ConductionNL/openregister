@@ -17,7 +17,6 @@ use OCP\IDBConnection;
 
 /**
  * Class GdprEntityMapper
- */
  *
  * @method GdprEntity insert(Entity $entity)
  * @method GdprEntity update(Entity $entity)

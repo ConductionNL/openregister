@@ -102,13 +102,13 @@ class ConfigurationCheckJob extends TimedJob
         $this->appConfig            = $appConfig;
         $this->logger = $logger;
 
-        // Set interval based on app configuration (default 3600 seconds = 1 hour)
+        // Set interval based on app configuration (default 3600 seconds = 1 hour).
         $interval = (int) $this->appConfig->getValueString('openregister', 'configuration_check_interval', '3600');
 
-        // If interval is 0, disable the job by setting a very long interval
+        // If interval is 0, disable the job by setting a very long interval.
         if ($interval === 0) {
             $this->setInterval(86400 * 365);
-            // 1 year
+            // 1 year.
             $this->logger->info('Configuration check job is disabled (interval set to 0)');
         } else {
             $this->setInterval($interval);
@@ -132,7 +132,7 @@ class ConfigurationCheckJob extends TimedJob
     {
         $this->logger->info('Starting configuration check job');
 
-        // Check if the job is disabled
+        // Check if the job is disabled.
         $interval = (int) $this->appConfig->getValueString('openregister', 'configuration_check_interval', '3600');
         if ($interval === 0) {
             $this->logger->info('Configuration check job is disabled, skipping');
@@ -140,7 +140,7 @@ class ConfigurationCheckJob extends TimedJob
         }
 
         try {
-            // Get all configurations
+            // Get all configurations.
             $configurations = $this->configurationMapper->findAll();
             $this->logger->info('Found '.count($configurations).' configurations to check');
 
@@ -150,14 +150,14 @@ class ConfigurationCheckJob extends TimedJob
 
             foreach ($configurations as $configuration) {
                 try {
-                    // Only check remote configurations
+                    // Only check remote configurations.
                     if ($configuration->isRemoteSource() === false) {
                         continue;
                     }
 
                     $this->logger->info("Checking configuration: {$configuration->getTitle()} (ID: {$configuration->getId()})");
 
-                    // Check remote version
+                    // Check remote version.
                     $remoteVersion = $this->configurationService->checkRemoteVersion($configuration);
                     $checked++;
 
@@ -166,7 +166,7 @@ class ConfigurationCheckJob extends TimedJob
                         continue;
                     }
 
-                    // Check if update is available
+                    // Check if update is available.
                     if ($configuration->hasUpdateAvailable() === false) {
                         $this->logger->info("Configuration {$configuration->getTitle()} is up to date");
                         continue;
@@ -174,16 +174,16 @@ class ConfigurationCheckJob extends TimedJob
 
                     $this->logger->info("Update available for {$configuration->getTitle()}: {$configuration->getLocalVersion()} → {$remoteVersion}");
 
-                    // If auto-update is enabled, import the updates
+                    // If auto-update is enabled, import the updates.
                     if ($configuration->getAutoUpdate() === true) {
                         $this->logger->info("Auto-update enabled, importing updates for {$configuration->getTitle()}");
 
                         try {
-                            // Import all changes (no selection, import everything)
+                            // Import all changes (no selection, import everything).
                             $this->configurationService->importConfigurationWithSelection(
                                 $configuration,
                                 []
-                            // Empty selection means import all
+                            // Empty selection means import all.
                             );
 
                             $updated++;
@@ -196,7 +196,7 @@ class ConfigurationCheckJob extends TimedJob
                         $this->logger->info("Auto-update disabled for {$configuration->getTitle()}, sending notification");
 
                         try {
-                            // Send notification to configured groups
+                            // Send notification to configured groups.
                             $notificationCount = $this->notificationService->notifyConfigurationUpdate($configuration);
                             $this->logger->info("Sent {$notificationCount} notifications for configuration {$configuration->getTitle()}");
                         } catch (Exception $e) {

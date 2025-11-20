@@ -17,7 +17,6 @@ use OCP\IDBConnection;
 
 /**
  * Class ObjectTextMapper
- */
  *
  * @method ObjectText insert(Entity $entity)
  * @method ObjectText update(Entity $entity)

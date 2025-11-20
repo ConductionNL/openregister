@@ -55,12 +55,12 @@ class SemVerFormat implements Format
      */
     public function validate(mixed $data): bool
     {
-        // Only validate strings
+        // Only validate strings.
         if (!is_string($data)) {
             return false;
         }
 
-        // Validate against SemVer pattern
+        // Validate against SemVer pattern.
         return preg_match(self::SEMVER_PATTERN, $data) === 1;
 
     }//end validate()

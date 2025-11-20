@@ -113,7 +113,7 @@ class ViewsController extends Controller
 
             $params = $this->request->getParams();
 
-            // Extract pagination and search parameters (for future use)
+            // Extract pagination and search parameters (for future use).
             $limit  = isset($params['_limit']) ? (int) $params['_limit'] : null;
             $offset = isset($params['_offset']) ? (int) $params['_offset'] : null;
             $page   = isset($params['_page']) ? (int) $params['_page'] : null;
@@ -121,7 +121,7 @@ class ViewsController extends Controller
 
             $views = $this->viewService->findAll($userId);
 
-            // Apply client-side pagination if parameters are provided
+            // Apply client-side pagination if parameters are provided.
             $total = count($views);
             if ($limit !== null) {
                 if ($page !== null) {
@@ -244,7 +244,7 @@ class ViewsController extends Controller
 
             $data = $this->request->getParams();
 
-            // Validate required fields
+            // Validate required fields.
             if (!isset($data['name']) || empty($data['name'])) {
                 return new JSONResponse(
                         [
@@ -254,10 +254,10 @@ class ViewsController extends Controller
                         );
             }
 
-            // Extract query parameters from configuration or query
+            // Extract query parameters from configuration or query.
             $query = [];
             if (isset($data['configuration']) && is_array($data['configuration'])) {
-                // Frontend still sends 'configuration', extract only query params
+                // Frontend still sends 'configuration', extract only query params.
                 $config = $data['configuration'];
                 $query  = [
                     'registers'     => $config['registers'] ?? [],
@@ -268,7 +268,7 @@ class ViewsController extends Controller
                     'enabledFacets' => $config['enabledFacets'] ?? [],
                 ];
             } else if (isset($data['query']) && is_array($data['query'])) {
-                // Direct query parameter
+                // Direct query parameter.
                 $query = $data['query'];
             } else {
                 return new JSONResponse(
@@ -340,7 +340,7 @@ class ViewsController extends Controller
 
             $data = $this->request->getParams();
 
-            // Validate required fields
+            // Validate required fields.
             if (!isset($data['name']) || empty($data['name'])) {
                 return new JSONResponse(
                         [
@@ -350,10 +350,10 @@ class ViewsController extends Controller
                         );
             }
 
-            // Extract query parameters from configuration or query
+            // Extract query parameters from configuration or query.
             $query = [];
             if (isset($data['configuration']) && is_array($data['configuration'])) {
-                // Frontend still sends 'configuration', extract only query params
+                // Frontend still sends 'configuration', extract only query params.
                 $config = $data['configuration'];
                 $query  = [
                     'registers'     => $config['registers'] ?? [],
@@ -364,7 +364,7 @@ class ViewsController extends Controller
                     'enabledFacets' => $config['enabledFacets'] ?? [],
                 ];
             } else if (isset($data['query']) && is_array($data['query'])) {
-                // Direct query parameter
+                // Direct query parameter.
                 $query = $data['query'];
             } else {
                 return new JSONResponse(
@@ -445,19 +445,19 @@ class ViewsController extends Controller
                         );
             }
 
-            // Get existing view
+            // Get existing view.
             $view = $this->viewService->find($id, $userId);
 
             $data = $this->request->getParams();
 
-            // Use existing values for fields not provided
+            // Use existing values for fields not provided.
             $name        = $data['name'] ?? $view->getName();
             $description = $data['description'] ?? $view->getDescription();
             $isPublic    = isset($data['isPublic']) ? $data['isPublic'] : $view->getIsPublic();
             $isDefault   = isset($data['isDefault']) ? $data['isDefault'] : $view->getIsDefault();
             $favoredBy   = $data['favoredBy'] ?? $view->getFavoredBy();
 
-            // Handle query parameter
+            // Handle query parameter.
             $query = $view->getQuery() ?? [];
             if (isset($data['configuration']) && is_array($data['configuration'])) {
                 $config = $data['configuration'];
@@ -473,7 +473,7 @@ class ViewsController extends Controller
                 $query = $data['query'];
             }
 
-            // Update view
+            // Update view.
             $updatedView = $this->viewService->update(
                 id: $id,
                 name: $name,

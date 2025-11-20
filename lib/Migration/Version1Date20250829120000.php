@@ -213,7 +213,7 @@ class Version1Date20250829120000 extends SimpleMigrationStep
          */
         $schema = $schemaClosure();
 
-        // 1. Add image column to openregister_objects table
+        // 1. Add image column to openregister_objects table.
         if ($schema->hasTable('openregister_objects') === true) {
             $table = $schema->getTable('openregister_objects');
 
@@ -230,7 +230,7 @@ class Version1Date20250829120000 extends SimpleMigrationStep
             }
         }
 
-        // 2. Add unique constraint for (organisation, slug) on registers table
+        // 2. Add unique constraint for (organisation, slug) on registers table.
         if ($schema->hasTable('openregister_registers') === true) {
             $table = $schema->getTable('openregister_registers');
 
@@ -246,7 +246,7 @@ class Version1Date20250829120000 extends SimpleMigrationStep
             }
         }
 
-        // 3. Add unique constraint for (organisation, slug) on schemas table
+        // 3. Add unique constraint for (organisation, slug) on schemas table.
         if ($schema->hasTable('openregister_schemas') === true) {
             $table = $schema->getTable('openregister_schemas');
 

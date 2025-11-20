@@ -33,7 +33,7 @@ class OrganisationFilteredConversationListTest extends TestCase
         $this->conversationMapper = new ConversationMapper($this->db, \OC::$server->get(ITimeFactory::class));
         $this->agentMapper = new AgentMapper($this->db);
 
-        // Create test agents for different organisations
+        // Create test agents for different organisations.
         for ($org = 1; $org <= 3; $org++) {
             $agent = new Agent();
             $agent->setUuid('test-agent-org' . $org . '-' . uniqid());
@@ -52,7 +52,7 @@ class OrganisationFilteredConversationListTest extends TestCase
                 $this->agentMapper->delete($agent);
             }
         } catch (\Exception $e) {
-            // Ignore cleanup errors
+            // Ignore cleanup errors.
         }
 
         parent::tearDown();
@@ -60,10 +60,10 @@ class OrganisationFilteredConversationListTest extends TestCase
 
     public function testConversationsFilteredByOrganisation(): void
     {
-        // Create conversations for different organisations
+        // Create conversations for different organisations.
         $conversations = [];
         
-        // Organisation 1 - 3 conversations
+        // Organisation 1 - 3 conversations.
         for ($i = 1; $i <= 3; $i++) {
             $conv = new Conversation();
             $conv->setUuid('test-conv-org1-' . $i . '-' . uniqid());
@@ -74,7 +74,7 @@ class OrganisationFilteredConversationListTest extends TestCase
             $conversations[1][] = $this->conversationMapper->insert($conv);
         }
 
-        // Organisation 2 - 2 conversations
+        // Organisation 2 - 2 conversations.
         for ($i = 1; $i <= 2; $i++) {
             $conv = new Conversation();
             $conv->setUuid('test-conv-org2-' . $i . '-' . uniqid());
@@ -85,27 +85,27 @@ class OrganisationFilteredConversationListTest extends TestCase
             $conversations[2][] = $this->conversationMapper->insert($conv);
         }
 
-        // Find conversations by organisation
+        // Find conversations by organisation.
         $org1Convs = $this->conversationMapper->findByUser('test-user', 1);
         $org2Convs = $this->conversationMapper->findByUser('test-user', 2);
 
-        // Extract UUIDs
+        // Extract UUIDs.
         $org1Uuids = array_map(fn($c) => $c->getUuid(), $org1Convs);
         $org2Uuids = array_map(fn($c) => $c->getUuid(), $org2Convs);
 
-        // Verify org 1 conversations
+        // Verify org 1 conversations.
         foreach ($conversations[1] as $conv) {
             $this->assertContains($conv->getUuid(), $org1Uuids);
             $this->assertNotContains($conv->getUuid(), $org2Uuids);
         }
 
-        // Verify org 2 conversations
+        // Verify org 2 conversations.
         foreach ($conversations[2] as $conv) {
             $this->assertContains($conv->getUuid(), $org2Uuids);
             $this->assertNotContains($conv->getUuid(), $org1Uuids);
         }
 
-        // Cleanup
+        // Cleanup.
         foreach ($conversations as $orgConvs) {
             foreach ($orgConvs as $conv) {
                 $this->conversationMapper->delete($conv);
@@ -115,7 +115,7 @@ class OrganisationFilteredConversationListTest extends TestCase
 
     public function testConversationCountByOrganisation(): void
     {
-        // Create conversations
+        // Create conversations.
         $org1Conv1 = new Conversation();
         $org1Conv1->setUuid('test-conv-count-org1-1-' . uniqid());
         $org1Conv1->setTitle('Count Org 1 Conv 1');
@@ -140,14 +140,14 @@ class OrganisationFilteredConversationListTest extends TestCase
         $org2Conv1->setAgentId($this->testAgents[2]->getId());
         $org2Conv1 = $this->conversationMapper->insert($org2Conv1);
 
-        // Count by organisation
+        // Count by organisation.
         $org1Count = $this->conversationMapper->countByUser('test-user-count', 1);
         $org2Count = $this->conversationMapper->countByUser('test-user-count', 2);
 
         $this->assertEquals(2, $org1Count);
         $this->assertEquals(1, $org2Count);
 
-        // Cleanup
+        // Cleanup.
         $this->conversationMapper->delete($org1Conv1);
         $this->conversationMapper->delete($org1Conv2);
         $this->conversationMapper->delete($org2Conv1);
@@ -155,7 +155,7 @@ class OrganisationFilteredConversationListTest extends TestCase
 
     public function testUserSwitchingOrganisations(): void
     {
-        // User in org 1
+        // User in org 1.
         $org1Conv = new Conversation();
         $org1Conv->setUuid('test-conv-switch-org1-' . uniqid());
         $org1Conv->setTitle('Org 1 Conv');
@@ -164,7 +164,7 @@ class OrganisationFilteredConversationListTest extends TestCase
         $org1Conv->setAgentId($this->testAgents[1]->getId());
         $org1Conv = $this->conversationMapper->insert($org1Conv);
 
-        // User switches to org 2
+        // User switches to org 2.
         $org2Conv = new Conversation();
         $org2Conv->setUuid('test-conv-switch-org2-' . uniqid());
         $org2Conv->setTitle('Org 2 Conv');
@@ -173,19 +173,19 @@ class OrganisationFilteredConversationListTest extends TestCase
         $org2Conv->setAgentId($this->testAgents[2]->getId());
         $org2Conv = $this->conversationMapper->insert($org2Conv);
 
-        // When in org 1, should only see org 1 conversations
+        // When in org 1, should only see org 1 conversations.
         $inOrg1 = $this->conversationMapper->findByUser('switching-user', 1);
         $inOrg1Uuids = array_map(fn($c) => $c->getUuid(), $inOrg1);
         $this->assertContains($org1Conv->getUuid(), $inOrg1Uuids);
         $this->assertNotContains($org2Conv->getUuid(), $inOrg1Uuids);
 
-        // When in org 2, should only see org 2 conversations
+        // When in org 2, should only see org 2 conversations.
         $inOrg2 = $this->conversationMapper->findByUser('switching-user', 2);
         $inOrg2Uuids = array_map(fn($c) => $c->getUuid(), $inOrg2);
         $this->assertContains($org2Conv->getUuid(), $inOrg2Uuids);
         $this->assertNotContains($org1Conv->getUuid(), $inOrg2Uuids);
 
-        // Cleanup
+        // Cleanup.
         $this->conversationMapper->delete($org1Conv);
         $this->conversationMapper->delete($org2Conv);
     }
@@ -194,7 +194,7 @@ class OrganisationFilteredConversationListTest extends TestCase
     {
         $conversations = [];
         
-        // Create 15 conversations in org 1
+        // Create 15 conversations in org 1.
         for ($i = 1; $i <= 15; $i++) {
             $conv = new Conversation();
             $conv->setUuid('test-conv-page-' . $i . '-' . uniqid());
@@ -206,20 +206,20 @@ class OrganisationFilteredConversationListTest extends TestCase
             usleep(10000); // Small delay for ordering
         }
 
-        // Get first page (10 items)
+        // Get first page (10 items).
         $page1 = $this->conversationMapper->findByUser('page-user', 1, 10, 0);
         $this->assertCount(10, $page1);
 
-        // Get second page (5 items)
+        // Get second page (5 items).
         $page2 = $this->conversationMapper->findByUser('page-user', 1, 10, 10);
         $this->assertCount(5, $page2);
 
-        // Verify no overlap
+        // Verify no overlap.
         $page1Uuids = array_map(fn($c) => $c->getUuid(), $page1);
         $page2Uuids = array_map(fn($c) => $c->getUuid(), $page2);
         $this->assertEmpty(array_intersect($page1Uuids, $page2Uuids));
 
-        // Cleanup
+        // Cleanup.
         foreach ($conversations as $conv) {
             $this->conversationMapper->delete($conv);
         }
@@ -227,7 +227,7 @@ class OrganisationFilteredConversationListTest extends TestCase
 
     public function testMultipleUsersInSameOrganisation(): void
     {
-        // User 1 conversations
+        // User 1 conversations.
         $user1Conv = new Conversation();
         $user1Conv->setUuid('test-conv-multi-user1-' . uniqid());
         $user1Conv->setTitle('User 1 Conv');
@@ -236,7 +236,7 @@ class OrganisationFilteredConversationListTest extends TestCase
         $user1Conv->setAgentId($this->testAgents[1]->getId());
         $user1Conv = $this->conversationMapper->insert($user1Conv);
 
-        // User 2 conversations
+        // User 2 conversations.
         $user2Conv = new Conversation();
         $user2Conv->setUuid('test-conv-multi-user2-' . uniqid());
         $user2Conv->setTitle('User 2 Conv');
@@ -245,7 +245,7 @@ class OrganisationFilteredConversationListTest extends TestCase
         $user2Conv->setAgentId($this->testAgents[1]->getId());
         $user2Conv = $this->conversationMapper->insert($user2Conv);
 
-        // Each user should only see their own conversations
+        // Each user should only see their own conversations.
         $user1Convs = $this->conversationMapper->findByUser('user1', 1);
         $user1Uuids = array_map(fn($c) => $c->getUuid(), $user1Convs);
         $this->assertContains($user1Conv->getUuid(), $user1Uuids);
@@ -256,14 +256,14 @@ class OrganisationFilteredConversationListTest extends TestCase
         $this->assertContains($user2Conv->getUuid(), $user2Uuids);
         $this->assertNotContains($user1Conv->getUuid(), $user2Uuids);
 
-        // Cleanup
+        // Cleanup.
         $this->conversationMapper->delete($user1Conv);
         $this->conversationMapper->delete($user2Conv);
     }
 
     public function testConversationWithNullOrganisation(): void
     {
-        // Create conversation without organisation
+        // Create conversation without organisation.
         $noOrgConv = new Conversation();
         $noOrgConv->setUuid('test-conv-no-org-' . uniqid());
         $noOrgConv->setTitle('No Org Conv');
@@ -272,21 +272,21 @@ class OrganisationFilteredConversationListTest extends TestCase
         $noOrgConv->setAgentId($this->testAgents[1]->getId());
         $noOrgConv = $this->conversationMapper->insert($noOrgConv);
 
-        // Should not appear in any organisation-filtered list
+        // Should not appear in any organisation-filtered list.
         $org1Convs = $this->conversationMapper->findByUser('test-user', 1);
         $org1Uuids = array_map(fn($c) => $c->getUuid(), $org1Convs);
         $this->assertNotContains($noOrgConv->getUuid(), $org1Uuids);
 
-        // Could potentially be retrieved with null organisation filter
-        // (implementation-dependent)
+        // Could potentially be retrieved with null organisation filter.
+        // (implementation-dependent).
 
-        // Cleanup
+        // Cleanup.
         $this->conversationMapper->delete($noOrgConv);
     }
 
     public function testDeletedConversationsFilteredByOrganisation(): void
     {
-        // Create and soft delete conversations in different orgs
+        // Create and soft delete conversations in different orgs.
         $org1Conv = new Conversation();
         $org1Conv->setUuid('test-conv-del-org1-' . uniqid());
         $org1Conv->setTitle('Deleted Org 1');
@@ -305,7 +305,7 @@ class OrganisationFilteredConversationListTest extends TestCase
         $org2Conv = $this->conversationMapper->insert($org2Conv);
         $this->conversationMapper->softDelete($org2Conv->getId());
 
-        // Get deleted conversations by organisation
+        // Get deleted conversations by organisation.
         $org1Deleted = $this->conversationMapper->findDeletedByUser('test-user-del', 1);
         $org2Deleted = $this->conversationMapper->findDeletedByUser('test-user-del', 2);
 
@@ -318,7 +318,7 @@ class OrganisationFilteredConversationListTest extends TestCase
         $this->assertContains($org2Conv->getUuid(), $org2DeletedUuids);
         $this->assertNotContains($org1Conv->getUuid(), $org2DeletedUuids);
 
-        // Cleanup
+        // Cleanup.
         $org1Found = $this->conversationMapper->find($org1Conv->getId());
         $org2Found = $this->conversationMapper->find($org2Conv->getId());
         $this->conversationMapper->delete($org1Found);

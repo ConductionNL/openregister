@@ -19,12 +19,12 @@
 
 declare(strict_types=1);
 
-// Define that we're running PHPUnit
+// Define that we're running PHPUnit.
 define('PHPUNIT_RUN', 1);
 
-// Include Composer's autoloader
+// Include Composer's autoloader.
 require_once __DIR__ . '/../vendor/autoload.php';
 
-// No Nextcloud bootstrap needed for integration tests
-// They use HTTP client to test the running API
+// No Nextcloud bootstrap needed for integration tests.
+// They use HTTP client to test the running API.
 

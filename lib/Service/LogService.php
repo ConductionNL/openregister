@@ -199,17 +199,17 @@ class LogService
      */
     public function exportLogs(string $format, array $config=[]): array
     {
-        // Get all logs with current filters
+        // Get all logs with current filters.
         $logs = $this->auditTrailMapper->findAll(
             filters: $config['filters'] ?? [],
             sort: ['created' => 'DESC'],
             search: $config['search'] ?? null
         );
 
-        // Process logs for export
+        // Process logs for export.
         $exportData = $this->prepareLogsForExport($logs, $config);
 
-        // Generate content based on format
+        // Generate content based on format.
         switch (strtolower($format)) {
             case 'csv':
                 return $this->exportToCsv($exportData);
@@ -266,7 +266,7 @@ class LogService
         $failed  = 0;
 
         try {
-            // If specific IDs are provided, use those
+            // If specific IDs are provided, use those.
             if (!empty($config['ids']) && is_array($config['ids'])) {
                 foreach ($config['ids'] as $id) {
                     try {
@@ -278,7 +278,7 @@ class LogService
                     }
                 }
             } else {
-                // Otherwise, use filters to find logs to delete
+                // Otherwise, use filters to find logs to delete.
                 $logs = $this->auditTrailMapper->findAll(
                     filters: $config['filters'] ?? [],
                     search: $config['search'] ?? null
@@ -323,7 +323,7 @@ class LogService
         foreach ($logs as $log) {
             $logData = $log->jsonSerialize();
 
-            // Always include basic fields
+            // Always include basic fields.
             $exportRow = [
                 'id'       => $logData['id'] ?? '',
                 'uuid'     => $logData['uuid'] ?? '',
@@ -337,7 +337,7 @@ class LogService
                 'size'     => $logData['size'] ?? '',
             ];
 
-            // Include changes if requested
+            // Include changes if requested.
             if ($includeChanges && !empty($logData['changed'])) {
                 $exportRow['changes'] = is_array($logData['changed']) ? json_encode($logData['changed']) : $logData['changed'];
             }
@@ -377,10 +377,10 @@ class LogService
 
         $output = fopen('php://temp', 'r+');
 
-        // Write header
+        // Write header.
         fputcsv($output, array_keys($data[0]));
 
-        // Write data rows
+        // Write data rows.
         foreach ($data as $row) {
             fputcsv($output, $row);
         }
@@ -430,7 +430,7 @@ class LogService
         foreach ($data as $logData) {
             $logElement = $xml->addChild('auditTrail');
             foreach ($logData as $key => $value) {
-                // Handle special characters and ensure valid XML
+                // Handle special characters and ensure valid XML.
                 $cleanKey = preg_replace('/[^a-zA-Z0-9_]/', '_', $key);
                 $logElement->addChild($cleanKey, htmlspecialchars($value ?? ''));
             }

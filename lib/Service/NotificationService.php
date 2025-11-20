@@ -89,15 +89,15 @@ class NotificationService
     {
         $this->logger->info("Sending configuration update notification for: {$configuration->getTitle()}");
 
-        // Get notification groups from configuration
+        // Get notification groups from configuration.
         $notificationGroups = $configuration->getNotificationGroups() ?? [];
 
-        // Always include admin group
+        // Always include admin group.
         if (in_array('admin', $notificationGroups, true) === false) {
             $notificationGroups[] = 'admin';
         }
 
-        // Collect all users to notify
+        // Collect all users to notify.
         $usersToNotify = [];
         foreach ($notificationGroups as $groupId) {
             $group = $this->groupManager->get($groupId);
@@ -109,11 +109,11 @@ class NotificationService
             $users = $group->getUsers();
             foreach ($users as $user) {
                 $usersToNotify[$user->getUID()] = true;
-                // Use array key to avoid duplicates
+                // Use array key to avoid duplicates.
             }
         }
 
-        // Send notifications to all users
+        // Send notifications to all users.
         $notificationCount = 0;
         foreach (array_keys($usersToNotify) as $userId) {
             try {
@@ -192,7 +192,7 @@ class NotificationService
         $notification->setApp('openregister')
             ->setObject('configuration', (string) $configuration->getId());
 
-        // This will remove all notifications for this configuration
+        // This will remove all notifications for this configuration.
         $this->notificationManager->markProcessed($notification);
 
         $this->logger->info("Marked configuration {$configuration->getTitle()} notifications as processed");

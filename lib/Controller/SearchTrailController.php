@@ -69,7 +69,7 @@ class SearchTrailController extends Controller
         // Get request parameters for filtering and pagination.
         $params = $this->request->getParams();
 
-        // Extract pagination parameters (prioritize underscore-prefixed versions)
+        // Extract pagination parameters (prioritize underscore-prefixed versions).
         if (isset($params['_limit']) === true) {
             $limit = (int) $params['_limit'];
         } else if (isset($params['limit']) === true) {
@@ -99,10 +99,10 @@ class SearchTrailController extends Controller
             $offset = ($page - 1) * $limit;
         }
 
-        // Extract search parameter (prioritize underscore-prefixed version)
+        // Extract search parameter (prioritize underscore-prefixed version).
         $search = $params['_search'] ?? $params['search'] ?? null;
 
-        // Extract sort parameters (prioritize underscore-prefixed versions)
+        // Extract sort parameters (prioritize underscore-prefixed versions).
         $sort = [];
         if (isset($params['_sort']) === true || isset($params['sort']) === true) {
             $sortField        = $params['_sort'] ?? $params['sort'] ?? 'created';
@@ -202,7 +202,7 @@ class SearchTrailController extends Controller
         // Minimum limit of 1.
         $offset = max(0, $offset ?? 0);
         $page   = max(1, $page ?? 1);
-        // Minimum page of 1
+        // Minimum page of 1.
         // Calculate the number of pages (minimum 1 page).
         $pages = max(1, ceil($total / $limit));
 
@@ -240,7 +240,7 @@ class SearchTrailController extends Controller
             $nextPage = $page + 1;
             $nextUrl  = preg_replace('/([?&])_page=\d+/', '$1_page='.$nextPage, $currentUrl);
             if (strpos($nextUrl, '_page=') === false) {
-                // Also handle legacy 'page' parameter
+                // Also handle legacy 'page' parameter.
                 $nextUrl = preg_replace('/([?&])page=\d+/', '$1_page='.$nextPage, $nextUrl);
                 if (strpos($nextUrl, '_page=') === false) {
                     $nextUrl .= (strpos($nextUrl, '?') === false ? '?' : '&').'_page='.$nextPage;
@@ -255,7 +255,7 @@ class SearchTrailController extends Controller
             $prevPage = $page - 1;
             $prevUrl  = preg_replace('/([?&])_page=\d+/', '$1_page='.$prevPage, $currentUrl);
             if (strpos($prevUrl, '_page=') === false) {
-                // Also handle legacy 'page' parameter
+                // Also handle legacy 'page' parameter.
                 $prevUrl = preg_replace('/([?&])page=\d+/', '$1_page='.$prevPage, $prevUrl);
                 if (strpos($prevUrl, '_page=') === false) {
                     $prevUrl .= (strpos($prevUrl, '?') === false ? '?' : '&').'_page='.$prevPage;
@@ -281,23 +281,23 @@ class SearchTrailController extends Controller
     public function index(): JSONResponse
     {
         try {
-            // Get raw request parameters (this is what the service expects)
+            // Get raw request parameters (this is what the service expects).
             $rawParams = $this->request->getParams();
 
-            // Remove system parameters that shouldn't be passed to the service
+            // Remove system parameters that shouldn't be passed to the service.
             unset($rawParams['_route'], $rawParams['id']);
 
-            // Get paginated search trails from service using raw parameters
+            // Get paginated search trails from service using raw parameters.
             $serviceResult = $this->searchTrailService->getSearchTrails($rawParams);
 
-            // Extract the raw results and pagination info from service
+            // Extract the raw results and pagination info from service.
             $results = $serviceResult['results'] ?? [];
             $total   = $serviceResult['total'] ?? 0;
             $limit   = $serviceResult['limit'] ?? 20;
             $offset  = $serviceResult['offset'] ?? 0;
             $page    = $serviceResult['page'] ?? 1;
 
-            // Use the paginate method to ensure consistent format with ObjectsController
+            // Use the paginate method to ensure consistent format with ObjectsController.
             $paginatedResult = $this->paginate($results, $total, $limit, $offset, $page);
 
             return new JSONResponse($paginatedResult);
@@ -383,7 +383,7 @@ class SearchTrailController extends Controller
     {
         // Extract parameters.
         $params = $this->extractRequestParameters();
-        // Prioritize underscore-prefixed limit parameter
+        // Prioritize underscore-prefixed limit parameter.
         $limit = $this->request->getParam('_limit', $this->request->getParam('limit', 10));
 
         try {
@@ -393,18 +393,18 @@ class SearchTrailController extends Controller
                 to: $params['to']
             );
 
-            // Extract the terms array and metadata
+            // Extract the terms array and metadata.
             $terms            = $serviceResult['terms'] ?? [];
             $totalUniqueTerms = $serviceResult['total_unique_terms'] ?? 0;
             $totalSearches    = $serviceResult['total_searches'] ?? 0;
             $period           = $serviceResult['period'] ?? null;
 
-            // Use pagination format for the terms array
+            // Use pagination format for the terms array.
             $page           = $params['page'] ?? 1;
             $offset         = $params['offset'] ?? 0;
             $paginatedTerms = $this->paginate($terms, $totalUniqueTerms, $limit, $offset, $page);
 
-            // Add the additional metadata from the service
+            // Add the additional metadata from the service.
             $paginatedTerms['total_searches'] = $totalSearches;
             $paginatedTerms['period']         = $period;
 
@@ -470,20 +470,20 @@ class SearchTrailController extends Controller
                 to: $params['to']
             );
 
-            // Extract the statistics array and metadata
+            // Extract the statistics array and metadata.
             $statistics        = $serviceResult['statistics'] ?? [];
             $totalCombinations = $serviceResult['total_combinations'] ?? 0;
             $totalSearches     = $serviceResult['total_searches'] ?? 0;
             $period            = $serviceResult['period'] ?? null;
 
-            // Use pagination format for the statistics array
-            // Prioritize underscore-prefixed limit parameter
+            // Use pagination format for the statistics array.
+            // Prioritize underscore-prefixed limit parameter.
             $limit          = $this->request->getParam('_limit', $this->request->getParam('limit', 20));
             $page           = $params['page'] ?? 1;
             $offset         = $params['offset'] ?? 0;
             $paginatedStats = $this->paginate($statistics, $totalCombinations, $limit, $offset, $page);
 
-            // Add the additional metadata from the service
+            // Add the additional metadata from the service.
             $paginatedStats['total_searches'] = $totalSearches;
             $paginatedStats['period']         = $period;
 
@@ -510,7 +510,7 @@ class SearchTrailController extends Controller
     {
         // Extract parameters.
         $params = $this->extractRequestParameters();
-        // Prioritize underscore-prefixed limit parameter
+        // Prioritize underscore-prefixed limit parameter.
         $limit = $this->request->getParam('_limit', $this->request->getParam('limit', 10));
 
         try {
@@ -520,16 +520,16 @@ class SearchTrailController extends Controller
                 to: $params['to']
             );
 
-            // Check if service result is a structured array with nested data
+            // Check if service result is a structured array with nested data.
             if (isset($serviceResult['user_agents'])) {
-                // Extract the user agents array and metadata from structured response
+                // Extract the user agents array and metadata from structured response.
                 $userAgents        = $serviceResult['user_agents'] ?? [];
                 $totalUniqueAgents = $serviceResult['total_unique_agents'] ?? 0;
                 $totalSearches     = $serviceResult['total_searches'] ?? 0;
                 $period            = $serviceResult['period'] ?? null;
                 $browserStats      = $serviceResult['browser_breakdown'] ?? null;
 
-                // Use pagination format for the user agents array
+                // Use pagination format for the user agents array.
                 $page   = $params['page'] ?? 1;
                 $offset = $params['offset'] ?? 0;
                 $paginatedUserAgents = $this->paginate($userAgents, $totalUniqueAgents, $limit, $offset, $page);
@@ -543,11 +543,11 @@ class SearchTrailController extends Controller
 
                 return new JSONResponse($paginatedUserAgents);
             } else {
-                // If service returns a simple array, treat it as the user agents list
+                // If service returns a simple array, treat it as the user agents list.
                 $userAgents        = $serviceResult ?? [];
                 $totalUniqueAgents = count($userAgents);
 
-                // Use pagination format for the user agents array
+                // Use pagination format for the user agents array.
                 $page   = $params['page'] ?? 1;
                 $offset = $params['offset'] ?? 0;
                 $paginatedUserAgents = $this->paginate($userAgents, $totalUniqueAgents, $limit, $offset, $page);
@@ -834,7 +834,7 @@ class SearchTrailController extends Controller
     public function clearAll(): JSONResponse
     {
         try {
-            // Get the search trail mapper from the container
+            // Get the search trail mapper from the container.
             $searchTrailMapper = \OC::$server->get('OCA\OpenRegister\Db\SearchTrailMapper');
 
                     // Use the clearAllLogs method from the mapper.

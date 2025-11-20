@@ -5,7 +5,7 @@
 
 echo "=== TOOLS COMPREHENSIVE TEST ===\n\n";
 
-// 1. List available tools
+// 1. List available tools.
 echo "Step 1: Getting available tools...\n";
 echo "────────────────────────────────────────────\n";
 
@@ -34,12 +34,12 @@ foreach ($tools as $toolId => $metadata) {
     echo "    {$metadata['description']}\n\n";
 }
 
-// 2. Test ApplicationTool
+// 2. Test ApplicationTool.
 echo "\n";
 echo "Step 2: Testing ApplicationTool...\n";
 echo "────────────────────────────────────────────\n";
 
-// Get Agent 4's UUID
+// Get Agent 4's UUID.
 $ch = curl_init('http://localhost/index.php/apps/openregister/api/agents');
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
@@ -63,7 +63,7 @@ if (!$agent4) {
 
 echo "✓ Found Agent 4: {$agent4['name']} (UUID: {$agent4['uuid']})\n";
 
-// Send test message
+// Send test message.
 $testData = [
     'agentUuid' => $agent4['uuid'],
     'message' => 'Can you list all available applications in the system?'
@@ -88,7 +88,7 @@ if ($httpCode === 200) {
     if (isset($chatResult['message']['content'])) {
         $content = $chatResult['message']['content'];
         
-        // Check if tool was called (look for function call indicators)
+        // Check if tool was called (look for function call indicators).
         if (stripos($content, 'application') !== false && 
             (stripos($content, 'found') !== false || stripos($content, 'list') !== false)) {
             echo "✓ Tool appears to have been called!\n";
@@ -107,7 +107,7 @@ if ($httpCode === 200) {
     echo substr($response, 0, 500) . "\n";
 }
 
-// 3. Test CMS Tool (if available)
+// 3. Test CMS Tool (if available).
 echo "\n\n";
 echo "Step 3: Testing CMS Tool...\n";
 echo "────────────────────────────────────────────\n";

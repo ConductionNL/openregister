@@ -51,7 +51,7 @@ class Version1Date20251103130000 extends SimpleMigrationStep
         $schema  = $schemaClosure();
         $updated = false;
 
-        // Add authorization to organisations table
+        // Add authorization to organisations table.
         if ($schema->hasTable('openregister_organisations') === true) {
             $organisationsTable = $schema->getTable('openregister_organisations');
 
@@ -69,7 +69,7 @@ class Version1Date20251103130000 extends SimpleMigrationStep
             }
         }//end if
 
-        // Add authorization to applications table
+        // Add authorization to applications table.
         if ($schema->hasTable('openregister_applications') === true) {
             $applicationsTable = $schema->getTable('openregister_applications');
 

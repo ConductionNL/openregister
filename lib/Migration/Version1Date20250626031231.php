@@ -30,7 +30,7 @@ class Version1Date20250626031231 extends SimpleMigrationStep
          */
         $schema = $schemaClosure();
 
-        // Ensure the source field in openregister_registers table has proper default
+        // Ensure the source field in openregister_registers table has proper default.
         if ($schema->hasTable('openregister_registers')) {
             $table = $schema->getTable('openregister_registers');
             if ($table->hasColumn('source')) {
@@ -40,7 +40,7 @@ class Version1Date20250626031231 extends SimpleMigrationStep
             }
         }
 
-        // Ensure the source field in openregister_schemas table has proper default
+        // Ensure the source field in openregister_schemas table has proper default.
         if ($schema->hasTable('openregister_schemas')) {
             $table = $schema->getTable('openregister_schemas');
             if ($table->hasColumn('source')) {

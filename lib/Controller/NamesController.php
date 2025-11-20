@@ -111,14 +111,14 @@ class NamesController extends Controller
         $startTime = microtime(true);
 
         try {
-            // Check if specific IDs were requested
+            // Check if specific IDs were requested.
             $requestedIds = $this->request->getParam('ids');
 
-            // Handle different input formats for IDs
+            // Handle different input formats for IDs.
             if ($requestedIds !== null) {
-                // Parse IDs from different possible formats
+                // Parse IDs from different possible formats.
                 if (is_string($requestedIds)) {
-                    // Handle comma-separated string or JSON array string
+                    // Handle comma-separated string or JSON array string.
                     if (str_starts_with($requestedIds, '[')) {
                         $requestedIds = json_decode($requestedIds, true) ?? [];
                     } else {
@@ -128,7 +128,7 @@ class NamesController extends Controller
                     $requestedIds = [(string) $requestedIds];
                 }
 
-                // Get names for specific IDs
+                // Get names for specific IDs.
                 $names = $this->objectCacheService->getMultipleObjectNames($requestedIds);
 
                 $this->logger->debug(
@@ -140,7 +140,7 @@ class NamesController extends Controller
                         ]
                         );
             } else {
-                // Get all object names (triggers warmup if needed)
+                // Get all object names (triggers warmup if needed).
                 $names = $this->objectCacheService->getAllObjectNames();
 
                 $this->logger->debug(
@@ -226,10 +226,10 @@ class NamesController extends Controller
         $startTime = microtime(true);
 
         try {
-            // Get JSON body content
+            // Get JSON body content.
             $inputData = $this->request->getParams();
 
-            // Support both 'ids' in JSON body and form data
+            // Support both 'ids' in JSON body and form data.
             $requestedIds = $inputData['ids'] ?? null;
 
             if (!$requestedIds || !is_array($requestedIds)) {
@@ -242,7 +242,7 @@ class NamesController extends Controller
                         );
             }
 
-            // Filter and validate IDs
+            // Filter and validate IDs.
             $requestedIds = array_filter(array_map('trim', $requestedIds));
 
             if (empty($requestedIds)) {

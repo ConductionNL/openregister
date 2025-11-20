@@ -92,7 +92,7 @@ class OrganisationHandler
         try {
             unset($data['id'], $data['uuid']);
 
-            // Check if organisation already exists by title
+            // Check if organisation already exists by title.
             $existingOrganisations = $this->organisationMapper->findAll();
             $existingOrganisation  = null;
             foreach ($existingOrganisations as $organisation) {
@@ -103,7 +103,7 @@ class OrganisationHandler
             }
 
             if ($existingOrganisation !== null) {
-                // Update existing organisation
+                // Update existing organisation.
                 $existingOrganisation->hydrate($data);
                 if ($owner !== null) {
                     $existingOrganisation->setOwner($owner);
@@ -112,7 +112,7 @@ class OrganisationHandler
                 return $this->organisationMapper->update($existingOrganisation);
             }
 
-            // Create new organisation
+            // Create new organisation.
             $organisation = new Organisation();
             $organisation->hydrate($data);
             if ($owner !== null) {

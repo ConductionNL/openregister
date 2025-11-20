@@ -255,15 +255,15 @@ class ObjectsProvider implements IFilteringProvider
         $offset = null;
         $order  = null;
 
-        // Build search query for searchObjectsPaginated
+        // Build search query for searchObjectsPaginated.
         $searchQuery = [];
 
-        // Add search term if provided
+        // Add search term if provided.
         if (!empty($search)) {
             $searchQuery['_search'] = $search;
         }
 
-        // Add filters to @self metadata section
+        // Add filters to @self metadata section.
         if (!empty($register)) {
             $searchQuery['@self']['register'] = (int) $register;
         }
@@ -272,7 +272,7 @@ class ObjectsProvider implements IFilteringProvider
             $searchQuery['@self']['schema'] = (int) $schema;
         }
 
-        // Add date filters if provided
+        // Add date filters if provided.
         if ($since !== null) {
             $searchQuery['@self']['created'] = ['$gte' => $since];
         }
@@ -285,9 +285,9 @@ class ObjectsProvider implements IFilteringProvider
             }
         }
 
-        // Set pagination limits for Nextcloud search
+        // Set pagination limits for Nextcloud search.
         $searchQuery['_limit'] = $limit ?? 25;
-        // Default limit for search interface
+        // Default limit for search interface.
         $searchQuery['_offset'] = $offset ?? 0;
 
         $this->logger->debug(
@@ -298,20 +298,20 @@ class ObjectsProvider implements IFilteringProvider
                 ]
                 );
 
-        // Use searchObjectsPaginated for optimal performance
+        // Use searchObjectsPaginated for optimal performance.
         $searchResults = $this->objectService->searchObjectsPaginated($searchQuery, rbac: true, multi: true);
 
-        // Convert results to SearchResultEntry format
+        // Convert results to SearchResultEntry format.
         $searchResultEntries = [];
         if (!empty($searchResults['results'])) {
             foreach ($searchResults['results'] as $result) {
-                // Generate URLs for the object
+                // Generate URLs for the object.
                 $objectUrl = $this->urlGenerator->linkToRoute(
                     'openregister.objects.show',
                     ['id' => $result['uuid']]
                 );
 
-                // Create descriptive title and description
+                // Create descriptive title and description.
                 $title       = $result['title'] ?? $result['name'] ?? $result['uuid'] ?? 'Unknown Object';
                 $description = $this->buildDescription($result);
 
@@ -352,7 +352,7 @@ class ObjectsProvider implements IFilteringProvider
     {
         $parts = [];
 
-        // Add schema/register information if available
+        // Add schema/register information if available.
         if (!empty($object['schema'])) {
             $parts[] = $this->l10n->t('Schema: %s', [$object['schema']]);
         }
@@ -361,14 +361,14 @@ class ObjectsProvider implements IFilteringProvider
             $parts[] = $this->l10n->t('Register: %s', [$object['register']]);
         }
 
-        // Add summary/description if available
+        // Add summary/description if available.
         if (!empty($object['summary'])) {
             $parts[] = $object['summary'];
         } else if (!empty($object['description'])) {
             $parts[] = substr($object['description'], 0, 100).(strlen($object['description']) > 100 ? '...' : '');
         }
 
-        // Add last updated info if available
+        // Add last updated info if available.
         if (!empty($object['updated'])) {
             $parts[] = $this->l10n->t('Updated: %s', [date('Y-m-d H:i', strtotime($object['updated']))]);
         }

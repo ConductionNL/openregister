@@ -52,13 +52,13 @@ class Version1Date20250830120000 extends SimpleMigrationStep
          */
         $schema = $schemaClosure();
 
-        // Check if the configurations table exists
+        // Check if the configurations table exists.
         if ($schema->hasTable('openregister_configurations') === true) {
             $table = $schema->getTable('openregister_configurations');
 
-            // Rename 'owner' column to 'app' if it exists
+            // Rename 'owner' column to 'app' if it exists.
             if ($table->hasColumn('owner') === true) {
-                // Add the new 'app' column
+                // Add the new 'app' column.
                 if ($table->hasColumn('app') === false) {
                     $table->addColumn(
                             'app',
@@ -73,7 +73,7 @@ class Version1Date20250830120000 extends SimpleMigrationStep
                 // Note: We'll copy data in postSchemaChange, then drop the old column
             }
 
-            // Add 'schemas' column if it doesn't exist
+            // Add 'schemas' column if it doesn't exist.
             if ($table->hasColumn('schemas') === false) {
                 $table->addColumn(
                         'schemas',
@@ -84,7 +84,7 @@ class Version1Date20250830120000 extends SimpleMigrationStep
                         );
             }
 
-            // Add 'objects' column if it doesn't exist
+            // Add 'objects' column if it doesn't exist.
             if ($table->hasColumn('objects') === false) {
                 $table->addColumn(
                         'objects',
@@ -119,21 +119,21 @@ class Version1Date20250830120000 extends SimpleMigrationStep
          */
         $schema = $schemaClosure();
 
-        // Check if the configurations table exists
+        // Check if the configurations table exists.
         if ($schema->hasTable('openregister_configurations') === true) {
             $table = $schema->getTable('openregister_configurations');
 
-            // If both 'owner' and 'app' columns exist, copy data and drop 'owner'
+            // If both 'owner' and 'app' columns exist, copy data and drop 'owner'.
             if ($table->hasColumn('owner') === true && $table->hasColumn('app') === true) {
-                // Copy data from 'owner' to 'app' column using raw SQL
+                // Copy data from 'owner' to 'app' column using raw SQL.
                 $connection = \OC::$server->getDatabaseConnection();
 
-                // Copy the data
+                // Copy the data.
                 $connection->executeStatement(
                     'UPDATE `*PREFIX*openregister_configurations` SET `app` = `owner`'
                 );
 
-                // Drop the old 'owner' column
+                // Drop the old 'owner' column.
                 $schema = $schemaClosure();
                 $table  = $schema->getTable('openregister_configurations');
                 if ($table->hasColumn('owner') === true) {

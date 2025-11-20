@@ -1,5 +1,5 @@
 <?php
-// phpcs:ignoreFile
+// phpcs:ignoreFile.
 /**
  * OpenRegister Migration
  *
@@ -59,7 +59,7 @@ class Version1Date20241020231700 extends SimpleMigrationStep
          */
         $schema = $schemaClosure();
 
-        // create the openregister_logs table
+        // create the openregister_logs table.
         if (!$schema->hasTable('openregister_audit_trails')) {
             $table = $schema->createTable('openregister_audit_trails');
             $table->addColumn('id', Types::INTEGER, ['autoincrement' => true, 'notnull' => true]);
@@ -82,7 +82,7 @@ class Version1Date20241020231700 extends SimpleMigrationStep
             $table->addIndex(['uuid'], 'openregister_logs_uuid_index');
         }//end if
 
-        // Update the openregister_objects table
+        // Update the openregister_objects table.
         $table = $schema->getTable('openregister_objects');
         if (!$table->hasColumn('text_representation')) {
             $table->addColumn(name: 'text_representation', typeName: Types::TEXT, options: ['notnull' => false]);

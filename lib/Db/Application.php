@@ -390,10 +390,10 @@ class Application extends Entity implements JsonSerializable
      */
     public function setActive(mixed $active): self
     {
-        // Handle various input types defensively (including empty strings from API)
+        // Handle various input types defensively (including empty strings from API).
         if ($active === '' || $active === null) {
             $this->active = true;
-            // Default to true for applications
+            // Default to true for applications.
         } else {
             $this->active = (bool) $active;
         }
@@ -559,19 +559,19 @@ class Application extends Entity implements JsonSerializable
                 'bandwidth' => $this->bandwidthQuota,
                 'requests'  => $this->requestQuota,
                 'users'     => null,
-        // To be set via admin configuration
+        // To be set via admin configuration.
                 'groups'    => null,
-        // To be set via admin configuration
+        // To be set via admin configuration.
             ],
             'usage'                  => [
                 'storage'   => 0,
-            // To be calculated from actual usage
+            // To be calculated from actual usage.
                 'bandwidth' => 0,
-            // To be calculated from actual usage
+            // To be calculated from actual usage.
                 'requests'  => 0,
-            // To be calculated from actual usage
+            // To be calculated from actual usage.
                 'users'     => 0,
-            // Applications don't have direct users
+            // Applications don't have direct users.
                 'groups'    => count($groups),
             ],
             'authorization'          => $this->authorization ?? $this->getDefaultAuthorization(),
@@ -597,7 +597,7 @@ class Application extends Entity implements JsonSerializable
      */
     public function __toString(): string
     {
-        // Generate new UUID if none exists or is empty
+        // Generate new UUID if none exists or is empty.
         if ($this->uuid === null || $this->uuid === '') {
             $this->uuid = Uuid::v4()->toRfc4122();
         }

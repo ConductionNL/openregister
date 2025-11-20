@@ -57,12 +57,12 @@ class SolrApiIntegrationTest extends TestCase
     {
         parent::setUp();
         
-        // Mock dependencies
+        // Mock dependencies.
         $this->config = $this->createMock(IConfig::class);
         $this->logger = $this->createMock(LoggerInterface::class);
         $clientService = $this->createMock(IClientService::class);
         
-        // Configure mock SOLR settings
+        // Configure mock SOLR settings.
         $this->config->method('getAppValue')
             ->willReturnMap([
                 ['openregister', 'solr_host', 'localhost', 'localhost'],
@@ -73,7 +73,7 @@ class SolrApiIntegrationTest extends TestCase
                 ['openregister', 'zookeeper_hosts', 'localhost:2181', 'localhost:2181'],
             ]);
 
-        // Create services
+        // Create services.
         $this->settingsService = new SettingsService(
             $this->config,
             $this->logger
@@ -105,27 +105,27 @@ class SolrApiIntegrationTest extends TestCase
      */
     public function testSolrConnectionTestEndpoint(): void
     {
-        // Test the actual API endpoint
+        // Test the actual API endpoint.
         $response = $this->controller->testSolrConnection();
         
-        // Verify it's a JSONResponse
+        // Verify it's a JSONResponse.
         $this->assertInstanceOf(JSONResponse::class, $response);
         
-        // Get the response data
+        // Get the response data.
         $data = $response->getData();
         
-        // Verify response structure (regardless of success/failure)
+        // Verify response structure (regardless of success/failure).
         $this->assertIsArray($data);
         $this->assertArrayHasKey('success', $data);
         $this->assertIsBool($data['success']);
         $this->assertArrayHasKey('message', $data);
         $this->assertIsString($data['message']);
         
-        // If detailed results are returned, verify structure
+        // If detailed results are returned, verify structure.
         if (isset($data['components'])) {
             $this->assertIsArray($data['components']);
             
-            // Check component structure
+            // Check component structure.
             foreach (['zookeeper', 'solr', 'collection'] as $component) {
                 if (isset($data['components'][$component])) {
                     $componentData = $data['components'][$component];
@@ -145,16 +145,16 @@ class SolrApiIntegrationTest extends TestCase
      */
     public function testSolrSetupEndpoint(): void
     {
-        // Test the actual API endpoint
+        // Test the actual API endpoint.
         $response = $this->controller->setupSolr();
         
-        // Verify it's a JSONResponse
+        // Verify it's a JSONResponse.
         $this->assertInstanceOf(JSONResponse::class, $response);
         
-        // Get the response data
+        // Get the response data.
         $data = $response->getData();
         
-        // Verify response structure
+        // Verify response structure.
         $this->assertIsArray($data);
         $this->assertArrayHasKey('success', $data);
         $this->assertIsBool($data['success']);
@@ -172,15 +172,15 @@ class SolrApiIntegrationTest extends TestCase
      */
     public function testGuzzleSolrServiceResponseHandling(): void
     {
-        // Test the connection method that was failing
+        // Test the connection method that was failing.
         $result = $this->guzzleSolrService->testConnection();
         
-        // Verify it returns an array (not throwing json_decode errors)
+        // Verify it returns an array (not throwing json_decode errors).
         $this->assertIsArray($result);
         $this->assertArrayHasKey('success', $result);
         $this->assertIsBool($result['success']);
         
-        // If components are returned, verify they're properly structured
+        // If components are returned, verify they're properly structured.
         if (isset($result['components'])) {
             $this->assertIsArray($result['components']);
             
@@ -205,37 +205,37 @@ class SolrApiIntegrationTest extends TestCase
      */
     public function testJsonDecodeStreamBugIsFixed(): void
     {
-        // Create a mock Stream response (the source of our bug)
+        // Create a mock Stream response (the source of our bug).
         $jsonData = ['status' => 'OK', 'message' => 'Test response'];
         $jsonString = json_encode($jsonData);
         
-        // Create a Stream object (what Guzzle returns)
+        // Create a Stream object (what Guzzle returns).
         $stream = \GuzzleHttp\Psr7\Utils::streamFor($jsonString);
         
-        // Create a mock response with Stream body
+        // Create a mock response with Stream body.
         $mockResponse = new Response(200, [], $stream);
         
-        // Create a mock handler that returns our Stream response
+        // Create a mock handler that returns our Stream response.
         $mockHandler = new MockHandler([$mockResponse]);
         $handlerStack = HandlerStack::create($mockHandler);
         $mockClient = new GuzzleClient(['handler' => $handlerStack]);
         
-        // Create GuzzleSolrService with our mock client
+        // Create GuzzleSolrService with our mock client.
         $reflection = new \ReflectionClass($this->guzzleSolrService);
         $httpClientProperty = $reflection->getProperty('httpClient');
         $httpClientProperty->setAccessible(true);
         $httpClientProperty->setValue($this->guzzleSolrService, $mockClient);
         
-        // Test the method that was failing - this should NOT throw json_decode errors
+        // Test the method that was failing - this should NOT throw json_decode errors.
         try {
             $result = $this->guzzleSolrService->testConnection();
             
-            // If we get here, the bug is fixed - json_decode worked correctly
+            // If we get here, the bug is fixed - json_decode worked correctly.
             $this->assertIsArray($result);
             $this->assertArrayHasKey('success', $result);
             
         } catch (\TypeError $e) {
-            // If we get a TypeError about json_decode, the bug still exists
+            // If we get a TypeError about json_decode, the bug still exists.
             $this->assertStringNotContainsString(
                 'json_decode(): Argument #1 ($json) must be of type string',
                 $e->getMessage(),
@@ -254,7 +254,7 @@ class SolrApiIntegrationTest extends TestCase
      */
     public function testAllSolrMethodsHandleResponsesProperly(): void
     {
-        // Create mock responses for different scenarios
+        // Create mock responses for different scenarios.
         $responses = [
             new Response(200, [], json_encode(['status' => 'OK'])),
             new Response(500, [], json_encode(['error' => 'Server Error'])),
@@ -266,17 +266,17 @@ class SolrApiIntegrationTest extends TestCase
             $handlerStack = HandlerStack::create($mockHandler);
             $mockClient = new GuzzleClient(['handler' => $handlerStack]);
             
-            // Inject mock client
+            // Inject mock client.
             $reflection = new \ReflectionClass($this->guzzleSolrService);
             $httpClientProperty = $reflection->getProperty('httpClient');
             $httpClientProperty->setAccessible(true);
             $httpClientProperty->setValue($this->guzzleSolrService, $mockClient);
             
             try {
-                // Test the connection method - should handle all response types
+                // Test the connection method - should handle all response types.
                 $result = $this->guzzleSolrService->testConnection();
                 
-                // Verify it returns an array (no json_decode errors)
+                // Verify it returns an array (no json_decode errors).
                 $this->assertIsArray($result);
                 $this->assertArrayHasKey('success', $result);
                 
@@ -312,7 +312,7 @@ class SolrApiIntegrationTest extends TestCase
      */
     public function testUrlBuildingWithKubernetesServiceNames(): void
     {
-        // Configure mock settings for Kubernetes service
+        // Configure mock settings for Kubernetes service.
         $this->config->method('getAppValue')
             ->willReturnMap([
                 ['openregister', 'solr_host', 'localhost', 'con-solr-solrcloud-common.solr.svc.cluster.local'],
@@ -323,19 +323,19 @@ class SolrApiIntegrationTest extends TestCase
                 ['openregister', 'zookeeper_hosts', 'localhost:2181', 'con-zookeeper-solrcloud-common.zookeeper.svc.cluster.local'],
             ]);
 
-        // Mock successful response without port
+        // Mock successful response without port.
         $mockResponse = new Response(200, [], json_encode(['status' => 'OK']));
         $mockHandler = new MockHandler([$mockResponse]);
         $handlerStack = HandlerStack::create($mockHandler);
         $mockClient = new GuzzleClient(['handler' => $handlerStack]);
 
-        // Inject mock client
+        // Inject mock client.
         $reflection = new \ReflectionClass($this->guzzleSolrService);
         $httpClientProperty = $reflection->getProperty('httpClient');
         $httpClientProperty->setAccessible(true);
         $httpClientProperty->setValue($this->guzzleSolrService, $mockClient);
 
-        // Test connection - should work without port issues
+        // Test connection - should work without port issues.
         $result = $this->guzzleSolrService->testConnection();
         
         $this->assertIsArray($result);
@@ -349,7 +349,7 @@ class SolrApiIntegrationTest extends TestCase
      */
     public function testUrlBuildingWithRegularHostnames(): void
     {
-        // Configure mock settings for regular hostname with explicit port
+        // Configure mock settings for regular hostname with explicit port.
         $this->config->method('getAppValue')
             ->willReturnMap([
                 ['openregister', 'solr_host', 'localhost', 'solr.example.com'],
@@ -360,19 +360,19 @@ class SolrApiIntegrationTest extends TestCase
                 ['openregister', 'zookeeper_hosts', 'localhost:2181', 'zk.example.com:2181'],
             ]);
 
-        // Mock successful response
+        // Mock successful response.
         $mockResponse = new Response(200, [], json_encode(['status' => 'OK']));
         $mockHandler = new MockHandler([$mockResponse]);
         $handlerStack = HandlerStack::create($mockHandler);
         $mockClient = new GuzzleClient(['handler' => $handlerStack]);
 
-        // Inject mock client
+        // Inject mock client.
         $reflection = new \ReflectionClass($this->guzzleSolrService);
         $httpClientProperty = $reflection->getProperty('httpClient');
         $httpClientProperty->setAccessible(true);
         $httpClientProperty->setValue($this->guzzleSolrService, $mockClient);
 
-        // Test connection - should work with explicit port
+        // Test connection - should work with explicit port.
         $result = $this->guzzleSolrService->testConnection();
         
         $this->assertIsArray($result);
@@ -386,7 +386,7 @@ class SolrApiIntegrationTest extends TestCase
      */
     public function testUrlBuildingWithPortZero(): void
     {
-        // Configure mock settings with port 0
+        // Configure mock settings with port 0.
         $this->config->method('getAppValue')
             ->willReturnMap([
                 ['openregister', 'solr_host', 'localhost', 'localhost'],
@@ -397,24 +397,24 @@ class SolrApiIntegrationTest extends TestCase
                 ['openregister', 'zookeeper_hosts', 'localhost:2181', 'localhost:2181'],
             ]);
 
-        // Mock successful response
+        // Mock successful response.
         $mockResponse = new Response(200, [], json_encode(['status' => 'OK']));
         $mockHandler = new MockHandler([$mockResponse]);
         $handlerStack = HandlerStack::create($mockHandler);
         $mockClient = new GuzzleClient(['handler' => $handlerStack]);
 
-        // Inject mock client
+        // Inject mock client.
         $reflection = new \ReflectionClass($this->guzzleSolrService);
         $httpClientProperty = $reflection->getProperty('httpClient');
         $httpClientProperty->setAccessible(true);
         $httpClientProperty->setValue($this->guzzleSolrService, $mockClient);
 
-        // Test connection - should work without port 0 in URL
+        // Test connection - should work without port 0 in URL.
         $result = $this->guzzleSolrService->testConnection();
         
         $this->assertIsArray($result);
         $this->assertArrayHasKey('success', $result);
         
-        // The fact that this doesn't fail means URLs are being built correctly without :0
+        // The fact that this doesn't fail means URLs are being built correctly without :0.
     }
 }

@@ -218,11 +218,11 @@ class ApplicationTool extends AbstractTool implements ToolInterface
                     ]
                     );
 
-            // Get applications via mapper (RBAC is enforced in mapper)
+            // Get applications via mapper (RBAC is enforced in mapper).
             $applications = $this->applicationMapper->findAll($limit, $offset);
             $total        = $this->applicationMapper->count();
 
-            // Convert to array
+            // Convert to array.
             $results = array_map(fn ($app) => $app->jsonSerialize(), $applications);
 
             return $this->formatSuccess(
@@ -259,7 +259,7 @@ class ApplicationTool extends AbstractTool implements ToolInterface
         try {
             $this->logger->info('[ApplicationTool] Getting application', ['uuid' => $uuid]);
 
-            // Find application (RBAC enforced in mapper)
+            // Find application (RBAC enforced in mapper).
             $application = $this->applicationMapper->findByUuid($uuid);
 
             return $this->formatSuccess(
@@ -310,7 +310,7 @@ class ApplicationTool extends AbstractTool implements ToolInterface
                 $application->setDomain($domain);
             }
 
-            // Save via mapper (RBAC and organisation are enforced in mapper)
+            // Save via mapper (RBAC and organisation are enforced in mapper).
             $application = $this->applicationMapper->insert($application);
 
             return $this->formatSuccess(
@@ -350,10 +350,10 @@ class ApplicationTool extends AbstractTool implements ToolInterface
         try {
             $this->logger->info('[ApplicationTool] Updating application', ['uuid' => $uuid]);
 
-            // Find application (RBAC enforced in mapper)
+            // Find application (RBAC enforced in mapper).
             $application = $this->applicationMapper->findByUuid($uuid);
 
-            // Update fields
+            // Update fields.
             if ($name !== null) {
                 $application->setName($name);
             }
@@ -366,7 +366,7 @@ class ApplicationTool extends AbstractTool implements ToolInterface
                 $application->setDomain($domain);
             }
 
-            // Save changes (RBAC enforced in mapper)
+            // Save changes (RBAC enforced in mapper).
             $application = $this->applicationMapper->update($application);
 
             return $this->formatSuccess(
@@ -401,11 +401,11 @@ class ApplicationTool extends AbstractTool implements ToolInterface
         try {
             $this->logger->info('[ApplicationTool] Deleting application', ['uuid' => $uuid]);
 
-            // Find application (RBAC enforced in mapper)
+            // Find application (RBAC enforced in mapper).
             $application = $this->applicationMapper->findByUuid($uuid);
             $name        = $application->getName();
 
-            // Delete (RBAC enforced in mapper)
+            // Delete (RBAC enforced in mapper).
             $this->applicationMapper->delete($application);
 
             return $this->formatSuccess(
@@ -439,10 +439,10 @@ class ApplicationTool extends AbstractTool implements ToolInterface
      */
     public function executeFunction(string $functionName, array $parameters, ?string $userId=null): array
     {
-        // Convert snake_case to camelCase for PSR compliance
+        // Convert snake_case to camelCase for PSR compliance.
         $methodName = lcfirst(str_replace('_', '', ucwords($functionName, '_')));
 
-        // Call the method directly (LLPhant-compatible)
+        // Call the method directly (LLPhant-compatible).
         return $this->$methodName(...array_values($parameters));
 
     }//end executeFunction()

@@ -58,13 +58,13 @@ class Version1Date20250904170000 extends SimpleMigrationStep
          */
         $schema = $schemaClosure();
 
-        // Get the objects table for optimization
+        // Get the objects table for optimization.
         if ($schema->hasTable('openregister_objects')) {
             $table = $schema->getTable('openregister_objects');
 
             $output->info('🚀 Applying safe database performance optimizations...');
 
-            // **SAFE INDEX 1**: Basic schema index only (no composite indexes to avoid key length issues)
+            // **SAFE INDEX 1**: Basic schema index only (no composite indexes to avoid key length issues).
             if (!$table->hasIndex('idx_schema_only') && $table->hasColumn('schema')) {
                 try {
                     $table->addIndex(['schema'], 'idx_schema_only');
@@ -74,7 +74,7 @@ class Version1Date20250904170000 extends SimpleMigrationStep
                 }
             }
 
-            // **SAFE INDEX 2**: Basic register index only
+            // **SAFE INDEX 2**: Basic register index only.
             if (!$table->hasIndex('idx_register_only') && $table->hasColumn('register')) {
                 try {
                     $table->addIndex(['register'], 'idx_register_only');
@@ -88,8 +88,8 @@ class Version1Date20250904170000 extends SimpleMigrationStep
             $output->info('ℹ️  Text column indexes skipped due to potential key length issues');
         }//end if
 
-        // **RELATIONSHIP TABLES OPTIMIZATION**: Disabled due to MySQL key length limitations
-        // Relationship table indexes are skipped to avoid key length issues with VARCHAR fields
+        // **RELATIONSHIP TABLES OPTIMIZATION**: Disabled due to MySQL key length limitations.
+        // Relationship table indexes are skipped to avoid key length issues with VARCHAR fields.
         $output->info('ℹ️  Skipping relationship table optimizations (potential key length issues with text fields)');
 
         $output->info('🎯 Database performance optimization completed successfully');
@@ -113,7 +113,7 @@ class Version1Date20250904170000 extends SimpleMigrationStep
     {
         $tableName = $table->getName();
 
-        // Add composite indexes based on common relationship query patterns
+        // Add composite indexes based on common relationship query patterns.
         if ($tableName === 'openregister_object_relations') {
             if (!$table->hasIndex('idx_source_target') && $table->hasColumn('source_id') && $table->hasColumn('target_id')) {
                 try {
@@ -128,7 +128,7 @@ class Version1Date20250904170000 extends SimpleMigrationStep
         if ($tableName === 'openregister_schema_properties') {
             if (!$table->hasIndex('idx_schema_property') && $table->hasColumn('schema_id') && $table->hasColumn('name')) {
                 try {
-                    // Skip name column in index due to potential key length issues with text fields
+                    // Skip name column in index due to potential key length issues with text fields.
                     $table->addIndex(['schema_id'], 'idx_schema_property');
                     $output->info("✅ Optimized {$tableName} with schema index (name column skipped due to key length limits)");
                 } catch (\Exception $e) {

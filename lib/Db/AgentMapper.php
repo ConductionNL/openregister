@@ -41,7 +41,6 @@ use Symfony\Component\Uid\Uuid;
  * @template-extends QBMapper<Agent>
  *
  * @psalm-suppress MissingTemplateParam
- */
  *
  * @method Agent insert(Entity $entity)
  * @method Agent update(Entity $entity)
@@ -113,7 +112,7 @@ class AgentMapper extends QBMapper
      */
     public function find(int $id): Agent
     {
-        // Verify RBAC permission to read
+        // Verify RBAC permission to read.
         $this->verifyRbacPermission('read', 'agent');
 
         $qb = $this->db->getQueryBuilder();
@@ -122,7 +121,7 @@ class AgentMapper extends QBMapper
             ->from($this->tableName)
             ->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
 
-        // Apply organisation filter, allowing NULL organisation for legacy/global agents
+        // Apply organisation filter, allowing NULL organisation for legacy/global agents.
         $this->applyOrganisationFilter($qb, 'organisation', true);
 
         return $this->findEntity($qb);
@@ -143,7 +142,7 @@ class AgentMapper extends QBMapper
      */
     public function findByUuid(string $uuid): Agent
     {
-        // Verify RBAC permission to read
+        // Verify RBAC permission to read.
         $this->verifyRbacPermission('read', 'agent');
 
         $qb = $this->db->getQueryBuilder();
@@ -152,7 +151,7 @@ class AgentMapper extends QBMapper
             ->from($this->tableName)
             ->where($qb->expr()->eq('uuid', $qb->createNamedParameter($uuid, IQueryBuilder::PARAM_STR)));
 
-        // Apply organisation filter, allowing NULL organisation for legacy/global agents
+        // Apply organisation filter, allowing NULL organisation for legacy/global agents.
         $this->applyOrganisationFilter($qb, 'organisation', true);
 
         return $this->findEntity($qb);
@@ -179,7 +178,7 @@ class AgentMapper extends QBMapper
      */
     public function findByOrganisation(string $organisationUuid, ?string $userId=null, int $limit=50, int $offset=0): array
     {
-        // Verify RBAC permission to read
+        // Verify RBAC permission to read.
         $this->verifyRbacPermission('read', 'agent');
 
         $qb = $this->db->getQueryBuilder();
@@ -191,12 +190,12 @@ class AgentMapper extends QBMapper
             ->setFirstResult($offset)
             ->orderBy('created', 'DESC');
 
-        // If no user provided, return all agents in the organisation
+        // If no user provided, return all agents in the organisation.
         if ($userId === null) {
             return $this->findEntities($qb);
         }
 
-        // Filter results by user access rights
+        // Filter results by user access rights.
         $allAgents = $this->findEntities($qb);
         return $this->filterByUserAccess($allAgents, $userId);
 
@@ -240,17 +239,17 @@ class AgentMapper extends QBMapper
      */
     public function canUserAccessAgent(Agent $agent, string $userId): bool
     {
-        // Non-private agents are accessible to all users in the organisation
+        // Non-private agents are accessible to all users in the organisation.
         if ($agent->getIsPrivate() === false || $agent->getIsPrivate() === null) {
             return true;
         }
 
-        // Owner always has access
+        // Owner always has access.
         if ($agent->getOwner() === $userId) {
             return true;
         }
 
-        // Check if user is invited
+        // Check if user is invited.
         if ($agent->hasInvitedUser($userId)) {
             return true;
         }
@@ -290,7 +289,7 @@ class AgentMapper extends QBMapper
      */
     public function findByOwner(string $owner, int $limit=50, int $offset=0): array
     {
-        // Verify RBAC permission to read
+        // Verify RBAC permission to read.
         $this->verifyRbacPermission('read', 'agent');
 
         $qb = $this->db->getQueryBuilder();
@@ -302,7 +301,7 @@ class AgentMapper extends QBMapper
             ->setFirstResult($offset)
             ->orderBy('created', 'DESC');
 
-        // Apply organisation filter
+        // Apply organisation filter.
         $this->applyOrganisationFilter($qb);
 
         return $this->findEntities($qb);
@@ -322,7 +321,7 @@ class AgentMapper extends QBMapper
      */
     public function findByType(string $type, int $limit=50, int $offset=0): array
     {
-        // Verify RBAC permission to read
+        // Verify RBAC permission to read.
         $this->verifyRbacPermission('read', 'agent');
 
         $qb = $this->db->getQueryBuilder();
@@ -334,7 +333,7 @@ class AgentMapper extends QBMapper
             ->setFirstResult($offset)
             ->orderBy('created', 'DESC');
 
-        // Apply organisation filter, allowing NULL organisation for legacy/global agents
+        // Apply organisation filter, allowing NULL organisation for legacy/global agents.
         $this->applyOrganisationFilter($qb, 'organisation', true);
 
         return $this->findEntities($qb);
@@ -355,7 +354,7 @@ class AgentMapper extends QBMapper
      */
     public function findAll(?int $limit=null, ?int $offset=null, ?array $filters=[], ?array $order=[]): array
     {
-        // Verify RBAC permission to read
+        // Verify RBAC permission to read.
         $this->verifyRbacPermission('read', 'agent');
 
         $qb = $this->db->getQueryBuilder();
@@ -363,7 +362,7 @@ class AgentMapper extends QBMapper
         $qb->select('*')
             ->from($this->tableName);
 
-        // Apply filters
+        // Apply filters.
         if (!empty($filters)) {
             foreach ($filters as $field => $value) {
                 if ($value !== null && $field !== '_route') {
@@ -378,7 +377,7 @@ class AgentMapper extends QBMapper
             }
         }
 
-        // Apply ordering
+        // Apply ordering.
         if (!empty($order)) {
             foreach ($order as $field => $direction) {
                 $qb->addOrderBy($field, $direction);
@@ -387,7 +386,7 @@ class AgentMapper extends QBMapper
             $qb->orderBy('created', 'DESC');
         }
 
-        // Apply pagination
+        // Apply pagination.
         if ($limit !== null) {
             $qb->setMaxResults($limit);
         }
@@ -396,7 +395,7 @@ class AgentMapper extends QBMapper
             $qb->setFirstResult($offset);
         }
 
-        // Apply organisation filter, allowing NULL organisation for legacy/global agents
+        // Apply organisation filter, allowing NULL organisation for legacy/global agents.
         $this->applyOrganisationFilter($qb, 'organisation', true);
 
         return $this->findEntities($qb);
@@ -414,18 +413,18 @@ class AgentMapper extends QBMapper
      */
     public function insert(Entity $entity): Entity
     {
-        // Verify RBAC permission to create
+        // Verify RBAC permission to create.
         $this->verifyRbacPermission('create', 'agent');
 
         if ($entity instanceof Agent) {
-            // Ensure UUID is set
+            // Ensure UUID is set.
             $uuid = $entity->getUuid();
             if (!$uuid || trim($uuid) === '') {
                 $newUuid = \Symfony\Component\Uid\Uuid::v4()->toRfc4122();
                 $entity->setUuid($newUuid);
             }
 
-            // Set timestamps if not already set
+            // Set timestamps if not already set.
             if ($entity->getCreated() === null) {
                 $entity->setCreated(new DateTime());
             }
@@ -435,7 +434,7 @@ class AgentMapper extends QBMapper
             }
         }
 
-        // Auto-set organisation from active session
+        // Auto-set organisation from active session.
         $this->setOrganisationOnCreate($entity);
 
         return parent::insert($entity);
@@ -453,10 +452,10 @@ class AgentMapper extends QBMapper
      */
     public function update(Entity $entity): Entity
     {
-        // Verify RBAC permission to update
+        // Verify RBAC permission to update.
         $this->verifyRbacPermission('update', 'agent');
 
-        // Verify user has access to this organisation
+        // Verify user has access to this organisation.
         $this->verifyOrganisationAccess($entity);
 
         if ($entity instanceof Agent) {
@@ -478,10 +477,10 @@ class AgentMapper extends QBMapper
      */
     public function delete(Entity $entity): Entity
     {
-        // Verify RBAC permission to delete
+        // Verify RBAC permission to delete.
         $this->verifyRbacPermission('delete', 'agent');
 
-        // Verify user has access to this organisation
+        // Verify user has access to this organisation.
         $this->verifyOrganisationAccess($entity);
 
         return parent::delete($entity);
@@ -516,7 +515,7 @@ class AgentMapper extends QBMapper
      */
     public function count(?array $filters=[]): int
     {
-        // Verify RBAC permission to read
+        // Verify RBAC permission to read.
         $this->verifyRbacPermission('read', 'agent');
 
         $qb = $this->db->getQueryBuilder();
@@ -524,7 +523,7 @@ class AgentMapper extends QBMapper
         $qb->select($qb->createFunction('COUNT(*)'))
             ->from($this->tableName);
 
-        // Apply filters
+        // Apply filters.
         if (!empty($filters)) {
             foreach ($filters as $field => $value) {
                 if ($value !== null && $field !== '_route') {
@@ -539,7 +538,7 @@ class AgentMapper extends QBMapper
             }
         }
 
-        // Apply organisation filter (all users including admins must have active org)
+        // Apply organisation filter (all users including admins must have active org).
         $this->applyOrganisationFilter($qb);
 
         return (int) $qb->executeQuery()->fetchOne();

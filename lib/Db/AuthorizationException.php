@@ -433,12 +433,12 @@ class AuthorizationException extends Entity implements JsonSerializable
         ?string $registerUuid=null,
         ?string $organizationUuid=null
     ): bool {
-        // Must be active
+        // Must be active.
         if (!$this->active) {
             return false;
         }
 
-        // Check basic criteria
+        // Check basic criteria.
         if ($this->subjectType !== $subjectType
             || $this->subjectId !== $subjectId
             || $this->action !== $action
@@ -446,17 +446,17 @@ class AuthorizationException extends Entity implements JsonSerializable
             return false;
         }
 
-        // Check schema UUID (null means applies to all schemas)
+        // Check schema UUID (null means applies to all schemas).
         if ($this->schemaUuid !== null && $this->schemaUuid !== $schemaUuid) {
             return false;
         }
 
-        // Check register UUID (null means applies to all registers)
+        // Check register UUID (null means applies to all registers).
         if ($this->registerUuid !== null && $this->registerUuid !== $registerUuid) {
             return false;
         }
 
-        // Check organization UUID (null means applies to all organizations)
+        // Check organization UUID (null means applies to all organizations).
         if ($this->organizationUuid !== null && $this->organizationUuid !== $organizationUuid) {
             return false;
         }

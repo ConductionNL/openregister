@@ -65,11 +65,11 @@ class Version1Date20251114120000 extends SimpleMigrationStep
 
         $output->info('🔧 Adding JSON Schema composition support...');
 
-        // Add allOf, oneOf, anyOf fields to schemas table
+        // Add allOf, oneOf, anyOf fields to schemas table.
         if ($schema->hasTable('openregister_schemas')) {
             $table = $schema->getTable('openregister_schemas');
 
-            // Add allOf field (array of schema identifiers - must validate against ALL)
+            // Add allOf field (array of schema identifiers - must validate against ALL).
             if (!$table->hasColumn('all_of')) {
                 $table->addColumn(
                         'all_of',
@@ -86,7 +86,7 @@ class Version1Date20251114120000 extends SimpleMigrationStep
                 $output->info('   ⚠️  all_of column already exists');
             }
 
-            // Add oneOf field (array of schema identifiers - must validate against EXACTLY ONE)
+            // Add oneOf field (array of schema identifiers - must validate against EXACTLY ONE).
             if (!$table->hasColumn('one_of')) {
                 $table->addColumn(
                         'one_of',
@@ -103,7 +103,7 @@ class Version1Date20251114120000 extends SimpleMigrationStep
                 $output->info('   ⚠️  one_of column already exists');
             }
 
-            // Add anyOf field (array of schema identifiers - must validate against AT LEAST ONE)
+            // Add anyOf field (array of schema identifiers - must validate against AT LEAST ONE).
             if (!$table->hasColumn('any_of')) {
                 $table->addColumn(
                         'any_of',

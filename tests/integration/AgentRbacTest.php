@@ -47,12 +47,12 @@ class AgentRbacTest extends TestCase
         $publicAgent->setIsPrivate(false); // Public agent
         $publicAgent = $this->agentMapper->insert($publicAgent);
 
-        // Any user in the same organisation should be able to access
+        // Any user in the same organisation should be able to access.
         $this->assertTrue($this->agentMapper->canUserAccessAgent($publicAgent, 'user1'));
         $this->assertTrue($this->agentMapper->canUserAccessAgent($publicAgent, 'user2'));
         $this->assertTrue($this->agentMapper->canUserAccessAgent($publicAgent, 'user3'));
 
-        // Cleanup
+        // Cleanup.
         $this->agentMapper->delete($publicAgent);
     }
 
@@ -68,12 +68,12 @@ class AgentRbacTest extends TestCase
         $privateAgent->setInvitedUsers([]); // No invited users
         $privateAgent = $this->agentMapper->insert($privateAgent);
 
-        // Only owner should have access
+        // Only owner should have access.
         $this->assertTrue($this->agentMapper->canUserAccessAgent($privateAgent, 'user1'));
         $this->assertFalse($this->agentMapper->canUserAccessAgent($privateAgent, 'user2'));
         $this->assertFalse($this->agentMapper->canUserAccessAgent($privateAgent, 'user3'));
 
-        // Cleanup
+        // Cleanup.
         $this->agentMapper->delete($privateAgent);
     }
 
@@ -89,15 +89,15 @@ class AgentRbacTest extends TestCase
         $privateAgent->setInvitedUsers(['user2', 'user3']); // Invited users
         $privateAgent = $this->agentMapper->insert($privateAgent);
 
-        // Owner and invited users should have access
+        // Owner and invited users should have access.
         $this->assertTrue($this->agentMapper->canUserAccessAgent($privateAgent, 'user1'));
         $this->assertTrue($this->agentMapper->canUserAccessAgent($privateAgent, 'user2'));
         $this->assertTrue($this->agentMapper->canUserAccessAgent($privateAgent, 'user3'));
         
-        // Other users should not have access
+        // Other users should not have access.
         $this->assertFalse($this->agentMapper->canUserAccessAgent($privateAgent, 'user4'));
 
-        // Cleanup
+        // Cleanup.
         $this->agentMapper->delete($privateAgent);
     }
 
@@ -113,17 +113,17 @@ class AgentRbacTest extends TestCase
         $privateAgent->setInvitedUsers([]);
         $privateAgent = $this->agentMapper->insert($privateAgent);
 
-        // Initially user2 has no access
+        // Initially user2 has no access.
         $this->assertFalse($this->agentMapper->canUserAccessAgent($privateAgent, 'user2'));
 
-        // Add user2 to invited users
+        // Add user2 to invited users.
         $privateAgent->addInvitedUser('user2');
         $updated = $this->agentMapper->update($privateAgent);
 
-        // Now user2 should have access
+        // Now user2 should have access.
         $this->assertTrue($this->agentMapper->canUserAccessAgent($updated, 'user2'));
 
-        // Cleanup
+        // Cleanup.
         $this->agentMapper->delete($updated);
     }
 
@@ -139,20 +139,20 @@ class AgentRbacTest extends TestCase
         $privateAgent->setInvitedUsers(['user2', 'user3']);
         $privateAgent = $this->agentMapper->insert($privateAgent);
 
-        // Initially user2 has access
+        // Initially user2 has access.
         $this->assertTrue($this->agentMapper->canUserAccessAgent($privateAgent, 'user2'));
 
-        // Remove user2 from invited users
+        // Remove user2 from invited users.
         $privateAgent->removeInvitedUser('user2');
         $updated = $this->agentMapper->update($privateAgent);
 
-        // Now user2 should not have access
+        // Now user2 should not have access.
         $this->assertFalse($this->agentMapper->canUserAccessAgent($updated, 'user2'));
         
-        // user3 should still have access
+        // user3 should still have access.
         $this->assertTrue($this->agentMapper->canUserAccessAgent($updated, 'user3'));
 
-        // Cleanup
+        // Cleanup.
         $this->agentMapper->delete($updated);
     }
 
@@ -168,18 +168,18 @@ class AgentRbacTest extends TestCase
         $agent->setInvitedUsers(['user2']);
         $agent = $this->agentMapper->insert($agent);
 
-        // Only owner can modify
+        // Only owner can modify.
         $this->assertTrue($this->agentMapper->canUserModifyAgent($agent, 'user1'));
         $this->assertFalse($this->agentMapper->canUserModifyAgent($agent, 'user2')); // Even if invited
         $this->assertFalse($this->agentMapper->canUserModifyAgent($agent, 'user3'));
 
-        // Cleanup
+        // Cleanup.
         $this->agentMapper->delete($agent);
     }
 
     public function testOrganisationBasedFiltering(): void
     {
-        // Create agents in different organisations
+        // Create agents in different organisations.
         $agent1 = new Agent();
         $agent1->setUuid('test-agent-org1-' . uniqid());
         $agent1->setName('Agent Org 1');
@@ -198,7 +198,7 @@ class AgentRbacTest extends TestCase
         $agent2->setIsPrivate(false);
         $agent2 = $this->agentMapper->insert($agent2);
 
-        // Find agents by organisation
+        // Find agents by organisation.
         $org1Agents = $this->agentMapper->findByOrganisation(1, 'user1');
         $org2Agents = $this->agentMapper->findByOrganisation(2, 'user1');
 
@@ -211,7 +211,7 @@ class AgentRbacTest extends TestCase
         $this->assertContains($agent2->getUuid(), $org2Uuids);
         $this->assertNotContains($agent1->getUuid(), $org2Uuids);
 
-        // Cleanup
+        // Cleanup.
         $this->agentMapper->delete($agent1);
         $this->agentMapper->delete($agent2);
     }
@@ -229,18 +229,18 @@ class AgentRbacTest extends TestCase
         $agent = $this->agentMapper->insert($agent);
 
         // Note: Group membership checking would be done in the controller/service layer
-        // The mapper just stores the group restrictions
+        // The mapper just stores the group restrictions.
         $this->assertCount(2, $agent->getGroups());
         $this->assertContains('group1', $agent->getGroups());
         $this->assertContains('group2', $agent->getGroups());
 
-        // Cleanup
+        // Cleanup.
         $this->agentMapper->delete($agent);
     }
 
     public function testPrivateAgentNotReturnedInPublicListing(): void
     {
-        // Create a public and a private agent
+        // Create a public and a private agent.
         $publicAgent = new Agent();
         $publicAgent->setUuid('test-agent-public-list-' . uniqid());
         $publicAgent->setName('Public Agent');
@@ -260,32 +260,32 @@ class AgentRbacTest extends TestCase
         $privateAgent->setInvitedUsers([]);
         $privateAgent = $this->agentMapper->insert($privateAgent);
 
-        // Get agents for organisation as user2 (not owner, not invited)
+        // Get agents for organisation as user2 (not owner, not invited).
         $agentsForUser2 = $this->agentMapper->findByOrganisation(1, 'user2');
         $uuids = array_map(fn($a) => $a->getUuid(), $agentsForUser2);
 
-        // Should include public agent
+        // Should include public agent.
         $this->assertContains($publicAgent->getUuid(), $uuids);
         
-        // Should NOT include private agent for non-owner
+        // Should NOT include private agent for non-owner.
         $this->assertNotContains($privateAgent->getUuid(), $uuids);
 
-        // Get agents as owner (user1)
+        // Get agents as owner (user1).
         $agentsForUser1 = $this->agentMapper->findByOrganisation(1, 'user1');
         $uuids1 = array_map(fn($a) => $a->getUuid(), $agentsForUser1);
 
-        // Should include both for owner
+        // Should include both for owner.
         $this->assertContains($publicAgent->getUuid(), $uuids1);
         $this->assertContains($privateAgent->getUuid(), $uuids1);
 
-        // Cleanup
+        // Cleanup.
         $this->agentMapper->delete($publicAgent);
         $this->agentMapper->delete($privateAgent);
     }
 
     public function testAgentRbacWithNullOrganisation(): void
     {
-        // Agent without organisation (should still work with RBAC)
+        // Agent without organisation (should still work with RBAC).
         $agent = new Agent();
         $agent->setUuid('test-agent-no-org-' . uniqid());
         $agent->setName('No Org Agent');
@@ -296,12 +296,12 @@ class AgentRbacTest extends TestCase
         $agent->setInvitedUsers(['user2']);
         $agent = $this->agentMapper->insert($agent);
 
-        // RBAC should still work
+        // RBAC should still work.
         $this->assertTrue($this->agentMapper->canUserAccessAgent($agent, 'user1'));
         $this->assertTrue($this->agentMapper->canUserAccessAgent($agent, 'user2'));
         $this->assertFalse($this->agentMapper->canUserAccessAgent($agent, 'user3'));
 
-        // Cleanup
+        // Cleanup.
         $this->agentMapper->delete($agent);
     }
 
@@ -320,7 +320,7 @@ class AgentRbacTest extends TestCase
         $this->assertTrue($agent->hasInvitedUser('user3'));
         $this->assertFalse($agent->hasInvitedUser('user4'));
 
-        // Cleanup
+        // Cleanup.
         $this->agentMapper->delete($agent);
     }
 }

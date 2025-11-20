@@ -33,7 +33,6 @@ use OCP\IDBConnection;
  * @template-extends QBMapper<Message>
  *
  * @psalm-suppress MissingTemplateParam
- */
  *
  * @method Message insert(Entity $entity)
  * @method Message update(Entity $entity)
@@ -156,7 +155,7 @@ class MessageMapper extends QBMapper
 
         $messages = $this->findEntities($qb);
 
-        // Reverse to get oldest-first order
+        // Reverse to get oldest-first order.
         return array_reverse($messages);
 
     }//end findRecentByConversation()

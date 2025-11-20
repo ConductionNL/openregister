@@ -62,7 +62,7 @@ class Version1Date20250723110323 extends SimpleMigrationStep
      */
     public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
-        // No pre-schema changes required
+        // No pre-schema changes required.
 
     }//end preSchemaChange()
 
@@ -80,11 +80,11 @@ class Version1Date20250723110323 extends SimpleMigrationStep
         /** @var ISchemaWrapper $schema */
         $schema = $schemaClosure();
 
-        // Add is_default field to organisations table
+        // Add is_default field to organisations table.
         if ($schema->hasTable('openregister_organisations')) {
             $table = $schema->getTable('openregister_organisations');
             
-            // Add is_default field (boolean flag for default organisation)
+            // Add is_default field (boolean flag for default organisation).
             if (!$table->hasColumn('is_default')) {
                 $table->addColumn('is_default', Types::BOOLEAN, [
                     'notnull' => false,
@@ -109,7 +109,7 @@ class Version1Date20250723110323 extends SimpleMigrationStep
      */
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
-        // No post-schema changes required
+        // No post-schema changes required.
 
     }//end postSchemaChange()
 } 

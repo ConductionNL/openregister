@@ -98,8 +98,8 @@ class ConfigurationManagementIntegrationTest extends TestCase
     {
         parent::setUp();
 
-        // Set up Guzzle client to call the Nextcloud container
-        // Using master-nextcloud-1 container name as per docker-compose
+        // Set up Guzzle client to call the Nextcloud container.
+        // Using master-nextcloud-1 container name as per docker-compose.
         $this->baseUrl = 'http://master-nextcloud-1/index.php/apps/openregister/api';
         $this->auth    = ['admin', 'admin'];
 
@@ -111,7 +111,7 @@ class ConfigurationManagementIntegrationTest extends TestCase
             'verify'          => false, // Disable SSL verification for local testing
         ]);
 
-        // Create test configuration JSON
+        // Create test configuration JSON.
         $this->testConfigJson = [
             'version' => '1.0.0',
             'info'    => [
@@ -161,42 +161,42 @@ class ConfigurationManagementIntegrationTest extends TestCase
      */
     protected function tearDown(): void
     {
-        // Clean up test data via API
+        // Clean up test data via API.
         try {
-            // Delete test configurations
+            // Delete test configurations.
             foreach ($this->createdConfigIds as $configId) {
                 try {
                     $this->client->delete("/configurations/{$configId}", [
                         'auth' => $this->auth,
                     ]);
                 } catch (\Exception $e) {
-                    // Ignore cleanup errors
+                    // Ignore cleanup errors.
                 }
             }
 
-            // Delete test schemas
+            // Delete test schemas.
             foreach ($this->createdSchemaIds as $schemaId) {
                 try {
                     $this->client->delete("/schemas/{$schemaId}", [
                         'auth' => $this->auth,
                     ]);
                 } catch (\Exception $e) {
-                    // Ignore cleanup errors
+                    // Ignore cleanup errors.
                 }
             }
 
-            // Delete test registers
+            // Delete test registers.
             foreach ($this->createdRegisterIds as $registerId) {
                 try {
                     $this->client->delete("/registers/{$registerId}", [
                         'auth' => $this->auth,
                     ]);
                 } catch (\Exception $e) {
-                    // Ignore cleanup errors
+                    // Ignore cleanup errors.
                 }
             }
         } catch (\Exception $e) {
-            // Ignore cleanup errors
+            // Ignore cleanup errors.
         }
 
         parent::tearDown();
@@ -233,7 +233,7 @@ class ConfigurationManagementIntegrationTest extends TestCase
         $this->assertEquals('local', $data['sourceType']);
         $this->assertFalse($data['autoUpdate']);
 
-        // Store for cleanup
+        // Store for cleanup.
         $this->createdConfigIds[] = $data['id'];
 
     }//end testCreateConfigurationWithVersionTracking()
@@ -246,7 +246,7 @@ class ConfigurationManagementIntegrationTest extends TestCase
      */
     public function testListConfigurations(): void
     {
-        // Create a test configuration first
+        // Create a test configuration first.
         $createResponse = $this->client->post('/configurations', [
             'auth' => $this->auth,
             'json' => [
@@ -261,7 +261,7 @@ class ConfigurationManagementIntegrationTest extends TestCase
         $createData = json_decode($createResponse->getBody()->getContents(), true);
         $this->createdConfigIds[] = $createData['id'];
 
-        // List all configurations
+        // List all configurations.
         $listResponse = $this->client->get('/configurations', [
             'auth' => $this->auth,
         ]);
@@ -272,7 +272,7 @@ class ConfigurationManagementIntegrationTest extends TestCase
         $this->assertIsArray($listData);
         $this->assertNotEmpty($listData, 'Should have at least one configuration');
 
-        // Find our created configuration
+        // Find our created configuration.
         $found = false;
         foreach ($listData as $config) {
             if ($config['id'] === $createData['id']) {
@@ -294,7 +294,7 @@ class ConfigurationManagementIntegrationTest extends TestCase
      */
     public function testGetSingleConfiguration(): void
     {
-        // Create a test configuration
+        // Create a test configuration.
         $createResponse = $this->client->post('/configurations', [
             'auth' => $this->auth,
             'json' => [
@@ -313,7 +313,7 @@ class ConfigurationManagementIntegrationTest extends TestCase
         $createData = json_decode($createResponse->getBody()->getContents(), true);
         $this->createdConfigIds[] = $createData['id'];
 
-        // Get the configuration
+        // Get the configuration.
         $getResponse = $this->client->get("/configurations/{$createData['id']}", [
             'auth' => $this->auth,
         ]);
@@ -339,7 +339,7 @@ class ConfigurationManagementIntegrationTest extends TestCase
      */
     public function testUpdateConfiguration(): void
     {
-        // Create a configuration
+        // Create a configuration.
         $createResponse = $this->client->post('/configurations', [
             'auth' => $this->auth,
             'json' => [
@@ -354,7 +354,7 @@ class ConfigurationManagementIntegrationTest extends TestCase
         $createData = json_decode($createResponse->getBody()->getContents(), true);
         $this->createdConfigIds[] = $createData['id'];
 
-        // Update the configuration
+        // Update the configuration.
         $updateResponse = $this->client->put("/configurations/{$createData['id']}", [
             'auth' => $this->auth,
             'json' => [
@@ -452,7 +452,7 @@ class ConfigurationManagementIntegrationTest extends TestCase
      */
     public function testDeleteConfiguration(): void
     {
-        // Create a configuration
+        // Create a configuration.
         $createResponse = $this->client->post('/configurations', [
             'auth' => $this->auth,
             'json' => [
@@ -466,14 +466,14 @@ class ConfigurationManagementIntegrationTest extends TestCase
         $createData = json_decode($createResponse->getBody()->getContents(), true);
         $configId   = $createData['id'];
 
-        // Delete the configuration
+        // Delete the configuration.
         $deleteResponse = $this->client->delete("/configurations/{$configId}", [
             'auth' => $this->auth,
         ]);
 
         $this->assertEquals(200, $deleteResponse->getStatusCode());
 
-        // Verify it's deleted - GET should return 404
+        // Verify it's deleted - GET should return 404.
         $getResponse = $this->client->get("/configurations/{$configId}", [
             'auth' => $this->auth,
         ]);

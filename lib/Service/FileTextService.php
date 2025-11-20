@@ -85,7 +85,7 @@ class FileTextService
         $this->logger->info('[FileTextService] Starting text extraction', ['file_id' => $fileId]);
 
         try {
-            // Check if already exists
+            // Check if already exists.
             $existingFileText = null;
             try {
                 $existingFileText = $this->fileTextMapper->findByFileId($fileId);
@@ -97,7 +97,7 @@ class FileTextService
                         ]
                         );
             } catch (DoesNotExistException $e) {
-                // No existing record, will create new one
+                // No existing record, will create new one.
             }
 
             // Get file from Nextcloud.
@@ -106,7 +106,7 @@ class FileTextService
                 throw new Exception("File not found: $fileId");
             }
 
-            // Check MIME type
+            // Check MIME type.
             $mimeType = $file->getMimeType();
             if (!$this->isSupportedMimeType($mimeType)) {
                 $this->logger->info(
@@ -128,7 +128,7 @@ class FileTextService
                 return ['success' => false, 'error' => 'Unsupported MIME type'];
             }
 
-            // Calculate checksum
+            // Calculate checksum.
             $checksum = md5($file->getContent());
 
             // Check if extraction needed (file changed).
@@ -157,7 +157,7 @@ class FileTextService
                 $fileText->setUpdatedAt(new DateTime());
             }
 
-            // Set file metadata
+            // Set file metadata.
             $fileText->setFilePath($file->getPath());
             $fileText->setFileName($file->getName());
             $fileText->setMimeType($mimeType);
@@ -173,10 +173,10 @@ class FileTextService
                 $this->fileTextMapper->insert($fileText);
             }
 
-            // Extract text using SolrFileService
+            // Extract text using SolrFileService.
             $this->logger->debug('[FileTextService] Extracting text from file', ['file_id' => $fileId]);
 
-            // Get local path for extraction
+            // Get local path for extraction.
             // Note: This service is now called via background job, so the file is guaranteed to be available
             $storage      = $file->getStorage();
             $internalPath = $file->getInternalPath();
@@ -205,7 +205,7 @@ class FileTextService
                     ]
                     );
 
-            // Update record with extracted text
+            // Update record with extracted text.
             $fileText->setTextContent($extractedText);
             $fileText->setTextLength($textLength);
             $fileText->setExtractionStatus('completed');
@@ -224,7 +224,7 @@ class FileTextService
                     ]
                     );
 
-            // Update status to failed if we have a record
+            // Update status to failed if we have a record.
             if (isset($fileText)) {
                 $fileText->setExtractionStatus('failed');
                 $fileText->setExtractionError($e->getMessage());
@@ -278,7 +278,7 @@ class FileTextService
 
         if ($fileText->getExtractionStatus() === 'failed') {
             return true;
-            // Retry failed extractions
+            // Retry failed extractions.
         }
 
         // Check if file changed.
@@ -288,7 +288,7 @@ class FileTextService
                 $currentChecksum = md5($file->getContent());
                 if ($currentChecksum !== $fileText->getFileChecksum()) {
                     return true;
-                    // File changed
+                    // File changed.
                 }
             }
         } catch (Exception $e) {

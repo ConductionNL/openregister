@@ -1,5 +1,5 @@
 <?php
-// phpcs:ignoreFile
+// phpcs:ignoreFile.
 /**
  * OpenRegister Migration
  *
@@ -64,10 +64,10 @@ class Version1Date20250115230511 extends SimpleMigrationStep
          */
         $schema = $schemaClosure();
 
-        // Update the openregister_objects table
+        // Update the openregister_objects table.
         $table = $schema->getTable('openregister_objects');
 
-        // Add locked column to store lock tokens as JSON array
+        // Add locked column to store lock tokens as JSON array.
         if ($table->hasColumn('locked') === false) {
             $table->addColumn(
                 'locked',
@@ -79,7 +79,7 @@ class Version1Date20250115230511 extends SimpleMigrationStep
             );
         }
 
-        // Add owner column to store user ID of object owner
+        // Add owner column to store user ID of object owner.
         if ($table->hasColumn('owner') === false) {
             $table->addColumn(
                 'owner',
@@ -92,7 +92,7 @@ class Version1Date20250115230511 extends SimpleMigrationStep
             );
         }
 
-        // Add authorization column to store access permissions as JSON object
+        // Add authorization column to store access permissions as JSON object.
         if ($table->hasColumn('authorization') === false) {
             $table->addColumn(
                 'authorization',
@@ -104,7 +104,7 @@ class Version1Date20250115230511 extends SimpleMigrationStep
             );
         }
 
-        // Add folder column to store Nextcloud folder path
+        // Add folder column to store Nextcloud folder path.
         if ($table->hasColumn('folder') === false) {
             $table->addColumn(
                 'folder',
@@ -117,10 +117,10 @@ class Version1Date20250115230511 extends SimpleMigrationStep
             );
         }
 
-        // Update the openregister_registers table
+        // Update the openregister_registers table.
         $registersTable = $schema->getTable('openregister_registers');
 
-        // Add folder column to store Nextcloud folder path for registers
+        // Add folder column to store Nextcloud folder path for registers.
         if ($registersTable->hasColumn('folder') === false) {
             $registersTable->addColumn(
                 'folder',
