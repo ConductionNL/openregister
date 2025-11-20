@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * NamesController - Ultra-fast object name lookup endpoints
  *
  * This controller provides optimized endpoints for frontend name resolution:
@@ -12,16 +12,16 @@ declare(strict_types=1);
  * Utilizes aggressive caching for sub-10ms response times to enable
  * seamless frontend rendering of object names instead of UUIDs.
  *
- * @category Controller  
+ * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
- * @author   Conduction Development Team <info@conduction.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version  GIT: <git_id>
+ * @version GIT: <git_id>
  *
- * @link     https://www.OpenRegister.app
+ * @link https://www.OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Controller;
@@ -52,6 +52,7 @@ use Psr\Log\LoggerInterface;
 class NamesController extends Controller
 {
 
+
     /**
      * Constructor for NamesController
      *
@@ -75,10 +76,10 @@ class NamesController extends Controller
      * Get all object names or names for specific IDs
      *
      * **PERFORMANCE ENDPOINT**: Returns object names with aggressive caching.
-     * 
+     *
      * **Query Parameters:**
      * - `ids` (array): Optional. Array of object IDs/UUIDs to get names for
-     *   - If provided: returns only names for specified IDs  
+     *   - If provided: returns only names for specified IDs
      *   - If omitted: returns all object names (triggers cache warmup)
      *
      * **Response Format:**
@@ -108,11 +109,11 @@ class NamesController extends Controller
     public function index(): JSONResponse
     {
         $startTime = microtime(true);
-        
+
         try {
             // Check if specific IDs were requested
             $requestedIds = $this->request->getParam('ids');
-            
+
             // Handle different input formats for IDs
             if ($requestedIds !== null) {
                 // Parse IDs from different possible formats
@@ -123,49 +124,62 @@ class NamesController extends Controller
                     } else {
                         $requestedIds = array_map('trim', explode(',', $requestedIds));
                     }
-                } elseif (!is_array($requestedIds)) {
+                } else if (!is_array($requestedIds)) {
                     $requestedIds = [(string) $requestedIds];
                 }
-                
+
                 // Get names for specific IDs
                 $names = $this->objectCacheService->getMultipleObjectNames($requestedIds);
-                
-                $this->logger->debug('📦 BULK NAME LOOKUP REQUEST', [
-                    'requested_count' => count($requestedIds),
-                    'found_count' => count($names),
-                    'execution_time' => round((microtime(true) - $startTime) * 1000, 2) . 'ms'
-                ]);
+
+                $this->logger->debug(
+                        '📦 BULK NAME LOOKUP REQUEST',
+                        [
+                            'requested_count' => count($requestedIds),
+                            'found_count'     => count($names),
+                            'execution_time'  => round((microtime(true) - $startTime) * 1000, 2).'ms',
+                        ]
+                        );
             } else {
                 // Get all object names (triggers warmup if needed)
                 $names = $this->objectCacheService->getAllObjectNames();
-                
-                $this->logger->debug('📋 ALL NAMES REQUEST', [
-                    'total_names' => count($names),
-                    'execution_time' => round((microtime(true) - $startTime) * 1000, 2) . 'ms'
-                ]);
-            }
-            
+
+                $this->logger->debug(
+                        '📋 ALL NAMES REQUEST',
+                        [
+                            'total_names'    => count($names),
+                            'execution_time' => round((microtime(true) - $startTime) * 1000, 2).'ms',
+                        ]
+                        );
+            }//end if
+
             $executionTime = round((microtime(true) - $startTime) * 1000, 2);
-            
-            return new JSONResponse([
-                'names' => $names,
-                'total' => count($names),
-                'cached' => true,
-                'execution_time' => $executionTime . 'ms',
-                'cache_stats' => $this->objectCacheService->getStats()
-            ]);
-            
+
+            return new JSONResponse(
+                    [
+                        'names'          => $names,
+                        'total'          => count($names),
+                        'cached'         => true,
+                        'execution_time' => $executionTime.'ms',
+                        'cache_stats'    => $this->objectCacheService->getStats(),
+                    ]
+                    );
         } catch (\Exception $e) {
-            $this->logger->error('Names endpoint failed', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            
-            return new JSONResponse([
-                'error' => 'Failed to retrieve object names',
-                'message' => $e->getMessage()
-            ], 500);
-        }
+            $this->logger->error(
+                    'Names endpoint failed',
+                    [
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString(),
+                    ]
+                    );
+
+            return new JSONResponse(
+                    [
+                        'error'   => 'Failed to retrieve object names',
+                        'message' => $e->getMessage(),
+                    ],
+                    500
+                    );
+        }//end try
 
     }//end index()
 
@@ -210,59 +224,75 @@ class NamesController extends Controller
     public function create(): JSONResponse
     {
         $startTime = microtime(true);
-        
+
         try {
             // Get JSON body content
             $inputData = $this->request->getParams();
-            
+
             // Support both 'ids' in JSON body and form data
             $requestedIds = $inputData['ids'] ?? null;
 
             if (!$requestedIds || !is_array($requestedIds)) {
-                return new JSONResponse([
-                    'error' => 'Invalid request: ids array is required in request body',
-                    'example' => ['ids' => ['uuid-1', 'uuid-2', 'uuid-3']]
-                ], 400);
+                return new JSONResponse(
+                        [
+                            'error'   => 'Invalid request: ids array is required in request body',
+                            'example' => ['ids' => ['uuid-1', 'uuid-2', 'uuid-3']],
+                        ],
+                        400
+                        );
             }
 
             // Filter and validate IDs
             $requestedIds = array_filter(array_map('trim', $requestedIds));
-            
+
             if (empty($requestedIds)) {
-                return new JSONResponse([
-                    'error' => 'No valid IDs provided in request'
-                ], 400);
+                return new JSONResponse(
+                        [
+                            'error' => 'No valid IDs provided in request',
+                        ],
+                        400
+                        );
             }
 
-            $names = $this->objectCacheService->getMultipleObjectNames($requestedIds);
+            $names         = $this->objectCacheService->getMultipleObjectNames($requestedIds);
             $executionTime = round((microtime(true) - $startTime) * 1000, 2);
 
-            $this->logger->debug('📦 BULK NAME POST REQUEST', [
-                'requested_count' => count($requestedIds),
-                'found_count' => count($names),
-                'execution_time' => $executionTime . 'ms'
-            ]);
+            $this->logger->debug(
+                    '📦 BULK NAME POST REQUEST',
+                    [
+                        'requested_count' => count($requestedIds),
+                        'found_count'     => count($names),
+                        'execution_time'  => $executionTime.'ms',
+                    ]
+                    );
 
-            return new JSONResponse([
-                'names' => $names,
-                'total' => count($names),
-                'requested' => count($requestedIds),
-                'cached' => true,
-                'execution_time' => $executionTime . 'ms',
-                'cache_stats' => $this->objectCacheService->getStats()
-            ]);
-            
+            return new JSONResponse(
+                    [
+                        'names'          => $names,
+                        'total'          => count($names),
+                        'requested'      => count($requestedIds),
+                        'cached'         => true,
+                        'execution_time' => $executionTime.'ms',
+                        'cache_stats'    => $this->objectCacheService->getStats(),
+                    ]
+                    );
         } catch (\Exception $e) {
-            $this->logger->error('POST names endpoint failed', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            
-            return new JSONResponse([
-                'error' => 'Failed to retrieve object names',
-                'message' => $e->getMessage()
-            ], 500);
-        }
+            $this->logger->error(
+                    'POST names endpoint failed',
+                    [
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString(),
+                    ]
+                    );
+
+            return new JSONResponse(
+                    [
+                        'error'   => 'Failed to retrieve object names',
+                        'message' => $e->getMessage(),
+                    ],
+                    500
+                    );
+        }//end try
 
     }//end create()
 
@@ -299,52 +329,68 @@ class NamesController extends Controller
     public function show(string $id): JSONResponse
     {
         $startTime = microtime(true);
-        
+
         try {
             $name = $this->objectCacheService->getSingleObjectName($id);
-            
+
             $executionTime = round((microtime(true) - $startTime) * 1000, 2);
-            
+
             if ($name === null) {
-                $this->logger->debug('❌ SINGLE NAME NOT FOUND', [
-                    'id' => $id,
-                    'execution_time' => $executionTime . 'ms'
-                ]);
-                
-                return new JSONResponse([
-                    'id' => $id,
-                    'name' => null,
-                    'found' => false,
-                    'execution_time' => $executionTime . 'ms'
-                ], 404);
+                $this->logger->debug(
+                        '❌ SINGLE NAME NOT FOUND',
+                        [
+                            'id'             => $id,
+                            'execution_time' => $executionTime.'ms',
+                        ]
+                        );
+
+                return new JSONResponse(
+                        [
+                            'id'             => $id,
+                            'name'           => null,
+                            'found'          => false,
+                            'execution_time' => $executionTime.'ms',
+                        ],
+                        404
+                        );
             }
-            
-            $this->logger->debug('🚀 SINGLE NAME LOOKUP', [
-                'id' => $id,
-                'name' => $name,
-                'execution_time' => $executionTime . 'ms'
-            ]);
-            
-            return new JSONResponse([
-                'id' => $id,
-                'name' => $name,
-                'found' => true,
-                'cached' => true,
-                'execution_time' => $executionTime . 'ms'
-            ]);
-            
+
+            $this->logger->debug(
+                    '🚀 SINGLE NAME LOOKUP',
+                    [
+                        'id'             => $id,
+                        'name'           => $name,
+                        'execution_time' => $executionTime.'ms',
+                    ]
+                    );
+
+            return new JSONResponse(
+                    [
+                        'id'             => $id,
+                        'name'           => $name,
+                        'found'          => true,
+                        'cached'         => true,
+                        'execution_time' => $executionTime.'ms',
+                    ]
+                    );
         } catch (\Exception $e) {
-            $this->logger->error('Single name lookup failed', [
-                'id' => $id,
-                'error' => $e->getMessage()
-            ]);
-            
-            return new JSONResponse([
-                'id' => $id,
-                'error' => 'Failed to retrieve object name',
-                'message' => $e->getMessage()
-            ], 500);
-        }
+            $this->logger->error(
+                    'Single name lookup failed',
+                    [
+                        'id'    => $id,
+                        'error' => $e->getMessage(),
+                    ]
+                    );
+
+            return new JSONResponse(
+                    [
+                        'id'      => $id,
+                        'error'   => 'Failed to retrieve object name',
+                        'message' => $e->getMessage(),
+                    ],
+                    500
+                    );
+        }//end try
 
     }//end show()
 
@@ -368,26 +414,33 @@ class NamesController extends Controller
     {
         try {
             $stats = $this->objectCacheService->getStats();
-            
-            return new JSONResponse([
-                'cache_statistics' => $stats,
-                'performance_metrics' => [
-                    'name_cache_enabled' => true,
-                    'distributed_cache_available' => true,
-                    'warmup_available' => true
-                ]
-            ]);
-            
+
+            return new JSONResponse(
+                    [
+                        'cache_statistics'    => $stats,
+                        'performance_metrics' => [
+                            'name_cache_enabled'          => true,
+                            'distributed_cache_available' => true,
+                            'warmup_available'            => true,
+                        ],
+                    ]
+                    );
         } catch (\Exception $e) {
-            $this->logger->error('Failed to get cache statistics', [
-                'error' => $e->getMessage()
-            ]);
-            
-            return new JSONResponse([
-                'error' => 'Failed to retrieve cache statistics',
-                'message' => $e->getMessage()
-            ], 500);
-        }
+            $this->logger->error(
+                    'Failed to get cache statistics',
+                    [
+                        'error' => $e->getMessage(),
+                    ]
+                    );
+
+            return new JSONResponse(
+                    [
+                        'error'   => 'Failed to retrieve cache statistics',
+                        'message' => $e->getMessage(),
+                    ],
+                    500
+                    );
+        }//end try
 
     }//end stats()
 
@@ -410,34 +463,44 @@ class NamesController extends Controller
     public function warmup(): JSONResponse
     {
         $startTime = microtime(true);
-        
+
         try {
-            $loadedCount = $this->objectCacheService->warmupNameCache();
+            $loadedCount   = $this->objectCacheService->warmupNameCache();
             $executionTime = round((microtime(true) - $startTime) * 1000, 2);
-            
-            $this->logger->info('Manual name cache warmup completed', [
-                'loaded_names' => $loadedCount,
-                'execution_time' => $executionTime . 'ms'
-            ]);
-            
-            return new JSONResponse([
-                'success' => true,
-                'loaded_names' => $loadedCount,
-                'execution_time' => $executionTime . 'ms',
-                'cache_stats' => $this->objectCacheService->getStats()
-            ]);
-            
+
+            $this->logger->info(
+                    'Manual name cache warmup completed',
+                    [
+                        'loaded_names'   => $loadedCount,
+                        'execution_time' => $executionTime.'ms',
+                    ]
+                    );
+
+            return new JSONResponse(
+                    [
+                        'success'        => true,
+                        'loaded_names'   => $loadedCount,
+                        'execution_time' => $executionTime.'ms',
+                        'cache_stats'    => $this->objectCacheService->getStats(),
+                    ]
+                    );
         } catch (\Exception $e) {
-            $this->logger->error('Manual cache warmup failed', [
-                'error' => $e->getMessage()
-            ]);
-            
-            return new JSONResponse([
-                'success' => false,
-                'error' => 'Cache warmup failed',
-                'message' => $e->getMessage()
-            ], 500);
-        }
+            $this->logger->error(
+                    'Manual cache warmup failed',
+                    [
+                        'error' => $e->getMessage(),
+                    ]
+                    );
+
+            return new JSONResponse(
+                    [
+                        'success' => false,
+                        'error'   => 'Cache warmup failed',
+                        'message' => $e->getMessage(),
+                    ],
+                    500
+                    );
+        }//end try
 
     }//end warmup()
 

@@ -66,18 +66,18 @@ class ConfigurationCacheService
     /**
      * Constructor
      *
-     * @param ISession              $session               Session interface
-     * @param ConfigurationMapper   $configurationMapper   Configuration mapper
-     * @param OrganisationService   $organisationService   Organisation service
+     * @param ISession            $session             Session interface
+     * @param ConfigurationMapper $configurationMapper Configuration mapper
+     * @param OrganisationService $organisationService Organisation service
      */
     public function __construct(
         ISession $session,
         ConfigurationMapper $configurationMapper,
         OrganisationService $organisationService
     ) {
-        $this->session               = $session;
-        $this->configurationMapper   = $configurationMapper;
-        $this->organisationService   = $organisationService;
+        $this->session = $session;
+        $this->configurationMapper = $configurationMapper;
+        $this->organisationService = $organisationService;
 
     }//end __construct()
 
@@ -97,7 +97,7 @@ class ConfigurationCacheService
             return [];
         }
 
-        $orgUuid = $activeOrg->getUuid();
+        $orgUuid    = $activeOrg->getUuid();
         $sessionKey = self::SESSION_KEY_PREFIX.$orgUuid;
 
         // Check if configurations are cached in session
@@ -133,7 +133,7 @@ class ConfigurationCacheService
             return;
         }
 
-        $orgUuid = $activeOrg->getUuid();
+        $orgUuid    = $activeOrg->getUuid();
         $sessionKey = self::SESSION_KEY_PREFIX.$orgUuid;
 
         // Remove from session
@@ -179,4 +179,3 @@ class ConfigurationCacheService
 
 
 }//end class
-

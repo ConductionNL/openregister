@@ -162,7 +162,7 @@ class Agent extends Entity implements JsonSerializable
     /**
      * Maximum tokens to generate in responses
      *
-     * @var int|null Token limit
+     * @var integer|null Token limit
      */
     protected ?int $maxTokens = null;
 
@@ -197,14 +197,14 @@ class Agent extends Entity implements JsonSerializable
     /**
      * Whether the agent is active
      *
-     * @var bool Active status
+     * @var boolean Active status
      */
     protected bool $active = true;
 
     /**
      * Enable RAG (Retrieval-Augmented Generation)
      *
-     * @var bool Whether to use RAG for context retrieval
+     * @var boolean Whether to use RAG for context retrieval
      */
     protected bool $enableRag = false;
 
@@ -218,35 +218,35 @@ class Agent extends Entity implements JsonSerializable
     /**
      * Number of sources to retrieve for RAG
      *
-     * @var int|null Number of context sources
+     * @var integer|null Number of context sources
      */
     protected ?int $ragNumSources = null;
 
     /**
      * Include files in RAG search
      *
-     * @var bool Whether to search files
+     * @var boolean Whether to search files
      */
     protected bool $ragIncludeFiles = false;
 
     /**
      * Include objects in RAG search
      *
-     * @var bool Whether to search objects
+     * @var boolean Whether to search objects
      */
     protected bool $ragIncludeObjects = false;
 
     /**
      * API request quota per day (0 = unlimited)
      *
-     * @var int|null Maximum requests per day
+     * @var integer|null Maximum requests per day
      */
     protected ?int $requestQuota = null;
 
     /**
      * Token quota per day (0 = unlimited)
      *
-     * @var int|null Maximum tokens per day
+     * @var integer|null Maximum tokens per day
      */
     protected ?int $tokenQuota = null;
 
@@ -260,21 +260,21 @@ class Agent extends Entity implements JsonSerializable
     /**
      * Whether to search in files (Nextcloud files)
      *
-     * @var bool|null Search in files flag
+     * @var boolean|null Search in files flag
      */
     protected ?bool $searchFiles = null;
 
     /**
      * Whether to search in objects (OpenRegister objects)
      *
-     * @var bool|null Search in objects flag
+     * @var boolean|null Search in objects flag
      */
     protected ?bool $searchObjects = null;
 
     /**
      * Whether agent is private (not shared with organization)
      *
-     * @var bool|null Private flag
+     * @var boolean|null Private flag
      */
     protected ?bool $isPrivate = null;
 
@@ -401,7 +401,7 @@ class Agent extends Entity implements JsonSerializable
         if ($this->invitedUsers === null) {
             return false;
         }
-        
+
         return in_array($userId, $this->invitedUsers, true);
 
     }//end hasInvitedUser()
@@ -419,7 +419,7 @@ class Agent extends Entity implements JsonSerializable
         if ($this->invitedUsers === null) {
             $this->invitedUsers = [];
         }
-        
+
         if (!in_array($userId, $this->invitedUsers, true)) {
             $this->invitedUsers[] = $userId;
             $this->markFieldUpdated('invitedUsers');
@@ -440,7 +440,7 @@ class Agent extends Entity implements JsonSerializable
         if ($this->invitedUsers === null) {
             return;
         }
-        
+
         $key = array_search($userId, $this->invitedUsers, true);
         if ($key !== false) {
             unset($this->invitedUsers[$key]);
@@ -467,6 +467,7 @@ class Agent extends Entity implements JsonSerializable
             // Generate new UUID if not provided
             $this->setUuid(Uuid::v4()->toRfc4122());
         }
+
         $this->setName($object['name'] ?? null);
         $this->setDescription($object['description'] ?? null);
         $this->setType($object['type'] ?? null);
@@ -508,40 +509,40 @@ class Agent extends Entity implements JsonSerializable
     public function jsonSerialize(): array
     {
         return [
-            'id'                 => $this->id,
-            'uuid'               => $this->uuid,
-            'name'               => $this->name,
-            'description'        => $this->description,
-            'type'               => $this->type,
-            'provider'           => $this->provider,
-            'model'              => $this->model,
-            'prompt'             => $this->prompt,
-            'temperature'        => $this->temperature,
-            'maxTokens'          => $this->maxTokens,
-            'configuration'      => $this->configuration,
-            'organisation'       => $this->organisation,
-            'owner'              => $this->owner,
-            'active'             => $this->active,
-            'enableRag'          => $this->enableRag,
-            'ragSearchMode'      => $this->ragSearchMode,
-            'ragNumSources'      => $this->ragNumSources,
-            'ragIncludeFiles'    => $this->ragIncludeFiles,
-            'ragIncludeObjects'  => $this->ragIncludeObjects,
-            'requestQuota'       => $this->requestQuota,
-            'tokenQuota'         => $this->tokenQuota,
-            'views'              => $this->views,
-            'searchFiles'        => $this->searchFiles,
-            'searchObjects'      => $this->searchObjects,
-            'isPrivate'          => $this->isPrivate,
-            'invitedUsers'       => $this->invitedUsers,
-            'groups'             => $this->groups,
-            'tools'              => $this->tools,
-            'user'               => $this->user,
-            'created'            => $this->created?->format('Y-m-d\TH:i:s\Z'),
-            'updated'            => $this->updated?->format('Y-m-d\TH:i:s\Z'),
+            'id'                     => $this->id,
+            'uuid'                   => $this->uuid,
+            'name'                   => $this->name,
+            'description'            => $this->description,
+            'type'                   => $this->type,
+            'provider'               => $this->provider,
+            'model'                  => $this->model,
+            'prompt'                 => $this->prompt,
+            'temperature'            => $this->temperature,
+            'maxTokens'              => $this->maxTokens,
+            'configuration'          => $this->configuration,
+            'organisation'           => $this->organisation,
+            'owner'                  => $this->owner,
+            'active'                 => $this->active,
+            'enableRag'              => $this->enableRag,
+            'ragSearchMode'          => $this->ragSearchMode,
+            'ragNumSources'          => $this->ragNumSources,
+            'ragIncludeFiles'        => $this->ragIncludeFiles,
+            'ragIncludeObjects'      => $this->ragIncludeObjects,
+            'requestQuota'           => $this->requestQuota,
+            'tokenQuota'             => $this->tokenQuota,
+            'views'                  => $this->views,
+            'searchFiles'            => $this->searchFiles,
+            'searchObjects'          => $this->searchObjects,
+            'isPrivate'              => $this->isPrivate,
+            'invitedUsers'           => $this->invitedUsers,
+            'groups'                 => $this->groups,
+            'tools'                  => $this->tools,
+            'user'                   => $this->user,
+            'created'                => $this->created?->format('Y-m-d\TH:i:s\Z'),
+            'updated'                => $this->updated?->format('Y-m-d\TH:i:s\Z'),
             'managedByConfiguration' => $this->managedByConfiguration !== null ? [
-                'id' => $this->managedByConfiguration->getId(),
-                'uuid' => $this->managedByConfiguration->getUuid(),
+                'id'    => $this->managedByConfiguration->getId(),
+                'uuid'  => $this->managedByConfiguration->getUuid(),
                 'title' => $this->managedByConfiguration->getTitle(),
             ] : null,
         ];

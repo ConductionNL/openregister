@@ -31,6 +31,8 @@ namespace OCA\OpenRegister\Tool;
  */
 interface ToolInterface
 {
+
+
     /**
      * Get the tool name
      *
@@ -41,6 +43,7 @@ interface ToolInterface
      */
     public function getName(): string;
 
+
     /**
      * Get the tool description
      *
@@ -50,6 +53,7 @@ interface ToolInterface
      * @return string Tool description for LLM
      */
     public function getDescription(): string;
+
 
     /**
      * Get the tool's function definitions for LLphant
@@ -77,6 +81,7 @@ interface ToolInterface
      */
     public function getFunctions(): array;
 
+
     /**
      * Execute a tool function
      *
@@ -91,6 +96,7 @@ interface ToolInterface
      *
      * @throws \Exception If function execution fails
      */
-    public function executeFunction(string $functionName, array $parameters, ?string $userId = null): array;
-}
+    public function executeFunction(string $functionName, array $parameters, ?string $userId=null): array;
 
+
+}//end interface

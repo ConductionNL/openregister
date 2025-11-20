@@ -22,13 +22,13 @@
  * - Cardinality estimation for facet optimization
  * - Multi-level aggregations and drill-down support
  *
- * @category Handler
- * @package  OCA\OpenRegister\Service\MagicMapperHandlers
- * @author   Conduction Development Team <info@conduction.nl>
+ * @category  Handler
+ * @package   OCA\OpenRegister\Service\MagicMapperHandlers
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @version  GIT: <git_id>
- * @link     https://www.OpenRegister.app
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version   GIT: <git_id>
+ * @link      https://www.OpenRegister.app
  *
  * @since 2.0.0 Initial implementation for MagicMapper faceting capabilities
  */
@@ -52,6 +52,8 @@ use Psr\Log\LoggerInterface;
  */
 class MagicFacetHandler
 {
+
+
     /**
      * Constructor for MagicFacetHandler
      *
@@ -62,16 +64,18 @@ class MagicFacetHandler
         private readonly IDBConnection $db,
         private readonly LoggerInterface $logger
     ) {
-    }
+
+    }//end __construct()
+
 
     /**
      * Get facets for objects in a specific register-schema table
      *
      * @param array    $facetConfig Facet configuration array
-     * @param array    $baseQuery  Base query filters to apply
-     * @param Register $register   Register context
-     * @param Schema   $schema     Schema context
-     * @param string   $tableName  Target dynamic table name
+     * @param array    $baseQuery   Base query filters to apply
+     * @param Register $register    Register context
+     * @param Schema   $schema      Schema context
+     * @param string   $tableName   Target dynamic table name
      *
      * @return array Facet results organized by field
      *
@@ -94,16 +98,22 @@ class MagicFacetHandler
         }
 
         // Process schema property facets
-        $objectFacetConfig = array_filter($facetConfig, function($key) {
-            return $key !== '@self';
-        }, ARRAY_FILTER_USE_KEY);
+        $objectFacetConfig = array_filter(
+                $facetConfig,
+                function ($key) {
+                    return $key !== '@self';
+                },
+                ARRAY_FILTER_USE_KEY
+                );
 
         foreach ($objectFacetConfig as $field => $config) {
             $facets[$field] = $this->getSchemaPropertyFacet($field, $config, $baseQuery, $schema, $tableName);
         }
 
         return $facets;
-    }
+
+    }//end getFacets()
+
 
     /**
      * Get facet data for a metadata field
@@ -117,25 +127,27 @@ class MagicFacetHandler
      */
     private function getMetadataFieldFacet(string $field, array $config, array $baseQuery, string $tableName): array
     {
-        $type = $config['type'] ?? 'terms';
-        $columnName = '_' . $field; // Metadata columns are prefixed with _
-
+        $type       = $config['type'] ?? 'terms';
+        $columnName = '_'.$field;
+        // Metadata columns are prefixed with _
         switch ($type) {
             case 'terms':
                 return $this->getTermsFacet($columnName, $baseQuery, $tableName);
-                
+
             case 'date_histogram':
                 $interval = $config['interval'] ?? 'month';
                 return $this->getDateHistogramFacet($columnName, $interval, $baseQuery, $tableName);
-                
+
             case 'range':
                 $ranges = $config['ranges'] ?? [];
                 return $this->getRangeFacet($columnName, $ranges, $baseQuery, $tableName);
-                
+
             default:
                 return $this->getTermsFacet($columnName, $baseQuery, $tableName);
         }
-    }
+
+    }//end getMetadataFieldFacet()
+
 
     /**
      * Get facet data for a schema property field
@@ -150,7 +162,7 @@ class MagicFacetHandler
      */
     private function getSchemaPropertyFacet(string $field, array $config, array $baseQuery, Schema $schema, string $tableName): array
     {
-        $type = $config['type'] ?? 'terms';
+        $type       = $config['type'] ?? 'terms';
         $columnName = $this->sanitizeColumnName($field);
 
         // Verify field exists in schema
@@ -162,19 +174,21 @@ class MagicFacetHandler
         switch ($type) {
             case 'terms':
                 return $this->getTermsFacet($columnName, $baseQuery, $tableName);
-                
+
             case 'date_histogram':
                 $interval = $config['interval'] ?? 'month';
                 return $this->getDateHistogramFacet($columnName, $interval, $baseQuery, $tableName);
-                
+
             case 'range':
                 $ranges = $config['ranges'] ?? [];
                 return $this->getRangeFacet($columnName, $ranges, $baseQuery, $tableName);
-                
+
             default:
                 return $this->getTermsFacet($columnName, $baseQuery, $tableName);
         }
-    }
+
+    }//end getSchemaPropertyFacet()
+
 
     /**
      * Get terms facet for a specific column
@@ -186,10 +200,10 @@ class MagicFacetHandler
      *
      * @return array Terms facet data
      */
-    private function getTermsFacet(string $columnName, array $baseQuery, string $tableName, int $limit = 100): array
+    private function getTermsFacet(string $columnName, array $baseQuery, string $tableName, int $limit=100): array
     {
         $qb = $this->db->getQueryBuilder();
-        
+
         $qb->select($columnName, $qb->createFunction('COUNT(*) as count'))
             ->from($tableName, 't')
             ->where($qb->expr()->isNotNull($columnName))
@@ -202,38 +216,43 @@ class MagicFacetHandler
 
         try {
             $result = $qb->executeQuery();
-            $rows = $result->fetchAll();
-            
+            $rows   = $result->fetchAll();
+
             $terms = [];
             foreach ($rows as $row) {
                 $terms[] = [
                     'value' => $row[$columnName],
-                    'count' => (int) $row['count']
+                    'count' => (int) $row['count'],
                 ];
             }
-            
+
             return [
-                'type' => 'terms',
-                'field' => $columnName,
-                'buckets' => $terms,
-                'total_buckets' => count($terms)
+                'type'          => 'terms',
+                'field'         => $columnName,
+                'buckets'       => $terms,
+                'total_buckets' => count($terms),
             ];
         } catch (\Exception $e) {
-            $this->logger->error('Terms facet query failed', [
-                'columnName' => $columnName,
-                'tableName' => $tableName,
-                'error' => $e->getMessage()
-            ]);
-            
+            $this->logger->error(
+                    'Terms facet query failed',
+                    [
+                        'columnName' => $columnName,
+                        'tableName'  => $tableName,
+                        'error'      => $e->getMessage(),
+                    ]
+                    );
+
             return [
-                'type' => 'terms',
-                'field' => $columnName,
-                'buckets' => [],
+                'type'          => 'terms',
+                'field'         => $columnName,
+                'buckets'       => [],
                 'total_buckets' => 0,
-                'error' => $e->getMessage()
+                'error'         => $e->getMessage(),
             ];
-        }
-    }
+        }//end try
+
+    }//end getTermsFacet()
+
 
     /**
      * Get date histogram facet for a date/datetime column
@@ -248,11 +267,11 @@ class MagicFacetHandler
     private function getDateHistogramFacet(string $columnName, string $interval, array $baseQuery, string $tableName): array
     {
         $qb = $this->db->getQueryBuilder();
-        
+
         // Generate date truncation based on interval
         $dateFormat = $this->getDateFormatForInterval($interval);
-        $dateTrunc = "DATE_FORMAT({$columnName}, '{$dateFormat}')";
-        
+        $dateTrunc  = "DATE_FORMAT({$columnName}, '{$dateFormat}')";
+
         $qb->selectAlias($dateTrunc, 'period')
             ->addSelect($qb->createFunction('COUNT(*) as count'))
             ->from($tableName, 't')
@@ -265,41 +284,46 @@ class MagicFacetHandler
 
         try {
             $result = $qb->executeQuery();
-            $rows = $result->fetchAll();
-            
+            $rows   = $result->fetchAll();
+
             $buckets = [];
             foreach ($rows as $row) {
                 $buckets[] = [
-                    'key' => $row['period'],
-                    'count' => (int) $row['count']
+                    'key'   => $row['period'],
+                    'count' => (int) $row['count'],
                 ];
             }
-            
+
             return [
-                'type' => 'date_histogram',
-                'field' => $columnName,
-                'interval' => $interval,
-                'buckets' => $buckets,
-                'total_buckets' => count($buckets)
+                'type'          => 'date_histogram',
+                'field'         => $columnName,
+                'interval'      => $interval,
+                'buckets'       => $buckets,
+                'total_buckets' => count($buckets),
             ];
         } catch (\Exception $e) {
-            $this->logger->error('Date histogram facet query failed', [
-                'columnName' => $columnName,
-                'interval' => $interval,
-                'tableName' => $tableName,
-                'error' => $e->getMessage()
-            ]);
-            
+            $this->logger->error(
+                    'Date histogram facet query failed',
+                    [
+                        'columnName' => $columnName,
+                        'interval'   => $interval,
+                        'tableName'  => $tableName,
+                        'error'      => $e->getMessage(),
+                    ]
+                    );
+
             return [
-                'type' => 'date_histogram',
-                'field' => $columnName,
-                'interval' => $interval,
-                'buckets' => [],
+                'type'          => 'date_histogram',
+                'field'         => $columnName,
+                'interval'      => $interval,
+                'buckets'       => [],
                 'total_buckets' => 0,
-                'error' => $e->getMessage()
+                'error'         => $e->getMessage(),
             ];
-        }
-    }
+        }//end try
+
+    }//end getDateHistogramFacet()
+
 
     /**
      * Get range facet for numerical columns
@@ -319,12 +343,12 @@ class MagicFacetHandler
         }
 
         $buckets = [];
-        
+
         foreach ($ranges as $range) {
             $from = $range['from'] ?? null;
-            $to = $range['to'] ?? null;
-            $key = $range['key'] ?? ($from . '-' . $to);
-            
+            $to   = $range['to'] ?? null;
+            $key  = $range['key'] ?? ($from.'-'.$to);
+
             $qb = $this->db->getQueryBuilder();
             $qb->selectAlias($qb->createFunction('COUNT(*)'), 'count')
                 ->from($tableName, 't')
@@ -334,6 +358,7 @@ class MagicFacetHandler
             if ($from !== null) {
                 $qb->andWhere($qb->expr()->gte($columnName, $qb->createNamedParameter($from)));
             }
+
             if ($to !== null) {
                 $qb->andWhere($qb->expr()->lt($columnName, $qb->createNamedParameter($to)));
             }
@@ -343,30 +368,35 @@ class MagicFacetHandler
 
             try {
                 $result = $qb->executeQuery();
-                $count = (int) $result->fetchOne();
-                
+                $count  = (int) $result->fetchOne();
+
                 $buckets[] = [
-                    'key' => $key,
-                    'from' => $from,
-                    'to' => $to,
-                    'count' => $count
+                    'key'   => $key,
+                    'from'  => $from,
+                    'to'    => $to,
+                    'count' => $count,
                 ];
             } catch (\Exception $e) {
-                $this->logger->error('Range facet query failed for range', [
-                    'columnName' => $columnName,
-                    'range' => $range,
-                    'error' => $e->getMessage()
-                ]);
+                $this->logger->error(
+                        'Range facet query failed for range',
+                        [
+                            'columnName' => $columnName,
+                            'range'      => $range,
+                            'error'      => $e->getMessage(),
+                        ]
+                        );
             }
-        }
-        
+        }//end foreach
+
         return [
-            'type' => 'range',
-            'field' => $columnName,
-            'buckets' => $buckets,
-            'total_buckets' => count($buckets)
+            'type'          => 'range',
+            'field'         => $columnName,
+            'buckets'       => $buckets,
+            'total_buckets' => count($buckets),
         ];
-    }
+
+    }//end getRangeFacet()
+
 
     /**
      * Apply base query filters to facet queries
@@ -380,7 +410,7 @@ class MagicFacetHandler
     {
         // Apply basic filters
         $includeDeleted = $baseQuery['_includeDeleted'] ?? false;
-        $published = $baseQuery['_published'] ?? false;
+        $published      = $baseQuery['_published'] ?? false;
 
         if ($includeDeleted === false) {
             $qb->andWhere($qb->expr()->isNull('t._deleted'));
@@ -403,13 +433,13 @@ class MagicFacetHandler
         // Apply metadata filters (@self)
         if (isset($baseQuery['@self']) && is_array($baseQuery['@self'])) {
             foreach ($baseQuery['@self'] as $field => $value) {
-                $columnName = '_' . $field;
-                
+                $columnName = '_'.$field;
+
                 if ($value === 'IS NOT NULL') {
                     $qb->andWhere($qb->expr()->isNotNull("t.{$columnName}"));
-                } elseif ($value === 'IS NULL') {
+                } else if ($value === 'IS NULL') {
                     $qb->andWhere($qb->expr()->isNull("t.{$columnName}"));
-                } elseif (is_array($value)) {
+                } else if (is_array($value)) {
                     $qb->andWhere($qb->expr()->in("t.{$columnName}", $qb->createNamedParameter($value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
                 } else {
                     $qb->andWhere($qb->expr()->eq("t.{$columnName}", $qb->createNamedParameter($value)));
@@ -418,24 +448,30 @@ class MagicFacetHandler
         }
 
         // Apply object field filters
-        $objectFilters = array_filter($baseQuery, function($key) {
-            return $key !== '@self' && !str_starts_with($key, '_');
-        }, ARRAY_FILTER_USE_KEY);
+        $objectFilters = array_filter(
+                $baseQuery,
+                function ($key) {
+                    return $key !== '@self' && !str_starts_with($key, '_');
+                },
+                ARRAY_FILTER_USE_KEY
+                );
 
         foreach ($objectFilters as $field => $value) {
             $columnName = $this->sanitizeColumnName($field);
-            
+
             if ($value === 'IS NOT NULL') {
                 $qb->andWhere($qb->expr()->isNotNull("t.{$columnName}"));
-            } elseif ($value === 'IS NULL') {
+            } else if ($value === 'IS NULL') {
                 $qb->andWhere($qb->expr()->isNull("t.{$columnName}"));
-            } elseif (is_array($value)) {
+            } else if (is_array($value)) {
                 $qb->andWhere($qb->expr()->in("t.{$columnName}", $qb->createNamedParameter($value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
             } else {
                 $qb->andWhere($qb->expr()->eq("t.{$columnName}", $qb->createNamedParameter($value)));
             }
         }
-    }
+
+    }//end applyBaseFilters()
+
 
     /**
      * Get facetable fields from schema definition
@@ -448,12 +484,14 @@ class MagicFacetHandler
     public function getFacetableFields(Register $register, Schema $schema): array
     {
         $facetableFields = [
-            '@self' => $this->getMetadataFacetableFields(),
-            'schema_properties' => $this->getSchemaFacetableFields($schema)
+            '@self'             => $this->getMetadataFacetableFields(),
+            'schema_properties' => $this->getSchemaFacetableFields($schema),
         ];
 
         return $facetableFields;
-    }
+
+    }//end getFacetableFields()
+
 
     /**
      * Get facetable metadata fields
@@ -463,46 +501,48 @@ class MagicFacetHandler
     private function getMetadataFacetableFields(): array
     {
         return [
-            'register' => [
-                'type' => 'integer',
-                'title' => 'Register',
+            'register'     => [
+                'type'        => 'integer',
+                'title'       => 'Register',
                 'description' => 'Register ID',
-                'facet_types' => ['terms']
+                'facet_types' => ['terms'],
             ],
-            'schema' => [
-                'type' => 'integer',
-                'title' => 'Schema',
+            'schema'       => [
+                'type'        => 'integer',
+                'title'       => 'Schema',
                 'description' => 'Schema ID',
-                'facet_types' => ['terms']
+                'facet_types' => ['terms'],
             ],
-            'owner' => [
-                'type' => 'string',
-                'title' => 'Owner',
+            'owner'        => [
+                'type'        => 'string',
+                'title'       => 'Owner',
                 'description' => 'Object owner',
-                'facet_types' => ['terms']
+                'facet_types' => ['terms'],
             ],
             'organisation' => [
-                'type' => 'string',
-                'title' => 'Organisation',
+                'type'        => 'string',
+                'title'       => 'Organisation',
                 'description' => 'Organisation UUID',
-                'facet_types' => ['terms']
+                'facet_types' => ['terms'],
             ],
-            'created' => [
-                'type' => 'string',
-                'format' => 'date-time',
-                'title' => 'Created',
+            'created'      => [
+                'type'        => 'string',
+                'format'      => 'date-time',
+                'title'       => 'Created',
                 'description' => 'Creation timestamp',
-                'facet_types' => ['date_histogram', 'range']
+                'facet_types' => ['date_histogram', 'range'],
             ],
-            'updated' => [
-                'type' => 'string',
-                'format' => 'date-time',
-                'title' => 'Updated',
+            'updated'      => [
+                'type'        => 'string',
+                'format'      => 'date-time',
+                'title'       => 'Updated',
                 'description' => 'Last update timestamp',
-                'facet_types' => ['date_histogram', 'range']
-            ]
+                'facet_types' => ['date_histogram', 'range'],
+            ],
         ];
-    }
+
+    }//end getMetadataFacetableFields()
+
 
     /**
      * Get facetable fields from schema properties
@@ -513,23 +553,25 @@ class MagicFacetHandler
      */
     private function getSchemaFacetableFields(Schema $schema): array
     {
-        $properties = $schema->getProperties();
+        $properties      = $schema->getProperties();
         $facetableFields = [];
 
         foreach ($properties as $propertyName => $propertyConfig) {
             if (($propertyConfig['facetable'] ?? false) === true) {
                 $facetableFields[$propertyName] = [
-                    'type' => $propertyConfig['type'] ?? 'string',
-                    'format' => $propertyConfig['format'] ?? '',
-                    'title' => $propertyConfig['title'] ?? $propertyName,
+                    'type'        => $propertyConfig['type'] ?? 'string',
+                    'format'      => $propertyConfig['format'] ?? '',
+                    'title'       => $propertyConfig['title'] ?? $propertyName,
                     'description' => $propertyConfig['description'] ?? "Schema property: {$propertyName}",
-                    'facet_types' => $this->determineFacetTypes($propertyConfig)
+                    'facet_types' => $this->determineFacetTypes($propertyConfig),
                 ];
             }
         }
 
         return $facetableFields;
-    }
+
+    }//end getSchemaFacetableFields()
+
 
     /**
      * Determine appropriate facet types for a property
@@ -540,7 +582,7 @@ class MagicFacetHandler
      */
     private function determineFacetTypes(array $propertyConfig): array
     {
-        $type = $propertyConfig['type'] ?? 'string';
+        $type   = $propertyConfig['type'] ?? 'string';
         $format = $propertyConfig['format'] ?? '';
 
         switch ($type) {
@@ -563,8 +605,10 @@ class MagicFacetHandler
 
             default:
                 return ['terms'];
-        }
-    }
+        }//end switch
+
+    }//end determineFacetTypes()
+
 
     /**
      * Get date format string for SQL DATE_FORMAT based on interval
@@ -579,15 +623,19 @@ class MagicFacetHandler
             case 'day':
                 return '%Y-%m-%d';
             case 'week':
-                return '%Y-%u'; // Year-week
+                return '%Y-%u';
+            // Year-week
             case 'month':
                 return '%Y-%m';
             case 'year':
                 return '%Y';
             default:
-                return '%Y-%m'; // Default to month
+                return '%Y-%m';
+            // Default to month
         }
-    }
+
+    }//end getDateFormatForInterval()
+
 
     /**
      * Generate automatic ranges based on data distribution
@@ -610,44 +658,48 @@ class MagicFacetHandler
                 ->where($qb->expr()->isNotNull($columnName));
 
             $result = $qb->executeQuery();
-            $stats = $result->fetch();
+            $stats  = $result->fetch();
 
             if (!$stats || $stats['min_val'] === null || $stats['max_val'] === null) {
                 return [];
             }
 
-            $min = (float) $stats['min_val'];
-            $max = (float) $stats['max_val'];
+            $min   = (float) $stats['min_val'];
+            $max   = (float) $stats['max_val'];
             $range = $max - $min;
 
             // Generate 5 equal ranges
             $numRanges = 5;
-            $step = $range / $numRanges;
-            $ranges = [];
+            $step      = $range / $numRanges;
+            $ranges    = [];
 
             for ($i = 0; $i < $numRanges; $i++) {
                 $from = $min + ($i * $step);
-                $to = ($i === $numRanges - 1) ? null : $min + (($i + 1) * $step);
-                
+                $to   = ($i === $numRanges - 1) ? null : $min + (($i + 1) * $step);
+
                 $ranges[] = [
-                    'key' => $to === null ? "{$from}+" : "{$from}-{$to}",
+                    'key'  => $to === null ? "{$from}+" : "{$from}-{$to}",
                     'from' => $from,
-                    'to' => $to
+                    'to'   => $to,
                 ];
             }
 
             return $ranges;
-            
         } catch (\Exception $e) {
-            $this->logger->error('Failed to generate auto ranges', [
-                'columnName' => $columnName,
-                'tableName' => $tableName,
-                'error' => $e->getMessage()
-            ]);
-            
+            $this->logger->error(
+                    'Failed to generate auto ranges',
+                    [
+                        'columnName' => $columnName,
+                        'tableName'  => $tableName,
+                        'error'      => $e->getMessage(),
+                    ]
+                    );
+
             return [];
-        }
-    }
+        }//end try
+
+    }//end generateAutoRanges()
+
 
     /**
      * Sanitize column name for safe database usage
@@ -660,13 +712,16 @@ class MagicFacetHandler
     {
         // Convert to lowercase and replace non-alphanumeric with underscores
         $sanitized = strtolower(preg_replace('/[^a-zA-Z0-9_]/', '_', $name));
-        
+
         // Ensure it starts with a letter or underscore
         if (!preg_match('/^[a-zA-Z_]/', $sanitized)) {
-            $sanitized = 'col_' . $sanitized;
+            $sanitized = 'col_'.$sanitized;
         }
-        
+
         // Limit length to 64 characters (MySQL limit)
         return substr($sanitized, 0, 64);
-    }
-}
+
+    }//end sanitizeColumnName()
+
+
+}//end class

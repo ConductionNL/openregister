@@ -110,7 +110,7 @@ class Application extends Entity implements JsonSerializable
     /**
      * Whether this application is active
      *
-     * @var bool|null Whether this application is active
+     * @var boolean|null Whether this application is active
      */
     protected ?bool $active = true;
 
@@ -118,7 +118,7 @@ class Application extends Entity implements JsonSerializable
      * Storage quota allocated to this application in bytes
      * NULL = unlimited storage
      *
-     * @var int|null Storage quota in bytes
+     * @var integer|null Storage quota in bytes
      */
     protected ?int $storageQuota = null;
 
@@ -126,7 +126,7 @@ class Application extends Entity implements JsonSerializable
      * Bandwidth/traffic quota allocated to this application in bytes per month
      * NULL = unlimited bandwidth
      *
-     * @var int|null Bandwidth quota in bytes per month
+     * @var integer|null Bandwidth quota in bytes per month
      */
     protected ?int $bandwidthQuota = null;
 
@@ -134,7 +134,7 @@ class Application extends Entity implements JsonSerializable
      * API request quota allocated to this application per day
      * NULL = unlimited API requests
      *
-     * @var int|null API request quota per day
+     * @var integer|null API request quota per day
      */
     protected ?int $requestQuota = null;
 
@@ -148,7 +148,7 @@ class Application extends Entity implements JsonSerializable
 
     /**
      * Authorization rules for this application
-     * 
+     *
      * Simple CRUD structure defining permissions:
      * {
      *   "create": [],
@@ -357,10 +357,12 @@ class Application extends Entity implements JsonSerializable
     {
         // Handle various input types defensively (including empty strings from API)
         if ($active === '' || $active === null) {
-            $this->active = true; // Default to true for applications
+            $this->active = true;
+            // Default to true for applications
         } else {
-            $this->active = (bool)$active;
+            $this->active = (bool) $active;
         }
+
         $this->markFieldUpdated('active');
         return $this;
 
@@ -505,38 +507,44 @@ class Application extends Entity implements JsonSerializable
         $groups = $this->getGroups();
 
         return [
-            'id'             => $this->id,
-            'uuid'           => $this->uuid,
-            'name'           => $this->name,
-            'description'    => $this->description,
-            'version'        => $this->version,
-            'organisation'   => $this->organisation,
-            'configurations' => $this->getConfigurations(),
-            'registers'      => $this->getRegisters(),
-            'schemas'        => $this->getSchemas(),
-            'owner'          => $this->owner,
-            'active'         => $this->getActive(),
-            'groups'         => $groups,
-            'quota'          => [
+            'id'                     => $this->id,
+            'uuid'                   => $this->uuid,
+            'name'                   => $this->name,
+            'description'            => $this->description,
+            'version'                => $this->version,
+            'organisation'           => $this->organisation,
+            'configurations'         => $this->getConfigurations(),
+            'registers'              => $this->getRegisters(),
+            'schemas'                => $this->getSchemas(),
+            'owner'                  => $this->owner,
+            'active'                 => $this->getActive(),
+            'groups'                 => $groups,
+            'quota'                  => [
                 'storage'   => $this->storageQuota,
                 'bandwidth' => $this->bandwidthQuota,
                 'requests'  => $this->requestQuota,
-                'users'     => null, // To be set via admin configuration
-                'groups'    => null, // To be set via admin configuration
+                'users'     => null,
+        // To be set via admin configuration
+                'groups'    => null,
+        // To be set via admin configuration
             ],
-            'usage'          => [
-                'storage'   => 0, // To be calculated from actual usage
-                'bandwidth' => 0, // To be calculated from actual usage
-                'requests'  => 0, // To be calculated from actual usage
-                'users'     => 0, // Applications don't have direct users
+            'usage'                  => [
+                'storage'   => 0,
+            // To be calculated from actual usage
+                'bandwidth' => 0,
+            // To be calculated from actual usage
+                'requests'  => 0,
+            // To be calculated from actual usage
+                'users'     => 0,
+            // Applications don't have direct users
                 'groups'    => count($groups),
             ],
-            'authorization'  => $this->authorization ?? $this->getDefaultAuthorization(),
-            'created'        => $this->created ? $this->created->format('c') : null,
-            'updated'        => $this->updated ? $this->updated->format('c') : null,
+            'authorization'          => $this->authorization ?? $this->getDefaultAuthorization(),
+            'created'                => $this->created ? $this->created->format('c') : null,
+            'updated'                => $this->updated ? $this->updated->format('c') : null,
             'managedByConfiguration' => $this->managedByConfiguration !== null ? [
-                'id' => $this->managedByConfiguration->getId(),
-                'uuid' => $this->managedByConfiguration->getUuid(),
+                'id'    => $this->managedByConfiguration->getId(),
+                'uuid'  => $this->managedByConfiguration->getUuid(),
                 'title' => $this->managedByConfiguration->getTitle(),
             ] : null,
         ];
@@ -652,4 +660,3 @@ class Application extends Entity implements JsonSerializable
 
 
 }//end class
-

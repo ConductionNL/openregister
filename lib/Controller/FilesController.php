@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * SPDX-FileCopyrightText: 2024 Nextcloud GmbH and Nextcloud contributors
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
@@ -23,16 +23,17 @@ use OCP\IRequest;
  *
  * Handles file operations for objects in registers
  *
- * @category Controller
- * @package  OCA\OpenRegister\Controller
- * @author   Conduction Development Team <dev@conduction.nl>
+ * @category  Controller
+ * @package   OCA\OpenRegister\Controller
+ * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @version  GIT: <git-id>
- * @link     https://OpenRegister.app
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version   GIT: <git-id>
+ * @link      https://OpenRegister.app
  */
 class FilesController extends Controller
 {
+
     /**
      * File service for handling file operations
      *
@@ -46,6 +47,7 @@ class FilesController extends Controller
      * @var ObjectService
      */
     private readonly ObjectService $objectService;
+
 
     /**
      * Constructor
@@ -68,6 +70,7 @@ class FilesController extends Controller
         $this->objectService = $objectService;
 
     }//end __construct()
+
 
      /**
       * Get all files associated with a specific object
@@ -127,7 +130,7 @@ class FilesController extends Controller
         $schema   = $this->objectService->setSchema($schema);
         $register = $this->objectService->setRegister($register);
         $this->objectService->setObject($id);
-        $object   = $this->objectService->getObject();
+        $object = $this->objectService->getObject();
 
         try {
             $file = $this->fileService->getFile($object, $fileId);
@@ -167,13 +170,14 @@ class FilesController extends Controller
         $schema   = $this->objectService->setSchema($schema);
         $register = $this->objectService->setRegister($register);
         $this->objectService->setObject($id);
-        $object   = $this->objectService->getObject();
+        $object = $this->objectService->getObject();
 
         try {
-            $data   = $this->request->getParams();
+            $data = $this->request->getParams();
             if (empty($data['name']) === true) {
                 return new JSONResponse(['error' => 'File name is required'], 400);
             }
+
             if (array_key_exists('content', $data) === false) {
                 return new JSONResponse(['error' => 'File content is required'], 400);
             }
@@ -221,7 +225,7 @@ class FilesController extends Controller
         $schema   = $this->objectService->setSchema($schema);
         $register = $this->objectService->setRegister($register);
         $this->objectService->setObject($id);
-        $object   = $this->objectService->getObject();
+        $object = $this->objectService->getObject();
 
         try {
             $data = $this->request->getParams();
@@ -287,7 +291,7 @@ class FilesController extends Controller
         $schema   = $this->objectService->setSchema($schema);
         $register = $this->objectService->setRegister($register);
         $this->objectService->setObject($id);
-        $object   = $this->objectService->getObject();
+        $object = $this->objectService->getObject();
 
         $data = $this->request->getParams();
         try {
@@ -353,18 +357,18 @@ class FilesController extends Controller
             foreach ($uploadedFiles as $file) {
                 // Check for upload errors first
                 if (isset($file['error']) === true && $file['error'] !== UPLOAD_ERR_OK) {
-                    throw new Exception('File upload error for ' . $file['name'] . ': ' . $this->getUploadErrorMessage($file['error']));
+                    throw new Exception('File upload error for '.$file['name'].': '.$this->getUploadErrorMessage($file['error']));
                 }
 
                 // Verify the temporary file exists and is readable
                 if (file_exists($file['tmp_name']) === false || is_readable($file['tmp_name']) === false) {
-                    throw new Exception('Temporary file not found or not readable for: ' . $file['name']);
+                    throw new Exception('Temporary file not found or not readable for: '.$file['name']);
                 }
 
                 // Read the file content with error handling
                 $content = file_get_contents($file['tmp_name']);
                 if ($content === false) {
-                    throw new Exception('Failed to read uploaded file content for: ' . $file['name']);
+                    throw new Exception('Failed to read uploaded file content for: '.$file['name']);
                 }
 
                 // Create file
@@ -375,7 +379,7 @@ class FilesController extends Controller
                     share: $file['share'],
                     tags: $file['tags']
                 );
-            }
+            }//end foreach
 
             return new JSONResponse($this->fileService->formatFiles($results, $this->request->getParams())['results']);
         } catch (Exception $e) {
@@ -419,7 +423,7 @@ class FilesController extends Controller
             $tags = $data['tags'] ?? [];
             // Content is optional for metadata-only updates
             $content = $data['content'] ?? null;
-            $result = $this->fileService->updateFile($fileId, $content, $tags, $this->objectService->getObject());
+            $result  = $this->fileService->updateFile($fileId, $content, $tags, $this->objectService->getObject());
             return new JSONResponse($this->fileService->formatFile($result));
         } catch (Exception $e) {
             return new JSONResponse(
@@ -563,11 +567,11 @@ class FilesController extends Controller
         try {
             // Get the file using the file service
             $file = $this->fileService->getFileById($fileId);
-            
+
             if ($file === null) {
                 return new JSONResponse(['error' => 'File not found'], 404);
             }
-            
+
             // Stream the file content back to the client
             return $this->fileService->streamFile($file);
         } catch (NotFoundException $e) {
@@ -600,7 +604,7 @@ class FilesController extends Controller
             UPLOAD_ERR_NO_TMP_DIR => 'Missing a temporary folder on the server',
             UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk',
             UPLOAD_ERR_EXTENSION => 'A PHP extension stopped the file upload',
-            default => 'Unknown upload error (code: ' . $errorCode . ')',
+            default => 'Unknown upload error (code: '.$errorCode.')',
         };
 
     }//end getUploadErrorMessage()

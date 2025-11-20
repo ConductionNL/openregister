@@ -226,7 +226,8 @@ class Application extends App implements IBootstrap
                     $container->get('OCP\IAppConfig'),
                     $container->get('Psr\Log\LoggerInterface'),
                     $container->get(OrganisationService::class),
-                    null // AuthorizationExceptionService
+                    null
+                    // AuthorizationExceptionService
                     );
                 }
         );
@@ -234,7 +235,7 @@ class Application extends App implements IBootstrap
         // Register SolrService for advanced search capabilities (disabled due to performance issues)
         // Issue: Even with lazy loading, DI registration causes performance problems
         /*
-        $context->registerService(
+            $context->registerService(
                 SolrService::class,
                 function ($container) {
                     return new SolrService(
@@ -259,12 +260,13 @@ class Application extends App implements IBootstrap
                         // If GuzzleSolrService is not available, continue without it
                         $solrService = null;
                     }
-                    
+
                     return new ObjectCacheService(
                     $container->get(ObjectEntityMapper::class),
                     $container->get(OrganisationMapper::class),
                     $container->get('Psr\Log\LoggerInterface'),
-                    $solrService, // Lightweight SOLR service enabled!
+                    $solrService,
+                    // Lightweight SOLR service enabled!
                     $container->get('OCP\ICacheFactory'),
                     $container->get('OCP\IUserSession')
                     );
@@ -285,7 +287,6 @@ class Application extends App implements IBootstrap
                     );
                 }
                 );
-
 
         // Register SaveObject with consolidated cache services
         $context->registerService(
@@ -456,7 +457,6 @@ class Application extends App implements IBootstrap
                 }
                 );
 
-
         // Register SolrEventListener for automatic Solr indexing
         $context->registerService(
                 SolrEventListener::class,
@@ -529,10 +529,14 @@ class Application extends App implements IBootstrap
                     $container->get('Psr\Log\LoggerInterface'),
                     $container->get('OCP\Http\Client\IClientService'),
                     $container->get('OCP\IConfig'),
-                    $container->get(SchemaMapper::class), // Add SchemaMapper for schema-aware mapping
-                    $container->get(RegisterMapper::class), // Add RegisterMapper for register access
-                    $container->get(OrganisationService::class), // Add OrganisationService for multi-tenancy
-                    $container->get(OrganisationMapper::class) // Add OrganisationMapper for organisation label resolution
+                    $container->get(SchemaMapper::class),
+                    // Add SchemaMapper for schema-aware mapping
+                    $container->get(RegisterMapper::class),
+                    // Add RegisterMapper for register access
+                    $container->get(OrganisationService::class),
+                    // Add OrganisationService for multi-tenancy
+                    $container->get(OrganisationMapper::class)
+                    // Add OrganisationMapper for organisation label resolution
                     // Note: RenderObject removed to avoid circular dependency with ObjectCacheService
                     // ObjectCacheService will be resolved lazily from container to avoid circular dependency
                     // SolrSchemaService will be resolved lazily to avoid circular dependency
@@ -734,7 +738,7 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(ObjectCreatedEvent::class, SolrEventListener::class);
         $context->registerEventListener(ObjectUpdatedEvent::class, SolrEventListener::class);
         $context->registerEventListener(ObjectDeletedEvent::class, SolrEventListener::class);
-        
+
         // Register Solr event listeners for schema lifecycle management
         $context->registerEventListener(SchemaCreatedEvent::class, SolrEventListener::class);
         $context->registerEventListener(SchemaUpdatedEvent::class, SolrEventListener::class);
@@ -760,39 +764,47 @@ class Application extends App implements IBootstrap
     public function boot(IBootContext $context): void
     {
         // Register event listeners for testing and functionality
-        $container = $context->getAppContainer();
+        $container       = $context->getAppContainer();
         $eventDispatcher = $container->get(IEventDispatcher::class);
-        $logger = $container->get('Psr\Log\LoggerInterface');
-        
+        $logger          = $container->get('Psr\Log\LoggerInterface');
+
         // Log boot process
-        $logger->info('OpenRegister boot: Registering event listeners', [
-            'app' => 'openregister',
-            'timestamp' => date('Y-m-d H:i:s')
-        ]);
-        
+        $logger->info(
+                'OpenRegister boot: Registering event listeners',
+                [
+                    'app'       => 'openregister',
+                    'timestamp' => date('Y-m-d H:i:s'),
+                ]
+                );
+
         try {
             $logger->info('OpenRegister boot: Event listeners registered successfully');
-            
+
             // Register recurring SOLR nightly warmup job
             $jobList = $container->get('OCP\BackgroundJob\IJobList');
-            
+
             // Check if the nightly warmup job is already registered
             if (!$jobList->has(SolrNightlyWarmupJob::class, null)) {
                 $jobList->add(SolrNightlyWarmupJob::class);
-                $logger->info('🌙 SOLR Nightly Warmup Job registered successfully', [
-                    'job_class' => SolrNightlyWarmupJob::class,
-                    'interval' => '24 hours (daily at 00:00)'
-                ]);
+                $logger->info(
+                        '🌙 SOLR Nightly Warmup Job registered successfully',
+                        [
+                            'job_class' => SolrNightlyWarmupJob::class,
+                            'interval'  => '24 hours (daily at 00:00)',
+                        ]
+                        );
             } else {
                 $logger->debug('SOLR Nightly Warmup Job already registered');
             }
-            
         } catch (\Exception $e) {
-            $logger->error('OpenRegister boot: Failed to register event listeners and background jobs', [
-                'exception' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-        }
+            $logger->error(
+                    'OpenRegister boot: Failed to register event listeners and background jobs',
+                    [
+                        'exception' => $e->getMessage(),
+                        'trace'     => $e->getTraceAsString(),
+                    ]
+                    );
+        }//end try
 
     }//end boot()
 

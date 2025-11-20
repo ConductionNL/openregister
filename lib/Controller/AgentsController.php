@@ -99,9 +99,9 @@ class AgentsController extends Controller
         ?string $userId
     ) {
         parent::__construct($appName, $request);
-        $this->agentMapper = $agentMapper;
+        $this->agentMapper         = $agentMapper;
         $this->organisationService = $organisationService;
-        $this->toolRegistry = $toolRegistry;
+        $this->toolRegistry        = $toolRegistry;
         $this->logger = $logger;
         $this->userId = $userId;
 
@@ -141,25 +141,23 @@ class AgentsController extends Controller
     {
         try {
             // Get active organisation
-            $organisation = $this->organisationService->getActiveOrganisation();
+            $organisation     = $this->organisationService->getActiveOrganisation();
             $organisationUuid = $organisation?->getUuid();
 
             $params = $this->request->getParams();
-            
+
             // Extract pagination parameters
             $limit  = isset($params['_limit']) ? (int) $params['_limit'] : 50;
             $offset = isset($params['_offset']) ? (int) $params['_offset'] : 0;
             $page   = isset($params['_page']) ? (int) $params['_page'] : null;
-            
+
             // Convert page to offset if provided
             if ($page !== null) {
                 $offset = ($page - 1) * $limit;
             }
 
             // Get agents with RBAC filtering (handled in mapper)
-            $agents = $organisationUuid !== null
-                ? $this->agentMapper->findByOrganisation($organisationUuid, $this->userId, $limit, $offset)
-                : $this->agentMapper->findAll($limit, $offset);
+            $agents = $organisationUuid !== null ? $this->agentMapper->findByOrganisation($organisationUuid, $this->userId, $limit, $offset) : $this->agentMapper->findAll($limit, $offset);
 
             return new JSONResponse(['results' => $agents], Http::STATUS_OK);
         } catch (Exception $e) {
@@ -175,7 +173,7 @@ class AgentsController extends Controller
                 ['error' => 'Failed to retrieve agents'],
                 Http::STATUS_INTERNAL_SERVER_ERROR
             );
-        }
+        }//end try
 
     }//end index()
 
@@ -210,7 +208,7 @@ class AgentsController extends Controller
             $this->logger->error(
                 'Failed to get agent',
                 [
-                    'id' => $id,
+                    'id'    => $id,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -219,7 +217,7 @@ class AgentsController extends Controller
                 ['error' => 'Agent not found'],
                 Http::STATUS_NOT_FOUND
             );
-        }
+        }//end try
 
     }//end show()
 
@@ -239,7 +237,7 @@ class AgentsController extends Controller
             unset($data['_route']);
 
             // Set active organisation UUID (users cannot manually set organization)
-            $organisation = $this->organisationService->getActiveOrganisation();
+            $organisation         = $this->organisationService->getActiveOrganisation();
             $data['organisation'] = $organisation?->getUuid();
 
             // Set owner
@@ -247,24 +245,30 @@ class AgentsController extends Controller
 
             // Set default values for new properties if not provided
             if (!isset($data['isPrivate']) && !isset($data['is_private'])) {
-                $data['isPrivate'] = true; // Private by default
+                $data['isPrivate'] = true;
+                // Private by default
             }
 
             if (!isset($data['searchFiles']) && !isset($data['search_files'])) {
-                $data['searchFiles'] = true; // Search files by default
+                $data['searchFiles'] = true;
+                // Search files by default
             }
 
             if (!isset($data['searchObjects']) && !isset($data['search_objects'])) {
-                $data['searchObjects'] = true; // Search objects by default
+                $data['searchObjects'] = true;
+                // Search objects by default
             }
 
             $agent = $this->agentMapper->createFromArray($data);
 
-            $this->logger->info('Agent created successfully', [
-                'id' => $agent->getId(),
-                'organisation' => $agent->getOrganisation(),
-                'isPrivate' => $agent->getIsPrivate(),
-            ]);
+            $this->logger->info(
+                    'Agent created successfully',
+                    [
+                        'id'           => $agent->getId(),
+                        'organisation' => $agent->getOrganisation(),
+                        'isPrivate'    => $agent->getIsPrivate(),
+                    ]
+                    );
 
             return new JSONResponse($agent, Http::STATUS_CREATED);
         } catch (Exception $e) {
@@ -277,10 +281,10 @@ class AgentsController extends Controller
             );
 
             return new JSONResponse(
-                ['error' => 'Failed to create agent: ' . $e->getMessage()],
+                ['error' => 'Failed to create agent: '.$e->getMessage()],
                 Http::STATUS_BAD_REQUEST
             );
-        }
+        }//end try
 
     }//end create()
 
@@ -307,9 +311,9 @@ class AgentsController extends Controller
                     Http::STATUS_FORBIDDEN
                 );
             }
-            
+
             $data = $this->request->getParams();
-            
+
             // Remove internal parameters and immutable fields to prevent tampering
             unset($data['_route']);
             unset($data['id']);
@@ -317,18 +321,18 @@ class AgentsController extends Controller
 
             // Preserve current organisation and owner (security: prevent privilege escalation)
             $currentOrganisation = $agent->getOrganisation();
-            $currentOwner = $agent->getOwner();
-            
+            $currentOwner        = $agent->getOwner();
+
             unset($data['organisation']);
             unset($data['owner']);
 
             // Update agent properties via hydration
             $agent->hydrate($data);
-            
+
             // Restore preserved immutable values
             $agent->setOrganisation($currentOrganisation);
             $agent->setOwner($currentOwner);
-            
+
             $updatedAgent = $this->agentMapper->update($agent);
 
             $this->logger->info('Agent updated successfully', ['id' => $id]);
@@ -338,16 +342,16 @@ class AgentsController extends Controller
             $this->logger->error(
                 'Failed to update agent',
                 [
-                    'id' => $id,
+                    'id'    => $id,
                     'error' => $e->getMessage(),
                 ]
             );
 
             return new JSONResponse(
-                ['error' => 'Failed to update agent: ' . $e->getMessage()],
+                ['error' => 'Failed to update agent: '.$e->getMessage()],
                 Http::STATUS_BAD_REQUEST
             );
-        }
+        }//end try
 
     }//end update()
 
@@ -403,7 +407,7 @@ class AgentsController extends Controller
             $this->logger->error(
                 'Failed to delete agent',
                 [
-                    'id' => $id,
+                    'id'    => $id,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -412,7 +416,7 @@ class AgentsController extends Controller
                 ['error' => 'Failed to delete agent'],
                 Http::STATUS_BAD_REQUEST
             );
-        }
+        }//end try
 
     }//end destroy()
 
@@ -428,13 +432,13 @@ class AgentsController extends Controller
     public function stats(): JSONResponse
     {
         try {
-            $total = $this->agentMapper->count([]);
-            $active = $this->agentMapper->count(['active' => true]);
+            $total    = $this->agentMapper->count([]);
+            $active   = $this->agentMapper->count(['active' => true]);
             $inactive = $this->agentMapper->count(['active' => false]);
 
             $stats = [
-                'total' => $total,
-                'active' => $active,
+                'total'    => $total,
+                'active'   => $active,
                 'inactive' => $inactive,
             ];
 
@@ -451,7 +455,7 @@ class AgentsController extends Controller
                 ['error' => 'Failed to retrieve statistics'],
                 Http::STATUS_INTERNAL_SERVER_ERROR
             );
-        }
+        }//end try
 
     }//end stats()
 
@@ -472,9 +476,12 @@ class AgentsController extends Controller
         try {
             $tools = $this->toolRegistry->getAllTools();
 
-            $this->logger->debug('[AgentsController] Returning available tools', [
-                'count' => count($tools),
-            ]);
+            $this->logger->debug(
+                    '[AgentsController] Returning available tools',
+                    [
+                        'count' => count($tools),
+                    ]
+                    );
 
             return new JSONResponse(['results' => $tools], Http::STATUS_OK);
         } catch (Exception $e) {
@@ -490,11 +497,9 @@ class AgentsController extends Controller
                 ['error' => 'Failed to retrieve tools'],
                 Http::STATUS_INTERNAL_SERVER_ERROR
             );
-        }
+        }//end try
 
     }//end tools()
 
 
 }//end class
-
-

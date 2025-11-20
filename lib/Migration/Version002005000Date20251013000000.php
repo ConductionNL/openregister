@@ -20,111 +20,163 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version002005000Date20251013000000 extends SimpleMigrationStep
 {
-	/**
-	 * @param IOutput $output
-	 * @param Closure $schemaClosure The `\Closure` returns a `ISchemaWrapper`
-	 * @param array   $options
-	 *
-	 * @return null|ISchemaWrapper
-	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
-		/** @var ISchemaWrapper $schema */
-		$schema = $schemaClosure();
 
-		// Create openregister_metrics table for tracking operational metrics
-		if (!$schema->hasTable('openregister_metrics')) {
-			$table = $schema->createTable('openregister_metrics');
-			
-			// Primary key
-			$table->addColumn('id', 'bigint', [
-				'autoincrement' => true,
-				'notnull' => true,
-				'length' => 20,
-			]);
 
-			// Metric type (e.g., 'file_processed', 'embedding_generated', 'search_executed')
-			$table->addColumn('metric_type', 'string', [
-				'notnull' => true,
-				'length' => 64,
-			]);
+    /**
+     * @param IOutput $output
+     * @param Closure $schemaClosure The `\Closure` returns a `ISchemaWrapper`
+     * @param array   $options
+     *
+     * @return null|ISchemaWrapper
+     */
+    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
+    {
+        /*
+         *
+         *
+         * @var ISchemaWrapper $schema
+         */
+        $schema = $schemaClosure();
 
-			// Entity type (e.g., 'file', 'object', 'search')
-			$table->addColumn('entity_type', 'string', [
-				'notnull' => false,
-				'length' => 32,
-				'default' => null,
-			]);
+        // Create openregister_metrics table for tracking operational metrics
+        if (!$schema->hasTable('openregister_metrics')) {
+            $table = $schema->createTable('openregister_metrics');
 
-			// Entity ID (if applicable)
-			$table->addColumn('entity_id', 'string', [
-				'notnull' => false,
-				'length' => 64,
-				'default' => null,
-			]);
+            // Primary key
+            $table->addColumn(
+            'id',
+            'bigint',
+            [
+                'autoincrement' => true,
+                'notnull'       => true,
+                'length'        => 20,
+            ]
+            );
 
-			// User who triggered the action
-			$table->addColumn('user_id', 'string', [
-				'notnull' => false,
-				'length' => 64,
-				'default' => null,
-			]);
+            // Metric type (e.g., 'file_processed', 'embedding_generated', 'search_executed')
+            $table->addColumn(
+            'metric_type',
+            'string',
+            [
+                'notnull' => true,
+                'length'  => 64,
+            ]
+            );
 
-			// Success or failure
-			$table->addColumn('status', 'string', [
-				'notnull' => true,
-				'length' => 20,
-				'default' => 'success',
-			]);
+            // Entity type (e.g., 'file', 'object', 'search')
+            $table->addColumn(
+            'entity_type',
+            'string',
+            [
+                'notnull' => false,
+                'length'  => 32,
+                'default' => null,
+            ]
+            );
 
-			// Duration in milliseconds
-			$table->addColumn('duration_ms', 'integer', [
-				'notnull' => false,
-				'default' => null,
-			]);
+            // Entity ID (if applicable)
+            $table->addColumn(
+            'entity_id',
+            'string',
+            [
+                'notnull' => false,
+                'length'  => 64,
+                'default' => null,
+            ]
+            );
 
-			// Additional metadata (JSON)
-			$table->addColumn('metadata', 'text', [
-				'notnull' => false,
-				'default' => null,
-			]);
+            // User who triggered the action
+            $table->addColumn(
+            'user_id',
+            'string',
+            [
+                'notnull' => false,
+                'length'  => 64,
+                'default' => null,
+            ]
+            );
 
-			// Error message (if failed)
-			$table->addColumn('error_message', 'text', [
-				'notnull' => false,
-				'default' => null,
-			]);
+            // Success or failure
+            $table->addColumn(
+            'status',
+            'string',
+            [
+                'notnull' => true,
+                'length'  => 20,
+                'default' => 'success',
+            ]
+            );
 
-			// Timestamp
-			$table->addColumn('created_at', 'bigint', [
-				'notnull' => true,
-			]);
+            // Duration in milliseconds
+            $table->addColumn(
+            'duration_ms',
+            'integer',
+            [
+                'notnull' => false,
+                'default' => null,
+            ]
+            );
 
-			// Set primary key
-			$table->setPrimaryKey(['id']);
+            // Additional metadata (JSON)
+            $table->addColumn(
+            'metadata',
+            'text',
+            [
+                'notnull' => false,
+                'default' => null,
+            ]
+            );
 
-			// Add indexes for common queries
-			$table->addIndex(['metric_type'], 'idx_metrics_type');
-			$table->addIndex(['entity_type'], 'idx_metrics_entity_type');
-			$table->addIndex(['status'], 'idx_metrics_status');
-			$table->addIndex(['created_at'], 'idx_metrics_created');
-			$table->addIndex(['metric_type', 'created_at'], 'idx_metrics_type_created');
-			$table->addIndex(['entity_type', 'created_at'], 'idx_metrics_entity_created');
-		}
+            // Error message (if failed)
+            $table->addColumn(
+            'error_message',
+            'text',
+            [
+                'notnull' => false,
+                'default' => null,
+            ]
+            );
 
-		return $schema;
-	}
+            // Timestamp
+            $table->addColumn(
+            'created_at',
+            'bigint',
+            [
+                'notnull' => true,
+            ]
+            );
 
-	/**
-	 * Rollback migration
-	 *
-	 * @param IOutput $output
-	 * @param Closure $schemaClosure
-	 * @param array   $options
-	 *
-	 * @return null|ISchemaWrapper
-	 */
-	public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
-		return null;
-	}
-}
+            // Set primary key
+            $table->setPrimaryKey(['id']);
 
+            // Add indexes for common queries
+            $table->addIndex(['metric_type'], 'idx_metrics_type');
+            $table->addIndex(['entity_type'], 'idx_metrics_entity_type');
+            $table->addIndex(['status'], 'idx_metrics_status');
+            $table->addIndex(['created_at'], 'idx_metrics_created');
+            $table->addIndex(['metric_type', 'created_at'], 'idx_metrics_type_created');
+            $table->addIndex(['entity_type', 'created_at'], 'idx_metrics_entity_created');
+        }//end if
+
+        return $schema;
+
+    }//end changeSchema()
+
+
+    /**
+     * Rollback migration
+     *
+     * @param IOutput $output
+     * @param Closure $schemaClosure
+     * @param array   $options
+     *
+     * @return null|ISchemaWrapper
+     */
+    public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
+    {
+        return null;
+
+    }//end postSchemaChange()
+
+
+}//end class

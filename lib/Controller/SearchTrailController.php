@@ -50,6 +50,7 @@ class SearchTrailController extends Controller
 
     }//end __construct()
 
+
     /**
      * Extract pagination, filter, and search parameters from request
      *
@@ -835,29 +836,37 @@ class SearchTrailController extends Controller
         try {
             // Get the search trail mapper from the container
             $searchTrailMapper = \OC::$server->get('OCA\OpenRegister\Db\SearchTrailMapper');
-            
+
                     // Use the clearAllLogs method from the mapper
                     $result = $searchTrailMapper->clearAllLogs();
-            
+
             if ($result) {
-                return new JSONResponse([
-                    'success' => true,
-                    'message' => 'All search trails cleared successfully',
-                    'deleted' => 'All expired search trails have been deleted'
-                ]);
+                return new JSONResponse(
+                        [
+                            'success' => true,
+                            'message' => 'All search trails cleared successfully',
+                            'deleted' => 'All expired search trails have been deleted',
+                        ]
+                        );
             } else {
-                return new JSONResponse([
-                    'success' => true,
-                    'message' => 'No expired search trails found to clear',
-                    'deleted' => 0
-                ]);
+                return new JSONResponse(
+                        [
+                            'success' => true,
+                            'message' => 'No expired search trails found to clear',
+                            'deleted' => 0,
+                        ]
+                        );
             }
         } catch (\Exception $e) {
-            return new JSONResponse([
-                'success' => false,
-                'error' => 'Failed to clear search trails: ' . $e->getMessage()
-            ], 500);
-        }
+            return new JSONResponse(
+                    [
+                        'success' => false,
+                        'error'   => 'Failed to clear search trails: '.$e->getMessage(),
+                    ],
+                    500
+                    );
+        }//end try
+
     }//end clearAll()
 
 

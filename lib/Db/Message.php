@@ -73,7 +73,7 @@ class Message extends Entity implements JsonSerializable
     /**
      * Conversation ID
      *
-     * @var int|null Conversation ID this message belongs to
+     * @var integer|null Conversation ID this message belongs to
      */
     protected ?int $conversationId = null;
 
@@ -197,18 +197,16 @@ class Message extends Entity implements JsonSerializable
     public function jsonSerialize(): array
     {
         return [
-            'id' => $this->id,
-            'uuid' => $this->uuid,
+            'id'             => $this->id,
+            'uuid'           => $this->uuid,
             'conversationId' => $this->conversationId,
-            'role' => $this->role,
-            'content' => $this->content,
-            'sources' => $this->sources,
-            'created' => $this->created?->format('c'),
+            'role'           => $this->role,
+            'content'        => $this->content,
+            'sources'        => $this->sources,
+            'created'        => $this->created?->format('c'),
         ];
 
     }//end jsonSerialize()
 
 
 }//end class
-
-

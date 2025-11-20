@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * Class Chunk
  *
  * Represents a single chunk of text produced from any source.
  *
- * @category Db
- * @package  OCA\OpenRegister\Db
- * @author   Conduction Development Team <dev@conduction.nl>
+ * @category  Db
+ * @package   OCA\OpenRegister\Db
+ * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @version  GIT: <git-id>
- * @link     https://www.openregister.nl
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version   GIT: <git-id>
+ * @link      https://www.openregister.nl
  */
 
 namespace OCA\OpenRegister\Db;
@@ -68,26 +68,47 @@ use OCP\AppFramework\Db\Entity;
  */
 class Chunk extends Entity implements JsonSerializable
 {
+
     protected ?string $uuid = null;
+
     protected ?string $sourceType = null;
+
     protected ?int $sourceId = null;
+
     protected ?string $textContent = null;
+
     protected int $startOffset = 0;
+
     protected int $endOffset = 0;
+
     protected int $chunkIndex = 0;
+
     protected ?array $positionReference = null;
+
     protected ?string $language = null;
+
     protected ?string $languageLevel = null;
+
     protected ?float $languageConfidence = null;
+
     protected ?string $detectionMethod = null;
+
     protected bool $indexed = false;
+
     protected bool $vectorized = false;
+
     protected ?string $embeddingProvider = null;
+
     protected int $overlapSize = 0;
+
     protected ?string $owner = null;
+
     protected ?string $organisation = null;
+
     protected ?DateTime $createdAt = null;
+
     protected ?DateTime $updatedAt = null;
+
 
     /**
      * Constructor.
@@ -114,7 +135,9 @@ class Chunk extends Entity implements JsonSerializable
         $this->addType('organisation', 'string');
         $this->addType('createdAt', 'datetime');
         $this->addType('updatedAt', 'datetime');
-    }
+
+    }//end __construct()
+
 
     /**
      * JSON serialization.
@@ -124,27 +147,28 @@ class Chunk extends Entity implements JsonSerializable
     public function jsonSerialize(): array
     {
         return [
-            'id' => $this->id,
-            'uuid' => $this->uuid,
-            'sourceType' => $this->sourceType,
-            'sourceId' => $this->sourceId,
-            'chunkIndex' => $this->chunkIndex,
-            'startOffset' => $this->startOffset,
-            'endOffset' => $this->endOffset,
-            'language' => $this->language,
-            'languageLevel' => $this->languageLevel,
+            'id'                 => $this->id,
+            'uuid'               => $this->uuid,
+            'sourceType'         => $this->sourceType,
+            'sourceId'           => $this->sourceId,
+            'chunkIndex'         => $this->chunkIndex,
+            'startOffset'        => $this->startOffset,
+            'endOffset'          => $this->endOffset,
+            'language'           => $this->language,
+            'languageLevel'      => $this->languageLevel,
             'languageConfidence' => $this->languageConfidence,
-            'indexed' => $this->indexed,
-            'vectorized' => $this->vectorized,
-            'embeddingProvider' => $this->embeddingProvider,
-            'overlapSize' => $this->overlapSize,
-            'owner' => $this->owner,
-            'organisation' => $this->organisation,
-            'createdAt' => $this->createdAt?->format(DateTime::ATOM),
-            'updatedAt' => $this->updatedAt?->format(DateTime::ATOM),
-            'positionReference' => $this->positionReference,
+            'indexed'            => $this->indexed,
+            'vectorized'         => $this->vectorized,
+            'embeddingProvider'  => $this->embeddingProvider,
+            'overlapSize'        => $this->overlapSize,
+            'owner'              => $this->owner,
+            'organisation'       => $this->organisation,
+            'createdAt'          => $this->createdAt?->format(DateTime::ATOM),
+            'updatedAt'          => $this->updatedAt?->format(DateTime::ATOM),
+            'positionReference'  => $this->positionReference,
         ];
-    }
-}
+
+    }//end jsonSerialize()
 
 
+}//end class

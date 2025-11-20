@@ -39,10 +39,10 @@ use InvalidArgumentException;
  * @category Database
  * @package  OCA\OpenRegister\Db
  *
- * @author   Conduction Development Team <info@conduction.nl>
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @version  GIT: <git_id>
- * @link     https://www.OpenRegister.app
+ * @author  Conduction Development Team <info@conduction.nl>
+ * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version GIT: <git_id>
+ * @link    https://www.OpenRegister.app
  */
 class AuthorizationException extends Entity implements JsonSerializable
 {
@@ -56,14 +56,14 @@ class AuthorizationException extends Entity implements JsonSerializable
     /**
      * Subject type constants
      */
-    public const SUBJECT_TYPE_USER = 'user';
+    public const SUBJECT_TYPE_USER  = 'user';
     public const SUBJECT_TYPE_GROUP = 'group';
 
     /**
      * Action constants
      */
     public const ACTION_CREATE = 'create';
-    public const ACTION_READ = 'read';
+    public const ACTION_READ   = 'read';
     public const ACTION_UPDATE = 'update';
     public const ACTION_DELETE = 'delete';
 
@@ -126,14 +126,14 @@ class AuthorizationException extends Entity implements JsonSerializable
     /**
      * Priority for exception resolution (higher = more important).
      *
-     * @var int|null Priority for exception resolution
+     * @var integer|null Priority for exception resolution
      */
     protected ?int $priority = 0;
 
     /**
      * Whether the exception is active.
      *
-     * @var bool|null Whether the exception is active
+     * @var boolean|null Whether the exception is active
      */
     protected ?bool $active = true;
 
@@ -291,10 +291,10 @@ class AuthorizationException extends Entity implements JsonSerializable
     {
         if ($type !== null && !$this->isValidType($type)) {
             throw new InvalidArgumentException(
-                'Invalid exception type: ' . $type . '. Valid types are: ' . implode(', ', self::getValidTypes())
+                'Invalid exception type: '.$type.'. Valid types are: '.implode(', ', self::getValidTypes())
             );
         }
-        
+
         $this->type = $type;
 
     }//end setType()
@@ -313,10 +313,10 @@ class AuthorizationException extends Entity implements JsonSerializable
     {
         if ($subjectType !== null && !$this->isValidSubjectType($subjectType)) {
             throw new InvalidArgumentException(
-                'Invalid subject type: ' . $subjectType . '. Valid types are: ' . implode(', ', self::getValidSubjectTypes())
+                'Invalid subject type: '.$subjectType.'. Valid types are: '.implode(', ', self::getValidSubjectTypes())
             );
         }
-        
+
         $this->subjectType = $subjectType;
 
     }//end setSubjectType()
@@ -335,10 +335,10 @@ class AuthorizationException extends Entity implements JsonSerializable
     {
         if ($action !== null && !$this->isValidAction($action)) {
             throw new InvalidArgumentException(
-                'Invalid action: ' . $action . '. Valid actions are: ' . implode(', ', self::getValidActions())
+                'Invalid action: '.$action.'. Valid actions are: '.implode(', ', self::getValidActions())
             );
         }
-        
+
         $this->action = $action;
 
     }//end setAction()
@@ -395,12 +395,12 @@ class AuthorizationException extends Entity implements JsonSerializable
     /**
      * Check if this exception matches the given criteria
      *
-     * @param string      $subjectType       The subject type to match
-     * @param string      $subjectId         The subject ID to match
-     * @param string      $action            The action to match
-     * @param string|null $schemaUuid        Optional schema UUID to match
-     * @param string|null $registerUuid      Optional register UUID to match
-     * @param string|null $organizationUuid  Optional organization UUID to match
+     * @param string      $subjectType      The subject type to match
+     * @param string      $subjectId        The subject ID to match
+     * @param string      $action           The action to match
+     * @param string|null $schemaUuid       Optional schema UUID to match
+     * @param string|null $registerUuid     Optional register UUID to match
+     * @param string|null $organizationUuid Optional organization UUID to match
      *
      * @return bool True if this exception matches the criteria
      */
@@ -408,9 +408,9 @@ class AuthorizationException extends Entity implements JsonSerializable
         string $subjectType,
         string $subjectId,
         string $action,
-        ?string $schemaUuid = null,
-        ?string $registerUuid = null,
-        ?string $organizationUuid = null
+        ?string $schemaUuid=null,
+        ?string $registerUuid=null,
+        ?string $organizationUuid=null
     ): bool {
         // Must be active
         if (!$this->active) {
@@ -418,9 +418,9 @@ class AuthorizationException extends Entity implements JsonSerializable
         }
 
         // Check basic criteria
-        if ($this->subjectType !== $subjectType ||
-            $this->subjectId !== $subjectId ||
-            $this->action !== $action
+        if ($this->subjectType !== $subjectType
+            || $this->subjectId !== $subjectId
+            || $this->action !== $action
         ) {
             return false;
         }
@@ -485,7 +485,7 @@ class AuthorizationException extends Entity implements JsonSerializable
         }
 
         if ($this->id !== null) {
-            return 'AuthorizationException #' . $this->id;
+            return 'AuthorizationException #'.$this->id;
         }
 
         return 'AuthorizationException Entity';
@@ -494,4 +494,3 @@ class AuthorizationException extends Entity implements JsonSerializable
 
 
 }//end class
-

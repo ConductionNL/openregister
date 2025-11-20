@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * Organisation Hierarchy Migration
  *
  * This migration adds parent-child relationship support to organisations,
@@ -22,13 +22,13 @@ declare(strict_types=1);
  * @category Migration
  * @package  OCA\OpenRegister\Migration
  *
- * @author   Conduction Development Team <dev@conduction.nl>
+ * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version  GIT: <git_id>
+ * @version GIT: <git_id>
  *
- * @link     https://www.OpenRegister.nl
+ * @link https://www.OpenRegister.nl
  */
 
 namespace OCA\OpenRegister\Migration;
@@ -51,19 +51,22 @@ use OCP\Migration\SimpleMigrationStep;
 class Version1Date20251110000000 extends SimpleMigrationStep
 {
 
+
     /**
      * Add parent column and constraints to organisations table
      *
-     * @param IOutput $output Migration output interface
+     * @param IOutput $output        Migration output interface
      * @param Closure $schemaClosure Schema closure
-     * @param array   $options Migration options
+     * @param array   $options       Migration options
      *
      * @return ISchemaWrapper|null Updated schema or null if no changes
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /** @var ISchemaWrapper $schema */
-        $schema = $schemaClosure();
+        /*
+         * @var ISchemaWrapper $schema
+         */
+        $schema  = $schemaClosure();
         $updated = false;
 
         $output->info('🏗️  Adding organisation hierarchy support...');
@@ -73,29 +76,33 @@ class Version1Date20251110000000 extends SimpleMigrationStep
         // ============================================================
         if ($schema->hasTable('openregister_organisations')) {
             $table = $schema->getTable('openregister_organisations');
-            
+
             if (!$table->hasColumn('parent')) {
                 $output->info('  📝 Adding organisations.parent column for hierarchy support');
-                
-                $table->addColumn('parent', Types::STRING, [
-                    'notnull' => false,
-                    'length'  => 255,
-                    'default' => null,
-                    'comment' => 'Parent organisation UUID for hierarchical relationships',
-                ]);
-                
+
+                $table->addColumn(
+                        'parent',
+                        Types::STRING,
+                        [
+                            'notnull' => false,
+                            'length'  => 255,
+                            'default' => null,
+                            'comment' => 'Parent organisation UUID for hierarchical relationships',
+                        ]
+                        );
+
                 $output->info('    ✅ organisations.parent column added');
                 $updated = true;
             } else {
                 $output->info('  ℹ️  organisations.parent column already exists');
             }
-            
+
             // Add index for fast parent lookups (used in recursive queries)
             if (!$table->hasIndex('parent_organisation_idx')) {
                 $output->info('  📝 Adding index on parent column');
-                
+
                 $table->addIndex(['parent'], 'parent_organisation_idx');
-                
+
                 $output->info('    ✅ Index on parent column added');
                 $updated = true;
             } else {
@@ -103,7 +110,7 @@ class Version1Date20251110000000 extends SimpleMigrationStep
             }
         } else {
             $output->warning('  ⚠️  organisations table not found - skipping hierarchy migration');
-        }
+        }//end if
 
         if ($updated) {
             $output->info('');
@@ -127,7 +134,7 @@ class Version1Date20251110000000 extends SimpleMigrationStep
         } else {
             $output->info('');
             $output->info('ℹ️  No changes needed - organisation hierarchy already configured');
-        }
+        }//end if
 
         return $updated === true ? $schema : null;
 
@@ -142,9 +149,9 @@ class Version1Date20251110000000 extends SimpleMigrationStep
      * self-referencing foreign keys. The constraint is enforced at application
      * level in OrganisationMapper::validateParentAssignment().
      *
-     * @param IOutput $output Migration output interface
+     * @param IOutput $output        Migration output interface
      * @param Closure $schemaClosure Schema closure
-     * @param array   $options Migration options
+     * @param array   $options       Migration options
      *
      * @return void
      */
@@ -163,4 +170,3 @@ class Version1Date20251110000000 extends SimpleMigrationStep
 
 
 }//end class
-

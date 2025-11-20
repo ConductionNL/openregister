@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * SPDX-FileCopyrightText: 2024 Nextcloud GmbH and Nextcloud contributors
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
@@ -21,9 +21,9 @@ use Psr\Log\LoggerInterface;
 
 /**
  * FileTextService
- * 
+ *
  * Service for managing file text extraction and storage.
- * 
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  * @author   OpenRegister Team
@@ -31,7 +31,9 @@ use Psr\Log\LoggerInterface;
  */
 class FileTextService
 {
-    /** @var array<string> Supported text extraction file types */
+    /**
+     * @var array<string> Supported text extraction file types
+     */
     private const SUPPORTED_MIME_TYPES = [
         'text/plain',
         'text/markdown',
@@ -50,14 +52,15 @@ class FileTextService
         'application/vnd.oasis.opendocument.spreadsheet',
     ];
 
+
     /**
      * Constructor
      *
-     * @param FileTextMapper     $fileTextMapper File text mapper
-     * @param FileMapper         $fileMapper     File mapper
-     * @param SolrFileService    $solrFileService SOLR file service
-     * @param IRootFolder        $rootFolder     Root folder
-     * @param LoggerInterface    $logger         Logger
+     * @param FileTextMapper  $fileTextMapper  File text mapper
+     * @param FileMapper      $fileMapper      File mapper
+     * @param SolrFileService $solrFileService SOLR file service
+     * @param IRootFolder     $rootFolder      Root folder
+     * @param LoggerInterface $logger          Logger
      */
     public function __construct(
         private readonly FileTextMapper $fileTextMapper,
@@ -66,13 +69,15 @@ class FileTextService
         private readonly IRootFolder $rootFolder,
         private readonly LoggerInterface $logger
     ) {
-    }
+
+    }//end __construct()
+
 
     /**
      * Extract and store file text
      *
      * @param int $fileId Nextcloud file ID
-     * 
+     *
      * @return array{success: bool, fileText?: FileText, error?: string}
      */
     public function extractAndStoreFileText(int $fileId): array
@@ -84,10 +89,13 @@ class FileTextService
             $existingFileText = null;
             try {
                 $existingFileText = $this->fileTextMapper->findByFileId($fileId);
-                $this->logger->debug('[FileTextService] Found existing file text record', [
-                    'file_id' => $fileId,
-                    'status' => $existingFileText->getExtractionStatus(),
-                ]);
+                $this->logger->debug(
+                        '[FileTextService] Found existing file text record',
+                        [
+                            'file_id' => $fileId,
+                            'status'  => $existingFileText->getExtractionStatus(),
+                        ]
+                        );
             } catch (DoesNotExistException $e) {
                 // No existing record, will create new one
             }
@@ -101,11 +109,14 @@ class FileTextService
             // Check MIME type
             $mimeType = $file->getMimeType();
             if (!$this->isSupportedMimeType($mimeType)) {
-                $this->logger->info('[FileTextService] Unsupported MIME type', [
-                    'file_id' => $fileId,
-                    'mime_type' => $mimeType,
-                ]);
-                
+                $this->logger->info(
+                        '[FileTextService] Unsupported MIME type',
+                        [
+                            'file_id'   => $fileId,
+                            'mime_type' => $mimeType,
+                        ]
+                        );
+
                 if ($existingFileText) {
                     $existingFileText->setExtractionStatus('skipped');
                     $existingFileText->setExtractionError("Unsupported MIME type: $mimeType");
@@ -113,7 +124,7 @@ class FileTextService
                     $this->fileTextMapper->update($existingFileText);
                     return ['success' => false, 'error' => 'Unsupported MIME type', 'fileText' => $existingFileText];
                 }
-                
+
                 return ['success' => false, 'error' => 'Unsupported MIME type'];
             }
 
@@ -122,11 +133,15 @@ class FileTextService
 
             // Check if extraction needed (file changed)
             if ($existingFileText) {
-                if ($existingFileText->getFileChecksum() === $checksum && 
-                    $existingFileText->getExtractionStatus() === 'completed') {
-                    $this->logger->debug('[FileTextService] File unchanged, using cached text', [
-                        'file_id' => $fileId,
-                    ]);
+                if ($existingFileText->getFileChecksum() === $checksum
+                    && $existingFileText->getExtractionStatus() === 'completed'
+                ) {
+                    $this->logger->debug(
+                            '[FileTextService] File unchanged, using cached text',
+                            [
+                                'file_id' => $fileId,
+                            ]
+                            );
                     return ['success' => true, 'fileText' => $existingFileText];
                 }
             }
@@ -160,29 +175,35 @@ class FileTextService
 
             // Extract text using SolrFileService
             $this->logger->debug('[FileTextService] Extracting text from file', ['file_id' => $fileId]);
-            
+
             // Get local path for extraction
             // Note: This service is now called via background job, so the file is guaranteed to be available
-            $storage = $file->getStorage();
+            $storage      = $file->getStorage();
             $internalPath = $file->getInternalPath();
-            $localPath = $storage->getLocalFile($internalPath);
-            
+            $localPath    = $storage->getLocalFile($internalPath);
+
             if ($localPath === false || file_exists($localPath) === false) {
-                throw new Exception("Could not get local file path for extraction. File: " . $file->getName());
+                throw new Exception("Could not get local file path for extraction. File: ".$file->getName());
             }
 
-            $this->logger->debug('[FileTextService] File path resolved', [
-                'file_id' => $fileId,
-                'local_path' => basename($localPath)
-            ]);
+            $this->logger->debug(
+                    '[FileTextService] File path resolved',
+                    [
+                        'file_id'    => $fileId,
+                        'local_path' => basename($localPath),
+                    ]
+                    );
 
             $extractedText = $this->solrFileService->extractTextFromFile($localPath);
-            $textLength = strlen($extractedText);
+            $textLength    = strlen($extractedText);
 
-            $this->logger->info('[FileTextService] Text extracted successfully', [
-                'file_id' => $fileId,
-                'text_length' => $textLength,
-            ]);
+            $this->logger->info(
+                    '[FileTextService] Text extracted successfully',
+                    [
+                        'file_id'     => $fileId,
+                        'text_length' => $textLength,
+                    ]
+                    );
 
             // Update record with extracted text
             $fileText->setTextContent($extractedText);
@@ -190,16 +211,18 @@ class FileTextService
             $fileText->setExtractionStatus('completed');
             $fileText->setExtractionMethod('text_extract');
             $fileText->setExtractedAt(new DateTime());
-            
+
             $this->fileTextMapper->update($fileText);
 
             return ['success' => true, 'fileText' => $fileText];
-
         } catch (Exception $e) {
-            $this->logger->error('[FileTextService] Text extraction failed', [
-                'file_id' => $fileId,
-                'error' => $e->getMessage(),
-            ]);
+            $this->logger->error(
+                    '[FileTextService] Text extraction failed',
+                    [
+                        'file_id' => $fileId,
+                        'error'   => $e->getMessage(),
+                    ]
+                    );
 
             // Update status to failed if we have a record
             if (isset($fileText)) {
@@ -210,14 +233,16 @@ class FileTextService
             }
 
             return ['success' => false, 'error' => $e->getMessage()];
-        }
-    }
+        }//end try
+
+    }//end extractAndStoreFileText()
+
 
     /**
      * Get file text by file ID
      *
      * @param int $fileId Nextcloud file ID
-     * 
+     *
      * @return FileText|null File text or null if not found
      */
     public function getFileText(int $fileId): ?FileText
@@ -227,21 +252,24 @@ class FileTextService
         } catch (DoesNotExistException $e) {
             return null;
         }
-    }
+
+    }//end getFileText()
+
 
     /**
      * Check if file needs extraction
      *
      * @param int $fileId Nextcloud file ID
-     * 
+     *
      * @return bool True if extraction needed
      */
     public function needsExtraction(int $fileId): bool
     {
         $fileText = $this->getFileText($fileId);
-        
+
         if (!$fileText) {
-            return true; // No record, needs extraction
+            return true;
+            // No record, needs extraction
         }
 
         if ($fileText->getExtractionStatus() === 'pending') {
@@ -249,7 +277,8 @@ class FileTextService
         }
 
         if ($fileText->getExtractionStatus() === 'failed') {
-            return true; // Retry failed extractions
+            return true;
+            // Retry failed extractions
         }
 
         // Check if file changed
@@ -258,18 +287,24 @@ class FileTextService
             if ($file) {
                 $currentChecksum = md5($file->getContent());
                 if ($currentChecksum !== $fileText->getFileChecksum()) {
-                    return true; // File changed
+                    return true;
+                    // File changed
                 }
             }
         } catch (Exception $e) {
-            $this->logger->warning('[FileTextService] Could not check file checksum', [
-                'file_id' => $fileId,
-                'error' => $e->getMessage(),
-            ]);
+            $this->logger->warning(
+                    '[FileTextService] Could not check file checksum',
+                    [
+                        'file_id' => $fileId,
+                        'error'   => $e->getMessage(),
+                    ]
+                    );
         }
 
         return false;
-    }
+
+    }//end needsExtraction()
+
 
     /**
      * Update extraction status
@@ -277,72 +312,82 @@ class FileTextService
      * @param int         $fileId File ID
      * @param string      $status Status (pending, processing, completed, failed)
      * @param string|null $error  Error message
-     * 
+     *
      * @return void
      */
-    public function updateExtractionStatus(int $fileId, string $status, ?string $error = null): void
+    public function updateExtractionStatus(int $fileId, string $status, ?string $error=null): void
     {
         try {
             $fileText = $this->fileTextMapper->findByFileId($fileId);
             $fileText->setExtractionStatus($status);
             $fileText->setExtractionError($error);
             $fileText->setUpdatedAt(new DateTime());
-            
+
             if ($status === 'completed') {
                 $fileText->setExtractedAt(new DateTime());
             }
-            
+
             $this->fileTextMapper->update($fileText);
         } catch (DoesNotExistException $e) {
-            $this->logger->warning('[FileTextService] Cannot update status, file text not found', [
-                'file_id' => $fileId,
-            ]);
+            $this->logger->warning(
+                    '[FileTextService] Cannot update status, file text not found',
+                    [
+                        'file_id' => $fileId,
+                    ]
+                    );
         }
-    }
+
+    }//end updateExtractionStatus()
+
 
     /**
      * Process pending files (bulk extraction)
      *
      * @param int $limit Maximum number of files to process
-     * 
+     *
      * @return array{processed: int, succeeded: int, failed: int, errors: array<string>}
      */
-    public function processPendingFiles(int $limit = 100): array
+    public function processPendingFiles(int $limit=100): array
     {
         $this->logger->info('[FileTextService] Processing pending files', ['limit' => $limit]);
 
         $pendingFiles = $this->fileTextMapper->findPendingExtractions($limit);
-        
+
         $processed = 0;
         $succeeded = 0;
-        $failed = 0;
-        $errors = [];
+        $failed    = 0;
+        $errors    = [];
 
         foreach ($pendingFiles as $fileText) {
             $result = $this->extractAndStoreFileText($fileText->getFileId());
             $processed++;
-            
+
             if ($result['success']) {
                 $succeeded++;
             } else {
                 $failed++;
-                $errors[] = "File {$fileText->getFileId()}: " . ($result['error'] ?? 'Unknown error');
+                $errors[] = "File {$fileText->getFileId()}: ".($result['error'] ?? 'Unknown error');
             }
         }
 
-        $this->logger->info('[FileTextService] Finished processing pending files', [
-            'processed' => $processed,
-            'succeeded' => $succeeded,
-            'failed' => $failed,
-        ]);
+        $this->logger->info(
+                '[FileTextService] Finished processing pending files',
+                [
+                    'processed' => $processed,
+                    'succeeded' => $succeeded,
+                    'failed'    => $failed,
+                ]
+                );
 
         return [
             'processed' => $processed,
             'succeeded' => $succeeded,
-            'failed' => $failed,
-            'errors' => $errors,
+            'failed'    => $failed,
+            'errors'    => $errors,
         ];
-    }
+
+    }//end processPendingFiles()
+
 
     /**
      * Get extraction statistics
@@ -352,25 +397,29 @@ class FileTextService
     public function getStats(): array
     {
         return $this->fileTextMapper->getStats();
-    }
+
+    }//end getStats()
+
 
     /**
      * Check if MIME type is supported
      *
      * @param string $mimeType MIME type to check
-     * 
+     *
      * @return bool True if supported
      */
     private function isSupportedMimeType(string $mimeType): bool
     {
         return in_array($mimeType, self::SUPPORTED_MIME_TYPES, true);
-    }
+
+    }//end isSupportedMimeType()
+
 
     /**
      * Get file node from Nextcloud
      *
      * @param int $fileId File ID
-     * 
+     *
      * @return \OCP\Files\File|null File node or null
      */
     private function getFileNode(int $fileId): ?\OCP\Files\File
@@ -380,52 +429,61 @@ class FileTextService
             if (empty($files)) {
                 return null;
             }
-            
+
             $file = $files[0];
             if ($file instanceof \OCP\Files\File) {
                 return $file;
             }
-            
+
             return null;
         } catch (NotFoundException $e) {
             return null;
         }
-    }
+
+    }//end getFileNode()
+
 
     /**
      * Delete file text by file ID
      *
      * @param int $fileId File ID
-     * 
+     *
      * @return void
      */
     public function deleteFileText(int $fileId): void
     {
         $this->logger->info('[FileTextService] Deleting file text', ['file_id' => $fileId]);
         $this->fileTextMapper->deleteByFileId($fileId);
-    }
+
+    }//end deleteFileText()
+
 
     /**
      * Get completed text extractions
-     * 
+     *
      * Retrieves file texts that have been successfully extracted.
-     * 
+     *
      * @param int|null $limit Maximum number of records to return (null = no limit)
-     * 
+     *
      * @return FileText[] Array of FileText entities
      */
-    public function getCompletedExtractions(?int $limit = null): array
+    public function getCompletedExtractions(?int $limit=null): array
     {
         $this->logger->debug('[FileTextService] Getting completed extractions', ['limit' => $limit]);
-        
+
         try {
             return $this->fileTextMapper->findCompleted($limit);
         } catch (Exception $e) {
-            $this->logger->error('[FileTextService] Failed to get completed extractions', [
-                'error' => $e->getMessage()
-            ]);
+            $this->logger->error(
+                    '[FileTextService] Failed to get completed extractions',
+                    [
+                        'error' => $e->getMessage(),
+                    ]
+                    );
             return [];
         }
-    }
-}
 
+    }//end getCompletedExtractions()
+
+
+}//end class

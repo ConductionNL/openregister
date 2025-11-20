@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * Mapper for entity relations.
  *
  * @category Db
@@ -20,6 +20,8 @@ use OCP\IDBConnection;
  */
 class EntityRelationMapper extends QBMapper
 {
+
+
     /**
      * Constructor.
      *
@@ -28,7 +30,9 @@ class EntityRelationMapper extends QBMapper
     public function __construct(IDBConnection $db)
     {
         parent::__construct($db, 'openregister_entity_relations', EntityRelation::class);
-    }
+
+    }//end __construct()
+
 
     /**
      * Find relations by entity ID.
@@ -48,9 +52,8 @@ class EntityRelationMapper extends QBMapper
             ->orderBy('created_at', 'DESC');
 
         return $this->findEntities($qb);
-    }
-}
+
+    }//end findByEntity()
 
 
-
-
+}//end class

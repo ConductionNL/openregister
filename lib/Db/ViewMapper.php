@@ -68,14 +68,15 @@ class ViewMapper extends QBMapper
      */
     private ConfigurationCacheService $configurationCacheService;
 
+
     /**
      * Constructor for ViewMapper
      *
-     * @param IDBConnection                $db                           The database connection
-     * @param OrganisationService          $organisationService          Organisation service for multi-tenancy
-     * @param IUserSession                 $userSession                  User session
-     * @param IGroupManager                $groupManager                 Group manager for RBAC
-     * @param ConfigurationCacheService    $configurationCacheService    Configuration cache service
+     * @param IDBConnection             $db                        The database connection
+     * @param OrganisationService       $organisationService       Organisation service for multi-tenancy
+     * @param IUserSession              $userSession               User session
+     * @param IGroupManager             $groupManager              Group manager for RBAC
+     * @param ConfigurationCacheService $configurationCacheService Configuration cache service
      *
      * @return void
      */
@@ -87,10 +88,11 @@ class ViewMapper extends QBMapper
         ConfigurationCacheService $configurationCacheService
     ) {
         parent::__construct($db, 'openregister_view');
-        $this->organisationService          = $organisationService;
-        $this->userSession                  = $userSession;
-        $this->groupManager                 = $groupManager;
-        $this->configurationCacheService    = $configurationCacheService;
+        $this->organisationService = $organisationService;
+        $this->userSession         = $userSession;
+        $this->groupManager        = $groupManager;
+        $this->configurationCacheService = $configurationCacheService;
+
     }//end __construct()
 
 
@@ -129,6 +131,7 @@ class ViewMapper extends QBMapper
         $this->enrichWithConfigurationInfo($entity);
 
         return $entity;
+
     }//end find()
 
 
@@ -140,7 +143,7 @@ class ViewMapper extends QBMapper
      * @return array Array of View entities
      * @throws \Exception If user doesn't have read permission
      */
-    public function findAll(?string $owner = null): array
+    public function findAll(?string $owner=null): array
     {
         // Verify RBAC permission to read
         $this->verifyRbacPermission('read', 'view');
@@ -172,6 +175,7 @@ class ViewMapper extends QBMapper
         }
 
         return $entities;
+
     }//end findAll()
 
 
@@ -201,6 +205,7 @@ class ViewMapper extends QBMapper
         $this->setOrganisationOnCreate($entity);
 
         return parent::insert(entity: $entity);
+
     }//end insert()
 
 
@@ -224,6 +229,7 @@ class ViewMapper extends QBMapper
         $entity->setUpdated(new \DateTime());
 
         return parent::update(entity: $entity);
+
     }//end update()
 
 
@@ -244,6 +250,7 @@ class ViewMapper extends QBMapper
         $this->verifyOrganisationAccess($entity);
 
         return parent::delete($entity);
+
     }//end delete()
 
 
@@ -261,6 +268,7 @@ class ViewMapper extends QBMapper
     {
         $entity = $this->find($id);
         $this->delete($entity);
+
     }//end deleteById()
 
 
@@ -290,5 +298,3 @@ class ViewMapper extends QBMapper
 
 
 }//end class
-
-

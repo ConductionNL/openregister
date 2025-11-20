@@ -44,6 +44,7 @@ use Psr\Log\LoggerInterface;
  */
 class ChatController extends Controller
 {
+
     /**
      * Chat service
      *
@@ -107,18 +108,19 @@ class ChatController extends Controller
      */
     private string $userId;
 
+
     /**
      * Constructor
      *
-     * @param string                $appName              Application name
-     * @param IRequest              $request              Request object
-     * @param ChatService           $chatService          Chat service
-     * @param ConversationMapper    $conversationMapper   Conversation mapper
-     * @param MessageMapper         $messageMapper        Message mapper
-     * @param AgentMapper           $agentMapper          Agent mapper
-     * @param OrganisationService   $organisationService  Organisation service
-     * @param LoggerInterface       $logger               Logger
-     * @param string                $userId               User ID
+     * @param string              $appName             Application name
+     * @param IRequest            $request             Request object
+     * @param ChatService         $chatService         Chat service
+     * @param ConversationMapper  $conversationMapper  Conversation mapper
+     * @param MessageMapper       $messageMapper       Message mapper
+     * @param AgentMapper         $agentMapper         Agent mapper
+     * @param OrganisationService $organisationService Organisation service
+     * @param LoggerInterface     $logger              Logger
+     * @param string              $userId              User ID
      */
     public function __construct(
         string $appName,
@@ -134,13 +136,13 @@ class ChatController extends Controller
         string $userId
     ) {
         parent::__construct($appName, $request);
-        $this->chatService = $chatService;
-        $this->conversationMapper = $conversationMapper;
-        $this->messageMapper = $messageMapper;
-        $this->feedbackMapper = $feedbackMapper;
-        $this->agentMapper = $agentMapper;
+        $this->chatService         = $chatService;
+        $this->conversationMapper  = $conversationMapper;
+        $this->messageMapper       = $messageMapper;
+        $this->feedbackMapper      = $feedbackMapper;
+        $this->agentMapper         = $agentMapper;
         $this->organisationService = $organisationService;
-        $this->db = $db;
+        $this->db     = $db;
         $this->logger = $logger;
         $this->userId = $userId;
 
@@ -179,66 +181,79 @@ class ChatController extends Controller
         try {
             // Get request parameters
             $conversationUuid = (string) $this->request->getParam('conversation');
-            $agentUuid = (string) $this->request->getParam('agentUuid');
-            $message = (string) $this->request->getParam('message');
-            $selectedViews = $this->request->getParam('views') ?: [];  // Array of view UUIDs
-            $selectedTools = $this->request->getParam('tools') ?: [];  // Array of tool UUIDs
-            
+            $agentUuid        = (string) $this->request->getParam('agentUuid');
+            $message          = (string) $this->request->getParam('message');
+            $selectedViews    = $this->request->getParam('views') ?: [];
+            // Array of view UUIDs
+            $selectedTools = $this->request->getParam('tools') ?: [];
+            // Array of tool UUIDs
             // Get RAG configuration settings
             $ragSettings = [
-                'includeObjects' => $this->request->getParam('includeObjects') ?? true,
-                'includeFiles' => $this->request->getParam('includeFiles') ?? true,
-                'numSourcesFiles' => $this->request->getParam('numSourcesFiles') ?? 5,
+                'includeObjects'    => $this->request->getParam('includeObjects') ?? true,
+                'includeFiles'      => $this->request->getParam('includeFiles') ?? true,
+                'numSourcesFiles'   => $this->request->getParam('numSourcesFiles') ?? 5,
                 'numSourcesObjects' => $this->request->getParam('numSourcesObjects') ?? 5,
             ];
 
             if (empty($message)) {
-                return new JSONResponse([
-                    'error' => 'Missing message',
-                    'message' => 'message content is required',
-                ], 400);
+                return new JSONResponse(
+                        [
+                            'error'   => 'Missing message',
+                            'message' => 'message content is required',
+                        ],
+                        400
+                        );
             }
 
-            $this->logger->info('[ChatController] Received message with settings', [
-                'views' => count($selectedViews),
-                'tools' => count($selectedTools),
-                'ragSettings' => $ragSettings,
-            ]);
+            $this->logger->info(
+                    '[ChatController] Received message with settings',
+                    [
+                        'views'       => count($selectedViews),
+                        'tools'       => count($selectedTools),
+                        'ragSettings' => $ragSettings,
+                    ]
+                    );
 
             // Load or create conversation
             $conversation = null;
-            
+
             if (!empty($conversationUuid)) {
                 // Load existing conversation by UUID
                 try {
                     $conversation = $this->conversationMapper->findByUuid($conversationUuid);
                 } catch (\Exception $e) {
-                    return new JSONResponse([
-                        'error' => 'Conversation not found',
-                        'message' => 'The conversation with UUID ' . $conversationUuid . ' does not exist',
-                    ], 404);
+                    return new JSONResponse(
+                            [
+                                'error'   => 'Conversation not found',
+                                'message' => 'The conversation with UUID '.$conversationUuid.' does not exist',
+                            ],
+                            404
+                            );
                 }
-            } elseif (!empty($agentUuid)) {
+            } else if (!empty($agentUuid)) {
                 // Create new conversation with specified agent
                 $organisation = $this->organisationService->getActiveOrganisation();
-                
+
                 // Look up agent by UUID
                 try {
                     $agent = $this->agentMapper->findByUuid($agentUuid);
                 } catch (\Exception $e) {
-                    return new JSONResponse([
-                        'error' => 'Agent not found',
-                        'message' => 'The agent with UUID ' . $agentUuid . ' does not exist',
-                    ], 404);
+                    return new JSONResponse(
+                            [
+                                'error'   => 'Agent not found',
+                                'message' => 'The agent with UUID '.$agentUuid.' does not exist',
+                            ],
+                            404
+                            );
                 }
-                
+
                 // Generate unique default title
                 $defaultTitle = $this->chatService->ensureUniqueTitle(
                     'New Conversation',
                     $this->userId,
                     $agent->getId()
                 );
-                
+
                 $conversation = new Conversation();
                 $conversation->setUserId($this->userId);
                 $conversation->setOrganisation($organisation?->getUuid());
@@ -246,25 +261,34 @@ class ChatController extends Controller
                 $conversation->setTitle($defaultTitle);
                 $conversation = $this->conversationMapper->insert($conversation);
 
-                $this->logger->info('[ChatController] New conversation created', [
-                    'uuid' => $conversation->getUuid(),
-                    'userId' => $this->userId,
-                    'agentId' => $agent->getId(),
-                    'title' => $defaultTitle,
-                ]);
+                $this->logger->info(
+                        '[ChatController] New conversation created',
+                        [
+                            'uuid'    => $conversation->getUuid(),
+                            'userId'  => $this->userId,
+                            'agentId' => $agent->getId(),
+                            'title'   => $defaultTitle,
+                        ]
+                        );
             } else {
-                return new JSONResponse([
-                    'error' => 'Missing conversation or agentUuid',
-                    'message' => 'Either conversation or agentUuid is required',
-                ], 400);
-            }
-            
+                return new JSONResponse(
+                        [
+                            'error'   => 'Missing conversation or agentUuid',
+                            'message' => 'Either conversation or agentUuid is required',
+                        ],
+                        400
+                        );
+            }//end if
+
             // Verify user has access
             if ($conversation->getUserId() !== $this->userId) {
-                return new JSONResponse([
-                    'error' => 'Access denied',
-                    'message' => 'You do not have access to this conversation',
-                ], 403);
+                return new JSONResponse(
+                        [
+                            'error'   => 'Access denied',
+                            'message' => 'You do not have access to this conversation',
+                        ],
+                        403
+                        );
             }
 
             // Process message through ChatService
@@ -281,17 +305,22 @@ class ChatController extends Controller
             $result['conversation'] = $conversation->getUuid();
 
             return new JSONResponse($result, 200);
-
         } catch (\Exception $e) {
-            $this->logger->error('[ChatController] Failed to send message', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
+            $this->logger->error(
+                    '[ChatController] Failed to send message',
+                    [
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString(),
+                    ]
+                    );
 
-            return new JSONResponse([
-                'error' => 'Failed to process message',
-                'message' => $e->getMessage(),
-            ], 500);
+            return new JSONResponse(
+                    [
+                        'error'   => 'Failed to process message',
+                        'message' => $e->getMessage(),
+                    ],
+                    500
+                    );
         }//end try
 
     }//end sendMessage()
@@ -312,10 +341,13 @@ class ChatController extends Controller
             $conversationId = (int) $this->request->getParam('conversationId');
 
             if (empty($conversationId)) {
-                return new JSONResponse([
-                    'error' => 'Missing conversationId',
-                    'message' => 'conversationId is required',
-                ], 400);
+                return new JSONResponse(
+                        [
+                            'error'   => 'Missing conversationId',
+                            'message' => 'conversationId is required',
+                        ],
+                        400
+                        );
             }
 
             // Get conversation
@@ -323,14 +355,17 @@ class ChatController extends Controller
 
             // Verify ownership
             if ($conversation->getUserId() !== $this->userId) {
-                return new JSONResponse([
-                    'error' => 'Access denied',
-                    'message' => 'You do not have access to this conversation',
-                ], 403);
+                return new JSONResponse(
+                        [
+                            'error'   => 'Access denied',
+                            'message' => 'You do not have access to this conversation',
+                        ],
+                        403
+                        );
             }
 
             // Get messages
-            $limit = (int) ($this->request->getParam('limit') ?? 100);
+            $limit  = (int) ($this->request->getParam('limit') ?? 100);
             $offset = (int) ($this->request->getParam('offset') ?? 0);
 
             $messages = $this->messageMapper->findByConversation(
@@ -339,22 +374,30 @@ class ChatController extends Controller
                 $offset
             );
 
-            return new JSONResponse([
-                'messages' => array_map(fn($msg) => $msg->jsonSerialize(), $messages),
-                'total' => $this->messageMapper->countByConversation($conversationId),
-                'conversationId' => $conversationId,
-            ], 200);
-
+            return new JSONResponse(
+                    [
+                        'messages'       => array_map(fn($msg) => $msg->jsonSerialize(), $messages),
+                        'total'          => $this->messageMapper->countByConversation($conversationId),
+                        'conversationId' => $conversationId,
+                    ],
+                    200
+                    );
         } catch (\Exception $e) {
-            $this->logger->error('[ChatController] Failed to get history', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
+            $this->logger->error(
+                    '[ChatController] Failed to get history',
+                    [
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString(),
+                    ]
+                    );
 
-            return new JSONResponse([
-                'error' => 'Failed to fetch conversation history',
-                'message' => $e->getMessage(),
-            ], 500);
+            return new JSONResponse(
+                    [
+                        'error'   => 'Failed to fetch conversation history',
+                        'message' => $e->getMessage(),
+                    ],
+                    500
+                    );
         }//end try
 
     }//end getHistory()
@@ -375,10 +418,13 @@ class ChatController extends Controller
             $conversationId = (int) $this->request->getParam('conversationId');
 
             if (empty($conversationId)) {
-                return new JSONResponse([
-                    'error' => 'Missing conversationId',
-                    'message' => 'conversationId is required',
-                ], 400);
+                return new JSONResponse(
+                        [
+                            'error'   => 'Missing conversationId',
+                            'message' => 'conversationId is required',
+                        ],
+                        400
+                        );
             }
 
             // Get conversation
@@ -386,35 +432,49 @@ class ChatController extends Controller
 
             // Verify ownership
             if ($conversation->getUserId() !== $this->userId) {
-                return new JSONResponse([
-                    'error' => 'Access denied',
-                    'message' => 'You do not have access to this conversation',
-                ], 403);
+                return new JSONResponse(
+                        [
+                            'error'   => 'Access denied',
+                            'message' => 'You do not have access to this conversation',
+                        ],
+                        403
+                        );
             }
 
             // Soft delete conversation
             $this->conversationMapper->softDelete($conversationId);
 
-            $this->logger->info('[ChatController] Conversation cleared (soft deleted)', [
-                'conversationId' => $conversationId,
-                'userId' => $this->userId,
-            ]);
+            $this->logger->info(
+                    '[ChatController] Conversation cleared (soft deleted)',
+                    [
+                        'conversationId' => $conversationId,
+                        'userId'         => $this->userId,
+                    ]
+                    );
 
-            return new JSONResponse([
-                'message' => 'Conversation cleared successfully',
-                'conversationId' => $conversationId,
-            ], 200);
-
+            return new JSONResponse(
+                    [
+                        'message'        => 'Conversation cleared successfully',
+                        'conversationId' => $conversationId,
+                    ],
+                    200
+                    );
         } catch (\Exception $e) {
-            $this->logger->error('[ChatController] Failed to clear history', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
+            $this->logger->error(
+                    '[ChatController] Failed to clear history',
+                    [
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString(),
+                    ]
+                    );
 
-            return new JSONResponse([
-                'error' => 'Failed to clear conversation',
-                'message' => $e->getMessage(),
-            ], 500);
+            return new JSONResponse(
+                    [
+                        'error'   => 'Failed to clear conversation',
+                        'message' => $e->getMessage(),
+                    ],
+                    500
+                    );
         }//end try
 
     }//end clearHistory()
@@ -437,15 +497,18 @@ class ChatController extends Controller
     {
         try {
             // Get request parameters
-            $type = (string) $this->request->getParam('type');
+            $type    = (string) $this->request->getParam('type');
             $comment = (string) $this->request->getParam('comment', '');
 
             // Validate feedback type
             if (!in_array($type, ['positive', 'negative'], true)) {
-                return new JSONResponse([
-                    'error' => 'Invalid feedback type',
-                    'message' => 'type must be "positive" or "negative"',
-                ], 400);
+                return new JSONResponse(
+                        [
+                            'error'   => 'Invalid feedback type',
+                            'message' => 'type must be "positive" or "negative"',
+                        ],
+                        400
+                        );
             }
 
             // Get conversation by UUID
@@ -453,24 +516,30 @@ class ChatController extends Controller
 
             // Verify user has access to this conversation
             if ($conversation->getUserId() !== $this->userId) {
-                return new JSONResponse([
-                    'error' => 'Access denied',
-                    'message' => 'You do not have access to this conversation',
-                ], 403);
+                return new JSONResponse(
+                        [
+                            'error'   => 'Access denied',
+                            'message' => 'You do not have access to this conversation',
+                        ],
+                        403
+                        );
             }
 
             // Get message and verify it belongs to this conversation
             $message = $this->messageMapper->find($messageId);
-            
+
             if ($message->getConversationId() !== $conversation->getId()) {
-                return new JSONResponse([
-                    'error' => 'Message not found',
-                    'message' => 'Message does not belong to this conversation',
-                ], 404);
+                return new JSONResponse(
+                        [
+                            'error'   => 'Message not found',
+                            'message' => 'Message does not belong to this conversation',
+                        ],
+                        404
+                        );
             }
 
             // Get active organisation
-            $organisation = $this->organisationService->getActiveOrganisation();
+            $organisation     = $this->organisationService->getActiveOrganisation();
             $organisationUuid = $organisation?->getUuid();
 
             // Check if feedback already exists for this message
@@ -480,15 +549,18 @@ class ChatController extends Controller
                 // Update existing feedback
                 $existingFeedback->setType($type);
                 $existingFeedback->setComment($comment);
-                
+
                 $feedback = $this->feedbackMapper->update($existingFeedback);
-                
-                $this->logger->info('[ChatController] Message feedback updated', [
-                    'feedbackId' => $feedback->getId(),
-                    'messageId' => $messageId,
-                    'type' => $type,
-                    'hasComment' => !empty($comment),
-                ]);
+
+                $this->logger->info(
+                        '[ChatController] Message feedback updated',
+                        [
+                            'feedbackId' => $feedback->getId(),
+                            'messageId'  => $messageId,
+                            'type'       => $type,
+                            'hasComment' => !empty($comment),
+                        ]
+                        );
             } else {
                 // Create new feedback
                 $feedback = new Feedback();
@@ -499,31 +571,39 @@ class ChatController extends Controller
                 $feedback->setOrganisation($organisationUuid);
                 $feedback->setType($type);
                 $feedback->setComment($comment);
-                
+
                 $feedback = $this->feedbackMapper->insert($feedback);
-                
-                $this->logger->info('[ChatController] Message feedback created', [
-                    'feedbackId' => $feedback->getId(),
-                    'messageId' => $messageId,
-                    'type' => $type,
-                    'hasComment' => !empty($comment),
-                ]);
-            }
+
+                $this->logger->info(
+                        '[ChatController] Message feedback created',
+                        [
+                            'feedbackId' => $feedback->getId(),
+                            'messageId'  => $messageId,
+                            'type'       => $type,
+                            'hasComment' => !empty($comment),
+                        ]
+                        );
+            }//end if
 
             return new JSONResponse($feedback->jsonSerialize(), 200);
-
         } catch (\Exception $e) {
-            $this->logger->error('[ChatController] Failed to save feedback', [
-                'conversationUuid' => $conversationUuid ?? null,
-                'messageId' => $messageId ?? null,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
+            $this->logger->error(
+                    '[ChatController] Failed to save feedback',
+                    [
+                        'conversationUuid' => $conversationUuid ?? null,
+                        'messageId'        => $messageId ?? null,
+                        'error'            => $e->getMessage(),
+                        'trace'            => $e->getTraceAsString(),
+                    ]
+                    );
 
-            return new JSONResponse([
-                'error' => 'Failed to save feedback',
-                'message' => $e->getMessage(),
-            ], 500);
+            return new JSONResponse(
+                    [
+                        'error'   => 'Failed to save feedback',
+                        'message' => $e->getMessage(),
+                    ],
+                    500
+                    );
         }//end try
 
     }//end sendFeedback()
@@ -558,24 +638,32 @@ class ChatController extends Controller
                 ->from('openregister_messages');
             $totalMessages = (int) $qb->executeQuery()->fetchOne();
 
-            return new JSONResponse([
-                'total_agents' => $totalAgents,
-                'total_conversations' => $totalConversations,
-                'total_messages' => $totalMessages,
-            ], 200);
-
+            return new JSONResponse(
+                    [
+                        'total_agents'        => $totalAgents,
+                        'total_conversations' => $totalConversations,
+                        'total_messages'      => $totalMessages,
+                    ],
+                    200
+                    );
         } catch (\Exception $e) {
-            $this->logger->error('[ChatController] Failed to get chat stats', [
-                'error' => $e->getMessage(),
-            ]);
+            $this->logger->error(
+                    '[ChatController] Failed to get chat stats',
+                    [
+                        'error' => $e->getMessage(),
+                    ]
+                    );
 
-            return new JSONResponse([
-                'error' => 'Failed to get chat statistics',
-                'message' => $e->getMessage(),
-            ], 500);
-        }
+            return new JSONResponse(
+                    [
+                        'error'   => 'Failed to get chat statistics',
+                        'message' => $e->getMessage(),
+                    ],
+                    500
+                    );
+        }//end try
+
     }//end getChatStats()
 
 
 }//end class
-

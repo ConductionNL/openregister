@@ -54,6 +54,7 @@ class SourcesController extends Controller
 
     }//end __construct()
 
+
     /**
      * Retrieves a list of all sources
      *
@@ -65,21 +66,22 @@ class SourcesController extends Controller
      *
      * @NoCSRFRequired
      */
-    public function index(): JSONResponse {
+    public function index(): JSONResponse
+    {
         // Get request parameters for filtering and searching.
         $params = $this->request->getParams();
-        
+
         // Extract pagination and search parameters
         $limit  = isset($params['_limit']) ? (int) $params['_limit'] : null;
         $offset = isset($params['_offset']) ? (int) $params['_offset'] : null;
         $page   = isset($params['_page']) ? (int) $params['_page'] : null;
         $search = $params['_search'] ?? '';
-        
+
         // Convert page to offset if provided
         if ($page !== null && $limit !== null) {
             $offset = ($page - 1) * $limit;
         }
-        
+
         // Remove special query params from filters
         $filters = $params;
         unset($filters['_limit'], $filters['_offset'], $filters['_page'], $filters['_search'], $filters['_route']);

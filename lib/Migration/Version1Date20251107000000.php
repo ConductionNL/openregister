@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * OpenRegister Remove Roles Column Migration
  *
  * This migration removes the deprecated 'roles' column from the organisations table.
@@ -11,13 +11,13 @@ declare(strict_types=1);
  * @category Migration
  * @package  OCA\OpenRegister\Migration
  *
- * @author   Conduction Development Team <info@conduction.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version  GIT: <git_id>
+ * @version GIT: <git_id>
  *
- * @link     https://www.OpenRegister.nl
+ * @link https://www.OpenRegister.nl
  */
 
 namespace OCA\OpenRegister\Migration;
@@ -36,34 +36,36 @@ use OCP\Migration\SimpleMigrationStep;
 class Version1Date20251107000000 extends SimpleMigrationStep
 {
 
+
     /**
      * Remove roles column from organisations table
      *
-     * @param IOutput $output Migration output interface
+     * @param IOutput $output        Migration output interface
      * @param Closure $schemaClosure Schema closure
-     * @param array   $options Migration options
+     * @param array   $options       Migration options
      *
      * @return ISchemaWrapper|null Updated schema
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /** @var ISchemaWrapper $schema */
+        /*
+         * @var ISchemaWrapper $schema
+         */
         $schema = $schemaClosure();
 
         if ($schema->hasTable('openregister_organisations')) {
             $table = $schema->getTable('openregister_organisations');
-            
+
             // Check if roles column still exists
             if ($table->hasColumn('roles')) {
                 $output->info('🗑️  Removing deprecated roles column from organisations table...');
-                
+
                 $table->dropColumn('roles');
-                
+
                 $output->info('   ✓ Dropped roles column');
                 $output->info('✅ Cleanup completed - organisations table now only uses groups column');
-                
+
                 return $schema;
-                
             } else {
                 $output->info('   ℹ️  Roles column already removed');
             }
@@ -75,6 +77,3 @@ class Version1Date20251107000000 extends SimpleMigrationStep
 
 
 }//end class
-
-
-

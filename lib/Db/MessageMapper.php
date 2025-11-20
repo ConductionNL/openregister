@@ -37,6 +37,7 @@ use OCP\IDBConnection;
 class MessageMapper extends QBMapper
 {
 
+
     /**
      * MessageMapper constructor.
      *
@@ -106,8 +107,8 @@ class MessageMapper extends QBMapper
      */
     public function findByConversation(
         int $conversationId,
-        int $limit = 100,
-        int $offset = 0
+        int $limit=100,
+        int $offset=0
     ): array {
         $qb = $this->db->getQueryBuilder();
 
@@ -133,7 +134,7 @@ class MessageMapper extends QBMapper
      *
      * @return array Array of Message entities (oldest first)
      */
-    public function findRecentByConversation(int $conversationId, int $limit = 10): array
+    public function findRecentByConversation(int $conversationId, int $limit=10): array
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -144,7 +145,7 @@ class MessageMapper extends QBMapper
             ->setMaxResults($limit);
 
         $messages = $this->findEntities($qb);
-        
+
         // Reverse to get oldest-first order
         return array_reverse($messages);
 
@@ -167,7 +168,7 @@ class MessageMapper extends QBMapper
             ->where($qb->expr()->eq('conversation_id', $qb->createNamedParameter($conversationId, IQueryBuilder::PARAM_INT)));
 
         $result = $qb->execute();
-        $count = (int) $result->fetchOne();
+        $count  = (int) $result->fetchOne();
         $result->closeCursor();
 
         return $count;
@@ -193,7 +194,7 @@ class MessageMapper extends QBMapper
             ->andWhere($qb->expr()->eq('role', $qb->createNamedParameter($role, IQueryBuilder::PARAM_STR)));
 
         $result = $qb->execute();
-        $count = (int) $result->fetchOne();
+        $count  = (int) $result->fetchOne();
         $result->closeCursor();
 
         return $count;
@@ -251,5 +252,3 @@ class MessageMapper extends QBMapper
 
 
 }//end class
-
-

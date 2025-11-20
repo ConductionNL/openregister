@@ -60,6 +60,7 @@ class SourceMapper extends QBMapper
      */
     private IGroupManager $groupManager;
 
+
     /**
      * Constructor for the SourceMapper
      *
@@ -183,7 +184,7 @@ class SourceMapper extends QBMapper
             if (empty($entity->getUuid())) {
                 $entity->setUuid(Uuid::v4());
             }
-            
+
             $entity->setCreated(new \DateTime());
             $entity->setUpdated(new \DateTime());
         }

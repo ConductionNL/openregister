@@ -115,18 +115,18 @@ class ApplicationsController extends Controller
     {
         try {
             $params = $this->request->getParams();
-            
+
             // Extract pagination and search parameters
             $limit  = isset($params['_limit']) ? (int) $params['_limit'] : null;
             $offset = isset($params['_offset']) ? (int) $params['_offset'] : null;
             $page   = isset($params['_page']) ? (int) $params['_page'] : null;
             $search = $params['_search'] ?? '';
-            
+
             // Convert page to offset if provided
             if ($page !== null && $limit !== null) {
                 $offset = ($page - 1) * $limit;
             }
-            
+
             // Remove special query params from filters
             $filters = $params;
             unset($filters['_limit'], $filters['_offset'], $filters['_page'], $filters['_search'], $filters['_route']);
@@ -151,7 +151,7 @@ class ApplicationsController extends Controller
                 ['error' => 'Failed to retrieve applications'],
                 Http::STATUS_INTERNAL_SERVER_ERROR
             );
-        }
+        }//end try
 
     }//end index()
 
@@ -176,7 +176,7 @@ class ApplicationsController extends Controller
             $this->logger->error(
                 'Failed to get application',
                 [
-                    'id' => $id,
+                    'id'    => $id,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -217,10 +217,10 @@ class ApplicationsController extends Controller
             );
 
             return new JSONResponse(
-                ['error' => 'Failed to create application: ' . $e->getMessage()],
+                ['error' => 'Failed to create application: '.$e->getMessage()],
                 Http::STATUS_BAD_REQUEST
             );
-        }
+        }//end try
 
     }//end create()
 
@@ -239,7 +239,7 @@ class ApplicationsController extends Controller
     {
         try {
             $data = $this->request->getParams();
-            
+
             // Remove internal parameters and immutable fields
             unset($data['_route']);
             unset($data['id']);
@@ -254,16 +254,16 @@ class ApplicationsController extends Controller
             $this->logger->error(
                 'Failed to update application',
                 [
-                    'id' => $id,
+                    'id'    => $id,
                     'error' => $e->getMessage(),
                 ]
             );
 
             return new JSONResponse(
-                ['error' => 'Failed to update application: ' . $e->getMessage()],
+                ['error' => 'Failed to update application: '.$e->getMessage()],
                 Http::STATUS_BAD_REQUEST
             );
-        }
+        }//end try
 
     }//end update()
 
@@ -305,7 +305,7 @@ class ApplicationsController extends Controller
             $this->logger->error(
                 'Failed to delete application',
                 [
-                    'id' => $id,
+                    'id'    => $id,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -320,4 +320,3 @@ class ApplicationsController extends Controller
 
 
 }//end class
-

@@ -51,7 +51,7 @@ class Version1Date20250828120000 extends SimpleMigrationStep
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /**
+        /*
          * @var ISchemaWrapper $schema
          */
         $schema = $schemaClosure();
@@ -64,12 +64,12 @@ class Version1Date20250828120000 extends SimpleMigrationStep
 
         // 1. Critical single-column indexes for common faceting fields
         $singleIndexes = [
-            'deleted' => 'objects_deleted_idx',
-            'published' => 'objects_published_idx', 
-            'depublished' => 'objects_depublished_idx',
-            'created' => 'objects_created_idx',
-            'updated' => 'objects_updated_idx',
-            'owner' => 'objects_owner_idx',
+            'deleted'      => 'objects_deleted_idx',
+            'published'    => 'objects_published_idx',
+            'depublished'  => 'objects_depublished_idx',
+            'created'      => 'objects_created_idx',
+            'updated'      => 'objects_updated_idx',
+            'owner'        => 'objects_owner_idx',
             'organisation' => 'objects_organisation_idx',
         ];
 
@@ -82,26 +82,26 @@ class Version1Date20250828120000 extends SimpleMigrationStep
 
         // 2. Critical composite indexes for common filter combinations
         // Note: Using raw SQL for composite indexes to handle MySQL key length limits
-        $connection = \OC::$server->getDatabaseConnection();
+        $connection  = \OC::$server->getDatabaseConnection();
         $tablePrefix = \OC::$server->getConfig()->getSystemValue('dbtableprefix', 'oc_');
-        $tableName = $tablePrefix . 'openregister_objects';
+        $tableName   = $tablePrefix.'openregister_objects';
 
         $compositeIndexes = [
             // For base filtering (deleted + published state)
-            'objects_deleted_published_idx' => ['deleted', 'published'],
-            'objects_lifecycle_idx' => ['deleted', 'published', 'depublished'],
-            
+            'objects_deleted_published_idx'       => ['deleted', 'published'],
+            'objects_lifecycle_idx'               => ['deleted', 'published', 'depublished'],
+
             // For register/schema filtering with lifecycle (with length prefixes for text columns)
             'objects_register_schema_deleted_idx' => ['register(20)', 'schema(20)', 'deleted'],
-            'objects_register_lifecycle_idx' => ['register(20)', 'deleted', 'published'],
-            'objects_schema_lifecycle_idx' => ['schema(20)', 'deleted', 'published'],
-            
+            'objects_register_lifecycle_idx'      => ['register(20)', 'deleted', 'published'],
+            'objects_schema_lifecycle_idx'        => ['schema(20)', 'deleted', 'published'],
+
             // For organisation-based filtering (with length prefix for text column)
-            'objects_org_lifecycle_idx' => ['organisation(20)', 'deleted', 'published'],
-            
+            'objects_org_lifecycle_idx'           => ['organisation(20)', 'deleted', 'published'],
+
             // For date range queries on faceting
-            'objects_created_deleted_idx' => ['created', 'deleted'],
-            'objects_updated_deleted_idx' => ['updated', 'deleted'],
+            'objects_created_deleted_idx'         => ['created', 'deleted'],
+            'objects_updated_deleted_idx'         => ['updated', 'deleted'],
         ];
 
         foreach ($compositeIndexes as $indexName => $columns) {
@@ -111,10 +111,13 @@ class Version1Date20250828120000 extends SimpleMigrationStep
             }
 
             // Check all base columns exist (without length prefixes)
-            $baseColumns = array_map(function($col) {
-                return preg_replace('/\(\d+\)/', '', $col);
-            }, $columns);
-            
+            $baseColumns = array_map(
+                    function ($col) {
+                        return preg_replace('/\(\d+\)/', '', $col);
+                    },
+                    $columns
+                    );
+
             $allColumnsExist = true;
             foreach ($baseColumns as $column) {
                 if (!$table->hasColumn($column)) {
@@ -122,17 +125,17 @@ class Version1Date20250828120000 extends SimpleMigrationStep
                     break;
                 }
             }
-            
+
             if ($allColumnsExist) {
                 try {
-                    $sql = "CREATE INDEX {$indexName} ON {$tableName} (" . implode(', ', $columns) . ")";
+                    $sql = "CREATE INDEX {$indexName} ON {$tableName} (".implode(', ', $columns).")";
                     $connection->executeStatement($sql);
-                    $output->info("Added composite index {$indexName} on columns: " . implode(', ', $columns));
+                    $output->info("Added composite index {$indexName} on columns: ".implode(', ', $columns));
                 } catch (\Exception $e) {
-                    $output->info("Failed to create index {$indexName}: " . $e->getMessage());
+                    $output->info("Failed to create index {$indexName}: ".$e->getMessage());
                 }
             }
-        }
+        }//end foreach
 
         return $schema;
 

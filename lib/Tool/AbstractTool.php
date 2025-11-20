@@ -37,6 +37,7 @@ use Psr\Log\LoggerInterface;
  */
 abstract class AbstractTool implements ToolInterface
 {
+
     /**
      * User session
      *
@@ -58,6 +59,7 @@ abstract class AbstractTool implements ToolInterface
      */
     protected ?Agent $agent = null;
 
+
     /**
      * Constructor
      *
@@ -69,8 +71,10 @@ abstract class AbstractTool implements ToolInterface
         LoggerInterface $logger
     ) {
         $this->userSession = $userSession;
-        $this->logger = $logger;
-    }
+        $this->logger      = $logger;
+
+    }//end __construct()
+
 
     /**
      * Set the agent context
@@ -85,7 +89,9 @@ abstract class AbstractTool implements ToolInterface
     public function setAgent(?Agent $agent): void
     {
         $this->agent = $agent;
-    }
+
+    }//end setAgent()
+
 
     /**
      * Get the current user ID
@@ -99,7 +105,7 @@ abstract class AbstractTool implements ToolInterface
      *
      * @return string|null User ID or null if no user context
      */
-    protected function getUserId(?string $explicitUserId = null): ?string
+    protected function getUserId(?string $explicitUserId=null): ?string
     {
         // Use explicit user ID if provided
         if ($explicitUserId !== null) {
@@ -118,7 +124,9 @@ abstract class AbstractTool implements ToolInterface
         }
 
         return null;
-    }
+
+    }//end getUserId()
+
 
     /**
      * Check if a user context is available
@@ -127,10 +135,12 @@ abstract class AbstractTool implements ToolInterface
      *
      * @return bool True if user context is available
      */
-    protected function hasUserContext(?string $explicitUserId = null): bool
+    protected function hasUserContext(?string $explicitUserId=null): bool
     {
         return $this->getUserId($explicitUserId) !== null;
-    }
+
+    }//end hasUserContext()
+
 
     /**
      * Apply view filters to query parameters
@@ -157,9 +167,10 @@ abstract class AbstractTool implements ToolInterface
         // View filtering allows agents to only see data filtered by predefined views
         // For now, this is disabled as the mappers don't have a 'views' column yet
         // $params['_views'] = $views;
-
         return $params;
-    }
+
+    }//end applyViewFilters()
+
 
     /**
      * Format a success result
@@ -169,14 +180,16 @@ abstract class AbstractTool implements ToolInterface
      *
      * @return array Formatted result
      */
-    protected function formatSuccess($data, string $message = 'Success'): array
+    protected function formatSuccess($data, string $message='Success'): array
     {
         return [
             'success' => true,
             'message' => $message,
-            'data' => $data,
+            'data'    => $data,
         ];
-    }
+
+    }//end formatSuccess()
+
 
     /**
      * Format an error result
@@ -186,11 +199,11 @@ abstract class AbstractTool implements ToolInterface
      *
      * @return array Formatted error result
      */
-    protected function formatError(string $message, $details = null): array
+    protected function formatError(string $message, $details=null): array
     {
         $result = [
             'success' => false,
-            'error' => $message,
+            'error'   => $message,
         ];
 
         if ($details !== null) {
@@ -198,7 +211,9 @@ abstract class AbstractTool implements ToolInterface
         }
 
         return $result;
-    }
+
+    }//end formatError()
+
 
     /**
      * Log tool execution
@@ -210,14 +225,14 @@ abstract class AbstractTool implements ToolInterface
      *
      * @return void
      */
-    protected function log(string $functionName, array $parameters, string $level = 'info', string $message = ''): void
+    protected function log(string $functionName, array $parameters, string $level='info', string $message=''): void
     {
         $context = [
-            'tool' => $this->getName(),
-            'function' => $functionName,
+            'tool'       => $this->getName(),
+            'function'   => $functionName,
             'parameters' => $parameters,
-            'agent' => $this->agent?->getId(),
-            'user' => $this->getUserId(),
+            'agent'      => $this->agent?->getId(),
+            'user'       => $this->getUserId(),
         ];
 
         $logMessage = sprintf(
@@ -238,7 +253,9 @@ abstract class AbstractTool implements ToolInterface
                 $this->logger->info($logMessage, $context);
                 break;
         }
-    }
+
+    }//end log()
+
 
     /**
      * Validate required parameters
@@ -257,7 +274,9 @@ abstract class AbstractTool implements ToolInterface
                 throw new \InvalidArgumentException("Missing required parameter: {$param}");
             }
         }
-    }
+
+    }//end validateParameters()
+
 
     /**
      * Magic method to support snake_case method calls for LLPhant compatibility
@@ -276,65 +295,67 @@ abstract class AbstractTool implements ToolInterface
     {
         // Convert snake_case to camelCase
         $camelCaseMethod = lcfirst(str_replace('_', '', ucwords($name, '_')));
-        
+
         if (method_exists($this, $camelCaseMethod)) {
             // Get method reflection to understand parameter types
             $reflection = new \ReflectionMethod($this, $camelCaseMethod);
             $parameters = $reflection->getParameters();
-            
+
             // Type-cast arguments based on method signature
             // Handle both positional and named arguments from LLPhant
             $isAssociative = array_keys($arguments) !== range(0, count($arguments) - 1);
-            
+
             $typedArguments = [];
             foreach ($parameters as $index => $param) {
                 $paramName = $param->getName();
-                
+
                 // Get value from either named argument or positional argument
                 if ($isAssociative && isset($arguments[$paramName])) {
                     $value = $arguments[$paramName];
                 } else {
                     $value = $arguments[$index] ?? null;
                 }
-                
+
                 // Handle string 'null' from LLM
                 if ($value === 'null' || $value === null) {
                     // Use default value if available, otherwise null
                     $value = $param->isDefaultValueAvailable() ? $param->getDefaultValue() : null;
-                } elseif ($param->hasType()) {
+                } else if ($param->hasType()) {
                     // Cast to the expected type
                     $type = $param->getType();
                     if ($type && $type instanceof \ReflectionNamedType) {
                         $typeName = $type->getName();
                         if ($typeName === 'int') {
                             $value = (int) $value;
-                        } elseif ($typeName === 'float') {
+                        } else if ($typeName === 'float') {
                             $value = (float) $value;
-                        } elseif ($typeName === 'bool') {
+                        } else if ($typeName === 'bool') {
                             $value = filter_var($value, FILTER_VALIDATE_BOOLEAN);
-                        } elseif ($typeName === 'string') {
+                        } else if ($typeName === 'string') {
                             $value = (string) $value;
-                        } elseif ($typeName === 'array') {
+                        } else if ($typeName === 'array') {
                             $value = is_array($value) ? $value : [];
                         }
                     }
-                }
-                
+                }//end if
+
                 $typedArguments[] = $value;
-            }
-            
+            }//end foreach
+
             $result = $this->$camelCaseMethod(...$typedArguments);
-            
+
             // LLPhant expects tool results to be JSON strings, not arrays
             // Convert array results to JSON for LLM consumption
             if (is_array($result)) {
                 return json_encode($result);
             }
-            
-            return $result;
-        }
-        
-        throw new \BadMethodCallException("Method {$name} (or {$camelCaseMethod}) does not exist");
-    }
-}
 
+            return $result;
+        }//end if
+
+        throw new \BadMethodCallException("Method {$name} (or {$camelCaseMethod}) does not exist");
+
+    }//end __call()
+
+
+}//end class

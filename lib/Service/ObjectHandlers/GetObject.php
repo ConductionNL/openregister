@@ -418,6 +418,7 @@ class GetObject
             // If we can't get settings, default to enabled for safety
             return true;
         }
+
     }//end isAuditTrailsEnabled()
 
 

@@ -349,17 +349,26 @@ class Register extends Entity implements JsonSerializable
             'authorization' => $this->authorization,
             'groups'        => $groups,
             'quota'         => [
-                'storage'   => null, // To be set via admin configuration
-                'bandwidth' => null, // To be set via admin configuration
-                'requests'  => null, // To be set via admin configuration
-                'users'     => null, // To be set via admin configuration
-                'groups'    => null, // To be set via admin configuration
+                'storage'   => null,
+        // To be set via admin configuration
+                'bandwidth' => null,
+        // To be set via admin configuration
+                'requests'  => null,
+        // To be set via admin configuration
+                'users'     => null,
+        // To be set via admin configuration
+                'groups'    => null,
+        // To be set via admin configuration
             ],
             'usage'         => [
-                'storage'   => 0, // To be calculated from actual usage
-                'bandwidth' => 0, // To be calculated from actual usage
-                'requests'  => 0, // To be calculated from actual usage
-                'users'     => 0, // Registers don't have direct users
+                'storage'   => 0,
+            // To be calculated from actual usage
+                'bandwidth' => 0,
+            // To be calculated from actual usage
+                'requests'  => 0,
+            // To be calculated from actual usage
+                'users'     => 0,
+            // Registers don't have direct users
                 'groups'    => count($groups),
             ],
             'deleted'       => $deleted,

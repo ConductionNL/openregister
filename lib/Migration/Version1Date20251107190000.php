@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * Remove is_default column from organisations table
  *
  * This migration removes the is_default column from the organisations table
@@ -12,13 +12,13 @@ declare(strict_types=1);
  * @category Migration
  * @package  OCA\OpenRegister\Migration
  *
- * @author   Conduction Development Team <dev@conduction.nl>
+ * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version  GIT: <git-id>
+ * @version GIT: <git-id>
  *
- * @link     https://www.OpenRegister.nl
+ * @link https://www.OpenRegister.nl
  */
 
 namespace OCA\OpenRegister\Migration;
@@ -36,24 +36,28 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20251107190000 extends SimpleMigrationStep
 {
+
+
     /**
      * Modify the database schema
      *
-     * @param IOutput $output   Output handler
+     * @param IOutput $output        Output handler
      * @param Closure $schemaClosure Schema closure
-     * @param array   $options  Options
+     * @param array   $options       Options
      *
      * @return ISchemaWrapper|null The modified schema or null
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /** @var ISchemaWrapper $schema */
-        $schema = $schemaClosure();
+        /*
+         * @var ISchemaWrapper $schema
+         */
+        $schema  = $schemaClosure();
         $updated = false;
 
         if ($schema->hasTable('openregister_organisations')) {
             $table = $schema->getTable('openregister_organisations');
-            
+
             // Remove is_default column if it exists
             if ($table->hasColumn('is_default')) {
                 $table->dropColumn('is_default');
@@ -67,14 +71,16 @@ class Version1Date20251107190000 extends SimpleMigrationStep
         }
 
         return $updated ? $schema : null;
-    }
+
+    }//end changeSchema()
+
 
     /**
      * Post-schema change hook
      *
-     * @param IOutput $output   Output handler
+     * @param IOutput $output        Output handler
      * @param Closure $schemaClosure Schema closure
-     * @param array   $options  Options
+     * @param array   $options       Options
      *
      * @return void
      */
@@ -82,6 +88,8 @@ class Version1Date20251107190000 extends SimpleMigrationStep
     {
         $output->info('✅ Migration complete - is_default column removed from organisations table');
         $output->info('   Default organisation is now managed via configuration');
-    }
-}
 
+    }//end postSchemaChange()
+
+
+}//end class

@@ -38,6 +38,7 @@ use OCP\IDBConnection;
 class ConversationMapper extends QBMapper
 {
 
+
     /**
      * ConversationMapper constructor.
      *
@@ -68,11 +69,12 @@ class ConversationMapper extends QBMapper
                 $newUuid = \Symfony\Component\Uid\Uuid::v4()->toRfc4122();
                 $entity->setUuid($newUuid);
             }
-            
+
             // Set timestamps if not already set
             if ($entity->getCreated() === null) {
                 $entity->setCreated(new \DateTime());
             }
+
             if ($entity->getUpdated() === null) {
                 $entity->setUpdated(new \DateTime());
             }
@@ -163,10 +165,10 @@ class ConversationMapper extends QBMapper
      */
     public function findByUser(
         string $userId,
-        ?string $organisation = null,
-        bool $includeDeleted = false,
-        int $limit = 50,
-        int $offset = 0
+        ?string $organisation=null,
+        bool $includeDeleted=false,
+        int $limit=50,
+        int $offset=0
     ): array {
         $qb = $this->db->getQueryBuilder();
 
@@ -205,9 +207,9 @@ class ConversationMapper extends QBMapper
      */
     public function findDeletedByUser(
         string $userId,
-        ?string $organisation = null,
-        int $limit = 50,
-        int $offset = 0
+        ?string $organisation=null,
+        int $limit=50,
+        int $offset=0
     ): array {
         $qb = $this->db->getQueryBuilder();
 
@@ -233,18 +235,18 @@ class ConversationMapper extends QBMapper
     /**
      * Find all conversations using a specific agent
      *
-     * @param int  $agentId Agent ID
+     * @param int  $agentId        Agent ID
      * @param bool $includeDeleted Whether to include soft-deleted conversations
-     * @param int  $limit   Maximum number of results
-     * @param int  $offset  Offset for pagination
+     * @param int  $limit          Maximum number of results
+     * @param int  $offset         Offset for pagination
      *
      * @return array Array of Conversation entities
      */
     public function findByAgent(
         int $agentId,
-        bool $includeDeleted = false,
-        int $limit = 50,
-        int $offset = 0
+        bool $includeDeleted=false,
+        int $limit=50,
+        int $offset=0
     ): array {
         $qb = $this->db->getQueryBuilder();
 
@@ -271,8 +273,8 @@ class ConversationMapper extends QBMapper
      *
      * Used to check for duplicate conversation names and generate unique titles.
      *
-     * @param string $userId User ID
-     * @param int    $agentId Agent ID
+     * @param string $userId       User ID
+     * @param int    $agentId      Agent ID
      * @param string $titlePattern Title pattern to match (e.g., "New Conversation%")
      *
      * @return array Array of matching conversation titles
@@ -289,17 +291,17 @@ class ConversationMapper extends QBMapper
             ->where($qb->expr()->eq('user_id', $qb->createNamedParameter($userId, IQueryBuilder::PARAM_STR)))
             ->andWhere($qb->expr()->eq('agent_id', $qb->createNamedParameter($agentId, IQueryBuilder::PARAM_INT)))
             ->andWhere($qb->expr()->like('title', $qb->createNamedParameter($titlePattern, IQueryBuilder::PARAM_STR)))
-            ->andWhere($qb->expr()->isNull('deleted_at')); // Only active conversations
-
+            ->andWhere($qb->expr()->isNull('deleted_at'));
+        // Only active conversations
         $result = $qb->executeQuery();
         $titles = [];
-        
+
         while ($row = $result->fetch()) {
             if ($row['title'] !== null) {
                 $titles[] = $row['title'];
             }
         }
-        
+
         $result->closeCursor();
 
         return $titles;
@@ -319,9 +321,9 @@ class ConversationMapper extends QBMapper
      */
     public function findByOrganisation(
         int $organisation,
-        bool $includeDeleted = false,
-        int $limit = 50,
-        int $offset = 0
+        bool $includeDeleted=false,
+        int $limit=50,
+        int $offset=0
     ): array {
         $qb = $this->db->getQueryBuilder();
 
@@ -354,8 +356,8 @@ class ConversationMapper extends QBMapper
      */
     public function countByUser(
         string $userId,
-        ?string $organisation = null,
-        bool $includeDeleted = false
+        ?string $organisation=null,
+        bool $includeDeleted=false
     ): int {
         $qb = $this->db->getQueryBuilder();
 
@@ -374,7 +376,7 @@ class ConversationMapper extends QBMapper
         }
 
         $result = $qb->execute();
-        $count = (int) $result->fetchOne();
+        $count  = (int) $result->fetchOne();
         $result->closeCursor();
 
         return $count;
@@ -392,7 +394,7 @@ class ConversationMapper extends QBMapper
      */
     public function countDeletedByUser(
         string $userId,
-        ?string $organisation = null
+        ?string $organisation=null
     ): int {
         $qb = $this->db->getQueryBuilder();
 
@@ -407,7 +409,7 @@ class ConversationMapper extends QBMapper
         }
 
         $result = $qb->execute();
-        $count = (int) $result->fetchOne();
+        $count  = (int) $result->fetchOne();
         $result->closeCursor();
 
         return $count;
@@ -430,7 +432,7 @@ class ConversationMapper extends QBMapper
         $conversation = $this->find($id);
         $conversation->softDelete();
         $conversation->setUpdated(new DateTime());
-        
+
         return $this->update($conversation);
 
     }//end softDelete()
@@ -451,7 +453,7 @@ class ConversationMapper extends QBMapper
         $conversation = $this->find($id);
         $conversation->restore();
         $conversation->setUpdated(new DateTime());
-        
+
         return $this->update($conversation);
 
     }//end restore()
@@ -467,12 +469,12 @@ class ConversationMapper extends QBMapper
      *
      * @return int Number of conversations deleted
      */
-    public function cleanupOldDeleted(int $daysOld = 30): int
+    public function cleanupOldDeleted(int $daysOld=30): int
     {
         $threshold = new DateTime("-{$daysOld} days");
-        
+
         $qb = $this->db->getQueryBuilder();
-        
+
         $qb->delete($this->tableName)
             ->where($qb->expr()->isNotNull('deleted_at'))
             ->andWhere(
@@ -494,13 +496,13 @@ class ConversationMapper extends QBMapper
      * - User must be the owner of the conversation
      * - Conversation must belong to the user's current organisation (if provided)
      *
-     * @param Conversation $conversation       Conversation entity
-     * @param string       $userId             User ID
-     * @param string|null  $organisationUuid   Current organisation UUID (optional)
+     * @param Conversation $conversation     Conversation entity
+     * @param string       $userId           User ID
+     * @param string|null  $organisationUuid Current organisation UUID (optional)
      *
      * @return bool True if user can access
      */
-    public function canUserAccessConversation(Conversation $conversation, string $userId, ?string $organisationUuid = null): bool
+    public function canUserAccessConversation(Conversation $conversation, string $userId, ?string $organisationUuid=null): bool
     {
         // User must be the owner
         if ($conversation->getUserId() !== $userId) {
@@ -536,5 +538,3 @@ class ConversationMapper extends QBMapper
 
 
 }//end class
-
-

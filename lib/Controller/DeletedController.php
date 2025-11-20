@@ -64,6 +64,7 @@ class DeletedController extends Controller
 
     }//end __construct()
 
+
     /**
      * Helper method to extract request parameters for deleted objects
      *

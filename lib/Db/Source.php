@@ -226,19 +226,19 @@ class Source extends Entity implements JsonSerializable
         }
 
         return [
-            'id'           => $this->id,
-            'uuid'         => $this->uuid,
-            'title'        => $this->title,
-            'version'      => $this->version,
-            'description'  => $this->description,
-            'databaseUrl'  => $this->databaseUrl,
-            'type'         => $this->type,
-            'organisation' => $this->organisation,
-            'updated'      => $updated,
-            'created'      => $created,
+            'id'                     => $this->id,
+            'uuid'                   => $this->uuid,
+            'title'                  => $this->title,
+            'version'                => $this->version,
+            'description'            => $this->description,
+            'databaseUrl'            => $this->databaseUrl,
+            'type'                   => $this->type,
+            'organisation'           => $this->organisation,
+            'updated'                => $updated,
+            'created'                => $created,
             'managedByConfiguration' => $this->managedByConfiguration !== null ? [
-                'id' => $this->managedByConfiguration->getId(),
-                'uuid' => $this->managedByConfiguration->getUuid(),
+                'id'    => $this->managedByConfiguration->getId(),
+                'uuid'  => $this->managedByConfiguration->getUuid(),
                 'title' => $this->managedByConfiguration->getTitle(),
             ] : null,
         ];

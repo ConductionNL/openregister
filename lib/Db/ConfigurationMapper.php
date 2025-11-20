@@ -80,6 +80,7 @@ class ConfigurationMapper extends QBMapper
      */
     private const SESSION_KEY_PREFIX = 'openregister_configurations_';
 
+
     /**
      * ConfigurationMapper constructor.
      *
@@ -100,7 +101,7 @@ class ConfigurationMapper extends QBMapper
         $this->organisationService = $organisationService;
         $this->userSession         = $userSession;
         $this->groupManager        = $groupManager;
-        $this->session             = $session;
+        $this->session = $session;
 
     }//end __construct()
 
@@ -251,7 +252,7 @@ class ConfigurationMapper extends QBMapper
      *
      * @since 0.2.10
      */
-    public function findBySyncEnabled(int $limit = 50, int $offset = 0): array
+    public function findBySyncEnabled(int $limit=50, int $offset=0): array
     {
         // Verify RBAC permission to read
         $this->verifyRbacPermission('read', 'configuration');
@@ -261,7 +262,8 @@ class ConfigurationMapper extends QBMapper
         $qb->select('*')
             ->from($this->tableName)
             ->where($qb->expr()->eq('sync_enabled', $qb->createNamedParameter(true, IQueryBuilder::PARAM_BOOL)))
-            ->orderBy('last_sync_date', 'ASC') // Oldest first for priority sync
+            ->orderBy('last_sync_date', 'ASC')
+        // Oldest first for priority sync
             ->setMaxResults($limit)
             ->setFirstResult($offset);
 
@@ -276,16 +278,16 @@ class ConfigurationMapper extends QBMapper
     /**
      * Find configurations by local/external status
      *
-     * @param bool $isLocal  True for local configurations, false for external
-     * @param int  $limit    Maximum number of results
-     * @param int  $offset   Offset for pagination
+     * @param bool $isLocal True for local configurations, false for external
+     * @param int  $limit   Maximum number of results
+     * @param int  $offset  Offset for pagination
      *
      * @return Configuration[] Array of configuration entities
      * @throws \Exception If user doesn't have read permission
      *
      * @since 0.2.10
      */
-    public function findByIsLocal(bool $isLocal, int $limit = 50, int $offset = 0): array
+    public function findByIsLocal(bool $isLocal, int $limit=50, int $offset=0): array
     {
         // Verify RBAC permission to read
         $this->verifyRbacPermission('read', 'configuration');
@@ -310,17 +312,17 @@ class ConfigurationMapper extends QBMapper
     /**
      * Update synchronization status for a configuration
      *
-     * @param int       $id          Configuration ID
-     * @param string    $status      Sync status: 'success', 'failed', 'pending'
-     * @param \DateTime $syncDate    Synchronization timestamp
-     * @param string    $message     Optional message about the sync result
+     * @param int       $id       Configuration ID
+     * @param string    $status   Sync status: 'success', 'failed', 'pending'
+     * @param \DateTime $syncDate Synchronization timestamp
+     * @param string    $message  Optional message about the sync result
      *
      * @return Configuration The updated configuration
      * @throws \Exception If configuration not found or user doesn't have permission
      *
      * @since 0.2.10
      */
-    public function updateSyncStatus(int $id, string $status, \DateTime $syncDate, string $message = ''): Configuration
+    public function updateSyncStatus(int $id, string $status, \DateTime $syncDate, string $message=''): Configuration
     {
         // Verify RBAC permission to update
         $this->verifyRbacPermission('update', 'configuration');
@@ -353,7 +355,7 @@ class ConfigurationMapper extends QBMapper
             if (empty($entity->getUuid())) {
                 $entity->setUuid(\Symfony\Component\Uid\Uuid::v4()->toRfc4122());
             }
-            
+
             // Set default type if not provided (required by database)
             if (empty($entity->getType())) {
                 $entity->setType('default');
@@ -366,10 +368,10 @@ class ConfigurationMapper extends QBMapper
                     $entity->setOwner($currentUserId);
                 }
             }
-            
+
             $entity->setCreated(new DateTime());
             $entity->setUpdated(new DateTime());
-        }
+        }//end if
 
         // Auto-set organisation from active session
         $this->setOrganisationOnCreate($entity);
@@ -608,7 +610,7 @@ class ConfigurationMapper extends QBMapper
             return;
         }
 
-        $orgUuid = $activeOrg->getUuid();
+        $orgUuid    = $activeOrg->getUuid();
         $sessionKey = self::SESSION_KEY_PREFIX.$orgUuid;
 
         // Remove from session

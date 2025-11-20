@@ -37,10 +37,10 @@ use Symfony\Component\Uid\Uuid;
  * @category Database
  * @package  OCA\OpenRegister\Db
  *
- * @author   Conduction Development Team <info@conduction.nl>
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @version  GIT: <git_id>
- * @link     https://www.OpenRegister.app
+ * @author  Conduction Development Team <info@conduction.nl>
+ * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version GIT: <git_id>
+ * @link    https://www.OpenRegister.app
  */
 class AuthorizationExceptionMapper extends QBMapper
 {
@@ -147,7 +147,7 @@ class AuthorizationExceptionMapper extends QBMapper
      *
      * @return array<AuthorizationException> Array of authorization exceptions
      */
-    public function findBySubject(string $subjectType, string $subjectId, bool $activeOnly = true): array
+    public function findBySubject(string $subjectType, string $subjectId, bool $activeOnly=true): array
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -171,13 +171,13 @@ class AuthorizationExceptionMapper extends QBMapper
      * This method finds all authorization exceptions that match the given criteria,
      * ordered by priority (highest first) for proper exception resolution.
      *
-     * @param string      $subjectType       The subject type (user or group)
-     * @param string      $subjectId         The subject ID
-     * @param string      $action            The action (create, read, update, delete)
-     * @param string|null $schemaUuid        Optional schema UUID
-     * @param string|null $registerUuid      Optional register UUID
-     * @param string|null $organizationUuid  Optional organization UUID
-     * @param bool        $activeOnly        Whether to return only active exceptions
+     * @param string      $subjectType      The subject type (user or group)
+     * @param string      $subjectId        The subject ID
+     * @param string      $action           The action (create, read, update, delete)
+     * @param string|null $schemaUuid       Optional schema UUID
+     * @param string|null $registerUuid     Optional register UUID
+     * @param string|null $organizationUuid Optional organization UUID
+     * @param bool        $activeOnly       Whether to return only active exceptions
      *
      * @return array<AuthorizationException> Array of matching authorization exceptions
      */
@@ -185,10 +185,10 @@ class AuthorizationExceptionMapper extends QBMapper
         string $subjectType,
         string $subjectId,
         string $action,
-        ?string $schemaUuid = null,
-        ?string $registerUuid = null,
-        ?string $organizationUuid = null,
-        bool $activeOnly = true
+        ?string $schemaUuid=null,
+        ?string $registerUuid=null,
+        ?string $organizationUuid=null,
+        bool $activeOnly=true
     ): array {
         $qb = $this->db->getQueryBuilder();
 
@@ -251,7 +251,7 @@ class AuthorizationExceptionMapper extends QBMapper
      *
      * @return array<AuthorizationException> Array of authorization exceptions
      */
-    public function findBySchema(string $schemaUuid, bool $activeOnly = true): array
+    public function findBySchema(string $schemaUuid, bool $activeOnly=true): array
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -279,7 +279,7 @@ class AuthorizationExceptionMapper extends QBMapper
      *
      * @return array<AuthorizationException> Array of authorization exceptions
      */
-    public function findByRegister(string $registerUuid, bool $activeOnly = true): array
+    public function findByRegister(string $registerUuid, bool $activeOnly=true): array
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -307,7 +307,7 @@ class AuthorizationExceptionMapper extends QBMapper
      *
      * @return array<AuthorizationException> Array of authorization exceptions
      */
-    public function findByOrganization(string $organizationUuid, bool $activeOnly = true): array
+    public function findByOrganization(string $organizationUuid, bool $activeOnly=true): array
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -335,7 +335,7 @@ class AuthorizationExceptionMapper extends QBMapper
      *
      * @return array<AuthorizationException> Array of authorization exceptions
      */
-    public function findByType(string $type, bool $activeOnly = true): array
+    public function findByType(string $type, bool $activeOnly=true): array
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -372,7 +372,7 @@ class AuthorizationExceptionMapper extends QBMapper
     {
         $exception = $this->findByUuid($uuid);
         $exception->setActive(false);
-        
+
         return $this->updateException($exception);
 
     }//end deactivateException()
@@ -394,7 +394,7 @@ class AuthorizationExceptionMapper extends QBMapper
     {
         $exception = $this->findByUuid($uuid);
         $exception->setActive(true);
-        
+
         return $this->updateException($exception);
 
     }//end activateException()
@@ -413,7 +413,7 @@ class AuthorizationExceptionMapper extends QBMapper
     public function deleteByUuid(string $uuid): AuthorizationException
     {
         $exception = $this->findByUuid($uuid);
-        
+
         return $this->delete($exception);
 
     }//end deleteByUuid()
@@ -426,10 +426,10 @@ class AuthorizationExceptionMapper extends QBMapper
      *
      * @return int The number of matching authorization exceptions
      */
-    public function countByCriteria(array $criteria = []): int
+    public function countByCriteria(array $criteria=[]): int
     {
         $qb = $this->db->getQueryBuilder();
-        
+
         $qb->select($qb->func()->count('*'))
             ->from($this->getTableName());
 
@@ -459,13 +459,12 @@ class AuthorizationExceptionMapper extends QBMapper
         }
 
         $result = $qb->execute();
-        $count = $result->fetchOne();
+        $count  = $result->fetchOne();
         $result->closeCursor();
-        
+
         return (int) $count;
 
     }//end countByCriteria()
 
 
 }//end class
-

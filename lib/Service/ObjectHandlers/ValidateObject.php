@@ -1407,22 +1407,28 @@ class ValidateObject
 
         if ($count !== 0) {
             // IMPROVED ERROR MESSAGE: Show which field(s) caused the uniqueness violation
-            $fieldNames = is_array($uniqueFields) ? implode(', ', $uniqueFields) : $uniqueFields;
-            $fieldValues = is_array($uniqueFields) ? 
-                implode(', ', array_map(function($field) use ($object) { 
-                    return $field . '=' . ($object[$field] ?? 'null'); 
-                }, $uniqueFields)) : 
-                $uniqueFields . '=' . ($object[$uniqueFields] ?? 'null');
-                
+            $fieldNames  = is_array($uniqueFields) ? implode(', ', $uniqueFields) : $uniqueFields;
+            $fieldValues = is_array($uniqueFields) ? implode(
+                        ', ',
+                        array_map(
+                        function ($field) use ($object) {
+                            return $field.'='.($object[$field] ?? 'null');
+                        },
+                        $uniqueFields
+                        )
+                        ) : $uniqueFields.'='.($object[$uniqueFields] ?? 'null');
+
             throw new CustomValidationException(
-                message: "Fields are not unique: {$fieldNames} (values: {$fieldValues})", 
-                errors: [[
-                    'name' => is_array($uniqueFields) ? array_shift($uniqueFields) : $uniqueFields, 
-                    'code' => 'identificatie-niet-uniek', 
-                    'reason' => "The identifying fields ({$fieldNames}) are not unique. Found duplicate values: {$fieldValues}"
-                ]]
+                message: "Fields are not unique: {$fieldNames} (values: {$fieldValues})",
+                errors: [
+                    [
+                        'name'   => is_array($uniqueFields) ? array_shift($uniqueFields) : $uniqueFields,
+                        'code'   => 'identificatie-niet-uniek',
+                        'reason' => "The identifying fields ({$fieldNames}) are not unique. Found duplicate values: {$fieldValues}",
+                    ],
+                ]
             );
-        }
+        }//end if
 
     }//end validateUniqueFields()
 

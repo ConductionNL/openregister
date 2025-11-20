@@ -33,16 +33,28 @@ use OCP\AppFramework\Db\Entity;
  */
 class Feedback extends Entity implements JsonSerializable
 {
+
     protected string $uuid = '';
+
     protected int $messageId = 0;
+
     protected int $conversationId = 0;
+
     protected int $agentId = 0;
+
     protected string $userId = '';
+
     protected ?string $organisation = null;
-    protected string $type = ''; // 'positive' or 'negative'
+
+    protected string $type = '';
+
+    // 'positive' or 'negative'
     protected ?string $comment = null;
+
     protected ?\DateTime $created = null;
+
     protected ?\DateTime $updated = null;
+
 
     public function __construct()
     {
@@ -56,23 +68,27 @@ class Feedback extends Entity implements JsonSerializable
         $this->addType('comment', 'string');
         $this->addType('created', 'datetime');
         $this->addType('updated', 'datetime');
-    }
+
+    }//end __construct()
+
 
     public function jsonSerialize(): array
     {
         return [
-            'id' => $this->id,
-            'uuid' => $this->uuid,
-            'messageId' => $this->messageId,
+            'id'             => $this->id,
+            'uuid'           => $this->uuid,
+            'messageId'      => $this->messageId,
             'conversationId' => $this->conversationId,
-            'agentId' => $this->agentId,
-            'userId' => $this->userId,
-            'organisation' => $this->organisation,
-            'type' => $this->type,
-            'comment' => $this->comment,
-            'created' => $this->created?->format('c'),
-            'updated' => $this->updated?->format('c'),
+            'agentId'        => $this->agentId,
+            'userId'         => $this->userId,
+            'organisation'   => $this->organisation,
+            'type'           => $this->type,
+            'comment'        => $this->comment,
+            'created'        => $this->created?->format('c'),
+            'updated'        => $this->updated?->format('c'),
         ];
-    }
-}
 
+    }//end jsonSerialize()
+
+
+}//end class

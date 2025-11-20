@@ -34,28 +34,31 @@ use OCP\Migration\SimpleMigrationStep;
  * @category Database
  * @package  OCA\OpenRegister\Migration
  *
- * @author   Conduction Development Team <info@conduction.nl>
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @version  GIT: <git_id>
- * @link     https://www.OpenRegister.app
+ * @author  Conduction Development Team <info@conduction.nl>
+ * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version GIT: <git_id>
+ * @link    https://www.OpenRegister.app
  */
 class Version1Date20250903160000 extends SimpleMigrationStep
 {
 
+
     /**
      * Perform the migration
      *
-     * @param IOutput         $output The output interface for logging
-     * @param Closure         $schemaClosure Closure that returns the current schema
-     * @param array           $options Migration options
+     * @param         IOutput $output        The output interface for logging
+     * @param         Closure $schemaClosure Closure that returns the current schema
+     * @param         array   $options       Migration options
      * @phpstan-param array<string, mixed> $options
-     * @psalm-param array<string, mixed> $options
+     * @psalm-param   array<string, mixed> $options
      *
      * @return ISchemaWrapper|null The new schema or null if no changes
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /** @var ISchemaWrapper $schema */
+        /*
+         * @var ISchemaWrapper $schema
+         */
         $schema = $schemaClosure();
 
         // Skip if table doesn't exist yet
@@ -63,11 +66,10 @@ class Version1Date20250903160000 extends SimpleMigrationStep
             return null;
         }
 
-        $table = $schema->getTable('openregister_authorization_exceptions');
+        $table   = $schema->getTable('openregister_authorization_exceptions');
         $changed = false;
 
         // Add performance optimization indexes if they don't exist
-
         // 1. Composite index for most common lookup pattern (user/group + action + active + priority)
         if (!$table->hasIndex('openregister_auth_exc_perf_lookup')) {
             $table->addIndex(

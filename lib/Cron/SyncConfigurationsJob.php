@@ -8,13 +8,13 @@
  * @category Cron
  * @package  OCA\OpenRegister\Cron
  *
- * @author   Conduction Development Team <info@conduction.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2025 Conduction B.V.
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version  GIT: <git_id>
+ * @version GIT: <git_id>
  *
- * @link     https://www.OpenRegister.app
+ * @link https://www.OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Cron;
@@ -106,13 +106,13 @@ class SyncConfigurationsJob extends TimedJob
         LoggerInterface $logger
     ) {
         parent::__construct($time);
-        
+
         $this->configurationMapper  = $configurationMapper;
         $this->configurationService = $configurationService;
         $this->githubService        = $githubService;
         $this->gitlabService        = $gitlabService;
         $this->httpClient           = $httpClient;
-        $this->logger               = $logger;
+        $this->logger = $logger;
 
         // Run every hour (3600 seconds)
         $this->setInterval(3600);
@@ -154,13 +154,13 @@ class SyncConfigurationsJob extends TimedJob
 
                     // Sync the configuration based on source type
                     $this->syncConfiguration($configuration);
-                    
+
                     $synced++;
                     $this->logger->info("Successfully synced configuration {$configuration->getTitle()}");
                 } catch (Exception $e) {
                     $failed++;
                     $this->logger->error("Error syncing configuration {$configuration->getId()}: ".$e->getMessage());
-                    
+
                     // Update sync status to failed
                     try {
                         $this->configurationMapper->updateSyncStatus(
@@ -172,14 +172,13 @@ class SyncConfigurationsJob extends TimedJob
                     } catch (Exception $statusError) {
                         $this->logger->error("Failed to update sync status: ".$statusError->getMessage());
                     }
-                    
+
                     continue;
                 }//end try
             }//end foreach
 
             $this->logger->info(
-                "Configuration sync job completed: ".
-                "{$synced} synced, {$skipped} skipped, {$failed} failed"
+                "Configuration sync job completed: "."{$synced} synced, {$skipped} skipped, {$failed} failed"
             );
         } catch (Exception $e) {
             $this->logger->error('Configuration sync job failed: '.$e->getMessage());
@@ -203,11 +202,11 @@ class SyncConfigurationsJob extends TimedJob
         }
 
         // Calculate time since last sync
-        $now = new DateTime();
+        $now      = new DateTime();
         $lastSync = $configuration->getLastSyncDate();
-        $interval = $configuration->getSyncInterval(); // In hours
-
-        $diff = $now->getTimestamp() - $lastSync->getTimestamp();
+        $interval = $configuration->getSyncInterval();
+        // In hours
+        $diff        = $now->getTimestamp() - $lastSync->getTimestamp();
         $hoursPassed = $diff / 3600;
 
         return $hoursPassed >= $interval;
@@ -261,9 +260,10 @@ class SyncConfigurationsJob extends TimedJob
      */
     private function syncFromGitHub(Configuration $configuration): void
     {
-        $githubRepo = $configuration->getGithubRepo(); // Format: owner/repo
+        $githubRepo = $configuration->getGithubRepo();
+        // Format: owner/repo
         $githubBranch = $configuration->getGithubBranch() ?? 'main';
-        $githubPath = $configuration->getGithubPath();
+        $githubPath   = $configuration->getGithubPath();
 
         if (empty($githubRepo) || empty($githubPath)) {
             throw new Exception('GitHub repository and path are required');
@@ -375,7 +375,7 @@ class SyncConfigurationsJob extends TimedJob
 
         $configData = json_decode($content, true);
         if (json_last_error() !== JSON_ERROR_NONE) {
-            throw new Exception('Invalid JSON in URL response: ' . json_last_error_msg());
+            throw new Exception('Invalid JSON in URL response: '.json_last_error_msg());
         }
 
         // Get app ID and version
@@ -439,8 +439,3 @@ class SyncConfigurationsJob extends TimedJob
 
 
 }//end class
-
-
-
-
-

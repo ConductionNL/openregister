@@ -38,18 +38,21 @@ use OCP\Migration\SimpleMigrationStep;
 class Version1Date20251107140000 extends SimpleMigrationStep
 {
 
+
     /**
      * Change the database schema
      *
-     * @param IOutput         $output The output interface
-     * @param Closure         $schemaClosure The schema closure
-     * @param array           $options The options
+     * @param IOutput $output        The output interface
+     * @param Closure $schemaClosure The schema closure
+     * @param array   $options       The options
      *
      * @return null|ISchemaWrapper The schema wrapper
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /** @var ISchemaWrapper $schema */
+        /*
+         * @var ISchemaWrapper $schema
+         */
         $schema = $schemaClosure();
 
         // Check if the configurations table exists
@@ -105,7 +108,7 @@ class Version1Date20251107140000 extends SimpleMigrationStep
             }
 
             return $schema;
-        }
+        }//end if
 
         return null;
 
@@ -113,4 +116,3 @@ class Version1Date20251107140000 extends SimpleMigrationStep
 
 
 }//end class
-

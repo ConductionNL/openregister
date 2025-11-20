@@ -18,6 +18,8 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20250902130000 extends SimpleMigrationStep
 {
+
+
     /**
      * Apply database schema changes for search performance
      *
@@ -29,7 +31,7 @@ class Version1Date20250902130000 extends SimpleMigrationStep
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /**
+        /*
          * @var ISchemaWrapper $schema
          */
         $schema = $schemaClosure();
@@ -45,7 +47,9 @@ class Version1Date20250902130000 extends SimpleMigrationStep
         $output->info('Skipping name index creation to avoid MySQL key length issues');
 
         return $schema;
-    }
+
+    }//end changeSchema()
+
 
     /**
      * Execute raw SQL for TEXT column prefix indexes
@@ -58,7 +62,7 @@ class Version1Date20250902130000 extends SimpleMigrationStep
      */
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
-        /**
+        /*
          * @var ISchemaWrapper $schema
          */
         $schema = $schemaClosure();
@@ -73,5 +77,8 @@ class Version1Date20250902130000 extends SimpleMigrationStep
         // Skip complex index creation for now to avoid MySQL key length issues
         // TODO: Add indexes after app is enabled
         $output->info('Skipping complex index creation to avoid MySQL key length issues');
-    }
-}
+
+    }//end postSchemaChange()
+
+
+}//end class

@@ -75,14 +75,14 @@ class DeleteObject
     /**
      * Constructor for DeleteObject handler.
      *
-     * @param ObjectEntityMapper        $objectEntityMapper        Object entity data mapper.
-     * @param FileService               $fileService               File service for managing files.
-     * @param ObjectCacheService        $objectCacheService        Object cache service for entity and query caching.
-     * @param SchemaCacheService        $schemaCacheService        Schema cache service for schema entity caching.
-     * @param SchemaFacetCacheService   $schemaFacetCacheService   Schema facet cache service for facet caching.
-     * @param AuditTrailMapper          $auditTrailMapper          Audit trail mapper for logs.
-     * @param SettingsService           $settingsService           Settings service for accessing trail settings.
-     * @param LoggerInterface           $logger                    Logger for error handling.
+     * @param ObjectEntityMapper      $objectEntityMapper      Object entity data mapper.
+     * @param FileService             $fileService             File service for managing files.
+     * @param ObjectCacheService      $objectCacheService      Object cache service for entity and query caching.
+     * @param SchemaCacheService      $schemaCacheService      Schema cache service for schema entity caching.
+     * @param SchemaFacetCacheService $schemaFacetCacheService Schema facet cache service for facet caching.
+     * @param AuditTrailMapper        $auditTrailMapper        Audit trail mapper for logs.
+     * @param SettingsService         $settingsService         Settings service for accessing trail settings.
+     * @param LoggerInterface         $logger                  Logger for error handling.
      */
     public function __construct(
         private readonly ObjectEntityMapper $objectEntityMapper,
@@ -146,6 +146,7 @@ class DeleteObject
             $log = $this->auditTrailMapper->createAuditTrail(old: $objectEntity, new: null, action: 'delete');
             // $result->setLastLog($log->jsonSerialize());
         }
+
         return $result;
 
     }//end delete()
@@ -266,6 +267,7 @@ class DeleteObject
             $this->logger->warning('Failed to check audit trails setting, defaulting to enabled', ['error' => $e->getMessage()]);
             return true;
         }
+
     }//end isAuditTrailsEnabled()
 
 

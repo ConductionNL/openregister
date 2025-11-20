@@ -16,10 +16,14 @@ use OCP\IDBConnection;
  */
 class FeedbackMapper extends QBMapper
 {
+
+
     public function __construct(IDBConnection $db)
     {
         parent::__construct($db, 'openregister_feedback', Feedback::class);
-    }
+
+    }//end __construct()
+
 
     /**
      * Override insert to generate UUID and timestamps
@@ -36,10 +40,13 @@ class FeedbackMapper extends QBMapper
         if ($entity->getCreated() === null) {
             $entity->setCreated($now);
         }
+
         $entity->setUpdated($now);
 
         return parent::insert($entity);
-    }
+
+    }//end insert()
+
 
     /**
      * Override update to set updated timestamp
@@ -48,7 +55,9 @@ class FeedbackMapper extends QBMapper
     {
         $entity->setUpdated(new \DateTime());
         return parent::update($entity);
-    }
+
+    }//end update()
+
 
     /**
      * Find feedback by UUID
@@ -65,7 +74,9 @@ class FeedbackMapper extends QBMapper
             ->where($qb->expr()->eq('uuid', $qb->createNamedParameter($uuid, IQueryBuilder::PARAM_STR)));
 
         return $this->findEntity($qb);
-    }
+
+    }//end findByUuid()
+
 
     /**
      * Find feedback for a specific message
@@ -89,7 +100,9 @@ class FeedbackMapper extends QBMapper
         } catch (DoesNotExistException $e) {
             return null;
         }
-    }
+
+    }//end findByMessage()
+
 
     /**
      * Find all feedback for a conversation
@@ -108,18 +121,20 @@ class FeedbackMapper extends QBMapper
             ->orderBy('created', 'DESC');
 
         return $this->findEntities($qb);
-    }
+
+    }//end findByConversation()
+
 
     /**
      * Find all feedback for an agent
      *
-     * @param int    $agentId Agent ID
-     * @param int    $limit   Limit
-     * @param int    $offset  Offset
+     * @param int $agentId Agent ID
+     * @param int $limit   Limit
+     * @param int $offset  Offset
      *
      * @return array<Feedback>
      */
-    public function findByAgent(int $agentId, int $limit = 100, int $offset = 0): array
+    public function findByAgent(int $agentId, int $limit=100, int $offset=0): array
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -131,7 +146,9 @@ class FeedbackMapper extends QBMapper
             ->setFirstResult($offset);
 
         return $this->findEntities($qb);
-    }
+
+    }//end findByAgent()
+
 
     /**
      * Count feedback by agent and type
@@ -141,7 +158,7 @@ class FeedbackMapper extends QBMapper
      *
      * @return int
      */
-    public function countByAgent(int $agentId, ?string $type = null): int
+    public function countByAgent(int $agentId, ?string $type=null): int
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -154,23 +171,25 @@ class FeedbackMapper extends QBMapper
         }
 
         $result = $qb->execute();
-        $count = (int) $result->fetchOne();
+        $count  = (int) $result->fetchOne();
         $result->closeCursor();
 
         return $count;
-    }
+
+    }//end countByAgent()
+
 
     /**
      * Find all feedback by user
      *
-     * @param string      $userId        User ID
-     * @param string|null $organisation  Organisation UUID
-     * @param int         $limit         Limit
-     * @param int         $offset        Offset
+     * @param string      $userId       User ID
+     * @param string|null $organisation Organisation UUID
+     * @param int         $limit        Limit
+     * @param int         $offset       Offset
      *
      * @return array<Feedback>
      */
-    public function findByUser(string $userId, ?string $organisation = null, int $limit = 100, int $offset = 0): array
+    public function findByUser(string $userId, ?string $organisation=null, int $limit=100, int $offset=0): array
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -186,7 +205,9 @@ class FeedbackMapper extends QBMapper
         }
 
         return $this->findEntities($qb);
-    }
+
+    }//end findByUser()
+
 
     /**
      * Delete all feedback for a message
@@ -201,7 +222,9 @@ class FeedbackMapper extends QBMapper
             ->where($qb->expr()->eq('message_id', $qb->createNamedParameter($messageId, IQueryBuilder::PARAM_INT)));
 
         $qb->execute();
-    }
+
+    }//end deleteByMessage()
+
 
     /**
      * Delete all feedback for a conversation
@@ -216,6 +239,8 @@ class FeedbackMapper extends QBMapper
             ->where($qb->expr()->eq('conversation_id', $qb->createNamedParameter($conversationId, IQueryBuilder::PARAM_INT)));
 
         $qb->execute();
-    }
-}
 
+    }//end deleteByConversation()
+
+
+}//end class

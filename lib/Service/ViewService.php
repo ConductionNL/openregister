@@ -129,7 +129,7 @@ class ViewService
 
             return $this->viewMapper->insert($view);
         } catch (Exception $e) {
-            $this->logger->error('Error creating view: ' . $e->getMessage());
+            $this->logger->error('Error creating view: '.$e->getMessage());
             throw $e;
         }
 
@@ -159,7 +159,7 @@ class ViewService
         bool $isPublic,
         bool $isDefault,
         array $query,
-        ?array $favoredBy = null
+        ?array $favoredBy=null
     ): View {
         try {
             $view = $this->find($id, $owner);
@@ -174,7 +174,7 @@ class ViewService
             $view->setIsPublic($isPublic);
             $view->setIsDefault($isDefault);
             $view->setQuery($query);
-            
+
             // Update favoredBy if provided
             if ($favoredBy !== null) {
                 $view->setFavoredBy($favoredBy);
@@ -182,9 +182,9 @@ class ViewService
 
             return $this->viewMapper->update($view);
         } catch (Exception $e) {
-            $this->logger->error('Error updating view: ' . $e->getMessage());
+            $this->logger->error('Error updating view: '.$e->getMessage());
             throw $e;
-        }
+        }//end try
 
     }//end update()
 
@@ -205,7 +205,7 @@ class ViewService
             $view = $this->find($id, $owner);
             $this->viewMapper->delete($view);
         } catch (Exception $e) {
-            $this->logger->error('Error deleting view: ' . $e->getMessage());
+            $this->logger->error('Error deleting view: '.$e->getMessage());
             throw $e;
         }
 
@@ -226,7 +226,7 @@ class ViewService
     public function toggleFavorite(int | string $id, string $owner, bool $favor): View
     {
         try {
-            $view = $this->find($id, $owner);
+            $view      = $this->find($id, $owner);
             $favoredBy = $view->getFavoredBy() ?? [];
 
             if ($favor === true) {
@@ -242,7 +242,7 @@ class ViewService
             $view->setFavoredBy($favoredBy);
             return $this->viewMapper->update($view);
         } catch (Exception $e) {
-            $this->logger->error('Error toggling favorite: ' . $e->getMessage());
+            $this->logger->error('Error toggling favorite: '.$e->getMessage());
             throw $e;
         }
 
@@ -270,4 +270,3 @@ class ViewService
 
 
 }//end class
-

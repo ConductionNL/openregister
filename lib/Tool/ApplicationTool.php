@@ -8,13 +8,13 @@
  * @category Tool
  * @package  OCA\OpenRegister\Tool
  *
- * @author   Conduction Development Team <dev@conduction.nl>
+ * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version  GIT: <git_id>
+ * @version GIT: <git_id>
  *
- * @link     https://www.OpenRegister.nl
+ * @link https://www.OpenRegister.nl
  */
 
 declare(strict_types=1);
@@ -38,12 +38,14 @@ use Psr\Log\LoggerInterface;
  */
 class ApplicationTool extends AbstractTool implements ToolInterface
 {
+
     /**
      * Application mapper for database operations
      *
      * @var ApplicationMapper
      */
     private ApplicationMapper $applicationMapper;
+
 
     /**
      * ApplicationTool constructor
@@ -59,7 +61,9 @@ class ApplicationTool extends AbstractTool implements ToolInterface
     ) {
         parent::__construct($userSession, $logger);
         $this->applicationMapper = $applicationMapper;
-    }
+
+    }//end __construct()
+
 
     /**
      * Get the tool name
@@ -69,7 +73,9 @@ class ApplicationTool extends AbstractTool implements ToolInterface
     public function getName(): string
     {
         return 'Application Management';
-    }
+
+    }//end getName()
+
 
     /**
      * Get the tool description
@@ -79,7 +85,9 @@ class ApplicationTool extends AbstractTool implements ToolInterface
     public function getDescription(): string
     {
         return 'Manage applications in OpenRegister. Applications represent software modules or systems within an organisation. Use this tool to list, view, create, update, or delete applications. Operations respect RBAC permissions and organisation boundaries.';
-    }
+
+    }//end getDescription()
+
 
     /**
      * Get function definitions for LLM function calling
@@ -93,101 +101,103 @@ class ApplicationTool extends AbstractTool implements ToolInterface
     {
         return [
             [
-                'name' => 'list_applications',
+                'name'        => 'list_applications',
                 'description' => 'List all applications accessible to the current user in their organisation. Returns basic information about each application. Use filters to narrow results.',
-                'parameters' => [
-                    'type' => 'object',
+                'parameters'  => [
+                    'type'       => 'object',
                     'properties' => [
-                        'limit' => [
-                            'type' => 'integer',
+                        'limit'  => [
+                            'type'        => 'integer',
                             'description' => 'Maximum number of results to return (default: 50)',
                         ],
                         'offset' => [
-                            'type' => 'integer',
+                            'type'        => 'integer',
                             'description' => 'Number of results to skip for pagination (default: 0)',
                         ],
                     ],
-                    'required' => [],
+                    'required'   => [],
                 ],
             ],
             [
-                'name' => 'get_application',
+                'name'        => 'get_application',
                 'description' => 'Get detailed information about a specific application by its UUID. Returns full application data including name, description, metadata, and configuration.',
-                'parameters' => [
-                    'type' => 'object',
+                'parameters'  => [
+                    'type'       => 'object',
                     'properties' => [
                         'uuid' => [
-                            'type' => 'string',
+                            'type'        => 'string',
                             'description' => 'UUID of the application to retrieve',
                         ],
                     ],
-                    'required' => ['uuid'],
+                    'required'   => ['uuid'],
                 ],
             ],
             [
-                'name' => 'create_application',
+                'name'        => 'create_application',
                 'description' => 'Create a new application in the current organisation. Requires a unique name and can include description, metadata, and configuration.',
-                'parameters' => [
-                    'type' => 'object',
+                'parameters'  => [
+                    'type'       => 'object',
                     'properties' => [
-                        'name' => [
-                            'type' => 'string',
+                        'name'        => [
+                            'type'        => 'string',
                             'description' => 'Name of the application (required)',
                         ],
                         'description' => [
-                            'type' => 'string',
+                            'type'        => 'string',
                             'description' => 'Description of what the application does',
                         ],
-                        'domain' => [
-                            'type' => 'string',
+                        'domain'      => [
+                            'type'        => 'string',
                             'description' => 'Domain or URL where the application is hosted',
                         ],
                     ],
-                    'required' => ['name'],
+                    'required'   => ['name'],
                 ],
             ],
             [
-                'name' => 'update_application',
+                'name'        => 'update_application',
                 'description' => 'Update an existing application. Only the owner or users with update permission can modify applications. Provide the UUID and fields to update.',
-                'parameters' => [
-                    'type' => 'object',
+                'parameters'  => [
+                    'type'       => 'object',
                     'properties' => [
-                        'uuid' => [
-                            'type' => 'string',
+                        'uuid'        => [
+                            'type'        => 'string',
                             'description' => 'UUID of the application to update',
                         ],
-                        'name' => [
-                            'type' => 'string',
+                        'name'        => [
+                            'type'        => 'string',
                             'description' => 'New name for the application',
                         ],
                         'description' => [
-                            'type' => 'string',
+                            'type'        => 'string',
                             'description' => 'New description',
                         ],
-                        'domain' => [
-                            'type' => 'string',
+                        'domain'      => [
+                            'type'        => 'string',
                             'description' => 'New domain or URL',
                         ],
                     ],
-                    'required' => ['uuid'],
+                    'required'   => ['uuid'],
                 ],
             ],
             [
-                'name' => 'delete_application',
+                'name'        => 'delete_application',
                 'description' => 'Delete an application permanently. Only the owner or users with delete permission can remove applications. This action cannot be undone.',
-                'parameters' => [
-                    'type' => 'object',
+                'parameters'  => [
+                    'type'       => 'object',
                     'properties' => [
                         'uuid' => [
-                            'type' => 'string',
+                            'type'        => 'string',
                             'description' => 'UUID of the application to delete',
                         ],
                     ],
-                    'required' => ['uuid'],
+                    'required'   => ['uuid'],
                 ],
             ],
         ];
-    }
+
+    }//end getFunctions()
+
 
     /**
      * List applications
@@ -197,34 +207,45 @@ class ApplicationTool extends AbstractTool implements ToolInterface
      *
      * @return array Response with applications list
      */
-    public function listApplications(int $limit = 50, int $offset = 0): array
+    public function listApplications(int $limit=50, int $offset=0): array
     {
         try {
-            $this->logger->info('[ApplicationTool] Listing applications', [
-                'limit' => $limit,
-                'offset' => $offset,
-            ]);
+            $this->logger->info(
+                    '[ApplicationTool] Listing applications',
+                    [
+                        'limit'  => $limit,
+                        'offset' => $offset,
+                    ]
+                    );
 
             // Get applications via mapper (RBAC is enforced in mapper)
             $applications = $this->applicationMapper->findAll($limit, $offset);
-            $total = $this->applicationMapper->count();
+            $total        = $this->applicationMapper->count();
 
             // Convert to array
             $results = array_map(fn ($app) => $app->jsonSerialize(), $applications);
 
-            return $this->formatSuccess([
-                'applications' => $results,
-                'total' => $total,
-                'limit' => $limit,
-                'offset' => $offset,
-            ], "Found {$total} applications.");
+            return $this->formatSuccess(
+                    [
+                        'applications' => $results,
+                        'total'        => $total,
+                        'limit'        => $limit,
+                        'offset'       => $offset,
+                    ],
+                    "Found {$total} applications."
+                    );
         } catch (\Exception $e) {
-            $this->logger->error('[ApplicationTool] Failed to list applications', [
-                'error' => $e->getMessage(),
-            ]);
-            return $this->formatError('Failed to list applications: ' . $e->getMessage());
-        }
-    }
+            $this->logger->error(
+                    '[ApplicationTool] Failed to list applications',
+                    [
+                        'error' => $e->getMessage(),
+                    ]
+                    );
+            return $this->formatError('Failed to list applications: '.$e->getMessage());
+        }//end try
+
+    }//end listApplications()
+
 
     /**
      * Get application details
@@ -248,13 +269,18 @@ class ApplicationTool extends AbstractTool implements ToolInterface
         } catch (DoesNotExistException $e) {
             return $this->formatError("Application with UUID '{$uuid}' not found.");
         } catch (\Exception $e) {
-            $this->logger->error('[ApplicationTool] Failed to get application', [
-                'uuid' => $uuid,
-                'error' => $e->getMessage(),
-            ]);
-            return $this->formatError('Failed to get application: ' . $e->getMessage());
-        }
-    }
+            $this->logger->error(
+                    '[ApplicationTool] Failed to get application',
+                    [
+                        'uuid'  => $uuid,
+                        'error' => $e->getMessage(),
+                    ]
+                    );
+            return $this->formatError('Failed to get application: '.$e->getMessage());
+        }//end try
+
+    }//end getApplication()
+
 
     /**
      * Create application
@@ -267,8 +293,8 @@ class ApplicationTool extends AbstractTool implements ToolInterface
      */
     public function createApplication(
         string $name,
-        ?string $description = null,
-        ?string $domain = null
+        ?string $description=null,
+        ?string $domain=null
     ): array {
         try {
             $this->logger->info('[ApplicationTool] Creating application', ['name' => $name]);
@@ -279,6 +305,7 @@ class ApplicationTool extends AbstractTool implements ToolInterface
             if ($description) {
                 $application->setDescription($description);
             }
+
             if ($domain) {
                 $application->setDomain($domain);
             }
@@ -291,13 +318,18 @@ class ApplicationTool extends AbstractTool implements ToolInterface
                 "Application '{$name}' created successfully with UUID {$application->getUuid()}."
             );
         } catch (\Exception $e) {
-            $this->logger->error('[ApplicationTool] Failed to create application', [
-                'name' => $name,
-                'error' => $e->getMessage(),
-            ]);
-            return $this->formatError('Failed to create application: ' . $e->getMessage());
-        }
-    }
+            $this->logger->error(
+                    '[ApplicationTool] Failed to create application',
+                    [
+                        'name'  => $name,
+                        'error' => $e->getMessage(),
+                    ]
+                    );
+            return $this->formatError('Failed to create application: '.$e->getMessage());
+        }//end try
+
+    }//end createApplication()
+
 
     /**
      * Update application
@@ -311,9 +343,9 @@ class ApplicationTool extends AbstractTool implements ToolInterface
      */
     public function updateApplication(
         string $uuid,
-        ?string $name = null,
-        ?string $description = null,
-        ?string $domain = null
+        ?string $name=null,
+        ?string $description=null,
+        ?string $domain=null
     ): array {
         try {
             $this->logger->info('[ApplicationTool] Updating application', ['uuid' => $uuid]);
@@ -325,9 +357,11 @@ class ApplicationTool extends AbstractTool implements ToolInterface
             if ($name !== null) {
                 $application->setName($name);
             }
+
             if ($description !== null) {
                 $application->setDescription($description);
             }
+
             if ($domain !== null) {
                 $application->setDomain($domain);
             }
@@ -342,13 +376,18 @@ class ApplicationTool extends AbstractTool implements ToolInterface
         } catch (DoesNotExistException $e) {
             return $this->formatError("Application with UUID '{$uuid}' not found.");
         } catch (\Exception $e) {
-            $this->logger->error('[ApplicationTool] Failed to update application', [
-                'uuid' => $uuid,
-                'error' => $e->getMessage(),
-            ]);
-            return $this->formatError('Failed to update application: ' . $e->getMessage());
-        }
-    }
+            $this->logger->error(
+                    '[ApplicationTool] Failed to update application',
+                    [
+                        'uuid'  => $uuid,
+                        'error' => $e->getMessage(),
+                    ]
+                    );
+            return $this->formatError('Failed to update application: '.$e->getMessage());
+        }//end try
+
+    }//end updateApplication()
+
 
     /**
      * Delete application
@@ -364,7 +403,7 @@ class ApplicationTool extends AbstractTool implements ToolInterface
 
             // Find application (RBAC enforced in mapper)
             $application = $this->applicationMapper->findByUuid($uuid);
-            $name = $application->getName();
+            $name        = $application->getName();
 
             // Delete (RBAC enforced in mapper)
             $this->applicationMapper->delete($application);
@@ -376,13 +415,18 @@ class ApplicationTool extends AbstractTool implements ToolInterface
         } catch (DoesNotExistException $e) {
             return $this->formatError("Application with UUID '{$uuid}' not found.");
         } catch (\Exception $e) {
-            $this->logger->error('[ApplicationTool] Failed to delete application', [
-                'uuid' => $uuid,
-                'error' => $e->getMessage(),
-            ]);
-            return $this->formatError('Failed to delete application: ' . $e->getMessage());
-        }
-    }
+            $this->logger->error(
+                    '[ApplicationTool] Failed to delete application',
+                    [
+                        'uuid'  => $uuid,
+                        'error' => $e->getMessage(),
+                    ]
+                    );
+            return $this->formatError('Failed to delete application: '.$e->getMessage());
+        }//end try
+
+    }//end deleteApplication()
+
 
     /**
      * Execute a function by name
@@ -393,13 +437,15 @@ class ApplicationTool extends AbstractTool implements ToolInterface
      *
      * @return array Response
      */
-    public function executeFunction(string $functionName, array $parameters, ?string $userId = null): array
+    public function executeFunction(string $functionName, array $parameters, ?string $userId=null): array
     {
         // Convert snake_case to camelCase for PSR compliance
         $methodName = lcfirst(str_replace('_', '', ucwords($functionName, '_')));
-        
+
         // Call the method directly (LLPhant-compatible)
         return $this->$methodName(...array_values($parameters));
-    }
-}
 
+    }//end executeFunction()
+
+
+}//end class

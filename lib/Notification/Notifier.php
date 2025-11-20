@@ -121,7 +121,7 @@ class Notifier implements INotifier
     private function prepareConfigurationUpdate(INotification $notification, $l): INotification
     {
         $parameters = $notification->getSubjectParameters();
-        
+
         $configurationTitle = $parameters['configurationTitle'] ?? 'Configuration';
         $currentVersion     = $parameters['currentVersion'] ?? 'unknown';
         $newVersion         = $parameters['newVersion'] ?? 'unknown';
@@ -152,7 +152,7 @@ class Notifier implements INotifier
                     ).'#/configurations/'.$parameters['configurationId'],
                     'GET'
                 );
-            
+
             $notification->addAction($action);
         }
 
@@ -162,5 +162,3 @@ class Notifier implements INotifier
 
 
 }//end class
-
-

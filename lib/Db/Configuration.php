@@ -178,7 +178,7 @@ class Configuration extends Entity implements JsonSerializable
     /**
      * Whether to automatically update when new version is available
      *
-     * @var bool
+     * @var boolean
      */
     protected $autoUpdate = false;
 
@@ -215,7 +215,7 @@ class Configuration extends Entity implements JsonSerializable
      * Local configurations are created/maintained in this installation
      * External configurations are imported and synchronized from remote sources
      *
-     * @var bool
+     * @var boolean
      */
     protected bool $isLocal = true;
 
@@ -223,7 +223,7 @@ class Configuration extends Entity implements JsonSerializable
      * Whether automatic synchronization is enabled for this configuration
      * Only applicable for external configurations (isLocal = false)
      *
-     * @var bool
+     * @var boolean
      */
     protected bool $syncEnabled = false;
 
@@ -231,7 +231,7 @@ class Configuration extends Entity implements JsonSerializable
      * Synchronization interval in hours
      * How often to check for updates from the source
      *
-     * @var int
+     * @var integer
      */
     protected int $syncInterval = 24;
 
@@ -475,7 +475,8 @@ class Configuration extends Entity implements JsonSerializable
             'description'        => $this->description,
             'type'               => $this->type,
             'app'                => $this->app,
-            'application'        => $this->app, // Alias for frontend compatibility
+            'application'        => $this->app,
+        // Alias for frontend compatibility
             'version'            => $this->version,
             'sourceType'         => $this->sourceType,
             'sourceUrl'          => $this->sourceUrl,
