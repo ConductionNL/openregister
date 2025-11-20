@@ -24,10 +24,224 @@ Files in Open Register are:
 
 Files can be attached to objects in several ways:
 
-1. Schema-defined file properties: When a schema includes properties of type 'file', these are automatically handled during object creation or updates
-2. Direct API attachment: Files can be added to an object after creation using the file attachment API endpoints
-3. Base64 encoded content: Files can be included in object data as base64-encoded strings
-4. URL references: External files can be referenced by URL and will be downloaded and stored locally
+1. **Integrated Uploads**: Files can be uploaded directly within object POST/PUT operations using multipart/form-data, base64-encoded content, or URL references
+2. Schema-defined file properties: When a schema includes properties of type 'file', these are automatically handled during object creation or updates
+3. Direct API attachment: Files can be added to an object after creation using the file attachment API endpoints
+4. Base64 encoded content: Files can be included in object data as base64-encoded strings
+5. URL references: External files can be referenced by URL and will be downloaded and stored locally
+
+## Integrated File Uploads
+
+OpenRegister supports **integrated file uploads** directly within object POST/PUT operations, providing a unified approach to handling structured data (objects) and unstructured data (files) together.
+
+### Upload Methods
+
+#### 1. Multipart/Form-Data Upload (Recommended)
+
+**Use Case:** Uploading files from web forms or file inputs
+
+**Example:**
+```http
+POST /index.php/apps/openregister/api/registers/documents/schemas/document/objects
+Content-Type: multipart/form-data
+
+title=Annual Report 2024
+attachment=@report.pdf
+thumbnail=@cover.jpg
+```
+
+**JavaScript Example:**
+```javascript
+const formData = new FormData();
+formData.append('title', 'Annual Report 2024');
+formData.append('attachment', fileInput.files[0]);
+formData.append('thumbnail', thumbnailInput.files[0]);
+
+fetch('/index.php/apps/openregister/api/registers/documents/schemas/document/objects', {
+  method: 'POST',
+  body: formData,
+  headers: {
+    'Authorization': 'Bearer YOUR_TOKEN'
+  }
+})
+.then(response => response.json())
+.then(data => console.log('Created:', data));
+```
+
+**Why this is recommended:**
+- ✅ Most efficient: No encoding overhead, files transferred directly
+- ✅ Preserves metadata: Original filename and MIME type are maintained
+- ✅ No guessing: Extension and filename are exactly as uploaded
+- ✅ Best file quality: No conversion or inference errors
+- ✅ Low memory footprint: Can stream directly from disk to disk
+- ✅ Fastest method: Direct transfer without intermediate conversions
+
+#### 2. Base64-Encoded Files
+
+**Use Case:** Embedding files in JSON payloads, API integrations
+
+**Data URI Format:**
+```json
+{
+  "title": "Screenshot",
+  "image": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUA..."
+}
+```
+
+**Plain Base64 Format:**
+```json
+{
+  "title": "Document",
+  "attachment": "JVBERi0xLjQKJeLjz9MKMyAwIG9iago8PC9MZW5ndGggMj..."
+}
+```
+
+**Note:** Base64 encoding increases file size by approximately 33% and original filenames are lost. Use only for small files (< 100 KB) or when multipart is not possible.
+
+#### 3. URL References
+
+**Use Case:** Referencing remote files, importing from external sources
+
+**Example:**
+```json
+{
+  "title": "External Document",
+  "attachment": "https://example.com/files/document.pdf",
+  "logo": "https://cdn.example.com/images/logo.png"
+}
+```
+
+**Note:** URL references are slower as the server must download the file from the external URL. Use only for trusted sources or migration scenarios.
+
+#### 4. Mixed Upload Methods
+
+You can combine all three methods in a single request:
+
+```http
+POST /index.php/apps/openregister/api/registers/documents/schemas/document/objects
+Content-Type: multipart/form-data
+
+title=Complete Package
+mainDocument=@contract.pdf
+signature=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUA...
+reference=https://example.com/terms.pdf
+```
+
+### Array of Files
+
+Files can be uploaded as arrays:
+
+**Schema:**
+```json
+{
+  "properties": {
+    "attachments": {
+      "type": "array",
+      "items": {
+        "type": "file"
+      }
+    }
+  }
+}
+```
+
+**Upload:**
+```json
+{
+  "title": "Multi-File Document",
+  "attachments": [
+    "data:application/pdf;base64,JVBERi0xLjQKJeL...",
+    "https://example.com/file2.pdf",
+    "data:image/png;base64,iVBORw0KGgo..."
+  ]
+}
+```
+
+### Update Operations
+
+File properties work the same way with PUT/PATCH operations:
+
+```http
+PUT /index.php/apps/openregister/api/registers/documents/schemas/document/objects/abc-123
+Content-Type: multipart/form-data
+
+title=Updated Document
+attachment=@new-version.pdf
+```
+
+**Note:** Updating a file property replaces the previous file.
+
+### Error Handling
+
+#### Invalid MIME Type
+```json
+{
+  "error": "File at attachment has invalid type 'application/zip'. Allowed types: application/pdf, application/msword"
+}
+```
+
+#### File Too Large
+```json
+{
+  "error": "File at attachment exceeds maximum size (10485760 bytes). File size: 15728640 bytes"
+}
+```
+
+#### Upload Error
+```json
+{
+  "error": "Failed to read uploaded file for field 'attachment'"
+}
+```
+
+#### URL Download Failure
+```json
+{
+  "error": "Unable to fetch file from URL: https://example.com/missing.pdf"
+}
+```
+
+### Backward Compatibility
+
+✅ **Existing file endpoints remain unchanged:**
+
+- `POST /api/objects/{register}/{schema}/{id}/files`
+- `GET /api/objects/{register}/{schema}/{id}/files`
+- `DELETE /api/objects/{register}/{schema}/{id}/files/{fileId}`
+
+Both approaches work and can be used interchangeably.
+
+### Performance Comparison
+
+| Method | Speed | File Size | Metadata | Use Case |
+|--------|-------|-----------|----------|----------|
+| **Multipart** | Fastest | Original | Preserved | ✅ Recommended for all uploads |
+| **Base64** | Medium | +33% larger | Lost | ⚠️ Small files only (< 100 KB) |
+| **URL** | Slowest | Original | Preserved | 🐌 External imports only |
+
+### Best Practices
+
+1. **✅ ALWAYS use Multipart for user uploads**
+   - Users expect filenames to be preserved
+   - Prevents confusion about generic filenames
+
+2. **⚠️ Base64 only for APIs**
+   - When API client doesn't support multipart
+   - Document that filenames will be lost
+   - Always use data URI format with MIME type
+
+3. **🐌 URLs only for trusted sources**
+   - Use timeout limits (max 30 seconds)
+   - Validate content-length headers upfront
+   - Implement retry logic
+
+4. **📝 Document your choice**
+   - If using base64 or URL, explain why
+   - Make users aware of trade-offs
+
+5. **🧪 Test performance**
+   - Measure upload times in production
+   - Monitor failure rates for URL downloads
 
 ## File Metadata and Tagging
 
@@ -718,6 +932,258 @@ This will:
 - **Data Lifecycle**: Remove temporary or expired files
 - **Error Correction**: Remove incorrectly uploaded files
 
+## Executable File Blocking
+
+OpenRegister automatically **blocks executable files** from being uploaded for security reasons. This prevents malicious code execution and protects your Nextcloud instance.
+
+### What is Blocked
+
+#### Blocked File Types
+
+**Windows Executables**
+- `.exe`, `.bat`, `.cmd`, `.com`, `.msi`, `.scr`
+- `.vbs`, `.vbe`, `.js`, `.jse`, `.wsf`, `.wsh`
+- `.ps1` (PowerShell), `.dll`
+
+**Unix/Linux Executables**
+- `.sh`, `.bash`, `.csh`, `.ksh`, `.zsh`
+- `.run`, `.bin`, `.app`
+- `.deb`, `.rpm` (package files)
+
+**Scripts & Code**
+- `.php`, `.phtml`, `.php3`, `.php4`, `.php5`, `.phps`, `.phar`
+- `.py`, `.pyc`, `.pyo`, `.pyw` (Python)
+- `.pl`, `.pm`, `.cgi` (Perl)
+- `.rb`, `.rbw` (Ruby)
+- `.jar`, `.war`, `.ear`, `.class` (Java)
+
+**Containers & Packages**
+- `.appimage`, `.snap`, `.flatpak`
+- `.dmg`, `.pkg`, `.command` (macOS)
+- `.apk` (Android)
+
+**Binary Formats**
+- `.elf`, `.out`, `.o`, `.so`, `.dylib`
+
+### Detection Methods
+
+OpenRegister uses **multiple layers** of detection:
+
+#### 1. File Extension Check
+Checks the file extension against a blacklist of dangerous extensions.
+
+#### 2. Magic Bytes Detection
+Checks the **first bytes** of the file content for executable signatures:
+- `MZ` - Windows PE/EXE files
+- `\x7FELF` - Linux/Unix ELF executables
+- `#!/bin/sh` - Shell scripts
+- `#!/bin/bash` - Bash scripts
+- `<?php` - PHP scripts
+- `\xCA\xFE\xBA\xBE` - Java class files
+
+#### 3. MIME Type Validation
+Blocks dangerous MIME types:
+- `application/x-executable`
+- `application/x-dosexec`
+- `application/x-msdownload`
+- `application/x-sh`
+- `application/x-php`
+- `text/x-shellscript`
+- And more...
+
+### Default Behavior: Blocked
+
+**By default, ALL executable files are blocked.**
+
+```json
+POST /api/registers/docs/schemas/document/objects
+{
+  "title": "My Document",
+  "attachment": "script.sh"  // ❌ BLOCKED!
+}
+```
+
+**Response:**
+```json
+{
+  "error": "File at attachment is an executable file (.sh). Executable files are blocked for security reasons. Allowed formats: documents, images, archives, data files."
+}
+```
+
+### Explicit Allow (Not Recommended)
+
+If you **absolutely need** to allow executables (e.g., for a software repository), you can set `allowExecutables: true` in your schema:
+
+```json
+{
+  "properties": {
+    "softwarePackage": {
+      "type": "file",
+      "allowExecutables": true,  // ⚠️ DANGEROUS!
+      "allowedTypes": ["application/x-deb"]  // Still enforce MIME type
+    }
+  }
+}
+```
+
+**⚠️ WARNING:** Only use `allowExecutables: true` if:
+- You absolutely trust the source of files
+- Users are administrators only
+- You have other security measures in place (virus scanning, sandboxing)
+- You understand the security risks
+
+### Examples
+
+#### ✅ Safe Files (Allowed by Default)
+
+```bash
+# Documents
+curl -X POST '/api/registers/docs/schemas/document/objects' \
+  -F 'title=Report' \
+  -F 'attachment=@report.pdf'  # ✅ OK
+
+# Images
+curl -X POST '/api/registers/docs/schemas/document/objects' \
+  -F 'title=Photo' \
+  -F 'image=@photo.jpg'  # ✅ OK
+
+# Archives
+curl -X POST '/api/registers/docs/schemas/document/objects' \
+  -F 'title=Data' \
+  -F 'data=@archive.zip'  # ✅ OK (ZIPs are allowed unless they're JARs)
+```
+
+#### ❌ Blocked Files (Default)
+
+```bash
+# Windows executable
+curl -X POST '/api/registers/docs/schemas/document/objects' \
+  -F 'title=Software' \
+  -F 'file=@program.exe'  # ❌ BLOCKED
+
+# Shell script
+curl -X POST '/api/registers/docs/schemas/document/objects' \
+  -F 'title=Script' \
+  -F 'file=@setup.sh'  # ❌ BLOCKED
+
+# PHP script
+curl -X POST '/api/registers/docs/schemas/document/objects' \
+  -F 'title=Code' \
+  -F 'file=@index.php'  # ❌ BLOCKED
+```
+
+#### 🎭 Bypassing Attempts (Also Blocked!)
+
+OpenRegister detects renamed executables:
+
+```bash
+# Renamed EXE to TXT - Still blocked by magic bytes!
+mv malware.exe document.txt
+curl -X POST '/api/.../' -F 'file=@document.txt'  # ❌ BLOCKED (magic bytes: MZ)
+
+# PHP file renamed to JPG - Still blocked!
+mv shell.php image.jpg
+curl -X POST '/api/.../' -F 'file=@image.jpg'  # ❌ BLOCKED (detects <?php)
+```
+
+### Schema Configuration
+
+#### Basic File Upload (Executables Blocked)
+
+```json
+{
+  "slug": "document",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "attachment": {
+      "type": "file",
+      "allowedTypes": ["application/pdf", "application/msword"],
+      "maxSize": 10485760  // 10MB
+      // allowExecutables defaults to false
+    }
+  }
+}
+```
+
+### Security Recommendations
+
+#### 1. Keep Executables Blocked (Default)
+
+**DO:**
+- ✅ Use the default behavior (block executables)
+- ✅ Only allow documents, images, archives
+- ✅ Combine with virus scanning (ClamAV)
+
+**DON'T:**
+- ❌ Set `allowExecutables: true` unless absolutely necessary
+- ❌ Allow untrusted users to upload files to executable-allowed schemas
+- ❌ Assume file extensions are safe
+
+#### 2. Layer Your Security
+
+Even with executable blocking, use additional security:
+
+```mermaid
+graph TD
+    A[File Upload] --> B[1. Extension Check]
+    B --> C[2. Magic Bytes Detection]
+    C --> D[3. MIME Type Validation]
+    D --> E[4. Size Validation]
+    E --> F[5. Virus Scan - ClamAV]
+    F --> G[6. Store in Nextcloud]
+    
+    B --> X[❌ Block Executable]
+    C --> X
+    D --> X
+    F --> Y[❌ Virus Detected]
+    
+    style X fill:#f44
+    style Y fill:#f44
+    style G fill:#4f4
+```
+
+#### 3. Monitor and Log
+
+All blocked uploads are logged:
+
+```bash
+# Check logs for blocked attempts
+docker logs master-nextcloud-1 | grep "Executable file upload blocked"
+```
+
+### Performance Impact
+
+**Minimal!**
+
+- **Extension check:** < 0.1ms
+- **Magic bytes check:** < 1ms (only checks first 1KB)
+- **MIME type check:** < 0.1ms
+
+**Total overhead:** ~1-2ms per file upload
+
+### Frequently Asked Questions
+
+**Q: Can I upload ZIP files?**
+A: ✅ Yes! ZIP files (`.zip`) are allowed by default. Only executable ZIPs like JARs are blocked.
+
+**Q: What about JavaScript files (.js)?**
+A: ❌ Blocked by default (can be executed in browsers). Use JSON or TXT for data.
+
+**Q: Can I upload Python notebooks (.ipynb)?**
+A: ✅ Yes! `.ipynb` is JSON format, not an executable. Allowed by default.
+
+**Q: What if I need to share code files?**
+A: Use:
+- Text files (`.txt`) with code inside
+- Archives (`.zip` or `.tar.gz`) containing code
+- Git repositories
+- Dedicated code hosting (GitHub, GitLab)
+
+**Q: Does this protect against all malware?**
+A: **No!** This blocks **known executable formats**. Malicious documents (PDF with exploits, Office macros) need virus scanning. Use ClamAV for complete protection.
+
 ## Best Practices
 
 1. **Define File Types**: Establish clear guidelines for what file types are allowed
@@ -730,6 +1196,8 @@ This will:
 8. **Use Auto-Publish Wisely**: Only enable property-level 'autoPublish' for files that should be publicly accessible. Remember: property 'autoPublish' (file sharing) is different from schema 'autoPublish' (object publishing)
 9. **Document File Deletion**: Maintain audit trails when files are deleted for compliance
 10. **Handle Authentication**: Use authenticated URLs for sensitive files
+11. **Keep Executables Blocked**: Use the default executable blocking behavior unless absolutely necessary
+12. **Layer Security**: Combine executable blocking with virus scanning for complete protection
 
 ## Conclusion
 

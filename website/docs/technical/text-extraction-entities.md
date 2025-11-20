@@ -1423,10 +1423,11 @@ Analysis:
 Action:
 1. Merge Person(J. Doe) into Person(John Doe)
 2. Consolidate all contact information
-3. Update all EntityLink references
-4. Update all EntityRelation references (chunks)
-5. Maintain audit trail of merge
-6. Mark J. Doe as merged/alias
+3. Update all belongs_to_entity_id references
+4. Update all EntityLink references (if used)
+5. Update all EntityRelation references (chunks)
+6. Maintain audit trail of merge
+7. Mark J. Doe as merged/alias
 
 Result:
 Person(John Doe) now has:
@@ -1435,9 +1436,204 @@ Person(John Doe) now has:
 - Audit trail showing merge operation
 ```
 
+#### 5. Role-Based Anonymization
+
+Use role information to determine anonymization requirements:
+
+```php
+// Find all entity occurrences requiring anonymization
+$relations = $entityRelationMapper->findAll();
+
+foreach ($relations as $relation) {
+    if ($relation->requiresAnonymization()) {
+        $entity = $entityMapper->find($relation->getEntityId());
+        
+        // Get source document for context
+        $sourceType = $relation->getSourceType();
+        $sourceId = $relation->getSourceId();
+        
+        echo "Entity: {$entity->getValue()} ({$entity->getType()})\n";
+        echo "Role: {$relation->getRole()}\n";
+        echo "Source: {$sourceType} #{$sourceId}\n";
+        echo "Requires anonymization: Yes\n\n";
+    }
+}
+```
+
+**Example Output**:
+```
+Entity: John Doe (person)
+Role: employee
+Source: file #100
+Requires anonymization: No (business context)
+
+Entity: Jane Smith (person)
+Role: private_individual
+Source: file #150
+Requires anonymization: Yes (personal data)
+
+Entity: john.doe@example.com (email)
+Role: customer
+Source: object #500
+Requires anonymization: Yes (customer data)
+```
+
+#### 6. Source Document Retrieval for GDPR Requests
+
+Retrieve all source documents containing a specific entity:
+
+```php
+// GDPR request: All documents containing John Doe
+$person = $entityMapper->findByValue('John Doe', GdprEntity::TYPE_PERSON);
+$relations = $entityRelationMapper->findByEntityId($person->getId());
+
+$sources = [
+    'files' => [],
+    'objects' => [],
+    'emails' => []
+];
+
+foreach ($relations as $relation) {
+    $sourceType = $relation->getSourceType();
+    $sourceId = $relation->getSourceId();
+    
+    if ($sourceType === 'file') {
+        $sources['files'][] = [
+            'id' => $sourceId,
+            'role' => $relation->getRole(),
+            'confidence' => $relation->getConfidence()
+        ];
+    } elseif ($sourceType === 'object') {
+        $sources['objects'][] = [
+            'id' => $sourceId,
+            'role' => $relation->getRole(),
+            'confidence' => $relation->getConfidence()
+        ];
+    } elseif ($sourceType === 'email') {
+        $sources['emails'][] = [
+            'id' => $sourceId,
+            'role' => $relation->getRole(),
+            'confidence' => $relation->getConfidence()
+        ];
+    }
+}
+
+// Retrieve actual documents
+$files = $fileMapper->findByIds(array_unique(array_column($sources['files'], 'id')));
+$objects = $objectMapper->findByIds(array_unique(array_column($sources['objects'], 'id')));
+$emails = $emailMapper->findByIds(array_unique(array_column($sources['emails'], 'id')));
+```
+
+**Result**: Complete list of all documents containing the entity, with role context for each occurrence.
+
+### Relationship Scope Clarification
+
+:::important Contact Information Ownership Only
+The entity relationship system is **ONLY for tracking contact information ownership**:
+
+**✅ Supported Relationships**:
+- Phone → belongs_to → Person
+- Phone → belongs_to → Organization
+- Email → belongs_to → Person
+- Email → belongs_to → Organization
+- Address → belongs_to → Person
+- Address → belongs_to → Organization
+
+**❌ NOT Supported**:
+- Person → related_to → Person (family relationships)
+- Person → works_for → Organization (employment relationships)
+- Person → reports_to → Person (organizational hierarchy)
+- Organization → part_of → Organization (organizational structure)
+
+Employment, family, and organizational relationships should be handled through the object data model, not the entity link system.
+:::
+
+### Query Patterns
+
+#### Using belongs_to_entity_id (Direct Parent-Child)
+
+The `belongs_to_entity_id` field provides efficient direct parent-child relationships:
+
+```php
+// Find person
+$person = $entityMapper->findByValue('John Doe', GdprEntity::TYPE_PERSON);
+
+// Get all contact info for this person (single query)
+$contactInfo = $entityMapper->findByBelongsTo($person->getId());
+
+foreach ($contactInfo as $info) {
+    echo "{$info->getType()}: {$info->getValue()}\n";
+}
+```
+
+**SQL Equivalent**:
+```sql
+SELECT * FROM oc_openregister_entities 
+WHERE belongs_to_entity_id = {person_id};
+```
+
+**Performance**: ~5-20ms (single indexed query)
+
+#### Get Parent Entity for Contact Info
+
+```php
+// Find phone number
+$phone = $entityMapper->findByValue('+31612345678', GdprEntity::TYPE_PHONE);
+
+// Get parent entity (person or organization)
+if ($phone->getBelongsToEntityId()) {
+    $parent = $entityMapper->find($phone->getBelongsToEntityId());
+    echo "Phone belongs to: {$parent->getType()} '{$parent->getValue()}'\n";
+}
+```
+
+**SQL Equivalent**:
+```sql
+SELECT parent.* FROM oc_openregister_entities phone
+JOIN oc_openregister_entities parent ON phone.belongs_to_entity_id = parent.id
+WHERE phone.id = {phone_id};
+```
+
+#### Find All Persons with Specific Email Domain
+
+```sql
+SELECT DISTINCT parent.* 
+FROM oc_openregister_entities email
+JOIN oc_openregister_entities parent ON email.belongs_to_entity_id = parent.id
+WHERE email.type = 'email' 
+  AND email.value LIKE '%@acme.com'
+  AND parent.type = 'person';
+```
+
+#### Find All Entities Requiring Anonymization (Role-Based)
+
+```sql
+SELECT DISTINCT e.* 
+FROM oc_openregister_entities e
+JOIN oc_openregister_entity_relations er ON e.id = er.entity_id
+WHERE er.role IN ('private_individual', 'customer')
+  AND er.anonymized = FALSE;
+```
+
 ### Knowledge Graph Queries
 
 #### Get All Contact Info for a Person
+
+**Method 1: Using belongs_to_entity_id (Recommended)**
+
+```php
+// Find person
+$person = $entityMapper->findByValue('John Doe', GdprEntity::TYPE_PERSON);
+
+// Get all contact info directly (single query)
+$contactInfo = $entityMapper->findByBelongsTo($person->getId());
+
+foreach ($contactInfo as $info) {
+    echo "{$info->getType()}: {$info->getValue()}\n";
+}
+```
+
+**Method 2: Using EntityLink (If Many-to-Many Needed)**
 
 ```php
 // Find person

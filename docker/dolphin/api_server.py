@@ -32,7 +32,7 @@ def load_dolphin_model():
     if dolphin_model is None:
         try:
             print("Loading Dolphin model...")
-            from transformers import AutoModel, AutoProcessor
+            from transformers import VisionEncoderDecoderModel, AutoProcessor
             
             model_path = os.environ.get('MODEL_PATH', '/app/models')
             
@@ -43,10 +43,9 @@ def load_dolphin_model():
                 trust_remote_code=True
             )
             
-            dolphin_model = AutoModel.from_pretrained(
+            dolphin_model = VisionEncoderDecoderModel.from_pretrained(
                 model_path,
-                trust_remote_code=True,
-                torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32
+                trust_remote_code=True
             )
             
             # Move to GPU if available
@@ -93,10 +92,12 @@ def parse_document():
         # Get image from request
         if 'file' in request.files:
             file = request.files['file']
-            image = Image.open(file.stream)
+            # Read file content into memory to avoid tempfile issues
+            file_bytes = file.read()
+            image = Image.open(io.BytesIO(file_bytes))
         elif request.json and 'image_base64' in request.json:
             image_data = base64.b64decode(request.json['image_base64'])
-            image = Image.open(io.BytesIO(image_data))
+            image = Image.open(io.BytesIO(file_bytes))
         else:
             return jsonify({'error': 'No image provided. Send file or image_base64'}), 400
         
