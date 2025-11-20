@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * File Text Extraction Background Job
  *
  * One-time background job that extracts text from uploaded files asynchronously.

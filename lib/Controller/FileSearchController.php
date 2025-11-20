@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * FileSearchController
  *
  * Controller for file search operations.

@@ -318,7 +318,7 @@ class AgentTool extends AbstractTool implements ToolInterface
             }
 
             if ($systemPrompt !== null && $systemPrompt !== '') {
-                $agent->setSystemPrompt($systemPrompt);
+                $agent->setPrompt($systemPrompt);
             }
 
             // Set current user as owner if we have agent context.
@@ -379,7 +379,7 @@ class AgentTool extends AbstractTool implements ToolInterface
             }
 
             if ($systemPrompt !== null) {
-                $agent->setSystemPrompt($systemPrompt);
+                $agent->setPrompt($systemPrompt);
             }
 
             // Save changes (RBAC enforced in mapper).

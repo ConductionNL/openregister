@@ -142,7 +142,7 @@ class RenderObject
      */
     public function preloadRelatedObjects(array $objects, array $extend): array
     {
-        if (empty($objects) || empty($extend)) {
+        if ($objects === [] || $extend === []) {
             return [];
         }
 
@@ -150,7 +150,7 @@ class RenderObject
 
         // Step 1: Collect all relationship IDs from all objects.
         foreach ($objects as $object) {
-            if (!$object instanceof ObjectEntity) {
+            if (($object instanceof ObjectEntity) === false) {
                 continue;
             }
 
@@ -158,20 +158,20 @@ class RenderObject
 
             foreach ($extend as $extendField) {
                 // Skip special fields.
-                if (str_starts_with($extendField, '@')) {
+                if (str_starts_with($extendField, '@') === true) {
                     continue;
                 }
 
                 $value = $objectData[$extendField] ?? null;
 
-                if (is_array($value)) {
+                if (is_array($value) === true) {
                     // Multiple relationships.
                     foreach ($value as $relatedId) {
-                        if (is_string($relatedId) || is_int($relatedId)) {
+                        if (is_string($relatedId) === true || is_int($relatedId) === true) {
                             $allRelatedIds[] = (string) $relatedId;
                         }
                     }
-                } else if (is_string($value) || is_int($value)) {
+                } else if (is_string($value) === true || is_int($value) === true) {
                     // Single relationship.
                     $allRelatedIds[] = (string) $value;
                 }
@@ -179,9 +179,9 @@ class RenderObject
         }//end foreach
 
         // Step 2: Remove duplicates and empty values.
-        $uniqueIds = array_filter(array_unique($allRelatedIds), fn($id) => !empty($id));
+        $uniqueIds = array_filter(array_unique($allRelatedIds), fn($id) => $id !== '');
 
-        if (empty($uniqueIds)) {
+        if ($uniqueIds === []) {
             return [];
         }
 
@@ -346,7 +346,7 @@ class RenderObject
         // Update local cache for backward compatibility.
         if ($object !== null) {
             $this->objectsCache[$id] = $object;
-            if ($object->getUuid()) {
+            if ($object->getUuid() !== null && $object->getUuid() !== '') {
                 $this->objectsCache[$object->getUuid()] = $object;
             }
         }
@@ -603,19 +603,19 @@ class RenderObject
             // Process each property in the object data.
             foreach ($objectData as $propertyName => $propertyValue) {
                 // Skip metadata properties.
-                if (str_starts_with($propertyName, '@') || $propertyName === 'id') {
+                if (str_starts_with($propertyName, '@') === true || $propertyName === 'id') {
                     continue;
                 }
 
                 // Check if this property is configured in the schema.
-                if (!isset($schemaProperties[$propertyName])) {
+                if (isset($schemaProperties[$propertyName]) === false) {
                     continue;
                 }
 
                 $propertyConfig = $schemaProperties[$propertyName];
 
                 // Check if this is a file property (direct or array[file]).
-                if ($this->isFilePropertyConfig($propertyConfig)) {
+                if ($this->isFilePropertyConfig($propertyConfig) === true) {
                     $objectData[$propertyName] = $this->hydrateFileProperty(
                      propertyValue: $propertyValue,
                      propertyConfig: $propertyConfig,
@@ -676,12 +676,13 @@ class RenderObject
      *
      * @return mixed The hydrated property value (file object or array of file objects).
      *
-     * @psalm-param    mixed $propertyValue
-     * @phpstan-param  mixed $propertyValue
-     * @psalm-param    array<string, mixed> $propertyConfig
-     * @phpstan-param  array<string, mixed> $propertyConfig
-     * @psalm-param    string $propertyName
-     * @phpstan-param  string $propertyName
+     * @psalm-param   mixed $propertyValue
+     * @phpstan-param mixed $propertyValue
+     * @psalm-param   array<string, mixed> $propertyConfig
+     * @phpstan-param array<string, mixed> $propertyConfig
+     * @psalm-param   string $propertyName
+     * @phpstan-param string $propertyName
+     *
      * @psalm-return   mixed
      * @phpstan-return mixed
      */
@@ -691,7 +692,7 @@ class RenderObject
 
         if ($isArrayProperty === true) {
             // Handle array of files.
-            if (!is_array($propertyValue)) {
+            if (is_array($propertyValue) === false) {
                 return $propertyValue;
                 // Return unchanged if not an array.
             }
@@ -1549,6 +1550,24 @@ class RenderObject
         return substr($input, $lastSlashPosition + 1);
 
     }//end getStringAfterLastSlash()
+
+
+    /**
+     * Get file modified time
+     *
+     * @param array<string,mixed> $fileRecord File record array
+     *
+     * @return string|null Formatted datetime string or null
+     */
+    private function getFileModifiedTime(array $fileRecord): ?string
+    {
+        if (isset($fileRecord['mtime']) === true) {
+            return (new \DateTime())->setTimestamp($fileRecord['mtime'])->format('c');
+        }
+
+        return null;
+
+    }//end getFileModifiedTime()
 
 
 }//end class

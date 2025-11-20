@@ -458,7 +458,7 @@ class LogService
         $content .= str_repeat('=', 60)."\n\n";
 
         foreach ($data as $index => $logData) {
-            $content .= "Entry #".($index + 1)."\n";
+            $content .= "Entry #".((int) $index + 1)."\n";
             $content .= str_repeat('-', 20)."\n";
 
             foreach ($logData as $key => $value) {

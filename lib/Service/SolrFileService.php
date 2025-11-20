@@ -5,6 +5,10 @@ declare(strict_types=1);
 /*
  * SPDX-FileCopyrightText: 2024 Nextcloud GmbH and Nextcloud contributors
  * SPDX-License-Identifier: AGPL-3.0-or-later
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  */
 
 namespace OCA\OpenRegister\Service;
@@ -41,14 +45,33 @@ class SolrFileService
     /**
      * Default chunking configuration
      */
+    /**
+     * Default chunk size in tokens
+     *
+     * @var int
+     */
     private const DEFAULT_CHUNK_SIZE = 1000;
-    // tokens.
+
+    /**
+     * Default chunk overlap in tokens
+     *
+     * @var int
+     */
     private const DEFAULT_CHUNK_OVERLAP = 200;
-    // tokens.
+
+    /**
+     * Maximum chunks per file (safety limit)
+     *
+     * @var int
+     */
     private const MAX_CHUNKS_PER_FILE = 1000;
-    // safety limit.
+
+    /**
+     * Minimum chunk size in tokens
+     *
+     * @var int
+     */
     private const MIN_CHUNK_SIZE = 100;
-    // tokens.
 
     /**
      * Chunking strategies
@@ -151,7 +174,7 @@ class SolrFileService
             $this->logger->debug('Step 1: Extracting text from file');
             $fullText = $this->extractTextFromFile($filePath);
 
-            if (empty(trim($fullText))) {
+            if (trim($fullText) === '' || trim($fullText) === null) {
                 throw new \Exception('No text extracted from file');
             }
 
@@ -167,7 +190,7 @@ class SolrFileService
                     ]
                     );
 
-            if (empty($chunks)) {
+            if ($chunks === []) {
                 throw new \Exception('No chunks created from document');
             }
 
@@ -239,7 +262,7 @@ class SolrFileService
      */
     public function extractTextFromFile(string $filePath): string
     {
-        if (!file_exists($filePath)) {
+        if (file_exists($filePath) === false) {
             throw new \Exception("File not found: {$filePath}");
         }
 
@@ -367,7 +390,7 @@ class SolrFileService
     private function extractFromPdf(string $filePath): string
     {
         // Try using Smalot PdfParser if available.
-        if (class_exists('\Smalot\PdfParser\Parser')) {
+        if (class_exists('\Smalot\PdfParser\Parser') === true) {
             try {
                 $parser = new \Smalot\PdfParser\Parser();
                 $pdf    = $parser->parseFile($filePath);
@@ -383,15 +406,19 @@ class SolrFileService
         }
 
         // Fallback to pdftotext command if available.
-        if ($this->commandExists('pdftotext')) {
+        if ($this->commandExists('pdftotext') === true) {
             $outputFile = tempnam(sys_get_temp_dir(), 'pdf_').'.txt';
             $command    = sprintf('pdftotext %s %s 2>&1', escapeshellarg($filePath), escapeshellarg($outputFile));
             exec($command, $output, $returnCode);
 
-            if ($returnCode === 0 && file_exists($outputFile)) {
+            if ($returnCode === 0 && file_exists($outputFile) === true) {
                 $text = file_get_contents($outputFile);
                 unlink($outputFile);
-                return $text ?: '';
+                if ($text !== false && $text !== '') {
+                    return $text;
+                }
+
+                return '';
             }
         }
 
@@ -409,7 +436,7 @@ class SolrFileService
      */
     private function extractFromDocx(string $filePath): string
     {
-        if (!class_exists('\PhpOffice\PhpWord\IOFactory')) {
+        if (class_exists('\PhpOffice\PhpWord\IOFactory') === false) {
             throw new \Exception('PhpOffice\PhpWord is required for DOCX extraction');
         }
 
@@ -419,11 +446,11 @@ class SolrFileService
 
             foreach ($phpWord->getSections() as $section) {
                 foreach ($section->getElements() as $element) {
-                    if (method_exists($element, 'getText')) {
+                    if (method_exists($element, 'getText') === true) {
                         $text .= $element->getText()."\n";
-                    } else if (method_exists($element, 'getElements')) {
+                    } else if (method_exists($element, 'getElements') === true) {
                         foreach ($element->getElements() as $childElement) {
-                            if (method_exists($childElement, 'getText')) {
+                            if (method_exists($childElement, 'getText') === true) {
                                 $text .= $childElement->getText()."\n";
                             }
                         }
@@ -448,7 +475,7 @@ class SolrFileService
      */
     private function extractFromXlsx(string $filePath): string
     {
-        if (!class_exists('\PhpOffice\PhpSpreadsheet\IOFactory')) {
+        if (class_exists('\PhpOffice\PhpSpreadsheet\IOFactory') === false) {
             throw new \Exception('PhpOffice\PhpSpreadsheet is required for XLSX extraction');
         }
 
@@ -492,7 +519,7 @@ class SolrFileService
     private function extractFromPptx(string $filePath): string
     {
         // PhpPresentation is not as widely used, so we'll use a simple ZIP extraction.
-        if (!class_exists('\ZipArchive')) {
+        if (class_exists('\ZipArchive') === false) {
             throw new \Exception('ZipArchive extension is required for PPTX extraction');
         }
 
@@ -540,7 +567,7 @@ class SolrFileService
     private function extractFromImage(string $filePath): string
     {
         // Check if Tesseract OCR is available.
-        if (!$this->commandExists('tesseract')) {
+        if ($this->commandExists('tesseract') === false) {
             throw new \Exception('Tesseract OCR is required for image text extraction. Install with: sudo apt-get install tesseract-ocr');
         }
 
@@ -549,14 +576,18 @@ class SolrFileService
         exec($command, $output, $returnCode);
 
         $textFile = $outputFile.'.txt';
-        if ($returnCode === 0 && file_exists($textFile)) {
+        if ($returnCode === 0 && file_exists($textFile) === true) {
             $text = file_get_contents($textFile);
             unlink($textFile);
-            if (file_exists($outputFile)) {
+            if (file_exists($outputFile) === true) {
                 unlink($outputFile);
             }
 
-            return $text ?: '';
+            if ($text !== false && $text !== '') {
+                return $text;
+            }
+
+            return '';
         }
 
         throw new \Exception('OCR extraction failed. Tesseract returned code: '.$returnCode);
@@ -625,16 +656,21 @@ class SolrFileService
     {
         $text = '';
 
-        if (is_array($data)) {
+        if (is_array($data) === true) {
             foreach ($data as $key => $value) {
-                $newPrefix = $prefix ? $prefix.'.'.$key : $key;
-                if (is_scalar($value)) {
+                if ($prefix !== null && $prefix !== '') {
+                    $newPrefix = $prefix.'.'.$key;
+                } else {
+                    $newPrefix = $key;
+                }
+
+                if (is_scalar($value) === true) {
                     $text .= $newPrefix.': '.$value."\n";
-                } else if (is_array($value) || is_object($value)) {
+                } else if (is_array($value) === true || is_object($value) === true) {
                     $text .= $this->jsonToText($value, $newPrefix);
                 }
             }
-        } else if (is_object($data)) {
+        } else if (is_object($data) === true) {
             $text .= $this->jsonToText((array) $data, $prefix);
         }
 
@@ -717,7 +753,7 @@ class SolrFileService
                 [
                     'chunk_count'      => count($chunks),
                     'chunking_time_ms' => $chunkingTime,
-                    'avg_chunk_size'   => count($chunks) > 0 ? round(array_sum(array_map('strlen', $chunks)) / count($chunks)) : 0,
+                    'avg_chunk_size'   => $this->calculateAvgChunkSize($chunks),
                 ]
                 );
 
@@ -860,7 +896,7 @@ class SolrFileService
         }
 
         // If no separators left, use fixed size chunking.
-        if (empty($separators)) {
+        if ($separators === []) {
             return $this->chunkFixedSize($text, $chunkSize, $chunkOverlap);
         }
 
@@ -873,7 +909,11 @@ class SolrFileService
         $currentChunk = '';
 
         foreach ($splits as $split) {
-            $testChunk = $currentChunk === '' ? $split : $currentChunk.$separator.$split;
+            if ($currentChunk === '') {
+                $testChunk = $split;
+            } else {
+                $testChunk = $currentChunk.$separator.$split;
+            }
 
             if (strlen($testChunk) <= $chunkSize) {
                 // Can add to current chunk.
@@ -962,9 +1002,15 @@ class SolrFileService
         // For now, use existing bulk index method.
         $success = $this->guzzleSolrService->bulkIndex($documents, true);
 
+        if ($success === true) {
+            $indexedCount = count($documents);
+        } else {
+            $indexedCount = 0;
+        }
+
         return [
             'success'    => $success,
-            'indexed'    => $success ? count($documents) : 0,
+            'indexed'    => $indexedCount,
             'collection' => $collection,
         ];
 
@@ -1035,7 +1081,7 @@ class SolrFileService
         // Delete all chunks for this file.
         $query = "file_id:{$fileId}";
 
-        // TODO: PHASE 2 - Use collection-aware delete
+        // TODO: PHASE 2 - Use collection-aware delete.
         return $this->guzzleSolrService->deleteByQuery($query, true);
 
     }//end deleteFile()
@@ -1113,7 +1159,7 @@ class SolrFileService
         ];
 
         // Get extracted file texts that haven't been indexed yet.
-        // TODO: Add a flag to file_texts table to track indexing status
+        // TODO: Add a flag to file_texts table to track indexing status.
         $fileTexts = $this->getFileTextService()->getCompletedExtractions($limit);
 
         foreach ($fileTexts as $fileText) {
@@ -1122,7 +1168,7 @@ class SolrFileService
 
                 // Get the text content.
                 $text = $fileText->getTextContent();
-                if (empty($text)) {
+                if ($text === '' || $text === null) {
                     $this->logger->warning(
                             'Empty text content for file',
                             [
@@ -1143,7 +1189,7 @@ class SolrFileService
                         )
                         );
 
-                if (empty($chunks)) {
+                if ($chunks === []) {
                     $this->logger->warning(
                             'No chunks produced for file',
                             [
@@ -1169,7 +1215,7 @@ class SolrFileService
                     $metadata
                 );
 
-                if ($result['success']) {
+                if ($result['success'] === true) {
                     $stats['indexed']++;
                     $stats['total_chunks'] += $result['chunks_indexed'];
 
@@ -1248,7 +1294,7 @@ class SolrFileService
         }
 
         $text = $fileText->getTextContent();
-        if (empty($text)) {
+        if ($text === '' || $text === null) {
             return [
                 'success' => false,
                 'message' => 'Empty text content',
@@ -1266,7 +1312,7 @@ class SolrFileService
                 )
                 );
 
-        if (empty($chunks)) {
+        if ($chunks === []) {
             return [
                 'success' => false,
                 'message' => 'No chunks produced',

@@ -5,6 +5,10 @@ declare(strict_types=1);
 /*
  * SPDX-FileCopyrightText: 2024 Nextcloud GmbH and Nextcloud contributors
  * SPDX-License-Identifier: AGPL-3.0-or-later
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  */
 
 namespace OCA\OpenRegister\Service;
@@ -295,16 +299,16 @@ class VectorEmbeddingService
             ];
 
             // Validate required fields.
-            if (empty($normalizedConfig['provider'])) {
+            if (empty($normalizedConfig['provider']) === true) {
                 throw new \Exception('Provider is required');
             }
 
-            if (empty($normalizedConfig['model'])) {
+            if (empty($normalizedConfig['model']) === true) {
                 throw new \Exception('Model is required');
             }
 
             // Validate API keys for providers that need them.
-            if (in_array($normalizedConfig['provider'], ['openai', 'fireworks']) && empty($normalizedConfig['api_key'])) {
+            if (in_array($normalizedConfig['provider'], ['openai', 'fireworks'], true) === true && empty($normalizedConfig['api_key']) === true) {
                 throw new \Exception("API key is required for {$normalizedConfig['provider']}");
             }
 
@@ -350,7 +354,7 @@ class VectorEmbeddingService
      *
      * @return array Test results with success status and embedding info
      */
-    public function testEmbedding(string $provider, array $config, string $testText='This is a test embedding to verify the LLM configuration.'): array
+    public function testEmbedding(string $provider, array $config, string $testText='Test.'): array
     {
         $this->logger->info(
                 '[VectorEmbeddingService] Testing embedding generation',
@@ -546,7 +550,7 @@ class VectorEmbeddingService
             }
 
             // Check if Solr is available.
-            if (!$this->solrService->isAvailable()) {
+            if ($this->solrService->isAvailable() === false) {
                 throw new \Exception('Solr service is not available');
             }
 
@@ -597,7 +601,7 @@ class VectorEmbeddingService
 
             $responseData = json_decode((string) $response->getBody(), true);
 
-            if (!isset($responseData['responseHeader']['status']) || $responseData['responseHeader']['status'] !== 0) {
+            if (isset($responseData['responseHeader']['status']) === false || $responseData['responseHeader']['status'] !== 0) {
                 throw new \Exception('Solr atomic update failed: '.json_encode($responseData));
             }
 
@@ -639,7 +643,7 @@ class VectorEmbeddingService
      * @param int   $limit          Maximum number of results
      * @param array $filters        Additional filters (entity_type, etc.)
      *
-     * @return array<int, array{entity_type: string, entity_id: string, similarity: float, chunk_index: int, chunk_text: string|null, metadata: array, vector_id: string}> Search results
+     * @return array<int,array<string,mixed>> Search results
      *
      * @throws \Exception If search fails or Solr is not configured
      */
@@ -658,7 +662,7 @@ class VectorEmbeddingService
 
         try {
             // Check if Solr is available.
-            if (!$this->solrService->isAvailable()) {
+            if ($this->solrService->isAvailable() === false) {
                 throw new \Exception('Solr service is not available');
             }
 
@@ -667,12 +671,20 @@ class VectorEmbeddingService
 
             // Determine which collections to search based on entity_type filter.
             $collectionsToSearch = [];
-            if (isset($filters['entity_type'])) {
-                $entityTypes = is_array($filters['entity_type']) ? $filters['entity_type'] : [$filters['entity_type']];
+            if (isset($filters['entity_type']) === true) {
+                if (is_array($filters['entity_type']) === true) {
+                    $entityTypes = $filters['entity_type'];
+                } else {
+                    $entityTypes = [$filters['entity_type']];
+                }
+
                 foreach ($entityTypes as $entityType) {
                     $collection = $this->getSolrCollectionForEntityType($entityType);
                     if ($collection !== null && $collection !== '') {
-                        $collectionsToSearch[] = ['type' => $entityType, 'collection' => $collection];
+                        $collectionsToSearch[] = [
+                            'type'       => $entityType,
+                            'collection' => $collection,
+                        ];
                     }
                 }
             } else {
@@ -690,12 +702,12 @@ class VectorEmbeddingService
                 }
             }//end if
 
-            if (empty($collectionsToSearch)) {
+            if ($collectionsToSearch === []) {
                 throw new \Exception('No Solr collections configured for vector search');
             }
 
             // Build Solr KNN query.
-            // Format: {!knn f=_embedding_ topK=10}[0.1, 0.2, 0.3, ...]
+            // Format: {!knn f=_embedding_ topK=10}[0.1, 0.2, 0.3, ...].
             $vectorString = '['.implode(', ', $queryEmbedding).']';
             $knnQuery     = "{!knn f={$vectorField} topK={$limit}}{$vectorString}";
 
@@ -733,7 +745,7 @@ class VectorEmbeddingService
 
                     $responseData = json_decode((string) $response->getBody(), true);
 
-                    if (!isset($responseData['response']['docs'])) {
+                    if (isset($responseData['response']['docs']) === false) {
                         $this->logger->warning(
                                 '[VectorEmbeddingService] Invalid Solr response format',
                                 [
@@ -950,11 +962,19 @@ class VectorEmbeddingService
             $embeddingBlob = serialize($embedding);
 
             // Serialize metadata to JSON.
-            $metadataJson = !empty($metadata) ? json_encode($metadata) : null;
+            if (empty($metadata) === false) {
+                $metadataJson = json_encode($metadata);
+            } else {
+                $metadataJson = null;
+            }
 
             // Sanitize chunk_text to prevent encoding errors.
             // Remove invalid UTF-8 sequences and control characters.
-            $sanitizedChunkText = $chunkText !== null ? $this->sanitizeText($chunkText) : null;
+            if ($chunkText !== null) {
+                $sanitizedChunkText = $this->sanitizeText($chunkText);
+            } else {
+                $sanitizedChunkText = null;
+            }
 
             $qb = $this->db->getQueryBuilder();
             $qb->insert('openregister_vectors')
@@ -1012,7 +1032,7 @@ class VectorEmbeddingService
      * @param array       $filters  Additional filters (entity_type, etc.)
      * @param string|null $provider Embedding provider
      *
-     * @return array<int, array{entity_type: string, entity_id: string, similarity: float, chunk_index: int, chunk_text: string|null, metadata: array, vector_id: int}> Search results
+     * @return array<int,array<string,mixed>> Search results
      *
      * @throws \Exception If search fails
      */
@@ -1051,7 +1071,7 @@ class VectorEmbeddingService
                 $this->logger->debug('Step 2: Fetching vectors from database');
                 $vectors = $this->fetchVectors($filters);
 
-                if (empty($vectors)) {
+                if ($vectors === []) {
                     $this->logger->warning('No vectors found in database', ['filters' => $filters]);
                     return [];
                 }
@@ -1064,7 +1084,7 @@ class VectorEmbeddingService
                     try {
                         $storedEmbedding = unserialize($vector['embedding']);
 
-                        if (!is_array($storedEmbedding)) {
+                        if (is_array($storedEmbedding) === false) {
                             $this->logger->warning('Invalid embedding format', ['vector_id' => $vector['id']]);
                             continue;
                         }
@@ -1073,7 +1093,7 @@ class VectorEmbeddingService
 
                         // Parse metadata.
                         $metadata = [];
-                        if (!empty($vector['metadata'])) {
+                        if (empty($vector['metadata']) === false) {
                             $metadata = json_decode($vector['metadata'], true) ?? [];
                         }
 
@@ -1154,25 +1174,41 @@ class VectorEmbeddingService
                 ->from('openregister_vectors');
 
             // Apply filters.
-            if (isset($filters['entity_type'])) {
+            if (isset($filters['entity_type']) === true) {
                 // Support both string and array for entity_type.
-                if (is_array($filters['entity_type'])) {
-                    $qb->andWhere($qb->expr()->in('entity_type', $qb->createNamedParameter($filters['entity_type'], \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_STR_ARRAY)));
+                if (is_array($filters['entity_type']) === true) {
+                    $qb->andWhere(
+                        $qb->expr()->in(
+                            'entity_type',
+                            $qb->createNamedParameter(
+                                $filters['entity_type'],
+                                \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_STR_ARRAY
+                            )
+                        )
+                    );
                 } else {
                     $qb->andWhere($qb->expr()->eq('entity_type', $qb->createNamedParameter($filters['entity_type'])));
                 }
             }
 
-            if (isset($filters['entity_id'])) {
+            if (isset($filters['entity_id']) === true) {
                 // Support both string and array for entity_id.
-                if (is_array($filters['entity_id'])) {
-                    $qb->andWhere($qb->expr()->in('entity_id', $qb->createNamedParameter($filters['entity_id'], \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_STR_ARRAY)));
+                if (is_array($filters['entity_id']) === true) {
+                    $qb->andWhere(
+                        $qb->expr()->in(
+                            'entity_id',
+                            $qb->createNamedParameter(
+                                $filters['entity_id'],
+                                \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_STR_ARRAY
+                            )
+                        )
+                    );
                 } else {
                     $qb->andWhere($qb->expr()->eq('entity_id', $qb->createNamedParameter($filters['entity_id'])));
                 }
             }
 
-            if (isset($filters['embedding_model'])) {
+            if (isset($filters['embedding_model']) === true) {
                 $qb->andWhere($qb->expr()->eq('embedding_model', $qb->createNamedParameter($filters['embedding_model'])));
             }
 
@@ -1312,11 +1348,11 @@ class VectorEmbeddingService
             $both       = 0;
 
             foreach ($finalResults as $result) {
-                if ($result['in_vector'] && $result['in_solr']) {
+                if ($result['in_vector'] === true && $result['in_solr'] === true) {
                     $both++;
-                } else if ($result['in_vector']) {
+                } else if ($result['in_vector'] === true) {
                     $vectorOnly++;
-                } else if ($result['in_solr']) {
+                } else if ($result['in_solr'] === true) {
                     $solrOnly++;
                 }
             }
@@ -1391,7 +1427,7 @@ class VectorEmbeddingService
         foreach ($vectorResults as $rank => $result) {
             $key = $result['entity_type'].'_'.$result['entity_id'];
 
-            if (!isset($combinedScores[$key])) {
+            if (isset($combinedScores[$key]) === false) {
                 $combinedScores[$key] = [
                     'entity_type'       => $result['entity_type'],
                     'entity_id'         => $result['entity_id'],
@@ -1418,7 +1454,7 @@ class VectorEmbeddingService
         foreach ($solrResults as $rank => $result) {
             $key = $result['entity_type'].'_'.$result['entity_id'];
 
-            if (!isset($combinedScores[$key])) {
+            if (isset($combinedScores[$key]) === false) {
                 $combinedScores[$key] = [
                     'entity_type'       => $result['entity_type'],
                     'entity_id'         => $result['entity_id'],
@@ -1575,7 +1611,7 @@ class VectorEmbeddingService
                 ->groupBy('entity_type');
             $result = $qb->executeQuery();
             $byType = [];
-            while ($row = $result->fetch()) {
+            while (($row = $result->fetch()) !== false) {
                 $byType[$row['entity_type']] = (int) $row['count'];
             }
 
@@ -1588,7 +1624,7 @@ class VectorEmbeddingService
                 ->groupBy('embedding_model');
             $result  = $qb->executeQuery();
             $byModel = [];
-            while ($row = $result->fetch()) {
+            while (($row = $result->fetch()) !== false) {
                 $byModel[$row['embedding_model']] = (int) $row['count'];
             }
 
@@ -1628,7 +1664,7 @@ class VectorEmbeddingService
     private function getVectorStatsFromSolr(): array
     {
         try {
-            if (!$this->solrService->isAvailable()) {
+            if ($this->solrService->isAvailable() === false) {
                 $this->logger->warning('[VectorEmbeddingService] Solr not available for stats');
                 return [
                     'total_vectors'  => 0,
@@ -1755,7 +1791,7 @@ class VectorEmbeddingService
         ];
 
         // Add HTTP authentication if configured.
-        if (!empty($solrConfig['username']) && !empty($solrConfig['password'])) {
+        if (empty($solrConfig['username']) === false && empty($solrConfig['password']) === false) {
             $options['auth'] = [$solrConfig['username'], $solrConfig['password']];
         }
 
@@ -1768,14 +1804,14 @@ class VectorEmbeddingService
 
         // Extract model counts from facets.
         $byModel = [];
-        if (isset($data['facet_counts']['facet_fields']['_embedding_model_'])) {
+        if (isset($data['facet_counts']['facet_fields']['_embedding_model_']) === true) {
             $facets = $data['facet_counts']['facet_fields']['_embedding_model_'];
             // Facets are returned as [value1, count1, value2, count2, ...].
             for ($i = 0; $i < count($facets); $i += 2) {
-                if (isset($facets[$i]) && isset($facets[$i + 1])) {
+                if (isset($facets[$i]) === true && isset($facets[$i + 1]) === true) {
                     $modelName  = $facets[$i];
                     $modelCount = $facets[$i + 1];
-                    if ($modelName && $modelCount > 0) {
+                    if ($modelName !== null && $modelName !== '' && $modelCount > 0) {
                         $byModel[$modelName] = $modelCount;
                     }
                 }
@@ -1848,7 +1884,7 @@ class VectorEmbeddingService
     {
         $cacheKey = $config['provider'].'_'.$config['model'];
 
-        if (!isset($this->generatorCache[$cacheKey])) {
+        if (isset($this->generatorCache[$cacheKey]) === false) {
             $this->logger->debug(
                     'Creating new embedding generator',
                     [
@@ -1896,11 +1932,11 @@ class VectorEmbeddingService
     {
         $llphantConfig = new OpenAIConfig();
 
-        if (!empty($config['api_key'])) {
+        if (empty($config['api_key']) === false) {
             $llphantConfig->apiKey = $config['api_key'];
         }
 
-        if (!empty($config['base_url'])) {
+        if (empty($config['base_url']) === false) {
             $llphantConfig->url = $config['base_url'];
         }
 
@@ -1933,13 +1969,35 @@ class VectorEmbeddingService
         // This allows us to use any Fireworks model name without LLPhant's restrictions.
         return new class($model, $config, $this->logger) implements EmbeddingGeneratorInterface {
 
+            /**
+             * Model name
+             *
+             * @var string
+             */
             private string $model;
 
+            /**
+             * Configuration array
+             *
+             * @var array
+             */
             private array $config;
 
+            /**
+             * Logger instance
+             *
+             * @var \Psr\Log\LoggerInterface
+             */
             private $logger;
 
 
+            /**
+             * Constructor
+             *
+             * @param string                   $model  Model name
+             * @param array<string,mixed>      $config Configuration array
+             * @param \Psr\Log\LoggerInterface $logger Logger instance
+             */
             public function __construct(string $model, array $config, $logger)
             {
                 $this->model  = $model;
@@ -1948,6 +2006,13 @@ class VectorEmbeddingService
             }//end __construct()
 
 
+            /**
+             * Embed text
+             *
+             * @param string $text Text to embed
+             *
+             * @return array<float> Embedding vector
+             */
             public function embedText(string $text): array
             {
                 $url = rtrim($this->config['base_url'] ?? 'https://api.fireworks.ai/inference/v1', '/').'/embeddings';
@@ -1996,7 +2061,7 @@ class VectorEmbeddingService
                 }
 
                 $data = json_decode($response, true);
-                if (!isset($data['data'][0]['embedding'])) {
+                if (isset($data['data'][0]['embedding']) === false) {
                     throw new \Exception("Unexpected Fireworks API response format: {$response}");
                 }
 
@@ -2004,6 +2069,11 @@ class VectorEmbeddingService
             }//end embedText()
 
 
+            /**
+             * Get embedding length
+             *
+             * @return int Embedding length
+             */
             public function getEmbeddingLength(): int
             {
                 // Return expected dimensions based on model.
@@ -2017,6 +2087,13 @@ class VectorEmbeddingService
             }//end getEmbeddingLength()
 
 
+            /**
+             * Embed a document
+             *
+             * @param \LLPhant\Embeddings\Document $document Document to embed
+             *
+             * @return \LLPhant\Embeddings\Document Embedded document
+             */
             public function embedDocument(\LLPhant\Embeddings\Document $document): \LLPhant\Embeddings\Document
             {
                 // Embed the document content and store it back in the document.
@@ -2025,6 +2102,13 @@ class VectorEmbeddingService
             }//end embedDocument()
 
 
+            /**
+             * Embed multiple documents
+             *
+             * @param array<int,\LLPhant\Embeddings\Document> $documents Documents to embed
+             *
+             * @return array<int,\LLPhant\Embeddings\Document> Embedded documents
+             */
             public function embedDocuments(array $documents): array
             {
                 // Embed multiple documents.
@@ -2089,7 +2173,7 @@ class VectorEmbeddingService
         $magnitude1 = sqrt($magnitude1);
         $magnitude2 = sqrt($magnitude2);
 
-        if ($magnitude1 == 0 || $magnitude2 == 0) {
+        if ($magnitude1 === 0 || $magnitude2 === 0) {
             return 0.0;
         }
 
@@ -2366,7 +2450,7 @@ class VectorEmbeddingService
 
             $result         = $qb->executeQuery();
             $existingModels = [];
-            while ($row = $result->fetch()) {
+            while (($row = $result->fetch()) !== false) {
                 $existingModels[] = $row['embedding_model'];
             }
 
@@ -2401,7 +2485,7 @@ class VectorEmbeddingService
                 'total_vectors'     => $totalVectors,
                 'null_model_count'  => $nullModelCount,
                 'mismatched_models' => $mismatchDetails,
-                'message'           => $hasMismatch || $nullModelCount > 0 ? 'Embedding model has changed. Please clear all vectors and re-vectorize.' : 'All vectors use the current embedding model',
+                'message'           => $this->getModelMismatchMessage($hasMismatch, $nullModelCount),
             ];
         } catch (\Exception $e) {
             $this->logger->error(

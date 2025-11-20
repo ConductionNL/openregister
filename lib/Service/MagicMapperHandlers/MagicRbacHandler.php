@@ -21,13 +21,13 @@
  * - Admin override capabilities
  * - Unauthenticated user handling
  *
- * @category Handler
- * @package  OCA\OpenRegister\Service\MagicMapperHandlers
- * @author   Conduction Development Team <info@conduction.nl>
+ * @category  Handler
+ * @package   OCA\OpenRegister\Service\MagicMapperHandlers
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @version  GIT: <git_id>
- * @link     https://www.OpenRegister.app
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version   GIT: <git_id>
+ * @link      https://www.OpenRegister.app
  *
  * @since 2.0.0 Initial implementation for MagicMapper RBAC capabilities
  */
@@ -57,11 +57,11 @@ class MagicRbacHandler
     /**
      * Constructor for MagicRbacHandler
      *
-     * @param IUserSession    $userSession    User session for current user context
-     * @param IGroupManager   $groupManager   Group manager for user group operations
-     * @param IUserManager    $userManager    User manager for user operations
-     * @param IAppConfig      $appConfig      App configuration for RBAC settings
-     * @param LoggerInterface $logger         Logger for debugging and error reporting
+     * @param IUserSession  $userSession  User session for current user context
+     * @param IGroupManager $groupManager Group manager for user group operations
+     * @param IUserManager  $userManager User manager for user operations
+     * @param IAppConfig    $appConfig    App configuration for RBAC settings
+     * @param LoggerInterface $logger    Logger for debugging and error reporting
      */
     public function __construct(
         private readonly IUserSession $userSession,
@@ -70,7 +70,8 @@ class MagicRbacHandler
         private readonly IAppConfig $appConfig,
         private readonly LoggerInterface $logger
     ) {
-    }
+
+    }//end __construct()
 
     /**
      * Apply RBAC permission filters to a dynamic table query
@@ -78,12 +79,12 @@ class MagicRbacHandler
      * This method adds WHERE conditions to filter objects based on the current user's
      * permissions according to the schema's authorization configuration.
      *
-     * @param IQueryBuilder $qb               Query builder to modify
-     * @param Register      $register         Register context
-     * @param Schema        $schema           Schema with authorization config
-     * @param string        $tableAlias       Table alias for the dynamic table (default: 't')
-     * @param string|null   $userId           Optional user ID (defaults to current user)
-     * @param bool          $rbac             Whether to apply RBAC checks (default: true)
+     * @param IQueryBuilder $qb         Query builder to modify
+     * @param Register      $register   Register context
+     * @param Schema        $schema     Schema with authorization config
+     * @param string        $tableAlias Table alias for the dynamic table (default: 't')
+     * @param string|null   $userId     Optional user ID (defaults to current user)
+     * @param bool          $rbac       Whether to apply RBAC checks (default: true)
      *
      * @return void
      */
@@ -91,12 +92,12 @@ class MagicRbacHandler
         IQueryBuilder $qb,
         Register $register,
         Schema $schema,
-        string $tableAlias = 't',
-        ?string $userId = null,
-        bool $rbac = true
+        string $tableAlias='t',
+        ?string $userId=null,
+        bool $rbac=true
     ): void {
         // If RBAC is disabled, skip all permission filtering.
-        if ($rbac === false || !$this->isRbacEnabled()) {
+        if ($rbac === false || $this->isRbacEnabled() === false) {
             return;
         }
 
@@ -122,8 +123,9 @@ class MagicRbacHandler
         $userGroups = $this->groupManager->getUserGroupIds($userObj);
 
         // Admin users see everything if admin override is enabled.
-        if (in_array('admin', $userGroups) && $this->isAdminOverrideEnabled()) {
-            return; // No filtering needed for admin users
+        if (in_array('admin', $userGroups) === true && $this->isAdminOverrideEnabled() === true) {
+            // No filtering needed for admin users.
+            return;
         }
 
         // Build conditions for read access.
@@ -131,14 +133,19 @@ class MagicRbacHandler
 
         // 1. Check schema authorization configuration.
         $authorization = $schema->getAuthorization();
-        
-        if (empty($authorization) || $authorization === '{}') {
+
+        if (empty($authorization) === true || $authorization === '{}') {
             // No authorization configured - open access.
             return;
         }
 
-        $authConfig = is_string($authorization) ? json_decode($authorization, true) : $authorization;
-        if (!is_array($authConfig)) {
+        if (is_string($authorization) === true) {
+            $authConfig = json_decode($authorization, true);
+        } else {
+            $authConfig = $authorization;
+        }
+
+        if (is_array($authConfig) === false) {
             // Invalid authorization config - default to open access.
             return;
         }
@@ -150,7 +157,7 @@ class MagicRbacHandler
 
         // 3. Check read permissions in authorization config.
         $readPerms = $authConfig['read'] ?? [];
-        if (is_array($readPerms)) {
+        if (is_array($readPerms) === true) {
             // Check if user's groups are in the authorized groups for read action.
             foreach ($userGroups as $groupId) {
                 if (in_array($groupId, $readPerms)) {
