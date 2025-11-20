@@ -6,6 +6,7 @@ volumes:
   config:
   solr:
   ollama:
+  presidio-models:
 
 services:
   db:
@@ -75,6 +76,30 @@ services:
       retries: 3
       start_period: 60s
 
+  # Presidio Analyzer for PII detection and NER (Development)
+  presidio-analyzer:
+    image: mcr.microsoft.com/presidio-analyzer:latest
+    container_name: openregister-presidio-analyzer-dev
+    restart: always
+    ports:
+      - "5001:5001"
+    environment:
+      - GRPC_PORT=5001
+      - LOG_LEVEL=DEBUG  # More verbose logging for development
+      - PRESIDIO_ANALYZER_LANGUAGES=en,nl,de,fr,es
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 512M
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5001/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
   nextcloud:
     user: root
     container_name: nextcloud-dev
@@ -86,6 +111,7 @@ services:
       - db
       - solr
       - ollama
+      - presidio-analyzer
     volumes:
       - nextcloud:/var/www/html:rw
       - ./custom_apps:/var/www/html/custom_apps

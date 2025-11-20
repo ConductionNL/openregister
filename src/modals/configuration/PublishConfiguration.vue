@@ -9,22 +9,25 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 		size="large"
 		:can-close="!loading"
 		@update:open="closeModal">
-		
 		<NcNoteCard v-if="success" type="success">
-			<p v-for="(line, index) in successMessage.split('\n')" :key="index">{{ line }}</p>
+			<p v-for="(line, index) in successMessage.split('\n')" :key="index">
+				{{ line }}
+			</p>
 		</NcNoteCard>
-		
+
 		<NcNoteCard v-if="error" type="error">
 			<p>{{ error }}</p>
 		</NcNoteCard>
-		
+
 		<div v-if="configuration" class="publishForm">
 			<div class="formRow">
 				<div class="formSection formSection--inline formSection--config">
 					<h3>{{ t('openregister', 'Configuration') }}</h3>
-					<p class="formDescription">{{ configuration.title }}</p>
+					<p class="formDescription">
+						{{ configuration.title }}
+					</p>
 				</div>
-				
+
 				<div class="formSection formSection--inline">
 					<h3>{{ t('openregister', 'Repository') }}</h3>
 					<NcLoadingIcon v-if="loadingRepositories" :size="32" />
@@ -38,9 +41,11 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 						:disabled="loading"
 						:label-outside="true"
 						aria-label-combobox="Repository selection" />
-					<p class="formHint">{{ t('openregister', 'Select a repository you have write access to') }}</p>
+					<p class="formHint">
+						{{ t('openregister', 'Select a repository you have write access to') }}
+					</p>
 				</div>
-				
+
 				<div v-if="selectedRepository" class="formSection formSection--inline">
 					<h3>{{ t('openregister', 'Branch') }}</h3>
 					<NcLoadingIcon v-if="loadingBranches" :size="32" />
@@ -54,10 +59,12 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 						:disabled="loading"
 						:label-outside="true"
 						aria-label-combobox="Branch selection" />
-					<p class="formHint">{{ t('openregister', 'Select the branch to publish to') }}</p>
+					<p class="formHint">
+						{{ t('openregister', 'Select the branch to publish to') }}
+					</p>
 				</div>
 			</div>
-			
+
 			<div v-if="selectedBranch" class="formSection">
 				<h3>{{ t('openregister', 'File Path') }}</h3>
 				<NcTextField
@@ -65,9 +72,11 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 					:placeholder="t('openregister', 'e.g., lib/Settings/config.json')"
 					:disabled="loading"
 					:label="t('openregister', 'Path in repository')" />
-				<p class="formHint">{{ t('openregister', 'Path where the configuration file will be saved in the repository') }}</p>
+				<p class="formHint">
+					{{ t('openregister', 'Path where the configuration file will be saved in the repository') }}
+				</p>
 			</div>
-			
+
 			<div v-if="filePath" class="formSection">
 				<h3>{{ t('openregister', 'Commit Message') }}</h3>
 				<NcTextField
@@ -76,7 +85,7 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 					:disabled="loading"
 					:label="t('openregister', 'Commit message')" />
 			</div>
-			
+
 			<div class="formActions">
 				<NcButton
 					type="primary"
@@ -99,7 +108,7 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 
 <script>
 import { NcDialog, NcButton, NcTextField, NcSelect, NcNoteCard, NcLoadingIcon } from '@nextcloud/vue'
-import { configurationStore, navigationStore } from '../../store/store.js'
+
 import CloudUploadOutline from 'vue-material-design-icons/CloudUploadOutline.vue'
 
 export default {
@@ -119,13 +128,13 @@ export default {
 			error: null,
 			success: false,
 			successMessage: '',
-			
+
 			// Form fields
 			selectedRepository: null,
 			selectedBranch: null,
 			filePath: '',
 			commitMessage: '',
-			
+
 			// Data
 			repositories: [],
 			branches: [],
@@ -144,14 +153,14 @@ export default {
 			return this.repositories.map(repo => ({
 				value: repo.full_name,
 				label: `${repo.full_name}${repo.private ? ' (Private)' : ''}`,
-				...repo
+				...repo,
 			}))
 		},
 		branchOptions() {
 			return this.branches.map(branch => ({
 				value: branch.name,
 				label: branch.name,
-				...branch
+				...branch,
 			}))
 		},
 	},
@@ -170,7 +179,7 @@ export default {
 	},
 	async mounted() {
 		await this.loadRepositories()
-		
+
 		// Set default commit message
 		if (this.configuration) {
 			this.commitMessage = `Update configuration: ${this.configuration.title}`
@@ -187,7 +196,7 @@ export default {
 		async loadRepositories() {
 			this.loadingRepositories = true
 			this.error = null
-			
+
 			try {
 				const response = await fetch('/index.php/apps/openregister/api/configurations/github/repositories', {
 					method: 'GET',
@@ -195,15 +204,15 @@ export default {
 						'Content-Type': 'application/json',
 					},
 				})
-				
+
 				if (!response.ok) {
 					const errorData = await response.json()
 					throw new Error(errorData.error || 'Failed to load repositories')
 				}
-				
+
 				const data = await response.json()
 				this.repositories = data.repositories || []
-				
+
 				// Pre-select existing GitHub repo if configuration is already published
 				if (this.configuration?.githubRepo) {
 					const existingRepo = this.repositories.find(r => r.full_name === this.configuration.githubRepo)
@@ -230,10 +239,10 @@ export default {
 		},
 		async loadBranches(owner, repo) {
 			if (!owner || !repo) return
-			
+
 			this.loadingBranches = true
 			this.error = null
-			
+
 			try {
 				const response = await fetch(`/index.php/apps/openregister/api/configurations/github/branches?owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(repo)}`, {
 					method: 'GET',
@@ -241,15 +250,15 @@ export default {
 						'Content-Type': 'application/json',
 					},
 				})
-				
+
 				if (!response.ok) {
 					const errorData = await response.json()
 					throw new Error(errorData.error || 'Failed to load branches')
 				}
-				
+
 				const data = await response.json()
 				this.branches = data.branches || []
-				
+
 				// Select default branch if available
 				if (this.branches.length > 0 && !this.selectedBranch) {
 					const defaultBranch = this.branches.find(b => b.name === 'main') || this.branches.find(b => b.name === 'master') || this.branches[0]
@@ -268,11 +277,11 @@ export default {
 			// Clear branches and selected branch when repository changes
 			this.branches = []
 			this.selectedBranch = null
-			
+
 			if (value) {
 				// Handle both string (full_name) and object cases
 				const repoFullName = typeof value === 'string' ? value : value.value || value.full_name
-				
+
 				const repo = this.repositories.find(r => r.full_name === repoFullName)
 				if (repo) {
 					this.loadBranches(repo.owner, repo.name)
@@ -281,37 +290,37 @@ export default {
 		},
 		async publishConfiguration() {
 			if (!this.canPublish || !this.configuration) return
-			
+
 			this.loading = true
 			this.error = null
 			this.success = false
-			
+
 			try {
 				// Extract repository value (handle both object and string)
-				const repoValue = typeof this.selectedRepository === 'object' 
+				const repoValue = typeof this.selectedRepository === 'object'
 					? (this.selectedRepository.value || this.selectedRepository.full_name)
 					: this.selectedRepository
-				
+
 				if (!repoValue) {
 					throw new Error('Repository not selected')
 				}
-				
+
 				const repo = this.repositories.find(r => r.full_name === repoValue)
 				if (!repo) {
 					throw new Error('Repository not found')
 				}
-				
+
 				const [owner, repoName] = repoValue.split('/')
-				
+
 				// Extract branch value (handle both object and string)
 				const branchValue = typeof this.selectedBranch === 'object'
 					? (this.selectedBranch.value || this.selectedBranch.name)
 					: this.selectedBranch
-				
+
 				if (!branchValue) {
 					throw new Error('Branch not selected')
 				}
-				
+
 				const response = await fetch(`/index.php/apps/openregister/api/configurations/${this.configuration.id}/publish/github`, {
 					method: 'POST',
 					headers: {
@@ -325,24 +334,24 @@ export default {
 						commitMessage: this.commitMessage || `Update configuration: ${this.configuration.title}`,
 					}),
 				})
-				
+
 				if (!response.ok) {
 					const errorData = await response.json()
 					throw new Error(errorData.error || 'Failed to publish configuration')
 				}
-				
+
 				const data = await response.json()
-				
+
 				this.success = true
 				let message = `Configuration published successfully! Commit: ${data.commit_sha?.substring(0, 7) || 'N/A'}`
 				if (data.indexing_note) {
 					message += `\n\n${data.indexing_note}`
 				}
 				this.successMessage = message
-				
+
 				// Refresh configuration list
 				await configurationStore.refreshConfigurationList()
-				
+
 				// Close modal after 4 seconds (longer to read the indexing note)
 				setTimeout(() => {
 					this.closeModal()

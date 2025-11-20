@@ -228,14 +228,14 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 								<span class="detail-value">{{ suggestion.max_length }}</span>
 							</div>
 
-						<div v-if="suggestion.string_patterns && suggestion.string_patterns.length > 0" class="detail-item">
-							<span class="detail-label">{{ t('openregister', 'Patterns:') }}</span>
-							<span class="detail-value">
-								<span v-for="(pattern, patternIndex) in suggestion.string_patterns" :key="`pattern-${patternIndex}`" class="pattern-tag">
-									{{ pattern }}
+							<div v-if="suggestion.string_patterns && suggestion.string_patterns.length > 0" class="detail-item">
+								<span class="detail-label">{{ t('openregister', 'Patterns:') }}</span>
+								<span class="detail-value">
+									<span v-for="(pattern, patternIndex) in suggestion.string_patterns" :key="`pattern-${patternIndex}`" class="pattern-tag">
+										{{ pattern }}
+									</span>
 								</span>
-							</span>
-						</div>
+							</div>
 
 							<div class="detail-item">
 								<span class="detail-label">{{ t('openregister', 'Description:') }}</span>

@@ -101,15 +101,15 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 								<td class="uuid-cell">
 									{{ object.uuid }}
 								</td>
-							<td class="errors-cell">
-								<div v-if="object.errors && object.errors.length > 0" class="errors-list">
-									<div v-for="validationError in object.errors" :key="validationError.path" class="error-item">
-										<strong>{{ validationError.path }}:</strong> {{ validationError.message }}
-										<span class="error-keyword">({{ validationError.keyword }})</span>
+								<td class="errors-cell">
+									<div v-if="object.errors && object.errors.length > 0" class="errors-list">
+										<div v-for="validationError in object.errors" :key="validationError.path" class="error-item">
+											<strong>{{ validationError.path }}:</strong> {{ validationError.message }}
+											<span class="error-keyword">({{ validationError.keyword }})</span>
+										</div>
 									</div>
-								</div>
-								<span v-else class="no-errors">No errors</span>
-							</td>
+									<span v-else class="no-errors">No errors</span>
+								</td>
 								<td class="actions-cell">
 									<NcButton v-if="object.errors && object.errors.length > 0"
 										size="small"

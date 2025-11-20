@@ -1,9 +1,10 @@
 <template>
-	<div class="configurationCard" :class="{ 
-		'configurationCard--imported': isImported, 
-		'configurationCard--local': isImported && isLocalConfiguration,
-		'configurationCard--external': isImported && !isLocalConfiguration
-	}">
+	<div class="configurationCard"
+		:class="{
+			'configurationCard--imported': isImported,
+			'configurationCard--local': isImported && isLocalConfiguration,
+			'configurationCard--external': isImported && !isLocalConfiguration
+		}">
 		<div class="cardHeader">
 			<h2 v-tooltip.bottom="configuration.description || configuration.config?.description">
 				<CogOutline :size="20" />
@@ -122,13 +123,13 @@
 				</template>
 			</NcActions>
 		</div>
-		
+
 		<!-- Configuration Details -->
 		<div class="configurationDetails">
 			<p v-if="description" class="configurationDescription">
 				{{ description }}
 			</p>
-			
+
 			<!-- Meta information footer (organization, repo, stars, versions) -->
 			<div v-if="hasMetadata" class="cardMeta">
 				<!-- Repository link -->
@@ -141,7 +142,7 @@
 					<SourceBranch :size="16" />
 					{{ repositoryFullName }}
 				</a>
-				
+
 				<!-- Organization link -->
 				<a
 					v-if="displayConfiguration.organization && displayConfiguration.organization.url"
@@ -152,31 +153,31 @@
 					<OfficeBuilding :size="16" />
 					{{ displayConfiguration.organization.name }}
 				</a>
-				
+
 				<!-- Stars count -->
 				<span v-if="displayConfiguration.stars" class="metaItem">
 					<Star :size="16" />
 					{{ displayConfiguration.stars }}
 				</span>
-				
+
 				<!-- App ID badge (fallback if no repo info) -->
 				<span v-if="displayConfiguration.app && !repositoryFullName" class="metaItem">
 					<ApplicationCog :size="16" />
 					{{ displayConfiguration.app }}
 				</span>
-				
+
 				<!-- Source type (fallback if no repo info) -->
 				<span v-if="displayConfiguration.sourceType && !repositoryFullName" class="metaItem">
 					<Cloud :size="16" />
 					{{ getSourceTypeLabel(displayConfiguration.sourceType) }}
 				</span>
-				
+
 				<!-- Version info -->
 				<span v-if="displayConfiguration.version || displayConfiguration.localVersion" class="metaItem">
 					<Tag :size="16" />
 					v{{ displayConfiguration.version || displayConfiguration.localVersion }}
 				</span>
-				
+
 				<span v-if="displayConfiguration.remoteVersion && displayConfiguration.remoteVersion !== (displayConfiguration.version || displayConfiguration.localVersion)" class="metaItem">
 					<Update :size="16" />
 					v{{ displayConfiguration.remoteVersion }} available
@@ -215,19 +216,19 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 
 /**
  * Universal Configuration Card Component
- * 
+ *
  * Works for ALL configuration types:
  * - Local/imported configurations (from ConfigurationsIndex)
  * - Discovered configurations (from ImportConfiguration modal)
  * - Automatically detects if a discovered config is already imported
- * 
- * @emits view - View configuration details
- * @emits edit - Edit configuration
- * @emits export - Export configuration
- * @emits delete - Delete configuration
- * @emits import - Import discovered configuration
- * @emits check-version - Check for updates
- * @emits preview-update - Preview available updates
+ *
+ * @fires view - View configuration details
+ * @fires edit - Edit configuration
+ * @fires export - Export configuration
+ * @fires delete - Delete configuration
+ * @fires import - Import discovered configuration
+ * @fires check-version - Check for updates
+ * @fires preview-update - Preview available updates
  */
 export default {
 	name: 'ConfigurationCard',
@@ -275,20 +276,6 @@ export default {
 			checkingImportStatus: false,
 		}
 	},
-	mounted() {
-		// For discovered configs, check backend to see if already imported
-		if (this.isDiscovered && this.appId) {
-			this.checkIfImported()
-		}
-	},
-	watch: {
-		'configuration.config.app'() {
-			// Re-check if app ID changes
-			if (this.isDiscovered && this.appId) {
-				this.checkIfImported()
-			}
-		},
-	},
 	computed: {
 		/**
 		 * Check if this is a discovered configuration (has config.app structure)
@@ -327,9 +314,9 @@ export default {
 
 			// Try to find in store first (fast)
 			const found = configurationStore.configurationList.find(
-				config => config.id === this.importedConfigId
+				config => config.id === this.importedConfigId,
 			)
-			
+
 			if (found) return found
 
 			// Not in store, create a minimal config object for display
@@ -413,7 +400,7 @@ export default {
 			// Check both displayConfiguration and original configuration prop
 			const displayConfig = this.displayConfiguration
 			const originalConfig = this.configuration
-			
+
 			// Debug logging
 			console.log('[ConfigurationCard] isLocalConfiguration check:', {
 				title: displayConfig.title || originalConfig.title,
@@ -422,13 +409,13 @@ export default {
 				originalConfig_isLocal: originalConfig.isLocal,
 				originalConfig_sourceType: originalConfig.sourceType,
 			})
-			
+
 			// Check isLocal property from either source (boolean true or string 'true')
 			const isLocal = displayConfig.isLocal ?? originalConfig.isLocal
 			if (isLocal === true || isLocal === 'true') {
 				return true
 			}
-			
+
 			// Fallback: check sourceType from either source
 			const sourceType = displayConfig.sourceType ?? originalConfig.sourceType
 			return sourceType === 'local' || sourceType === 'manual'
@@ -448,7 +435,7 @@ export default {
 		 */
 		isRemoteConfiguration() {
 			const result = this.isImported && this.displayConfiguration.sourceType && this.displayConfiguration.sourceType !== 'local'
-			
+
 			// Debug logging
 			console.log('[ConfigurationCard] isRemoteConfiguration check:', {
 				title: this.displayConfiguration.title || this.displayConfiguration.config?.title,
@@ -458,7 +445,7 @@ export default {
 				result,
 				fullConfig: this.displayConfiguration,
 			})
-			
+
 			return result
 		},
 		/**
@@ -501,13 +488,13 @@ export default {
 		hasMetadata() {
 			const config = this.displayConfiguration
 			return !!(
-				this.repositoryFullName ||
-				config.organization ||
-				config.stars ||
-				config.app ||
-				config.sourceType ||
-				config.localVersion ||
-				config.remoteVersion
+				this.repositoryFullName
+				|| config.organization
+				|| config.stars
+				|| config.app
+				|| config.sourceType
+				|| config.localVersion
+				|| config.remoteVersion
 			)
 		},
 		/**
@@ -517,17 +504,17 @@ export default {
 		 */
 		repositoryFullName() {
 			const config = this.displayConfiguration
-			
+
 			// From discovered configs
 			if (config.repository) {
 				return config.repository
 			}
-			
+
 			// From imported configs with github info
 			if (config.githubRepo) {
 				return config.githubRepo
 			}
-			
+
 			// Try to extract from sourceUrl
 			if (config.sourceUrl) {
 				const githubMatch = config.sourceUrl.match(/github\.com\/([^\/]+\/[^\/]+)/)
@@ -535,7 +522,7 @@ export default {
 					return githubMatch[1].replace(/\/blob\/.*$/, '')
 				}
 			}
-			
+
 			return null
 		},
 		/**
@@ -545,17 +532,31 @@ export default {
 		 */
 		repositoryUrl() {
 			if (!this.repositoryFullName) return null
-			
+
 			const config = this.displayConfiguration
-			
+
 			// Check if it's a GitLab repo
 			if (config.sourceType === 'gitlab' || config.sourceUrl?.includes('gitlab')) {
 				return `https://gitlab.com/${this.repositoryFullName}`
 			}
-			
+
 			// Default to GitHub
 			return `https://github.com/${this.repositoryFullName}`
 		},
+	},
+	watch: {
+		'configuration.config.app'() {
+			// Re-check if app ID changes
+			if (this.isDiscovered && this.appId) {
+				this.checkIfImported()
+			}
+		},
+	},
+	mounted() {
+		// For discovered configs, check backend to see if already imported
+		if (this.isDiscovered && this.appId) {
+			this.checkIfImported()
+		}
 	},
 	methods: {
 		/**
@@ -566,7 +567,7 @@ export default {
 			if (!this.appId || this.checkingImportStatus) return
 
 			this.checkingImportStatus = true
-			
+
 			try {
 				const response = await fetch(
 					`/index.php/apps/openregister/api/configurations?app=${encodeURIComponent(this.appId)}`,
@@ -574,29 +575,29 @@ export default {
 						method: 'GET',
 						headers: {
 							'Content-Type': 'application/json',
-							'Accept': 'application/json',
+							Accept: 'application/json',
 						},
-					}
+					},
 				)
 
 				if (response.ok) {
 					const data = await response.json()
-					
+
 					// Check if we got results
 					if (data.results && data.results.length > 0) {
 						const importedConfig = data.results[0]
-						
+
 						// Configuration exists! Store the ID and add to store if not present
 						this.importedConfigId = importedConfig.id
-						
+
 						// Add to store if not already there (for pagination support)
 						const existsInStore = configurationStore.configurationList.find(
-							c => c.id === importedConfig.id
+							c => c.id === importedConfig.id,
 						)
 						if (!existsInStore) {
 							configurationStore.configurationList.push(importedConfig)
 						}
-						
+
 						console.log('[ConfigurationCard] Configuration already imported:', {
 							appId: this.appId,
 							configId: this.importedConfigId,
@@ -645,7 +646,7 @@ export default {
 				const now = new Date()
 				const lastSync = new Date(configuration.lastSyncDate)
 				const diffInHours = Math.floor((now - lastSync) / (1000 * 60 * 60))
-				
+
 				if (diffInHours < 1) {
 					return 'Synced just now'
 				} else if (diffInHours < 24) {
@@ -946,5 +947,3 @@ export default {
 	color: white;
 }
 </style>
-
-

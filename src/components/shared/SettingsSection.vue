@@ -76,8 +76,6 @@ import InformationOutline from 'vue-material-design-icons/InformationOutline.vue
 export default {
 	name: 'SettingsSection',
 
-	inheritAttrs: false,
-
 	components: {
 		NcSettingsSection,
 		NcLoadingIcon,
@@ -85,6 +83,8 @@ export default {
 		Refresh,
 		InformationOutline,
 	},
+
+	inheritAttrs: false,
 
 	props: {
 		/**

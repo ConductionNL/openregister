@@ -97,10 +97,13 @@ import { dashboardStore, registerStore, navigationStore, configurationStore } fr
 			<div v-else>
 				<template v-if="registerStore.viewMode === 'cards'">
 					<div class="cardGrid">
-						<div v-for="register in paginatedRegisters" :key="register.id" class="card" :class="{ 
-							'card--managed': isManagedByExternalConfig(register),
-							'card--local': isManagedByLocalConfig(register)
-						}">
+						<div v-for="register in paginatedRegisters"
+							:key="register.id"
+							class="card"
+							:class="{
+								'card--managed': isManagedByExternalConfig(register),
+								'card--local': isManagedByLocalConfig(register)
+							}">
 							<div class="cardHeader">
 								<h2 v-tooltip.bottom="register.description">
 									<DatabaseOutline :size="20" />
@@ -124,13 +127,13 @@ import { dashboardStore, registerStore, navigationStore, configurationStore } fr
 										</template>
 										Calculate Sizes
 									</NcActionButton>
-									<NcActionButton 
+									<NcActionButton
 										v-tooltip="isManagedByExternalConfig(register) ? 'Cannot edit: This register is managed by external configuration ' + getManagingConfiguration(register).title : ''"
 										close-after-click
 										:disabled="isManagedByExternalConfig(register)"
 										@click="registerStore.setRegisterItem({
 											...register,
-											schemas: Array.isArray(register.schemas) 
+											schemas: Array.isArray(register.schemas)
 												? register.schemas.map(schema => typeof schema === 'object' ? schema.id : schema)
 												: []
 										}); navigationStore.setModal('editRegister')">
@@ -184,52 +187,52 @@ import { dashboardStore, registerStore, navigationStore, configurationStore } fr
 										</template>
 										View Details
 									</NcActionButton>
-							</NcActions>
-						</div>
-						
-						<!-- Register Description -->
-						<div class="registerDescription"
-							:class="{ 'registerDescription--expanded': isDescriptionExpanded(register.id), 'registerDescription--empty': !register.description }"
-							@click="register.description ? toggleDescriptionExpanded(register.id) : null">
-							{{ register.description || t('openregister', 'No description found') }}
-						</div>
-						
-						<!-- Schemas section -->
-						<table class="statisticsTable registerSchemas">
-							<thead>
-								<tr>
-									<th>{{ t('openregister', 'Schema Name') }}</th>
-									<th>{{ t('openregister', 'Type') }}</th>
-								</tr>
-							</thead>
-							<tbody>
-								<tr v-for="(schema, index) in getDisplayedSchemas(register)" :key="schema.id">
-									<td>{{ schema.title }}</td>
-									<td>{{ schema.type || 'object' }}</td>
-								</tr>
-								<tr v-if="!register.schemas || register.schemas.length === 0">
-									<td colspan="2" class="emptyText">
-										{{ t('openregister', 'No schemas found') }}
-									</td>
-								</tr>
-							</tbody>
-						</table>
-						
-					<!-- View More Button -->
-					<div v-if="getRemainingSchemasCount(register) > 0" class="viewMoreContainer">
-						<NcButton
-							type="secondary"
-							@click="toggleRegisterExpanded(register.id)">
-							<template #icon>
-								<ChevronDown v-if="!isRegisterExpanded(register.id)" :size="20" />
-								<ChevronUp v-else :size="20" />
-							</template>
-							{{ isRegisterExpanded(register.id) 
-								? t('openregister', 'Show less') 
-								: t('openregister', 'View {count} more', { count: getRemainingSchemasCount(register) }) 
-							}}
-						</NcButton>
-					</div>
+								</NcActions>
+							</div>
+
+							<!-- Register Description -->
+							<div class="registerDescription"
+								:class="{ 'registerDescription--expanded': isDescriptionExpanded(register.id), 'registerDescription--empty': !register.description }"
+								@click="register.description ? toggleDescriptionExpanded(register.id) : null">
+								{{ register.description || t('openregister', 'No description found') }}
+							</div>
+
+							<!-- Schemas section -->
+							<table class="statisticsTable registerSchemas">
+								<thead>
+									<tr>
+										<th>{{ t('openregister', 'Schema Name') }}</th>
+										<th>{{ t('openregister', 'Type') }}</th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr v-for="(schema, index) in getDisplayedSchemas(register)" :key="schema.id">
+										<td>{{ schema.title }}</td>
+										<td>{{ schema.type || 'object' }}</td>
+									</tr>
+									<tr v-if="!register.schemas || register.schemas.length === 0">
+										<td colspan="2" class="emptyText">
+											{{ t('openregister', 'No schemas found') }}
+										</td>
+									</tr>
+								</tbody>
+							</table>
+
+							<!-- View More Button -->
+							<div v-if="getRemainingSchemasCount(register) > 0" class="viewMoreContainer">
+								<NcButton
+									type="secondary"
+									@click="toggleRegisterExpanded(register.id)">
+									<template #icon>
+										<ChevronDown v-if="!isRegisterExpanded(register.id)" :size="20" />
+										<ChevronUp v-else :size="20" />
+									</template>
+									{{ isRegisterExpanded(register.id)
+										? t('openregister', 'Show less')
+										: t('openregister', 'View {count} more', { count: getRemainingSchemasCount(register) })
+									}}
+								</NcButton>
+							</div>
 						</div>
 					</div>
 				</template>
@@ -257,7 +260,7 @@ import { dashboardStore, registerStore, navigationStore, configurationStore } fr
 								<tr v-for="register in paginatedRegisters"
 									:key="register.id"
 									class="viewTableRow"
-									:class="{ 
+									:class="{
 										viewTableRowSelected: selectedRegisters.includes(register.id),
 										'viewTableRow--managed': isManagedByExternalConfig(register),
 										'viewTableRow--local': isManagedByLocalConfig(register)
@@ -301,13 +304,13 @@ import { dashboardStore, registerStore, navigationStore, configurationStore } fr
 												</template>
 												Calculate Sizes
 											</NcActionButton>
-											<NcActionButton 
+											<NcActionButton
 												v-tooltip="isManagedByExternalConfig(register) ? 'Cannot edit: This register is managed by external configuration ' + getManagingConfiguration(register).title : ''"
 												close-after-click
 												:disabled="isManagedByExternalConfig(register)"
 												@click="registerStore.setRegisterItem({
 													...register,
-													schemas: Array.isArray(register.schemas) 
+													schemas: Array.isArray(register.schemas)
 														? register.schemas.map(schema => typeof schema === 'object' ? schema.id : schema)
 														: []
 												}); navigationStore.setModal('editRegister')">
@@ -564,11 +567,11 @@ export default {
 			if (!register.schemas || register.schemas.length === 0) {
 				return []
 			}
-			
+
 			if (this.isRegisterExpanded(register.id)) {
 				return register.schemas
 			}
-			
+
 			// Show only first 5 schemas
 			return register.schemas.slice(0, 5)
 		},
@@ -592,9 +595,9 @@ export default {
 		 */
 		getManagingConfiguration(register) {
 			if (!register || !register.id) return null
-			
+
 			return configurationStore.configurationList.find(
-				config => config.registers && config.registers.includes(register.id)
+				config => config.registers && config.registers.includes(register.id),
 			) || null
 		},
 		/**
@@ -607,7 +610,7 @@ export default {
 		isManagedByExternalConfig(register) {
 			const config = this.getManagingConfiguration(register)
 			if (!config) return false
-			
+
 			// External configurations: github, gitlab, url sources, or isLocal === false
 			return (config.sourceType && ['github', 'gitlab', 'url'].includes(config.sourceType)) || config.isLocal === false
 		},
@@ -621,7 +624,7 @@ export default {
 		isManagedByLocalConfig(register) {
 			const config = this.getManagingConfiguration(register)
 			if (!config) return false
-			
+
 			// Local configurations: sourceType === 'local' or 'manual', or isLocal === true
 			return config.sourceType === 'local' || config.sourceType === 'manual' || config.isLocal === true
 		},

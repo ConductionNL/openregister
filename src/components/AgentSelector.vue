@@ -81,14 +81,14 @@
 								<span class="capability-count">{{ agent.views.length }}</span>
 							</div>
 							<div class="capability-list">
-								<span 
-									v-for="view in getVisibleViews(agent)" 
-									:key="view.uuid || view" 
+								<span
+									v-for="view in getVisibleViews(agent)"
+									:key="view.uuid || view"
 									class="capability-item">
 									{{ getViewName(view) }}
 								</span>
-								<button 
-									v-if="agent.views.length > 3 && !isExpanded(agent.id, 'views')" 
+								<button
+									v-if="agent.views.length > 3 && !isExpanded(agent.id, 'views')"
 									class="capability-more"
 									@click.stop="toggleExpand(agent.id, 'views')">
 									+{{ agent.views.length - 3 }}
@@ -104,14 +104,14 @@
 								<span class="capability-count">{{ agent.tools.length }}</span>
 							</div>
 							<div class="capability-list">
-								<span 
-									v-for="tool in getVisibleTools(agent)" 
-									:key="tool.uuid || tool" 
+								<span
+									v-for="tool in getVisibleTools(agent)"
+									:key="tool.uuid || tool"
 									class="capability-item">
 									{{ getToolName(tool) }}
 								</span>
-								<button 
-									v-if="agent.tools.length > 3 && !isExpanded(agent.id, 'tools')" 
+								<button
+									v-if="agent.tools.length > 3 && !isExpanded(agent.id, 'tools')"
 									class="capability-more"
 									@click.stop="toggleExpand(agent.id, 'tools')">
 									+{{ agent.tools.length - 3 }}
@@ -407,17 +407,17 @@ export default {
 		grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
 		gap: 20px;
 		align-content: start;
-		
+
 		// Ensure at least 2 columns on larger screens
 		@media (min-width: 640px) {
 			grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
 		}
-		
+
 		// Prefer 2-3 columns on wide screens
 		@media (min-width: 960px) {
 			grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
 		}
-		
+
 		// Allow up to 3 columns on very wide screens
 		@media (min-width: 1280px) {
 			grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -483,7 +483,7 @@ export default {
 					padding: 6px 12px !important;
 					min-height: 36px !important;
 					white-space: nowrap;
-					
+
 					::v-deep .button-vue__text {
 						font-size: 13px;
 					}

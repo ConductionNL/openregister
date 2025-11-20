@@ -40,7 +40,10 @@
 					<p class="scope-note">
 						The <code>repo</code> scope provides full repository access (read and write), enabling both discovery and publishing workflows.
 					</p>
-					<a href="https://github.com/settings/tokens/new" target="_blank" rel="noopener noreferrer" class="external-link">
+					<a href="https://github.com/settings/tokens/new"
+						target="_blank"
+						rel="noopener noreferrer"
+						class="external-link">
 						Create GitHub Personal Access Token →
 					</a>
 				</div>
@@ -62,7 +65,10 @@
 					<p class="scope-note">
 						If you plan to publish configurations back to GitLab, select the <code>api</code> scope when creating your token.
 					</p>
-					<a href="https://gitlab.com/-/user_settings/personal_access_tokens" target="_blank" rel="noopener noreferrer" class="external-link">
+					<a href="https://gitlab.com/-/user_settings/personal_access_tokens"
+						target="_blank"
+						rel="noopener noreferrer"
+						class="external-link">
 						Create GitLab Personal Access Token →
 					</a>
 				</div>
@@ -101,44 +107,44 @@
 						</NcPasswordField>
 
 						<div class="token-actions">
-					<NcButton
-						type="primary"
-						:disabled="saving || !githubToken || githubToken === originalGithubToken"
-						@click="saveGitHubToken">
-						<template #icon>
-							<NcLoadingIcon v-if="saving" :size="20" />
-							<ContentSave v-else :size="20" />
-						</template>
-						Save Token
-					</NcButton>
-					<NcButton
-						type="secondary"
-						:disabled="testingGithub || !githubToken"
-						@click="testGitHubToken">
-						<template #icon>
-							<NcLoadingIcon v-if="testingGithub" :size="20" />
-							<TestTube v-else :size="20" />
-						</template>
-						Test Token
-					</NcButton>
-					<NcButton
-						type="error"
-						:disabled="saving || !githubToken"
-						@click="clearGitHubToken">
-						<template #icon>
-							<Delete :size="20" />
-						</template>
-						Clear Token
-					</NcButton>
-					<span v-if="githubToken && githubToken === originalGithubToken && !githubTestResult" class="saved-indicator">
-						<CheckCircle :size="20" /> Token saved
-					</span>
-					<span v-if="githubTestResult && githubTestResult.success" class="test-result-success">
-						<CheckCircle :size="20" /> {{ githubTestResult.message }}
-					</span>
-					<span v-if="githubTestResult && !githubTestResult.success" class="test-result-error">
-						<AlertCircle :size="20" /> {{ githubTestResult.message }}
-					</span>
+							<NcButton
+								type="primary"
+								:disabled="saving || !githubToken || githubToken === originalGithubToken"
+								@click="saveGitHubToken">
+								<template #icon>
+									<NcLoadingIcon v-if="saving" :size="20" />
+									<ContentSave v-else :size="20" />
+								</template>
+								Save Token
+							</NcButton>
+							<NcButton
+								type="secondary"
+								:disabled="testingGithub || !githubToken"
+								@click="testGitHubToken">
+								<template #icon>
+									<NcLoadingIcon v-if="testingGithub" :size="20" />
+									<TestTube v-else :size="20" />
+								</template>
+								Test Token
+							</NcButton>
+							<NcButton
+								type="error"
+								:disabled="saving || !githubToken"
+								@click="clearGitHubToken">
+								<template #icon>
+									<Delete :size="20" />
+								</template>
+								Clear Token
+							</NcButton>
+							<span v-if="githubToken && githubToken === originalGithubToken && !githubTestResult" class="saved-indicator">
+								<CheckCircle :size="20" /> Token saved
+							</span>
+							<span v-if="githubTestResult && githubTestResult.success" class="test-result-success">
+								<CheckCircle :size="20" /> {{ githubTestResult.message }}
+							</span>
+							<span v-if="githubTestResult && !githubTestResult.success" class="test-result-error">
+								<AlertCircle :size="20" /> {{ githubTestResult.message }}
+							</span>
 						</div>
 					</div>
 
@@ -174,44 +180,44 @@
 						</NcPasswordField>
 
 						<div class="token-actions">
-					<NcButton
-						type="primary"
-						:disabled="saving || !gitlabToken || gitlabToken === originalGitlabToken"
-						@click="saveGitLabToken">
-						<template #icon>
-							<NcLoadingIcon v-if="saving" :size="20" />
-							<ContentSave v-else :size="20" />
-						</template>
-						Save Token
-					</NcButton>
-					<NcButton
-						type="secondary"
-						:disabled="testingGitlab || !gitlabToken"
-						@click="testGitLabToken">
-						<template #icon>
-							<NcLoadingIcon v-if="testingGitlab" :size="20" />
-							<TestTube v-else :size="20" />
-						</template>
-						Test Token
-					</NcButton>
-					<NcButton
-						type="error"
-						:disabled="saving || !gitlabToken"
-						@click="clearGitLabToken">
-						<template #icon>
-							<Delete :size="20" />
-						</template>
-						Clear Token
-					</NcButton>
-					<span v-if="gitlabToken && gitlabToken === originalGitlabToken && !gitlabTestResult" class="saved-indicator">
-						<CheckCircle :size="20" /> Token saved
-					</span>
-					<span v-if="gitlabTestResult && gitlabTestResult.success" class="test-result-success">
-						<CheckCircle :size="20" /> {{ gitlabTestResult.message }}
-					</span>
-					<span v-if="gitlabTestResult && !gitlabTestResult.success" class="test-result-error">
-						<AlertCircle :size="20" /> {{ gitlabTestResult.message }}
-					</span>
+							<NcButton
+								type="primary"
+								:disabled="saving || !gitlabToken || gitlabToken === originalGitlabToken"
+								@click="saveGitLabToken">
+								<template #icon>
+									<NcLoadingIcon v-if="saving" :size="20" />
+									<ContentSave v-else :size="20" />
+								</template>
+								Save Token
+							</NcButton>
+							<NcButton
+								type="secondary"
+								:disabled="testingGitlab || !gitlabToken"
+								@click="testGitLabToken">
+								<template #icon>
+									<NcLoadingIcon v-if="testingGitlab" :size="20" />
+									<TestTube v-else :size="20" />
+								</template>
+								Test Token
+							</NcButton>
+							<NcButton
+								type="error"
+								:disabled="saving || !gitlabToken"
+								@click="clearGitLabToken">
+								<template #icon>
+									<Delete :size="20" />
+								</template>
+								Clear Token
+							</NcButton>
+							<span v-if="gitlabToken && gitlabToken === originalGitlabToken && !gitlabTestResult" class="saved-indicator">
+								<CheckCircle :size="20" /> Token saved
+							</span>
+							<span v-if="gitlabTestResult && gitlabTestResult.success" class="test-result-success">
+								<CheckCircle :size="20" /> {{ gitlabTestResult.message }}
+							</span>
+							<span v-if="gitlabTestResult && !gitlabTestResult.success" class="test-result-error">
+								<AlertCircle :size="20" /> {{ gitlabTestResult.message }}
+							</span>
 						</div>
 					</div>
 
@@ -290,7 +296,7 @@ import { showSuccess, showError } from '@nextcloud/dialogs'
  * Manages GitHub and GitLab API tokens for configuration discovery
  *
  * @category Settings
- * @package  OCA\OpenRegister\Views\Settings
+ * @package
  *
  * @author   Conduction Development Team <info@conduction.nl>
  * @copyright 2025 Conduction B.V.
@@ -509,25 +515,25 @@ export default {
 				// Send the current token value for testing
 				const response = await axios.post(
 					generateUrl('/apps/openregister/api/settings/api-tokens/test/github'),
-					{ token: this.githubToken }
+					{ token: this.githubToken },
 				)
 				this.githubTestResult = {
 					success: true,
 					message: response.data.message,
 					username: response.data.username,
-					scopes: response.data.scopes
+					scopes: response.data.scopes,
 				}
 				showSuccess(this.t('openregister', 'GitHub token is valid! Username: {username}', {
-					username: response.data.username
+					username: response.data.username,
 				}))
 			} catch (error) {
 				const message = error.response?.data?.message || error.message || 'Unknown error'
 				this.githubTestResult = {
 					success: false,
-					message: message
+					message,
 				}
 				showError(this.t('openregister', 'GitHub token test failed: {message}', {
-					message: message
+					message,
 				}))
 			} finally {
 				this.testingGithub = false
@@ -546,25 +552,25 @@ export default {
 				// Send the current token value for testing
 				const response = await axios.post(
 					generateUrl('/apps/openregister/api/settings/api-tokens/test/gitlab'),
-					{ token: this.gitlabToken, url: this.gitlabUrl }
+					{ token: this.gitlabToken, url: this.gitlabUrl },
 				)
 				this.gitlabTestResult = {
 					success: true,
 					message: response.data.message,
 					username: response.data.username,
-					instance: response.data.instance
+					instance: response.data.instance,
 				}
 				showSuccess(this.t('openregister', 'GitLab token is valid! Username: {username}', {
-					username: response.data.username
+					username: response.data.username,
 				}))
 			} catch (error) {
 				const message = error.response?.data?.message || error.message || 'Unknown error'
 				this.gitlabTestResult = {
 					success: false,
-					message: message
+					message,
 				}
 				showError(this.t('openregister', 'GitLab token test failed: {message}', {
-					message: message
+					message,
 				}))
 			} finally {
 				this.testingGitlab = false
@@ -866,4 +872,3 @@ export default {
 	}
 }
 </style>
-
