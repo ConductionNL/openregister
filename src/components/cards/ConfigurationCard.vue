@@ -222,13 +222,14 @@ import { configurationStore, navigationStore } from '../../store/store.js'
  * - Discovered configurations (from ImportConfiguration modal)
  * - Automatically detects if a discovered config is already imported
  *
- * @fires view - View configuration details
- * @fires edit - Edit configuration
- * @fires export - Export configuration
- * @fires delete - Delete configuration
- * @fires import - Import discovered configuration
- * @fires check-version - Check for updates
- * @fires preview-update - Preview available updates
+ * Events emitted by this component:
+ * - view: View configuration details
+ * - edit: Edit configuration
+ * - export: Export configuration
+ * - delete: Delete configuration
+ * - import: Import discovered configuration
+ * - check-version: Check for updates
+ * - preview-update: Preview available updates
  */
 export default {
 	name: 'ConfigurationCard',
@@ -401,14 +402,7 @@ export default {
 			const displayConfig = this.displayConfiguration
 			const originalConfig = this.configuration
 
-			// Debug logging
-			console.log('[ConfigurationCard] isLocalConfiguration check:', {
-				title: displayConfig.title || originalConfig.title,
-				displayConfig_isLocal: displayConfig.isLocal,
-				displayConfig_sourceType: displayConfig.sourceType,
-				originalConfig_isLocal: originalConfig.isLocal,
-				originalConfig_sourceType: originalConfig.sourceType,
-			})
+			// Debug logging removed for production
 
 			// Check isLocal property from either source (boolean true or string 'true')
 			const isLocal = displayConfig.isLocal ?? originalConfig.isLocal
@@ -435,16 +429,6 @@ export default {
 		 */
 		isRemoteConfiguration() {
 			const result = this.isImported && this.displayConfiguration.sourceType && this.displayConfiguration.sourceType !== 'local'
-
-			// Debug logging
-			console.log('[ConfigurationCard] isRemoteConfiguration check:', {
-				title: this.displayConfiguration.title || this.displayConfiguration.config?.title,
-				isImported: this.isImported,
-				sourceType: this.displayConfiguration.sourceType,
-				isLocal: this.displayConfiguration.isLocal,
-				result,
-				fullConfig: this.displayConfiguration,
-			})
 
 			return result
 		},
@@ -517,7 +501,7 @@ export default {
 
 			// Try to extract from sourceUrl
 			if (config.sourceUrl) {
-				const githubMatch = config.sourceUrl.match(/github\.com\/([^\/]+\/[^\/]+)/)
+				const githubMatch = config.sourceUrl.match(/github\.com\/([^/]+\/[^/]+)/)
 				if (githubMatch) {
 					return githubMatch[1].replace(/\/blob\/.*$/, '')
 				}
@@ -598,22 +582,15 @@ export default {
 							configurationStore.configurationList.push(importedConfig)
 						}
 
-						console.log('[ConfigurationCard] Configuration already imported:', {
-							appId: this.appId,
-							configId: this.importedConfigId,
-							sourceType: importedConfig.sourceType,
-							config: importedConfig,
-						})
+						// Debug logging removed for production
 					} else {
 						// Not imported
 						this.importedConfigId = null
-						console.log('[ConfigurationCard] Configuration not yet imported:', {
-							appId: this.appId,
-						})
+						// Debug logging removed for production
 					}
 				}
 			} catch (error) {
-				console.error('[ConfigurationCard] Failed to check import status:', error)
+				// Debug logging removed for production
 				// On error, assume not imported
 				this.importedConfigId = null
 			} finally {

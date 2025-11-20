@@ -154,7 +154,7 @@ import { schemaStore, navigationStore, configurationStore } from '../../store/st
 									</tr>
 								</thead>
 								<tbody>
-									<tr v-for="(property, key, index) in getDisplayedProperties(schema)" :key="key">
+									<tr v-for="(property, key) in getDisplayedProperties(schema)" :key="key">
 										<td>{{ key }} <span v-if="isPropertyRequired(schema, key)" class="required-indicator">({{ t('openregister', 'required') }})</span></td>
 										<td>{{ property.type }}</td>
 									</tr>

@@ -379,12 +379,9 @@ export default {
 				this.hasGithubToken = !!(response.data.github_token && response.data.github_token.length > 0)
 				this.hasGitlabToken = !!(response.data.gitlab_token && response.data.gitlab_token.length > 0)
 
-				console.log('Token availability check:', {
-					github: this.hasGithubToken,
-					gitlab: this.hasGitlabToken,
-				})
+				// Debug logging removed for production
 			} catch (error) {
-				console.warn('Failed to check token availability:', error)
+				// Debug logging removed for production
 				// Assume no tokens if check fails
 				this.hasGithubToken = false
 				this.hasGitlabToken = false
@@ -606,13 +603,16 @@ export default {
 					}
 
 					this.successMessage = `Configuration imported from ${this.repoSource}!`
-				}
-				// Tab 2: URL
-				else if (this.activeTab === 2) {
-				// Validate URL
+				} else if (this.activeTab === 2) {
+					// Tab 2: URL
+					// Validate URL
 					try {
-						const validUrl = new URL(this.importUrl)
-						void validUrl // URL validation successful
+						// eslint-disable-next-line no-new
+						const validUrl = new URL(this.importUrl) // URL validation successful
+						// Use validUrl.href to avoid no-new and no-void rule violations
+						if (!validUrl.href) {
+							throw new Error('Invalid URL')
+						}
 					} catch {
 						this.urlError = 'Please enter a valid URL'
 						this.loading = false
