@@ -88,10 +88,16 @@ class FileVectorizationStrategy implements VectorizationStrategyInterface
                 );
 
         // Get files with completed extraction.
-        $files = $this->fileTextMapper->findByStatus('completed', $maxFiles > 0 ? $maxFiles : 1000);
+        if ($maxFiles > 0) {
+            $limit = $maxFiles;
+        } else {
+            $limit = 1000;
+        }
+
+        $files = $this->fileTextMapper->findByStatus('completed', $limit);
 
         // Filter by file types if specified.
-        if (!empty($fileTypes)) {
+        if (empty($fileTypes) === false) {
             $files = array_filter(
                     $files,
                     function ($file) use ($fileTypes) {
@@ -129,7 +135,7 @@ class FileVectorizationStrategy implements VectorizationStrategyInterface
     {
         $chunksJson = $entity->getChunksJson();
 
-        if (empty($chunksJson)) {
+        if ($chunksJson === '' || $chunksJson === null) {
             $this->logger->warning(
                     '[FileVectorizationStrategy] No chunks JSON found',
                     [
@@ -141,7 +147,7 @@ class FileVectorizationStrategy implements VectorizationStrategyInterface
 
         $chunks = json_decode($chunksJson, true);
 
-        if (!is_array($chunks)) {
+        if (is_array($chunks) === false) {
             $this->logger->error(
                     '[FileVectorizationStrategy] Invalid chunks data',
                     [
@@ -177,8 +183,12 @@ class FileVectorizationStrategy implements VectorizationStrategyInterface
      */
     public function prepareVectorMetadata($entity, array $item): array
     {
-        $chunks      = json_decode($entity->getChunksJson(), true);
-        $totalChunks = is_array($chunks) ? count($chunks) : 1;
+        $chunks = json_decode($entity->getChunksJson(), true);
+        if (is_array($chunks) === true) {
+            $totalChunks = count($chunks);
+        } else {
+            $totalChunks = 1;
+        }
 
         return [
             'entity_type'         => 'file',

@@ -274,7 +274,7 @@ class RegisterService
         $folderProperty = $entity->getFolder();
 
         // Check if folder needs to be created (null, empty string, or legacy string path).
-        if ($folderProperty === null || $folderProperty === '' || is_string($folderProperty)) {
+        if ($folderProperty === null || $folderProperty === '' || is_string($folderProperty) === true) {
             try {
                 // Create folder and get the folder node.
                 $folderNode = $this->fileService->createEntityFolder($entity);

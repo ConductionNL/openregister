@@ -111,11 +111,17 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
             views: $views
         );
 
-        // searchObjects returns array of ObjectEntity objects directly.
+        // SearchObjects returns array of ObjectEntity objects directly.
+        if (is_array($objects) === true) {
+            $count = count($objects);
+        } else {
+            $count = 0;
+        }
+
         $this->logger->debug(
                 '[ObjectVectorizationStrategy] Fetched objects',
                 [
-                    'count' => is_array($objects) ? count($objects) : 0,
+                    'count' => $count,
                 ]
                 );
 
@@ -134,7 +140,11 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
     public function extractVectorizationItems($entity): array
     {
         // Get object data.
-        $objectData = is_array($entity) ? $entity : $entity->jsonSerialize();
+        if (is_array($entity) === true) {
+            $objectData = $entity;
+        } else {
+            $objectData = $entity->jsonSerialize();
+        }
 
         // Get vectorization config.
         $config = $this->settingsService->getObjectSettingsOnly();
@@ -163,8 +173,17 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
      */
     public function prepareVectorMetadata($entity, array $item): array
     {
-        $objectData = is_array($entity) ? $entity : $entity->jsonSerialize();
-        $objectId   = $objectData['id'] ?? 'unknown';
+        if (is_array($entity) === true) {
+            $objectData = $entity;
+        } else {
+            $objectData = $entity->jsonSerialize();
+        }
+
+        if (isset($objectData['id']) === true) {
+            $objectId = $objectData['id'];
+        } else {
+            $objectId = 'unknown';
+        }
 
         // DEBUG: Log what we're receiving.
         $this->logger->debug(
@@ -172,23 +191,27 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
                 [
                     'object_id'       => $objectId,
                     'has_@self'       => isset($objectData['@self']),
-                    '@self_keys'      => isset($objectData['@self']) ? array_keys($objectData['@self']) : [],
+                    '@self_keys'      => $this->getSelfKeys($objectData),
                     'register_direct' => $objectData['_register'] ?? $objectData['register'] ?? 'none',
                     'register_@self'  => $objectData['@self']['register'] ?? 'none',
                 ]
                 );
 
         // Extract title/name - check multiple possible fields.
-        $title = $objectData['title'] ?? $objectData['name'] ?? $objectData['_name'] ?? $objectData['summary'] ?? $this->extractFirstStringField($objectData)
-        // Try to find ANY string field.
-            ?? 'Object #'.$objectId;
+        $title = $objectData['title'] ?? $objectData['name'] ?? $objectData['_name'] ?? $objectData['summary'];
+        if ($title === null) {
+            $title = $this->extractFirstStringField($objectData);
+        }
+
+        if ($title === null) {
+            $title = 'Object #'.$objectId;
+        }
 
         // Extract description - check common variants.
-        $description = $objectData['description'] ?? $objectData['_description'] ?? $objectData['Beschrijving']
-        // Dutch variant.
-            ?? $objectData['beschrijving']
-        // Lowercase variant.
-            ?? $objectData['summary'] ?? $objectData['_summary'] ?? '';
+        $description = $objectData['description'] ?? $objectData['_description'] ?? $objectData['Beschrijving'];
+        if ($description === null) {
+            $description = $objectData['beschrijving'] ?? $objectData['summary'] ?? $objectData['_summary'] ?? '';
+        }
 
         return [
             'entity_type'         => 'object',
@@ -212,9 +235,7 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
                 'register_id'  => $objectData['_register'] ?? $objectData['register'] ?? $objectData['@self']['register'] ?? null,
                 'schema'       => $objectData['_schema'] ?? $objectData['schema'] ?? $objectData['@self']['schema'] ?? null,
                 'schema_id'    => $objectData['_schema'] ?? $objectData['schema'] ?? $objectData['@self']['schema'] ?? null,
-                'uuid'         => $objectData['uuid'] ?? $objectData['_uuid'] ?? $objectData['@self']['id']
-        // Fallback to @self.id.
-                    ?? null,
+                'uuid'         => $objectData['uuid'] ?? $objectData['_uuid'] ?? $objectData['@self']['id'] ?? null,
                 'uri'          => $objectData['uri'] ?? $objectData['_uri'] ?? $objectData['@self']['uri'] ?? null,
             ],
         ];
@@ -238,18 +259,18 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
         // Look for short, meaningful strings (< 100 chars).
         foreach ($objectData as $key => $value) {
             // Skip metadata and system fields.
-            if (str_starts_with($key, '_') || str_starts_with($key, '@')) {
+            if (str_starts_with($key, '_') === true || str_starts_with($key, '@') === true) {
                 continue;
             }
 
             // Skip known non-title fields.
             $skipFields = ['id', 'uuid', 'description', 'Beschrijving', 'beschrijving', 'content', 'text'];
-            if (in_array(strtolower($key), array_map('strtolower', $skipFields))) {
+            if (in_array(strtolower($key), array_map('strtolower', $skipFields), true) === true) {
                 continue;
             }
 
             // Check if it's a short string (likely a title/identifier).
-            if (is_string($value) && strlen($value) > 0 && strlen($value) < 100) {
+            if (is_string($value) === true && strlen($value) > 0 && strlen($value) < 100) {
                 return $value;
             }
         }
@@ -268,8 +289,17 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
      */
     public function getEntityIdentifier($entity)
     {
-        $objectData = is_array($entity) ? $entity : $entity->jsonSerialize();
-        return $objectData['id'] ?? 'unknown';
+        if (is_array($entity) === true) {
+            $objectData = $entity;
+        } else {
+            $objectData = $entity->jsonSerialize();
+        }
+
+        if (isset($objectData['id']) === true) {
+            return $objectData['id'];
+        }
+
+        return 'unknown';
 
     }//end getEntityIdentifier()
 

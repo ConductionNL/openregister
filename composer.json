@@ -33,6 +33,7 @@
 		"phpcs": "./vendor/bin/phpcs --standard=phpcs.xml",
 		"phpcs:fix": "./vendor/bin/phpcbf --standard=phpcs.xml",
 		"psalm": "psalm --threads=1 --no-cache || echo 'Psalm not installed, skipping...'",
+		"phpstan": "php phpstan.phar analyse --memory-limit=1G || echo 'PHPStan not installed, skipping...'",
 		"phpmd": "phpmd lib text phpmd.xml || echo 'PHPMD not installed, skipping...'",
 		"test:unit": "./vendor/bin/phpunit --testsuite=\"Unit Tests\" --colors=always || echo 'Tests require Nextcloud environment, skipping...'",
 		"test:integration": "./vendor/bin/phpunit --testsuite=\"Integration Tests\" --colors=always || echo 'Tests require Nextcloud environment, skipping...'",
@@ -47,10 +48,12 @@
 		"quality:phpcs-score": "./vendor/bin/phpcs --standard=phpcs.xml --report=json lib/ | php -r \"\\$json = json_decode(file_get_contents('php://stdin'), true); \\$errors = \\$json['totals']['errors'] ?? 0; \\$warnings = \\$json['totals']['warnings'] ?? 0; \\$score = 1000 - \\$errors - (\\$warnings / 2); echo 'PHPCS Score: ' . \\$score . ' (Errors: ' . \\$errors . ', Warnings: ' . \\$warnings . ')' . PHP_EOL;\"",
 		"quality:phpmd-score": "phpmd lib/ json phpmd.xml | php -r \"\\$input = file_get_contents('php://stdin'); \\$json = json_decode(\\$input, true); \\$violations = count(\\$json['files'] ?? []); \\$score = 1000 - (\\$violations * 10); echo 'PHPMD Score: ' . \\$score . ' (Violations: ' . \\$violations . ')' . PHP_EOL;\" || echo 'PHPMD not available'",
 		"quality:psalm-score": "psalm --output-format=json --no-cache | php -r \"\\$input = file_get_contents('php://stdin'); \\$json = json_decode(\\$input, true); \\$errors = count(\\$json ?? []); \\$score = 1000 - (\\$errors * 5); echo 'Psalm Score: ' . \\$score . ' (Errors: ' . \\$errors . ')' . PHP_EOL;\" || echo 'Psalm not available'",
+		"quality:phpstan-score": "php phpstan.phar analyse --memory-limit=1G --error-format=json --no-progress | php -r \"\\$input = file_get_contents('php://stdin'); \\$json = json_decode(\\$input, true); \\$errors = \\$json['totals']['file_errors'] ?? 0; \\$score = 1000 - (\\$errors * 5); echo 'PHPStan Score: ' . \\$score . ' (Errors: ' . \\$errors . ')' . PHP_EOL;\" || echo 'PHPStan not available'",
 		"quality:score": [
 			"@quality:phpcs-score",
 			"@quality:phpmd-score",
-			"@quality:psalm-score"
+			"@quality:psalm-score",
+			"@quality:phpstan-score"
 		],
 		"quality:baseline": "php scripts/quality-baseline.php",
 		"openapi": "generate-spec",
@@ -62,6 +65,7 @@
 		"check:full": [
 			"@lint",
 			"@psalm",
+			"@phpstan",
 			"@test:all"
 		],
 		"check:strict": [
@@ -69,6 +73,7 @@
 			"@phpcs",
 			"@phpmd",
 			"@psalm",
+			"@phpstan",
 			"@test:all"
 		],
 		"fix": [

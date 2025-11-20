@@ -57,16 +57,22 @@ class DeleteObject
 {
 
     /**
+     * Audit trail mapper
+     *
      * @var AuditTrailMapper
      */
     private AuditTrailMapper $auditTrailMapper;
 
     /**
+     * Settings service
+     *
      * @var SettingsService
      */
     private SettingsService $settingsService;
 
     /**
+     * Logger interface
+     *
      * @var LoggerInterface
      */
     private LoggerInterface $logger;
@@ -142,7 +148,7 @@ class DeleteObject
         }
 
         // Create audit trail for delete if audit trails are enabled.
-        if ($this->isAuditTrailsEnabled()) {
+        if ($this->isAuditTrailsEnabled() === true) {
             $log = $this->auditTrailMapper->createAuditTrail(old: $objectEntity, new: null, action: 'delete');
             // $result->setLastLog($log->jsonSerialize());
         }

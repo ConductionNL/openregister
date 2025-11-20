@@ -154,7 +154,7 @@ class SchemaFacetCacheService
         $cacheKey = "facetable_fields_{$schemaId}";
 
         // Check in-memory cache.
-        if (isset(self::$facetConfigCache[$cacheKey])) {
+        if (isset(self::$facetConfigCache[$cacheKey]) === true) {
             $this->logger->debug('Facetable fields cache hit (memory)', ['schemaId' => $schemaId]);
             return self::$facetConfigCache[$cacheKey];
         }
@@ -306,7 +306,7 @@ class SchemaFacetCacheService
         $memoryClearedCount = 0;
         $cacheKeys          = array_keys(self::$facetConfigCache);
         foreach ($cacheKeys as $key) {
-            if (str_contains($key, "_{$schemaId}")) {
+            if (str_contains($key, "_{$schemaId}") === true) {
                 unset(self::$facetConfigCache[$key]);
                 $memoryClearedCount++;
             }
@@ -331,10 +331,13 @@ class SchemaFacetCacheService
     /**
      * Invalidate all cached facets for a schema (legacy method)
      *
+     * @param int $schemaId The schema ID to invalidate
+     *
+     * @return void
+     *
+     * @throws \OCP\DB\Exception If a database error occurs
+     *
      * @deprecated Use invalidateForSchemaChange() instead
-     * @param      int $schemaId The schema ID to invalidate
-     * @return     void
-     * @throws     \OCP\DB\Exception If a database error occurs
      */
     public function invalidateSchemaFacets(int $schemaId): void
     {
@@ -529,9 +532,9 @@ class SchemaFacetCacheService
 
         // Analyze schema properties for facetable fields.
         $properties = $schema->getProperties();
-        if (is_array($properties)) {
+        if (is_array($properties) === true) {
             foreach ($properties as $propertyName => $property) {
-                if ($this->isPropertyFacetable($property)) {
+                if ($this->isPropertyFacetable($property) === true) {
                     $fieldConfig = $this->generateFieldConfigFromProperty($propertyName, $property);
                     if ($fieldConfig !== null) {
                         $facetableFields['object_fields'][$propertyName] = $fieldConfig;
@@ -617,7 +620,7 @@ class SchemaFacetCacheService
     private function isPropertyFacetable(array $property): bool
     {
         // Check for explicit facetable flag.
-        if (isset($property['facetable']) && $property['facetable'] === true) {
+        if (isset($property['facetable']) === true && $property['facetable'] === true) {
             return true;
         }
 
@@ -628,12 +631,12 @@ class SchemaFacetCacheService
         // Facetable types.
         $facetableTypes = ['string', 'integer', 'number', 'boolean', 'date', 'datetime'];
 
-        if (in_array($type, $facetableTypes)) {
+        if (in_array($type, $facetableTypes) === true) {
             return true;
         }
 
         // Check for enum properties (always facetable).
-        if (isset($property['enum']) && is_array($property['enum'])) {
+        if (isset($property['enum']) === true && is_array($property['enum']) === true) {
             return true;
         }
 
@@ -662,17 +665,17 @@ class SchemaFacetCacheService
         ];
 
         // Add enum values if available.
-        if (isset($property['enum']) && is_array($property['enum'])) {
+        if (isset($property['enum']) === true && is_array($property['enum']) === true) {
             $config['enum_values'] = $property['enum'];
         }
 
         // Add range information for numeric types.
-        if (in_array($type, ['integer', 'number'])) {
-            if (isset($property['minimum'])) {
+        if (in_array($type, ['integer', 'number']) === true) {
+            if (isset($property['minimum']) === true) {
                 $config['minimum'] = $property['minimum'];
             }
 
-            if (isset($property['maximum'])) {
+            if (isset($property['maximum']) === true) {
                 $config['maximum'] = $property['maximum'];
             }
         }
@@ -796,8 +799,12 @@ class SchemaFacetCacheService
         // Enforce maximum cache TTL for office environments.
         $ttl = min($ttl, self::MAX_CACHE_TTL);
 
-        $now     = new \DateTime();
-        $expires = $ttl > 0 ? (clone $now)->add(new \DateInterval("PT{$ttl}S")) : null;
+        $now = new \DateTime();
+        if ($ttl > 0) {
+            $expires = (clone $now)->add(new \DateInterval("PT{$ttl}S"));
+        } else {
+            $expires = null;
+        }
 
         // Use INSERT ... ON DUPLICATE KEY UPDATE pattern.
         $qb = $this->db->getQueryBuilder();

@@ -96,7 +96,7 @@ class MagicBulkHandler
      */
     public function saveObjects(array $objects, Register $register, Schema $schema, string $tableName): array
     {
-        if (empty($objects)) {
+        if ($objects === []) {
             return [
                 'saved'      => [],
                 'updated'    => [],
@@ -119,12 +119,12 @@ class MagicBulkHandler
         [$insertObjects, $updateObjects] = $this->categorizeObjectsForSave($preparedObjects, $tableName);
 
         // Execute bulk operations.
-        if (!empty($insertObjects)) {
+        if (empty($insertObjects) === false) {
             $insertedUuids = $this->bulkInsertToDynamicTable($insertObjects, $tableName);
             $savedUuids    = array_merge($savedUuids, $insertedUuids);
         }
 
-        if (!empty($updateObjects)) {
+        if (empty($updateObjects) === false) {
             $updatedObjectUuids = $this->bulkUpdateDynamicTable($updateObjects, $tableName);
             $updatedUuids       = array_merge($updatedUuids, $updatedObjectUuids);
         }
@@ -164,7 +164,7 @@ class MagicBulkHandler
      */
     public function deleteObjects(array $uuids, Register $register, Schema $schema, string $tableName, bool $softDelete=true): array
     {
-        if (empty($uuids)) {
+        if ($uuids === []) {
             return [];
         }
 
@@ -230,7 +230,7 @@ class MagicBulkHandler
      */
     public function publishObjects(array $uuids, Register $register, Schema $schema, string $tableName, \DateTime|bool $datetime=true): array
     {
-        if (empty($uuids)) {
+        if ($uuids === []) {
             return [];
         }
 
@@ -257,7 +257,11 @@ class MagicBulkHandler
 
         $affectedRows = $qb->executeStatement();
 
-        return $affectedRows > 0 ? $uuids : [];
+        if ($affectedRows > 0) {
+            return $uuids;
+        }
+
+        return [];
 
     }//end publishObjects()
 
@@ -277,7 +281,7 @@ class MagicBulkHandler
      */
     public function depublishObjects(array $uuids, Register $register, Schema $schema, string $tableName, \DateTime|bool $datetime=true): array
     {
-        if (empty($uuids)) {
+        if ($uuids === []) {
             return [];
         }
 
@@ -304,7 +308,11 @@ class MagicBulkHandler
 
         $affectedRows = $qb->executeStatement();
 
-        return $affectedRows > 0 ? $uuids : [];
+        if ($affectedRows > 0) {
+            return $uuids;
+        }
+
+        return [];
 
     }//end depublishObjects()
 
@@ -353,7 +361,7 @@ class MagicBulkHandler
                 $value      = $object[$propertyName] ?? null;
 
                 // Convert complex values for database storage.
-                if (is_array($value) || is_object($value)) {
+                if (is_array($value) === true || is_object($value) === true) {
                     $preparedObject[$columnName] = json_encode($value);
                 } else {
                     $preparedObject[$columnName] = $value;
@@ -378,7 +386,7 @@ class MagicBulkHandler
      */
     private function categorizeObjectsForSave(array $objects, string $tableName): array
     {
-        if (empty($objects)) {
+        if ($objects === []) {
             return [[], []];
         }
 
@@ -399,7 +407,7 @@ class MagicBulkHandler
         $updateObjects = [];
 
         foreach ($objects as $object) {
-            if (in_array($object['_uuid'], $existingUuids)) {
+            if (in_array($object['_uuid'], $existingUuids, true) === true) {
                 $updateObjects[] = $object;
             } else {
                 $insertObjects[] = $object;
@@ -423,7 +431,7 @@ class MagicBulkHandler
      */
     private function bulkInsertToDynamicTable(array $objects, string $tableName): array
     {
-        if (empty($objects)) {
+        if ($objects === []) {
             return [];
         }
 
@@ -453,7 +461,7 @@ class MagicBulkHandler
      */
     private function executeBulkInsertChunk(array $chunk, string $tableName): array
     {
-        if (empty($chunk)) {
+        if ($chunk === []) {
             return [];
         }
 
@@ -479,7 +487,7 @@ class MagicBulkHandler
             $valuesClause[] = '('.implode(',', $rowValues).')';
 
             // Collect UUID for return.
-            if (isset($objectData['_uuid'])) {
+            if (isset($objectData['_uuid']) === true) {
                 $insertedUuids[] = $objectData['_uuid'];
             }
         }
@@ -519,7 +527,7 @@ class MagicBulkHandler
      */
     private function bulkUpdateDynamicTable(array $objects, string $tableName): array
     {
-        if (empty($objects)) {
+        if ($objects === []) {
             return [];
         }
 
@@ -576,7 +584,7 @@ class MagicBulkHandler
      */
     private function calculateOptimalChunkSize(array $objects): int
     {
-        if (empty($objects)) {
+        if ($objects === []) {
             return 50;
         }
 
@@ -612,7 +620,7 @@ class MagicBulkHandler
             $stmt   = $this->db->executeQuery('SHOW VARIABLES LIKE \'max_allowed_packet\'');
             $result = $stmt->fetch();
 
-            if ($result && isset($result['Value'])) {
+            if ($result !== false && isset($result['Value']) === true) {
                 return (int) $result['Value'];
             }
         } catch (\Exception $e) {
@@ -672,7 +680,7 @@ class MagicBulkHandler
         $sanitized = strtolower(preg_replace('/[^a-zA-Z0-9_]/', '_', $name));
 
         // Ensure it starts with a letter or underscore.
-        if (!preg_match('/^[a-zA-Z_]/', $sanitized)) {
+        if (preg_match('/^[a-zA-Z_]/', $sanitized) === 0) {
             $sanitized = 'col_'.$sanitized;
         }
 

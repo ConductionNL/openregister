@@ -116,7 +116,7 @@ class ToolRegistry
      */
     private function loadTools(): void
     {
-        if ($this->loaded) {
+        if ($this->loaded === true) {
             return;
         }
 
@@ -154,21 +154,21 @@ class ToolRegistry
     public function registerTool(string $id, ToolInterface $tool, array $metadata): void
     {
         // Validate ID format (should be app_name.tool_name).
-        if (!preg_match('/^[a-z0-9_]+\.[a-z0-9_]+$/', $id)) {
+        if (preg_match('/^[a-z0-9_]+\.[a-z0-9_]+$/', $id) === 0) {
             throw new \InvalidArgumentException(
                 "Invalid tool ID format: {$id}. Must be 'app_name.tool_name'"
             );
         }
 
         // Check if already registered.
-        if (isset($this->tools[$id])) {
+        if (isset($this->tools[$id]) === true) {
             throw new \InvalidArgumentException("Tool already registered: {$id}");
         }
 
         // Validate required metadata.
         $required = ['name', 'description', 'icon', 'app'];
         foreach ($required as $field) {
-            if (!isset($metadata[$field])) {
+            if (isset($metadata[$field]) === false) {
                 throw new \InvalidArgumentException("Missing required metadata field: {$field}");
             }
         }
@@ -202,7 +202,7 @@ class ToolRegistry
     {
         $this->loadTools();
 
-        if (!isset($this->tools[$id])) {
+        if (isset($this->tools[$id]) === false) {
             return null;
         }
 
@@ -245,7 +245,7 @@ class ToolRegistry
 
         $result = [];
         foreach ($ids as $id) {
-            if (isset($this->tools[$id])) {
+            if (isset($this->tools[$id]) === true) {
                 $result[$id] = $this->tools[$id]['tool'];
             } else {
                 $this->logger->warning('[ToolRegistry] Tool not found', ['id' => $id]);

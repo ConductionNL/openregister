@@ -127,17 +127,17 @@ class MagicSearchHandler
         $this->applyBasicFilters($queryBuilder, $includeDeleted, $published);
 
         // Apply metadata filters.
-        if (!empty($metadataFilters)) {
+        if (empty($metadataFilters) === false) {
             $this->applyMetadataFilters($queryBuilder, $metadataFilters);
         }
 
         // Apply object field filters (schema-specific columns).
-        if (!empty($objectFilters)) {
+        if (empty($objectFilters) === false) {
             $this->applyObjectFilters($queryBuilder, $objectFilters, $schema);
         }
 
         // Apply ID filtering if provided.
-        if ($ids !== null && !empty($ids)) {
+        if ($ids !== null && empty($ids) === false) {
             $this->applyIdFilters($queryBuilder, $ids);
         }
 
@@ -147,7 +147,7 @@ class MagicSearchHandler
         }
 
         // Apply sorting (skip for count queries).
-        if ($count === false && !empty($order)) {
+        if ($count === false && empty($order) === false) {
             $this->applySorting($queryBuilder, $order, $schema);
         }
 
@@ -213,7 +213,7 @@ class MagicSearchHandler
                 $qb->andWhere($qb->expr()->isNotNull("t.{$columnName}"));
             } else if ($value === 'IS NULL') {
                 $qb->andWhere($qb->expr()->isNull("t.{$columnName}"));
-            } else if (is_array($value)) {
+            } else if (is_array($value) === true) {
                 $qb->andWhere($qb->expr()->in("t.{$columnName}", $qb->createNamedParameter($value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
             } else {
                 $qb->andWhere($qb->expr()->eq("t.{$columnName}", $qb->createNamedParameter($value)));
@@ -238,14 +238,14 @@ class MagicSearchHandler
 
         foreach ($filters as $field => $value) {
             // Check if this field exists as a column in the schema.
-            if (isset($properties[$field])) {
+            if (isset($properties[$field]) === true) {
                 $columnName = $this->sanitizeColumnName($field);
 
                 if ($value === 'IS NOT NULL') {
                     $qb->andWhere($qb->expr()->isNotNull("t.{$columnName}"));
                 } else if ($value === 'IS NULL') {
                     $qb->andWhere($qb->expr()->isNull("t.{$columnName}"));
-                } else if (is_array($value)) {
+                } else if (is_array($value) === true) {
                     $qb->andWhere($qb->expr()->in("t.{$columnName}", $qb->createNamedParameter($value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
                 } else {
                     $qb->andWhere($qb->expr()->eq("t.{$columnName}", $qb->createNamedParameter($value)));
@@ -323,15 +323,15 @@ class MagicSearchHandler
 
         foreach ($order as $field => $direction) {
             $direction = strtoupper($direction);
-            if (!in_array($direction, ['ASC', 'DESC'])) {
+            if (in_array($direction, ['ASC', 'DESC']) === false) {
                 $direction = 'ASC';
             }
 
-            if (str_starts_with($field, '@self.')) {
+            if (str_starts_with($field, '@self.') === true) {
                 // Metadata field sorting.
                 $metadataField = '_'.str_replace('@self.', '', $field);
                 $qb->addOrderBy("t.{$metadataField}", $direction);
-            } else if (isset($properties[$field])) {
+            } else if (isset($properties[$field]) === true) {
                 // Schema property field sorting.
                 $columnName = $this->sanitizeColumnName($field);
                 $qb->addOrderBy("t.{$columnName}", $direction);
@@ -389,7 +389,7 @@ class MagicSearchHandler
             $objectData   = [];
 
             foreach ($row as $column => $value) {
-                if (str_starts_with($column, '_')) {
+                if (str_starts_with($column, '_') === true) {
                     // Metadata column - remove prefix and map to ObjectEntity.
                     $metadataField = substr($column, 1);
                     $metadataData[$metadataField] = $value;
@@ -400,55 +400,59 @@ class MagicSearchHandler
             }
 
             // Set metadata properties.
-            if (isset($metadataData['uuid'])) {
+            if (isset($metadataData['uuid']) === true) {
                 $objectEntity->setUuid($metadataData['uuid']);
             }
 
-            if (isset($metadataData['name'])) {
+            if (isset($metadataData['name']) === true) {
                 $objectEntity->setName($metadataData['name']);
             }
 
-            if (isset($metadataData['description'])) {
+            if (isset($metadataData['description']) === true) {
                 $objectEntity->setDescription($metadataData['description']);
             }
 
-            if (isset($metadataData['summary'])) {
+            if (isset($metadataData['summary']) === true) {
                 $objectEntity->setSummary($metadataData['summary']);
             }
 
-            if (isset($metadataData['image'])) {
+            if (isset($metadataData['image']) === true) {
                 $objectEntity->setImage($metadataData['image']);
             }
 
-            if (isset($metadataData['slug'])) {
+            if (isset($metadataData['slug']) === true) {
                 $objectEntity->setSlug($metadataData['slug']);
             }
 
-            if (isset($metadataData['uri'])) {
+            if (isset($metadataData['uri']) === true) {
                 $objectEntity->setUri($metadataData['uri']);
             }
 
-            if (isset($metadataData['owner'])) {
+            if (isset($metadataData['owner']) === true) {
                 $objectEntity->setOwner($metadataData['owner']);
             }
 
-            if (isset($metadataData['organisation'])) {
+            if (isset($metadataData['organisation']) === true) {
                 $objectEntity->setOrganisation($metadataData['organisation']);
             }
 
-            if (isset($metadataData['created'])) {
+            if (isset($metadataData['created']) === true) {
                 $objectEntity->setCreated(new \DateTime($metadataData['created']));
             }
 
-            if (isset($metadataData['updated'])) {
+            if (isset($metadataData['updated']) === true) {
                 $objectEntity->setUpdated(new \DateTime($metadataData['updated']));
             }
 
-            if (isset($metadataData['published'])) {
+            if (isset($metadataData['published']) === true) {
                 $objectEntity->setPublished(new \DateTime($metadataData['published']));
             }
 
-            if (isset($metadataData['depublished'])) {
+            if (isset($metadataData['deleted']) === true) {
+                $objectEntity->setDeleted(new \DateTime($metadataData['deleted']));
+            }
+
+            if (isset($metadataData['depublished']) === true) {
                 $objectEntity->setDepublished(new \DateTime($metadataData['depublished']));
             }
 
@@ -534,15 +538,15 @@ class MagicSearchHandler
         // Apply same filters as search.
         $this->applyBasicFilters($queryBuilder, $includeDeleted, $published);
 
-        if (!empty($metadataFilters)) {
+        if (empty($metadataFilters) === false) {
             $this->applyMetadataFilters($queryBuilder, $metadataFilters);
         }
 
-        if (!empty($objectFilters)) {
+        if (empty($objectFilters) === false) {
             $this->applyObjectFilters($queryBuilder, $objectFilters, $schema);
         }
 
-        if ($ids !== null && !empty($ids)) {
+        if ($ids !== null && empty($ids) === false) {
             $this->applyIdFilters($queryBuilder, $ids);
         }
 
@@ -567,7 +571,7 @@ class MagicSearchHandler
         $sanitized = strtolower(preg_replace('/[^a-zA-Z0-9_]/', '_', $name));
 
         // Ensure it starts with a letter or underscore.
-        if (!preg_match('/^[a-zA-Z_]/', $sanitized)) {
+        if (preg_match('/^[a-zA-Z_]/', $sanitized) === 0) {
             $sanitized = 'col_'.$sanitized;
         }
 
