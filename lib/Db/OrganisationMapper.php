@@ -597,4 +597,314 @@ class OrganisationMapper extends QBMapper
     }//end findUpdatedAfter()
 
 
+    /**
+     * Find all parent organisations recursively for a given organisation UUID
+     *
+     * Uses recursive Common Table Expression (CTE) for efficient hierarchical queries.
+     * Returns array of parent organisation UUIDs ordered from direct parent to root.
+     * Maximum depth is limited to 10 levels to prevent infinite loops.
+     *
+     * Example:
+     * - Organisation A (root)
+     * - Organisation B (parent: A)
+     * - Organisation C (parent: B)
+     * 
+     * findParentChain(C) returns: [B, A]
+     *
+     * @param string $organisationUuid The starting organisation UUID
+     *
+     * @return array Array of parent organisation UUIDs ordered by level (direct parent first)
+     */
+    public function findParentChain(string $organisationUuid): array
+    {
+        // Use raw SQL for recursive CTE (Common Table Expression)
+        // This is more efficient than multiple queries for hierarchical data
+        $sql = "
+            WITH RECURSIVE org_hierarchy AS (
+                -- Base case: the organisation itself
+                SELECT uuid, parent, 0 as level
+                FROM " . $this->getTablePrefix() . $this->getTableName() . "
+                WHERE uuid = :org_uuid
+                
+                UNION ALL
+                
+                -- Recursive case: get parent organisations
+                SELECT o.uuid, o.parent, oh.level + 1
+                FROM " . $this->getTablePrefix() . $this->getTableName() . " o
+                INNER JOIN org_hierarchy oh ON o.uuid = oh.parent
+                WHERE oh.level < 10  -- Prevent infinite loops, max 10 levels
+            )
+            SELECT uuid 
+            FROM org_hierarchy 
+            WHERE level > 0
+            ORDER BY level ASC
+        ";
+        
+        try {
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindValue(':org_uuid', $organisationUuid);
+            $result = $stmt->executeQuery();
+            
+            $parents = [];
+            while ($row = $result->fetch()) {
+                $parents[] = $row['uuid'];
+            }
+            
+            $this->logger->debug(
+                'Found parent chain for organisation',
+                [
+                    'organisation' => $organisationUuid,
+                    'parents'      => $parents,
+                    'count'        => count($parents),
+                ]
+            );
+            
+            return $parents;
+        } catch (\Exception $e) {
+            $this->logger->error(
+                'Error finding parent chain',
+                [
+                    'organisation' => $organisationUuid,
+                    'error'        => $e->getMessage(),
+                ]
+            );
+            
+            // Return empty array on error (fail gracefully)
+            return [];
+        }//end try
+
+    }//end findParentChain()
+
+
+    /**
+     * Find all child organisations recursively for a given organisation UUID
+     *
+     * Uses recursive Common Table Expression (CTE) for efficient hierarchical queries.
+     * Returns array of all child organisation UUIDs (direct and indirect children).
+     * Maximum depth is limited to 10 levels to prevent infinite loops.
+     *
+     * Example:
+     * - Organisation A (root)
+     * - Organisation B (parent: A)
+     * - Organisation C (parent: A)
+     * - Organisation D (parent: B)
+     * 
+     * findChildrenChain(A) returns: [B, C, D]
+     *
+     * @param string $organisationUuid The parent organisation UUID
+     *
+     * @return array Array of child organisation UUIDs
+     */
+    public function findChildrenChain(string $organisationUuid): array
+    {
+        // Use raw SQL for recursive CTE
+        $sql = "
+            WITH RECURSIVE org_hierarchy AS (
+                -- Base case: direct children
+                SELECT uuid, parent, 0 as level
+                FROM " . $this->getTablePrefix() . $this->getTableName() . "
+                WHERE parent = :org_uuid
+                
+                UNION ALL
+                
+                -- Recursive case: children of children
+                SELECT o.uuid, o.parent, oh.level + 1
+                FROM " . $this->getTablePrefix() . $this->getTableName() . " o
+                INNER JOIN org_hierarchy oh ON o.parent = oh.uuid
+                WHERE oh.level < 10  -- Prevent infinite loops, max 10 levels
+            )
+            SELECT uuid 
+            FROM org_hierarchy
+            ORDER BY level ASC
+        ";
+        
+        try {
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindValue(':org_uuid', $organisationUuid);
+            $result = $stmt->executeQuery();
+            
+            $children = [];
+            while ($row = $result->fetch()) {
+                $children[] = $row['uuid'];
+            }
+            
+            $this->logger->debug(
+                'Found children chain for organisation',
+                [
+                    'organisation' => $organisationUuid,
+                    'children'     => $children,
+                    'count'        => count($children),
+                ]
+            );
+            
+            return $children;
+        } catch (\Exception $e) {
+            $this->logger->error(
+                'Error finding children chain',
+                [
+                    'organisation' => $organisationUuid,
+                    'error'        => $e->getMessage(),
+                ]
+            );
+            
+            // Return empty array on error (fail gracefully)
+            return [];
+        }//end try
+
+    }//end findChildrenChain()
+
+
+    /**
+     * Validate parent assignment to prevent circular references and enforce max depth
+     *
+     * Checks that setting a parent organisation will not create:
+     * - Circular references (A -> B -> A)
+     * - Excessive depth (> 10 levels)
+     * - Self-reference (organisation pointing to itself)
+     *
+     * @param string      $organisationUuid The organisation UUID to update
+     * @param string|null $newParentUuid    The new parent UUID to assign (null to remove parent)
+     *
+     * @return void
+     *
+     * @throws \Exception If validation fails (circular reference, max depth exceeded, etc.)
+     */
+    public function validateParentAssignment(string $organisationUuid, ?string $newParentUuid): void
+    {
+        // Allow setting parent to null (removing parent)
+        if ($newParentUuid === null) {
+            return;
+        }
+        
+        // Prevent self-reference
+        if ($organisationUuid === $newParentUuid) {
+            throw new \Exception('Organisation cannot be its own parent.');
+        }
+        
+        // Check if new parent exists
+        try {
+            $parentOrg = $this->findByUuid($newParentUuid);
+        } catch (\Exception $e) {
+            throw new \Exception('Parent organisation not found.');
+        }
+        
+        // Check for circular reference: if the new parent has this org in its parent chain
+        $parentChain = $this->findParentChain($newParentUuid);
+        if (in_array($organisationUuid, $parentChain)) {
+            throw new \Exception(
+                'Circular reference detected: The new parent organisation is already a descendant of this organisation.'
+            );
+        }
+        
+        // Check max depth: current parent chain + this org + existing children chain
+        $childrenChain = $this->findChildrenChain($organisationUuid);
+        
+        // Calculate maximum depth after assignment
+        $maxDepthAbove = count($parentChain) + 1; // Parent chain + new parent
+        $maxDepthBelow = $this->getMaxDepthInChain($childrenChain, $organisationUuid);
+        $totalDepth = $maxDepthAbove + $maxDepthBelow;
+        
+        if ($totalDepth > 10) {
+            throw new \Exception(
+                "Maximum hierarchy depth exceeded. Total depth would be {$totalDepth} levels (max 10 allowed)."
+            );
+        }
+        
+        $this->logger->debug(
+            'Parent assignment validated',
+            [
+                'organisation' => $organisationUuid,
+                'newParent'    => $newParentUuid,
+                'parentChain'  => $parentChain,
+                'totalDepth'   => $totalDepth,
+            ]
+        );
+
+    }//end validateParentAssignment()
+
+
+    /**
+     * Get maximum depth in a children chain
+     *
+     * Helper method to calculate the deepest level in a hierarchy chain.
+     * Used for validating maximum depth constraints.
+     *
+     * @param array  $childrenUuids Array of child organisation UUIDs
+     * @param string $rootUuid      The root organisation UUID
+     *
+     * @return int Maximum depth from root
+     */
+    private function getMaxDepthInChain(array $childrenUuids, string $rootUuid): int
+    {
+        if (empty($childrenUuids)) {
+            return 0;
+        }
+        
+        // Build parent map for efficient lookup
+        $parentMap = [];
+        foreach ($childrenUuids as $childUuid) {
+            try {
+                $child = $this->findByUuid($childUuid);
+                if ($child->getParent() !== null) {
+                    $parentMap[$childUuid] = $child->getParent();
+                }
+            } catch (\Exception $e) {
+                // Skip if child not found
+                continue;
+            }
+        }
+        
+        // Calculate depth for each child
+        $maxDepth = 0;
+        foreach ($childrenUuids as $childUuid) {
+            $depth = $this->calculateDepthFromRoot($childUuid, $rootUuid, $parentMap);
+            $maxDepth = max($maxDepth, $depth);
+        }
+        
+        return $maxDepth;
+
+    }//end getMaxDepthInChain()
+
+
+    /**
+     * Calculate depth of a node from root
+     *
+     * @param string $nodeUuid  The node UUID
+     * @param string $rootUuid  The root UUID
+     * @param array  $parentMap Parent mapping array
+     *
+     * @return int Depth from root
+     */
+    private function calculateDepthFromRoot(string $nodeUuid, string $rootUuid, array $parentMap): int
+    {
+        $depth = 0;
+        $current = $nodeUuid;
+        
+        while (isset($parentMap[$current]) && $current !== $rootUuid && $depth < 20) {
+            $depth++;
+            $current = $parentMap[$current];
+        }
+        
+        return $depth;
+
+    }//end calculateDepthFromRoot()
+
+
+    /**
+     * Get table prefix for raw SQL queries
+     *
+     * Nextcloud uses 'oc_' prefix by default but can be customized.
+     * This method ensures we use the correct prefix for raw SQL.
+     *
+     * @return string Table prefix (e.g., 'oc_')
+     */
+    private function getTablePrefix(): string
+    {
+        // Get table prefix from database configuration
+        // Default is 'oc_' but can be customized per installation
+        return $this->db->getPrefix();
+
+    }//end getTablePrefix()
+
+
 }//end class

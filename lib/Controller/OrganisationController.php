@@ -407,6 +407,10 @@ class OrganisationController extends Controller
             }
 
             $organisation = $this->organisationMapper->findByUuid($uuid);
+            
+            // Load children for this organisation
+            $children = $this->organisationMapper->findChildrenChain($uuid);
+            $organisation->setChildren($children);
 
             return new JSONResponse(
                     [
@@ -508,6 +512,33 @@ class OrganisationController extends Controller
         
         if (isset($data['authorization']) && is_array($data['authorization'])) {
             $organisation->setAuthorization($data['authorization']);
+        }
+        
+        // Handle parent organisation update with validation
+        if (array_key_exists('parent', $data)) {
+            $newParent = $data['parent'] === '' || $data['parent'] === null ? null : $data['parent'];
+            
+            // Validate parent assignment to prevent circular references
+            try {
+                $this->organisationMapper->validateParentAssignment($uuid, $newParent);
+                $organisation->setParent($newParent);
+            } catch (Exception $e) {
+                $this->logger->warning(
+                    'Parent assignment validation failed',
+                    [
+                        'organisationUuid' => $uuid,
+                        'newParent' => $newParent,
+                        'error' => $e->getMessage(),
+                    ]
+                );
+                
+                return new JSONResponse(
+                    [
+                        'error' => $e->getMessage(),
+                    ],
+                    Http::STATUS_BAD_REQUEST
+                );
+            }
         }
 
         $updated = $this->organisationMapper->save($organisation);
