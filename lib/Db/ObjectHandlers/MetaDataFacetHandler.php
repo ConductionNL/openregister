@@ -574,6 +574,17 @@ class MetaDataFacetHandler
                             $queryBuilder->andWhere($queryBuilder->expr()->isNotNull($field));
                         }
                         break;
+
+                    case 'or':
+                        $values = is_string($operatorValue) ? array_map('trim', explode(',', $operatorValue)) : $operatorValue;
+                        $orConditions = $queryBuilder->expr()->orX();
+                        foreach ($values as $val) {
+                            $orConditions->add(
+                                $queryBuilder->expr()->eq($field, $queryBuilder->createNamedParameter($val))
+                            );
+                        }
+                        $queryBuilder->andWhere($orConditions);
+                        break;
                     default:
                         // Default to equals for unknown operators.
                         $queryBuilder->andWhere($queryBuilder->expr()->eq($field, $queryBuilder->createNamedParameter($operatorValue)));
