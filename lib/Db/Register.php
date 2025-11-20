@@ -246,10 +246,8 @@ class Register extends Entity implements JsonSerializable
      * Set the schemas data
      *
      * @param array|string $schemas Array of schema IDs or JSON string
-     *
-     * @return self
      */
-    public function setSchemas($schemas): self
+    public function setSchemas($schemas): static
     {
         if (is_string($schemas) === true) {
             $decoded = json_decode($schemas, true);
@@ -284,7 +282,9 @@ class Register extends Entity implements JsonSerializable
      *
      * Returns all fields that are of type 'json'
      *
-     * @return array<string> List of JSON field names
+     * @return string[] List of JSON field names
+     *
+     * @psalm-return list<string>
      */
     public function getJsonFields(): array
     {
@@ -307,9 +307,9 @@ class Register extends Entity implements JsonSerializable
      *
      * @param array $object The data array to hydrate from
      *
-     * @return self Returns $this for method chaining
+     * @return static Returns $this for method chaining
      */
-    public function hydrate(array $object): self
+    public function hydrate(array $object): static
     {
         $jsonFields = $this->getJsonFields();
 
@@ -341,7 +341,9 @@ class Register extends Entity implements JsonSerializable
      *
      * Prepares the entity data for JSON serialization
      *
-     * @return array<string, mixed> Array of serializable entity data
+     * @return ((int|mixed|null|string|string[])[]|int|null|string)[] Array of serializable entity data
+     *
+     * @psalm-return array{id: int, uuid: null|string, slug: null|string, title: null|string, version: null|string, description: null|string, schemas: array<int|string>, source: null|string, tablePrefix: null|string, folder: null|string, updated: null|string, created: null|string, owner: null|string, application: null|string, organisation: null|string, authorization: array|null, groups: array<string, list<string>>, quota: array{storage: null, bandwidth: null, requests: null, users: null, groups: null}, usage: array{storage: 0, bandwidth: 0, requests: 0, users: 0, groups: int<0, max>}, deleted: null|string}
      */
     public function jsonSerialize(): array
     {

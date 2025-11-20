@@ -206,9 +206,11 @@ class VectorEmbeddingService
      * @param string      $text     Text to embed
      * @param string|null $provider Embedding provider (null = use default from settings)
      *
-     * @return array{embedding: array<float>, model: string, dimensions: int} Embedding data
+     * @return (float[]|int|string)[] Embedding data
      *
      * @throws \Exception If embedding generation fails
+     *
+     * @psalm-return array{embedding: array<float>, model: string, dimensions: int<0, max>}
      */
     public function generateEmbedding(string $text, ?string $provider=null): array
     {
@@ -274,9 +276,11 @@ class VectorEmbeddingService
      *                       - url: URL (for Ollama)
      *                       - baseUrl: Base URL (for Fireworks)
      *
-     * @return array Embedding vector (array of floats)
+     * @return float[] Embedding vector (array of floats)
      *
      * @throws \Exception If embedding generation fails
+     *
+     * @psalm-return array<float>
      */
     public function generateEmbeddingWithCustomConfig(string $text, array $config): array
     {
@@ -352,7 +356,9 @@ class VectorEmbeddingService
      * @param array  $config   Provider-specific configuration
      * @param string $testText Optional test text to embed
      *
-     * @return array Test results with success status and embedding info
+     * @return ((array|int|mixed|string)[]|bool|string)[] Test results with success status and embedding info
+     *
+     * @psalm-return array{success: bool, error?: string, message: string, data?: array{provider: string, model: 'unknown'|mixed, vectorLength: int<0, max>, sampleValues: array, testText: string}}
      */
     public function testEmbedding(string $provider, array $config, string $testText='Test.'): array
     {
@@ -643,9 +649,11 @@ class VectorEmbeddingService
      * @param int   $limit          Maximum number of results
      * @param array $filters        Additional filters (entity_type, etc.)
      *
-     * @return array<int,array<string,mixed>> Search results
+     * @return (array|float|int|mixed|null|string)[][] Search results
      *
      * @throws \Exception If search fails or Solr is not configured
+     *
+     * @psalm-return list<array{chunk_index: 0|mixed, chunk_text: mixed|null, dimensions: 0|mixed, entity_id: string, entity_type: string, metadata: array, model: ''|mixed, similarity: float(0)|mixed, total_chunks: 1|mixed, vector_id: mixed}>
      */
     private function searchVectorsInSolr(
         array $queryEmbedding,
@@ -1265,9 +1273,11 @@ class VectorEmbeddingService
      * @param array       $weights     Weights for each search type ['solr' => 0.5, 'vector' => 0.5]
      * @param string|null $provider    Embedding provider
      *
-     * @return array Combined and ranked results
+     * @return (array|float|int)[] Combined and ranked results
      *
      * @throws \Exception If hybrid search fails
+     *
+     * @psalm-return array{results: array, total: int<0, max>, search_time_ms: float, source_breakdown: array{vector_only: int<0, max>, solr_only: int<0, max>, both: int<0, max>}, weights: array{solr: float, vector: float}}
      */
     public function hybridSearch(
         string $query,
@@ -1411,7 +1421,9 @@ class VectorEmbeddingService
      * @param float $vectorWeight  Weight for vector results (0-1)
      * @param float $solrWeight    Weight for SOLR results (0-1)
      *
-     * @return array Combined and ranked results
+     * @return (array|bool|float|int|mixed|null)[][] Combined and ranked results
+     *
+     * @psalm-return list<array{chunk_index: 0|mixed, chunk_text: mixed|null, combined_score: 0|float, entity_id: mixed, entity_type: mixed, in_solr: bool, in_vector: bool, metadata: array<never, never>|mixed, solr_rank: float|int|null, solr_score: mixed|null, vector_rank: float|int|null, vector_similarity: mixed|null}>
      */
     private function reciprocalRankFusion(
         array $vectorResults,
@@ -1659,7 +1671,9 @@ class VectorEmbeddingService
      *
      * Counts documents with embeddings in file and object collections
      *
-     * @return array Vector statistics from Solr
+     * @return (array|int|string)[] Vector statistics from Solr
+     *
+     * @psalm-return array{total_vectors: int, by_type: array{object?: int, file?: int}, by_model: array, object_vectors: int, file_vectors: int, source: 'solr'|'solr_error'|'solr_unavailable'}
      */
     private function getVectorStatsFromSolr(): array
     {
@@ -1924,11 +1938,11 @@ class VectorEmbeddingService
      * @param string $model  Model name
      * @param array  $config Configuration array with api_key and base_url
      *
-     * @return EmbeddingGeneratorInterface Generator instance
+     * @return OpenAI3LargeEmbeddingGenerator|OpenAI3SmallEmbeddingGenerator|OpenAIADA002EmbeddingGenerator Generator instance
      *
      * @throws \Exception If model is not supported
      */
-    private function createOpenAIGenerator(string $model, array $config): EmbeddingGeneratorInterface
+    private function createOpenAIGenerator(string $model, array $config): OpenAIADA002EmbeddingGenerator|OpenAI3SmallEmbeddingGenerator|OpenAI3LargeEmbeddingGenerator
     {
         $llphantConfig = new OpenAIConfig();
 
@@ -1959,11 +1973,11 @@ class VectorEmbeddingService
      * @param string $model  Model name (e.g., 'nomic-ai/nomic-embed-text-v1.5')
      * @param array  $config Configuration array with api_key and base_url
      *
-     * @return EmbeddingGeneratorInterface Generator instance
+     * @return object Generator instance
      *
      * @throws \Exception If model is not supported
      */
-    private function createFireworksGenerator(string $model, array $config): EmbeddingGeneratorInterface
+    private function createFireworksGenerator(string $model, array $config): object
     {
         // Create a custom anonymous class that implements the EmbeddingGeneratorInterface.
         // This allows us to use any Fireworks model name without LLPhant's restrictions.
@@ -2073,6 +2087,8 @@ class VectorEmbeddingService
              * Get embedding length
              *
              * @return int Embedding length
+             *
+             * @psalm-return 768|1024
              */
             public function getEmbeddingLength(): int
             {
@@ -2131,9 +2147,9 @@ class VectorEmbeddingService
      * @param string $model  Model name (e.g., 'nomic-embed-text')
      * @param array  $config Configuration array with base_url
      *
-     * @return EmbeddingGeneratorInterface Generator instance
+     * @return OllamaEmbeddingGenerator Generator instance
      */
-    private function createOllamaGenerator(string $model, array $config): EmbeddingGeneratorInterface
+    private function createOllamaGenerator(string $model, array $config): OllamaEmbeddingGenerator
     {
         // Create native Ollama configuration.
         $ollamaConfig        = new OllamaConfig();
@@ -2192,9 +2208,11 @@ class VectorEmbeddingService
      * @param array         $metadata File metadata
      * @param string|null   $provider Embedding provider (null = use default)
      *
-     * @return array{success: bool, vectors_created: int, errors?: array} Result
+     * @return (bool|float|int|string[])[] Result
      *
      * @throws \Exception If vectorization fails
+     *
+     * @psalm-return array{success: bool, vectors_created: int<0, max>, errors: array<string>, execution_time_ms: float}
      */
     public function vectorizeFileChunks(int $fileId, array $chunks, array $metadata=[], ?string $provider=null): array
     {
@@ -2398,7 +2416,9 @@ class VectorEmbeddingService
      * Compares the configured embedding model with models used in existing vectors.
      * If they don't match, vectors need to be regenerated.
      *
-     * @return array Status information with mismatch details
+     * @return (array|bool|int|mixed|string)[] Status information with mismatch details
+     *
+     * @psalm-return array{has_vectors: bool, mismatch: bool, error?: string, message?: 'No embedding model configured'|'No vectors exist yet'|mixed, current_model?: mixed, existing_models?: list<mixed>, total_vectors?: int, null_model_count?: int, mismatched_models?: list<mixed>}
      */
     public function checkEmbeddingModelMismatch(): array
     {
@@ -2510,7 +2530,9 @@ class VectorEmbeddingService
      *
      * Deletes all vectors. This should be done when changing embedding models.
      *
-     * @return array Result with count of deleted vectors
+     * @return (bool|int|string)[] Result with count of deleted vectors
+     *
+     * @psalm-return array{success: bool, error?: string, message: string, deleted?: int}
      */
     public function clearAllEmbeddings(): array
     {

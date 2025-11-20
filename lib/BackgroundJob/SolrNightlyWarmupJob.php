@@ -3,17 +3,21 @@
 declare(strict_types=1);
 
 /*
- * SOLR Nightly Warmup Background Job
+    OpenRegister SOLR Nightly Warmup Background Job
  *
  * Recurring background job that runs every night at 00:00 to warm up the SOLR index.
  * This ensures optimal search performance by keeping the index warm and ready for queries.
  *
- * @category  BackgroundJob
- * @package   OCA\OpenRegister\BackgroundJob
- * @author    OpenRegister Team
- * @copyright 2024 OpenRegister
- * @license   AGPL-3.0-or-later
- * @link      https://github.com/OpenRegister/OpenRegister
+ * @category BackgroundJob
+ * @package  OCA\OpenRegister\BackgroundJob
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenRegister.nl
  */
 
 namespace OCA\OpenRegister\BackgroundJob;
@@ -54,7 +58,7 @@ class SolrNightlyWarmupJob extends TimedJob
     private const DEFAULT_NIGHTLY_MAX_OBJECTS = 10000;
 
     /**
-     * Default warmup mode for nightly runs
+     * Default warmup mode for nightly runs.
      */
     private const DEFAULT_NIGHTLY_MODE = 'parallel';
 
@@ -84,6 +88,8 @@ class SolrNightlyWarmupJob extends TimedJob
      * Execute the nightly SOLR warmup job
      *
      * @param array $arguments Job arguments (unused for recurring jobs)
+     *
+     * @return void
      */
     protected function run($arguments): void
     {
@@ -92,6 +98,7 @@ class SolrNightlyWarmupJob extends TimedJob
         /*
          * @var LoggerInterface $logger
          */
+
         $logger = \OC::$server->get(LoggerInterface::class);
 
         $logger->info(
@@ -104,24 +111,28 @@ class SolrNightlyWarmupJob extends TimedJob
                 );
 
         try {
-            // Get required services.
             /*
+             * Get required services.
+             *
              * @var GuzzleSolrService $solrService
              */
+
             $solrService = \OC::$server->get(GuzzleSolrService::class);
 
             /*
              * @var SettingsService $settingsService
              */
+
             $settingsService = \OC::$server->get(SettingsService::class);
 
             /*
              * @var SchemaMapper $schemaMapper
              */
+
             $schemaMapper = \OC::$server->get(SchemaMapper::class);
 
             // Check if SOLR is enabled and available.
-            if (!$this->isSolrEnabledAndAvailable($solrService, $settingsService, $logger)) {
+            if ($this->isSolrEnabledAndAvailable($solrService, $settingsService, $logger) === false) {
                 $logger->info('SOLR Nightly Warmup Job skipped - SOLR not enabled or available');
                 return;
             }
@@ -209,9 +220,10 @@ class SolrNightlyWarmupJob extends TimedJob
     /**
      * Check if SOLR is enabled and available for nightly warmup
      *
-     * @param  GuzzleSolrService $solrService     The SOLR service
-     * @param  SettingsService   $settingsService The settings service
-     * @param  LoggerInterface   $logger          The logger
+     * @param GuzzleSolrService $solrService     The SOLR service
+     * @param SettingsService   $settingsService The settings service
+     * @param LoggerInterface   $logger          The logger
+     *
      * @return bool True if SOLR is enabled and available
      */
     private function isSolrEnabledAndAvailable(
@@ -223,7 +235,7 @@ class SolrNightlyWarmupJob extends TimedJob
             // Check if SOLR is enabled in settings.
             $solrSettings = $settingsService->getSolrSettings();
 
-            if (!($solrSettings['enabled'] ?? false)) {
+            if (($solrSettings['enabled'] ?? false) === false) {
                 $logger->info('SOLR is disabled in settings, skipping nightly warmup');
                 return false;
             }
@@ -260,8 +272,9 @@ class SolrNightlyWarmupJob extends TimedJob
     /**
      * Get warmup configuration from settings with defaults
      *
-     * @param  SettingsService $settingsService The settings service
-     * @param  LoggerInterface $logger          The logger
+     * @param SettingsService $settingsService The settings service
+     * @param LoggerInterface $logger          The logger
+     *
      * @return array Warmup configuration
      */
     private function getWarmupConfiguration(SettingsService $settingsService, LoggerInterface $logger): array
@@ -301,8 +314,9 @@ class SolrNightlyWarmupJob extends TimedJob
     /**
      * Calculate objects per second performance metric
      *
-     * @param  array $result        Warmup result
-     * @param  float $executionTime Total execution time in seconds
+     * @param array $result        Warmup result
+     * @param float $executionTime Total execution time in seconds
+     *
      * @return float Objects indexed per second
      */
     private function calculateObjectsPerSecond(array $result, float $executionTime): float
@@ -321,7 +335,8 @@ class SolrNightlyWarmupJob extends TimedJob
     /**
      * Summarize operations for logging
      *
-     * @param  array $operations Operations array from warmup result
+     * @param array $operations Operations array from warmup result
+     *
      * @return array Summarized operations
      */
     private function summarizeOperations(array $operations): array
@@ -340,7 +355,8 @@ class SolrNightlyWarmupJob extends TimedJob
     /**
      * Count successful warmup queries
      *
-     * @param  array $operations Operations array
+     * @param array $operations Operations array
+     *
      * @return int Number of successful warmup queries
      */
     private function countSuccessfulWarmupQueries(array $operations): int
@@ -348,7 +364,7 @@ class SolrNightlyWarmupJob extends TimedJob
         $count = 0;
 
         foreach ($operations as $key => $value) {
-            if (str_starts_with($key, 'warmup_query_') && $value === true) {
+            if (str_starts_with($key, 'warmup_query_') === true && $value === true) {
                 $count++;
             }
         }
@@ -364,6 +380,8 @@ class SolrNightlyWarmupJob extends TimedJob
      * @param array           $result        Warmup result
      * @param float           $executionTime Total execution time
      * @param LoggerInterface $logger        The logger
+     *
+     * @return void
      */
     private function logPerformanceStats(array $result, float $executionTime, LoggerInterface $logger): void
     {
@@ -388,7 +406,8 @@ class SolrNightlyWarmupJob extends TimedJob
     /**
      * Calculate warmup efficiency percentage
      *
-     * @param  array $result Warmup result
+     * @param array $result Warmup result
+     *
      * @return float Efficiency percentage
      */
     private function calculateWarmupEfficiency(array $result): float
@@ -400,7 +419,18 @@ class SolrNightlyWarmupJob extends TimedJob
             return 0.0;
         }
 
-        $successfulOperations = array_sum(array_map(fn($op) => $op === true ? 1 : 0, $operations));
+        $successfulOperations = array_sum(
+            array_map(
+                function ($op) {
+                    if ($op === true) {
+                        return 1;
+                    }
+
+                    return 0;
+                },
+                $operations
+            )
+        );
 
         return round(($successfulOperations / $totalOperations) * 100, 1);
 

@@ -217,7 +217,8 @@ class SchemaPropertyValidatorService
      * @param string $path       The current path in the schema
      *
      * @throws Exception If any property definition is invalid
-     * @return bool True if all properties are valid
+     *
+     * @return true True if all properties are valid
      */
     public function validateProperties(array $properties, string $path=''): bool
     {
@@ -268,10 +269,13 @@ class SchemaPropertyValidatorService
      * @param string $path     The current path in the schema (for error messages)
      *
      * @throws Exception If the file property configuration is invalid
-     * @return bool True if the file property is valid
      *
-     * @psalm-param    array<string, mixed> $property
-     * @phpstan-param  array<string, mixed> $property
+     * @return true
+     *
+     * @psalm-param array<string, mixed> $property
+     *
+     * @phpstan-param array<string, mixed> $property
+     *
      * @psalm-return   bool
      * @phpstan-return bool
      */

@@ -64,4 +64,3 @@ class ConfigurationDeletedEvent extends Event
 
 
 }//end class
-

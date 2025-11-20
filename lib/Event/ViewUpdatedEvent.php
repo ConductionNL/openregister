@@ -85,4 +85,3 @@ class ViewUpdatedEvent extends Event
 
 
 }//end class
-

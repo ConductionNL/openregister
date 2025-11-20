@@ -396,7 +396,9 @@ class SearchTrail extends Entity implements JsonSerializable
      *
      * Returns all fields that are of type 'json'
      *
-     * @return array<string> List of JSON field names
+     * @return string[] List of JSON field names
+     *
+     * @psalm-return list<string>
      */
     public function getJsonFields(): array
     {
@@ -419,9 +421,9 @@ class SearchTrail extends Entity implements JsonSerializable
      *
      * @param array $object The data array to hydrate from
      *
-     * @return self Returns $this for method chaining
+     * @return static Returns $this for method chaining
      */
-    public function hydrate(array $object): self
+    public function hydrate(array $object): static
     {
         $jsonFields = $this->getJsonFields();
 
@@ -477,7 +479,44 @@ class SearchTrail extends Entity implements JsonSerializable
      *
      * Prepares the entity data for JSON serialization
      *
-     * @return array<string, mixed> Array of serializable entity data
+     * @return (array|bool|int|null|string)[] Array of serializable entity data
+     *
+     * @psalm-return array{
+     *     id: int,
+     *     uuid: null|string,
+     *     searchTerm: null|string,
+     *     queryParameters: array|null,
+     *     resultCount: int|null,
+     *     totalResults: int|null,
+     *     register: int|null,
+     *     schema: int|null,
+     *     registerUuid: null|string,
+     *     schemaUuid: null|string,
+     *     user: null|string,
+     *     userName: null|string,
+     *     registerName: null|string,
+     *     schemaName: null|string,
+     *     session: null|string,
+     *     ipAddress: null|string,
+     *     userAgent: null|string,
+     *     requestUri: null|string,
+     *     httpMethod: null|string,
+     *     responseTime: int|null,
+     *     page: int|null,
+     *     limit: int|null,
+     *     offset: int|null,
+     *     facetsRequested: bool|null,
+     *     facetableRequested: bool|null,
+     *     filters: array|null,
+     *     sortParameters: array|null,
+     *     publishedOnly: bool|null,
+     *     executionType: null|string,
+     *     created: null|string,
+     *     organisationId: null|string,
+     *     organisationIdType: null|string,
+     *     expires: null|string,
+     *     size: int|null
+     * }
      */
     public function jsonSerialize(): array
     {

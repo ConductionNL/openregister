@@ -72,6 +72,8 @@ class ObjectsTool extends AbstractTool
      * Get tool name
      *
      * @return string Tool name
+     *
+     * @psalm-return 'objects'
      */
     public function getName(): string
     {
@@ -84,6 +86,8 @@ class ObjectsTool extends AbstractTool
      * Get tool description
      *
      * @return string Tool description
+     *
+     * @psalm-return 'Manage objects: search, view, create, update, or delete objects. Objects are data records conforming to schemas.'
      */
     public function getDescription(): string
     {
@@ -95,7 +99,9 @@ class ObjectsTool extends AbstractTool
     /**
      * Get function definitions for LLphant
      *
-     * @return array Array of function definitions
+     * @return (((string|string[])[]|string)[]|string)[][] Array of function definitions
+     *
+     * @psalm-return list<array<string, mixed>>
      */
     public function getFunctions(): array
     {
@@ -311,7 +317,7 @@ class ObjectsTool extends AbstractTool
      */
     public function getObject(string $id): array
     {
-        $object = $this->objectService->findObject($id);
+        $object = $this->objectService->find($id);
 
         return $this->formatSuccess(
             [
@@ -355,9 +361,9 @@ class ObjectsTool extends AbstractTool
         );
 
         $object = $this->objectService->saveObject(
-            registerId: (int) $register,
-            schemaId: (int) $schema,
-            objectArray: $objectData
+            object: $objectData,
+            register: (int) $register,
+            schema: (int) $schema
         );
 
         return $this->formatSuccess(
@@ -387,7 +393,7 @@ class ObjectsTool extends AbstractTool
     public function updateObject(string $id, array $data): array
     {
         // Get existing object.
-        $existingObject = $this->objectService->findObject($id);
+        $existingObject = $this->objectService->find($id);
 
         // Merge new data with existing data.
         $mergedData = array_merge(
@@ -397,10 +403,10 @@ class ObjectsTool extends AbstractTool
 
         // Update object.
         $object = $this->objectService->saveObject(
-            registerId: $existingObject->getRegister(),
-            schemaId: $existingObject->getSchema(),
-            objectArray: $mergedData,
-            id: $existingObject->getId()
+            object: $mergedData,
+            register: $existingObject->getRegister(),
+            schema: $existingObject->getSchema(),
+            uuid: $existingObject->getUuid()
         );
 
         return $this->formatSuccess(
@@ -428,8 +434,8 @@ class ObjectsTool extends AbstractTool
      */
     public function deleteObject(string $id): array
     {
-        $object = $this->objectService->findObject($id);
-        $this->objectService->deleteObject($object->getId());
+        $object = $this->objectService->find($id);
+        $this->objectService->deleteObject($object->getUuid() ?? $object->getId());
 
         return $this->formatSuccess(
             ['id' => $id],

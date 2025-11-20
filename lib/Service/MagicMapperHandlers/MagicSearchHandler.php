@@ -79,14 +79,17 @@ class MagicSearchHandler
      * @param Schema   $schema    Schema context for the search
      * @param string   $tableName Target dynamic table name
      *
-     * @return array<int, ObjectEntity>|int Array of ObjectEntity objects or count if _count=true
+     * @return OCA\OpenRegister\Db\ObjectEntity[]|int Array of ObjectEntity objects or count if _count=true
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
      * @phpstan-param array<string, mixed> $query
-     * @psalm-param   array<string, mixed> $query
+     *
+     * @psalm-param array<string, mixed> $query
+     *
+     * @psalm-return int|list<OCA\OpenRegister\Db\ObjectEntity>
      */
-    public function searchObjects(array $query, Register $register, Schema $schema, string $tableName): array|int
+    public function searchObjects(array $query, Register $register, Schema $schema, string $tableName): array|int|int
     {
         // Extract options from query (prefixed with _).
         $limit          = $query['_limit'] ?? null;
@@ -348,9 +351,11 @@ class MagicSearchHandler
      * @param Register      $register Register context
      * @param Schema        $schema   Schema context
      *
-     * @return array<int, ObjectEntity> Array of ObjectEntity objects
+     * @return ObjectEntity[]
      *
      * @throws \OCP\DB\Exception If query execution fails
+     *
+     * @psalm-return list<OCA\OpenRegister\Db\ObjectEntity>
      */
     private function executeSearchQuery(IQueryBuilder $qb, Register $register, Schema $schema): array
     {
@@ -488,11 +493,13 @@ class MagicSearchHandler
      * @param Schema   $schema    Schema context
      * @param string   $tableName Target dynamic table name
      *
-     * @return int Number of objects matching the criteria
+     * @return ObjectEntity[]|int Number of objects matching the criteria
      *
      * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @psalm-return array<int, ObjectEntity>|int
      */
-    public function countObjects(array $query, Register $register, Schema $schema, string $tableName): int
+    public function countObjects(array $query, Register $register, Schema $schema, string $tableName): array|int
     {
         // Use the same search method but force count mode.
         $countQuery           = $query;

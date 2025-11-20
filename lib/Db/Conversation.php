@@ -193,10 +193,8 @@ class Conversation extends Entity implements JsonSerializable
      *
      * @param string $key   The metadata key
      * @param mixed  $value The value to set
-     *
-     * @return self
      */
-    public function setMetadataValue(string $key, mixed $value): self
+    public function setMetadataValue(string $key, mixed $value): static
     {
         if ($this->metadata === null) {
             $this->metadata = [];
@@ -222,10 +220,8 @@ class Conversation extends Entity implements JsonSerializable
 
     /**
      * Soft delete the conversation
-     *
-     * @return self
      */
-    public function softDelete(): self
+    public function softDelete(): static
     {
         $this->setter('deletedAt', [new DateTime()]);
         return $this;
@@ -235,10 +231,8 @@ class Conversation extends Entity implements JsonSerializable
 
     /**
      * Restore soft deleted conversation
-     *
-     * @return self
      */
-    public function restore(): self
+    public function restore(): static
     {
         $this->setter('deletedAt', [null]);
         return $this;
@@ -249,7 +243,9 @@ class Conversation extends Entity implements JsonSerializable
     /**
      * Serialize the conversation to JSON
      *
-     * @return array Serialized conversation
+     * @return (array|int|null|string)[] Serialized conversation
+     *
+     * @psalm-return array{id: int, uuid: null|string, title: null|string, userId: null|string, organisation: null|string, agentId: int|null, metadata: array|null, deletedAt: null|string, created: null|string, updated: null|string}
      */
     public function jsonSerialize(): array
     {

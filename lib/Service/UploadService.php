@@ -171,10 +171,11 @@ class UploadService
     /**
      * Gets JSON content from an uploaded file.
      *
-     * @return array|JSONResponse The parsed JSON content from the file or an error response.
+     * @return never The parsed JSON content from the file or an error response.
+     *
      * @throws Exception If the file cannot be read or its content cannot be parsed as JSON.
      */
-    private function getJSONfromFile(): array | JSONResponse
+    private function getJSONfromFile() | JSONResponse
     {
         // @todo: Implement file reading logic here.
         // For now, return a simple array to ensure code consistency.

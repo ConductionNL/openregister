@@ -146,7 +146,9 @@ class Source extends Entity implements JsonSerializable
      *
      * Returns all fields that are of type 'json'
      *
-     * @return array<string> List of JSON field names
+     * @return string[] List of JSON field names
+     *
+     * @psalm-return list<string>
      */
     public function getJsonFields(): array
     {
@@ -169,9 +171,9 @@ class Source extends Entity implements JsonSerializable
      *
      * @param array $object The data array to hydrate from
      *
-     * @return self Returns $this for method chaining
+     * @return static Returns $this for method chaining
      */
-    public function hydrate(array $object): self
+    public function hydrate(array $object): static
     {
         $jsonFields = $this->getJsonFields();
 
@@ -230,7 +232,21 @@ class Source extends Entity implements JsonSerializable
      *
      * Prepares the entity data for JSON serialization
      *
-     * @return array<string, mixed> Array of serializable entity data
+     * @return (array|int|null|string)[] Array of serializable entity data
+     *
+     * @psalm-return array{
+     *     id: int,
+     *     uuid: null|string,
+     *     title: null|string,
+     *     version: null|string,
+     *     description: null|string,
+     *     databaseUrl: null|string,
+     *     type: null|string,
+     *     organisation: null|string,
+     *     updated: null|string,
+     *     created: null|string,
+     *     managedByConfiguration: array<string, mixed>|null
+     * }
      */
     public function jsonSerialize(): array
     {
@@ -321,9 +337,11 @@ class Source extends Entity implements JsonSerializable
     /**
      * Check if this source is managed by a configuration
      *
-     * Returns true if this source's ID appears in any of the provided configurations' sources arrays.
+     * Returns true if this source's ID appears in any of the provided
+     * configurations' sources arrays.
      *
-     * @param array<Configuration> $configurations Array of Configuration entities to check against
+     * @param array<Configuration> $configurations Array of Configuration
+     *                                               entities to check against
      *
      * @return bool True if managed by a configuration, false otherwise
      *
@@ -382,9 +400,11 @@ class Source extends Entity implements JsonSerializable
     /**
      * Get managed by configuration data as array or null
      *
-     * @return array<string, mixed>|null Configuration data or null
+     * @return (int|null|string)[]|null Configuration data or null
+     *
+     * @psalm-return array{id: int, uuid: null|string, title: null|string}|null
      */
-    private function getManagedByConfigurationData(): ?array
+    private function getManagedByConfigurationData(): array|null
     {
         if ($this->managedByConfiguration !== null) {
             return [

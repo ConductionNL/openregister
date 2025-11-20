@@ -53,9 +53,15 @@ class HeartbeatController extends Controller
      * response with minimal server processing.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Simple success response
+     *
+     * @psalm-return JSONResponse<200,
+     *     array{status: 'alive', timestamp: int<1, max>,
+     *     message: 'Heartbeat successful - connection kept alive'},
+     *     array<never, never>>
      */
     public function heartbeat(): JSONResponse
     {

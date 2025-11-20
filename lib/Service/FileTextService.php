@@ -359,7 +359,9 @@ class FileTextService
      *
      * @param int $limit Maximum number of files to process
      *
-     * @return array{processed: int, succeeded: int, failed: int, errors: array<string>}
+     * @return (int|string[])[]
+     *
+     * @psalm-return array{processed: int<0, max>, succeeded: int<0, max>, failed: int<0, max>, errors: list<non-empty-string>}
      */
     public function processPendingFiles(int $limit=100): array
     {

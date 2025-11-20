@@ -56,13 +56,9 @@ class AuditTrailController extends Controller
     /**
      * Extract pagination, filter, and search parameters from request
      *
-     * @return array Array containing processed parameters:
-     *               - limit: (int) Maximum number of items per page
-     *               - offset: (int|null) Number of items to skip
-     *               - page: (int|null) Current page number
-     *               - filters: (array) Filter parameters
-     *               - sort: (array) Sort parameters ['field' => 'ASC|DESC']
-     *               - search: (string|null) Search term
+     * @return ((mixed|string)[]|int|mixed|null)[] Array containing processed parameters: - limit: (int) Maximum number of items per page - offset: (int|null) Number of items to skip - page: (int|null) Current page number - filters: (array) Filter parameters - sort: (array) Sort parameters ['field' => 'ASC|DESC'] - search: (string|null) Search term
+     *
+     * @psalm-return array{limit: int, offset: int|null, page: int|null, filters: array, sort: array<array-key|mixed, 'DESC'|mixed>, search: mixed|null}
      */
     private function extractRequestParameters(): array
     {
@@ -157,7 +153,10 @@ class AuditTrailController extends Controller
      * @return JSONResponse A JSON response containing the logs
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200, array{results: array, total: int, page: mixed, pages: float, limit: mixed, offset: mixed}, array<never, never>>
      */
     public function index(): JSONResponse
     {
@@ -193,7 +192,10 @@ class AuditTrailController extends Controller
      * @return JSONResponse A JSON response containing the log
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200, array<array-key, mixed>, array<never, never>>|JSONResponse<404, array{error: 'Audit trail not found'}, array<never, never>>
      */
     public function show(int $id): JSONResponse
     {
@@ -220,7 +222,10 @@ class AuditTrailController extends Controller
      * @return JSONResponse A JSON response containing the logs
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|400|404, array{error?: string, results?: array, total?: int, page?: mixed, pages?: float, limit?: mixed, offset?: mixed}, array<never, never>>
      */
     public function objects(string $register, string $schema, string $id): JSONResponse
     {
@@ -271,7 +276,10 @@ class AuditTrailController extends Controller
      * @return JSONResponse A JSON response containing the export data or file download
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|400|500, array{error?: string, success?: true, data?: array{content: mixed, filename: mixed, contentType: mixed, size: int<0, max>}}, array<never, never>>
      */
     public function export(): JSONResponse
     {
@@ -334,7 +342,10 @@ class AuditTrailController extends Controller
      * @return JSONResponse A JSON response indicating success or failure
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|404|500, array{error?: string, success?: true, message?: 'Audit trail deleted successfully'}, array<never, never>>
      */
     public function destroy(int $id): JSONResponse
     {
@@ -381,7 +392,10 @@ class AuditTrailController extends Controller
      * @return JSONResponse A JSON response with deletion results
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|500, array{error?: string, success?: true, results?: array, message?: string}, array<never, never>>
      */
     public function destroyMultiple(): JSONResponse
     {
@@ -440,7 +454,10 @@ class AuditTrailController extends Controller
      * @return JSONResponse A JSON response indicating success or failure
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, message?: 'All audit trails cleared successfully'|'No expired audit trails found to clear', deleted?: 'All expired audit trails have been deleted'|0}, array<never, never>>
      */
     public function clearAll(): JSONResponse
     {

@@ -220,6 +220,8 @@ class NewFacetingExample
      * Shows how to use searchObjectsPaginated with the new faceting system.
      *
      * @return array Complete paginated results with facets
+     *
+     * @psalm-return array<string, mixed>
      */
     public function paginatedSearchWithFacets(): array
     {
@@ -258,7 +260,22 @@ class NewFacetingExample
      *
      * Shows how to migrate from the old getFacets approach to the new system.
      *
-     * @return array Comparison of old vs new approach
+     * @return array[] Comparison of old vs new approach
+     *
+     * @psalm-return array{
+     *     migration_notes: array{
+     *         old_method: 'getFacets() with simple filters',
+     *         new_method: 'getFacetsForObjects() with _facets configuration',
+     *         benefits: list{
+     *             'More flexible facet types (terms, date_histogram, range)',
+     *             'Better performance with disjunctive faceting',
+     *             'Consistent query structure with searchObjects',
+     *             'Enhanced metadata support',
+     *             'Future-proof architecture'
+     *         }
+     *     },
+     *     new_facets: array
+     * }
      */
     public function migrationExample(): array
     {

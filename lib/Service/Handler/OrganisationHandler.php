@@ -84,10 +84,11 @@ class OrganisationHandler
      * @param array       $data  The organisation data
      * @param string|null $owner The owner of the organisation
      *
-     * @return Organisation|null The imported organisation or null if skipped
+     * @return Organisation The imported organisation or null if skipped
+     *
      * @throws Exception If import fails
      */
-    public function import(array $data, ?string $owner=null): ?Organisation
+    public function import(array $data, ?string $owner=null): Organisation
     {
         try {
             unset($data['id'], $data['uuid']);

@@ -564,7 +564,7 @@ class FileTextMapper extends QBMapper
 
         $result = $qb->executeQuery();
         while ($row = $result->fetch()) {
-            if (!in_array($row['id'], $idsToDelete)) {
+            if (in_array($row['id'], $idsToDelete) === false) {
                 $idsToDelete[] = $row['id'];
                 $reasons['is_directory']++;
             }
@@ -580,7 +580,10 @@ class FileTextMapper extends QBMapper
             ->leftJoin('fc', 'storages', 'st', $qb->expr()->eq('fc.storage', 'st.numeric_id'))
             ->where(
                 $qb->expr()->orX(
-                    $qb->expr()->notLike('st.id', $qb->createNamedParameter('home::%', IQueryBuilder::PARAM_STR)),
+                    $qb->expr()->notLike(
+                        'st.id',
+                        $qb->createNamedParameter('home::%', IQueryBuilder::PARAM_STR)
+                    ),
                     $qb->expr()->like('fc.path', $qb->createNamedParameter('%files_trashbin%', IQueryBuilder::PARAM_STR)),
                     $qb->expr()->like('fc.path', $qb->createNamedParameter('appdata_%', IQueryBuilder::PARAM_STR)),
                     $qb->expr()->like('fc.path', $qb->createNamedParameter('%files_versions%', IQueryBuilder::PARAM_STR)),
@@ -591,7 +594,7 @@ class FileTextMapper extends QBMapper
 
         $result = $qb->executeQuery();
         while ($row = $result->fetch()) {
-            if (!in_array($row['id'], $idsToDelete)) {
+            if (in_array($row['id'], $idsToDelete) === false) {
                 $idsToDelete[] = $row['id'];
                 $reasons['system_file']++;
             }
@@ -600,7 +603,7 @@ class FileTextMapper extends QBMapper
         $result->closeCursor();
 
         // Delete all collected IDs.
-        if (!empty($idsToDelete)) {
+        if (empty($idsToDelete) === false) {
             // Delete in batches of 1000 to avoid query size limits.
             $chunks = array_chunk($idsToDelete, 1000);
             foreach ($chunks as $chunk) {

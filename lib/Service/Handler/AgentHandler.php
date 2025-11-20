@@ -68,6 +68,8 @@ class AgentHandler
      * @param Agent $agent The agent to export
      *
      * @return array The exported agent data
+     *
+     * @psalm-return array<string, mixed>
      */
     public function export(Agent $agent): array
     {
@@ -84,10 +86,11 @@ class AgentHandler
      * @param array       $data  The agent data
      * @param string|null $owner The owner of the agent
      *
-     * @return Agent|null The imported agent or null if skipped
+     * @return Agent The imported agent or null if skipped
+     *
      * @throws Exception If import fails
      */
-    public function import(array $data, ?string $owner=null): ?Agent
+    public function import(array $data, ?string $owner=null): Agent
     {
         try {
             unset($data['id'], $data['uuid']);

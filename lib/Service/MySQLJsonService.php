@@ -446,7 +446,9 @@ class MySQLJsonService implements IDatabaseJsonService
      * @param array         $filters  Additional filters to apply
      * @param string|null   $search   Optional search term
      *
-     * @return array Array of facets with counts for each field
+     * @return array[] Array of facets with counts for each field
+     *
+     * @psalm-return array<array>
      */
     public function getAggregations(IQueryBuilder $builder, array $fields, int $register, int $schema, array $filters=[], ?string $search=null): array
     {

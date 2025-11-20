@@ -192,7 +192,9 @@ class Message extends Entity implements JsonSerializable
     /**
      * Serialize the message to JSON
      *
-     * @return array Serialized message
+     * @return (array|int|null|string)[] Serialized message
+     *
+     * @psalm-return array{id: int, uuid: null|string, conversationId: int|null, role: null|string, content: null|string, sources: array|null, created: null|string}
      */
     public function jsonSerialize(): array
     {

@@ -64,4 +64,3 @@ class ConversationCreatedEvent extends Event
 
 
 }//end class
-

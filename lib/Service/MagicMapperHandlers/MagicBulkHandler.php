@@ -87,12 +87,15 @@ class MagicBulkHandler
      * @param Schema   $schema    Schema context
      * @param string   $tableName Target dynamic table name
      *
-     * @return array Array containing saved object UUIDs and statistics
+     * @return array[] Array containing saved object UUIDs and statistics
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
      * @phpstan-param array<int, array<string, mixed>> $objects
-     * @psalm-param   array<int, array<string, mixed>> $objects
+     *
+     * @psalm-param array<int, array<string, mixed>> $objects
+     *
+     * @psalm-return array{saved: array, updated: array, statistics: array{saved: int<0, max>, updated: int<0, max>, total: int<0, max>, processingTimeMs?: float}}
      */
     public function saveObjects(array $objects, Register $register, Schema $schema, string $tableName): array
     {
@@ -155,12 +158,15 @@ class MagicBulkHandler
      * @param string   $tableName  Target dynamic table name
      * @param bool     $softDelete Whether to perform soft delete (default: true)
      *
-     * @return array Array of deleted UUIDs
+     * @return string[] Array of deleted UUIDs
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
      * @phpstan-param array<int, string> $uuids
-     * @psalm-param   array<int, string> $uuids
+     *
+     * @psalm-param array<int, string> $uuids
+     *
+     * @psalm-return array<int, string>
      */
     public function deleteObjects(array $uuids, Register $register, Schema $schema, string $tableName, bool $softDelete=true): array
     {
@@ -324,7 +330,9 @@ class MagicBulkHandler
      * @param Register $register Register context
      * @param Schema   $schema   Schema context
      *
-     * @return array Array of prepared object data
+     * @return (false|int|mixed|null|string)[][] Array of prepared object data
+     *
+     * @psalm-return list<non-empty-array<string, false|int|mixed|null|string>>
      */
     private function prepareObjectsForDynamicTable(array $objects, Register $register, Schema $schema): array
     {
@@ -382,7 +390,9 @@ class MagicBulkHandler
      * @param array  $objects   Prepared object data
      * @param string $tableName Target table name
      *
-     * @return array Array containing [insertObjects, updateObjects]
+     * @return array[] Array containing [insertObjects, updateObjects]
+     *
+     * @psalm-return list{list<mixed>, list<mixed>}
      */
     private function categorizeObjectsForSave(array $objects, string $tableName): array
     {
@@ -458,6 +468,8 @@ class MagicBulkHandler
      * @param string $tableName Target table name
      *
      * @return array Array of inserted UUIDs
+     *
+     * @psalm-return list<mixed>
      */
     private function executeBulkInsertChunk(array $chunk, string $tableName): array
     {
@@ -524,6 +536,8 @@ class MagicBulkHandler
      * @return array Array of updated UUIDs
      *
      * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @psalm-return list<mixed>
      */
     private function bulkUpdateDynamicTable(array $objects, string $tableName): array
     {
@@ -581,6 +595,8 @@ class MagicBulkHandler
      * @param array $objects Array of objects to analyze
      *
      * @return int Optimal chunk size
+     *
+     * @psalm-return int<5, 500>
      */
     private function calculateOptimalChunkSize(array $objects): int
     {

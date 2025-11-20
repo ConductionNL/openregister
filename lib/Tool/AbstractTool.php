@@ -178,7 +178,9 @@ abstract class AbstractTool implements ToolInterface
      * @param mixed  $data    Result data
      * @param string $message Success message
      *
-     * @return array Formatted result
+     * @return (mixed|string|true)[] Formatted result
+     *
+     * @psalm-return array{success: true, message: string, data: mixed}
      */
     protected function formatSuccess($data, string $message='Success'): array
     {
@@ -197,7 +199,9 @@ abstract class AbstractTool implements ToolInterface
      * @param string $message Error message
      * @param mixed  $details Additional error details
      *
-     * @return array Formatted error result
+     * @return (false|mixed|string)[] Formatted error result
+     *
+     * @psalm-return array{success: false, error: string, details?: mixed}
      */
     protected function formatError(string $message, $details=null): array
     {

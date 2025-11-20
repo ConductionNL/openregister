@@ -177,6 +177,7 @@ class SolrObjectService
      * This method traverses the object data structure and extracts all
      * string values, building a coherent text representation.
      *
+     *
      * @param array  $data   The data to extract text from
      * @param string $prefix Optional prefix for nested keys (for context)
      * @param int    $depth  Current recursion depth (limit to prevent infinite loops)
@@ -235,7 +236,9 @@ class SolrObjectService
      *
      * @param array $objects Array of ObjectEntity instances
      *
-     * @return array Array of ['object_id' => int, 'text' => string] arrays
+     * @return (int|null|string)[][] Array of ['object_id' => int, 'text' => string] arrays
+     *
+     * @psalm-return list<array{object_id: int, text: string, uuid: null|string}>
      */
     public function convertObjectsToText(array $objects): array
     {
@@ -423,9 +426,11 @@ class SolrObjectService
     /**
      * Get statistics for objects in SOLR
      *
-     * @return array Statistics including document count, collection info
+     * @return (false|int|mixed|null|string)[] Statistics including document count, collection info
      *
      * @throws \Exception If objectCollection is not configured
+     *
+     * @psalm-return array{available: false|mixed, collection?: string, document_count?: 0|mixed, total_objects?: 0|mixed, published_objects?: 0|mixed, collection_info?: mixed|null, error?: 'objectCollection not configured'}
      */
     public function getObjectStats(): array
     {
@@ -494,9 +499,11 @@ class SolrObjectService
      * @param int   $batchSize  Batch size for processing
      * @param array $schemaIds  Optional schema IDs to filter
      *
-     * @return array Reindexing results with statistics
+     * @return (array|bool|string)[] Reindexing results with statistics
      *
      * @throws \Exception If objectCollection is not configured
+     *
+     * @psalm-return array{success: bool, message: string, stats?: array, error?: string}
      */
     public function reindexObjects(int $maxObjects=0, int $batchSize=1000, array $schemaIds=[]): array
     {

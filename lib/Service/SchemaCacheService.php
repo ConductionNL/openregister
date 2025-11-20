@@ -526,6 +526,8 @@ class SchemaCacheService
      * @return int Number of expired entries removed
      *
      * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @psalm-return int<min, max>
      */
     public function cleanExpiredEntries(): int
     {
@@ -572,9 +574,11 @@ class SchemaCacheService
     /**
      * Get comprehensive cache statistics
      *
-     * @return array<string, mixed> Cache statistics including performance metrics
+     * @return (int|string)[] Cache statistics including performance metrics
      *
      * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @psalm-return array{total_entries: int, entries_with_ttl: int, memory_cache_size: int<0, max>, cache_table: 'openregister_schema_cache', query_time: string, timestamp: int<1, max>}
      */
     public function getCacheStatistics(): array
     {
@@ -751,7 +755,9 @@ class SchemaCacheService
      *
      * @param Schema $schema The schema to serialize
      *
-     * @return array<string, mixed> Serialized schema data
+     * @return (array|int|mixed|null|string)[] Serialized schema data
+     *
+     * @psalm-return array{id: int, uuid: null|string, title: null|string, version: null|string, description: null|string, summary: null|string, tags: mixed, required: array|null, properties: array|null, archive: array|null, configuration: array|null, source: null|string, register: mixed, organisation: null|string, owner: null|string, created: null|string, updated: null|string}
      */
     private function serializeSchemaForCache(Schema $schema): array
     {

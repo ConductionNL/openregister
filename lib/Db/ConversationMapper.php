@@ -215,7 +215,9 @@ class ConversationMapper extends QBMapper
      * @param int         $limit          Maximum number of results
      * @param int         $offset         Offset for pagination
      *
-     * @return array Array of Conversation entities
+     * @return Conversation[] Array of Conversation entities
+     *
+     * @psalm-return array<Conversation>
      */
     public function findByUser(
         string $userId,
@@ -253,11 +255,13 @@ class ConversationMapper extends QBMapper
      * Find all soft-deleted conversations for a user (archive)
      *
      * @param string   $userId       User ID
-     * @param int|null $organisation Optional organisation filter
+     * @param null|string $organisation Optional organisation filter
      * @param int      $limit        Maximum number of results
      * @param int      $offset       Offset for pagination
      *
-     * @return array Array of Conversation entities
+     * @return Conversation[] Array of Conversation entities
+     *
+     * @psalm-return array<Conversation>
      */
     public function findDeletedByUser(
         string $userId,
@@ -294,7 +298,9 @@ class ConversationMapper extends QBMapper
      * @param int  $limit          Maximum number of results
      * @param int  $offset         Offset for pagination
      *
-     * @return array Array of Conversation entities
+     * @return Conversation[] Array of Conversation entities
+     *
+     * @psalm-return array<Conversation>
      */
     public function findByAgent(
         int $agentId,
@@ -332,6 +338,8 @@ class ConversationMapper extends QBMapper
      * @param string $titlePattern Title pattern to match (e.g., "New Conversation%")
      *
      * @return array Array of matching conversation titles
+     *
+     * @psalm-return list<mixed>
      */
     public function findTitlesByUserAgent(
         string $userId,
@@ -371,7 +379,9 @@ class ConversationMapper extends QBMapper
      * @param int  $limit          Maximum number of results
      * @param int  $offset         Offset for pagination
      *
-     * @return array Array of Conversation entities
+     * @return Conversation[] Array of Conversation entities
+     *
+     * @psalm-return array<Conversation>
      */
     public function findByOrganisation(
         int $organisation,
@@ -521,9 +531,9 @@ class ConversationMapper extends QBMapper
      *
      * @param int $daysOld Number of days old (default: 30)
      *
-     * @return int Number of conversations deleted
+     * @return \OCP\DB\IResult|int Number of conversations deleted
      */
-    public function cleanupOldDeleted(int $daysOld=30): int
+    public function cleanupOldDeleted(int $daysOld=30): int|\OCP\DB\IResult
     {
         $threshold = new DateTime("-{$daysOld} days");
 

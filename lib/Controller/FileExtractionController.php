@@ -77,7 +77,10 @@ class FileExtractionController extends Controller
      * @return JSONResponse List of files with extraction information
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, data?: array<array>, count?: int<0, max>}, array<never, never>>
      */
     public function index(?int $limit=100, ?int $offset=0, ?string $status=null, ?string $search=null): JSONResponse
     {
@@ -133,7 +136,10 @@ class FileExtractionController extends Controller
      * @return JSONResponse File extraction information
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|404, array{success: bool, error?: 'File not found in extraction system', message?: string, data?: array}, array<never, never>>
      */
     public function show(int $id): JSONResponse
     {
@@ -172,7 +178,10 @@ class FileExtractionController extends Controller
      * @return JSONResponse Extraction result
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|404|500, array{success: bool, error?: 'Extraction failed'|'File not found in Nextcloud', message: string, data?: array}, array<never, never>>
      */
     public function extract(int $id, bool $forceReExtract=false): JSONResponse
     {
@@ -220,7 +229,10 @@ class FileExtractionController extends Controller
      * @return JSONResponse Discovery statistics
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|500, array{success: bool, error?: 'File discovery failed', message: string, data?: array}, array<never, never>>
      */
     public function discover(int $limit=100): JSONResponse
     {
@@ -259,7 +271,10 @@ class FileExtractionController extends Controller
      * @return JSONResponse Extraction statistics
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|500, array{success: bool, error?: 'Batch extraction failed', message: string, data?: array}, array<never, never>>
      */
     public function extractAll(int $limit=100): JSONResponse
     {
@@ -295,7 +310,10 @@ class FileExtractionController extends Controller
      * @return JSONResponse Retry statistics
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|500, array{success: bool, error?: 'Retry failed', message: string, data?: array}, array<never, never>>
      */
     public function retryFailed(int $limit=50): JSONResponse
     {
@@ -327,9 +345,12 @@ class FileExtractionController extends Controller
      * Get extraction statistics
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Extraction statistics
+     *
+     * @psalm-return JSONResponse<200|500, array{success: bool, error?: 'Failed to retrieve statistics', message?: string, data?: array}, array<never, never>>
      */
     public function stats(): JSONResponse
     {
@@ -363,9 +384,12 @@ class FileExtractionController extends Controller
      * This helps maintain database integrity and remove orphaned records.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Cleanup statistics
+     *
+     * @psalm-return JSONResponse<200|500, array{success: bool, error?: 'Cleanup failed', message: string, data?: array{deleted: int, reasons: array<string, int>}}, array<never, never>>
      */
     public function cleanup(): JSONResponse
     {
@@ -400,9 +424,12 @@ class FileExtractionController extends Controller
      * Useful for showing which file types are available for vectorization.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse File types with counts
+     *
+     * @psalm-return JSONResponse<200|500, array{success: bool, error?: 'Failed to retrieve file types', message?: string, data?: array}, array<never, never>>
      */
     public function fileTypes(): JSONResponse
     {
@@ -436,9 +463,12 @@ class FileExtractionController extends Controller
      * Supports serial and parallel processing modes.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Vectorization results
+     *
+     * @psalm-return JSONResponse<200|500, array{success: bool, error?: 'Vectorization failed', message?: string, data?: array}, array<never, never>>
      */
     public function vectorizeBatch(): JSONResponse
     {

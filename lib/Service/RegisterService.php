@@ -99,7 +99,9 @@ class RegisterService
      * @param array|null $searchParams     Array of search parameters
      * @param array      $extend           Optional extensions
      *
-     * @return array Array of found registers
+     * @return Register[] Array of found registers
+     *
+     * @psalm-return array<Register>
      */
     public function findAll(
         ?int $limit=null,
@@ -235,7 +237,9 @@ class RegisterService
     /**
      * Get ID to slug mappings.
      *
-     * @return array Array mapping IDs to slugs
+     * @return string[] Array mapping IDs to slugs
+     *
+     * @psalm-return array<string, string>
      */
     public function getIdToSlugMap(): array
     {
@@ -247,7 +251,9 @@ class RegisterService
     /**
      * Get slug to ID mappings.
      *
-     * @return array Array mapping slugs to IDs
+     * @return string[] Array mapping slugs to IDs
+     *
+     * @psalm-return array<string, string>
      */
     public function getSlugToIdMap(): array
     {

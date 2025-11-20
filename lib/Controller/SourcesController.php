@@ -21,6 +21,7 @@ namespace OCA\OpenRegister\Controller;
 use OCA\OpenRegister\Db\Source;
 use OCA\OpenRegister\Db\SourceMapper;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\DB\Exception;
@@ -65,6 +66,8 @@ class SourcesController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200, array{results: array<Source>}, array<never, never>>
      */
     public function index(): JSONResponse
     {
@@ -112,6 +115,8 @@ class SourcesController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200, Source, array<never, never>>|JSONResponse<404, array{error: 'Not Found'}, array<never, never>>
      */
     public function show(string $id): JSONResponse
     {
@@ -136,6 +141,8 @@ class SourcesController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200, Source, array<never, never>>
      */
     public function create(): JSONResponse
     {
@@ -172,6 +179,8 @@ class SourcesController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200, Source, array<never, never>>
      */
     public function update(int $id): JSONResponse
     {
@@ -228,6 +237,8 @@ class SourcesController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200, array<never, never>, array<never, never>>
      */
     public function destroy(int $id): JSONResponse
     {

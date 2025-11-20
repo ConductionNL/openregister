@@ -241,9 +241,9 @@ class MagicOrganizationHandler
     /**
      * Get the system default organization UUID
      *
-     * @return string|null Default organization UUID or null if not found
+     * @return null|string Default organization UUID or null if not found
      */
-    private function getSystemDefaultOrganizationUuid(): ?string
+    private function getSystemDefaultOrganizationUuid(): string|null
     {
         try {
             // Get default organisation UUID from configuration (not deprecated is_default column).
@@ -306,9 +306,9 @@ class MagicOrganizationHandler
     /**
      * Get current user's active organization
      *
-     * @return string|null Active organization UUID or null
+     * @return null Active organization UUID or null
      */
-    public function getCurrentUserActiveOrganization(): ?string
+    public function getCurrentUserActiveOrganization()
     {
         $user = $this->userSession->getUser();
         if ($user === null) {
@@ -330,7 +330,7 @@ class MagicOrganizationHandler
      * @param Register $register       Register context
      * @param Schema   $schema         Schema context
      *
-     * @return bool True if user belongs to organization
+     * @return true True if user belongs to organization
      */
     public function userBelongsToOrganization(string $userId, string $organizationId, Register $register, Schema $schema): bool
     {

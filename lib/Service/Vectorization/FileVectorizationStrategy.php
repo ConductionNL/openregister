@@ -72,7 +72,9 @@ class FileVectorizationStrategy implements VectorizationStrategyInterface
      *
      * @param array $options Options: max_files, file_types
      *
-     * @return array Array of FileText entities
+     * @return \OCA\OpenRegister\Db\FileText[]
+     *
+     * @psalm-return list<\OCA\OpenRegister\Db\FileText>
      */
     public function fetchEntities(array $options): array
     {
@@ -129,7 +131,9 @@ class FileVectorizationStrategy implements VectorizationStrategyInterface
      *
      * @param mixed $entity FileText entity
      *
-     * @return array Array of items with 'text' and chunk data
+     * @return ((int|string)|mixed|null)[][] Array of items with 'text' and chunk data
+     *
+     * @psalm-return list<array{end_offset: mixed|null, index: array-key, start_offset: mixed|null, text: mixed}>
      */
     public function extractVectorizationItems($entity): array
     {
@@ -179,7 +183,23 @@ class FileVectorizationStrategy implements VectorizationStrategyInterface
      * @param mixed $entity FileText entity
      * @param array $item   Chunk item
      *
-     * @return array Metadata for storage
+     * @return (array|int|mixed|string)[] Metadata for storage
+     *
+     * @psalm-return array{
+     *     entity_type: 'file',
+     *     entity_id: string,
+     *     chunk_index: mixed,
+     *     total_chunks: int<0, max>,
+     *     chunk_text: string,
+     *     additional_metadata: array{
+     *         file_id: mixed,
+     *         file_name: mixed,
+     *         file_path: mixed,
+     *         mime_type: mixed,
+     *         start_offset: mixed,
+     *         end_offset: mixed
+     *     }
+     * }
      */
     public function prepareVectorMetadata($entity, array $item): array
     {

@@ -64,4 +64,3 @@ class ConfigurationCreatedEvent extends Event
 
 
 }//end class
-

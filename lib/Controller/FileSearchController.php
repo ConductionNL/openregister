@@ -130,7 +130,10 @@ class FileSearchController extends Controller
                 $requestOptions['auth'] = [$solrConfig['username'], $solrConfig['password']];
             }
 
-            $httpClient = \OC::$server->get(\OCP\Http\Client\IClientService::class)->newClient();
+            /** @psalm-suppress UndefinedClass */
+            /** @var \OCP\Http\Client\IClientService $clientService */
+            $clientService = \OC::$server->get(\OCP\Http\Client\IClientService::class);
+            $httpClient = $clientService->newClient();
             $response   = $httpClient->get($queryUrl, $requestOptions);
             $result     = json_decode($response->getBody()->getContents(), true);
 
@@ -192,9 +195,12 @@ class FileSearchController extends Controller
      * Semantic search in file contents (vector similarity search)
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Search results
+     *
+     * @psalm-return JSONResponse<200|400|500, array{success: bool, message?: string, query?: string, total?: int<0, max>, results?: array<int, array<string, mixed>>, search_type?: 'semantic'}, array<never, never>>
      */
     public function semanticSearch(): JSONResponse
     {
@@ -216,7 +222,7 @@ class FileSearchController extends Controller
             $results = $this->vectorService->semanticSearch(
                 query: $query,
                 limit: $limit,
-                entityType: 'file'
+                filters: ['entityType' => 'file']
             );
 
             return new JSONResponse(
@@ -252,9 +258,12 @@ class FileSearchController extends Controller
      * Hybrid search - Combines keyword (SOLR) and semantic (vector) search
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Search results
+     *
+     * @psalm-return JSONResponse<200|400|500, array{success: bool, message?: string, query?: string, total?: int<0, max>, results?: array, search_type?: 'hybrid', weights?: array{keyword: float, semantic: float}}, array<never, never>>
      */
     public function hybridSearch(): JSONResponse
     {
@@ -277,10 +286,9 @@ class FileSearchController extends Controller
             // Use existing hybridSearch method from VectorEmbeddingService.
             $results = $this->vectorService->hybridSearch(
                 query: $query,
+                solrFilters: ['entityType' => 'file'],
                 limit: $limit,
-                entityType: 'file',
-                keywordWeight: $keywordWeight,
-                semanticWeight: $semanticWeight
+                weights: ['solr' => $keywordWeight, 'vector' => $semanticWeight]
             );
 
             return new JSONResponse(

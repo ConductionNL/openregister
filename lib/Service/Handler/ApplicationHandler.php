@@ -84,10 +84,11 @@ class ApplicationHandler
      * @param array       $data  The application data
      * @param string|null $owner The owner of the application
      *
-     * @return Application|null The imported application or null if skipped
+     * @return Application The imported application or null if skipped
+     *
      * @throws Exception If import fails
      */
-    public function import(array $data, ?string $owner=null): ?Application
+    public function import(array $data, ?string $owner=null): Application
     {
         try {
             unset($data['id'], $data['uuid']);

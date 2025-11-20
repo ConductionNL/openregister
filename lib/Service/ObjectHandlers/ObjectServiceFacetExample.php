@@ -102,6 +102,8 @@ class ObjectServiceFacetExample
      * Demonstrates searchObjectsPaginated with comprehensive faceting.
      *
      * @return array Complete search results with pagination and facets
+     *
+     * @psalm-return array<string, mixed>
      */
     public function paginatedSearchWithFacets(): array
     {
@@ -141,6 +143,8 @@ class ObjectServiceFacetExample
      * Real-world example for an e-commerce product catalog.
      *
      * @return array E-commerce search results with product facets
+     *
+     * @psalm-return array<string, mixed>
      */
     public function ecommerceFacetedSearch(): array
     {
@@ -230,6 +234,8 @@ class ObjectServiceFacetExample
      * Example for building analytics dashboards with time-based facets.
      *
      * @return array Analytics data with time-based facets
+     *
+     * @psalm-return array<string, mixed>
      */
     public function analyticsDashboardFacets(): array
     {
@@ -337,7 +343,9 @@ class ObjectServiceFacetExample
      *
      * Compares performance between new and legacy faceting approaches.
      *
-     * @return array Performance comparison results
+     * @return ((array|float|int)[]|mixed)[] Performance comparison results
+     *
+     * @psalm-return array{new_approach: array{execution_time: float, facet_count: int<0, max>, results: array}, legacy_approach: array{execution_time: float, facet_count: int<0, max>, results: array}, performance_improvement: mixed}
      */
     public function performanceComparison(): array
     {
@@ -399,7 +407,9 @@ class ObjectServiceFacetExample
      *
      * Shows how to structure data for frontend consumption.
      *
-     * @return array Frontend-ready search results with facets
+     * @return array[] Frontend-ready search results with facets
+     *
+     * @psalm-return array{search: array{results: mixed, pagination: array{current_page: mixed, total_pages: mixed, total_items: mixed, items_per_page: mixed, has_next: bool, has_prev: bool, next_url: mixed|null, prev_url: mixed|null}}, facets: array, applied_filters: array}
      */
     public function frontendIntegrationExample(): array
     {
@@ -455,7 +465,9 @@ class ObjectServiceFacetExample
      *
      * @psalm-param array<string, mixed> $facets
      *
-     * @return array Frontend-friendly facet structure
+     * @return (array|mixed|string)[][] Frontend-friendly facet structure
+     *
+     * @psalm-return array<string, array{field: mixed|string, type: mixed, label: string, options: array}>
      */
     private function transformFacetsForFrontend(array $facets): array
     {
@@ -497,7 +509,9 @@ class ObjectServiceFacetExample
      *
      * @psalm-param array<array<string, mixed>> $buckets
      *
-     * @return array Frontend-friendly bucket structure
+     * @return (mixed|null)[][] Frontend-friendly bucket structure
+     *
+     * @psalm-return array<array{value: mixed, label: mixed, count: mixed, from: mixed|null, to: mixed|null}>
      */
     private function transformBuckets(array $buckets): array
     {
@@ -526,7 +540,9 @@ class ObjectServiceFacetExample
      *
      * @psalm-param array<string, mixed> $query
      *
-     * @return array Applied filters structure
+     * @return (mixed|string)[][] Applied filters structure
+     *
+     * @psalm-return array<string, array{field: mixed|string, value: mixed, type: 'metadata'|'object_field'}>
      */
     private function extractAppliedFilters(array $query): array
     {

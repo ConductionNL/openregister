@@ -77,6 +77,8 @@ class OpenRegisterAdmin implements IIconSection
      * Get the ID of this admin section.
      *
      * @return string Section ID
+     *
+     * @psalm-return 'openregister'
      */
     public function getID(): string
     {
@@ -101,6 +103,8 @@ class OpenRegisterAdmin implements IIconSection
      * Get the priority of this admin section.
      *
      * @return int Section priority
+     *
+     * @psalm-return 97
      */
     public function getPriority(): int
     {
