@@ -534,10 +534,10 @@ class SearchTrailController extends Controller
                 $offset = $params['offset'] ?? 0;
                 $paginatedUserAgents = $this->paginate($userAgents, $totalUniqueAgents, $limit, $offset, $page);
 
-                // Add the additional metadata from the service
+                // Add the additional metadata from the service.
                 $paginatedUserAgents['total_searches'] = $totalSearches;
                 $paginatedUserAgents['period']         = $period;
-                if ($browserStats) {
+                if ($browserStats !== null && !empty($browserStats)) {
                     $paginatedUserAgents['browser_breakdown'] = $browserStats;
                 }
 
@@ -837,10 +837,10 @@ class SearchTrailController extends Controller
             // Get the search trail mapper from the container
             $searchTrailMapper = \OC::$server->get('OCA\OpenRegister\Db\SearchTrailMapper');
 
-                    // Use the clearAllLogs method from the mapper
+                    // Use the clearAllLogs method from the mapper.
                     $result = $searchTrailMapper->clearAllLogs();
 
-            if ($result) {
+            if ($result === true) {
                 return new JSONResponse(
                         [
                             'success' => true,

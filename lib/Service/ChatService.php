@@ -340,7 +340,7 @@ class ChatService
                 strpos($currentTitle, 'New Conversation') === 0
             );
 
-            if ($shouldGenerateTitle) {
+            if ($shouldGenerateTitle === true) {
                 $this->logger->info(
                         '[ChatService] Generating title for conversation',
                         [
@@ -489,13 +489,13 @@ class ChatService
             // Build filters for vector search
             $vectorFilters = [];
 
-            // Filter by entity types based on agent settings
+            // Filter by entity types based on agent settings.
             $entityTypes = [];
-            if ($includeObjects) {
+            if ($includeObjects === true) {
                 $entityTypes[] = 'object';
             }
 
-            if ($includeFiles) {
+            if ($includeFiles === true) {
                 $entityTypes[] = 'file';
             }
 
@@ -610,10 +610,10 @@ class ChatService
 
                 $sources[] = $source;
 
-                // Increment the appropriate counter
-                if ($isFile) {
+                // Increment the appropriate counter.
+                if ($isFile === true) {
                     $fileSourceCount++;
-                } else if ($isObject) {
+                } else if ($isObject === true) {
                     $objectSourceCount++;
                 }
 
@@ -1541,7 +1541,7 @@ class ChatService
         $curlError = curl_error($ch);
         curl_close($ch);
 
-        if ($curlError) {
+        if ($curlError !== null && $curlError !== '') {
             throw new \Exception("Fireworks API request failed: {$curlError}");
         }
 
@@ -1656,7 +1656,7 @@ class ChatService
         $curlError = curl_error($ch);
         curl_close($ch);
 
-        if ($curlError) {
+        if ($curlError !== null && $curlError !== '') {
             throw new \Exception("Fireworks API request failed: {$curlError}");
         }
 

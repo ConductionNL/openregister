@@ -1125,7 +1125,7 @@ class ConfigurationService
                 $results        = $this->objectService->searchObjects($search, true, true);
                 $existingObject = is_array($results) && count($results) > 0 ? $results[0] : null;
 
-                if (!$existingObject) {
+                if ($existingObject === null) {
                     $this->logger->info(
                         'No existing object found - will create new object',
                         [
@@ -1141,7 +1141,7 @@ class ConfigurationService
                 $objectData['@self']['register'] = (int) $registerId;
                 $objectData['@self']['schema']   = (int) $schemaId;
 
-                if ($existingObject) {
+                if ($existingObject !== null) {
                     $existingObjectData = is_array($existingObject) ? $existingObject : $existingObject->jsonSerialize();
                     $importedVersion    = $objectData['@self']['version'] ?? $objectData['version'] ?? '1.0.0';
                     $existingVersion    = $existingObjectData['@self']['version'] ?? $existingObjectData['version'] ?? '1.0.0';

@@ -276,10 +276,10 @@ class ObjectCacheService
             // Graceful degradation
         }
 
-        // Index in SOLR
+        // Index in SOLR.
         $result = $solrService->indexObject($object, $commit);
 
-        if ($result) {
+        if ($result === true) {
             $this->logger->debug(
                     '🔍 OBJECT INDEXED IN SOLR',
                     [
@@ -326,7 +326,7 @@ class ObjectCacheService
         try {
             $result = $solrService->deleteObject($object->getUuid(), $commit);
 
-            if ($result) {
+            if ($result === true) {
                 $this->logger->debug(
                         '🗑️  OBJECT REMOVED FROM SOLR',
                         [
@@ -1541,10 +1541,10 @@ class ObjectCacheService
     {
         $startTime = microtime(true);
 
-        // Check if we should trigger warmup
+        // Check if we should trigger warmup.
         $shouldWarmup = $forceWarmup || empty($this->nameCache);
 
-        if ($shouldWarmup) {
+        if ($shouldWarmup === true) {
             $this->warmupNameCache();
         }
 
@@ -1790,10 +1790,10 @@ class ObjectCacheService
                     }
                 }
 
-                // Bulk index documents in SOLR
+                // Bulk index documents in SOLR.
                 if (!empty($solrDocuments)) {
                     $bulkResult = $solrService->bulkIndex($solrDocuments, true);
-                    if (!$bulkResult) {
+                    if ($bulkResult === false) {
                         $batchErrors += count($solrDocuments);
                         $this->logger->warning(
                                 'Bulk index failed for batch',

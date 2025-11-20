@@ -883,7 +883,7 @@ class FileService
 
             $result = $this->fileMapper->setFileOwnership($fileId, $userId);
 
-            if ($result) {
+            if ($result === true) {
                 $this->logger->info("ownFile: Successfully set ownership of file {$file->getName()} (ID: $fileId) to user: $userId");
             } else {
                 $this->logger->warning("ownFile: Failed to set ownership of file {$file->getName()} (ID: $fileId) to user: $userId");
@@ -936,10 +936,10 @@ class FileService
                 if ($fileOwner === null || $fileOwner->getUID() !== $openRegisterUser->getUID()) {
                     $this->logger->info("checkOwnership: File {$file->getName()} (ID: {$file->getId()}) has incorrect owner, attempting to fix");
 
-                    // Try to fix the ownership
+                    // Try to fix the ownership.
                     $ownershipFixed = $this->ownFile($file);
 
-                    if ($ownershipFixed) {
+                    if ($ownershipFixed === true) {
                         $this->logger->info("checkOwnership: Successfully fixed ownership for file {$file->getName()} (ID: {$file->getId()})");
                     } else {
                         $this->logger->error("checkOwnership: Failed to fix ownership for file {$file->getName()} (ID: {$file->getId()})");
@@ -959,7 +959,7 @@ class FileService
             try {
                 $ownershipFixed = $this->ownFile($file);
 
-                if ($ownershipFixed) {
+                if ($ownershipFixed === true) {
                     $this->logger->info("checkOwnership: Successfully fixed ownership for file {$file->getName()} (ID: {$file->getId()}) after permission error");
                 } else {
                     $this->logger->error("checkOwnership: Failed to fix ownership for file {$file->getName()} (ID: {$file->getId()}) after permission error");
@@ -1278,10 +1278,10 @@ class FileService
                 }
             }
 
-            // Filter for files without labels (business logic filter)
+            // Filter for files without labels (business logic filter).
             if (isset($filters['_noLabels']) && $filters['_noLabels'] === true) {
                 $hasLabels = !empty($file['labels']);
-                if ($hasLabels) {
+                if ($hasLabels === true) {
                     return false;
                 }
             }
@@ -1298,7 +1298,7 @@ class FileService
                     }
                 }
 
-                if (!$hasMatchingLabel) {
+                if ($hasMatchingLabel === false) {
                     return false;
                 }
             }
@@ -1323,7 +1323,7 @@ class FileService
                     }
                 }
 
-                if (!$hasMatchingExtension) {
+                if ($hasMatchingExtension === false) {
                     return false;
                 }
             }
@@ -2203,7 +2203,7 @@ class FileService
                     }
                 }
 
-                if ($shouldKeep) {
+                if ($shouldKeep === true) {
                     $updatedFiles[] = $fileEntry;
                 }
             }

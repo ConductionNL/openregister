@@ -282,9 +282,9 @@ class SolrManagementCommand extends Command
                 $output->writeln('✅ Index optimization completed');
                 $output->writeln('   Execution time: <comment>'.$executionTime.'ms</comment>');
 
-                if ($commit) {
+                if ($commit === true) {
                     $output->writeln('💾 Committing changes...');
-                    if ($this->solrService->commit()) {
+                    if ($this->solrService->commit() === true) {
                         $output->writeln('✅ Changes committed successfully');
                     } else {
                         $output->writeln('<error>⚠️  Commit failed, but optimization succeeded</error>');
@@ -513,7 +513,7 @@ class SolrManagementCommand extends Command
      */
     private function handleClear(OutputInterface $output, bool $force): int
     {
-        if (!$force) {
+        if ($force === false) {
             $output->writeln('<error>❌ Clear operation requires --force flag for safety</error>');
             $output->writeln('<comment>   This will DELETE ALL indexed documents for current tenant!</comment>');
             $output->writeln('<comment>   Use: php occ openregister:solr:manage clear --force</comment>');

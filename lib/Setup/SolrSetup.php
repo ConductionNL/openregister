@@ -190,7 +190,7 @@ class SolrSetup
             }
         }
 
-        if (!$found) {
+        if ($found === false) {
             $this->setupProgress['steps'][] = $stepData;
         }
 
@@ -801,7 +801,7 @@ class SolrSetup
             $connectionTest = $this->solrService->testConnectivityOnly();
             $isConnected    = $connectionTest['success'] ?? false;
 
-            if ($isConnected) {
+            if ($isConnected === true) {
                 $this->logger->info(
                         'SOLR connectivity verified successfully using GuzzleSolrService',
                         [
@@ -1535,10 +1535,10 @@ class SolrSetup
                         ]
                         );
 
-                // Direct attempt to create collection
+                // Direct attempt to create collection.
                 $success = $this->solrService->createCollection($collectionName, $configSetName);
 
-                if ($success) {
+                if ($success === true) {
                     $totalElapsed = time() - $startTime;
                     $this->logger->info(
                             'Collection created successfully',
@@ -1610,8 +1610,8 @@ class SolrSetup
                     );
                 }
 
-                // If not a configSet propagation error, throw immediately
-                if (!$isConfigSetError) {
+                // If not a configSet propagation error, throw immediately.
+                if ($isConfigSetError === false) {
                     throw $e;
                 }
 
@@ -2442,7 +2442,7 @@ class SolrSetup
             $fieldResults
         );
 
-        if ($success) {
+        if ($success === true) {
             $this->logger->info('Schema field configuration completed successfully', $fieldResults);
         }
 
@@ -2540,7 +2540,7 @@ class SolrSetup
             $data    = json_decode((string) $response->getBody(), true);
             $success = ($data['responseHeader']['status'] ?? -1) === 0;
 
-            if ($success) {
+            if ($success === true) {
                 return [
                     'success'       => true,
                     'solr_response' => $data,
@@ -2600,7 +2600,7 @@ class SolrSetup
             $data    = json_decode((string) $response->getBody(), true);
             $success = ($data['responseHeader']['status'] ?? -1) === 0;
 
-            if ($success) {
+            if ($success === true) {
                 return [
                     'success'       => true,
                     'solr_response' => $data,
@@ -3045,7 +3045,7 @@ class SolrSetup
             $data    = json_decode((string) $response->getBody(), true);
             $success = ($data['responseHeader']['status'] ?? -1) === 0;
 
-            if ($success) {
+            if ($success === true) {
                 $this->logger->debug('Added schema field', ['field' => $fieldName]);
             } else {
                 $this->logger->debug(
@@ -3114,7 +3114,7 @@ class SolrSetup
             $data    = json_decode((string) $response->getBody(), true);
             $success = ($data['responseHeader']['status'] ?? -1) === 0;
 
-            if ($success) {
+            if ($success === true) {
                 $this->logger->debug('Replaced schema field', ['field' => $fieldName]);
             } else {
                 $this->logger->debug(

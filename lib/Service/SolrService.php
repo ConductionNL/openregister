@@ -222,10 +222,10 @@ class SolrService
             // Use the base configSet name (same as base collection)
             $baseConfigSet = 'openregister'; // This should match the configSet name from SolrSetup
             
-            // Create collection using Collections API
+            // Create collection using Collections API.
             $success = $this->createCollection($collectionName, $baseConfigSet);
             
-            if ($success) {
+            if ($success === true) {
                 $this->logger->info("Successfully created Solr collection '{$collectionName}' for tenant", [
                     'tenant_id' => $this->tenantId,
                     'configSet' => $baseConfigSet
@@ -329,9 +329,9 @@ class SolrService
             $tenantSpecificCollection = $this->getTenantSpecificCoreName($baseCoreName);
             $collectionExists = $this->collectionExists($tenantSpecificCollection);
             
-            if (!$collectionExists) {
-                // FALLBACK: Use base collection
-                if ($this->collectionExists($baseCoreName)) {
+            if ($collectionExists === false) {
+                // FALLBACK: Use base collection.
+                if ($this->collectionExists($baseCoreName) === true) {
                     $coreToUse = $baseCoreName;
                     $this->logger->warning('Using base collection as fallback (no tenant isolation)', [
                         'tenant_id' => $this->tenantId,
@@ -579,8 +579,8 @@ class SolrService
             }
             
             if ($indexed > 0) {
-                // Set commit options
-                if ($commit) {
+                // Set commit options.
+                if ($commit === true) {
                 if ($this->solrConfig['commitWithin'] > 0) {
                     $update->addCommit(false, false, false, $this->solrConfig['commitWithin']);
                     } else {
@@ -1296,8 +1296,8 @@ class SolrService
                         'trace' => $e->getTraceAsString()
                     ]);
                     
-                    // **ERROR COLLECTION MODE**: Collect errors instead of re-throwing
-                    if ($collectErrors) {
+                    // **ERROR COLLECTION MODE**: Collect errors instead of re-throwing.
+                    if ($collectErrors === true) {
                         if (!isset($operations['collected_errors'])) {
                             $operations['collected_errors'] = [];
                         }
@@ -1728,10 +1728,10 @@ class SolrService
             }
         }
         
-        // Final commit and optional optimize
+        // Final commit and optional optimize.
         try {
             $this->commit();
-            if ($optimize) {
+            if ($optimize === true) {
                 $this->optimize();
             }
         } catch (\Exception $e) {
@@ -2043,10 +2043,10 @@ class SolrService
         $doc->setField('self_validation', $object->getValidation() ? json_encode($object->getValidation()) : null);
         $doc->setField('self_groups', $object->getGroups() ? json_encode($object->getGroups()) : null);
         
-        // Index object data with schema-aware mapping if schema is provided
+        // Index object data with schema-aware mapping if schema is provided.
         $objectData = $object->getObject() ?: [];
-        if ($schema) {
-            // Schema-aware mapping: only properties defined in schema
+        if ($schema !== null) {
+            // Schema-aware mapping: only properties defined in schema.
             $mappedProperties = $this->mapPropertiesUsingSchema($objectData, $schema->getProperties());
             foreach ($mappedProperties as $fieldName => $value) {
                 $doc->setField($fieldName, $value);
@@ -2576,10 +2576,10 @@ class SolrService
         $objects = [];
         $objectIds = [];
         
-        // Extract object IDs from SOLR results
+        // Extract object IDs from SOLR results.
         foreach ($resultSet as $document) {
             $objectId = $document->object_id ?? $document->id;
-            if ($objectId) {
+            if ($objectId !== null && $objectId !== '') {
                 $objectIds[] = $objectId;
             }
         }
@@ -2613,7 +2613,7 @@ class SolrService
         $facets = [];
         
         $facetSet = $resultSet->getFacetSet();
-        if ($facetSet) {
+        if ($facetSet !== null) {
             foreach ($facetSet as $facetKey => $facet) {
                 $facets[$facetKey] = [];
                 foreach ($facet as $value => $count) {
@@ -2892,9 +2892,9 @@ class SolrService
         $documents = $solrResults['documents'] ?? [];
         
         foreach ($documents as $doc) {
-            // Reconstruct object from Solr document
+            // Reconstruct object from Solr document.
             $objectEntity = $this->reconstructObjectFromSolrDocument($doc);
-            if ($objectEntity) {
+            if ($objectEntity !== null) {
                 $results[] = $objectEntity;
             }
         }

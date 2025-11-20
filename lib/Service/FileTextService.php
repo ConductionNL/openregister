@@ -100,9 +100,9 @@ class FileTextService
                 // No existing record, will create new one
             }
 
-            // Get file from Nextcloud
+            // Get file from Nextcloud.
             $file = $this->getFileNode($fileId);
-            if (!$file) {
+            if ($file === null) {
                 throw new Exception("File not found: $fileId");
             }
 
@@ -117,7 +117,7 @@ class FileTextService
                         ]
                         );
 
-                if ($existingFileText) {
+                if ($existingFileText !== null) {
                     $existingFileText->setExtractionStatus('skipped');
                     $existingFileText->setExtractionError("Unsupported MIME type: $mimeType");
                     $existingFileText->setUpdatedAt(new DateTime());
@@ -131,8 +131,8 @@ class FileTextService
             // Calculate checksum
             $checksum = md5($file->getContent());
 
-            // Check if extraction needed (file changed)
-            if ($existingFileText) {
+            // Check if extraction needed (file changed).
+            if ($existingFileText !== null) {
                 if ($existingFileText->getFileChecksum() === $checksum
                     && $existingFileText->getExtractionStatus() === 'completed'
                 ) {
@@ -146,8 +146,8 @@ class FileTextService
                 }
             }
 
-            // Create or update file text record
-            if ($existingFileText) {
+            // Create or update file text record.
+            if ($existingFileText !== null) {
                 $fileText = $existingFileText;
                 $fileText->setUpdatedAt(new DateTime());
             } else {
@@ -166,8 +166,8 @@ class FileTextService
             $fileText->setExtractionStatus('processing');
             $fileText->setExtractionError(null);
 
-            // Save initial status
-            if ($existingFileText) {
+            // Save initial status.
+            if ($existingFileText !== null) {
                 $this->fileTextMapper->update($fileText);
             } else {
                 $this->fileTextMapper->insert($fileText);
@@ -267,9 +267,9 @@ class FileTextService
     {
         $fileText = $this->getFileText($fileId);
 
-        if (!$fileText) {
+        if ($fileText === null) {
             return true;
-            // No record, needs extraction
+            // No record, needs extraction.
         }
 
         if ($fileText->getExtractionStatus() === 'pending') {
@@ -281,10 +281,10 @@ class FileTextService
             // Retry failed extractions
         }
 
-        // Check if file changed
+        // Check if file changed.
         try {
             $file = $this->getFileNode($fileId);
-            if ($file) {
+            if ($file !== null) {
                 $currentChecksum = md5($file->getContent());
                 if ($currentChecksum !== $fileText->getFileChecksum()) {
                     return true;

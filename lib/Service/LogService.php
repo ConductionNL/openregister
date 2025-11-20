@@ -342,8 +342,8 @@ class LogService
                 $exportRow['changes'] = is_array($logData['changed']) ? json_encode($logData['changed']) : $logData['changed'];
             }
 
-            // Include metadata if requested
-            if ($includeMetadata) {
+            // Include metadata if requested.
+            if ($includeMetadata === true) {
                 $exportRow['session']   = $logData['session'] ?? '';
                 $exportRow['request']   = $logData['request'] ?? '';
                 $exportRow['ipAddress'] = $logData['ipAddress'] ?? '';

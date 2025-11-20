@@ -329,7 +329,7 @@ class Organisation extends Entity implements JsonSerializable
                 }
             }
 
-            if (!$exists) {
+            if ($exists === false) {
                 $this->roles[] = $role;
             }
         }

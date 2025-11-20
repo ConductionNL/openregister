@@ -753,7 +753,7 @@ class SettingsController extends Controller
                     $object->getUuid()
                 );
 
-                if ($savedObject) {
+                if ($savedObject !== null) {
                     $results['stats']['successful_saves']++;
                 } else {
                     $results['stats']['failed_saves']++;
@@ -777,11 +777,11 @@ class SettingsController extends Controller
                     'batch_mode'  => 'serial',
                 ];
 
-                // Log the error for debugging
+                // Log the error for debugging.
                 $this->logger->error('Mass validation failed for object '.$object->getUuid().': '.$e->getMessage());
 
-                // If not collecting errors, stop processing this batch
-                if (!$collectErrors) {
+                // If not collecting errors, stop processing this batch.
+                if ($collectErrors === false) {
                     break;
                 }
             }//end try
@@ -822,7 +822,7 @@ class SettingsController extends Controller
                     $object->getUuid()
                 );
 
-                if ($savedObject) {
+                if ($savedObject !== null) {
                     $batchSuccesses++;
                 } else {
                     $batchErrors[] = [
@@ -844,11 +844,11 @@ class SettingsController extends Controller
                     'batch_mode'  => 'parallel',
                 ];
 
-                // Log the error for debugging
+                // Log the error for debugging.
                 $this->logger->error('Mass validation failed for object '.$object->getUuid().': '.$e->getMessage());
 
-                // If not collecting errors, stop processing this batch
-                if (!$collectErrors) {
+                // If not collecting errors, stop processing this batch.
+                if ($collectErrors === false) {
                     break;
                 }
             }//end try
@@ -902,7 +902,7 @@ class SettingsController extends Controller
                         $object->getUuid()
                     );
 
-                    if ($savedObject) {
+                    if ($savedObject !== null) {
                         $batchSuccesses++;
                         $results['stats']['successful_saves']++;
                     } else {
@@ -929,7 +929,7 @@ class SettingsController extends Controller
 
                     $logger->error('Mass validation failed for object '.$object->getUuid().': '.$e->getMessage());
 
-                    if (!$collectErrors) {
+                    if ($collectErrors === false) {
                         break;
                     }
                 }//end try
@@ -1076,7 +1076,7 @@ class SettingsController extends Controller
                     $object->getUuid()
                 );
 
-                if ($savedObject) {
+                if ($savedObject !== null) {
                     $batchSuccesses++;
                 } else {
                     $batchErrors[] = [
@@ -1098,7 +1098,7 @@ class SettingsController extends Controller
                     'batch_mode'  => 'parallel_optimized',
                 ];
 
-                if (!$collectErrors) {
+                if ($collectErrors === false) {
                     break;
                 }
             }//end try

@@ -115,7 +115,7 @@ class Version1Date20251111000000 extends SimpleMigrationStep
             $output->warning('  ⚠️  vectors table not found - skipping model tracking migration');
         }//end if
 
-        if ($updated) {
+        if ($updated === true) {
             $output->info('');
             $output->info('🎉 Embedding model tracking added successfully!');
             $output->info('');

@@ -1886,42 +1886,42 @@ class SchemaMapper extends QBMapper
         // Add conditions for all possible ways to reference the schema
         $orConditions = [];
 
-        // Check in allOf field (JSON array)
-        if ($targetId) {
+        // Check in allOf field (JSON array).
+        if ($targetId !== null && $targetId !== '') {
             $orConditions[] = $qb->expr()->like('all_of', $qb->createNamedParameter('%"'.$targetId.'"%'));
         }
 
-        if ($targetUuid) {
+        if ($targetUuid !== null && $targetUuid !== '') {
             $orConditions[] = $qb->expr()->like('all_of', $qb->createNamedParameter('%"'.$targetUuid.'"%'));
         }
 
-        if ($targetSlug) {
+        if ($targetSlug !== null && $targetSlug !== '') {
             $orConditions[] = $qb->expr()->like('all_of', $qb->createNamedParameter('%"'.$targetSlug.'"%'));
         }
 
-        // Check in oneOf field (JSON array)
-        if ($targetId) {
+        // Check in oneOf field (JSON array).
+        if ($targetId !== null && $targetId !== '') {
             $orConditions[] = $qb->expr()->like('one_of', $qb->createNamedParameter('%"'.$targetId.'"%'));
         }
 
-        if ($targetUuid) {
+        if ($targetUuid !== null && $targetUuid !== '') {
             $orConditions[] = $qb->expr()->like('one_of', $qb->createNamedParameter('%"'.$targetUuid.'"%'));
         }
 
-        if ($targetSlug) {
+        if ($targetSlug !== null && $targetSlug !== '') {
             $orConditions[] = $qb->expr()->like('one_of', $qb->createNamedParameter('%"'.$targetSlug.'"%'));
         }
 
-        // Check in anyOf field (JSON array)
-        if ($targetId) {
+        // Check in anyOf field (JSON array).
+        if ($targetId !== null && $targetId !== '') {
             $orConditions[] = $qb->expr()->like('any_of', $qb->createNamedParameter('%"'.$targetId.'"%'));
         }
 
-        if ($targetUuid) {
+        if ($targetUuid !== null && $targetUuid !== '') {
             $orConditions[] = $qb->expr()->like('any_of', $qb->createNamedParameter('%"'.$targetUuid.'"%'));
         }
 
-        if ($targetSlug) {
+        if ($targetSlug !== null && $targetSlug !== '') {
             $orConditions[] = $qb->expr()->like('any_of', $qb->createNamedParameter('%"'.$targetSlug.'"%'));
         }
 

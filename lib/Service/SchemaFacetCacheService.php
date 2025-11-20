@@ -750,7 +750,7 @@ class SchemaFacetCacheService
             ->andWhere($qb->expr()->eq('field_name', $qb->createNamedParameter($cacheKey)));
 
         $result = $qb->executeQuery()->fetch();
-        if (!$result) {
+        if ($result === false || $result === null) {
             return null;
         }
 

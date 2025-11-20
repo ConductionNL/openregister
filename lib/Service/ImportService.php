@@ -616,11 +616,11 @@ class ImportService
         $summary['found'] = count($allObjects);
 
         // Call saveObjects ONCE with all objects - NO ERROR SUPPRESSION!
-        // This will reveal the real bulk save problem immediately
+        // This will reveal the real bulk save problem immediately.
         if (!empty($allObjects) && $register !== null && $schema !== null) {
-            // Add publish date to all objects if publish is enabled
-            if ($publish) {
-                $publishDate = (new \DateTime())->format('c'); // ISO 8601 format
+            // Add publish date to all objects if publish is enabled.
+            if ($publish === true) {
+                $publishDate = (new \DateTime())->format('c'); // ISO 8601 format.
                 $allObjects = $this->addPublishedDateToObjects($allObjects, $publishDate);
             }
             
@@ -746,9 +746,9 @@ class ImportService
                 'publish' => $publish
             ]);
             
-            // Add publish date to all objects if publish is enabled
-            if ($publish) {
-                $publishDate = (new \DateTime())->format('c'); // ISO 8601 format
+            // Add publish date to all objects if publish is enabled.
+            if ($publish === true) {
+                $publishDate = (new \DateTime())->format('c'); // ISO 8601 format.
                 $this->logger->debug('Adding publish date to CSV import objects', [
                     'publishDate' => $publishDate,
                     'objectCount' => count($allObjects)
@@ -1049,9 +1049,9 @@ class ImportService
                 // REQUIREMENT: Columns starting with _ are completely ignored
                 continue;
             } else if ($firstChar === '@') {
-                // REQUIREMENT: @ columns only processed if user is admin
-                if (!$isAdmin) {
-                    continue; // Skip @ columns for non-admin users
+                // REQUIREMENT: @ columns only processed if user is admin.
+                if ($isAdmin === false) {
+                    continue; // Skip @ columns for non-admin users.
                 }
                 
                 if (str_starts_with($key, '@self.')) {
@@ -1236,9 +1236,9 @@ class ImportService
                 // REQUIREMENT: Columns starting with _ are completely ignored
                 continue;
             } else if (str_starts_with($key, '@') === true) {
-                // REQUIREMENT: @ columns only processed if user is admin
-                if (!$isAdmin) {
-                    continue; // Skip @ columns for non-admin users
+                // REQUIREMENT: @ columns only processed if user is admin.
+                if ($isAdmin === false) {
+                    continue; // Skip @ columns for non-admin users.
                 }
                 
                 if (str_starts_with($key, '@self.') === true) {

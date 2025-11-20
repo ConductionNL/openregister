@@ -584,31 +584,31 @@ class OptimizedBulkOperations
                 return json_encode($objectContent, \JSON_UNESCAPED_UNICODE);
 
             case 'created':
-                // DATABASE-MANAGED: Let database set DEFAULT CURRENT_TIMESTAMP on new records
-                // Only set if explicitly provided (for migrations or special cases)
+                // DATABASE-MANAGED: Let database set DEFAULT CURRENT_TIMESTAMP on new records.
+                // Only set if explicitly provided (for migrations or special cases).
                 $value = $objectData[$dbColumn] ?? null;
-                if ($value) {
+                if ($value !== null && $value !== '') {
                     return $this->convertDateTimeToMySQLFormat($value);
                 }
                 return null;
             // Let database handle with DEFAULT CURRENT_TIMESTAMP
             case 'updated':
-                // DATABASE-MANAGED: Let database set ON UPDATE CURRENT_TIMESTAMP
-                // Only set if explicitly provided (for migrations or special cases)
+                // DATABASE-MANAGED: Let database set ON UPDATE CURRENT_TIMESTAMP.
+                // Only set if explicitly provided (for migrations or special cases).
                 $value = $objectData[$dbColumn] ?? null;
-                if ($value) {
+                if ($value !== null && $value !== '') {
                     return $this->convertDateTimeToMySQLFormat($value);
                 }
                 return null;
             // Let database handle with ON UPDATE CURRENT_TIMESTAMP
             case 'published':
             case 'depublished':
-                // Handle datetime fields that might be in ISO 8601 format
-                // CRITICAL FIX: Check @self section first (from CSV import), then root level
+                // Handle datetime fields that might be in ISO 8601 format.
+                // CRITICAL FIX: Check @self section first (from CSV import), then root level.
                 $value = $objectData['@self'][$dbColumn] ?? $objectData[$dbColumn] ?? null;
-                if (!$value) {
+                if ($value === null || $value === '') {
                     return null;
-                    // These fields can be null
+                    // These fields can be null.
                 }
                 return $this->convertDateTimeToMySQLFormat($value);
 

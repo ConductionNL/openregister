@@ -105,7 +105,7 @@ class Version1Date20251106000001 extends SimpleMigrationStep
                 $updated = true;
             }
 
-            if ($updated) {
+            if ($updated === true) {
                 $output->info('✅ Missing columns added successfully to agents table');
                 return $schema;
             } else {

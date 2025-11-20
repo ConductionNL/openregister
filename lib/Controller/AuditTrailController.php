@@ -338,7 +338,7 @@ class AuditTrailController extends Controller
         try {
             $success = $this->logService->deleteLog($id);
 
-            if ($success) {
+            if ($success === true) {
                 return new JSONResponse(
                         [
                             'success' => true,
@@ -445,10 +445,10 @@ class AuditTrailController extends Controller
             // Get the audit trail mapper from the container
             $auditTrailMapper = \OC::$server->get('OCA\OpenRegister\Db\AuditTrailMapper');
 
-                    // Use the clearAllLogs method from the mapper
+                    // Use the clearAllLogs method from the mapper.
                     $result = $auditTrailMapper->clearAllLogs();
 
-            if ($result) {
+            if ($result === true) {
                 return new JSONResponse(
                         [
                             'success' => true,

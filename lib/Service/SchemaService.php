@@ -332,10 +332,10 @@ class SchemaService
             }
         }
 
-        // Date-Time formats
+        // Date-Time formats.
         if (preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/', $value)) {
             $parsed = DateTime::createFromFormat(DATE_ISO8601, $value);
-            if ($parsed) {
+            if ($parsed !== false) {
                 return 'date-time';
             }
         }
@@ -627,11 +627,11 @@ class SchemaService
             return ['type' => 'empty', 'item_types' => []];
         }
 
-        // Check if it's a list (indexed array) or object (associative array)
+        // Check if it's a list (indexed array) or object (associative array).
         $isList = array_is_list($array);
 
-        if ($isList) {
-            // Analyze item types in the list
+        if ($isList === true) {
+            // Analyze item types in the list.
             $itemTypes = [];
             foreach ($array as $item) {
                 $type = gettype($item);
@@ -919,10 +919,10 @@ class SchemaService
             $actualType    = $currentType ?: $recommendedType;
             $suggestConfig = [];
 
-            // Check for missing maxLength
+            // Check for missing maxLength.
             if (isset($analysis['max_length']) && $analysis['max_length'] > 0) {
                 $currentMaxLength = $currentConfig['maxLength'] ?? null;
-                if (!$currentMaxLength) {
+                if ($currentMaxLength === null || $currentMaxLength === 0) {
                     $issues[] = "missing_max_length";
                     $suggestConfig['maxLength'] = min($analysis['max_length'] * 2, 1000);
                     $suggestions[] = [
@@ -945,10 +945,10 @@ class SchemaService
                 }//end if
             }//end if
 
-            // Check for missing format
-            if (isset($analysis['detected_format']) && $analysis['detected_format']) {
+            // Check for missing format.
+            if (isset($analysis['detected_format']) && $analysis['detected_format'] !== null && $analysis['detected_format'] !== '') {
                 $currentFormat = $currentConfig['format'] ?? null;
-                if (!$currentFormat) {
+                if ($currentFormat === null || $currentFormat === '') {
                     $issues[]      = "missing_format";
                     $suggestions[] = [
                         'type'        => 'format',
@@ -964,7 +964,7 @@ class SchemaService
             if (!empty($analysis['string_patterns'])) {
                 $currentPattern = $currentConfig['pattern'] ?? null;
                 $mainPattern    = $analysis['string_patterns'][0];
-                if (!$currentPattern) {
+                if ($currentPattern === null || $currentPattern === '') {
                     $issues[]      = "missing_pattern";
                     $suggestions[] = [
                         'type'        => 'pattern',
@@ -1030,11 +1030,11 @@ class SchemaService
             }//end if
         }//end if
 
-        // Check for type variations (nullable vs required)
-        $nullableVariation = isset($analysis['nullable_variation']) && $analysis['nullable_variation'];
-        if ($nullableVariation) {
-            $currentRequired = isset($currentConfig['required']) && $currentConfig['required'];
-            if ($currentRequired) {
+        // Check for type variations (nullable vs required).
+        $nullableVariation = isset($analysis['nullable_variation']) && $analysis['nullable_variation'] === true;
+        if ($nullableVariation === true) {
+            $currentRequired = isset($currentConfig['required']) && $currentConfig['required'] === true;
+            if ($currentRequired === true) {
                 $issues[]      = "inconsistent_required";
                 $suggestions[] = [
                     'type'        => 'behavior',
@@ -1046,10 +1046,10 @@ class SchemaService
             }
         }
 
-        // Check for enum-like patterns
-        if ($this->detectEnumLike($analysis)) {
+        // Check for enum-like patterns.
+        if ($this->detectEnumLike($analysis) === true) {
             $currentEnum = $currentConfig['enum'] ?? null;
-            if (!$currentEnum) {
+            if ($currentEnum === null || empty($currentEnum)) {
                 $issues[]      = "missing_enum";
                 $enumValues    = $this->extractEnumValues($analysis['examples']);
                 $suggestions[] = [
@@ -1113,9 +1113,9 @@ class SchemaService
     {
         $types = $analysis['types'];
 
-        // If we detected a specific format, recommend type based on format
+        // If we detected a specific format, recommend type based on format.
         $detectedFormat = $analysis['detected_format'] ?? null;
-        if ($detectedFormat) {
+        if ($detectedFormat !== null && $detectedFormat !== '') {
             switch ($detectedFormat) {
                 case 'date':
                 case 'date-time':

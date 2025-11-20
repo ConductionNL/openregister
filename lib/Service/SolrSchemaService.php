@@ -1297,11 +1297,11 @@ class SolrSchemaService
             $objectCollection = $settings['solr']['objectCollection'] ?? $settings['solr']['collection'] ?? null;
             $fileCollection   = $settings['solr']['fileCollection'] ?? null;
 
-            if ($objectCollection) {
+            if ($objectCollection !== null && $objectCollection !== '') {
                 $this->ensureVectorFieldType($objectCollection, 4096, 'cosine');
             }
 
-            if ($fileCollection) {
+            if ($fileCollection !== null && $fileCollection !== '') {
                 $this->ensureVectorFieldType($fileCollection, 4096, 'cosine');
             }
         } catch (\Exception $e) {
@@ -1427,11 +1427,11 @@ class SolrSchemaService
      */
     public function getObjectCollectionFieldStatus(): array
     {
-        // Get object collection from settings
+        // Get object collection from settings.
         $settings         = $this->settingsService->getSettings();
         $objectCollection = $settings['solr']['objectCollection'] ?? null;
-        if (!$objectCollection) {
-            // Fall back to default collection if object collection not configured
+        if ($objectCollection === null || $objectCollection === '') {
+            // Fall back to default collection if object collection not configured.
             $objectCollection = $settings['solr']['collection'] ?? 'openregister';
         }
 
@@ -1496,11 +1496,11 @@ class SolrSchemaService
      */
     public function getFileCollectionFieldStatus(): array
     {
-        // Get file collection from settings
+        // Get file collection from settings.
         $settings       = $this->settingsService->getSettings();
         $fileCollection = $settings['solr']['fileCollection'] ?? null;
-        if (!$fileCollection) {
-            // File collection might not be configured yet
+        if ($fileCollection === null || $fileCollection === '') {
+            // File collection might not be configured yet.
             $fileCollection = 'openregister_files';
         }
 
@@ -1760,8 +1760,8 @@ class SolrSchemaService
             return true;
         }
 
-        // If add failed and force is enabled, try to replace
-        if ($force) {
+        // If add failed and force is enabled, try to replace.
+        if ($force === true) {
             $payload = [
                 'replace-field' => array_merge(['name' => $fieldName], $fieldConfig),
             ];
@@ -1865,7 +1865,7 @@ class SolrSchemaService
         $settings   = $this->settingsService->getSettings();
         $collection = $collectionType === 'files' ? ($settings['solr']['fileCollection'] ?? null) : ($settings['solr']['objectCollection'] ?? $settings['solr']['collection'] ?? 'openregister');
 
-        if (!$collection) {
+        if ($collection === null || $collection === '') {
             return [
                 'success'       => false,
                 'message'       => "No collection configured for type: {$collectionType}",
@@ -1876,7 +1876,7 @@ class SolrSchemaService
 
         foreach ($missingFields as $fieldName => $fieldConfig) {
             try {
-                if ($dryRun) {
+                if ($dryRun === true) {
                     $created[] = $fieldName;
                     continue;
                 }
@@ -1888,7 +1888,7 @@ class SolrSchemaService
                     $fieldConfig
                 );
 
-                if ($result) {
+                if ($result === true) {
                     $created[] = $fieldName;
                     $this->logger->debug(
                             'Created field in SOLR',

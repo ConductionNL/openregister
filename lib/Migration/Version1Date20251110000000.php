@@ -112,7 +112,7 @@ class Version1Date20251110000000 extends SimpleMigrationStep
             $output->warning('  ⚠️  organisations table not found - skipping hierarchy migration');
         }//end if
 
-        if ($updated) {
+        if ($updated === true) {
             $output->info('');
             $output->info('🎉 Organisation hierarchy support added successfully!');
             $output->info('');

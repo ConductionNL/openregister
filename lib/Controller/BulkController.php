@@ -318,13 +318,13 @@ class BulkController extends Controller
             }
 
             // FLEXIBLE SCHEMA HANDLING: Support both single-schema and mixed-schema operations
-            // Use schema=0 to indicate mixed-schema operations where objects specify their own schemas
+            // Use schema=0 to indicate mixed-schema operations where objects specify their own schemas.
             $isMixedSchemaOperation = ($schema === '0' || $schema === 0);
 
-            if ($isMixedSchemaOperation) {
-                // Mixed-schema operation - don't set a specific schema context
+            if ($isMixedSchemaOperation === true) {
+                // Mixed-schema operation - don't set a specific schema context.
                 $this->objectService->setRegister($register);
-                // Don't call setSchema() for mixed operations
+                // Don't call setSchema() for mixed operations.
                 $savedObjects = $this->objectService->saveObjects(
                     objects: $objects,
                     register: $register,

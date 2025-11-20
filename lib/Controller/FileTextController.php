@@ -69,7 +69,7 @@ class FileTextController extends Controller
         try {
             $fileText = $this->fileTextService->getFileText($fileId);
 
-            if (!$fileText) {
+            if ($fileText === null) {
                 return new JSONResponse(
                         [
                             'success' => false,

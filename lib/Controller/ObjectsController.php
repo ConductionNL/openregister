@@ -925,11 +925,11 @@ class ObjectsController extends Controller
             // If admin, disable RBAC
             $multi = !$isAdmin;
             // If admin, disable multitenancy
-            // Use ObjectService to delete the object (includes RBAC permission checks, audit trail, and soft delete)
+            // Use ObjectService to delete the object (includes RBAC permission checks, audit trail, and soft delete).
             $deleteResult = $objectService->deleteObject($id, $rbac, $multi);
 
-            if (!$deleteResult) {
-                // If delete operation failed, return error
+            if ($deleteResult === false) {
+                // If delete operation failed, return error.
                 return new JSONResponse(['error' => 'Failed to delete object'], 500);
             }
 
@@ -1364,11 +1364,11 @@ class ObjectsController extends Controller
 
                 case 'csv':
 
-                    // For CSV, schema can be specified in the request
+                    // For CSV, schema can be specified in the request.
                     $schemaId = $this->request->getParam(key: 'schema');
 
-                    if (!$schemaId) {
-                        // If no schema specified, get the first available schema from the register
+                    if ($schemaId === null || $schemaId === '') {
+                        // If no schema specified, get the first available schema from the register.
                         $schemas = $registerEntity->getSchemas();
                         if (empty($schemas)) {
                             return new JSONResponse(['error' => 'No schema found for register'], 400);

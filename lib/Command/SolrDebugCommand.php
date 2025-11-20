@@ -208,7 +208,7 @@ class SolrDebugCommand extends Command
             $setup  = new SolrSetup($solrSettings, $this->logger);
             $result = $setup->setupSolr();
 
-            if ($result) {
+            if ($result === true) {
                 $output->writeln('<info>✅ SOLR setup completed successfully</info>');
             } else {
                 $output->writeln('<error>❌ SOLR setup failed</error>');
@@ -238,7 +238,7 @@ class SolrDebugCommand extends Command
             $container   = \OC::$server->getRegisteredAppContainer('openregister');
             $solrService = $container->get(GuzzleSolrService::class);
 
-            if (!$solrService) {
+            if ($solrService === null) {
                 $output->writeln('<error>❌ Failed to create SOLR service</error>');
                 return;
             }
@@ -331,7 +331,7 @@ class SolrDebugCommand extends Command
         $output->writeln("  Testing cores API: <comment>$coresUrl</comment>");
 
         $coresResponse = @file_get_contents($coresUrl);
-        if ($coresResponse) {
+        if ($coresResponse !== false && $coresResponse !== '') {
             $coresData = json_decode($coresResponse, true);
             if (isset($coresData['status'])) {
                 $coreCount = count($coresData['status']);
@@ -357,7 +357,7 @@ class SolrDebugCommand extends Command
         $output->writeln("  Testing collections API: <comment>$collectionsUrl</comment>");
 
         $collectionsResponse = @file_get_contents($collectionsUrl);
-        if ($collectionsResponse) {
+        if ($collectionsResponse !== false && $collectionsResponse !== '') {
             $collectionsData = json_decode($collectionsResponse, true);
             if (isset($collectionsData['cluster']['collections'])) {
                 $collectionCount = count($collectionsData['cluster']['collections']);
@@ -382,7 +382,7 @@ class SolrDebugCommand extends Command
         $output->writeln("  Testing configSets API: <comment>$configSetsUrl</comment>");
 
         $configSetsResponse = @file_get_contents($configSetsUrl);
-        if ($configSetsResponse) {
+        if ($configSetsResponse !== false && $configSetsResponse !== '') {
             $configSetsData = json_decode($configSetsResponse, true);
             if (isset($configSetsData['configSets'])) {
                 $configSetCount = count($configSetsData['configSets']);

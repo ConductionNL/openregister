@@ -139,12 +139,12 @@ class MagicOrganizationHandler
                 // If admin override is disabled, apply organization filtering for admin users
                 if ($activeOrganisationUuid === null) {
                     return;
-                    // No filtering if no active organization
+                    // No filtering if no active organization.
                 }
 
-                if ($isSystemDefaultOrg) {
+                if ($isSystemDefaultOrg === true) {
                     return;
-                    // Admin with default org sees everything
+                    // Admin with default org sees everything.
                 }
 
                 // Continue with organization filtering for non-default org
@@ -176,9 +176,9 @@ class MagicOrganizationHandler
             );
         }
 
-        // If this is the system-wide default organization, include additional objects
-        if ($isSystemDefaultOrg) {
-            // Include objects with NULL organization (legacy data)
+        // If this is the system-wide default organization, include additional objects.
+        if ($isSystemDefaultOrg === true) {
+            // Include objects with NULL organization (legacy data).
             $orgConditions->add(
                 $qb->expr()->isNull($organizationColumn)
             );

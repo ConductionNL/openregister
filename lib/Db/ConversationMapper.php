@@ -181,8 +181,8 @@ class ConversationMapper extends QBMapper
             $qb->andWhere($qb->expr()->eq('organisation', $qb->createNamedParameter($organisation, IQueryBuilder::PARAM_STR)));
         }
 
-        // Exclude soft-deleted conversations unless requested
-        if (!$includeDeleted) {
+        // Exclude soft-deleted conversations unless requested.
+        if ($includeDeleted === false) {
             $qb->andWhere($qb->expr()->isNull('deleted_at'));
         }
 
@@ -254,8 +254,8 @@ class ConversationMapper extends QBMapper
             ->from($this->tableName)
             ->where($qb->expr()->eq('agent_id', $qb->createNamedParameter($agentId, IQueryBuilder::PARAM_INT)));
 
-        // Exclude soft-deleted conversations unless requested
-        if (!$includeDeleted) {
+        // Exclude soft-deleted conversations unless requested.
+        if ($includeDeleted === false) {
             $qb->andWhere($qb->expr()->isNull('deleted_at'));
         }
 
@@ -331,8 +331,8 @@ class ConversationMapper extends QBMapper
             ->from($this->tableName)
             ->where($qb->expr()->eq('organisation', $qb->createNamedParameter($organisation, IQueryBuilder::PARAM_INT)));
 
-        // Exclude soft-deleted conversations unless requested
-        if (!$includeDeleted) {
+        // Exclude soft-deleted conversations unless requested.
+        if ($includeDeleted === false) {
             $qb->andWhere($qb->expr()->isNull('deleted_at'));
         }
 
@@ -370,8 +370,8 @@ class ConversationMapper extends QBMapper
             $qb->andWhere($qb->expr()->eq('organisation', $qb->createNamedParameter($organisation, IQueryBuilder::PARAM_STR)));
         }
 
-        // Exclude soft-deleted conversations unless requested
-        if (!$includeDeleted) {
+        // Exclude soft-deleted conversations unless requested.
+        if ($includeDeleted === false) {
             $qb->andWhere($qb->expr()->isNull('deleted_at'));
         }
 

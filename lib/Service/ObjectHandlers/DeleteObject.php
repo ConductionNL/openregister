@@ -131,8 +131,8 @@ class DeleteObject
         // Delete the object from database.
         $result = $this->objectEntityMapper->delete($objectEntity) !== null;
 
-        // **CACHE INVALIDATION**: Clear collection and facet caches so deleted objects disappear immediately
-        if ($result) {
+        // **CACHE INVALIDATION**: Clear collection and facet caches so deleted objects disappear immediately.
+        if ($result === true) {
             $this->objectCacheService->invalidateForObjectChange(
                 $objectEntity,
                 'delete',

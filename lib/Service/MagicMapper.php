@@ -440,8 +440,8 @@ class MagicMapper
         $tableName = $this->getTableNameForRegisterSchema($register, $schema);
         $exists    = $this->checkTableExistsInDatabase($tableName);
 
-        if ($exists) {
-            // Cache positive result
+        if ($exists === true) {
+            // Cache positive result.
             self::$tableExistsCache[$cacheKey] = time();
 
             $this->logger->debug(
@@ -502,7 +502,7 @@ class MagicMapper
         try {
             foreach ($objects as $object) {
                 $uuid = $this->saveObjectToRegisterSchemaTable($object, $register, $schema, $tableName);
-                if ($uuid) {
+                if ($uuid !== null && $uuid !== '') {
                     $savedUuids[] = $uuid;
                 }
             }
@@ -795,7 +795,7 @@ class MagicMapper
                 }
 
                 $column = $this->mapSchemaPropertyToColumn($propertyName, $propertyConfig);
-                if ($column) {
+                if ($column !== null && $column !== '') {
                     $columns[$propertyName] = $column;
                 }
             }
@@ -1381,11 +1381,11 @@ class MagicMapper
         $uuid = $preparedData[self::METADATA_PREFIX.'uuid'];
 
         try {
-            // Check if object exists (for update vs insert)
+            // Check if object exists (for update vs insert).
             $existingObject = $this->findObjectInRegisterSchemaTable($uuid, $tableName);
 
-            if ($existingObject) {
-                // Update existing object
+            if ($existingObject !== null) {
+                // Update existing object.
                 $this->updateObjectInRegisterSchemaTable($uuid, $preparedData, $tableName);
                 $this->logger->debug(
                         'Updated object in register+schema table',
@@ -1585,7 +1585,7 @@ class MagicMapper
             $objects = [];
             foreach ($rows as $row) {
                 $objectEntity = $this->convertRowToObjectEntity($row, $register, $schema);
-                if ($objectEntity) {
+                if ($objectEntity !== null) {
                     $objects[] = $objectEntity;
                 }
             }

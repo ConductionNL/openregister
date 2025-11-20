@@ -170,8 +170,8 @@ class MagicBulkHandler
 
         $deletedUuids = [];
 
-        if ($softDelete) {
-            // Perform soft delete by setting _deleted timestamp
+        if ($softDelete === true) {
+            // Perform soft delete by setting _deleted timestamp.
             $now = (new \DateTime())->format('Y-m-d H:i:s');
             $qb  = $this->db->getQueryBuilder();
 
@@ -525,10 +525,10 @@ class MagicBulkHandler
 
         $updatedUuids = [];
 
-        // Process updates individually for now (can be optimized later with CASE statements)
+        // Process updates individually for now (can be optimized later with CASE statements).
         foreach ($objects as $objectData) {
             $uuid = $objectData['_uuid'] ?? null;
-            if (!$uuid) {
+            if ($uuid === null || $uuid === '') {
                 continue;
             }
 

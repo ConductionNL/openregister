@@ -149,7 +149,7 @@ class VectorEmbeddingService
                 $collection = $settings['solr']['objectCollection'] ?? $settings['solr']['collection'] ?? null;
             }
 
-            if (!$collection) {
+            if ($collection === null || $collection === '') {
                 $this->logger->warning(
                         '[VectorEmbeddingService] No Solr collection configured for entity type',
                         [
@@ -541,7 +541,7 @@ class VectorEmbeddingService
             $collection  = $this->getSolrCollectionForEntityType($entityType);
             $vectorField = $this->getSolrVectorField();
 
-            if (!$collection) {
+            if ($collection === null || $collection === '') {
                 throw new \Exception("Solr collection not configured for entity type: {$entityType}");
             }
 
@@ -671,7 +671,7 @@ class VectorEmbeddingService
                 $entityTypes = is_array($filters['entity_type']) ? $filters['entity_type'] : [$filters['entity_type']];
                 foreach ($entityTypes as $entityType) {
                     $collection = $this->getSolrCollectionForEntityType($entityType);
-                    if ($collection) {
+                    if ($collection !== null && $collection !== '') {
                         $collectionsToSearch[] = ['type' => $entityType, 'collection' => $collection];
                     }
                 }
@@ -681,11 +681,11 @@ class VectorEmbeddingService
                 $objectCollection = $settings['solr']['objectCollection'] ?? $settings['solr']['collection'] ?? null;
                 $fileCollection   = $settings['solr']['fileCollection'] ?? null;
 
-                if ($objectCollection) {
+                if ($objectCollection !== null && $objectCollection !== '') {
                     $collectionsToSearch[] = ['type' => 'object', 'collection' => $objectCollection];
                 }
 
-                if ($fileCollection) {
+                if ($fileCollection !== null && $fileCollection !== '') {
                     $collectionsToSearch[] = ['type' => 'file', 'collection' => $fileCollection];
                 }
             }//end if
@@ -1649,8 +1649,8 @@ class VectorEmbeddingService
             $fileCount   = 0;
             $byModel     = [];
 
-            // Count objects with embeddings
-            if ($objectCollection) {
+            // Count objects with embeddings.
+            if ($objectCollection !== null && $objectCollection !== '') {
                 try {
                     $objectStats = $this->countVectorsInCollection($objectCollection, $vectorField);
                     $objectCount = $objectStats['count'];
@@ -1665,8 +1665,8 @@ class VectorEmbeddingService
                 }
             }
 
-            // Count files with embeddings
-            if ($fileCollection) {
+            // Count files with embeddings.
+            if ($fileCollection !== null && $fileCollection !== '') {
                 try {
                     $fileStats = $this->countVectorsInCollection($fileCollection, $vectorField);
                     $fileCount = $fileStats['count'];
@@ -1987,7 +1987,7 @@ class VectorEmbeddingService
                 $error    = curl_error($ch);
                 curl_close($ch);
 
-                if ($error) {
+                if ($error !== null && $error !== '') {
                     throw new \Exception("Fireworks API request failed: {$error}");
                 }
 
@@ -2332,7 +2332,7 @@ class VectorEmbeddingService
                 $currentModel = $settings['fireworksConfig']['embeddingModel'] ?? null;
             }
 
-            if (!$currentModel) {
+            if ($currentModel === null || $currentModel === '') {
                 return [
                     'has_vectors' => false,
                     'mismatch'    => false,
