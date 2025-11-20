@@ -40,6 +40,7 @@ class FileTextController extends Controller
      * @param FileTextService $fileTextService File text service
      * @param SolrFileService $solrFileService SOLR file service
      * @param LoggerInterface $logger          Logger
+     * @param IAppConfig      $config          Application configuration
      */
     public function __construct(
         string $appName,
@@ -60,8 +61,7 @@ class FileTextController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @param int $fileId Nextcloud file ID
-     *
+     * @param  int $fileId Nextcloud file ID
      * @return JSONResponse File text data
      */
     public function getFileText(int $fileId): JSONResponse
@@ -113,13 +113,14 @@ class FileTextController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @param int $fileId Nextcloud file ID
-     *
+     * @param  int $fileId Nextcloud file ID
      * @return JSONResponse Extraction result
      */
     public function extractFileText(int $fileId): JSONResponse
     {
-        if ($this->config->hasKey(app: 'openregister', key: 'fileManagement') === false || json_decode($this->config->getValueString(app: 'openregister', key: 'fileManagement'), true)['extractionScope'] === 'none') {
+        if ($this->config->hasKey(app: 'openregister', key: 'fileManagement') === false
+            || json_decode($this->config->getValueString(app: 'openregister', key: 'fileManagement'), true)['extractionScope'] === 'none'
+        ) {
             $this->logger->info('[FileTextController] File extraction is disabled. Not extracting text from files.');
             return new JSONResponse(data: ['success' => false, 'message' => 'Text extraction disabled'], statusCode: Http::STATUS_NOT_IMPLEMENTED);
         }
@@ -127,7 +128,7 @@ class FileTextController extends Controller
         try {
             $result = $this->fileTextService->extractAndStoreFileText($fileId);
 
-            if ($result['success']) {
+            if ($result['success'] === true) {
                 return new JSONResponse(
                         [
                             'success'   => true,
@@ -255,8 +256,7 @@ class FileTextController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @param int $fileId Nextcloud file ID
-     *
+     * @param  int $fileId Nextcloud file ID
      * @return JSONResponse Deletion result
      */
     public function deleteFileText(int $fileId): JSONResponse
@@ -297,10 +297,9 @@ class FileTextController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @param int|null $limit        Maximum number of files to process
-     * @param int|null $chunkSize    Chunk size in characters
-     * @param int|null $chunkOverlap Overlap between chunks in characters
-     *
+     * @param  int|null $limit        Maximum number of files to process
+     * @param  int|null $chunkSize    Chunk size in characters
+     * @param  int|null $chunkOverlap Overlap between chunks in characters
      * @return JSONResponse Processing result with statistics
      */
     public function processAndIndexExtracted(?int $limit=null, ?int $chunkSize=null, ?int $chunkOverlap=null): JSONResponse
@@ -344,10 +343,9 @@ class FileTextController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @param int      $fileId       File ID
-     * @param int|null $chunkSize    Chunk size in characters
-     * @param int|null $chunkOverlap Overlap between chunks in characters
-     *
+     * @param  int      $fileId       File ID
+     * @param  int|null $chunkSize    Chunk size in characters
+     * @param  int|null $chunkOverlap Overlap between chunks in characters
      * @return JSONResponse Processing result
      */
     public function processAndIndexFile(int $fileId, ?int $chunkSize=null, ?int $chunkOverlap=null): JSONResponse

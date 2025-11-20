@@ -124,7 +124,7 @@ class SchemaService
 
         $this->logger->info('Found '.count($objects).' objects to analyze');
 
-        if (empty($objects)) {
+        if (empty($objects) === true) {
             return [
                 'schema_id'             => $schemaId,
                 'schema_title'          => $schema->getTitle(),
@@ -141,8 +141,15 @@ class SchemaService
         $propertyAnalysis = $this->analyzeObjectProperties($objects, $schema->getProperties());
 
         // Generate suggestions for both new and existing properties.
-        $newPropertySuggestions      = $this->generateSuggestions($propertyAnalysis['discovered'], $schema->getProperties());
-        $existingPropertySuggestions = $this->analyzeExistingProperties($schema->getProperties(), $propertyAnalysis['discovered'], $propertyAnalysis['usage_stats']);
+        $newPropertySuggestions      = $this->generateSuggestions(
+            $propertyAnalysis['discovered'],
+            $schema->getProperties()
+        );
+        $existingPropertySuggestions = $this->analyzeExistingProperties(
+            $schema->getProperties(),
+            $propertyAnalysis['discovered'],
+            $propertyAnalysis['usage_stats']
+        );
 
         return [
             'schema_id'             => $schemaId,
@@ -189,7 +196,7 @@ class SchemaService
 
             foreach ($objectData as $propertyName => $propertyValue) {
                 // Track usage count.
-                if (!isset($usageStats['counts'][$propertyName])) {
+                if (isset($usageStats['counts'][$propertyName]) === false) {
                     $usageStats['counts'][$propertyName] = 0;
                 }
 
@@ -203,7 +210,7 @@ class SchemaService
                 // Analyze data type and characteristics.
                 $propertyAnalysis = $this->analyzePropertyValue($propertyValue);
 
-                if (!isset($discoveredProperties[$propertyName])) {
+                if (isset($discoveredProperties[$propertyName]) === false) {
                     $discoveredProperties[$propertyName] = [
                         'name'             => $propertyName,
                         'types'            => [],
@@ -294,7 +301,7 @@ class SchemaService
                 break;
 
             case 'array':
-                if (empty($value)) {
+                if (empty($value) === true) {
                     break;
                 }
 
@@ -304,7 +311,9 @@ class SchemaService
 
             case 'object':
             case 'array':
-                if (is_object($value) || (is_array($value) && !empty($value) && !array_is_list($value))) {
+                if (is_object($value) === true
+                    || (is_array($value) === true && empty($value) === false && array_is_list($value) === false)
+                ) {
                     $analysis['object_structure'] = $this->analyzeObjectStructure($value);
                 }
                 break;
@@ -325,28 +334,28 @@ class SchemaService
     private function detectStringFormat(string $value): ?string
     {
         // Date formats.
-        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) {
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) === 1) {
             $parsed = DateTime::createFromFormat('Y-m-d', $value);
-            if ($parsed && $parsed->format('Y-m-d') === $value) {
+            if ($parsed !== false && $parsed->format('Y-m-d') === $value) {
                 return 'date';
             }
         }
 
         // Date-Time formats.
-        if (preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/', $value)) {
+        if (preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/', $value) === 1) {
             $parsed = DateTime::createFromFormat(DATE_ISO8601, $value);
-            if ($parsed !== false) {
+            if ($parsed !== false && $parsed !== false) {
                 return 'date-time';
             }
         }
 
         // RFC3339 format.
-        if (preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/', $value)) {
+        if (preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/', $value) === 1) {
             return 'date-time';
         }
 
         // UUID format.
-        if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value)) {
+        if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value) === 1) {
             return 'uuid';
         }
 

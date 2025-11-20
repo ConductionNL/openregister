@@ -1146,7 +1146,7 @@ class Schema extends Entity implements JsonSerializable
         } else {
             $this->facets = $facets;
         }
-        
+
         $this->markFieldUpdated('facets');
 
     }//end setFacets()
@@ -1164,16 +1164,16 @@ class Schema extends Entity implements JsonSerializable
     public function regenerateFacetsFromProperties(): void
     {
         $properties = $this->getProperties();
-        
+
         if (empty($properties)) {
             $this->setFacets(null);
             return;
         }
 
         $facetConfig = [
-            'object_fields' => [],
-            'generated_at' => time(),
-            'schema_version' => $this->getVersion() ?? '1.0'
+            'object_fields'  => [],
+            'generated_at'   => time(),
+            'schema_version' => $this->getVersion() ?? '1.0',
         ];
 
         // Analyze each property for facetable configuration.
@@ -1185,27 +1185,27 @@ class Schema extends Entity implements JsonSerializable
 
             // Determine appropriate facet type based on property configuration.
             $facetType = $this->determineFacetType($property);
-            
+
             if ($facetType !== null) {
                 $facetConfig['object_fields'][$propertyKey] = [
-                    'type' => $facetType,
-                    'title' => $property['title'] ?? $propertyKey,
-                    'description' => $property['description'] ?? null,
-                    'data_type' => $property['type'] ?? 'string',
-                    'queryParameter' => $propertyKey
+                    'type'           => $facetType,
+                    'title'          => $property['title'] ?? $propertyKey,
+                    'description'    => $property['description'] ?? null,
+                    'data_type'      => $property['type'] ?? 'string',
+                    'queryParameter' => $propertyKey,
                 ];
 
                 // Add type-specific configuration.
                 if ($facetType === 'date_histogram') {
-                    $facetConfig['object_fields'][$propertyKey]['default_interval'] = 'month';
+                    $facetConfig['object_fields'][$propertyKey]['default_interval']    = 'month';
                     $facetConfig['object_fields'][$propertyKey]['supported_intervals'] = ['day', 'week', 'month', 'year'];
-                } elseif ($facetType === 'range') {
+                } else if ($facetType === 'range') {
                     $facetConfig['object_fields'][$propertyKey]['supports_custom_ranges'] = true;
-                } elseif ($facetType === 'terms' && isset($property['enum'])) {
+                } else if ($facetType === 'terms' && isset($property['enum'])) {
                     $facetConfig['object_fields'][$propertyKey]['predefined_values'] = $property['enum'];
                 }
             }
-        }
+        }//end foreach
 
         // Set the generated facet configuration.
         $this->setFacets($facetConfig);
@@ -1220,14 +1220,14 @@ class Schema extends Entity implements JsonSerializable
      *
      * @return string|null The facet type ('terms', 'date_histogram', 'range') or null
      *
-     * @phpstan-param array<string, mixed> $property
-     * @psalm-param   array<string, mixed> $property
+     * @phpstan-param  array<string, mixed> $property
+     * @psalm-param    array<string, mixed> $property
      * @phpstan-return string|null
      * @psalm-return   string|null
      */
     private function determineFacetType(array $property): ?string
     {
-        $type = $property['type'] ?? 'string';
+        $type   = $property['type'] ?? 'string';
         $format = $property['format'] ?? null;
 
         // Date/datetime fields use date_histogram.
@@ -1267,36 +1267,50 @@ class Schema extends Entity implements JsonSerializable
     private function determineFacetTypeForProperty(array $property, string $fieldName): ?string
     {
         // Check if explicitly marked as facetable.
-        if (isset($property['facetable']) && 
-            ($property['facetable'] === true || $property['facetable'] === 'true' || 
-             (is_string($property['facetable']) && strtolower(trim($property['facetable'])) === 'true'))
+        if (isset($property['facetable'])
+            && ($property['facetable'] === true || $property['facetable'] === 'true'
+            || (is_string($property['facetable']) && strtolower(trim($property['facetable'])) === 'true'))
         ) {
             return $this->determineFacetTypeFromPropertyType($property);
         }
-        
+
         // Auto-detect common facetable field names.
         $commonFacetableFields = [
-            'type', 'status', 'category', 'tags', 'label', 'group', 
-            'department', 'location', 'priority', 'state', 'classification',
-            'genre', 'brand', 'model', 'version', 'license', 'language'
+            'type',
+            'status',
+            'category',
+            'tags',
+            'label',
+            'group',
+            'department',
+            'location',
+            'priority',
+            'state',
+            'classification',
+            'genre',
+            'brand',
+            'model',
+            'version',
+            'license',
+            'language',
         ];
-        
+
         $lowerFieldName = strtolower($fieldName);
         if (in_array($lowerFieldName, $commonFacetableFields)) {
             return $this->determineFacetTypeFromPropertyType($property);
         }
-        
+
         // Auto-detect enum properties (good for faceting).
         if (isset($property['enum']) && is_array($property['enum']) && count($property['enum']) > 0) {
             return 'terms';
         }
-        
+
         // Auto-detect date/datetime fields.
         $propertyType = $property['type'] ?? '';
         if (in_array($propertyType, ['date', 'datetime', 'date-time'])) {
             return 'date_histogram';
         }
-        
+
         // Check for date-like field names.
         $dateFields = ['created', 'updated', 'modified', 'date', 'time', 'timestamp'];
         foreach ($dateFields as $dateField) {
@@ -1304,9 +1318,9 @@ class Schema extends Entity implements JsonSerializable
                 return 'date_histogram';
             }
         }
-        
+
         return null;
-        
+
     }//end determineFacetTypeForProperty()
 
 
@@ -1320,25 +1334,25 @@ class Schema extends Entity implements JsonSerializable
     private function determineFacetTypeFromPropertyType(array $property): string
     {
         $propertyType = $property['type'] ?? 'string';
-        
+
         // Date/datetime properties use date_histogram.
         if (in_array($propertyType, ['date', 'datetime', 'date-time'])) {
             return 'date_histogram';
         }
-        
+
         // Enum properties use terms.
         if (isset($property['enum']) && is_array($property['enum'])) {
             return 'terms';
         }
-        
+
         // Boolean, integer, number with small ranges use terms.
         if (in_array($propertyType, ['boolean', 'integer', 'number'])) {
             return 'terms';
         }
-        
+
         // Default to terms for other types.
         return 'terms';
-        
+
     }//end determineFacetTypeFromPropertyType()
 
 
