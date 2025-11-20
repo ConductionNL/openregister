@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * Rename views table to view (singular)
  *
  * This migration renames the openregister_views table to openregister_view
@@ -35,39 +35,41 @@ class Version1Date20251103120000 extends SimpleMigrationStep
     /**
      * Rename the table from openregister_views to openregister_view
      *
-     * @param IOutput $output The migration output handler
+     * @param IOutput $output        The migration output handler
      * @param Closure $schemaClosure The closure to get the schema
-     * @param array   $options Migration options
+     * @param array   $options       Migration options
      *
      * @return null|ISchemaWrapper The updated schema or null
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /** @var ISchemaWrapper $schema */
+        /*
+         * @var ISchemaWrapper $schema
+         */
         $schema = $schemaClosure();
 
         // Check if old table exists and new table doesn't
         if ($schema->hasTable('openregister_views') === true && $schema->hasTable('openregister_view') === false) {
             // Get the old table
             $oldTable = $schema->getTable('openregister_views');
-            
+
             // Create new table with same structure
             $newTable = $schema->createTable('openregister_view');
-            
+
             // Copy all columns from old table to new table
             foreach ($oldTable->getColumns() as $column) {
                 $newColumn = $newTable->addColumn(
                     $column->getName(),
                     $column->getType()->getName(),
                     [
-                        'notnull' => $column->getNotnull(),
-                        'length' => $column->getLength(),
-                        'default' => $column->getDefault(),
+                        'notnull'       => $column->getNotnull(),
+                        'length'        => $column->getLength(),
+                        'default'       => $column->getDefault(),
                         'autoincrement' => $column->getAutoincrement(),
-                        'unsigned' => $column->getUnsigned(),
+                        'unsigned'      => $column->getUnsigned(),
                     ]
                 );
-                
+
                 if ($column->getComment() !== null) {
                     $newColumn->setComment($column->getComment());
                 }
@@ -85,13 +87,13 @@ class Version1Date20251103120000 extends SimpleMigrationStep
                     // Rename index: views_* -> view_*
                     $oldIndexName = $index->getName();
                     $newIndexName = str_replace('views_', 'view_', $oldIndexName);
-                    
+
                     // Build options array only with available options
                     $options = [];
                     if ($index->hasOption('lengths')) {
                         $options['lengths'] = $index->getOption('lengths');
                     }
-                    
+
                     $newTable->addIndex(
                         $index->getColumns(),
                         $newIndexName,
@@ -114,27 +116,29 @@ class Version1Date20251103120000 extends SimpleMigrationStep
     /**
      * Copy data from old table to new table and drop old table
      *
-     * @param IOutput $output The migration output handler
+     * @param IOutput $output        The migration output handler
      * @param Closure $schemaClosure The closure to get the schema
-     * @param array   $options Migration options
+     * @param array   $options       Migration options
      *
      * @return void
      */
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
-        /** @var ISchemaWrapper $schema */
+        /*
+         * @var ISchemaWrapper $schema
+         */
         $schema = $schemaClosure();
 
         if ($schema->hasTable('openregister_views') === true && $schema->hasTable('openregister_view') === true) {
             // Copy data
             $connection = \OC::$server->getDatabaseConnection();
             $connection->executeQuery('INSERT INTO `*PREFIX*openregister_view` SELECT * FROM `*PREFIX*openregister_views`');
-            
+
             $output->info('Copied data from openregister_views to openregister_view');
 
             // Drop old table
             $schema->dropTable('openregister_views');
-            
+
             $output->info('Dropped old table openregister_views');
         }//end if
 
@@ -142,8 +146,3 @@ class Version1Date20251103120000 extends SimpleMigrationStep
 
 
 }//end class
-
-
-
-
-

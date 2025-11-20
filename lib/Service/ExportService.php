@@ -112,16 +112,19 @@ class ExportService
     private function isUserAdmin(?IUser $user): bool
     {
         if ($user === null) {
-            return false; // Anonymous users are never admin
+            return false;
+            // Anonymous users are never admin
         }
 
         // Check if user is in admin group
         $adminGroup = $this->groupManager->get('admin');
         if ($adminGroup === null) {
-            return false; // Admin group doesn't exist
+            return false;
+            // Admin group doesn't exist
         }
 
         return $adminGroup->inGroup($user);
+
     }//end isUserAdmin()
 
 
@@ -271,17 +274,17 @@ class ExportService
         $row++;
 
         // Export data using optimized ObjectEntityMapper query for raw ObjectEntity objects
-        // Build filters for ObjectEntityMapper->findAll() method 
+        // Build filters for ObjectEntityMapper->findAll() method
         $objectFilters = [];
-        
+
         if ($register !== null) {
             $objectFilters['register'] = $register->getId();
         }
-        
+
         if ($schema !== null) {
             $objectFilters['schema'] = $schema->getId();
         }
-        
+
         // Apply additional filters
         foreach ($filters as $key => $value) {
             if (!str_starts_with($key, '@self.')) {
@@ -295,24 +298,28 @@ class ExportService
                 $objectFilters[$metaField] = $value;
             }
         }
-        
+
         // Use ObjectService::searchObjects directly with proper RBAC and multi-tenancy filtering
         // Set a very high limit to get all objects (export needs all data)
         $query = [
-            '@self' => $objectFilters,
-            '_limit' => 999999, // Very high limit to get all objects
-            '_published' => false, // Export all objects, not just published ones
-            '_includeDeleted' => false
+            '@self'           => $objectFilters,
+            '_limit'          => 999999,
+        // Very high limit to get all objects
+            '_published'      => false,
+        // Export all objects, not just published ones
+            '_includeDeleted' => false,
         ];
-        
+
         $objects = $this->objectService->searchObjects(
             query: $query,
-            rbac: true,  // Apply RBAC filtering
-            multi: true, // Apply multi-tenancy filtering
+            rbac: true,
+        // Apply RBAC filtering
+            multi: true,
+        // Apply multi-tenancy filtering
             ids: null,
             uses: null
         );
-        
+
         foreach ($objects as $object) {
             foreach ($headers as $col => $header) {
                 $value = $this->getObjectValue(object: $object, header: $header);
@@ -392,7 +399,7 @@ class ExportService
                 $headers[$col] = '@self.'.$field;
                 $col++;
             }
-        }
+        }//end if
 
         return $headers;
 

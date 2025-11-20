@@ -57,7 +57,7 @@ class OrganisationHandler
     public function __construct(OrganisationMapper $organisationMapper, LoggerInterface $logger)
     {
         $this->organisationMapper = $organisationMapper;
-        $this->logger             = $logger;
+        $this->logger = $logger;
 
     }//end __construct()
 
@@ -87,7 +87,7 @@ class OrganisationHandler
      * @return Organisation|null The imported organisation or null if skipped
      * @throws Exception If import fails
      */
-    public function import(array $data, ?string $owner = null): ?Organisation
+    public function import(array $data, ?string $owner=null): ?Organisation
     {
         try {
             unset($data['id'], $data['uuid']);
@@ -129,5 +129,3 @@ class OrganisationHandler
 
 
 }//end class
-
-

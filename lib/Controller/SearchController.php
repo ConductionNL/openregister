@@ -36,7 +36,7 @@ class SearchController extends Controller
 
     // phpcs:ignore Squiz.Commenting.VariableComment.Missing
     private readonly ISearch $searchService;
-    
+
     // phpcs:ignore Squiz.Commenting.VariableComment.Missing
     private readonly SolrService $solrService;
 
@@ -59,7 +59,7 @@ class SearchController extends Controller
     ) {
         parent::__construct($appName, $request);
         $this->searchService = $searchService;
-        $this->solrService = $solrService;
+        $this->solrService   = $solrService;
 
     }//end __construct()
 

@@ -51,8 +51,8 @@ class AgentHandler
     /**
      * Constructor
      *
-     * @param AgentMapper       $agentMapper The agent mapper instance
-     * @param LoggerInterface   $logger      The logger instance
+     * @param AgentMapper     $agentMapper The agent mapper instance
+     * @param LoggerInterface $logger      The logger instance
      */
     public function __construct(AgentMapper $agentMapper, LoggerInterface $logger)
     {
@@ -87,7 +87,7 @@ class AgentHandler
      * @return Agent|null The imported agent or null if skipped
      * @throws Exception If import fails
      */
-    public function import(array $data, ?string $owner = null): ?Agent
+    public function import(array $data, ?string $owner=null): ?Agent
     {
         try {
             unset($data['id'], $data['uuid']);
@@ -129,5 +129,3 @@ class AgentHandler
 
 
 }//end class
-
-

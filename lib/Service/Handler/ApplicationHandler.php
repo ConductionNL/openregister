@@ -87,7 +87,7 @@ class ApplicationHandler
      * @return Application|null The imported application or null if skipped
      * @throws Exception If import fails
      */
-    public function import(array $data, ?string $owner = null): ?Application
+    public function import(array $data, ?string $owner=null): ?Application
     {
         try {
             unset($data['id'], $data['uuid']);
@@ -129,5 +129,3 @@ class ApplicationHandler
 
 
 }//end class
-
-

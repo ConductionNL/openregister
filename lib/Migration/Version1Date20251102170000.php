@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * OpenRegister Schema Extension Migration
  *
  * This migration adds the 'extend' column to the schemas table to support
@@ -11,13 +11,13 @@ declare(strict_types=1);
  * @category Migration
  * @package  OCA\OpenRegister\Migration
  *
- * @author   Conduction Development Team <info@conduction.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version  GIT: <git_id>
+ * @version GIT: <git_id>
  *
- * @link     https://www.OpenRegister.nl
+ * @link https://www.OpenRegister.nl
  */
 
 namespace OCA\OpenRegister\Migration;
@@ -37,18 +37,21 @@ use OCP\Migration\SimpleMigrationStep;
 class Version1Date20251102170000 extends SimpleMigrationStep
 {
 
+
     /**
      * Add extend column to schemas table
      *
-     * @param IOutput $output Migration output interface
+     * @param IOutput $output        Migration output interface
      * @param Closure $schemaClosure Schema closure
-     * @param array   $options Migration options
+     * @param array   $options       Migration options
      *
      * @return ISchemaWrapper|null Updated schema
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /** @var ISchemaWrapper $schema */
+        /*
+         * @var ISchemaWrapper $schema
+         */
         $schema = $schemaClosure();
 
         $output->info('⚠️  Schema extension (extend column) is deprecated - skipping migration');
@@ -60,15 +63,9 @@ class Version1Date20251102170000 extends SimpleMigrationStep
         //
         // If the extend column exists from a previous installation, it will remain
         // but is no longer used by the application.
-
         return null;
 
     }//end changeSchema()
 
 
 }//end class
-
-
-
-
-

@@ -112,7 +112,7 @@ class Organisation extends Entity implements JsonSerializable
      * Storage quota allocated to this organisation in bytes
      * NULL = unlimited storage
      *
-     * @var int|null Storage quota in bytes
+     * @var integer|null Storage quota in bytes
      */
     protected ?int $storageQuota = null;
 
@@ -120,7 +120,7 @@ class Organisation extends Entity implements JsonSerializable
      * Bandwidth/traffic quota allocated to this organisation in bytes per month
      * NULL = unlimited bandwidth
      *
-     * @var int|null Bandwidth quota in bytes per month
+     * @var integer|null Bandwidth quota in bytes per month
      */
     protected ?int $bandwidthQuota = null;
 
@@ -128,13 +128,13 @@ class Organisation extends Entity implements JsonSerializable
      * API request quota allocated to this organisation per day
      * NULL = unlimited API requests
      *
-     * @var int|null API request quota per day
+     * @var integer|null API request quota per day
      */
     protected ?int $requestQuota = null;
 
     /**
      * Authorization rules for this organisation
-     * 
+     *
      * Hierarchical structure defining CRUD permissions per entity type
      * and special rights. Uses singular entity names for easier authorization checks.
      * Structure:
@@ -156,7 +156,7 @@ class Organisation extends Entity implements JsonSerializable
 
     /**
      * UUID of parent organisation for hierarchical organisation structures
-     * 
+     *
      * Enables parent-child relationships where children inherit access
      * to parent resources (schemas, registers, configurations, etc.).
      * NULL indicates this is a root-level organisation with no parent.
@@ -167,7 +167,7 @@ class Organisation extends Entity implements JsonSerializable
 
     /**
      * Array of child organisation UUIDs (computed, not stored in database)
-     * 
+     *
      * This property is populated on-demand via OrganisationMapper::findChildrenChain()
      * and is used primarily for UI display and administrative purposes.
      * Children can view parent resources but parents cannot view child resources.
@@ -259,7 +259,7 @@ class Organisation extends Entity implements JsonSerializable
         }
 
         $originalCount = count($this->users);
-        $this->users = array_values(
+        $this->users   = array_values(
                 array_filter(
                 $this->users,
                 function ($id) use ($userId) {
@@ -328,7 +328,7 @@ class Organisation extends Entity implements JsonSerializable
                     break;
                 }
             }
-            
+
             if (!$exists) {
                 $this->roles[] = $role;
             }
@@ -445,8 +445,6 @@ class Organisation extends Entity implements JsonSerializable
     }//end setGroups()
 
 
-
-
     /**
      * Get whether this organisation is active
      *
@@ -470,10 +468,12 @@ class Organisation extends Entity implements JsonSerializable
     {
         // Handle various input types defensively (including empty strings from API)
         if ($active === '' || $active === null) {
-            parent::setActive(true); // Default to true for organisations
+            parent::setActive(true);
+            // Default to true for organisations
         } else {
-            parent::setActive((bool)$active);
+            parent::setActive((bool) $active);
         }
+
         $this->markFieldUpdated('active');
         return $this;
 
@@ -662,7 +662,7 @@ class Organisation extends Entity implements JsonSerializable
      */
     public function jsonSerialize(): array
     {
-        $users = $this->getUserIds();
+        $users  = $this->getUserIds();
         $groups = $this->getGroups();
 
         return [
@@ -681,13 +681,18 @@ class Organisation extends Entity implements JsonSerializable
                 'storage'   => $this->storageQuota,
                 'bandwidth' => $this->bandwidthQuota,
                 'requests'  => $this->requestQuota,
-                'users'     => null, // To be set via admin configuration
-                'groups'    => null, // To be set via admin configuration
+                'users'     => null,
+        // To be set via admin configuration
+                'groups'    => null,
+        // To be set via admin configuration
             ],
             'usage'         => [
-                'storage'   => 0, // To be calculated from actual usage
-                'bandwidth' => 0, // To be calculated from actual usage
-                'requests'  => 0, // To be calculated from actual usage
+                'storage'   => 0,
+            // To be calculated from actual usage
+                'bandwidth' => 0,
+            // To be calculated from actual usage
+                'requests'  => 0,
+            // To be calculated from actual usage
                 'users'     => count($users),
                 'groups'    => count($groups),
             ],

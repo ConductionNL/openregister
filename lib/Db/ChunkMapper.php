@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * Mapper for chunk entities.
  *
  * @category Db
@@ -20,6 +20,8 @@ use OCP\IDBConnection;
  */
 class ChunkMapper extends QBMapper
 {
+
+
     /**
      * Constructor.
      *
@@ -28,7 +30,9 @@ class ChunkMapper extends QBMapper
     public function __construct(IDBConnection $db)
     {
         parent::__construct($db, 'openregister_chunks', Chunk::class);
-    }
+
+    }//end __construct()
+
 
     /**
      * Find chunks by source reference.
@@ -37,7 +41,7 @@ class ChunkMapper extends QBMapper
      * @param int    $sourceId   Source identifier.
      *
      * @phpstan-param non-empty-string $sourceType
-     * @psalm-param non-empty-string   $sourceType
+     * @psalm-param   non-empty-string   $sourceType
      *
      * @return Chunk[]
      */
@@ -55,7 +59,9 @@ class ChunkMapper extends QBMapper
             ->orderBy('chunk_index', 'ASC');
 
         return $this->findEntities($qb);
-    }
+
+    }//end findBySource()
+
 
     /**
      * Delete chunks by source reference.
@@ -64,7 +70,7 @@ class ChunkMapper extends QBMapper
      * @param int    $sourceId   Source identifier.
      *
      * @phpstan-param non-empty-string $sourceType
-     * @psalm-param non-empty-string   $sourceType
+     * @psalm-param   non-empty-string   $sourceType
      *
      * @return void
      */
@@ -79,7 +85,9 @@ class ChunkMapper extends QBMapper
                 )
             )
             ->executeStatement();
-    }
+
+    }//end deleteBySource()
+
 
     /**
      * Get the latest updated timestamp for a source's chunks.
@@ -88,7 +96,7 @@ class ChunkMapper extends QBMapper
      * @param int    $sourceId   Source identifier.
      *
      * @phpstan-param non-empty-string $sourceType
-     * @psalm-param non-empty-string   $sourceType
+     * @psalm-param   non-empty-string   $sourceType
      *
      * @return int|null Unix timestamp of the latest update or null when unavailable.
      */
@@ -105,7 +113,7 @@ class ChunkMapper extends QBMapper
             );
 
         $result = $qb->executeQuery();
-        $value = $result->fetchOne();
+        $value  = $result->fetchOne();
         $result->closeCursor();
 
         if ($value === false || $value === null) {
@@ -115,7 +123,8 @@ class ChunkMapper extends QBMapper
         $timestamp = strtotime((string) $value);
 
         return $timestamp === false ? null : $timestamp;
-    }
-}
+
+    }//end getLatestUpdatedTimestamp()
 
 
+}//end class

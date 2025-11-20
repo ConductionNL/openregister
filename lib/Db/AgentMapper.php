@@ -67,6 +67,7 @@ class AgentMapper extends QBMapper
      */
     private IGroupManager $groupManager;
 
+
     /**
      * AgentMapper constructor.
      *
@@ -334,10 +335,10 @@ class AgentMapper extends QBMapper
     /**
      * Find all agents with optional filters
      *
-     * @param int|null    $limit   Maximum number of results
-     * @param int|null    $offset  Offset for pagination
-     * @param array|null  $filters Filter criteria
-     * @param array|null  $order   Order by criteria
+     * @param int|null   $limit   Maximum number of results
+     * @param int|null   $offset  Offset for pagination
+     * @param array|null $filters Filter criteria
+     * @param array|null $order   Order by criteria
      *
      * @return Agent[] Array of agent entities
      * @throws \Exception If user doesn't have read permission
@@ -358,7 +359,7 @@ class AgentMapper extends QBMapper
                 if ($value !== null && $field !== '_route') {
                     if ($field === 'active') {
                         $qb->andWhere($qb->expr()->eq($field, $qb->createNamedParameter((bool) $value, IQueryBuilder::PARAM_BOOL)));
-                    } elseif (is_array($value)) {
+                    } else if (is_array($value)) {
                         $qb->andWhere($qb->expr()->in($field, $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY)));
                     } else {
                         $qb->andWhere($qb->expr()->eq($field, $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR)));
@@ -380,6 +381,7 @@ class AgentMapper extends QBMapper
         if ($limit !== null) {
             $qb->setMaxResults($limit);
         }
+
         if ($offset !== null) {
             $qb->setFirstResult($offset);
         }
@@ -412,11 +414,12 @@ class AgentMapper extends QBMapper
                 $newUuid = \Symfony\Component\Uid\Uuid::v4()->toRfc4122();
                 $entity->setUuid($newUuid);
             }
-            
+
             // Set timestamps if not already set
             if ($entity->getCreated() === null) {
                 $entity->setCreated(new DateTime());
             }
+
             if ($entity->getUpdated() === null) {
                 $entity->setUpdated(new DateTime());
             }
@@ -517,7 +520,7 @@ class AgentMapper extends QBMapper
                 if ($value !== null && $field !== '_route') {
                     if ($field === 'active') {
                         $qb->andWhere($qb->expr()->eq($field, $qb->createNamedParameter((bool) $value, IQueryBuilder::PARAM_BOOL)));
-                    } elseif (is_array($value)) {
+                    } else if (is_array($value)) {
                         $qb->andWhere($qb->expr()->in($field, $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY)));
                     } else {
                         $qb->andWhere($qb->expr()->eq($field, $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR)));
@@ -535,5 +538,3 @@ class AgentMapper extends QBMapper
 
 
 }//end class
-
-

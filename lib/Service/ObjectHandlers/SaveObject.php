@@ -95,10 +95,10 @@ use Twig\Loader\ArrayLoader;
  * @version   GIT: <git_id>
  * @link      https://www.OpenRegister.app
  *
- * @since     1.0.0 Initial SaveObject implementation
- * @since     1.3.0 Added relationship cascading and writeBack operations
- * @since     1.8.0 Enhanced metadata hydration and file processing
- * @since     2.0.0 Optimized for integration with bulk operations
+ * @since 1.0.0 Initial SaveObject implementation
+ * @since 1.3.0 Added relationship cascading and writeBack operations
+ * @since 1.8.0 Enhanced metadata hydration and file processing
+ * @since 2.0.0 Optimized for integration with bulk operations
  */
 class SaveObject
 {
@@ -111,20 +111,20 @@ class SaveObject
     /**
      * Constructor for SaveObject handler.
      *
-     * @param ObjectEntityMapper  $objectEntityMapper  Object entity data mapper.
-     * @param FileService         $fileService         File service for managing files.
-     * @param IUserSession        $userSession         User session service.
-     * @param AuditTrailMapper    $auditTrailMapper    Audit trail mapper for logging changes.
-     * @param SchemaMapper        $schemaMapper        Schema mapper for schema operations.
-     * @param RegisterMapper      $registerMapper      Register mapper for register operations.
-     * @param IURLGenerator       $urlGenerator        URL generator service.
-     * @param OrganisationService        $organisationService        Service for organisation operations.
-     * @param ObjectCacheService        $objectCacheService        Object cache service for entity and query caching.
-     * @param SchemaCacheService        $schemaCacheService        Schema cache service for schema entity caching.
-     * @param SchemaFacetCacheService   $schemaFacetCacheService   Schema facet cache service for facet caching.
-     * @param SettingsService          $settingsService          Settings service for accessing trail settings.
-     * @param LoggerInterface          $logger                   Logger interface for logging operations.
-     * @param ArrayLoader              $arrayLoader              Twig array loader for template rendering.
+     * @param ObjectEntityMapper      $objectEntityMapper      Object entity data mapper.
+     * @param FileService             $fileService             File service for managing files.
+     * @param IUserSession            $userSession             User session service.
+     * @param AuditTrailMapper        $auditTrailMapper        Audit trail mapper for logging changes.
+     * @param SchemaMapper            $schemaMapper            Schema mapper for schema operations.
+     * @param RegisterMapper          $registerMapper          Register mapper for register operations.
+     * @param IURLGenerator           $urlGenerator            URL generator service.
+     * @param OrganisationService     $organisationService     Service for organisation operations.
+     * @param ObjectCacheService      $objectCacheService      Object cache service for entity and query caching.
+     * @param SchemaCacheService      $schemaCacheService      Schema cache service for schema entity caching.
+     * @param SchemaFacetCacheService $schemaFacetCacheService Schema facet cache service for facet caching.
+     * @param SettingsService         $settingsService         Settings service for accessing trail settings.
+     * @param LoggerInterface         $logger                  Logger interface for logging operations.
+     * @param ArrayLoader             $arrayLoader             Twig array loader for template rendering.
      */
     public function __construct(
         private readonly ObjectEntityMapper $objectEntityMapper,
@@ -200,10 +200,10 @@ class SaveObject
             // Schema not found
         }
 
-        // Try direct slug match as last resort
+        // Try direct slug match as last resort.
         try {
             $schema = $this->schemaMapper->findBySlug($slug);
-            if ($schema) {
+            if ($schema !== null) {
                 return $schema->getId();
             }
         } catch (Exception $e) {
@@ -283,10 +283,10 @@ class SaveObject
             // Register not found
         }
 
-        // Try direct slug match as last resort
+        // Try direct slug match as last resort.
         try {
             $register = $this->registerMapper->findBySlug($slug);
-            if ($register) {
+            if ($register !== null) {
                 return $register->getId();
             }
         } catch (Exception $e) {
@@ -344,8 +344,8 @@ class SaveObject
                                       isset($propertyConfig['items']['type']) &&
                                       $propertyConfig['items']['type'] === 'object';
 
-                    if ($isArrayOfObjects) {
-                        // For arrays of objects, scan each item for relations
+                    if ($isArrayOfObjects === true) {
+                        // For arrays of objects, scan each item for relations.
                         foreach ($value as $index => $item) {
                             if (is_array($item)) {
                                 $itemRelations = $this->scanForRelations(
@@ -369,7 +369,7 @@ class SaveObject
                                     $currentPath.'.'.$index,
                                     $schema
                                 );
-                                $relations = array_merge($relations, $itemRelations);
+                                $relations     = array_merge($relations, $itemRelations);
                             } else if (is_string($item) && !empty($item) && trim($item) !== '') {
                                 // Check if the string looks like a reference
                                 if ($this->isReference($item)) {
@@ -377,7 +377,7 @@ class SaveObject
                                 }
                             }
                         }
-                    }
+                    }//end if
                 } else if (is_string($value) && !empty($value) && trim($value) !== '') {
                     $shouldTreatAsRelation = false;
 
@@ -396,12 +396,12 @@ class SaveObject
                         }
                     }
 
-                    // If not determined by schema, check for reference patterns
-                    if (!$shouldTreatAsRelation) {
+                    // If not determined by schema, check for reference patterns.
+                    if ($shouldTreatAsRelation === false) {
                         $shouldTreatAsRelation = $this->isReference($value);
                     }
 
-                    if ($shouldTreatAsRelation) {
+                    if ($shouldTreatAsRelation === true) {
                         $relations[$currentPath] = $value;
                     }
                 }//end if
@@ -457,14 +457,16 @@ class SaveObject
         if (preg_match('/^[a-z0-9][a-z0-9_-]{7,}$/i', $value)) {
             // Must contain at least one hyphen or underscore (indicating it's likely an ID)
             // AND must not contain spaces or common text words
-            if ((strpos($value, '-') !== false || strpos($value, '_') !== false) &&
-                !preg_match('/\s/', $value) &&
-                !in_array(strtolower($value), ['applicatie', 'systeemsoftware', 'open-source', 'closed-source'])) {
+            if ((strpos($value, '-') !== false || strpos($value, '_') !== false)
+                && !preg_match('/\s/', $value)
+                && !in_array(strtolower($value), ['applicatie', 'systeemsoftware', 'open-source', 'closed-source'])
+            ) {
                 return true;
             }
         }
 
         return false;
+
     }//end isReference()
 
 
@@ -567,7 +569,6 @@ class SaveObject
             // 3. Single file ID: 123
             // 4. Single file object: {accessUrl: ...}
             // 5. String URL
-
             if (is_array($imageValue) && !empty($imageValue)) {
                 // Check if first element is a file ID or file object
                 $firstElement = $imageValue[0] ?? null;
@@ -585,10 +586,10 @@ class SaveObject
                                 $this->logger->warning(
                                     'File configured as objectImageField is not published. Auto-publishing file.',
                                     [
-                                        'app' => 'openregister',
-                                        'fileId' => $firstElement,
+                                        'app'      => 'openregister',
+                                        'fileId'   => $firstElement,
                                         'objectId' => $entity->getId(),
-                                        'field' => $config['objectImageField']
+                                        'field'    => $config['objectImageField'],
                                     ]
                                 );
                                 // Publish the file
@@ -600,22 +601,25 @@ class SaveObject
                             if (isset($fileData['downloadUrl'])) {
                                 $entity->setImage($fileData['downloadUrl']);
                             }
-                        }
+                        }//end if
                     } catch (\Exception $e) {
                         // File not found or error loading - skip
-                        $this->logger->error('Failed to load file for objectImageField', [
-                            'app' => 'openregister',
-                            'fileId' => $firstElement,
-                            'error' => $e->getMessage()
-                        ]);
-                    }
+                        $this->logger->error(
+                                'Failed to load file for objectImageField',
+                                [
+                                    'app'    => 'openregister',
+                                    'fileId' => $firstElement,
+                                    'error'  => $e->getMessage(),
+                                ]
+                                );
+                    }//end try
                 } else if (is_array($firstElement) && isset($firstElement['downloadUrl'])) {
                     // Array of file objects - use first file's downloadUrl
                     $entity->setImage($firstElement['downloadUrl']);
                 } else if (is_array($firstElement) && isset($firstElement['accessUrl'])) {
                     // Fallback to accessUrl if downloadUrl not available
                     $entity->setImage($firstElement['accessUrl']);
-                }
+                }//end if
             } else if (is_numeric($imageValue)) {
                 // Single file ID - load file and get its download URL
                 try {
@@ -629,10 +633,10 @@ class SaveObject
                             $this->logger->warning(
                                 'File configured as objectImageField is not published. Auto-publishing file.',
                                 [
-                                    'app' => 'openregister',
-                                    'fileId' => $imageValue,
+                                    'app'      => 'openregister',
+                                    'fileId'   => $imageValue,
                                     'objectId' => $entity->getId(),
-                                    'field' => $config['objectImageField']
+                                    'field'    => $config['objectImageField'],
                                 ]
                             );
                             // Publish the file
@@ -644,15 +648,18 @@ class SaveObject
                         if (isset($fileData['downloadUrl'])) {
                             $entity->setImage($fileData['downloadUrl']);
                         }
-                    }
+                    }//end if
                 } catch (\Exception $e) {
                     // File not found or error loading - skip
-                    $this->logger->error('Failed to load file for objectImageField', [
-                        'app' => 'openregister',
-                        'fileId' => $imageValue,
-                        'error' => $e->getMessage()
-                    ]);
-                }
+                    $this->logger->error(
+                            'Failed to load file for objectImageField',
+                            [
+                                'app'    => 'openregister',
+                                'fileId' => $imageValue,
+                                'error'  => $e->getMessage(),
+                            ]
+                            );
+                }//end try
             } else if (is_array($imageValue) && isset($imageValue['downloadUrl'])) {
                 // Single file object - use its downloadUrl
                 $entity->setImage($imageValue['downloadUrl']);
@@ -662,8 +669,8 @@ class SaveObject
             } else if (is_string($imageValue) && trim($imageValue) !== '') {
                 // Regular string URL
                 $entity->setImage(trim($imageValue));
-            }
-        }
+            }//end if
+        }//end if
 
         // Slug field mapping
         if (isset($config['objectSlugField']) === true) {
@@ -686,10 +693,13 @@ class SaveObject
                     $entity->setPublished($publishedDate);
                 } catch (Exception $e) {
                     // Log warning but don't fail the entire operation
-                    $this->logger->warning('Invalid published date format', [
-                        'value' => $published,
-                        'error' => $e->getMessage()
-                    ]);
+                    $this->logger->warning(
+                            'Invalid published date format',
+                            [
+                                'value' => $published,
+                                'error' => $e->getMessage(),
+                            ]
+                            );
                 }
             }
         }
@@ -703,10 +713,13 @@ class SaveObject
                     $entity->setDepublished($depublishedDate);
                 } catch (Exception $e) {
                     // Log warning but don't fail the entire operation
-                    $this->logger->warning('Invalid depublished date format', [
-                        'value' => $depublished,
-                        'error' => $e->getMessage()
-                    ]);
+                    $this->logger->warning(
+                            'Invalid depublished date format',
+                            [
+                                'value' => $depublished,
+                                'error' => $e->getMessage(),
+                            ]
+                            );
                 }
             }
         }
@@ -803,16 +816,16 @@ class SaveObject
             return null;
         }
 
-        $result = $template;
+        $result    = $template;
         $hasValues = false;
 
         // Replace each {{ fieldName }} with its value
         foreach ($matches[0] as $index => $fullMatch) {
             $fieldName = trim($matches[1][$index]);
-            $value = $this->getValueFromPath($data, $fieldName);
+            $value     = $this->getValueFromPath($data, $fieldName);
 
             if ($value !== null && trim($value) !== '') {
-                $result = str_replace($fullMatch, trim($value), $result);
+                $result    = str_replace($fullMatch, trim($value), $result);
                 $hasValues = true;
             } else {
                 // Replace with empty string for missing/empty values
@@ -820,7 +833,7 @@ class SaveObject
             }
         }
 
-        if (!$hasValues) {
+        if ($hasValues === false) {
             return null;
         }
 
@@ -934,7 +947,7 @@ class SaveObject
                 $shouldApplyDefault = !isset($data[$key]) || $data[$key] === null;
             }
 
-            if ($shouldApplyDefault) {
+            if ($shouldApplyDefault === true) {
                 $defaultValues[$key] = $defaultValue;
             }
         }//end foreach
@@ -1172,8 +1185,8 @@ class SaveObject
                     $hasWriteBack = (isset($definition['writeBack']) && $definition['writeBack'] === true) ||
                                    (isset($definition['items']['writeBack']) && $definition['items']['writeBack'] === true);
 
-                    if ($hasWriteBack) {
-                        // Keep the property for write-back processing
+                    if ($hasWriteBack === true) {
+                        // Keep the property for write-back processing.
                         $data[$property] = $createdUuids;
                     } else {
                         // Remove the property (traditional cascading)
@@ -1244,7 +1257,6 @@ class SaveObject
 
         $createdUuids = [];
         foreach ($validObjects as $object) {
-
             if (is_string($object) && Uuid::isValid($object)) {
                 continue;
             }
@@ -1456,9 +1468,9 @@ class SaveObject
             // Update each target object
             foreach ($validUuids as $targetUuid) {
                 try {
-                    // Find the target object
+                    // Find the target object.
                     $targetObject = $this->objectEntityMapper->find($targetUuid);
-                    if (!$targetObject) {
+                    if ($targetObject === null) {
                         continue;
                     }
 
@@ -1492,8 +1504,8 @@ class SaveObject
                 }//end try
             }//end foreach
 
-            // Remove the property from source object if configured to do so
-            if ($removeFromSource) {
+            // Remove the property from source object if configured to do so.
+            if ($removeFromSource === true) {
                 unset($data[$propertyName]);
             }
         }//end foreach
@@ -1585,16 +1597,16 @@ class SaveObject
                             }
                         }
 
-                        if ($hasChanges) {
+                        if ($hasChanges === true) {
                             $sanitizedData[$propertyName] = $sanitizedArray;
                         }
                     }//end if
                 }//end if
             }
-            // Handle other property types with empty strings
+            // Handle other property types with empty strings.
             else if ($value === '' && in_array($propertyType, ['string', 'number', 'integer', 'boolean'])) {
-                if (!$isRequired) {
-                    // Convert empty string to null for non-required scalar properties
+                if ($isRequired === false) {
+                    // Convert empty string to null for non-required scalar properties.
                     $sanitizedData[$propertyName] = null;
                 } else {
                     // Keep empty string for required properties - will fail validation with clear error
@@ -1648,7 +1660,7 @@ class SaveObject
         if ($uuid === null && (isset($selfData['id']) || isset($data['id']))) {
             $uuid = $selfData['id'] ?? $data['id'];
         }
-        
+
         if ($uuid === '') {
             $uuid = null;
         }
@@ -1661,7 +1673,6 @@ class SaveObject
         if ($uploadedFiles !== null && !empty($uploadedFiles)) {
             $data = $this->processUploadedFiles($uploadedFiles, $data);
         }
-
 
         // Debug logging can be added here if needed
         // Set schema ID based on input type.
@@ -1716,8 +1727,8 @@ class SaveObject
                     selfData: $selfData ?? [],
                     folderId: $folderId
                 );
-                // If not persisting, return the prepared object
-                if (!$persist) {
+                // If not persisting, return the prepared object.
+                if ($persist === false) {
                     return $preparedObject;
                 }
 
@@ -1756,8 +1767,8 @@ class SaveObject
             multi: $multi
         );
 
-        // If not persisting, return the prepared object
-        if (!$persist) {
+        // If not persisting, return the prepared object.
+        if ($persist === false) {
             return $preparedObject;
         }
 
@@ -1776,8 +1787,8 @@ class SaveObject
                 }
             }
 
-            // If files were processed, update the object with file IDs
-            if ($filePropertiesProcessed) {
+            // If files were processed, update the object with file IDs.
+            if ($filePropertiesProcessed === true) {
                 $savedEntity->setObject($data);
 
                 // Re-hydrate image metadata if objectImageField points to a file property
@@ -1785,7 +1796,7 @@ class SaveObject
                 // clear the image metadata so it can be properly extracted during rendering
                 $config = $schema->getConfiguration();
                 if (isset($config['objectImageField'])) {
-                    $imageField = $config['objectImageField'];
+                    $imageField       = $config['objectImageField'];
                     $schemaProperties = $schema->getProperties() ?? [];
 
                     // Check if the image field is a file property
@@ -1799,18 +1810,21 @@ class SaveObject
                 }
 
                 $savedEntity = $this->objectEntityMapper->update($savedEntity);
-            }
+            }//end if
         } catch (\Exception $e) {
             // ROLLBACK: Delete the object if file processing failed
-            $this->logger->warning('File processing failed, rolling back object creation', [
-                'uuid' => $savedEntity->getUuid(),
-                'error' => $e->getMessage()
-            ]);
+            $this->logger->warning(
+                    'File processing failed, rolling back object creation',
+                    [
+                        'uuid'  => $savedEntity->getUuid(),
+                        'error' => $e->getMessage(),
+                    ]
+                    );
             $this->objectEntityMapper->delete($savedEntity);
 
             // Re-throw the exception so the controller can handle it
             throw $e;
-        }
+        }//end try
 
         // Create audit trail for creation if audit trails are enabled and not in silent mode.
         if (!$silent && $this->isAuditTrailsEnabled()) {
@@ -1818,10 +1832,8 @@ class SaveObject
             $savedEntity->setLastLog($log->jsonSerialize());
         }
 
-
         // Update the object with the modified data (file IDs instead of content)
-//        $savedEntity->setObject($data);
-
+        // $savedEntity->setObject($data);
         // **CACHE INVALIDATION**: Clear collection and facet caches so new/updated objects appear immediately
         $this->objectCacheService->invalidateForObjectChange(
             $savedEntity,
@@ -1862,6 +1874,7 @@ class SaveObject
         if ($objectEntity->getUuid() === null) {
             $objectEntity->setUuid(Uuid::v4()->toRfc4122());
         }
+
         $objectEntity->setUri(
             $this->urlGenerator->getAbsoluteURL(
                 $this->urlGenerator->linkToRoute(
@@ -1887,8 +1900,7 @@ class SaveObject
         } catch (Exception $e) {
             // CRITICAL FIX: Hydration failures indicate schema/data mismatch - don't suppress!
             throw new \Exception(
-                'Object metadata hydration failed: ' . $e->getMessage() .
-                '. This indicates a mismatch between object data and schema configuration.',
+                'Object metadata hydration failed: '.$e->getMessage().'. This indicates a mismatch between object data and schema configuration.',
                 0,
                 $e
             );
@@ -1899,19 +1911,25 @@ class SaveObject
         $config = $schema->getConfiguration();
         if (isset($config['autoPublish']) && $config['autoPublish'] === true) {
             if ($objectEntity->getPublished() === null) {
-                $this->logger->debug('Auto-publishing object on creation', [
-                    'uuid' => $objectEntity->getUuid(),
-                    'schema' => $schema->getTitle(),
-                    'autoPublish' => true
-                ]);
+                $this->logger->debug(
+                        'Auto-publishing object on creation',
+                        [
+                            'uuid'        => $objectEntity->getUuid(),
+                            'schema'      => $schema->getTitle(),
+                            'autoPublish' => true,
+                        ]
+                        );
                 $objectEntity->setPublished(new DateTime());
             } else {
-                $this->logger->debug('Object already has published date, skipping auto-publish', [
-                    'uuid' => $objectEntity->getUuid(),
-                    'publishedDate' => $objectEntity->getPublished()->format('Y-m-d H:i:s')
-                ]);
+                $this->logger->debug(
+                        'Object already has published date, skipping auto-publish',
+                        [
+                            'uuid'          => $objectEntity->getUuid(),
+                            'publishedDate' => $objectEntity->getPublished()->format('Y-m-d H:i:s'),
+                        ]
+                        );
             }
-        }
+        }//end if
 
         // Set user information if available.
         $user = $this->userSession->getUser();
@@ -1923,7 +1941,8 @@ class SaveObject
         // Always respect user's active organisation regardless of multitenancy settings
         // BUT: Don't override if organisation was explicitly set via @self metadata (e.g., for organization activation)
         if (($objectEntity->getOrganisation() === null || $objectEntity->getOrganisation() === '')
-            && !isset($selfData['organisation'])) {
+            && !isset($selfData['organisation'])
+        ) {
             $organisationUuid = $this->organisationService->getOrganisationForNewEntity();
             $objectEntity->setOrganisation($organisationUuid);
         }
@@ -1934,8 +1953,7 @@ class SaveObject
         } catch (Exception $e) {
             // CRITICAL FIX: Relation processing failures indicate serious data integrity issues!
             throw new \Exception(
-                'Object relations processing failed: ' . $e->getMessage() .
-                '. This indicates invalid relation data or schema configuration problems.',
+                'Object relations processing failed: '.$e->getMessage().'. This indicates invalid relation data or schema configuration problems.',
                 0,
                 $e
             );
@@ -1985,7 +2003,6 @@ class SaveObject
 
         // NOTE: Relations are already updated in prepareObjectForCreation() - no need to update again
         // Duplicate call would overwrite relations after handleInverseRelationsWriteBack removes properties
-
         return $existingObject;
 
     }//end prepareObjectForUpdate()
@@ -2009,43 +2026,55 @@ class SaveObject
         }
 
         // Extract and set published property if present
-        $this->logger->debug('Processing published field in SaveObject', [
-            'selfDataKeys' => array_keys($selfData)
-        ]);
+        $this->logger->debug(
+                'Processing published field in SaveObject',
+                [
+                    'selfDataKeys' => array_keys($selfData),
+                ]
+                );
 
         if (array_key_exists('published', $selfData)) {
             $publishedValue = $selfData['published'];
-            $isEmpty = empty($publishedValue);
+            $isEmpty        = empty($publishedValue);
 
-            $this->logger->debug('Published field found in object data', [
-                'publishedValue' => $publishedValue,
-                'isEmpty' => $isEmpty
-            ]);
+            $this->logger->debug(
+                    'Published field found in object data',
+                    [
+                        'publishedValue' => $publishedValue,
+                        'isEmpty'        => $isEmpty,
+                    ]
+                    );
 
             if (!empty($publishedValue)) {
                 try {
                     // Convert string to DateTime if it's a valid date string
                     if (is_string($publishedValue) === true) {
-                        $this->logger->debug('Setting published date on object entity', [
-                            'publishedValue' => $publishedValue
-                        ]);
+                        $this->logger->debug(
+                                'Setting published date on object entity',
+                                [
+                                    'publishedValue' => $publishedValue,
+                                ]
+                                );
                         $objectEntity->setPublished(new DateTime($publishedValue));
                     }
                 } catch (Exception $exception) {
-                    $this->logger->warning('Failed to convert published date', [
-                        'publishedValue' => $publishedValue,
-                        'error' => $exception->getMessage()
-                    ]);
+                    $this->logger->warning(
+                            'Failed to convert published date',
+                            [
+                                'publishedValue' => $publishedValue,
+                                'error'          => $exception->getMessage(),
+                            ]
+                            );
                     // Silently ignore invalid date formats
-                }
+                }//end try
             } else {
                 $this->logger->debug('Published value is empty, setting to null');
                 $objectEntity->setPublished(null);
-            }
+            }//end if
         } else {
             $this->logger->debug('No published field found in selfData, setting to existing value');
             $objectEntity->setPublished($objectEntity->getPublished());
-        }
+        }//end if
 
         // Extract and set depublished property if present
         if (array_key_exists('depublished', $selfData) && !empty($selfData['depublished'])) {
@@ -2092,8 +2121,7 @@ class SaveObject
         } catch (Exception $e) {
             // CRITICAL FIX: Sanitization failures indicate serious data problems - don't suppress!
             throw new \Exception(
-                'Object data sanitization failed: ' . $e->getMessage() .
-                '. This indicates invalid or corrupted object data that cannot be processed safely.',
+                'Object data sanitization failed: '.$e->getMessage().'. This indicates invalid or corrupted object data that cannot be processed safely.',
                 0,
                 $e
             );
@@ -2216,12 +2244,15 @@ class SaveObject
             // Skip files with upload errors
             if ($fileInfo['error'] !== UPLOAD_ERR_OK) {
                 // Log the error but don't fail the entire request
-                $this->logger->warning('File upload error for field {field}: {error}', [
-                    'app' => 'openregister',
-                    'field' => $fieldName,
-                    'error' => $fileInfo['error'],
-                    'file' => $fileInfo['name'] ?? 'unknown'
-                ]);
+                $this->logger->warning(
+                        'File upload error for field {field}: {error}',
+                        [
+                            'app'   => 'openregister',
+                            'field' => $fieldName,
+                            'error' => $fileInfo['error'],
+                            'file'  => $fileInfo['name'] ?? 'unknown',
+                        ]
+                        );
                 continue;
             }
 
@@ -2233,36 +2264,39 @@ class SaveObject
 
             // Create a data URI from the uploaded file
             // This allows the existing file handling logic to process it
-            $mimeType = $fileInfo['type'] ?? 'application/octet-stream';
+            $mimeType      = $fileInfo['type'] ?? 'application/octet-stream';
             $base64Content = base64_encode($fileContent);
-            $dataUri = "data:$mimeType;base64,$base64Content";
+            $dataUri       = "data:$mimeType;base64,$base64Content";
 
             // Handle array field names (e.g., 'images[]' or 'images[0]' becomes 'images')
             // Strip the array suffix/index and treat as array property
-            $isArrayField = false;
+            $isArrayField   = false;
             $cleanFieldName = $fieldName;
 
             // Check for array notation: images[] or images[0], images[1], etc.
             if (preg_match('/^(.+)\[\d*\]$/', $fieldName, $matches)) {
-                $isArrayField = true;
-                $cleanFieldName = $matches[1]; // Extract 'images' from 'images[0]'
+                $isArrayField   = true;
+                $cleanFieldName = $matches[1];
+                // Extract 'images' from 'images[0]'
             }
 
-            // Inject the data URI into the object data
-            // If the field already has a value in $data, the uploaded file takes precedence
-            if ($isArrayField) {
-                // For array fields, append to array
+            // Inject the data URI into the object data.
+            // If the field already has a value in $data, the uploaded file takes precedence.
+            if ($isArrayField === true) {
+                // For array fields, append to array.
                 if (!isset($data[$cleanFieldName])) {
                     $data[$cleanFieldName] = [];
                 }
+
                 $data[$cleanFieldName][] = $dataUri;
             } else {
                 // For single fields, set directly
                 $data[$fieldName] = $dataUri;
             }
-        }
+        }//end foreach
 
         return $data;
+
     }//end processUploadedFiles()
 
 
@@ -2319,10 +2353,10 @@ class SaveObject
             if (filter_var($value, FILTER_VALIDATE_URL)
                 && (strpos($value, 'http://') === 0 || strpos($value, 'https://') === 0)
             ) {
-                // Parse URL to get path
+                // Parse URL to get path.
                 $urlPath = parse_url($value, PHP_URL_PATH);
-                if ($urlPath) {
-                    // Get file extension
+                if ($urlPath !== null && $urlPath !== '') {
+                    // Get file extension.
                     $extension = strtolower(pathinfo($urlPath, PATHINFO_EXTENSION));
 
                     // Common file extensions that indicate downloadable files
@@ -2422,7 +2456,7 @@ class SaveObject
                         && (strpos($item, 'http://') === 0 || strpos($item, 'https://') === 0)
                     ) {
                         $urlPath = parse_url($item, PHP_URL_PATH);
-                        if ($urlPath) {
+                        if ($urlPath !== null && $urlPath !== '') {
                             $extension      = strtolower(pathinfo($urlPath, PATHINFO_EXTENSION));
                             $fileExtensions = [
                                 'pdf',
@@ -2598,7 +2632,7 @@ class SaveObject
         if ($fileValue === null || (is_array($fileValue) && empty($fileValue))) {
             // Get existing file IDs from the current object data
             $currentObjectData = $objectEntity->getObject();
-            $existingFileIds = $currentObjectData[$propertyName] ?? null;
+            $existingFileIds   = $currentObjectData[$propertyName] ?? null;
 
             if ($existingFileIds !== null) {
                 // Delete existing files
@@ -2610,7 +2644,7 @@ class SaveObject
                                 $this->fileService->deleteFile((int) $fileId, $objectEntity);
                             } catch (\Exception $e) {
                                 // Log but don't fail - file might already be deleted
-                                $this->logger->warning("Failed to delete file $fileId: " . $e->getMessage());
+                                $this->logger->warning("Failed to delete file $fileId: ".$e->getMessage());
                             }
                         }
                     }
@@ -2620,18 +2654,18 @@ class SaveObject
                         $this->fileService->deleteFile((int) $existingFileIds, $objectEntity);
                     } catch (\Exception $e) {
                         // Log but don't fail - file might already be deleted
-                        $this->logger->warning("Failed to delete file $existingFileIds: " . $e->getMessage());
+                        $this->logger->warning("Failed to delete file $existingFileIds: ".$e->getMessage());
                     }
-                }
-            }
+                }//end if
+            }//end if
 
             // Set property to null or empty array
             $object[$propertyName] = $isArrayProperty ? [] : null;
             return;
-        }
+        }//end if
 
-        if ($isArrayProperty) {
-            // Handle array of files
+        if ($isArrayProperty === true) {
+            // Handle array of files.
             if (!is_array($fileValue)) {
                 throw new Exception("Property '$propertyName' is configured as array but received non-array value");
             }
@@ -3081,8 +3115,8 @@ class SaveObject
             // Extract MIME type and content from data URI
             if (preg_match('/^data:([^;]+);base64,(.+)$/', $fileContent, $matches)) {
                 $mimeType = $matches[1];
-                $content  = base64_decode($matches[2], true); // Strict mode
-
+                $content  = base64_decode($matches[2], true);
+                // Strict mode
                 if ($content === false) {
                     throw new \OCA\OpenRegister\Exception\ValidationException('Invalid base64 content in data URI');
                 }
@@ -3091,7 +3125,8 @@ class SaveObject
             }
         } else {
             // Handle plain base64 content
-            $content = base64_decode($fileContent, true); // Strict mode
+            $content = base64_decode($fileContent, true);
+            // Strict mode
             if ($content === false) {
                 throw new \OCA\OpenRegister\Exception\ValidationException('Invalid base64 content');
             }
@@ -3144,9 +3179,9 @@ class SaveObject
     {
         $errorPrefix = $index !== null ? "File at $propertyName[$index]" : "File at $propertyName";
 
-        // Security: Block executable files (unless explicitly allowed)
+        // Security: Block executable files (unless explicitly allowed).
         $allowExecutables = $fileConfig['allowExecutables'] ?? false;
-        if (!$allowExecutables) {
+        if ($allowExecutables === false) {
             $this->blockExecutableFiles($fileData, $errorPrefix);
         }
 
@@ -3188,40 +3223,86 @@ class SaveObject
         // List of dangerous executable extensions
         $dangerousExtensions = [
             // Windows executables
-            'exe', 'bat', 'cmd', 'com', 'msi', 'scr', 'vbs', 'vbe', 'js', 'jse', 'wsf', 'wsh', 'ps1', 'dll',
+            'exe',
+            'bat',
+            'cmd',
+            'com',
+            'msi',
+            'scr',
+            'vbs',
+            'vbe',
+            'js',
+            'jse',
+            'wsf',
+            'wsh',
+            'ps1',
+            'dll',
             // Unix/Linux executables
-            'sh', 'bash', 'csh', 'ksh', 'zsh', 'run', 'bin', 'app', 'deb', 'rpm',
+            'sh',
+            'bash',
+            'csh',
+            'ksh',
+            'zsh',
+            'run',
+            'bin',
+            'app',
+            'deb',
+            'rpm',
             // Scripts and code
-            'php', 'phtml', 'php3', 'php4', 'php5', 'phps', 'phar',
-            'py', 'pyc', 'pyo', 'pyw',
-            'pl', 'pm', 'cgi',
-            'rb', 'rbw',
-            'jar', 'war', 'ear', 'class',
+            'php',
+            'phtml',
+            'php3',
+            'php4',
+            'php5',
+            'phps',
+            'phar',
+            'py',
+            'pyc',
+            'pyo',
+            'pyw',
+            'pl',
+            'pm',
+            'cgi',
+            'rb',
+            'rbw',
+            'jar',
+            'war',
+            'ear',
+            'class',
             // Containers and packages
-            'appimage', 'snap', 'flatpak',
+            'appimage',
+            'snap',
+            'flatpak',
             // MacOS
-            'dmg', 'pkg', 'command',
+            'dmg',
+            'pkg',
+            'command',
             // Android
             'apk',
             // Other dangerous
-            'elf', 'out', 'o', 'so', 'dylib',
+            'elf',
+            'out',
+            'o',
+            'so',
+            'dylib',
         ];
 
         // Check file extension
         if (isset($fileData['filename'])) {
             $extension = strtolower(pathinfo($fileData['filename'], PATHINFO_EXTENSION));
             if (in_array($extension, $dangerousExtensions, true)) {
-                $this->logger->warning('Executable file upload blocked', [
-                    'app' => 'openregister',
-                    'filename' => $fileData['filename'],
-                    'extension' => $extension,
-                    'mimeType' => $fileData['mimeType'] ?? 'unknown'
-                ]);
+                $this->logger->warning(
+                        'Executable file upload blocked',
+                        [
+                            'app'       => 'openregister',
+                            'filename'  => $fileData['filename'],
+                            'extension' => $extension,
+                            'mimeType'  => $fileData['mimeType'] ?? 'unknown',
+                        ]
+                        );
 
                 throw new \OCA\OpenRegister\Exception\ValidationException(
-                    "$errorPrefix is an executable file (.$extension). "
-                    ."Executable files are blocked for security reasons. "
-                    ."Allowed formats: documents, images, archives, data files."
+                    "$errorPrefix is an executable file (.$extension). "."Executable files are blocked for security reasons. "."Allowed formats: documents, images, archives, data files."
                 );
             }
         }
@@ -3250,14 +3331,16 @@ class SaveObject
         ];
 
         if (isset($fileData['mimeType']) && in_array($fileData['mimeType'], $executableMimeTypes, true)) {
-            $this->logger->warning('Executable MIME type blocked', [
-                'app' => 'openregister',
-                'mimeType' => $fileData['mimeType']
-            ]);
+            $this->logger->warning(
+                    'Executable MIME type blocked',
+                    [
+                        'app'      => 'openregister',
+                        'mimeType' => $fileData['mimeType'],
+                    ]
+                    );
 
             throw new \OCA\OpenRegister\Exception\ValidationException(
-                "$errorPrefix has executable MIME type '{$fileData['mimeType']}'. "
-                ."Executable files are blocked for security reasons."
+                "$errorPrefix has executable MIME type '{$fileData['mimeType']}'. "."Executable files are blocked for security reasons."
             );
         }
 
@@ -3281,49 +3364,52 @@ class SaveObject
     {
         // Common executable magic bytes
         $magicBytes = [
-            'MZ' => 'Windows executable (PE/EXE)',
-            "\x7FELF" => 'Linux/Unix executable (ELF)',
-            "#!/bin/sh" => 'Shell script',
-            "#!/bin/bash" => 'Bash script',
-            "#!/usr/bin/env" => 'Script with env shebang',
-            "<?php" => 'PHP script',
+            'MZ'               => 'Windows executable (PE/EXE)',
+            "\x7FELF"          => 'Linux/Unix executable (ELF)',
+            "#!/bin/sh"        => 'Shell script',
+            "#!/bin/bash"      => 'Bash script',
+            "#!/usr/bin/env"   => 'Script with env shebang',
+            "<?php"            => 'PHP script',
             "\xCA\xFE\xBA\xBE" => 'Java class file',
-            "PK\x03\x04" => false, // ZIP - need deeper inspection as JARs are ZIPs
-            "\x50\x4B\x03\x04" => false, // ZIP alternate
+            "PK\x03\x04"       => false,
+        // ZIP - need deeper inspection as JARs are ZIPs
+            "\x50\x4B\x03\x04" => false,
+        // ZIP alternate
         ];
 
         foreach ($magicBytes as $signature => $description) {
             if ($description === false) {
-                continue; // Skip patterns that need deeper inspection
+                continue;
+                // Skip patterns that need deeper inspection
             }
 
             if (strpos($content, $signature) === 0) {
-                $this->logger->warning('Executable magic bytes detected', [
-                    'app' => 'openregister',
-                    'type' => $description
-                ]);
+                $this->logger->warning(
+                        'Executable magic bytes detected',
+                        [
+                            'app'  => 'openregister',
+                            'type' => $description,
+                        ]
+                        );
 
                 throw new \OCA\OpenRegister\Exception\ValidationException(
-                    "$errorPrefix contains executable code ($description). "
-                    ."Executable files are blocked for security reasons."
+                    "$errorPrefix contains executable code ($description). "."Executable files are blocked for security reasons."
                 );
             }
-        }
+        }//end foreach
 
         // Check for script shebangs anywhere in first 4 lines
         $firstLines = substr($content, 0, 1024);
         if (preg_match('/^#!.*\/(sh|bash|zsh|ksh|csh|python|perl|ruby|php|node)/m', $firstLines)) {
             throw new \OCA\OpenRegister\Exception\ValidationException(
-                "$errorPrefix contains script shebang. "
-                ."Script files are blocked for security reasons."
+                "$errorPrefix contains script shebang. "."Script files are blocked for security reasons."
             );
         }
 
         // Check for embedded PHP tags
         if (preg_match('/<\?php|<\?=|<script\s+language\s*=\s*["\']php/i', $firstLines)) {
             throw new \OCA\OpenRegister\Exception\ValidationException(
-                "$errorPrefix contains PHP code. "
-                ."PHP files are blocked for security reasons."
+                "$errorPrefix contains PHP code. "."PHP files are blocked for security reasons."
             );
         }
 
@@ -3559,15 +3645,15 @@ class SaveObject
             }
         }
 
-        // Update the object with the modified data (file IDs instead of content)
-        if ($filePropertiesProcessed) {
+        // Update the object with the modified data (file IDs instead of content).
+        if ($filePropertiesProcessed === true) {
             $updatedEntity->setObject($data);
 
             // Clear image metadata if objectImageField points to a file property
             // This ensures the image URL is extracted from the file object during rendering
             $config = $schema->getConfiguration();
             if (isset($config['objectImageField'])) {
-                $imageField = $config['objectImageField'];
+                $imageField       = $config['objectImageField'];
                 $schemaProperties = $schema->getProperties() ?? [];
 
                 // Check if the image field is a file property
@@ -3582,7 +3668,7 @@ class SaveObject
 
             // Save the updated entity with file IDs back to database
             $updatedEntity = $this->objectEntityMapper->update($updatedEntity);
-        }
+        }//end if
 
         return $updatedEntity;
 
@@ -3688,6 +3774,7 @@ class SaveObject
             $this->logger->warning('Failed to check audit trails setting, defaulting to enabled', ['error' => $e->getMessage()]);
             return true;
         }
+
     }//end isAuditTrailsEnabled()
 
 

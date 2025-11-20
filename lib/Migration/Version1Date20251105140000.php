@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * Add configuration management columns
  *
  * This migration adds columns to support remote configuration management,
@@ -36,22 +36,24 @@ class Version1Date20251105140000 extends SimpleMigrationStep
     /**
      * Add configuration management columns to configurations table
      *
-     * @param IOutput $output The migration output handler
+     * @param IOutput $output        The migration output handler
      * @param Closure $schemaClosure The closure to get the schema
-     * @param array   $options Migration options
+     * @param array   $options       Migration options
      *
      * @return null|ISchemaWrapper The updated schema or null
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /** @var ISchemaWrapper $schema */
-        $schema = $schemaClosure();
+        /*
+         * @var ISchemaWrapper $schema
+         */
+        $schema  = $schemaClosure();
         $updated = false;
 
         // Add new columns to configurations table
         if ($schema->hasTable('openregister_configurations') === true) {
             $table = $schema->getTable('openregister_configurations');
-            
+
             // Add sourceType column
             if ($table->hasColumn('source_type') === false) {
                 $table->addColumn(
@@ -59,7 +61,7 @@ class Version1Date20251105140000 extends SimpleMigrationStep
                     Types::STRING,
                     [
                         'notnull' => false,
-                        'length' => 64,
+                        'length'  => 64,
                         'default' => 'manual',
                     ]
                 );
@@ -88,7 +90,7 @@ class Version1Date20251105140000 extends SimpleMigrationStep
                     Types::STRING,
                     [
                         'notnull' => false,
-                        'length' => 255,
+                        'length'  => 255,
                         'default' => null,
                     ]
                 );
@@ -103,7 +105,7 @@ class Version1Date20251105140000 extends SimpleMigrationStep
                     Types::STRING,
                     [
                         'notnull' => false,
-                        'length' => 255,
+                        'length'  => 255,
                         'default' => null,
                     ]
                 );
@@ -160,7 +162,7 @@ class Version1Date20251105140000 extends SimpleMigrationStep
                     Types::STRING,
                     [
                         'notnull' => false,
-                        'length' => 255,
+                        'length'  => 255,
                         'default' => null,
                     ]
                 );
@@ -175,7 +177,7 @@ class Version1Date20251105140000 extends SimpleMigrationStep
                     Types::STRING,
                     [
                         'notnull' => false,
-                        'length' => 255,
+                        'length'  => 255,
                         'default' => 'main',
                     ]
                 );
@@ -190,7 +192,7 @@ class Version1Date20251105140000 extends SimpleMigrationStep
                     Types::STRING,
                     [
                         'notnull' => false,
-                        'length' => 500,
+                        'length'  => 500,
                         'default' => null,
                     ]
                 );
@@ -233,7 +235,7 @@ class Version1Date20251105140000 extends SimpleMigrationStep
                     Types::STRING,
                     [
                         'notnull' => false,
-                        'length' => 36,
+                        'length'  => 36,
                         'default' => null,
                     ]
                 );
@@ -248,7 +250,7 @@ class Version1Date20251105140000 extends SimpleMigrationStep
                     Types::STRING,
                     [
                         'notnull' => false,
-                        'length' => 64,
+                        'length'  => 64,
                         'default' => null,
                     ]
                 );
@@ -290,5 +292,3 @@ class Version1Date20251105140000 extends SimpleMigrationStep
 
 
 }//end class
-
-

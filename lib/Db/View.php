@@ -78,14 +78,14 @@ class View extends Entity implements JsonSerializable
     /**
      * Whether the view is public
      *
-     * @var bool Whether the view is public
+     * @var boolean Whether the view is public
      */
     protected bool $isPublic = false;
 
     /**
      * Whether the view is the user's default
      *
-     * @var bool Whether the view is the default
+     * @var boolean Whether the view is the default
      */
     protected bool $isDefault = false;
 
@@ -133,6 +133,7 @@ class View extends Entity implements JsonSerializable
         $this->addType('favoredBy', 'json');
         $this->addType('created', 'datetime');
         $this->addType('updated', 'datetime');
+
     }//end __construct()
 
 
@@ -144,6 +145,7 @@ class View extends Entity implements JsonSerializable
     public function getFavoredBy(): array
     {
         return $this->favoredBy ?? [];
+
     }//end getFavoredBy()
 
 
@@ -158,6 +160,7 @@ class View extends Entity implements JsonSerializable
     {
         $this->favoredBy = $favoredBy;
         $this->markFieldUpdated('favoredBy');
+
     }//end setFavoredBy()
 
 
@@ -200,38 +203,49 @@ class View extends Entity implements JsonSerializable
         $favoredBy = $this->favoredBy ?? [];
 
         return [
-            'id'           => $this->id,
-            'uuid'         => $this->uuid,
-            'name'         => $this->name,
-            'description'  => $this->description,
-            'owner'        => $this->owner,
-            'organisation' => $this->organisation,
-            'isPublic'     => $this->isPublic,
-            'isDefault'   => $this->isDefault,
-            'query'       => $this->query,
-            'favoredBy'   => $favoredBy,
-            'quota'       => [
-                'storage'   => null, // To be set via admin configuration
-                'bandwidth' => null, // To be set via admin configuration
-                'requests'  => null, // To be set via admin configuration
-                'users'     => null, // To be set via admin configuration
-                'groups'    => null, // To be set via admin configuration
+            'id'                     => $this->id,
+            'uuid'                   => $this->uuid,
+            'name'                   => $this->name,
+            'description'            => $this->description,
+            'owner'                  => $this->owner,
+            'organisation'           => $this->organisation,
+            'isPublic'               => $this->isPublic,
+            'isDefault'              => $this->isDefault,
+            'query'                  => $this->query,
+            'favoredBy'              => $favoredBy,
+            'quota'                  => [
+                'storage'   => null,
+        // To be set via admin configuration
+                'bandwidth' => null,
+        // To be set via admin configuration
+                'requests'  => null,
+        // To be set via admin configuration
+                'users'     => null,
+        // To be set via admin configuration
+                'groups'    => null,
+        // To be set via admin configuration
             ],
-            'usage'       => [
-                'storage'   => 0, // To be calculated from actual usage
-                'bandwidth' => 0, // To be calculated from actual usage
-                'requests'  => 0, // To be calculated from actual usage (query executions)
-                'users'     => count($favoredBy), // Number of users who favorited this view
-                'groups'    => 0, // Views don't have groups
+            'usage'                  => [
+                'storage'   => 0,
+            // To be calculated from actual usage
+                'bandwidth' => 0,
+            // To be calculated from actual usage
+                'requests'  => 0,
+            // To be calculated from actual usage (query executions)
+                'users'     => count($favoredBy),
+            // Number of users who favorited this view
+                'groups'    => 0,
+            // Views don't have groups
             ],
-            'created'     => isset($this->created) === true ? $this->created->format('c') : null,
-            'updated'     => isset($this->updated) === true ? $this->updated->format('c') : null,
+            'created'                => isset($this->created) === true ? $this->created->format('c') : null,
+            'updated'                => isset($this->updated) === true ? $this->updated->format('c') : null,
             'managedByConfiguration' => $this->managedByConfiguration !== null ? [
-                'id' => $this->managedByConfiguration->getId(),
-                'uuid' => $this->managedByConfiguration->getUuid(),
+                'id'    => $this->managedByConfiguration->getId(),
+                'uuid'  => $this->managedByConfiguration->getUuid(),
                 'title' => $this->managedByConfiguration->getTitle(),
             ] : null,
         ];
+
     }//end jsonSerialize()
 
 
@@ -256,6 +270,7 @@ class View extends Entity implements JsonSerializable
         $this->setFavoredBy(isset($object['favoredBy']) === true ? $object['favoredBy'] : []);
 
         return $this;
+
     }//end hydrate()
 
 
@@ -347,4 +362,3 @@ class View extends Entity implements JsonSerializable
 
 
 }//end class
-

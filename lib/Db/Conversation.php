@@ -91,7 +91,7 @@ class Conversation extends Entity implements JsonSerializable
     /**
      * Agent ID used in this conversation
      *
-     * @var int|null Agent ID
+     * @var integer|null Agent ID
      */
     protected ?int $agentId = null;
 
@@ -172,16 +172,17 @@ class Conversation extends Entity implements JsonSerializable
     /**
      * Get a specific metadata value
      *
-     * @param string $key The metadata key
+     * @param string $key     The metadata key
      * @param mixed  $default Default value if key doesn't exist
      *
      * @return mixed The metadata value
      */
-    public function getMetadataValue(string $key, mixed $default = null): mixed
+    public function getMetadataValue(string $key, mixed $default=null): mixed
     {
         if ($this->metadata === null) {
             return $default;
         }
+
         return $this->metadata[$key] ?? $default;
 
     }//end getMetadataValue()
@@ -190,7 +191,7 @@ class Conversation extends Entity implements JsonSerializable
     /**
      * Set a specific metadata value
      *
-     * @param string $key The metadata key
+     * @param string $key   The metadata key
      * @param mixed  $value The value to set
      *
      * @return self
@@ -200,6 +201,7 @@ class Conversation extends Entity implements JsonSerializable
         if ($this->metadata === null) {
             $this->metadata = [];
         }
+
         $this->metadata[$key] = $value;
         return $this;
 
@@ -252,21 +254,19 @@ class Conversation extends Entity implements JsonSerializable
     public function jsonSerialize(): array
     {
         return [
-            'id' => $this->id,
-            'uuid' => $this->uuid,
-            'title' => $this->title,
-            'userId' => $this->userId,
+            'id'           => $this->id,
+            'uuid'         => $this->uuid,
+            'title'        => $this->title,
+            'userId'       => $this->userId,
             'organisation' => $this->organisation,
-            'agentId' => $this->agentId,
-            'metadata' => $this->metadata,
-            'deletedAt' => $this->deletedAt?->format('c'),
-            'created' => $this->created?->format('c'),
-            'updated' => $this->updated?->format('c'),
+            'agentId'      => $this->agentId,
+            'metadata'     => $this->metadata,
+            'deletedAt'    => $this->deletedAt?->format('c'),
+            'created'      => $this->created?->format('c'),
+            'updated'      => $this->updated?->format('c'),
         ];
 
     }//end jsonSerialize()
 
 
 }//end class
-
-

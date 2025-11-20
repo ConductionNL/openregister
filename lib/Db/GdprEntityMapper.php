@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * Mapper for GDPR entities.
  *
  * @category Db
@@ -20,6 +20,8 @@ use OCP\IDBConnection;
  */
 class GdprEntityMapper extends QBMapper
 {
+
+
     /**
      * Constructor.
      *
@@ -28,7 +30,9 @@ class GdprEntityMapper extends QBMapper
     public function __construct(IDBConnection $db)
     {
         parent::__construct($db, 'openregister_entities', GdprEntity::class);
-    }
+
+    }//end __construct()
+
 
     /**
      * Find entities by type and value prefix.
@@ -38,7 +42,7 @@ class GdprEntityMapper extends QBMapper
      *
      * @return GdprEntity[]
      */
-    public function findByType(string $type, ?string $search = null): array
+    public function findByType(string $type, ?string $search=null): array
     {
         $qb = $this->db->getQueryBuilder();
         $qb->select('*')
@@ -50,14 +54,13 @@ class GdprEntityMapper extends QBMapper
 
         if ($search !== null && $search !== '') {
             $qb->andWhere(
-                $qb->expr()->like('value', $qb->createNamedParameter('%' . $qb->escapeLikeParameter($search) . '%'))
+                $qb->expr()->like('value', $qb->createNamedParameter('%'.$qb->escapeLikeParameter($search).'%'))
             );
         }
 
         return $this->findEntities($qb);
-    }
-}
+
+    }//end findByType()
 
 
-
-
+}//end class

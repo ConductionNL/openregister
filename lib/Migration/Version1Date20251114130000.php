@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * OpenRegister Schema Extend Column Removal Migration
  *
  * This migration removes the deprecated 'extend' column from the schemas table.
@@ -12,13 +12,13 @@ declare(strict_types=1);
  * @category Migration
  * @package  OCA\OpenRegister\Migration
  *
- * @author   Conduction Development Team <info@conduction.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version  GIT: <git_id>
+ * @version GIT: <git_id>
  *
- * @link     https://www.OpenRegister.nl
+ * @link https://www.OpenRegister.nl
  */
 
 namespace OCA\OpenRegister\Migration;
@@ -34,7 +34,7 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * Removes the legacy 'extend' column which has been replaced with the
  * standards-compliant JSON Schema composition patterns (allOf, oneOf, anyOf).
- * 
+ *
  * This migration should run after Version1Date20251114120000 which adds the
  * new composition columns. It will migrate any existing 'extend' values to 'allOf'
  * before removing the column.
@@ -65,9 +65,9 @@ class Version1Date20251114130000 extends SimpleMigrationStep
     /**
      * Migrate extend values to allOf before schema change
      *
-     * @param IOutput $output Migration output interface
+     * @param IOutput $output        Migration output interface
      * @param Closure $schemaClosure Schema closure
-     * @param array   $options Migration options
+     * @param array   $options       Migration options
      *
      * @return void
      */
@@ -82,11 +82,11 @@ class Version1Date20251114130000 extends SimpleMigrationStep
             ->where($qb->expr()->isNotNull('extend'))
             ->andWhere($qb->expr()->neq('extend', $qb->createNamedParameter('')));
 
-        $result = $qb->executeQuery();
+        $result        = $qb->executeQuery();
         $migratedCount = 0;
 
         while ($row = $result->fetch()) {
-            $id = $row['id'];
+            $id     = $row['id'];
             $extend = $row['extend'];
 
             // Convert extend to allOf (single parent becomes array with one element)
@@ -116,15 +116,19 @@ class Version1Date20251114130000 extends SimpleMigrationStep
     /**
      * Remove extend column from schemas table
      *
-     * @param IOutput $output Migration output interface
+     * @param IOutput $output        Migration output interface
      * @param Closure $schemaClosure Schema closure
-     * @param array   $options Migration options
+     * @param array   $options       Migration options
      *
      * @return ISchemaWrapper|null Updated schema
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /** @var ISchemaWrapper $schema */
+        /*
+         *
+         *
+         * @var ISchemaWrapper $schema
+         */
         $schema = $schemaClosure();
 
         $output->info('🔧 Removing deprecated extend column...');
@@ -132,11 +136,11 @@ class Version1Date20251114130000 extends SimpleMigrationStep
         // Remove extend field from schemas table
         if ($schema->hasTable('openregister_schemas')) {
             $table = $schema->getTable('openregister_schemas');
-            
+
             // Remove extend column if it exists
             if ($table->hasColumn('extend')) {
                 $table->dropColumn('extend');
-                
+
                 $output->info('   ✓ Removed extend column from schemas table');
                 $output->info('✅ Migration completed successfully');
                 $output->info('📚 Use allOf, oneOf, or anyOf for schema composition');
@@ -154,5 +158,3 @@ class Version1Date20251114130000 extends SimpleMigrationStep
 
 
 }//end class
-
-

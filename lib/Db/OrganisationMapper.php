@@ -79,13 +79,14 @@ class OrganisationMapper extends QBMapper
 
     }//end findByUuid()
 
+
     /**
      * Find multiple organisations by UUIDs using a single optimized query
      *
      * This method performs a single database query to fetch multiple organisations,
      * significantly improving performance compared to individual queries.
      *
-     * @param array $uuids Array of organisation UUIDs to find
+     * @param  array $uuids Array of organisation UUIDs to find
      * @return array Associative array of UUID => Organisation entity
      */
     public function findMultipleByUuid(array $uuids): array
@@ -101,16 +102,17 @@ class OrganisationMapper extends QBMapper
                 $qb->expr()->in('uuid', $qb->createNamedParameter($uuids, IQueryBuilder::PARAM_STR_ARRAY))
             );
 
-        $result = $qb->execute();
+        $result        = $qb->execute();
         $organisations = [];
-        
+
         while ($row = $result->fetch()) {
             $organisation = new Organisation();
             $organisation = $organisation->fromRow($row);
             $organisations[$row['uuid']] = $organisation;
         }
-        
+
         return $organisations;
+
     }//end findMultipleByUuid()
 
 
@@ -207,15 +209,15 @@ class OrganisationMapper extends QBMapper
             $this->logger->info(
                     '[OrganisationMapper] Entity state before insert:',
                     [
-                    'id'          => $organisation->getId(),
-                    'uuid'        => $organisation->getUuid(),
-                    'name'        => $organisation->getName(),
-                    'description' => $organisation->getDescription(),
-                    'owner'       => $organisation->getOwner(),
-                    'users'       => $organisation->getUsers(),
-                    'created'     => $organisation->getCreated(),
-                    'updated'     => $organisation->getUpdated(),
-                ]
+                        'id'          => $organisation->getId(),
+                        'uuid'        => $organisation->getUuid(),
+                        'name'        => $organisation->getName(),
+                        'description' => $organisation->getDescription(),
+                        'owner'       => $organisation->getOwner(),
+                        'users'       => $organisation->getUsers(),
+                        'created'     => $organisation->getCreated(),
+                        'updated'     => $organisation->getUpdated(),
+                    ]
                 );
 
             try {
@@ -324,6 +326,8 @@ class OrganisationMapper extends QBMapper
      *
      * @return array Array of matching organisations
      */
+
+
     /**
      * Find all organisations with pagination
      *
@@ -458,7 +462,7 @@ class OrganisationMapper extends QBMapper
 
     /**
      * Find the default organisation
-     * 
+     *
      * @deprecated Use OrganisationService::getDefaultOrganisation() instead
      *
      * @return Organisation The default organisation
@@ -608,7 +612,7 @@ class OrganisationMapper extends QBMapper
      * - Organisation A (root)
      * - Organisation B (parent: A)
      * - Organisation C (parent: B)
-     * 
+     *
      * findParentChain(C) returns: [B, A]
      *
      * @param string $organisationUuid The starting organisation UUID
@@ -623,14 +627,14 @@ class OrganisationMapper extends QBMapper
             WITH RECURSIVE org_hierarchy AS (
                 -- Base case: the organisation itself
                 SELECT uuid, parent, 0 as level
-                FROM " . $this->getTablePrefix() . $this->getTableName() . "
+                FROM ".$this->getTablePrefix().$this->getTableName()."
                 WHERE uuid = :org_uuid
                 
                 UNION ALL
                 
                 -- Recursive case: get parent organisations
                 SELECT o.uuid, o.parent, oh.level + 1
-                FROM " . $this->getTablePrefix() . $this->getTableName() . " o
+                FROM ".$this->getTablePrefix().$this->getTableName()." o
                 INNER JOIN org_hierarchy oh ON o.uuid = oh.parent
                 WHERE oh.level < 10  -- Prevent infinite loops, max 10 levels
             )
@@ -639,17 +643,17 @@ class OrganisationMapper extends QBMapper
             WHERE level > 0
             ORDER BY level ASC
         ";
-        
+
         try {
             $stmt = $this->db->prepare($sql);
             $stmt->bindValue(':org_uuid', $organisationUuid);
             $result = $stmt->execute();
-            
+
             $parents = [];
             while ($row = $result->fetch()) {
                 $parents[] = $row['uuid'];
             }
-            
+
             $this->logger->debug(
                 'Found parent chain for organisation',
                 [
@@ -658,7 +662,7 @@ class OrganisationMapper extends QBMapper
                     'count'        => count($parents),
                 ]
             );
-            
+
             return $parents;
         } catch (\Exception $e) {
             $this->logger->error(
@@ -668,7 +672,7 @@ class OrganisationMapper extends QBMapper
                     'error'        => $e->getMessage(),
                 ]
             );
-            
+
             // Return empty array on error (fail gracefully)
             return [];
         }//end try
@@ -688,7 +692,7 @@ class OrganisationMapper extends QBMapper
      * - Organisation B (parent: A)
      * - Organisation C (parent: A)
      * - Organisation D (parent: B)
-     * 
+     *
      * findChildrenChain(A) returns: [B, C, D]
      *
      * @param string $organisationUuid The parent organisation UUID
@@ -702,14 +706,14 @@ class OrganisationMapper extends QBMapper
             WITH RECURSIVE org_hierarchy AS (
                 -- Base case: direct children
                 SELECT uuid, parent, 0 as level
-                FROM " . $this->getTablePrefix() . $this->getTableName() . "
+                FROM ".$this->getTablePrefix().$this->getTableName()."
                 WHERE parent = :org_uuid
                 
                 UNION ALL
                 
                 -- Recursive case: children of children
                 SELECT o.uuid, o.parent, oh.level + 1
-                FROM " . $this->getTablePrefix() . $this->getTableName() . " o
+                FROM ".$this->getTablePrefix().$this->getTableName()." o
                 INNER JOIN org_hierarchy oh ON o.parent = oh.uuid
                 WHERE oh.level < 10  -- Prevent infinite loops, max 10 levels
             )
@@ -717,17 +721,17 @@ class OrganisationMapper extends QBMapper
             FROM org_hierarchy
             ORDER BY level ASC
         ";
-        
+
         try {
             $stmt = $this->db->prepare($sql);
             $stmt->bindValue(':org_uuid', $organisationUuid);
             $result = $stmt->execute();
-            
+
             $children = [];
             while ($row = $result->fetch()) {
                 $children[] = $row['uuid'];
             }
-            
+
             $this->logger->debug(
                 'Found children chain for organisation',
                 [
@@ -736,7 +740,7 @@ class OrganisationMapper extends QBMapper
                     'count'        => count($children),
                 ]
             );
-            
+
             return $children;
         } catch (\Exception $e) {
             $this->logger->error(
@@ -746,7 +750,7 @@ class OrganisationMapper extends QBMapper
                     'error'        => $e->getMessage(),
                 ]
             );
-            
+
             // Return empty array on error (fail gracefully)
             return [];
         }//end try
@@ -775,19 +779,19 @@ class OrganisationMapper extends QBMapper
         if ($newParentUuid === null) {
             return;
         }
-        
+
         // Prevent self-reference
         if ($organisationUuid === $newParentUuid) {
             throw new \Exception('Organisation cannot be its own parent.');
         }
-        
+
         // Check if new parent exists
         try {
             $parentOrg = $this->findByUuid($newParentUuid);
         } catch (\Exception $e) {
             throw new \Exception('Parent organisation not found.');
         }
-        
+
         // Check for circular reference: if the new parent has this org in its parent chain
         $parentChain = $this->findParentChain($newParentUuid);
         if (in_array($organisationUuid, $parentChain)) {
@@ -795,21 +799,22 @@ class OrganisationMapper extends QBMapper
                 'Circular reference detected: The new parent organisation is already a descendant of this organisation.'
             );
         }
-        
+
         // Check max depth: current parent chain + this org + existing children chain
         $childrenChain = $this->findChildrenChain($organisationUuid);
-        
+
         // Calculate maximum depth after assignment
-        $maxDepthAbove = count($parentChain) + 1; // Parent chain + new parent
+        $maxDepthAbove = count($parentChain) + 1;
+        // Parent chain + new parent
         $maxDepthBelow = $this->getMaxDepthInChain($childrenChain, $organisationUuid);
-        $totalDepth = $maxDepthAbove + $maxDepthBelow;
-        
+        $totalDepth    = $maxDepthAbove + $maxDepthBelow;
+
         if ($totalDepth > 10) {
             throw new \Exception(
                 "Maximum hierarchy depth exceeded. Total depth would be {$totalDepth} levels (max 10 allowed)."
             );
         }
-        
+
         $this->logger->debug(
             'Parent assignment validated',
             [
@@ -839,7 +844,7 @@ class OrganisationMapper extends QBMapper
         if (empty($childrenUuids)) {
             return 0;
         }
-        
+
         // Build parent map for efficient lookup
         $parentMap = [];
         foreach ($childrenUuids as $childUuid) {
@@ -853,14 +858,14 @@ class OrganisationMapper extends QBMapper
                 continue;
             }
         }
-        
+
         // Calculate depth for each child
         $maxDepth = 0;
         foreach ($childrenUuids as $childUuid) {
-            $depth = $this->calculateDepthFromRoot($childUuid, $rootUuid, $parentMap);
+            $depth    = $this->calculateDepthFromRoot($childUuid, $rootUuid, $parentMap);
             $maxDepth = max($maxDepth, $depth);
         }
-        
+
         return $maxDepth;
 
     }//end getMaxDepthInChain()
@@ -877,14 +882,14 @@ class OrganisationMapper extends QBMapper
      */
     private function calculateDepthFromRoot(string $nodeUuid, string $rootUuid, array $parentMap): int
     {
-        $depth = 0;
+        $depth   = 0;
         $current = $nodeUuid;
-        
+
         while (isset($parentMap[$current]) && $current !== $rootUuid && $depth < 20) {
             $depth++;
             $current = $parentMap[$current];
         }
-        
+
         return $depth;
 
     }//end calculateDepthFromRoot()

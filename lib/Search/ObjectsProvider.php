@@ -123,8 +123,8 @@ class ObjectsProvider implements IFilteringProvider
      *
      * Lower values appear first in search results
      *
-     * @param string $route The route/context for which to get the order
-     * @param array $routeParameters Parameters for the route
+     * @param string $route           The route/context for which to get the order
+     * @param array  $routeParameters Parameters for the route
      *
      * @return int|null Order priority (0-100, lower = higher priority) or null for default
      */
@@ -286,13 +286,17 @@ class ObjectsProvider implements IFilteringProvider
         }
 
         // Set pagination limits for Nextcloud search
-        $searchQuery['_limit'] = $limit ?? 25; // Default limit for search interface
+        $searchQuery['_limit'] = $limit ?? 25;
+        // Default limit for search interface
         $searchQuery['_offset'] = $offset ?? 0;
 
-        $this->logger->debug('OpenRegister search requested', [
-            'search_query' => $searchQuery,
-            'has_search' => !empty($search)
-        ]);
+        $this->logger->debug(
+                'OpenRegister search requested',
+                [
+                    'search_query' => $searchQuery,
+                    'has_search'   => !empty($search),
+                ]
+                );
 
         // Use searchObjectsPaginated for optimal performance
         $searchResults = $this->objectService->searchObjectsPaginated($searchQuery, rbac: true, multi: true);
@@ -308,7 +312,7 @@ class ObjectsProvider implements IFilteringProvider
                 );
 
                 // Create descriptive title and description
-                $title = $result['title'] ?? $result['name'] ?? $result['uuid'] ?? 'Unknown Object';
+                $title       = $result['title'] ?? $result['name'] ?? $result['uuid'] ?? 'Unknown Object';
                 $description = $this->buildDescription($result);
 
                 $searchResultEntries[] = new SearchResultEntry(
@@ -319,12 +323,15 @@ class ObjectsProvider implements IFilteringProvider
                     'icon-openregister'
                 );
             }
-        }
+        }//end if
 
-        $this->logger->debug('OpenRegister search completed', [
-            'results_count' => count($searchResultEntries),
-            'total_results' => $searchResults['total'] ?? 0
-        ]);
+        $this->logger->debug(
+                'OpenRegister search completed',
+                [
+                    'results_count' => count($searchResultEntries),
+                    'total_results' => $searchResults['total'] ?? 0,
+                ]
+                );
 
         return SearchResult::complete(
             $this->l10n->t('Open Register Objects'),
@@ -349,7 +356,7 @@ class ObjectsProvider implements IFilteringProvider
         if (!empty($object['schema'])) {
             $parts[] = $this->l10n->t('Schema: %s', [$object['schema']]);
         }
-        
+
         if (!empty($object['register'])) {
             $parts[] = $this->l10n->t('Register: %s', [$object['register']]);
         }
@@ -357,8 +364,8 @@ class ObjectsProvider implements IFilteringProvider
         // Add summary/description if available
         if (!empty($object['summary'])) {
             $parts[] = $object['summary'];
-        } elseif (!empty($object['description'])) {
-            $parts[] = substr($object['description'], 0, 100) . (strlen($object['description']) > 100 ? '...' : '');
+        } else if (!empty($object['description'])) {
+            $parts[] = substr($object['description'], 0, 100).(strlen($object['description']) > 100 ? '...' : '');
         }
 
         // Add last updated info if available

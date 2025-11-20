@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * Mapper for object text entities.
  *
  * @category Db
@@ -20,6 +20,8 @@ use OCP\IDBConnection;
  */
 class ObjectTextMapper extends QBMapper
 {
+
+
     /**
      * Constructor.
      *
@@ -28,7 +30,9 @@ class ObjectTextMapper extends QBMapper
     public function __construct(IDBConnection $db)
     {
         parent::__construct($db, 'openregister_object_texts', ObjectText::class);
-    }
+
+    }//end __construct()
+
 
     /**
      * Find text by object ID.
@@ -47,9 +51,8 @@ class ObjectTextMapper extends QBMapper
             );
 
         return $this->findEntities($qb);
-    }
-}
+
+    }//end findByObjectId()
 
 
-
-
+}//end class

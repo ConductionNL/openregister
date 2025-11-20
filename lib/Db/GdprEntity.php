@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * GDPR entity representing detected PII/contact information.
  *
  * @category Db
@@ -41,25 +41,36 @@ use OCP\AppFramework\Db\Entity;
  */
 class GdprEntity extends Entity implements JsonSerializable
 {
+
     protected ?string $uuid = null;
+
     protected ?string $type = null;
+
     protected ?string $value = null;
+
     protected ?string $category = null;
+
     protected ?int $belongsToEntityId = null;
+
     protected ?array $metadata = null;
+
     protected ?string $owner = null;
+
     protected ?string $organisation = null;
+
     protected ?DateTime $detectedAt = null;
+
     protected ?DateTime $updatedAt = null;
 
-    public const TYPE_PERSON = 'person';
-    public const TYPE_EMAIL = 'email';
-    public const TYPE_PHONE = 'phone';
+    public const TYPE_PERSON       = 'person';
+    public const TYPE_EMAIL        = 'email';
+    public const TYPE_PHONE        = 'phone';
     public const TYPE_ORGANIZATION = 'organization';
 
-    public const CATEGORY_PII = 'pii';
+    public const CATEGORY_PII       = 'pii';
     public const CATEGORY_SENSITIVE = 'sensitive_pii';
-    public const CATEGORY_BUSINESS = 'business_data';
+    public const CATEGORY_BUSINESS  = 'business_data';
+
 
     /**
      * Constructor.
@@ -76,7 +87,9 @@ class GdprEntity extends Entity implements JsonSerializable
         $this->addType('organisation', 'string');
         $this->addType('detectedAt', 'datetime');
         $this->addType('updatedAt', 'datetime');
-    }
+
+    }//end __construct()
+
 
     /**
      * JSON serialization.
@@ -86,21 +99,20 @@ class GdprEntity extends Entity implements JsonSerializable
     public function jsonSerialize(): array
     {
         return [
-            'id' => $this->id,
-            'uuid' => $this->uuid,
-            'type' => $this->type,
-            'value' => $this->value,
-            'category' => $this->category,
+            'id'                => $this->id,
+            'uuid'              => $this->uuid,
+            'type'              => $this->type,
+            'value'             => $this->value,
+            'category'          => $this->category,
             'belongsToEntityId' => $this->belongsToEntityId,
-            'metadata' => $this->metadata,
-            'owner' => $this->owner,
-            'organisation' => $this->organisation,
-            'detectedAt' => $this->detectedAt?->format(DateTime::ATOM),
-            'updatedAt' => $this->updatedAt?->format(DateTime::ATOM),
+            'metadata'          => $this->metadata,
+            'owner'             => $this->owner,
+            'organisation'      => $this->organisation,
+            'detectedAt'        => $this->detectedAt?->format(DateTime::ATOM),
+            'updatedAt'         => $this->updatedAt?->format(DateTime::ATOM),
         ];
-    }
-}
+
+    }//end jsonSerialize()
 
 
-
-
+}//end class

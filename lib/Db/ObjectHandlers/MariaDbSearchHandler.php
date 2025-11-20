@@ -169,6 +169,7 @@ class MariaDbSearchHandler
                                             );
                                         }
                                     }
+
                                     $queryBuilder->andWhere($orConditions);
                                 }
                                 break 2;
@@ -315,6 +316,7 @@ class MariaDbSearchHandler
                                             $queryBuilder->expr()->eq($qualifiedField, $queryBuilder->createNamedParameter($val))
                                         );
                                     }
+
                                     $queryBuilder->andWhere($orConditions);
                                 }
                                 break 2;
@@ -351,15 +353,16 @@ class MariaDbSearchHandler
                 if (is_array($value) && (isset($value['or']) || isset($value['and']))) {
                     if (isset($value['or'])) {
                         // OR logic: (field=val1 OR field=val2)
-                        $values = is_string($value['or']) ? array_map('trim', explode(',', $value['or'])) : $value['or'];
+                        $values       = is_string($value['or']) ? array_map('trim', explode(',', $value['or'])) : $value['or'];
                         $orConditions = $queryBuilder->expr()->orX();
                         foreach ($values as $val) {
                             $orConditions->add(
                                 $queryBuilder->expr()->eq($qualifiedField, $queryBuilder->createNamedParameter($val))
                             );
                         }
+
                         $queryBuilder->andWhere($orConditions);
-                    } elseif (isset($value['and'])) {
+                    } else if (isset($value['and'])) {
                         // AND logic: multiple andWhere clauses
                         $values = is_string($value['and']) ? array_map('trim', explode(',', $value['and'])) : $value['and'];
                         foreach ($values as $val) {
@@ -368,8 +371,9 @@ class MariaDbSearchHandler
                             );
                         }
                     }
+
                     continue;
-                }
+                }//end if
 
                 // Handle array values (one of search) for non-date fields or simple arrays
                 if (is_array($value) === true) {
@@ -655,11 +659,11 @@ class MariaDbSearchHandler
             // PRIORITY 1: Search in indexed metadata fields (FASTEST - uses database indexes)
             // These columns have indexes and provide the best search performance
             $indexedFields = [
-                'o.name' => 'name',
-                'o.summary' => 'summary', 
-                'o.description' => 'description'
+                'o.name'        => 'name',
+                'o.summary'     => 'summary',
+                'o.description' => 'description',
             ];
-            
+
             foreach ($indexedFields as $columnName => $fieldName) {
                 $termConditions->add(
                     $queryBuilder->expr()->like(
@@ -683,18 +687,17 @@ class MariaDbSearchHandler
             // **PERFORMANCE OPTIMIZATION**: JSON search on object field DISABLED for performance
             // JSON_SEARCH on large object fields is extremely expensive (can add 500ms+ per query)
             // _search now only covers: name, description, summary for sub-500ms performance
-            // 
+            //
             // If comprehensive JSON search is needed, use specific object field filters instead:
             // e.g., ?fieldName=searchTerm rather than ?_search=searchTerm
             //
             // Original code (DISABLED for performance):
             // $jsonSearchFunction = "JSON_SEARCH(LOWER(`object`), 'all', ".$searchParam.")";
             // $termConditions->add(
-            //     $queryBuilder->expr()->isNotNull(
-            //         $queryBuilder->createFunction($jsonSearchFunction)
-            //     )
+            // $queryBuilder->expr()->isNotNull(
+            // $queryBuilder->createFunction($jsonSearchFunction)
+            // )
             // );
-
             // Add the term conditions to the main OR group
             $orConditions->add($termConditions);
         }//end foreach

@@ -59,6 +59,7 @@ class ConfigurationsController extends Controller
 
     }//end __construct()
 
+
     /**
      * List all configurations
      *
@@ -70,15 +71,13 @@ class ConfigurationsController extends Controller
     public function index(): JSONResponse
     {
         // Get request parameters for filtering and searching.
-        $filters        = $this->request->getParams();
+        $filters = $this->request->getParams();
 
         unset($filters['_route']);
 
         $searchParams     = [];
         $searchConditions = [];
         $filters          = $filters;
-
-
 
         // Return all configurations that match the search conditions.
         return new JSONResponse(
@@ -149,15 +148,15 @@ class ConfigurationsController extends Controller
         if (!isset($data['sourceType']) || $data['sourceType'] === null || $data['sourceType'] === '') {
             $data['sourceType'] = 'local';
         }
-        
+
         // Set isLocal based on sourceType (enforce consistency)
         // Local configurations: sourceType === 'local' or 'manual' → isLocal = true
         // External configurations: sourceType === 'github', 'gitlab', or 'url' → isLocal = false
         if (in_array($data['sourceType'], ['local', 'manual'], true)) {
             $data['isLocal'] = true;
-        } elseif (in_array($data['sourceType'], ['github', 'gitlab', 'url'], true)) {
+        } else if (in_array($data['sourceType'], ['github', 'gitlab', 'url'], true)) {
             $data['isLocal'] = false;
-        } elseif (!isset($data['isLocal'])) {
+        } else if (!isset($data['isLocal'])) {
             // Fallback: if sourceType is something else and isLocal not set, default to true
             $data['isLocal'] = true;
         }
@@ -207,7 +206,7 @@ class ConfigurationsController extends Controller
         if (isset($data['sourceType'])) {
             if (in_array($data['sourceType'], ['local', 'manual'], true)) {
                 $data['isLocal'] = true;
-            } elseif (in_array($data['sourceType'], ['github', 'gitlab', 'url'], true)) {
+            } else if (in_array($data['sourceType'], ['github', 'gitlab', 'url'], true)) {
                 $data['isLocal'] = false;
             }
         }

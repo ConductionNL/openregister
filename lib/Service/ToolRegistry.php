@@ -59,6 +59,7 @@ use Psr\Log\LoggerInterface;
  */
 class ToolRegistry
 {
+
     /**
      * Registered tools
      *
@@ -85,9 +86,10 @@ class ToolRegistry
     /**
      * Whether tools have been loaded
      *
-     * @var bool
+     * @var boolean
      */
     private bool $loaded = false;
+
 
     /**
      * Constructor
@@ -100,8 +102,10 @@ class ToolRegistry
         LoggerInterface $logger
     ) {
         $this->eventDispatcher = $eventDispatcher;
-        $this->logger = $logger;
-    }
+        $this->logger          = $logger;
+
+    }//end __construct()
+
 
     /**
      * Load all tools by dispatching registration event
@@ -123,11 +127,16 @@ class ToolRegistry
 
         $this->loaded = true;
 
-        $this->logger->info('[ToolRegistry] Loaded tools', [
-            'count' => count($this->tools),
-            'tools' => array_keys($this->tools),
-        ]);
-    }
+        $this->logger->info(
+                '[ToolRegistry] Loaded tools',
+                [
+                    'count' => count($this->tools),
+                    'tools' => array_keys($this->tools),
+                ]
+                );
+
+    }//end loadTools()
+
 
     /**
      * Register a tool
@@ -166,16 +175,21 @@ class ToolRegistry
 
         // Register the tool
         $this->tools[$id] = [
-            'tool' => $tool,
+            'tool'     => $tool,
             'metadata' => $metadata,
         ];
 
-        $this->logger->info('[ToolRegistry] Tool registered', [
-            'id' => $id,
-            'name' => $metadata['name'],
-            'app' => $metadata['app'],
-        ]);
-    }
+        $this->logger->info(
+                '[ToolRegistry] Tool registered',
+                [
+                    'id'   => $id,
+                    'name' => $metadata['name'],
+                    'app'  => $metadata['app'],
+                ]
+                );
+
+    }//end registerTool()
+
 
     /**
      * Get a tool by ID
@@ -193,7 +207,9 @@ class ToolRegistry
         }
 
         return $this->tools[$id]['tool'];
-    }
+
+    }//end getTool()
+
 
     /**
      * Get all registered tools
@@ -210,7 +226,9 @@ class ToolRegistry
         }
 
         return $result;
-    }
+
+    }//end getAllTools()
+
 
     /**
      * Get tools by their IDs
@@ -235,7 +253,9 @@ class ToolRegistry
         }
 
         return $result;
-    }
+
+    }//end getTools()
+
 
     /**
      * Check if a tool exists
@@ -248,7 +268,9 @@ class ToolRegistry
     {
         $this->loadTools();
         return isset($this->tools[$id]);
-    }
+
+    }//end hasTool()
+
 
     /**
      * Get tools by app
@@ -271,6 +293,8 @@ class ToolRegistry
         }
 
         return $result;
-    }
-}
 
+    }//end getToolsByApp()
+
+
+}//end class

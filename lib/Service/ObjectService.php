@@ -2034,8 +2034,8 @@ class ObjectService
         // For regular search results, proceed with rendering
         $objects = $result;
 
-        // **ULTRA-FAST PATH**: Skip all expensive operations for simple requests
-        if (!$hasComplexRendering) {
+        // **ULTRA-FAST PATH**: Skip all expensive operations for simple requests.
+        if ($hasComplexRendering === false) {
             $this->logger->debug('Ultra-fast path - skipping all expensive operations', [
                 'objectCount' => count($objects),
                 'skipOperations' => ['schema_loading', 'register_loading', 'relationship_preloading', 'complex_rendering']
@@ -2246,7 +2246,7 @@ class ObjectService
         $objectCount = count($objects);
         $isLargeDataset = $objectCount > 20 || !empty($extend);
 
-        if ($isLargeDataset) {
+        if ($isLargeDataset === true) {
             $this->logger->info('📊 PERFORMANCE: Large dataset detected, using circuit breakers', [
                 'objectCount' => $objectCount,
                 'hasExtend' => !empty($extend),
@@ -2702,10 +2702,10 @@ class ObjectService
 
         // **REMOVED**: Cache disabled check removed since SOLR is now our index
 
-        // **PERFORMANCE MONITORING**: Check for _performance=true parameter
+        // **PERFORMANCE MONITORING**: Check for _performance=true parameter.
         $includePerformance = ($query['_performance'] ?? false) === true || ($query['_performance'] ?? false) === 'true';
 
-        if ($includePerformance) {
+        if ($includePerformance === true) {
             $this->logger->info('📊 PERFORMANCE MONITORING: _performance=true parameter detected', [
                 'requestUri' => $_SERVER['REQUEST_URI'] ?? 'unknown',
                 'purpose' => 'performance_analysis',
@@ -2730,8 +2730,8 @@ class ObjectService
             $query['_published'] = $published;
         }
 
-        // **PERFORMANCE OPTIMIZATION**: For complex requests, use async version for better performance
-        if ($isComplexRequest) {
+        // **PERFORMANCE OPTIMIZATION**: For complex requests, use async version for better performance.
+        if ($isComplexRequest === true) {
             $this->logger->debug('Complex request detected, using async processing', [
                 'hasFacets' => $hasFacets,
                 'hasFacetable' => $hasFacetable,
@@ -2845,10 +2845,10 @@ class ObjectService
         // Log the search trail with actual execution time
         $this->logSearchTrail($query, count($results), $total, $executionTime, 'optimized');
 
-        // **REMOVED**: Cache storage logic removed since SOLR is now our index
+        // **REMOVED**: Cache storage logic removed since SOLR is now our index.
 
-        // **PERFORMANCE MONITORING**: Include performance metrics if requested
-        if ($includePerformance) {
+        // **PERFORMANCE MONITORING**: Include performance metrics if requested.
+        if ($includePerformance === true) {
             $totalTime = round((microtime(true) - $perfStart) * 1000, 2);
 
             $paginatedResults['_performance'] = [
@@ -3021,9 +3021,9 @@ class ObjectService
     {
         $optimizeStart = microtime(true);
 
-        // **OPTIMIZATION 1**: Fast path for simple requests
+        // **OPTIMIZATION 1**: Fast path for simple requests.
         $isSimpleRequest = $this->isSimpleRequest($query);
-        if ($isSimpleRequest) {
+        if ($isSimpleRequest === true) {
             $query['_fast_path'] = true;
             $this->logger->debug('🚀 FAST PATH: Simple request detected', [
                 'benefit' => 'skip_heavy_processing',
@@ -3923,7 +3923,7 @@ class ObjectService
                     $slugValue = $this->getValueFromPath($objectData, $sourceField);
                     if ($slugValue !== null) {
                         $generatedSlug = $this->generateSlugFromValue((string) $slugValue);
-                        if ($generatedSlug) {
+                        if ($generatedSlug !== null && $generatedSlug !== '') {
                             $objectData['@self'][$metaField] = $generatedSlug;
                         }
                     }
@@ -4345,7 +4345,7 @@ class ObjectService
         $fileAction     = $mergeData['fileAction'] ?? 'transfer';
         $relationAction = $mergeData['relationAction'] ?? 'transfer';
 
-        if (!$targetObjectId) {
+        if ($targetObjectId === null || $targetObjectId === '') {
             throw new \InvalidArgumentException('Target object ID is required');
         }
 
@@ -4502,7 +4502,7 @@ class ObjectService
                     }
                 }
 
-                if ($updated) {
+                if ($updated === true) {
                     $referencingObject->setRelations($relations);
                     $this->objectEntityMapper->update($referencingObject);
                     $updatedReferences[] = [
@@ -4789,23 +4789,23 @@ class ObjectService
     private function createRelatedObject(array $objectData, array $definition, string $parentUuid): ?string
     {
         try {
-            // Resolve schema reference to actual schema ID
+            // Resolve schema reference to actual schema ID.
             $schemaRef = $definition['$ref'] ?? null;
-            if (!$schemaRef) {
+            if ($schemaRef === null || $schemaRef === '') {
                 return null;
             }
 
-            // Extract schema slug from reference
+            // Extract schema slug from reference.
             $schemaSlug = null;
             if (str_contains($schemaRef, '#/components/schemas/')) {
                 $schemaSlug = substr($schemaRef, strrpos($schemaRef, '/') + 1);
             }
 
-            if (!$schemaSlug) {
+            if ($schemaSlug === null || $schemaSlug === '') {
                 return null;
             }
 
-            // Find the schema - use the same logic as SaveObject.resolveSchemaReference
+            // Find the schema - use the same logic as SaveObject.resolveSchemaReference.
             $targetSchema = null;
 
             // First try to find by slug using findAll and filtering
@@ -4817,16 +4817,16 @@ class ObjectService
                 }
             }
 
-            if (!$targetSchema) {
+            if ($targetSchema === null) {
                 return null;
             }
 
-            // Get the register (use the same register as the parent object)
+            // Get the register (use the same register as the parent object).
             $targetRegister = $this->currentRegister;
 
-            // Add the inverse relationship to the parent object
+            // Add the inverse relationship to the parent object.
             $inversedBy = $definition['inversedBy'] ?? null;
-            if ($inversedBy) {
+            if ($inversedBy !== null && $inversedBy !== '') {
                 $objectData[$inversedBy] = $parentUuid;
             }
 
@@ -4900,10 +4900,10 @@ class ObjectService
             }
         }
 
-        // Remove duplicates and filter valid UUIDs
+        // Remove duplicates and filter valid UUIDs.
         $allRelatedIds = array_unique($allRelatedIds);
 
-        if ($includeRelated) {
+        if ($includeRelated === true) {
             $relatedData['related'] = array_values($allRelatedIds);
         }
 
@@ -5247,13 +5247,13 @@ class ObjectService
                     }
                 }
 
-                if ($updated) {
+                if ($updated === true) {
                     $referencingObject->setRelations($relations);
                     $this->objectEntityMapper->update($referencingObject);
                 }
             }
         } catch (\Exception $e) {
-            // Log error but don't fail the migration
+            // Log error but don't fail the migration.
         }//end try
 
     }//end migrateObjectRelations()
@@ -5892,7 +5892,7 @@ class ObjectService
             strpos($_SERVER['HTTP_HOST'] ?? '', '.ac.') !== false
         );
 
-        if ($isAcEnvironment) {
+        if ($isAcEnvironment === true) {
             return true;
         }
 

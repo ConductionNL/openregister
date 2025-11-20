@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * EntityRelation links detected entities to specific chunks with context.
  *
  * @category Db
@@ -49,20 +49,35 @@ use OCP\AppFramework\Db\Entity;
  */
 class EntityRelation extends Entity implements JsonSerializable
 {
+
     protected ?int $entityId = null;
+
     protected ?int $chunkId = null;
+
     protected ?string $role = null;
+
     protected ?int $fileId = null;
+
     protected ?int $objectId = null;
+
     protected ?int $emailId = null;
+
     protected int $positionStart = 0;
+
     protected int $positionEnd = 0;
+
     protected float $confidence = 0.0;
+
     protected ?string $detectionMethod = null;
+
     protected ?string $context = null;
+
     protected bool $anonymized = false;
+
     protected ?string $anonymizedValue = null;
+
     protected ?DateTime $createdAt = null;
+
 
     /**
      * Constructor.
@@ -83,7 +98,9 @@ class EntityRelation extends Entity implements JsonSerializable
         $this->addType('anonymized', 'boolean');
         $this->addType('anonymizedValue', 'string');
         $this->addType('createdAt', 'datetime');
-    }
+
+    }//end __construct()
+
 
     /**
      * JSON serialization.
@@ -93,25 +110,24 @@ class EntityRelation extends Entity implements JsonSerializable
     public function jsonSerialize(): array
     {
         return [
-            'id' => $this->id,
-            'entityId' => $this->entityId,
-            'chunkId' => $this->chunkId,
-            'role' => $this->role,
-            'fileId' => $this->fileId,
-            'objectId' => $this->objectId,
-            'emailId' => $this->emailId,
-            'positionStart' => $this->positionStart,
-            'positionEnd' => $this->positionEnd,
-            'confidence' => $this->confidence,
+            'id'              => $this->id,
+            'entityId'        => $this->entityId,
+            'chunkId'         => $this->chunkId,
+            'role'            => $this->role,
+            'fileId'          => $this->fileId,
+            'objectId'        => $this->objectId,
+            'emailId'         => $this->emailId,
+            'positionStart'   => $this->positionStart,
+            'positionEnd'     => $this->positionEnd,
+            'confidence'      => $this->confidence,
             'detectionMethod' => $this->detectionMethod,
-            'context' => $this->context,
-            'anonymized' => $this->anonymized,
+            'context'         => $this->context,
+            'anonymized'      => $this->anonymized,
             'anonymizedValue' => $this->anonymizedValue,
-            'createdAt' => $this->createdAt?->format(DateTime::ATOM),
+            'createdAt'       => $this->createdAt?->format(DateTime::ATOM),
         ];
-    }
-}
+
+    }//end jsonSerialize()
 
 
-
-
+}//end class

@@ -41,6 +41,7 @@ use Psr\Log\LoggerInterface;
  */
 class ObjectsTool extends AbstractTool
 {
+
     /**
      * Object service
      *
@@ -48,12 +49,13 @@ class ObjectsTool extends AbstractTool
      */
     private ObjectService $objectService;
 
+
     /**
      * Constructor
      *
-     * @param IUserSession    $userSession    User session service
-     * @param LoggerInterface $logger         Logger service
-     * @param ObjectService   $objectService  Object service
+     * @param IUserSession    $userSession   User session service
+     * @param LoggerInterface $logger        Logger service
+     * @param ObjectService   $objectService Object service
      */
     public function __construct(
         IUserSession $userSession,
@@ -62,7 +64,9 @@ class ObjectsTool extends AbstractTool
     ) {
         parent::__construct($userSession, $logger);
         $this->objectService = $objectService;
-    }
+
+    }//end __construct()
+
 
     /**
      * Get tool name
@@ -72,7 +76,9 @@ class ObjectsTool extends AbstractTool
     public function getName(): string
     {
         return 'objects';
-    }
+
+    }//end getName()
+
 
     /**
      * Get tool description
@@ -81,9 +87,10 @@ class ObjectsTool extends AbstractTool
      */
     public function getDescription(): string
     {
-        return 'Manage objects in OpenRegister. Objects are data records that conform to schemas. '
-             . 'Use this tool to search, view, create, update, or delete objects.';
-    }
+        return 'Manage objects in OpenRegister. Objects are data records that conform to schemas. '.'Use this tool to search, view, create, update, or delete objects.';
+
+    }//end getDescription()
+
 
     /**
      * Get function definitions for LLphant
@@ -94,105 +101,107 @@ class ObjectsTool extends AbstractTool
     {
         return [
             [
-                'name' => 'search_objects',
+                'name'        => 'search_objects',
                 'description' => 'Search for objects with optional filters',
-                'parameters' => [
-                    'type' => 'object',
+                'parameters'  => [
+                    'type'       => 'object',
                     'properties' => [
-                        'query' => [
-                            'type' => 'string',
+                        'query'    => [
+                            'type'        => 'string',
                             'description' => 'Search query text (optional)',
                         ],
                         'register' => [
-                            'type' => 'string',
+                            'type'        => 'string',
                             'description' => 'Filter by register ID (optional)',
                         ],
-                        'schema' => [
-                            'type' => 'string',
+                        'schema'   => [
+                            'type'        => 'string',
                             'description' => 'Filter by schema ID (optional)',
                         ],
-                        'limit' => [
-                            'type' => 'integer',
+                        'limit'    => [
+                            'type'        => 'integer',
                             'description' => 'Maximum number of results (default: 20)',
                         ],
-                        'offset' => [
-                            'type' => 'integer',
+                        'offset'   => [
+                            'type'        => 'integer',
                             'description' => 'Number of results to skip (default: 0)',
                         ],
                     ],
-                    'required' => [],
+                    'required'   => [],
                 ],
             ],
             [
-                'name' => 'get_object',
+                'name'        => 'get_object',
                 'description' => 'Get details about a specific object by ID or UUID',
-                'parameters' => [
-                    'type' => 'object',
+                'parameters'  => [
+                    'type'       => 'object',
                     'properties' => [
                         'id' => [
-                            'type' => 'string',
+                            'type'        => 'string',
                             'description' => 'The object ID or UUID to retrieve',
                         ],
                     ],
-                    'required' => ['id'],
+                    'required'   => ['id'],
                 ],
             ],
             [
-                'name' => 'create_object',
+                'name'        => 'create_object',
                 'description' => 'Create a new object with data',
-                'parameters' => [
-                    'type' => 'object',
+                'parameters'  => [
+                    'type'       => 'object',
                     'properties' => [
                         'register' => [
-                            'type' => 'string',
+                            'type'        => 'string',
                             'description' => 'The register ID where the object should be created',
                         ],
-                        'schema' => [
-                            'type' => 'string',
+                        'schema'   => [
+                            'type'        => 'string',
                             'description' => 'The schema ID that defines the object structure',
                         ],
-                        'data' => [
-                            'type' => 'object',
+                        'data'     => [
+                            'type'        => 'object',
                             'description' => 'The object data conforming to the schema',
                         ],
                     ],
-                    'required' => ['register', 'schema', 'data'],
+                    'required'   => ['register', 'schema', 'data'],
                 ],
             ],
             [
-                'name' => 'update_object',
+                'name'        => 'update_object',
                 'description' => 'Update an existing object',
-                'parameters' => [
-                    'type' => 'object',
+                'parameters'  => [
+                    'type'       => 'object',
                     'properties' => [
-                        'id' => [
-                            'type' => 'string',
+                        'id'   => [
+                            'type'        => 'string',
                             'description' => 'The object ID to update',
                         ],
                         'data' => [
-                            'type' => 'object',
+                            'type'        => 'object',
                             'description' => 'The updated object data (partial updates supported)',
                         ],
                     ],
-                    'required' => ['id', 'data'],
+                    'required'   => ['id', 'data'],
                 ],
             ],
             [
-                'name' => 'delete_object',
+                'name'        => 'delete_object',
                 'description' => 'Delete an object by ID',
-                'parameters' => [
-                    'type' => 'object',
+                'parameters'  => [
+                    'type'       => 'object',
                     'properties' => [
                         'id' => [
-                            'type' => 'string',
+                            'type'        => 'string',
                             'description' => 'The object ID to delete',
                         ],
                     ],
-                    'required' => ['id'],
+                    'required'   => ['id'],
                 ],
             ],
         ];
-    }
+
+    }//end getFunctions()
+
 
     /**
      * Execute a function
@@ -205,7 +214,7 @@ class ObjectsTool extends AbstractTool
      *
      * @throws \Exception If function execution fails
      */
-    public function executeFunction(string $functionName, array $parameters, ?string $userId = null): array
+    public function executeFunction(string $functionName, array $parameters, ?string $userId=null): array
     {
         $this->log($functionName, $parameters);
 
@@ -216,14 +225,16 @@ class ObjectsTool extends AbstractTool
         try {
             // Convert snake_case to camelCase for PSR compliance
             $methodName = lcfirst(str_replace('_', '', ucwords($functionName, '_')));
-            
+
             // Call the method directly (LLPhant-compatible)
             return $this->$methodName(...array_values($parameters));
         } catch (\Exception $e) {
             $this->log($functionName, $parameters, 'error', $e->getMessage());
             return $this->formatError($e->getMessage());
         }
-    }
+
+    }//end executeFunction()
+
 
     /**
      * Search for objects
@@ -232,15 +243,17 @@ class ObjectsTool extends AbstractTool
      *
      * @return array Result with list of objects
      */
-    public function searchObjects(int $limit = 20, int $offset = 0, ?string $register = null, ?string $schema = null, ?string $query = null): array
+    public function searchObjects(int $limit=20, int $offset=0, ?string $register=null, ?string $schema=null, ?string $query=null): array
     {
         $filters = [];
         if ($register !== null) {
             $filters['register'] = $register;
         }
+
         if ($schema !== null) {
             $filters['schema'] = $schema;
         }
+
         if ($query !== null && !empty($query)) {
             $filters['_search'] = $query;
         }
@@ -248,33 +261,40 @@ class ObjectsTool extends AbstractTool
         $filters = $this->applyViewFilters($filters);
 
         $result = $this->objectService->findAll(
-            null, // registerId
-            null, // schemaId
+            null,
+        // registerId
+            null,
+        // schemaId
             $limit,
             $offset,
             $filters
         );
 
-        $objectList = array_map(function ($object) {
-            return [
-                'id' => $object->getId(),
-                'uuid' => $object->getUuid(),
-                'register' => $object->getRegister(),
-                'schema' => $object->getSchema(),
-                'data' => $object->getObject(),
-                'created' => $object->getCreated()?->format('Y-m-d H:i:s'),
-                'updated' => $object->getUpdated()?->format('Y-m-d H:i:s'),
-            ];
-        }, $result['results'] ?? []);
+        $objectList = array_map(
+                function ($object) {
+                    return [
+                        'id'       => $object->getId(),
+                        'uuid'     => $object->getUuid(),
+                        'register' => $object->getRegister(),
+                        'schema'   => $object->getSchema(),
+                        'data'     => $object->getObject(),
+                        'created'  => $object->getCreated()?->format('Y-m-d H:i:s'),
+                        'updated'  => $object->getUpdated()?->format('Y-m-d H:i:s'),
+                    ];
+                },
+                $result['results'] ?? []
+                );
 
         return $this->formatSuccess(
             [
                 'objects' => $objectList,
-                'total' => $result['total'] ?? count($objectList),
+                'total'   => $result['total'] ?? count($objectList),
             ],
             sprintf('Found %d objects', count($objectList))
         );
-    }
+
+    }//end searchObjects()
+
 
     /**
      * Get a specific object
@@ -291,19 +311,21 @@ class ObjectsTool extends AbstractTool
 
         return $this->formatSuccess(
             [
-                'id' => $object->getId(),
-                'uuid' => $object->getUuid(),
-                'register' => $object->getRegister(),
-                'schema' => $object->getSchema(),
-                'data' => $object->getObject(),
+                'id'           => $object->getId(),
+                'uuid'         => $object->getUuid(),
+                'register'     => $object->getRegister(),
+                'schema'       => $object->getSchema(),
+                'data'         => $object->getObject(),
                 'organisation' => $object->getOrganisation(),
-                'owner' => $object->getOwner(),
-                'created' => $object->getCreated()?->format('Y-m-d H:i:s'),
-                'updated' => $object->getUpdated()?->format('Y-m-d H:i:s'),
+                'owner'        => $object->getOwner(),
+                'created'      => $object->getCreated()?->format('Y-m-d H:i:s'),
+                'updated'      => $object->getUpdated()?->format('Y-m-d H:i:s'),
             ],
             'Object retrieved successfully'
         );
-    }
+
+    }//end getObject()
+
 
     /**
      * Create a new object
@@ -321,7 +343,7 @@ class ObjectsTool extends AbstractTool
             [
                 '@self' => [
                     'register' => $register,
-                    'schema' => $schema,
+                    'schema'   => $schema,
                 ],
             ]
         );
@@ -334,15 +356,17 @@ class ObjectsTool extends AbstractTool
 
         return $this->formatSuccess(
             [
-                'id' => $object->getId(),
-                'uuid' => $object->getUuid(),
+                'id'       => $object->getId(),
+                'uuid'     => $object->getUuid(),
                 'register' => $object->getRegister(),
-                'schema' => $object->getSchema(),
-                'data' => $object->getObject(),
+                'schema'   => $object->getSchema(),
+                'data'     => $object->getObject(),
             ],
             'Object created successfully'
         );
-    }
+
+    }//end createObject()
+
 
     /**
      * Update an existing object
@@ -374,15 +398,17 @@ class ObjectsTool extends AbstractTool
 
         return $this->formatSuccess(
             [
-                'id' => $object->getId(),
-                'uuid' => $object->getUuid(),
+                'id'       => $object->getId(),
+                'uuid'     => $object->getUuid(),
                 'register' => $object->getRegister(),
-                'schema' => $object->getSchema(),
-                'data' => $object->getObject(),
+                'schema'   => $object->getSchema(),
+                'data'     => $object->getObject(),
             ],
             'Object updated successfully'
         );
-    }
+
+    }//end updateObject()
+
 
     /**
      * Delete an object
@@ -402,6 +428,8 @@ class ObjectsTool extends AbstractTool
             ['id' => $id],
             'Object deleted successfully'
         );
-    }
-}
 
+    }//end deleteObject()
+
+
+}//end class

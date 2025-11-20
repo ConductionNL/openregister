@@ -44,6 +44,7 @@ use Psr\Log\LoggerInterface;
  */
 class VectorizationService
 {
+
     /**
      * Vector embedding service
      *
@@ -65,6 +66,7 @@ class VectorizationService
      */
     private array $strategies = [];
 
+
     /**
      * Constructor
      *
@@ -76,13 +78,15 @@ class VectorizationService
         LoggerInterface $logger
     ) {
         $this->vectorService = $vectorService;
-        $this->logger = $logger;
-    }
+        $this->logger        = $logger;
+
+    }//end __construct()
+
 
     /**
      * Register a vectorization strategy for an entity type
      *
-     * @param string                          $entityType Entity type identifier
+     * @param string                         $entityType Entity type identifier
      * @param VectorizationStrategyInterface $strategy   Strategy implementation
      *
      * @return void
@@ -90,11 +94,16 @@ class VectorizationService
     public function registerStrategy(string $entityType, VectorizationStrategyInterface $strategy): void
     {
         $this->strategies[$entityType] = $strategy;
-        $this->logger->debug('[VectorizationService] Strategy registered', [
-            'entityType' => $entityType,
-            'strategyClass' => get_class($strategy),
-        ]);
-    }
+        $this->logger->debug(
+                '[VectorizationService] Strategy registered',
+                [
+                    'entityType'    => $entityType,
+                    'strategyClass' => get_class($strategy),
+                ]
+                );
+
+    }//end registerStrategy()
+
 
     /**
      * Vectorize entities in batch
@@ -109,12 +118,15 @@ class VectorizationService
      *
      * @throws \Exception If strategy not found or vectorization fails
      */
-    public function vectorizeBatch(string $entityType, array $options = []): array
+    public function vectorizeBatch(string $entityType, array $options=[]): array
     {
-        $this->logger->info('[VectorizationService] Starting batch vectorization', [
-            'entityType' => $entityType,
-            'options' => $options,
-        ]);
+        $this->logger->info(
+                '[VectorizationService] Starting batch vectorization',
+                [
+                    'entityType' => $entityType,
+                    'options'    => $options,
+                ]
+                );
 
         // Get strategy for entity type
         $strategy = $this->getStrategy($entityType);
@@ -125,79 +137,92 @@ class VectorizationService
 
             if (empty($entities)) {
                 return [
-                    'success' => true,
-                    'message' => 'No entities found to vectorize',
-                    'entity_type' => $entityType,
+                    'success'        => true,
+                    'message'        => 'No entities found to vectorize',
+                    'entity_type'    => $entityType,
                     'total_entities' => 0,
-                    'total_items' => 0,
-                    'vectorized' => 0,
-                    'failed' => 0,
+                    'total_items'    => 0,
+                    'vectorized'     => 0,
+                    'failed'         => 0,
                 ];
             }
 
-            $this->logger->info('[VectorizationService] Processing entities', [
-                'entityType' => $entityType,
-                'entityCount' => count($entities),
-            ]);
+            $this->logger->info(
+                    '[VectorizationService] Processing entities',
+                    [
+                        'entityType'  => $entityType,
+                        'entityCount' => count($entities),
+                    ]
+                    );
 
             // Process each entity
             $totalItems = 0;
             $vectorized = 0;
-            $failed = 0;
-            $errors = [];
+            $failed     = 0;
+            $errors     = [];
 
             foreach ($entities as $entity) {
                 try {
                     $result = $this->vectorizeEntity($entity, $strategy, $options);
-                    
+
                     $totalItems += $result['total_items'];
                     $vectorized += $result['vectorized'];
-                    $failed += $result['failed'];
-                    
+                    $failed     += $result['failed'];
+
                     if (!empty($result['errors'])) {
                         $errors = array_merge($errors, $result['errors']);
                     }
                 } catch (\Exception $e) {
                     $entityId = $strategy->getEntityIdentifier($entity);
-                    $this->logger->error('[VectorizationService] Failed to vectorize entity', [
-                        'entityType' => $entityType,
-                        'entityId' => $entityId,
-                        'error' => $e->getMessage(),
-                    ]);
+                    $this->logger->error(
+                            '[VectorizationService] Failed to vectorize entity',
+                            [
+                                'entityType' => $entityType,
+                                'entityId'   => $entityId,
+                                'error'      => $e->getMessage(),
+                            ]
+                            );
                     $errors[] = [
                         'entity_id' => $entityId,
-                        'error' => $e->getMessage(),
+                        'error'     => $e->getMessage(),
                     ];
-                }
-            }
+                }//end try
+            }//end foreach
 
-            $this->logger->info('[VectorizationService] Batch vectorization completed', [
-                'entityType' => $entityType,
-                'totalEntities' => count($entities),
-                'totalItems' => $totalItems,
-                'vectorized' => $vectorized,
-                'failed' => $failed,
-            ]);
+            $this->logger->info(
+                    '[VectorizationService] Batch vectorization completed',
+                    [
+                        'entityType'    => $entityType,
+                        'totalEntities' => count($entities),
+                        'totalItems'    => $totalItems,
+                        'vectorized'    => $vectorized,
+                        'failed'        => $failed,
+                    ]
+                    );
 
             return [
-                'success' => true,
-                'message' => "Batch vectorization completed: {$vectorized} vectorized, {$failed} failed",
-                'entity_type' => $entityType,
+                'success'        => true,
+                'message'        => "Batch vectorization completed: {$vectorized} vectorized, {$failed} failed",
+                'entity_type'    => $entityType,
                 'total_entities' => count($entities),
-                'total_items' => $totalItems,
-                'vectorized' => $vectorized,
-                'failed' => $failed,
-                'errors' => $errors,
+                'total_items'    => $totalItems,
+                'vectorized'     => $vectorized,
+                'failed'         => $failed,
+                'errors'         => $errors,
             ];
-
         } catch (\Exception $e) {
-            $this->logger->error('[VectorizationService] Batch vectorization failed', [
-                'entityType' => $entityType,
-                'error' => $e->getMessage(),
-            ]);
+            $this->logger->error(
+                    '[VectorizationService] Batch vectorization failed',
+                    [
+                        'entityType' => $entityType,
+                        'error'      => $e->getMessage(),
+                    ]
+                    );
             throw $e;
-        }
-    }
+        }//end try
+
+    }//end vectorizeBatch()
+
 
     /**
      * Vectorize a single entity
@@ -213,7 +238,7 @@ class VectorizationService
     private function vectorizeEntity($entity, VectorizationStrategyInterface $strategy, array $options): array
     {
         $entityId = $strategy->getEntityIdentifier($entity);
-        
+
         // Strategy extracts vectorization items from entity
         // For objects: usually 1 item (serialized object)
         // For files: N items (one per chunk)
@@ -222,51 +247,54 @@ class VectorizationService
         if (empty($items)) {
             return [
                 'total_items' => 0,
-                'vectorized' => 0,
-                'failed' => 0,
-                'errors' => [],
+                'vectorized'  => 0,
+                'failed'      => 0,
+                'errors'      => [],
             ];
         }
 
         $vectorized = 0;
-        $failed = 0;
-        $errors = [];
+        $failed     = 0;
+        $errors     = [];
 
-        $mode = $options['mode'] ?? 'serial';
+        $mode      = $options['mode'] ?? 'serial';
         $batchSize = $options['batch_size'] ?? 50;
 
         // Batch processing for efficiency
         if ($mode === 'parallel' && $batchSize > 1 && count($items) > 1) {
             $itemBatches = array_chunk($items, $batchSize);
-            
+
             foreach ($itemBatches as $batch) {
                 try {
-                    $texts = array_map(fn($item) => $item['text'], $batch);
+                    $texts      = array_map(fn($item) => $item['text'], $batch);
                     $embeddings = $this->vectorService->generateBatchEmbeddings($texts);
-                    
+
                     foreach ($batch as $index => $item) {
                         $embeddingData = $embeddings[$index] ?? null;
-                        
+
                         if ($embeddingData && isset($embeddingData['embedding']) && $embeddingData['embedding'] !== null) {
                             $this->storeVector($entity, $item, $embeddingData, $strategy);
                             $vectorized++;
                         } else {
                             $failed++;
                             $errors[] = [
-                                'entity_id' => $entityId,
+                                'entity_id'  => $entityId,
                                 'item_index' => $index,
-                                'error' => $embeddingData['error'] ?? 'Embedding generation failed',
+                                'error'      => $embeddingData['error'] ?? 'Embedding generation failed',
                             ];
                         }
                     }
                 } catch (\Exception $e) {
                     $failed += count($batch);
-                    $this->logger->error('[VectorizationService] Batch processing failed', [
-                        'entityId' => $entityId,
-                        'error' => $e->getMessage(),
-                    ]);
-                }
-            }
+                    $this->logger->error(
+                            '[VectorizationService] Batch processing failed',
+                            [
+                                'entityId' => $entityId,
+                                'error'    => $e->getMessage(),
+                            ]
+                            );
+                }//end try
+            }//end foreach
         } else {
             // Serial processing
             foreach ($items as $index => $item) {
@@ -277,21 +305,23 @@ class VectorizationService
                 } catch (\Exception $e) {
                     $failed++;
                     $errors[] = [
-                        'entity_id' => $entityId,
+                        'entity_id'  => $entityId,
                         'item_index' => $index,
-                        'error' => $e->getMessage(),
+                        'error'      => $e->getMessage(),
                     ];
                 }
             }
-        }
+        }//end if
 
         return [
             'total_items' => count($items),
-            'vectorized' => $vectorized,
-            'failed' => $failed,
-            'errors' => $errors,
+            'vectorized'  => $vectorized,
+            'failed'      => $failed,
+            'errors'      => $errors,
         ];
-    }
+
+    }//end vectorizeEntity()
+
 
     /**
      * Store a vector using strategy-provided metadata
@@ -306,7 +336,7 @@ class VectorizationService
     private function storeVector($entity, array $item, array $embeddingData, VectorizationStrategyInterface $strategy): void
     {
         $metadata = $strategy->prepareVectorMetadata($entity, $item);
-        
+
         $this->vectorService->storeVector(
             entityType: $metadata['entity_type'],
             entityId: $metadata['entity_id'],
@@ -318,7 +348,9 @@ class VectorizationService
             chunkText: $metadata['chunk_text'] ?? null,
             metadata: $metadata['additional_metadata'] ?? []
         );
-    }
+
+    }//end storeVector()
+
 
     /**
      * Get strategy for entity type
@@ -336,6 +368,8 @@ class VectorizationService
         }
 
         return $this->strategies[$entityType];
-    }
-}
 
+    }//end getStrategy()
+
+
+}//end class

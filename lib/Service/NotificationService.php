@@ -60,9 +60,9 @@ class NotificationService
     /**
      * Constructor
      *
-     * @param IManager          $notificationManager The notification manager instance
-     * @param IGroupManager     $groupManager        The group manager instance
-     * @param LoggerInterface   $logger              The logger instance
+     * @param IManager        $notificationManager The notification manager instance
+     * @param IGroupManager   $groupManager        The group manager instance
+     * @param LoggerInterface $logger              The logger instance
      */
     public function __construct(
         IManager $notificationManager,
@@ -71,7 +71,7 @@ class NotificationService
     ) {
         $this->notificationManager = $notificationManager;
         $this->groupManager        = $groupManager;
-        $this->logger              = $logger;
+        $this->logger = $logger;
 
     }//end __construct()
 
@@ -91,7 +91,7 @@ class NotificationService
 
         // Get notification groups from configuration
         $notificationGroups = $configuration->getNotificationGroups() ?? [];
-        
+
         // Always include admin group
         if (in_array('admin', $notificationGroups, true) === false) {
             $notificationGroups[] = 'admin';
@@ -108,7 +108,8 @@ class NotificationService
 
             $users = $group->getUsers();
             foreach ($users as $user) {
-                $usersToNotify[$user->getUID()] = true; // Use array key to avoid duplicates
+                $usersToNotify[$user->getUID()] = true;
+                // Use array key to avoid duplicates
             }
         }
 
@@ -139,11 +140,11 @@ class NotificationService
     /**
      * Send update notification to a specific user.
      *
-     * @param string      $userId               The user ID to notify
-     * @param string      $configurationTitle   The configuration title
-     * @param int         $configurationId      The configuration ID
-     * @param string|null $currentVersion       The current/local version
-     * @param string|null $newVersion           The new/remote version
+     * @param string      $userId             The user ID to notify
+     * @param string      $configurationTitle The configuration title
+     * @param int         $configurationId    The configuration ID
+     * @param string|null $currentVersion     The current/local version
+     * @param string|null $newVersion         The new/remote version
      *
      * @return void
      */
@@ -155,17 +156,20 @@ class NotificationService
         ?string $newVersion
     ): void {
         $notification = $this->notificationManager->createNotification();
-        
+
         $notification->setApp('openregister')
             ->setUser($userId)
             ->setDateTime(new DateTime())
             ->setObject('configuration', (string) $configurationId)
-            ->setSubject('configuration_update_available', [
-                'configurationTitle' => $configurationTitle,
-                'configurationId'    => $configurationId,
-                'currentVersion'     => $currentVersion ?? 'unknown',
-                'newVersion'         => $newVersion ?? 'unknown',
-            ]);
+            ->setSubject(
+                    'configuration_update_available',
+                    [
+                        'configurationTitle' => $configurationTitle,
+                        'configurationId'    => $configurationId,
+                        'currentVersion'     => $currentVersion ?? 'unknown',
+                        'newVersion'         => $newVersion ?? 'unknown',
+                    ]
+                    );
 
         $this->notificationManager->notify($notification);
 
@@ -184,7 +188,7 @@ class NotificationService
     public function markConfigurationUpdated(Configuration $configuration): void
     {
         $notification = $this->notificationManager->createNotification();
-        
+
         $notification->setApp('openregister')
             ->setObject('configuration', (string) $configuration->getId());
 
@@ -197,5 +201,3 @@ class NotificationService
 
 
 }//end class
-
-

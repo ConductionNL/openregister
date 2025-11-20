@@ -133,6 +133,7 @@ class ObjectsController extends Controller
 
     }//end isCurrentUserAdmin()
 
+
     /**
      * Private helper method to handle pagination of results.
      *
@@ -219,9 +220,6 @@ class ObjectsController extends Controller
         return $paginatedResults;
 
     }//end paginate()
-
-
-
 
 
     /**
@@ -368,32 +366,29 @@ class ObjectsController extends Controller
 
         // Build search query with resolved numeric IDs
         $query = $objectService->buildSearchQuery($this->request->getParams(), $resolved['register'], $resolved['schema']);
-        
+
         // Extract filtering parameters from request
-        $params = $this->request->getParams();
-        $rbac = filter_var($params['rbac'] ?? true, FILTER_VALIDATE_BOOLEAN);
-        $multi = filter_var($params['multi'] ?? true, FILTER_VALIDATE_BOOLEAN);
+        $params    = $this->request->getParams();
+        $rbac      = filter_var($params['rbac'] ?? true, FILTER_VALIDATE_BOOLEAN);
+        $multi     = filter_var($params['multi'] ?? true, FILTER_VALIDATE_BOOLEAN);
         $published = filter_var($params['_published'] ?? false, FILTER_VALIDATE_BOOLEAN);
-        $deleted = filter_var($params['deleted'] ?? false, FILTER_VALIDATE_BOOLEAN);
-        
+        $deleted   = filter_var($params['deleted'] ?? false, FILTER_VALIDATE_BOOLEAN);
+
         // **INTELLIGENT SOURCE SELECTION**: ObjectService automatically chooses optimal source
         $result = $objectService->searchObjectsPaginated($query, $rbac, $multi, $published, $deleted);
-        
-        
+
         // **SUB-SECOND OPTIMIZATION**: Enable response compression for large payloads
         $response = new JSONResponse($result);
-        
+
         // Enable gzip compression for responses > 1KB
         if (isset($result['results']) && count($result['results']) > 10) {
             $response->addHeader('Content-Encoding', 'gzip');
             $response->addHeader('Vary', 'Accept-Encoding');
         }
-        
+
         return $response;
 
     }//end index()
-
-
 
 
     /**
@@ -478,7 +473,7 @@ class ObjectsController extends Controller
         $extend = ($requestParams['extend'] ?? $requestParams['_extend'] ?? null);
         $filter = ($requestParams['filter'] ?? $requestParams['_filter'] ?? null);
         $fields = ($requestParams['fields'] ?? $requestParams['_fields'] ?? null);
-        $unset = ($requestParams['unset'] ?? $requestParams['_unset'] ?? null);
+        $unset  = ($requestParams['unset'] ?? $requestParams['_unset'] ?? null);
 
         // Convert extend to array if it's a string
         if (is_string($extend)) {
@@ -490,7 +485,7 @@ class ObjectsController extends Controller
             $fields = explode(',', $fields);
         }
 
-        // Convert filter to array if it's a string 
+        // Convert filter to array if it's a string
         if (is_string($filter)) {
             $filter = explode(',', $filter);
         }
@@ -584,12 +579,12 @@ class ObjectsController extends Controller
                 $fileCount = count($fileData['name']);
                 for ($i = 0; $i < $fileCount; $i++) {
                     // Use indexed key to preserve all files: images[0], images[1], images[2]
-                    $uploadedFiles[$fieldName . '[' . $i . ']'] = [
-                        'name' => $fileData['name'][$i],
-                        'type' => $fileData['type'][$i],
+                    $uploadedFiles[$fieldName.'['.$i.']'] = [
+                        'name'     => $fileData['name'][$i],
+                        'type'     => $fileData['type'][$i],
                         'tmp_name' => $fileData['tmp_name'][$i],
-                        'error' => $fileData['error'][$i],
-                        'size' => $fileData['size'][$i],
+                        'error'    => $fileData['error'][$i],
+                        'size'     => $fileData['size'][$i],
                     ];
                 }
             } else {
@@ -598,8 +593,8 @@ class ObjectsController extends Controller
                 if ($uploadedFile !== null) {
                     $uploadedFiles[$fieldName] = $uploadedFile;
                 }
-            }
-        }
+            }//end if
+        }//end foreach
 
         // Determine RBAC and multitenancy settings based on admin status
         $isAdmin = $this->isCurrentUserAdmin();
@@ -693,12 +688,12 @@ class ObjectsController extends Controller
                 $fileCount = count($fileData['name']);
                 for ($i = 0; $i < $fileCount; $i++) {
                     // Use indexed key to preserve all files: images[0], images[1], images[2]
-                    $uploadedFiles[$fieldName . '[' . $i . ']'] = [
-                        'name' => $fileData['name'][$i],
-                        'type' => $fileData['type'][$i],
+                    $uploadedFiles[$fieldName.'['.$i.']'] = [
+                        'name'     => $fileData['name'][$i],
+                        'type'     => $fileData['type'][$i],
                         'tmp_name' => $fileData['tmp_name'][$i],
-                        'error' => $fileData['error'][$i],
-                        'size' => $fileData['size'][$i],
+                        'error'    => $fileData['error'][$i],
+                        'size'     => $fileData['size'][$i],
                     ];
                 }
             } else {
@@ -707,8 +702,8 @@ class ObjectsController extends Controller
                 if ($uploadedFile !== null) {
                     $uploadedFiles[$fieldName] = $uploadedFile;
                 }
-            }
-        }
+            }//end if
+        }//end foreach
 
         // Determine RBAC and multitenancy settings based on admin status
         $isAdmin = $this->isCurrentUserAdmin();
@@ -930,7 +925,6 @@ class ObjectsController extends Controller
             // If admin, disable RBAC
             $multi = !$isAdmin;
             // If admin, disable multitenancy
-
             // Use ObjectService to delete the object (includes RBAC permission checks, audit trail, and soft delete)
             $deleteResult = $objectService->deleteObject($id, $rbac, $multi);
 
@@ -1024,20 +1018,20 @@ class ObjectsController extends Controller
         // Build search query using ObjectService searchObjectsPaginated directly
         $queryParams = $this->request->getParams();
         $searchQuery = $queryParams;
-        
+
         // Clean up unwanted parameters
         unset($searchQuery['id'], $searchQuery['_route']);
-        
+
         // Use ObjectService searchObjectsPaginated directly - pass ids as named parameter
         $result = $objectService->searchObjectsPaginated(
-            query: $searchQuery, 
-            rbac: true, 
-            multi: true, 
-            published: true, 
+            query: $searchQuery,
+            rbac: true,
+            multi: true,
+            published: true,
             deleted: false,
             ids: $relations
         );
-        
+
         // Add relations being searched for debugging
         $result['relations'] = $relations;
 
@@ -1072,20 +1066,20 @@ class ObjectsController extends Controller
         // Build search query using ObjectService searchObjectsPaginated directly
         $queryParams = $this->request->getParams();
         $searchQuery = $queryParams;
-        
+
         // Clean up unwanted parameters
         unset($searchQuery['id'], $searchQuery['_route']);
-        
+
         // Use ObjectService searchObjectsPaginated directly - pass uses as named parameter
         $result = $objectService->searchObjectsPaginated(
-            query: $searchQuery, 
-            rbac: true, 
-            multi: true, 
-            published: true, 
+            query: $searchQuery,
+            rbac: true,
+            multi: true,
+            published: true,
             deleted: false,
             uses: $id
         );
-        
+
         // Add what we're searching for in debugging
         $result['uses'] = $id;
 
@@ -1352,13 +1346,18 @@ class ObjectsController extends Controller
                     $summary = $this->importService->importFromExcel(
                         $uploadedFile['tmp_name'],
                         $registerEntity,
-                        null, // Schema will be determined from sheet names
-                        5, // Use default chunk size
+                        null,
+                    // Schema will be determined from sheet names
+                        5,
+                    // Use default chunk size
                         $validation,
                         $events,
-                        true, // rbac
-                        true, // multi
-                        false, // publish
+                        true,
+                    // rbac
+                        true,
+                    // multi
+                        false,
+                    // publish
                         $this->userSession->getUser()
                     );
                     break;
@@ -1735,30 +1734,40 @@ class ObjectsController extends Controller
     public function vectorizeBatch(): JSONResponse
     {
         try {
-            $data = $this->request->getParams();
-            $views = $data['views'] ?? null;
+            $data      = $this->request->getParams();
+            $views     = $data['views'] ?? null;
             $batchSize = (int) ($data['batchSize'] ?? 25);
 
             // Get unified VectorizationService from container
             $vectorizationService = $this->container->get(\OCA\OpenRegister\Service\VectorizationService::class);
 
             // Use unified vectorization service with 'object' entity type
-            $result = $vectorizationService->vectorizeBatch('object', [
-                'views' => $views,
-                'batch_size' => $batchSize,
-                'mode' => 'serial', // Objects use serial mode by default
-            ]);
+            $result = $vectorizationService->vectorizeBatch(
+                    'object',
+                    [
+                        'views'      => $views,
+                        'batch_size' => $batchSize,
+                        'mode'       => 'serial',
+            // Objects use serial mode by default
+                    ]
+                    );
 
-            return new JSONResponse([
-                'success' => true,
-                'data' => $result,
-            ]);
+            return new JSONResponse(
+                    [
+                        'success' => true,
+                        'data'    => $result,
+                    ]
+                    );
         } catch (\Exception $e) {
-            return new JSONResponse([
-                'success' => false,
-                'error' => $e->getMessage(),
-            ], 500);
-        }
+            return new JSONResponse(
+                    [
+                        'success' => false,
+                        'error'   => $e->getMessage(),
+                    ],
+                    500
+                    );
+        }//end try
+
     }//end vectorizeBatch()
 
 
@@ -1781,11 +1790,11 @@ class ObjectsController extends Controller
 
             // Get ObjectService from container for view-aware counting
             $objectService = $this->container->get(\OCA\OpenRegister\Service\ObjectService::class);
-            
+
             // Count objects with view filter support
             $totalObjects = $objectService->searchObjects(
                 query: [
-                    '_count' => true,
+                    '_count'  => true,
                     '_source' => 'database',
                 ],
                 rbac: false,
@@ -1795,17 +1804,23 @@ class ObjectsController extends Controller
                 views: $views
             );
 
-            return new JSONResponse([
-                'success' => true,
-                'total_objects' => $totalObjects,
-                'views' => $views,
-            ]);
+            return new JSONResponse(
+                    [
+                        'success'       => true,
+                        'total_objects' => $totalObjects,
+                        'views'         => $views,
+                    ]
+                    );
         } catch (\Exception $e) {
-            return new JSONResponse([
-                'success' => false,
-                'error' => $e->getMessage(),
-            ], 500);
-        }
+            return new JSONResponse(
+                    [
+                        'success' => false,
+                        'error'   => $e->getMessage(),
+                    ],
+                    500
+                    );
+        }//end try
+
     }//end getObjectVectorizationStats()
 
 
@@ -1829,16 +1844,22 @@ class ObjectsController extends Controller
             // For now, return a placeholder
             $count = 0;
 
-            return new JSONResponse([
-                'success' => true,
-                'count' => $count,
-            ]);
+            return new JSONResponse(
+                    [
+                        'success' => true,
+                        'count'   => $count,
+                    ]
+                    );
         } catch (\Exception $e) {
-            return new JSONResponse([
-                'success' => false,
-                'error' => $e->getMessage(),
-            ], 500);
-        }
+            return new JSONResponse(
+                    [
+                        'success' => false,
+                        'error'   => $e->getMessage(),
+                    ],
+                    500
+                    );
+        }//end try
+
     }//end getObjectVectorizationCount()
 
 

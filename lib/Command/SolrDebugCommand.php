@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * SOLR Debug Command
  *
- * @category Command
- * @package  OCA\OpenRegister\Command
- * @author   OpenRegister Team
+ * @category  Command
+ * @package   OCA\OpenRegister\Command
+ * @author    OpenRegister Team
  * @copyright 2024 OpenRegister
- * @license  AGPL-3.0-or-later
- * @version  1.0.0
- * @link     https://github.com/OpenRegister/OpenRegister
+ * @license   AGPL-3.0-or-later
+ * @version   1.0.0
+ * @link      https://github.com/OpenRegister/OpenRegister
  */
 
 namespace OCA\OpenRegister\Command;
@@ -29,14 +29,16 @@ use Symfony\Component\Console\Output\OutputInterface;
 /**
  * SOLR Debug Command for testing SOLR functionality step by step
  *
- * @category Command
- * @package  OCA\OpenRegister\Command
- * @author   OpenRegister Team
+ * @category  Command
+ * @package   OCA\OpenRegister\Command
+ * @author    OpenRegister Team
  * @copyright 2024 OpenRegister
- * @license  AGPL-3.0-or-later
+ * @license   AGPL-3.0-or-later
  */
 class SolrDebugCommand extends Command
 {
+
+
     /**
      * Constructor
      *
@@ -50,7 +52,9 @@ class SolrDebugCommand extends Command
         private readonly IConfig $config
     ) {
         parent::__construct();
-    }
+
+    }//end __construct()
+
 
     /**
      * Configure the command
@@ -92,7 +96,9 @@ class SolrDebugCommand extends Command
                 InputOption::VALUE_NONE,
                 'Run all debug steps'
             );
-    }
+
+    }//end configure()
+
 
     /**
      * Execute the command
@@ -131,7 +137,9 @@ class SolrDebugCommand extends Command
         }
 
         return Command::SUCCESS;
-    }
+
+    }//end execute()
+
 
     /**
      * Show tenant information
@@ -143,30 +151,32 @@ class SolrDebugCommand extends Command
     private function showTenantInfo(OutputInterface $output): void
     {
         $output->writeln('<info>📋 Tenant Information</info>');
-        
+
         // Generate tenant ID the same way as SolrService
-        $instanceId = $this->config->getSystemValue('instanceid', 'default');
+        $instanceId    = $this->config->getSystemValue('instanceid', 'default');
         $overwriteHost = $this->config->getSystemValue('overwrite.cli.url', '');
-        
+
         if (!empty($overwriteHost)) {
-            $tenantId = 'nc_' . hash('crc32', $overwriteHost);
+            $tenantId = 'nc_'.hash('crc32', $overwriteHost);
         } else {
-            $tenantId = 'nc_' . substr($instanceId, 0, 8);
+            $tenantId = 'nc_'.substr($instanceId, 0, 8);
         }
 
         $output->writeln("  Instance ID: <comment>$instanceId</comment>");
-        $output->writeln("  Overwrite Host: <comment>" . ($overwriteHost ?: 'not set') . "</comment>");
+        $output->writeln("  Overwrite Host: <comment>".($overwriteHost ?: 'not set')."</comment>");
         $output->writeln("  Generated Tenant ID: <comment>$tenantId</comment>");
 
         // Get SOLR settings
-        $solrSettings = $this->settingsService->getSolrSettings();
-        $baseCoreName = $solrSettings['core'] ?? 'openregister';
-        $tenantSpecificCore = $baseCoreName . '_' . $tenantId;
+        $solrSettings       = $this->settingsService->getSolrSettings();
+        $baseCoreName       = $solrSettings['core'] ?? 'openregister';
+        $tenantSpecificCore = $baseCoreName.'_'.$tenantId;
 
         $output->writeln("  Base Core Name: <comment>$baseCoreName</comment>");
         $output->writeln("  Tenant Specific Core: <comment>$tenantSpecificCore</comment>");
         $output->writeln('');
-    }
+
+    }//end showTenantInfo()
+
 
     /**
      * Test SOLR setup
@@ -178,10 +188,10 @@ class SolrDebugCommand extends Command
     private function testSetup(OutputInterface $output): void
     {
         $output->writeln('<info>🔧 Testing SOLR Setup</info>');
-        
+
         try {
             $solrSettings = $this->settingsService->getSolrSettings();
-            
+
             if (!$solrSettings['enabled']) {
                 $output->writeln('<error>❌ SOLR is disabled in settings</error>');
                 return;
@@ -195,7 +205,7 @@ class SolrDebugCommand extends Command
             $output->writeln("    Scheme: <comment>{$solrSettings['scheme']}</comment>");
 
             // Test setup
-            $setup = new SolrSetup($solrSettings, $this->logger);
+            $setup  = new SolrSetup($solrSettings, $this->logger);
             $result = $setup->setupSolr();
 
             if ($result) {
@@ -203,13 +213,14 @@ class SolrDebugCommand extends Command
             } else {
                 $output->writeln('<error>❌ SOLR setup failed</error>');
             }
-
         } catch (\Exception $e) {
             $output->writeln("<error>❌ Setup failed: {$e->getMessage()}</error>");
-        }
-        
+        }//end try
+
         $output->writeln('');
-    }
+
+    }//end testSetup()
+
 
     /**
      * Test SOLR connection
@@ -221,10 +232,10 @@ class SolrDebugCommand extends Command
     private function testConnection(OutputInterface $output): void
     {
         $output->writeln('<info>🔗 Testing SOLR Connection</info>');
-        
+
         try {
             // Get SOLR service via direct DI injection
-            $container = \OC::$server->getRegisteredAppContainer('openregister');
+            $container   = \OC::$server->getRegisteredAppContainer('openregister');
             $solrService = $container->get(GuzzleSolrService::class);
 
             if (!$solrService) {
@@ -238,14 +249,14 @@ class SolrDebugCommand extends Command
             }
 
             $connectionResult = $solrService->testConnection();
-            
+
             if ($connectionResult['success']) {
                 $output->writeln('<info>✅ SOLR connection successful (Guzzle HTTP)</info>');
                 $output->writeln("  Response time: <comment>{$connectionResult['details']['response_time_ms']}ms</comment>");
                 $output->writeln("  SOLR version: <comment>{$connectionResult['details']['solr_version']}</comment>");
                 $output->writeln("  Tenant ID: <comment>{$connectionResult['details']['tenant_id']}</comment>");
                 $output->writeln("  Mode: <comment>{$connectionResult['details']['mode']}</comment>");
-                
+
                 // Test tenant collection creation
                 $output->writeln('');
                 $output->writeln('<info>🏗️ Testing tenant collection creation...</info>');
@@ -259,13 +270,14 @@ class SolrDebugCommand extends Command
             } else {
                 $output->writeln("<error>❌ Connection failed: {$connectionResult['message']}</error>");
             }
-
         } catch (\Exception $e) {
             $output->writeln("<error>❌ Connection test failed: {$e->getMessage()}</error>");
-        }
-        
+        }//end try
+
         $output->writeln('');
-    }
+
+    }//end testConnection()
+
 
     /**
      * Check existing cores/collections
@@ -277,10 +289,10 @@ class SolrDebugCommand extends Command
     private function checkCores(OutputInterface $output): void
     {
         $output->writeln('<info>🗄️  Checking SOLR Cores/Collections</info>');
-        
+
         try {
             $solrSettings = $this->settingsService->getSolrSettings();
-            
+
             if (!$solrSettings['enabled']) {
                 $output->writeln('<error>❌ SOLR is disabled</error>');
                 return;
@@ -288,13 +300,14 @@ class SolrDebugCommand extends Command
 
             // Test direct SOLR admin API calls
             $this->testSolrAdminAPI($output, $solrSettings);
-
         } catch (\Exception $e) {
             $output->writeln("<error>❌ Core check failed: {$e->getMessage()}</error>");
         }
-        
+
         $output->writeln('');
-    }
+
+    }//end checkCores()
+
 
     /**
      * Test SOLR Admin API directly
@@ -316,7 +329,7 @@ class SolrDebugCommand extends Command
         );
 
         $output->writeln("  Testing cores API: <comment>$coresUrl</comment>");
-        
+
         $coresResponse = @file_get_contents($coresUrl);
         if ($coresResponse) {
             $coresData = json_decode($coresResponse, true);
@@ -342,7 +355,7 @@ class SolrDebugCommand extends Command
         );
 
         $output->writeln("  Testing collections API: <comment>$collectionsUrl</comment>");
-        
+
         $collectionsResponse = @file_get_contents($collectionsUrl);
         if ($collectionsResponse) {
             $collectionsData = json_decode($collectionsResponse, true);
@@ -367,7 +380,7 @@ class SolrDebugCommand extends Command
         );
 
         $output->writeln("  Testing configSets API: <comment>$configSetsUrl</comment>");
-        
+
         $configSetsResponse = @file_get_contents($configSetsUrl);
         if ($configSetsResponse) {
             $configSetsData = json_decode($configSetsResponse, true);
@@ -381,5 +394,8 @@ class SolrDebugCommand extends Command
         } else {
             $output->writeln('  <comment>❓ ConfigSets API not available</comment>');
         }
-    }
-}
+
+    }//end testSolrAdminAPI()
+
+
+}//end class

@@ -83,7 +83,7 @@ class RenderObject
 
     /**
      * Ultra-aggressive preload cache for sub-second performance
-     * 
+     *
      * Contains ALL relationship objects preloaded in a single query
      * for instant access during rendering without any additional database calls.
      *
@@ -132,13 +132,13 @@ class RenderObject
      * @param array $extend  Array of properties to extend
      *
      * @return array Array of preloaded objects indexed by ID/UUID
-     * 
-     * @phpstan-param array<ObjectEntity> $objects
-     * @phpstan-param array<string> $extend
+     *
+     * @phpstan-param  array<ObjectEntity> $objects
+     * @phpstan-param  array<string> $extend
      * @phpstan-return array<string, ObjectEntity>
-     * @psalm-param array<ObjectEntity> $objects  
-     * @psalm-param array<string> $extend
-     * @psalm-return array<string, ObjectEntity>
+     * @psalm-param    array<ObjectEntity> $objects
+     * @psalm-param    array<string> $extend
+     * @psalm-return   array<string, ObjectEntity>
      */
     public function preloadRelatedObjects(array $objects, array $extend): array
     {
@@ -155,7 +155,7 @@ class RenderObject
             }
 
             $objectData = $object->getObject();
-            
+
             foreach ($extend as $extendField) {
                 // Skip special fields
                 if (str_starts_with($extendField, '@')) {
@@ -163,7 +163,7 @@ class RenderObject
                 }
 
                 $value = $objectData[$extendField] ?? null;
-                
+
                 if (is_array($value)) {
                     // Multiple relationships
                     foreach ($value as $relatedId) {
@@ -171,32 +171,35 @@ class RenderObject
                             $allRelatedIds[] = (string) $relatedId;
                         }
                     }
-                } elseif (is_string($value) || is_int($value)) {
+                } else if (is_string($value) || is_int($value)) {
                     // Single relationship
                     $allRelatedIds[] = (string) $value;
                 }
             }
-        }
+        }//end foreach
 
         // Step 2: Remove duplicates and empty values
         $uniqueIds = array_filter(array_unique($allRelatedIds), fn($id) => !empty($id));
-        
+
         if (empty($uniqueIds)) {
             return [];
         }
 
         // Step 3: Use ObjectCacheService for optimized bulk loading
         try {
-            $preloadStart = microtime(true);
+            $preloadStart   = microtime(true);
             $relatedObjects = $this->objectCacheService->preloadObjects($uniqueIds);
-            $preloadTime = round((microtime(true) - $preloadStart) * 1000, 2);
-            
-            $this->logger->debug('ObjectCache preload completed', [
-                'preloadTime' => $preloadTime . 'ms',
-                'requestedIds' => count($uniqueIds),
-                'foundObjects' => count($relatedObjects)
-            ]);
-            
+            $preloadTime    = round((microtime(true) - $preloadStart) * 1000, 2);
+
+            $this->logger->debug(
+                    'ObjectCache preload completed',
+                    [
+                        'preloadTime'  => $preloadTime.'ms',
+                        'requestedIds' => count($uniqueIds),
+                        'foundObjects' => count($relatedObjects),
+                    ]
+                    );
+
             // Step 4: Index by both ID and UUID for quick lookup
             $indexedObjects = [];
             foreach ($relatedObjects as $relatedObject) {
@@ -207,21 +210,23 @@ class RenderObject
                     }
                 }
             }
-            
+
             // Step 5: Add to local cache for backward compatibility
             $this->objectsCache = array_merge($this->objectsCache, $indexedObjects);
-            
+
             return $indexedObjects;
-            
         } catch (\Exception $e) {
             // Log error but don't break the process
-            $this->logger->error('Bulk preloading failed', [
-                'exception' => $e->getMessage(),
-                'uniqueIds' => count($uniqueIds),
-                'objects' => count($objects)
-            ]);
+            $this->logger->error(
+                    'Bulk preloading failed',
+                    [
+                        'exception' => $e->getMessage(),
+                        'uniqueIds' => count($uniqueIds),
+                        'objects'   => count($objects),
+                    ]
+                    );
             return [];
-        }
+        }//end try
 
     }//end preloadRelatedObjects()
 
@@ -236,15 +241,18 @@ class RenderObject
      * @param array $ultraPreloadCache Array of preloaded objects indexed by ID/UUID
      *
      * @phpstan-param array<string, ObjectEntity> $ultraPreloadCache
-     * @psalm-param array<string, ObjectEntity> $ultraPreloadCache
+     * @psalm-param   array<string, ObjectEntity> $ultraPreloadCache
      */
     public function setUltraPreloadCache(array $ultraPreloadCache): void
     {
         $this->ultraPreloadCache = $ultraPreloadCache;
-        $this->logger->debug('Ultra preload cache set', [
-            'cachedObjectCount' => count($ultraPreloadCache)
-        ]);
-        
+        $this->logger->debug(
+                'Ultra preload cache set',
+                [
+                    'cachedObjectCount' => count($ultraPreloadCache),
+                ]
+                );
+
     }//end setUltraPreloadCache()
 
 
@@ -256,7 +264,7 @@ class RenderObject
     public function getUltraCacheSize(): int
     {
         return count($this->ultraPreloadCache);
-        
+
     }//end getUltraCacheSize()
 
 
@@ -322,8 +330,8 @@ class RenderObject
     private function getObject(int | string $id): ?ObjectEntity
     {
         // **ULTRA PERFORMANCE**: Check ultra preload cache first (fastest possible)
-        if (isset($this->ultraPreloadCache[(string)$id])) {
-            return $this->ultraPreloadCache[(string)$id];
+        if (isset($this->ultraPreloadCache[(string) $id])) {
+            return $this->ultraPreloadCache[(string) $id];
         }
 
         // **PERFORMANCE OPTIMIZATION**: Use ObjectCacheService for optimized caching
@@ -334,7 +342,7 @@ class RenderObject
 
         // Use cache service for optimized loading (only if not in ultra cache)
         $object = $this->objectCacheService->getObject($id);
-        
+
         // Update local cache for backward compatibility
         if ($object !== null) {
             $this->objectsCache[$id] = $object;
@@ -342,7 +350,7 @@ class RenderObject
                 $this->objectsCache[$object->getUuid()] = $object;
             }
         }
-        
+
         return $object;
 
     }//end getObject()
@@ -584,7 +592,7 @@ class RenderObject
             foreach ($schemaProperties as $propertyName => $propertyConfig) {
                 if ($this->isFilePropertyConfig($propertyConfig)) {
                     $isArrayProperty = ($propertyConfig['type'] ?? '') === 'array';
-                    
+
                     // If it's an array property and not set, initialize it as empty array
                     if ($isArrayProperty && !isset($objectData[$propertyName])) {
                         $objectData[$propertyName] = [];
@@ -712,7 +720,7 @@ class RenderObject
 
     /**
      * Hydrates metadata (@self) from file properties after they've been converted to file objects.
-     * 
+     *
      * This method extracts metadata like image URLs from file properties that have been
      * hydrated with accessUrl, downloadUrl, etc.
      *
@@ -729,16 +737,16 @@ class RenderObject
                 return $entity;
             }
 
-            $config = $schema->getConfiguration();
+            $config     = $schema->getConfiguration();
             $objectData = $entity->getObject();
 
             // Check if objectImageField is configured
             if (!empty($config['objectImageField'])) {
                 $imageField = $config['objectImageField'];
-                
+
                 // Get the value from the configured field
                 $value = $this->getValueFromPath($objectData, $imageField);
-                
+
                 // Check if the value is a file object (has downloadUrl or accessUrl)
                 if (is_array($value) && (isset($value['downloadUrl']) || isset($value['accessUrl']))) {
                     // Set the image URL on the entity itself (not in object data)
@@ -752,9 +760,10 @@ class RenderObject
             }
         } catch (\Exception $e) {
             // Log error but don't break rendering - just return original entity
-        }
+        }//end try
 
         return $entity;
+
     }//end hydrateMetadataFromFileProperties()
 
 
@@ -768,7 +777,7 @@ class RenderObject
      */
     private function getValueFromPath(array $data, string $path)
     {
-        $keys = explode('.', $path);
+        $keys  = explode('.', $path);
         $value = $data;
 
         foreach ($keys as $key) {
@@ -780,6 +789,7 @@ class RenderObject
         }
 
         return $value;
+
     }//end getValueFromPath()
 
 
@@ -947,6 +957,7 @@ class RenderObject
                     unset($objectData[$property]);
                 }
             }
+
             $entity->setObject($objectData);
         }
 
@@ -1120,10 +1131,13 @@ class RenderObject
                             $object = $this->getObject(id: $identifier);
                             if ($object === null) {
                                 // If not in cache, this object wasn't preloaded - skip it to prevent N+1
-                                $this->logger->debug('Object not found in preloaded cache - skipping to prevent N+1 query', [
-                                    'identifier' => $identifier,
-                                    'context' => 'extend_array_processing'
-                                ]);
+                                $this->logger->debug(
+                                        'Object not found in preloaded cache - skipping to prevent N+1 query',
+                                        [
+                                            'identifier' => $identifier,
+                                            'context'    => 'extend_array_processing',
+                                        ]
+                                        );
                                 return null;
                             }
 
@@ -1165,10 +1179,13 @@ class RenderObject
 
                 if ($object === null) {
                     // If not in cache, this object wasn't preloaded - skip it to prevent N+1
-                    $this->logger->debug('Single object not found in preloaded cache - skipping to prevent N+1 query', [
-                        'identifier' => $value,
-                        'context' => 'extend_single_processing'
-                    ]);
+                    $this->logger->debug(
+                            'Single object not found in preloaded cache - skipping to prevent N+1 query',
+                            [
+                                'identifier' => $value,
+                                'context'    => 'extend_single_processing',
+                            ]
+                            );
                     continue;
                 }
 

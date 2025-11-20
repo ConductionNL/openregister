@@ -319,18 +319,17 @@ class BulkController extends Controller
 
             // FLEXIBLE SCHEMA HANDLING: Support both single-schema and mixed-schema operations
             // Use schema=0 to indicate mixed-schema operations where objects specify their own schemas
-            
             $isMixedSchemaOperation = ($schema === '0' || $schema === 0);
-            
+
             if ($isMixedSchemaOperation) {
                 // Mixed-schema operation - don't set a specific schema context
                 $this->objectService->setRegister($register);
                 // Don't call setSchema() for mixed operations
-                
                 $savedObjects = $this->objectService->saveObjects(
                     objects: $objects,
                     register: $register,
-                    schema: null, // Allow objects to specify their own schemas
+                    schema: null,
+                // Allow objects to specify their own schemas
                     rbac: true,
                     multi: true,
                     validation: true,
@@ -350,7 +349,7 @@ class BulkController extends Controller
                     validation: true,
                     events: false
                 );
-            }
+            }//end if
 
             return new JSONResponse(
                     [
@@ -401,7 +400,7 @@ class BulkController extends Controller
             }
 
             // Get request data
-            $data = $this->request->getParams();
+            $data       = $this->request->getParams();
             $publishAll = $data['publishAll'] ?? false;
 
             // Set register and schema context
@@ -413,12 +412,12 @@ class BulkController extends Controller
 
             return new JSONResponse(
                 [
-                    'success' => true,
-                    'message' => 'Schema objects publishing completed successfully',
+                    'success'         => true,
+                    'message'         => 'Schema objects publishing completed successfully',
                     'published_count' => $result['published_count'],
                     'published_uuids' => $result['published_uuids'],
-                    'schema_id' => $result['schema_id'],
-                    'publish_all' => $publishAll,
+                    'schema_id'       => $result['schema_id'],
+                    'publish_all'     => $publishAll,
                 ]
             );
         } catch (Exception $e) {
@@ -461,7 +460,7 @@ class BulkController extends Controller
             }
 
             // Get request data
-            $data = $this->request->getParams();
+            $data       = $this->request->getParams();
             $hardDelete = $data['hardDelete'] ?? false;
 
             // Set register and schema context
@@ -473,12 +472,12 @@ class BulkController extends Controller
 
             return new JSONResponse(
                 [
-                    'success' => true,
-                    'message' => 'Schema objects deletion completed successfully',
+                    'success'       => true,
+                    'message'       => 'Schema objects deletion completed successfully',
                     'deleted_count' => $result['deleted_count'],
                     'deleted_uuids' => $result['deleted_uuids'],
-                    'schema_id' => $result['schema_id'],
-                    'hard_delete' => $hardDelete,
+                    'schema_id'     => $result['schema_id'],
+                    'hard_delete'   => $hardDelete,
                 ]
             );
         } catch (Exception $e) {
@@ -527,11 +526,11 @@ class BulkController extends Controller
 
             return new JSONResponse(
                 [
-                    'success' => true,
-                    'message' => 'Register objects deletion completed successfully',
+                    'success'       => true,
+                    'message'       => 'Register objects deletion completed successfully',
                     'deleted_count' => $result['deleted_count'],
                     'deleted_uuids' => $result['deleted_uuids'],
-                    'register_id' => $result['register_id'],
+                    'register_id'   => $result['register_id'],
                 ]
             );
         } catch (Exception $e) {
@@ -574,7 +573,7 @@ class BulkController extends Controller
 
             // Perform schema validation operation and return service result directly
             $result = $this->objectService->validateObjectsBySchema((int) $schema);
-            
+
             return new JSONResponse($result);
         } catch (Exception $e) {
             return new JSONResponse(

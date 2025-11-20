@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * ObjectText entity stores flattened text extracted from OpenRegister objects.
  *
  * @category Db
  * @package  OCA\OpenRegister\Db
  *
- * @author   Conduction Development Team
- * @license  AGPL-3.0-or-later
+ * @author  Conduction Development Team
+ * @license AGPL-3.0-or-later
  */
 
 namespace OCA\OpenRegister\Db;
@@ -54,20 +54,35 @@ use OCP\AppFramework\Db\Entity;
  */
 class ObjectText extends Entity implements JsonSerializable
 {
+
     protected ?string $uuid = null;
+
     protected ?int $objectId = null;
+
     protected ?string $register = null;
+
     protected ?string $schema = null;
+
     protected ?string $textBlob = null;
+
     protected int $textLength = 0;
+
     protected ?array $propertyMap = null;
+
     protected string $extractionStatus = 'completed';
+
     protected bool $chunked = false;
+
     protected int $chunkCount = 0;
+
     protected ?string $owner = null;
+
     protected ?string $organisation = null;
+
     protected ?DateTime $createdAt = null;
+
     protected ?DateTime $updatedAt = null;
+
 
     /**
      * Constructor.
@@ -88,7 +103,9 @@ class ObjectText extends Entity implements JsonSerializable
         $this->addType('organisation', 'string');
         $this->addType('createdAt', 'datetime');
         $this->addType('updatedAt', 'datetime');
-    }
+
+    }//end __construct()
+
 
     /**
      * JSON serialization.
@@ -98,22 +115,21 @@ class ObjectText extends Entity implements JsonSerializable
     public function jsonSerialize(): array
     {
         return [
-            'id' => $this->id,
-            'uuid' => $this->uuid,
-            'objectId' => $this->objectId,
-            'register' => $this->register,
-            'schema' => $this->schema,
-            'textLength' => $this->textLength,
-            'chunked' => $this->chunked,
-            'chunkCount' => $this->chunkCount,
-            'owner' => $this->owner,
+            'id'           => $this->id,
+            'uuid'         => $this->uuid,
+            'objectId'     => $this->objectId,
+            'register'     => $this->register,
+            'schema'       => $this->schema,
+            'textLength'   => $this->textLength,
+            'chunked'      => $this->chunked,
+            'chunkCount'   => $this->chunkCount,
+            'owner'        => $this->owner,
             'organisation' => $this->organisation,
-            'createdAt' => $this->createdAt?->format(DateTime::ATOM),
-            'updatedAt' => $this->updatedAt?->format(DateTime::ATOM),
+            'createdAt'    => $this->createdAt?->format(DateTime::ATOM),
+            'updatedAt'    => $this->updatedAt?->format(DateTime::ATOM),
         ];
-    }
-}
+
+    }//end jsonSerialize()
 
 
-
-
+}//end class

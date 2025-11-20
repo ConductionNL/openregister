@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * SPDX-FileCopyrightText: 2024 Nextcloud GmbH and Nextcloud contributors
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
@@ -16,14 +16,14 @@ use Symfony\Component\Uid\Uuid;
 
 /**
  * FileText Entity
- * 
+ *
  * Represents extracted text content from a file for SOLR indexing and AI processing.
- * 
+ *
  * @category Db
  * @package  OCA\OpenRegister\Db
  * @author   OpenRegister Team
  * @license  AGPL-3.0-or-later
- * 
+ *
  * @method string|null getUuid()
  * @method void setUuid(?string $uuid)
  * @method int getFileId()
@@ -67,26 +67,47 @@ use Symfony\Component\Uid\Uuid;
  */
 class FileText extends Entity implements JsonSerializable
 {
+
     protected ?string $uuid = null;
+
     protected ?int $fileId = null;
+
     protected ?string $filePath = null;
+
     protected ?string $fileName = null;
+
     protected ?string $mimeType = null;
+
     protected ?int $fileSize = null;
+
     protected ?string $fileChecksum = null;
+
     protected ?string $textContent = null;
+
     protected int $textLength = 0;
+
     protected string $extractionMethod = 'text_extract';
+
     protected string $extractionStatus = 'pending';
+
     protected ?string $extractionError = null;
+
     protected bool $chunked = false;
+
     protected int $chunkCount = 0;
+
     protected ?string $chunksJson = null;
+
     protected bool $indexedInSolr = false;
+
     protected bool $vectorized = false;
+
     protected ?DateTime $createdAt = null;
+
     protected ?DateTime $updatedAt = null;
+
     protected ?DateTime $extractedAt = null;
+
 
     public function __construct()
     {
@@ -110,7 +131,9 @@ class FileText extends Entity implements JsonSerializable
         $this->addType('createdAt', 'datetime');
         $this->addType('updatedAt', 'datetime');
         $this->addType('extractedAt', 'datetime');
-    }
+
+    }//end __construct()
+
 
     /**
      * Validate UUID format
@@ -127,31 +150,35 @@ class FileText extends Entity implements JsonSerializable
         } catch (\InvalidArgumentException $e) {
             return false;
         }
-    }
+
+    }//end isValidUuid()
+
 
     public function jsonSerialize(): array
     {
         return [
-            'id' => $this->id,
-            'uuid' => $this->uuid,
-            'fileId' => $this->fileId,
-            'filePath' => $this->filePath,
-            'fileName' => $this->fileName,
-            'mimeType' => $this->mimeType,
-            'fileSize' => $this->fileSize,
-            'fileChecksum' => $this->fileChecksum,
-            'textLength' => $this->textLength,
+            'id'               => $this->id,
+            'uuid'             => $this->uuid,
+            'fileId'           => $this->fileId,
+            'filePath'         => $this->filePath,
+            'fileName'         => $this->fileName,
+            'mimeType'         => $this->mimeType,
+            'fileSize'         => $this->fileSize,
+            'fileChecksum'     => $this->fileChecksum,
+            'textLength'       => $this->textLength,
             'extractionMethod' => $this->extractionMethod,
             'extractionStatus' => $this->extractionStatus,
-            'extractionError' => $this->extractionError,
-            'chunked' => $this->chunked,
-            'chunkCount' => $this->chunkCount,
-            'indexedInSolr' => $this->indexedInSolr,
-            'vectorized' => $this->vectorized,
-            'createdAt' => $this->createdAt?->format('Y-m-d H:i:s'),
-            'updatedAt' => $this->updatedAt?->format('Y-m-d H:i:s'),
-            'extractedAt' => $this->extractedAt?->format('Y-m-d H:i:s'),
+            'extractionError'  => $this->extractionError,
+            'chunked'          => $this->chunked,
+            'chunkCount'       => $this->chunkCount,
+            'indexedInSolr'    => $this->indexedInSolr,
+            'vectorized'       => $this->vectorized,
+            'createdAt'        => $this->createdAt?->format('Y-m-d H:i:s'),
+            'updatedAt'        => $this->updatedAt?->format('Y-m-d H:i:s'),
+            'extractedAt'      => $this->extractedAt?->format('Y-m-d H:i:s'),
         ];
-    }
-}
 
+    }//end jsonSerialize()
+
+
+}//end class

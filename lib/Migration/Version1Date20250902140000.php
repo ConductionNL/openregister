@@ -23,19 +23,21 @@ use OCP\Migration\SimpleMigrationStep;
  * - organisation: Critical for multi-tenancy performance
  * - published + depublished: Critical for publication status filtering
  *
- * @category   Migration
- * @package    OCA\OpenRegister\Migration
+ * @category Migration
+ * @package  OCA\OpenRegister\Migration
  *
- * @author     Conduction Development Team <info@conduction.nl>
- * @copyright  2024 Conduction B.V.
- * @license    EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version    GIT: <git_id>
+ * @version GIT: <git_id>
  *
- * @link       https://www.OpenRegister.app
+ * @link https://www.OpenRegister.app
  */
 class Version1Date20250902140000 extends SimpleMigrationStep
 {
+
+
     /**
      * Apply performance-critical database indexes
      *
@@ -47,7 +49,7 @@ class Version1Date20250902140000 extends SimpleMigrationStep
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /**
+        /*
          * @var ISchemaWrapper $schema
          */
         $schema = $schemaClosure();
@@ -96,9 +98,8 @@ class Version1Date20250902140000 extends SimpleMigrationStep
         $output->info('Skipping super-performance index creation to avoid MySQL key length issues');
 
         return $schema;
+
     }//end changeSchema()
-
-
 
 
 }//end class

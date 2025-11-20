@@ -35,6 +35,7 @@ use Psr\Log\LoggerInterface;
  */
 class FileVectorizationStrategy implements VectorizationStrategyInterface
 {
+
     /**
      * File text mapper
      *
@@ -49,6 +50,7 @@ class FileVectorizationStrategy implements VectorizationStrategyInterface
      */
     private LoggerInterface $logger;
 
+
     /**
      * Constructor
      *
@@ -60,8 +62,10 @@ class FileVectorizationStrategy implements VectorizationStrategyInterface
         LoggerInterface $logger
     ) {
         $this->fileTextMapper = $fileTextMapper;
-        $this->logger = $logger;
-    }
+        $this->logger         = $logger;
+
+    }//end __construct()
+
 
     /**
      * Fetch files with completed extractions and chunks
@@ -72,28 +76,37 @@ class FileVectorizationStrategy implements VectorizationStrategyInterface
      */
     public function fetchEntities(array $options): array
     {
-        $maxFiles = (int) ($options['max_files'] ?? 0);
+        $maxFiles  = (int) ($options['max_files'] ?? 0);
         $fileTypes = $options['file_types'] ?? [];
 
-        $this->logger->debug('[FileVectorizationStrategy] Fetching files', [
-            'maxFiles' => $maxFiles,
-            'fileTypes' => $fileTypes,
-        ]);
+        $this->logger->debug(
+                '[FileVectorizationStrategy] Fetching files',
+                [
+                    'maxFiles'  => $maxFiles,
+                    'fileTypes' => $fileTypes,
+                ]
+                );
 
         // Get files with completed extraction
         $files = $this->fileTextMapper->findByStatus('completed', $maxFiles > 0 ? $maxFiles : 1000);
 
         // Filter by file types if specified
         if (!empty($fileTypes)) {
-            $files = array_filter($files, function($file) use ($fileTypes) {
-                return in_array($file->getMimeType(), $fileTypes);
-            });
+            $files = array_filter(
+                    $files,
+                    function ($file) use ($fileTypes) {
+                        return in_array($file->getMimeType(), $fileTypes);
+                    }
+                    );
         }
 
         // Filter files that have chunks
-        $files = array_filter($files, function($file) {
-            return $file->getChunked() && $file->getChunkCount() > 0;
-        });
+        $files = array_filter(
+                $files,
+                function ($file) {
+                    return $file->getChunked() && $file->getChunkCount() > 0;
+                }
+                );
 
         // Apply max files limit
         if ($maxFiles > 0 && count($files) > $maxFiles) {
@@ -101,7 +114,9 @@ class FileVectorizationStrategy implements VectorizationStrategyInterface
         }
 
         return array_values($files);
-    }
+
+    }//end fetchEntities()
+
 
     /**
      * Extract chunks from file
@@ -113,20 +128,26 @@ class FileVectorizationStrategy implements VectorizationStrategyInterface
     public function extractVectorizationItems($entity): array
     {
         $chunksJson = $entity->getChunksJson();
-        
+
         if (empty($chunksJson)) {
-            $this->logger->warning('[FileVectorizationStrategy] No chunks JSON found', [
-                'fileId' => $entity->getFileId(),
-            ]);
+            $this->logger->warning(
+                    '[FileVectorizationStrategy] No chunks JSON found',
+                    [
+                        'fileId' => $entity->getFileId(),
+                    ]
+                    );
             return [];
         }
 
         $chunks = json_decode($chunksJson, true);
-        
+
         if (!is_array($chunks)) {
-            $this->logger->error('[FileVectorizationStrategy] Invalid chunks data', [
-                'fileId' => $entity->getFileId(),
-            ]);
+            $this->logger->error(
+                    '[FileVectorizationStrategy] Invalid chunks data',
+                    [
+                        'fileId' => $entity->getFileId(),
+                    ]
+                    );
             return [];
         }
 
@@ -134,15 +155,17 @@ class FileVectorizationStrategy implements VectorizationStrategyInterface
         $items = [];
         foreach ($chunks as $index => $chunk) {
             $items[] = [
-                'text' => $chunk['text'],
-                'index' => $index,
+                'text'         => $chunk['text'],
+                'index'        => $index,
                 'start_offset' => $chunk['start_offset'] ?? null,
-                'end_offset' => $chunk['end_offset'] ?? null,
+                'end_offset'   => $chunk['end_offset'] ?? null,
             ];
         }
 
         return $items;
-    }
+
+    }//end extractVectorizationItems()
+
 
     /**
      * Prepare metadata for file chunk vector
@@ -154,25 +177,28 @@ class FileVectorizationStrategy implements VectorizationStrategyInterface
      */
     public function prepareVectorMetadata($entity, array $item): array
     {
-        $chunks = json_decode($entity->getChunksJson(), true);
+        $chunks      = json_decode($entity->getChunksJson(), true);
         $totalChunks = is_array($chunks) ? count($chunks) : 1;
 
         return [
-            'entity_type' => 'file',
-            'entity_id' => (string) $entity->getFileId(),
-            'chunk_index' => $item['index'],
-            'total_chunks' => $totalChunks,
-            'chunk_text' => substr($item['text'], 0, 500), // Preview
+            'entity_type'         => 'file',
+            'entity_id'           => (string) $entity->getFileId(),
+            'chunk_index'         => $item['index'],
+            'total_chunks'        => $totalChunks,
+            'chunk_text'          => substr($item['text'], 0, 500),
+        // Preview
             'additional_metadata' => [
-                'file_id' => $entity->getFileId(),
-                'file_name' => $entity->getFileName(),
-                'file_path' => $entity->getFilePath(),
-                'mime_type' => $entity->getMimeType(),
+                'file_id'      => $entity->getFileId(),
+                'file_name'    => $entity->getFileName(),
+                'file_path'    => $entity->getFilePath(),
+                'mime_type'    => $entity->getMimeType(),
                 'start_offset' => $item['start_offset'],
-                'end_offset' => $item['end_offset'],
+                'end_offset'   => $item['end_offset'],
             ],
         ];
-    }
+
+    }//end prepareVectorMetadata()
+
 
     /**
      * Get file ID as identifier
@@ -184,6 +210,8 @@ class FileVectorizationStrategy implements VectorizationStrategyInterface
     public function getEntityIdentifier($entity)
     {
         return $entity->getFileId();
-    }
-}
 
+    }//end getEntityIdentifier()
+
+
+}//end class

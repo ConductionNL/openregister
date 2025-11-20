@@ -67,7 +67,7 @@ class MetaDataFacetHandler
     {
         // FACET FIX: Map @self metadata field names to actual database columns
         $actualField = $this->mapMetadataFieldToColumn($field);
-        
+
         $queryBuilder = $this->db->getQueryBuilder();
 
         // Build aggregation query using the actual database column
@@ -116,18 +116,19 @@ class MetaDataFacetHandler
     {
         // Map @self metadata fields to database columns
         $fieldMappings = [
-            'register' => 'register',         // @self.register -> register column (stores register ID)
-            'schema' => 'schema',             // @self.schema -> schema column (stores schema ID) 
+            'register'     => 'register',         // @self.register -> register column (stores register ID)
+            'schema'       => 'schema',             // @self.schema -> schema column (stores schema ID)
             'organisation' => 'organisation', // @self.organisation -> organisation column (stores org UUID)
-            'created' => 'created',           // @self.created -> created column
-            'updated' => 'updated',           // @self.updated -> updated column
-            'published' => 'published',       // @self.published -> published column
-            'owner' => 'owner',               // @self.owner -> owner column
+            'created'      => 'created',           // @self.created -> created column
+            'updated'      => 'updated',           // @self.updated -> updated column
+            'published'    => 'published',       // @self.published -> published column
+            'owner'        => 'owner',               // @self.owner -> owner column
             // Add more mappings as needed for other @self metadata fields
         ];
 
         // Return the mapped column name or original field name if no mapping exists
         return $fieldMappings[$field] ?? $field;
+
     }//end mapMetadataFieldToColumn()
 
 

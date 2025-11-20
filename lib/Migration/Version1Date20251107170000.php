@@ -2,19 +2,19 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * Add chunks_json column to file_texts table
  *
  * This migration adds a column to store text chunks as JSON for independent
  * text extraction that doesn't depend on SOLR indexing.
  *
- * @category Migration
- * @package  OCA\OpenRegister\Migration
- * @author   Conduction Development Team <dev@conduction.nl>
+ * @category  Migration
+ * @package   OCA\OpenRegister\Migration
+ * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @version  GIT: <git-id>
- * @link     https://www.OpenRegister.nl
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version   GIT: <git-id>
+ * @link      https://www.OpenRegister.nl
  */
 
 namespace OCA\OpenRegister\Migration;
@@ -33,30 +33,38 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20251107170000 extends SimpleMigrationStep
 {
+
+
     /**
      * Modify the database schema
      *
-     * @param IOutput $output   Output handler
+     * @param IOutput $output        Output handler
      * @param Closure $schemaClosure Schema closure
-     * @param array   $options  Options
+     * @param array   $options       Options
      *
      * @return ISchemaWrapper|null The modified schema or null
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /** @var ISchemaWrapper $schema */
-        $schema = $schemaClosure();
+        /*
+         * @var ISchemaWrapper $schema
+         */
+        $schema  = $schemaClosure();
         $updated = false;
 
         if ($schema->hasTable('openregister_file_texts')) {
             $table = $schema->getTable('openregister_file_texts');
-            
+
             if (!$table->hasColumn('chunks_json')) {
-                $table->addColumn('chunks_json', Types::TEXT, [
-                    'notnull' => false,
-                    'default' => null,
-                    'comment' => 'JSON-encoded array of text chunks with metadata'
-                ]);
+                $table->addColumn(
+                        'chunks_json',
+                        Types::TEXT,
+                        [
+                            'notnull' => false,
+                            'default' => null,
+                            'comment' => 'JSON-encoded array of text chunks with metadata',
+                        ]
+                        );
                 $output->info('✅ Added chunks_json column to file_texts table');
                 $updated = true;
             } else {
@@ -64,17 +72,19 @@ class Version1Date20251107170000 extends SimpleMigrationStep
             }
         } else {
             $output->warning('⚠️  openregister_file_texts table does not exist');
-        }
+        }//end if
 
         return $updated ? $schema : null;
-    }
+
+    }//end changeSchema()
+
 
     /**
      * Post-schema change hook
      *
-     * @param IOutput $output   Output handler
+     * @param IOutput $output        Output handler
      * @param Closure $schemaClosure Schema closure
-     * @param array   $options  Options
+     * @param array   $options       Options
      *
      * @return void
      */
@@ -82,6 +92,8 @@ class Version1Date20251107170000 extends SimpleMigrationStep
     {
         $output->info('✅ Migration complete - Text extraction is now independent of SOLR');
         $output->info('   Chunks will be generated during extraction and stored for later use');
-    }
-}
 
+    }//end postSchemaChange()
+
+
+}//end class

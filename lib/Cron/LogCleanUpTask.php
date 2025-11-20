@@ -68,7 +68,7 @@ class LogCleanUpTask extends TimedJob
     ) {
         parent::__construct($time);
         $this->auditTrailMapper = $auditTrailMapper;
-        $this->logger = $logger;
+        $this->logger           = $logger;
 
         // Run every hour (3600 seconds)
         $this->setInterval(3600);

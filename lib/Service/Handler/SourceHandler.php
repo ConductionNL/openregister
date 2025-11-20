@@ -51,8 +51,8 @@ class SourceHandler
     /**
      * Constructor
      *
-     * @param SourceMapper      $sourceMapper The source mapper instance
-     * @param LoggerInterface   $logger       The logger instance
+     * @param SourceMapper    $sourceMapper The source mapper instance
+     * @param LoggerInterface $logger       The logger instance
      */
     public function __construct(SourceMapper $sourceMapper, LoggerInterface $logger)
     {
@@ -87,7 +87,7 @@ class SourceHandler
      * @return Source|null The imported source or null if skipped
      * @throws Exception If import fails
      */
-    public function import(array $data, ?string $owner = null): ?Source
+    public function import(array $data, ?string $owner=null): ?Source
     {
         try {
             unset($data['id'], $data['uuid']);
@@ -129,5 +129,3 @@ class SourceHandler
 
 
 }//end class
-
-

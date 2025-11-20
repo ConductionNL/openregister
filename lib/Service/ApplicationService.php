@@ -51,15 +51,15 @@ class ApplicationService
     /**
      * Constructor for ApplicationService
      *
-     * @param ApplicationMapper  $applicationMapper  The application mapper
-     * @param LoggerInterface    $logger            The logger instance
+     * @param ApplicationMapper $applicationMapper The application mapper
+     * @param LoggerInterface   $logger            The logger instance
      */
     public function __construct(
         ApplicationMapper $applicationMapper,
         LoggerInterface $logger
     ) {
         $this->applicationMapper = $applicationMapper;
-        $this->logger = $logger;
+        $this->logger            = $logger;
 
     }//end __construct()
 
@@ -203,4 +203,3 @@ class ApplicationService
 
 
 }//end class
-

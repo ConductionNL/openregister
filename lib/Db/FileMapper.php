@@ -166,7 +166,8 @@ class FileMapper extends QBMapper
                 $row['accessUrl']   = $this->generateAuthenticatedAccessUrl($row['fileid']);
                 $row['downloadUrl'] = $this->generateAuthenticatedDownloadUrl($row['fileid']);
             }
-            $row['published']   = $row['share_stime'] ? (new DateTime())->setTimestamp($row['share_stime'])->format('c') : null;
+
+            $row['published'] = $row['share_stime'] ? (new DateTime())->setTimestamp($row['share_stime'])->format('c') : null;
 
             // Extract owner from storage ID (format is usually "home::username")
             $row['owner'] = null;
@@ -181,7 +182,7 @@ class FileMapper extends QBMapper
             }
 
             $files[] = $row;
-        }
+        }//end while
 
         $result->closeCursor();
 
@@ -263,7 +264,8 @@ class FileMapper extends QBMapper
             $file['accessUrl']   = $this->generateAuthenticatedAccessUrl($file['fileid']);
             $file['downloadUrl'] = $this->generateAuthenticatedDownloadUrl($file['fileid']);
         }
-        $file['published']   = $file['share_stime'] ? (new DateTime())->setTimestamp($file['share_stime'])->format('c') : null;
+
+        $file['published'] = $file['share_stime'] ? (new DateTime())->setTimestamp($file['share_stime'])->format('c') : null;
 
         // Extract owner from storage ID (format is usually "home::username")
         $file['owner'] = null;
@@ -612,12 +614,12 @@ class FileMapper extends QBMapper
             ->leftJoin('fc', 'mimetypes', 'mt', $qb->expr()->eq('fc.mimetype', 'mt.id'))
             ->where($qb->expr()->neq('mt.mimetype', $qb->createNamedParameter('httpd/unix-directory', IQueryBuilder::PARAM_STR)));
         // Exclude directories
-
         $result = $qb->executeQuery();
-        $row = $result->fetch();
+        $row    = $result->fetch();
         $result->closeCursor();
 
         return (int) ($row['count'] ?? 0);
+
     }//end countAllFiles()
 
 
@@ -636,12 +638,12 @@ class FileMapper extends QBMapper
             ->leftJoin('fc', 'mimetypes', 'mt', $qb->expr()->eq('fc.mimetype', 'mt.id'))
             ->where($qb->expr()->neq('mt.mimetype', $qb->createNamedParameter('httpd/unix-directory', IQueryBuilder::PARAM_STR)));
         // Exclude directories
-
         $result = $qb->executeQuery();
-        $row = $result->fetch();
+        $row    = $result->fetch();
         $result->closeCursor();
 
         return (int) ($row['total_size'] ?? 0);
+
     }//end getTotalFilesSize()
 
 
@@ -665,7 +667,7 @@ class FileMapper extends QBMapper
      * @phpstan-param  int $limit
      * @phpstan-return list<array{fileid: int, path: string, name: string, mimetype: string, size: int, mtime: int, checksum: string|null}>
      */
-    public function findUntrackedFiles(int $limit = 100): array
+    public function findUntrackedFiles(int $limit=100): array
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -683,16 +685,26 @@ class FileMapper extends QBMapper
             ->leftJoin('fc', 'mimetypes', 'mt', $qb->expr()->eq('fc.mimetype', 'mt.id'))
             ->leftJoin('fc', 'storages', 'st', $qb->expr()->eq('fc.storage', 'st.numeric_id'))
             ->leftJoin('fc', 'openregister_file_texts', 'ft', $qb->expr()->eq('fc.fileid', 'ft.file_id'))
-            ->where($qb->expr()->isNull('ft.id'))  // No corresponding record in file_texts
-            ->andWhere($qb->expr()->neq('mt.mimetype', $qb->createNamedParameter('httpd/unix-directory', IQueryBuilder::PARAM_STR))) // Exclude directories
-            ->andWhere($qb->expr()->like('st.id', $qb->createNamedParameter('home::%', IQueryBuilder::PARAM_STR))) // Only user home storages
-            ->andWhere($qb->expr()->notLike('fc.path', $qb->createNamedParameter('%files_trashbin%', IQueryBuilder::PARAM_STR))) // Exclude trash
-            ->andWhere($qb->expr()->notLike('fc.path', $qb->createNamedParameter('appdata_%', IQueryBuilder::PARAM_STR))) // Exclude system appdata
-            ->andWhere($qb->expr()->notLike('fc.path', $qb->createNamedParameter('%files_versions%', IQueryBuilder::PARAM_STR))) // Exclude file versions
-            ->andWhere($qb->expr()->notLike('fc.path', $qb->createNamedParameter('%cache%', IQueryBuilder::PARAM_STR))) // Exclude cache
-            ->andWhere($qb->expr()->notLike('fc.path', $qb->createNamedParameter('%thumbnails%', IQueryBuilder::PARAM_STR))) // Exclude thumbnails
-            ->andWhere($qb->expr()->like('fc.path', $qb->createNamedParameter('files/%', IQueryBuilder::PARAM_STR))) // Only files in 'files/' directory
-            ->andWhere($qb->expr()->gt('fc.size', $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT))) // Exclude empty files
+            ->where($qb->expr()->isNull('ft.id'))
+        // No corresponding record in file_texts
+            ->andWhere($qb->expr()->neq('mt.mimetype', $qb->createNamedParameter('httpd/unix-directory', IQueryBuilder::PARAM_STR)))
+        // Exclude directories
+            ->andWhere($qb->expr()->like('st.id', $qb->createNamedParameter('home::%', IQueryBuilder::PARAM_STR)))
+        // Only user home storages
+            ->andWhere($qb->expr()->notLike('fc.path', $qb->createNamedParameter('%files_trashbin%', IQueryBuilder::PARAM_STR)))
+        // Exclude trash
+            ->andWhere($qb->expr()->notLike('fc.path', $qb->createNamedParameter('appdata_%', IQueryBuilder::PARAM_STR)))
+        // Exclude system appdata
+            ->andWhere($qb->expr()->notLike('fc.path', $qb->createNamedParameter('%files_versions%', IQueryBuilder::PARAM_STR)))
+        // Exclude file versions
+            ->andWhere($qb->expr()->notLike('fc.path', $qb->createNamedParameter('%cache%', IQueryBuilder::PARAM_STR)))
+        // Exclude cache
+            ->andWhere($qb->expr()->notLike('fc.path', $qb->createNamedParameter('%thumbnails%', IQueryBuilder::PARAM_STR)))
+        // Exclude thumbnails
+            ->andWhere($qb->expr()->like('fc.path', $qb->createNamedParameter('files/%', IQueryBuilder::PARAM_STR)))
+        // Only files in 'files/' directory
+            ->andWhere($qb->expr()->gt('fc.size', $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT)))
+        // Exclude empty files
             ->setMaxResults($limit)
             ->orderBy('fc.fileid', 'ASC');
 
@@ -706,6 +718,7 @@ class FileMapper extends QBMapper
         $result->closeCursor();
 
         return $files;
+
     }//end findUntrackedFiles()
 
 
@@ -738,10 +751,11 @@ class FileMapper extends QBMapper
             ->andWhere($qb->expr()->gt('fc.size', $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT)));
 
         $result = $qb->executeQuery();
-        $count = (int) $result->fetchOne();
+        $count  = (int) $result->fetchOne();
         $result->closeCursor();
 
         return $count;
+
     }//end countUntrackedFiles()
 
 

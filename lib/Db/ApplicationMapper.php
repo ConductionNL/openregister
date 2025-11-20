@@ -65,6 +65,7 @@ class ApplicationMapper extends QBMapper
      */
     private IGroupManager $groupManager;
 
+
     /**
      * ApplicationMapper constructor.
      *
@@ -179,11 +180,11 @@ class ApplicationMapper extends QBMapper
     /**
      * Find all applications
      *
-     * @param int|null    $limit             Maximum number of results
-     * @param int|null    $offset            Offset for pagination
-     * @param array       $filters           Filter conditions
-     * @param array       $searchConditions  Search conditions for WHERE clause
-     * @param array       $searchParams      Parameters for search conditions
+     * @param int|null $limit            Maximum number of results
+     * @param int|null $offset           Offset for pagination
+     * @param array    $filters          Filter conditions
+     * @param array    $searchConditions Search conditions for WHERE clause
+     * @param array    $searchParams     Parameters for search conditions
      *
      * @return Application[] Array of application entities
      * @throws \Exception If user doesn't have read permission
@@ -240,7 +241,7 @@ class ApplicationMapper extends QBMapper
             if (empty($entity->getUuid())) {
                 $entity->setUuid(\Symfony\Component\Uid\Uuid::v4()->toRfc4122());
             }
-            
+
             $entity->setCreated(new DateTime());
             $entity->setUpdated(new DateTime());
         }
@@ -392,4 +393,3 @@ class ApplicationMapper extends QBMapper
 
 
 }//end class
-

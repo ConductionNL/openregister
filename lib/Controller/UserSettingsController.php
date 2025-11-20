@@ -62,11 +62,11 @@ class UserSettingsController extends Controller
     /**
      * Constructor
      *
-     * @param string          $appName        The app name
-     * @param IRequest        $request        The request object
-     * @param GitHubService   $gitHubService  GitHub service
-     * @param IUserSession    $userSession    User session
-     * @param LoggerInterface $logger         Logger
+     * @param string          $appName       The app name
+     * @param IRequest        $request       The request object
+     * @param GitHubService   $gitHubService GitHub service
+     * @param IUserSession    $userSession   User session
+     * @param LoggerInterface $logger        Logger
      */
     public function __construct(
         string $appName,
@@ -76,7 +76,7 @@ class UserSettingsController extends Controller
         LoggerInterface $logger
     ) {
         parent::__construct($appName, $request);
-        
+
         $this->gitHubService = $gitHubService;
         $this->userSession   = $userSession;
         $this->logger        = $logger;
@@ -104,27 +104,33 @@ class UserSettingsController extends Controller
             }
 
             $token = $this->gitHubService->getUserToken($user->getUID());
-            
+
             if ($token === null) {
-                return new JSONResponse([
-                    'hasToken'  => false,
-                    'isValid'   => false,
-                    'message'   => 'No GitHub token configured',
-                ], 200);
+                return new JSONResponse(
+                        [
+                            'hasToken' => false,
+                            'isValid'  => false,
+                            'message'  => 'No GitHub token configured',
+                        ],
+                        200
+                        );
             }
 
             // Validate the token
             $this->gitHubService->setUserToken($token);
             $isValid = $this->gitHubService->validateToken();
-            
-            return new JSONResponse([
-                'hasToken'  => true,
-                'isValid'   => $isValid,
-                'message'   => $isValid ? 'Token is valid' : 'Token is invalid or expired',
-            ], 200);
+
+            return new JSONResponse(
+                    [
+                        'hasToken' => true,
+                        'isValid'  => $isValid,
+                        'message'  => $isValid ? 'Token is valid' : 'Token is invalid or expired',
+                    ],
+                    200
+                    );
         } catch (Exception $e) {
             $this->logger->error('Failed to get GitHub token status: '.$e->getMessage());
-            
+
             return new JSONResponse(
                 ['error' => 'Failed to get token status'],
                 500
@@ -155,7 +161,7 @@ class UserSettingsController extends Controller
 
             $data  = $this->request->getParams();
             $token = $data['token'] ?? null;
-            
+
             if ($token === null || trim($token) === '') {
                 return new JSONResponse(
                     ['error' => 'Token is required'],
@@ -174,14 +180,17 @@ class UserSettingsController extends Controller
 
             // Save the token (it's already saved by setUserToken)
             $this->logger->info("GitHub token set for user: {$user->getUID()}");
-            
-            return new JSONResponse([
-                'success' => true,
-                'message' => 'GitHub token saved successfully',
-            ], 200);
+
+            return new JSONResponse(
+                    [
+                        'success' => true,
+                        'message' => 'GitHub token saved successfully',
+                    ],
+                    200
+                    );
         } catch (Exception $e) {
             $this->logger->error('Failed to set GitHub token: '.$e->getMessage());
-            
+
             return new JSONResponse(
                 ['error' => 'Failed to save token: '.$e->getMessage()],
                 500
@@ -212,16 +221,19 @@ class UserSettingsController extends Controller
 
             // Clear the token
             $this->gitHubService->setUserToken(null);
-            
+
             $this->logger->info("GitHub token removed for user: {$user->getUID()}");
-            
-            return new JSONResponse([
-                'success' => true,
-                'message' => 'GitHub token removed successfully',
-            ], 200);
+
+            return new JSONResponse(
+                    [
+                        'success' => true,
+                        'message' => 'GitHub token removed successfully',
+                    ],
+                    200
+                    );
         } catch (Exception $e) {
             $this->logger->error('Failed to remove GitHub token: '.$e->getMessage());
-            
+
             return new JSONResponse(
                 ['error' => 'Failed to remove token'],
                 500
@@ -232,5 +244,3 @@ class UserSettingsController extends Controller
 
 
 }//end class
-
-

@@ -368,10 +368,10 @@ class ObjectEntityMapper extends QBMapper
         }
 
         try {
-            // Use optimized method to check if user has any authorization exceptions
+            // Use optimized method to check if user has any authorization exceptions.
             $hasExceptions = $this->authorizationExceptionService->userHasExceptionsOptimized($userId);
-            if (!$hasExceptions) {
-                return null; // No exceptions for this user, fall back to normal RBAC
+            if ($hasExceptions === false) {
+                return null; // No exceptions for this user, fall back to normal RBAC.
             }
 
             // For query builder-based authorization, we need to add conditions for exceptions
@@ -755,8 +755,8 @@ class ObjectEntityMapper extends QBMapper
             $userGroups = $this->groupManager->getUserGroupIds($user);
             $isAdmin = in_array('admin', $userGroups);
 
-            // Only admin users can see objects with NULL organization (legacy data)
-            if ($isAdmin) {
+            // Only admin users can see objects with NULL organization (legacy data).
+            if ($isAdmin === true) {
                 $orgConditions->add($qb->expr()->isNull($organizationColumn));
             }
 
@@ -812,8 +812,8 @@ class ObjectEntityMapper extends QBMapper
                 if ($activeOrganisationUuids === null || empty($activeOrganisationUuids)) {
                     return;
                 }
-                // If admin user has the default organization set, they see everything (no filtering)
-                if ($isSystemDefaultOrg) {
+                // If admin user has the default organization set, they see everything (no filtering).
+                if ($isSystemDefaultOrg === true) {
                     return;
                 }
                 // If active organizations ARE set (and not default), admin users should see only those organization's objects
@@ -860,14 +860,14 @@ class ObjectEntityMapper extends QBMapper
             ]);
         }
 
-        // ONLY if this is the system-wide default organization, include additional objects
-        if ($isSystemDefaultOrg) {
-            // Check if user is admin - only admin users can see objects with NULL organization (legacy data)
+        // ONLY if this is the system-wide default organization, include additional objects.
+        if ($isSystemDefaultOrg === true) {
+            // Check if user is admin - only admin users can see objects with NULL organization (legacy data).
             $userGroups = $this->groupManager->getUserGroupIds($user);
             $isAdmin = in_array('admin', $userGroups);
 
-            if ($isAdmin) {
-                // Include objects with NULL organization (legacy data) - only for admin users
+            if ($isAdmin === true) {
+                // Include objects with NULL organization (legacy data) - only for admin users.
                 $orgConditions->add(
                     $qb->expr()->isNull($organizationColumn)
                 );
@@ -1585,9 +1585,9 @@ class ObjectEntityMapper extends QBMapper
             $queryBuilder->selectAlias($queryBuilder->createFunction('COUNT(*)'), 'count')
                 ->from('openregister_objects', 'o');
 
-            // **PERFORMANCE OPTIMIZATION**: Only join schema table if RBAC is needed (15-20% improvement)
+            // **PERFORMANCE OPTIMIZATION**: Only join schema table if RBAC is needed (15-20% improvement).
             $needsSchemaJoin = $rbac && !$performanceBypass && !$smartBypass;
-            if ($needsSchemaJoin) {
+            if ($needsSchemaJoin === true) {
                 $queryBuilder->leftJoin('o', 'openregister_schemas', 's', 'o.schema = s.id');
                 $this->logger->debug('📊 COUNT: Including schema join for RBAC');
             } else {
@@ -1612,9 +1612,9 @@ class ObjectEntityMapper extends QBMapper
                 ->setMaxResults($limit)
                 ->setFirstResult($offset);
 
-            // **PERFORMANCE OPTIMIZATION**: Only join schema table if RBAC is needed (15-20% improvement)
+            // **PERFORMANCE OPTIMIZATION**: Only join schema table if RBAC is needed (15-20% improvement).
             $needsSchemaJoin = $rbac && !$performanceBypass && !$smartBypass;
-            if ($needsSchemaJoin) {
+            if ($needsSchemaJoin === true) {
                 $queryBuilder->leftJoin('o', 'openregister_schemas', 's', 'o.schema = s.id');
                 $this->logger->debug('📊 SEARCH: Including schema join for RBAC');
             } else {
@@ -1624,11 +1624,11 @@ class ObjectEntityMapper extends QBMapper
             }
         }
 
-        if ($performanceBypass) {
+        if ($performanceBypass === true) {
             $this->logger->info('⚠️  PERFORMANCE BYPASS MODE - Skipping all authorization checks', [
                 'WARNING' => 'This should ONLY be used for performance testing!'
             ]);
-        } elseif ($smartBypass) {
+        } elseif ($smartBypass === true) {
             $this->logger->debug('🚀 PERFORMANCE: Smart RBAC bypass for public data', [
                 'reason' => 'simple_public_request',
                 'expectedImprovement' => '30-40%',
@@ -2441,7 +2441,7 @@ class ObjectEntityMapper extends QBMapper
             ->from('openregister_objects')
             ->where($qb->expr()->eq('id', $qb->createNamedParameter($entity->getId())));
 
-        if (!$includeDeleted) {
+        if ($includeDeleted === false) {
             $qb->andWhere($qb->expr()->isNull('deleted'));
         }
 
@@ -3617,8 +3617,8 @@ class ObjectEntityMapper extends QBMapper
                     strpos($errorMessage, 'Server has gone away') !== false
                 );
 
-                if ($isPacketSizeError) {
-                    // Reduce chunk size more aggressively and retry with smaller batches
+                if ($isPacketSizeError === true) {
+                    // Reduce chunk size more aggressively and retry with smaller batches.
                     $maxChunkSize = max(1, intval($maxChunkSize * 0.3)); // Reduce by 70%, minimum 1
 
                     // Rechunk the data with smaller size
@@ -4044,7 +4044,7 @@ class ObjectEntityMapper extends QBMapper
                     $stmt = $this->db->prepare($batchSql);
                     $result = $stmt->execute($parameters);
 
-                    if ($result) {
+                    if ($result === true) {
                         $batchSuccess = true;
                     } else {
                         throw new \Exception('Statement execution returned false');
@@ -4566,8 +4566,8 @@ class ObjectEntityMapper extends QBMapper
             $hardDeleteIds = [];
 
             foreach ($objects as $object) {
-                if ($hardDelete) {
-                    // Force hard delete for all objects when hardDelete flag is set
+                if ($hardDelete === true) {
+                    // Force hard delete for all objects when hardDelete flag is set.
                     $hardDeleteIds[] = $object['id'];
                 } elseif (empty($object['deleted'])) {
                     // No deleted value set - perform soft delete
@@ -4887,9 +4887,9 @@ class ObjectEntityMapper extends QBMapper
             ->from($this->getTableName())
             ->where($qb->expr()->eq('schema', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)));
 
-        // When publishAll is true, include ALL objects (both published and unpublished)
-        // When publishAll is false, only include objects that are not published
-        if (!$publishAll) {
+        // When publishAll is true, include ALL objects (both published and unpublished).
+        // When publishAll is false, only include objects that are not published.
+        if ($publishAll === false) {
             $qb->andWhere($qb->expr()->isNull('published'));
         }
 
@@ -4944,9 +4944,9 @@ class ObjectEntityMapper extends QBMapper
             ->from($this->getTableName())
             ->where($qb->expr()->eq('schema', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)));
 
-        // When hardDelete is true, include ALL objects (both soft-deleted and not deleted)
-        // When hardDelete is false, only include objects that are not soft-deleted
-        if (!$hardDelete) {
+        // When hardDelete is true, include ALL objects (both soft-deleted and not deleted).
+        // When hardDelete is false, only include objects that are not soft-deleted.
+        if ($hardDelete === false) {
             $qb->andWhere($qb->expr()->isNull('deleted'));
         }
 
@@ -5393,8 +5393,8 @@ class ObjectEntityMapper extends QBMapper
                     $batchResults['organisationsAssigned']++;
                 }
 
-                // Update the object if needed
-                if ($needsUpdate) {
+                // Update the object if needed.
+                if ($needsUpdate === true) {
                     $this->updateObjectOwnership((int)$objectData['id'], $updateData);
                 }
 
@@ -5627,9 +5627,9 @@ class ObjectEntityMapper extends QBMapper
             $this->logger->debug('🚀 QUERY OPTIMIZATION: Small result set - favoring index usage');
         }
 
-        // **QUERY HINT 2**: For RBAC-enabled queries, suggest specific execution plan
-        if (!$skipRbac) {
-            // RBAC queries should prioritize owner-based indexes
+        // **QUERY HINT 2**: For RBAC-enabled queries, suggest specific execution plan.
+        if ($skipRbac === false) {
+            // RBAC queries should prioritize owner-based indexes.
             $this->logger->debug('🚀 QUERY OPTIMIZATION: RBAC enabled - using owner-based indexes');
         }
 

@@ -76,13 +76,13 @@ class RegisterMapper extends QBMapper
     /**
      * Constructor for RegisterMapper
      *
-     * @param IDBConnection        $db                  The database connection
-     * @param SchemaMapper         $schemaMapper        The schema mapper
-     * @param IEventDispatcher     $eventDispatcher     The event dispatcher
-     * @param ObjectEntityMapper   $objectEntityMapper  The object entity mapper
-     * @param OrganisationService  $organisationService The organisation service (for multi-tenancy)
-     * @param IUserSession         $userSession         The user session (for multi-tenancy)
-     * @param IGroupManager        $groupManager        The group manager (for RBAC)
+     * @param IDBConnection       $db                  The database connection
+     * @param SchemaMapper        $schemaMapper        The schema mapper
+     * @param IEventDispatcher    $eventDispatcher     The event dispatcher
+     * @param ObjectEntityMapper  $objectEntityMapper  The object entity mapper
+     * @param OrganisationService $organisationService The organisation service (for multi-tenancy)
+     * @param IUserSession        $userSession         The user session (for multi-tenancy)
+     * @param IGroupManager       $groupManager        The group manager (for RBAC)
      *
      * @return void
      */
@@ -99,7 +99,7 @@ class RegisterMapper extends QBMapper
         $this->schemaMapper       = $schemaMapper;
         $this->eventDispatcher    = $eventDispatcher;
         $this->objectEntityMapper = $objectEntityMapper;
-        
+
         // Initialize multi-tenancy trait dependencies
         $this->organisationService = $organisationService;
         $this->userSession         = $userSession;
@@ -135,10 +135,10 @@ class RegisterMapper extends QBMapper
                     $qb->expr()->eq('slug', $qb->createNamedParameter($id, IQueryBuilder::PARAM_STR))
                 )
             );
-        
+
         // Apply organisation filter (all users including admins must have active org)
         $this->applyOrganisationFilter($qb);
-        
+
         // Just return the entity; do not attach stats here
         return $this->findEntity(query: $qb);
 
@@ -173,13 +173,14 @@ class RegisterMapper extends QBMapper
 
     }//end findMultiple()
 
+
     /**
      * Find multiple registers by IDs using a single optimized query
      *
      * This method performs a single database query to fetch multiple registers,
      * significantly improving performance compared to individual queries.
      *
-     * @param array $ids Array of register IDs to find
+     * @param  array $ids Array of register IDs to find
      * @return array Associative array of ID => Register entity
      */
     public function findMultipleOptimized(array $ids): array
@@ -195,16 +196,17 @@ class RegisterMapper extends QBMapper
                 $qb->expr()->in('id', $qb->createNamedParameter($ids, IQueryBuilder::PARAM_INT_ARRAY))
             );
 
-        $result = $qb->executeQuery();
+        $result    = $qb->executeQuery();
         $registers = [];
-        
+
         while ($row = $result->fetch()) {
             $register = new Register();
             $register = $register->fromRow($row);
             $registers[$row['id']] = $register;
         }
-        
+
         return $registers;
+
     }//end findMultipleOptimized()
 
 
@@ -236,10 +238,10 @@ class RegisterMapper extends QBMapper
             ->from('openregister_registers')
             ->setMaxResults($limit)
             ->setFirstResult($offset);
-        
+
         // Apply organisation filter (all users including admins must have active org)
         $this->applyOrganisationFilter($qb);
-        
+
         foreach ($filters as $filter => $value) {
             if ($value === 'IS NOT NULL') {
                 $qb->andWhere($qb->expr()->isNotNull($filter));
