@@ -241,7 +241,7 @@ class SchemaService
         foreach ($usageStats['counts'] as $propertyName => $count) {
             $usageStats['percentages'][$propertyName] = round(($count / $totalObjects) * 100, 2);
 
-            if (isset($discoveredProperties[$propertyName])) {
+            if (isset($discoveredProperties[$propertyName]) === true) {
                 $discoveredProperties[$propertyName]['usage_percentage'] = $usageStats['percentages'][$propertyName];
             }
         }
@@ -311,8 +311,8 @@ class SchemaService
 
             case 'object':
             case 'array':
-                if (is_object($value) === true ||
-                    (is_array($value) === true && empty($value) === false && array_is_list($value) === false)
+                if (is_object($value) === true
+                    || (is_array($value) === true && empty($value) === false && array_is_list($value) === false)
                 ) {
                     $analysis['object_structure'] = $this->analyzeObjectStructure($value);
                 }
@@ -360,42 +360,42 @@ class SchemaService
         }
 
         // Email format.
-        if (filter_var($value, FILTER_VALIDATE_EMAIL)) {
+        if (filter_var($value, FILTER_VALIDATE_EMAIL) !== false) {
             return 'email';
         }
 
         // URL format.
-        if (filter_var($value, FILTER_VALIDATE_URL)) {
+        if (filter_var($value, FILTER_VALIDATE_URL) !== false) {
             return 'url';
         }
 
         // Time format (HH:MM:SS).
-        if (preg_match('/^\d{2}:\d{2}:\d{2}$/', $value)) {
+        if (preg_match('/^\d{2}:\d{2}:\d{2}$/', $value) === 1) {
             return 'time';
         }
 
         // Duration format (ISO 8601 duration like PT1H30M).
-        if (preg_match('/^P(\d+Y)?(\d+M)?(\d+D)?(T(\d+H)?(\d+M)?(\d+S)?)?$/', $value)) {
+        if (preg_match('/^P(\d+Y)?(\d+M)?(\d+D)?(T(\d+H)?(\d+M)?(\d+S)?)?$/', $value) === 1) {
             return 'duration';
         }
 
         // Color format (hex, rgb, etc.).
-        if (preg_match('/^#[0-9a-fA-F]{6}$/', $value)) {
+        if (preg_match('/^#[0-9a-fA-F]{6}$/', $value) === 1) {
             return 'color';
         }
 
         // Hostname format.
-        if (preg_match('/^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/', $value)) {
+        if (preg_match('/^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/', $value) === 1) {
             return 'hostname';
         }
 
         // IPv4 format.
-        if (filter_var($value, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+        if (filter_var($value, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false) {
             return 'ipv4';
         }
 
         // IPv6 format.
-        if (filter_var($value, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+        if (filter_var($value, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false) {
             return 'ipv6';
         }
 
@@ -416,8 +416,8 @@ class SchemaService
         $patterns = [];
 
         // Check for numeric strings (could be integers).
-        if (is_numeric($value)) {
-            if (ctype_digit($value)) {
+        if (is_numeric($value) === true) {
+            if (ctype_digit($value) === true) {
                 $patterns[] = 'integer_string';
             } else {
                 $patterns[] = 'float_string';
@@ -425,34 +425,34 @@ class SchemaService
         }
 
         // Check for boolean-like strings.
-        if (in_array(strtolower($value), ['true', 'false', 'yes', 'no', 'on', 'off', '1', '0'])) {
+        if (in_array(strtolower($value), ['true', 'false', 'yes', 'no', 'on', 'off', '1', '0']) === true) {
             $patterns[] = 'boolean_string';
         }
 
         // Check for enum-like patterns (camelCase, PascalCase, etc.).
-        if (preg_match('/^[a-z]+[A-Z][a-zA-Z]*$/', $value)) {
+        if (preg_match('/^[a-z]+[A-Z][a-zA-Z]*$/', $value) === 1) {
             $patterns[] = 'camelCase';
         }
 
-        if (preg_match('/^[A-Z][a-z]*([A-Z][a-z]*)*$/', $value)) {
+        if (preg_match('/^[A-Z][a-z]*([A-Z][a-z]*)*$/', $value) === 1) {
             $patterns[] = 'PascalCase';
         }
 
-        if (preg_match('/^[a-z]+(_[a-z]+)*$/', $value)) {
+        if (preg_match('/^[a-z]+(_[a-z]+)*$/', $value) === 1) {
             $patterns[] = 'snake_case';
         }
 
-        if (preg_match('/^[A-Z]+(_[A-Z]+)*$/', $value)) {
+        if (preg_match('/^[A-Z]+(_[A-Z]+)*$/', $value) === 1) {
             $patterns[] = 'SCREAMING_SNAKE_CASE';
         }
 
         // Check for filename patterns.
-        if (preg_match('/^[^<>:"/\\|?*]+\.[a-zA-Z0-9]+$/', $value)) {
+        if (preg_match('/^[^<>:"/\\|?*]+\.[a-zA-Z0-9]+$/', $value) === 1) {
             $patterns[] = 'filename';
         }
 
         // Check for directory patterns.
-        if (str_contains($value, '/') || str_contains($value, '\\')) {
+        if (str_contains($value, '/') === true || str_contains($value, '\\') === true) {
             $patterns[] = 'path';
         }
 
@@ -473,7 +473,7 @@ class SchemaService
     {
         // Merge types.
         foreach ($newAnalysis['types'] as $type) {
-            if (!in_array($type, $existingAnalysis['types'])) {
+            if (in_array($type, $existingAnalysis['types']) === false) {
                 $existingAnalysis['types'][] = $type;
             }
         }
@@ -485,7 +485,7 @@ class SchemaService
             $existingAnalysis['examples']   = array_slice($existingAnalysis['examples'], 0, 5);
         } else {
             foreach ($newAnalysis['examples'] as $example) {
-                if (!in_array($example, $existingAnalysis['examples'], true)) {
+                if (in_array($example, $existingAnalysis['examples'], true) === false) {
                     $existingAnalysis['examples'][] = $example;
                 }
             }
@@ -494,16 +494,16 @@ class SchemaService
         }
 
         // Update length ranges.
-        if (isset($newAnalysis['max_length']) && $newAnalysis['max_length'] > $existingAnalysis['max_length']) {
+        if (isset($newAnalysis['max_length']) === true && $newAnalysis['max_length'] > $existingAnalysis['max_length']) {
             $existingAnalysis['max_length'] = $newAnalysis['max_length'];
         }
 
-        if (isset($newAnalysis['min_length']) && $newAnalysis['min_length'] < $existingAnalysis['min_length']) {
+        if (isset($newAnalysis['min_length']) === true && $newAnalysis['min_length'] < $existingAnalysis['min_length']) {
             $existingAnalysis['min_length'] = $newAnalysis['min_length'];
         }
 
         // Merge detected formats (if consistent patterns emerge).
-        if (isset($newAnalysis['detected_format']) && $newAnalysis['detected_format']) {
+        if (isset($newAnalysis['detected_format']) === true && $newAnalysis['detected_format'] !== null) {
             $existingAnalysis['detected_format'] = $this->consolidateFormatDetection(
                 $existingAnalysis['detected_format'] ?? null,
                 $newAnalysis['detected_format']
@@ -511,14 +511,14 @@ class SchemaService
         }
 
         // Merge string patterns.
-        if (!empty($newAnalysis['string_patterns'])) {
+        if (empty($newAnalysis['string_patterns']) === false) {
             $existingAnalysis['string_patterns'] = array_unique(
                 array_merge($existingAnalysis['string_patterns'] ?? [], $newAnalysis['string_patterns'])
             );
         }
 
         // Merge numeric ranges.
-        if (!empty($newAnalysis['numeric_range'])) {
+        if (empty($newAnalysis['numeric_range']) === false) {
             $existingAnalysis['numeric_range'] = $this->mergeNumericRanges(
                 $existingAnalysis['numeric_range'] ?? null,
                 $newAnalysis['numeric_range']
@@ -526,8 +526,8 @@ class SchemaService
         }
 
         // Merge object structure analysis.
-        if ($newAnalysis['object_structure']) {
-            if (!$existingAnalysis['object_structure']) {
+        if ($newAnalysis['object_structure'] !== null) {
+            if ($existingAnalysis['object_structure'] === null) {
                 $existingAnalysis['object_structure'] = $newAnalysis['object_structure'];
             } else {
                 $this->mergeObjectStructures($existingAnalysis['object_structure'], $newAnalysis['object_structure']);

@@ -234,7 +234,6 @@ class Application extends App implements IBootstrap
 
         // Register SolrService for advanced search capabilities (disabled due to performance issues).
         // Issue: Even with lazy loading, DI registration causes performance problems.
-
         /*
             $context->registerService(
                 SolrService::class,

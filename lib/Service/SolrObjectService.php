@@ -5,6 +5,10 @@ declare(strict_types=1);
 /*
  * SPDX-FileCopyrightText: 2024 Nextcloud GmbH and Nextcloud contributors
  * SPDX-License-Identifier: AGPL-3.0-or-later
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  */
 
 namespace OCA\OpenRegister\Service;
@@ -102,7 +106,7 @@ class SolrObjectService
             if ($object->getSchema() !== null) {
                 $schema      = $this->schemaMapper->find($object->getSchema());
                 $textParts[] = "Type: ".($schema->getTitle() ?? $schema->getName() ?? 'Unknown');
-                if ($schema->getDescription()) {
+                if ($schema->getDescription() !== null && $schema->getDescription() !== '') {
                     $textParts[] = "Schema Description: ".$schema->getDescription();
                 }
             }
@@ -121,7 +125,7 @@ class SolrObjectService
             if ($object->getRegister() !== null) {
                 $register    = $this->registerMapper->find($object->getRegister());
                 $textParts[] = "Register: ".($register->getTitle() ?? $register->getName() ?? 'Unknown');
-                if ($register->getDescription()) {
+                if ($register->getDescription() !== null && $register->getDescription() !== '') {
                     $textParts[] = "Register Description: ".$register->getDescription();
                 }
             }
@@ -137,15 +141,15 @@ class SolrObjectService
 
         // Step 4: Extract text from object data.
         $objectData = $object->getObject();
-        if (is_array($objectData)) {
+        if (is_array($objectData) === true) {
             $extractedText = $this->extractTextFromArray($objectData);
-            if (!empty($extractedText)) {
+            if (empty($extractedText) === false) {
                 $textParts[] = "Content: ".$extractedText;
             }
         }
 
         // Step 5: Add metadata.
-        if ($object->getOrganization()) {
+        if ($object->getOrganization() !== null && $object->getOrganization() !== '') {
             $textParts[] = "Organization: ".$object->getOrganization();
         }
 
@@ -190,28 +194,35 @@ class SolrObjectService
 
         foreach ($data as $key => $value) {
             // Build context path (e.g., "address.street").
-            $contextKey = $prefix ? "{$prefix}.{$key}" : (string) $key;
-
-            // Handle different value types.
-            if (is_string($value) && !empty(trim($value))) {
-                // Add field name for context, then value.
-                $textParts[] = "{$contextKey}: {$value}";
-            } else if (is_numeric($value)) {
-                // Include numeric values with context.
-                $textParts[] = "{$contextKey}: {$value}";
-            } else if (is_bool($value)) {
-                // Include boolean values.
-                $boolStr     = $value ? 'true' : 'false';
-                $textParts[] = "{$contextKey}: {$boolStr}";
-            } else if (is_array($value) && !empty($value)) {
-                // Recursively process nested arrays.
-                $nestedText = $this->extractTextFromArray($value, $contextKey, $depth + 1);
-                if (!empty($nestedText)) {
-                    $textParts[] = $nestedText;
-                }
+            if ($prefix !== null && $prefix !== '') {
+                $contextKey = "{$prefix}.{$key}";
+            } else {
+                $contextKey = (string) $key;
             }
 
-            // Skip null, empty strings, and objects we can't process.
+            // Handle different value types.
+            if (is_string($value) === true && trim($value) !== '' && trim($value) !== null) {
+                // Add field name for context, then value.
+                $textParts[] = "{$contextKey}: {$value}";
+            } else if (is_numeric($value) === true) {
+                // Include numeric values with context.
+                $textParts[] = "{$contextKey}: {$value}";
+            } else if (is_bool($value) === true) {
+                // Include boolean values.
+                if ($value === true) {
+                    $boolStr = 'true';
+                } else {
+                    $boolStr = 'false';
+                }
+
+                $textParts[] = "{$contextKey}: {$boolStr}";
+            } else if (is_array($value) === true && empty($value) === false) {
+                // Recursively process nested arrays.
+                $nestedText = $this->extractTextFromArray($value, $contextKey, $depth + 1);
+                if (empty($nestedText) === false) {
+                    $textParts[] = $nestedText;
+                }
+            }//end if
         }//end foreach
 
         return implode("\n", $textParts);
@@ -231,7 +242,7 @@ class SolrObjectService
         $results = [];
 
         foreach ($objects as $object) {
-            if (!$object instanceof ObjectEntity) {
+            if (($object instanceof ObjectEntity) === false) {
                 $this->logger->warning(
                         'Skipping non-ObjectEntity in batch conversion',
                         [
@@ -332,7 +343,7 @@ class SolrObjectService
                 ]
                 );
 
-        // TODO: Move bulk indexing logic from GuzzleSolrService
+        // TODO: Move bulk indexing logic from GuzzleSolrService.
         return $this->guzzleSolrService->bulkIndexObjects($objects, $commit);
 
     }//end bulkIndexObjects()
@@ -403,7 +414,7 @@ class SolrObjectService
                 ]
                 );
 
-        // TODO: Move delete logic to use collection parameter
+        // TODO: Move delete logic to use collection parameter.
         return $this->guzzleSolrService->deleteObject($objectId, $commit);
 
     }//end deleteObject()
@@ -470,7 +481,7 @@ class SolrObjectService
                 ]
                 );
 
-        // TODO: Move warmup logic to use collection parameter
+        // TODO: Move warmup logic to use collection parameter.
         return $this->guzzleSolrService->warmupIndex($schemaIds, $maxObjects, 'serial', false, $batchSize, $schemaIds);
 
     }//end warmupObjects()
@@ -504,7 +515,7 @@ class SolrObjectService
                 ]
                 );
 
-        // TODO: Move reindex logic to use collection parameter
+        // TODO: Move reindex logic to use collection parameter.
         return $this->guzzleSolrService->reindexAll($maxObjects, $batchSize);
 
     }//end reindexObjects()
@@ -532,7 +543,7 @@ class SolrObjectService
                 ]
                 );
 
-        // TODO: Move clear logic to use collection parameter
+        // TODO: Move clear logic to use collection parameter.
         return $this->guzzleSolrService->clearIndex();
 
     }//end clearObjectIndex()
@@ -553,7 +564,7 @@ class SolrObjectService
             throw new \Exception('objectCollection not configured in SOLR settings');
         }
 
-        // TODO: Move commit logic to use collection parameter
+        // TODO: Move commit logic to use collection parameter.
         return $this->guzzleSolrService->commit();
 
     }//end commit()
@@ -579,7 +590,7 @@ class SolrObjectService
         // Step 1: Convert object to text.
         $text = $this->convertObjectToText($object);
 
-        if (empty(trim($text))) {
+        if (trim($text) === '' || trim($text) === null) {
             throw new \Exception("Object {$object->getId()} has no text content to vectorize");
         }
 
@@ -589,28 +600,28 @@ class SolrObjectService
 
         $embedding = $vectorService->generateEmbedding($text, $provider);
 
-        if ($embedding === null || empty($embedding['embedding'])) {
+        if ($embedding === null || empty($embedding['embedding']) === true) {
             throw new \Exception("Failed to generate embedding for object {$object->getId()}");
         }
 
         // Step 3: Store vector in database.
         $vectorId = $vectorService->storeVector(
             'object',
-        // entity_type.
+            // Entity type.
             (string) $object->getId(),
-        // entity_id.
+            // Entity ID.
             $embedding['embedding'],
-        // embedding array.
+            // Embedding array.
             $embedding['model'],
-        // model name.
+            // Model name.
             $embedding['dimensions'],
-        // dimensions.
+            // Dimensions.
             0,
-        // chunk_index (objects are not chunked).
+            // Chunk index (objects are not chunked).
             1,
-        // total_chunks (always 1 for objects).
+            // Total chunks (always 1 for objects).
             $text,
-        // chunk_text.
+            // Chunk text.
             [
                 'uuid'         => $object->getUuid(),
                 'schema_id'    => $object->getSchema(),
@@ -621,7 +632,7 @@ class SolrObjectService
         );
 
         $duration = (microtime(true) - $startTime) * 1000;
-        // milliseconds.
+        // Milliseconds.
         $this->logger->info(
                 'Object vectorized successfully',
                 [
@@ -671,14 +682,14 @@ class SolrObjectService
                 'Starting batch object vectorization',
                 [
                     'total_objects' => count($objects),
-                    'provider'      => $provider ?? 'default',
+                    'provider'      => $this->getProviderOrDefault($provider),
                 ]
                 );
 
         // Step 1: Convert all objects to text.
         $textData = $this->convertObjectsToText($objects);
 
-        if (empty($textData)) {
+        if ($textData === []) {
             return [
                 'success'    => false,
                 'error'      => 'No objects could be converted to text',
@@ -780,7 +791,7 @@ class SolrObjectService
                     'successful'         => $successful,
                     'failed'             => $failed,
                     'duration_ms'        => round($duration, 2),
-                    'objects_per_second' => $successful > 0 ? round($successful / ($duration / 1000), 2) : 0,
+                    'objects_per_second' => $this->calculateObjectsPerSecond($successful, $duration),
                 ]
                 );
 
@@ -790,7 +801,7 @@ class SolrObjectService
             'successful'         => $successful,
             'failed'             => $failed,
             'duration_ms'        => round($duration, 2),
-            'objects_per_second' => $successful > 0 ? round($successful / ($duration / 1000), 2) : 0,
+            'objects_per_second' => $this->calculateObjectsPerSecond($successful, $duration),
             'results'            => $results,
         ];
 

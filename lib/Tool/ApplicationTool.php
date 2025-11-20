@@ -220,7 +220,7 @@ class ApplicationTool extends AbstractTool implements ToolInterface
 
             // Get applications via mapper (RBAC is enforced in mapper).
             $applications = $this->applicationMapper->findAll($limit, $offset);
-            $total        = $this->applicationMapper->count();
+            $total        = $this->applicationMapper->countAll();
 
             // Convert to array.
             $results = array_map(fn ($app) => $app->jsonSerialize(), $applications);
@@ -306,10 +306,6 @@ class ApplicationTool extends AbstractTool implements ToolInterface
                 $application->setDescription($description);
             }
 
-            if ($domain !== null && $domain !== '') {
-                $application->setDomain($domain);
-            }
-
             // Save via mapper (RBAC and organisation are enforced in mapper).
             $application = $this->applicationMapper->insert($application);
 
@@ -360,10 +356,6 @@ class ApplicationTool extends AbstractTool implements ToolInterface
 
             if ($description !== null) {
                 $application->setDescription($description);
-            }
-
-            if ($domain !== null) {
-                $application->setDomain($domain);
             }
 
             // Save changes (RBAC enforced in mapper).

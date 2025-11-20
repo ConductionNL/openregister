@@ -342,6 +342,7 @@ class SolrSchemaService
      * @param GuzzleSolrService $solrService     SOLR service for schema operations
      * @param SettingsService   $settingsService Settings service for tenant info
      * @param LoggerInterface   $logger          Logger for operations
+     * @param IConfig           $config          Nextcloud config
      */
     public function __construct(
         private readonly SchemaMapper $schemaMapper,
@@ -387,7 +388,7 @@ class SolrSchemaService
             // Add authentication.
             $username = $settings['solr']['username'] ?? null;
             $password = $settings['solr']['password'] ?? null;
-            if ($username && $password) {
+            if ($username !== null && $password !== null) {
                 $requestOptions['auth'] = [$username, $password];
             }
 
@@ -395,7 +396,7 @@ class SolrSchemaService
                 $response = $this->solrService->getHttpClient()->get($checkUrl, $requestOptions);
                 $data     = json_decode((string) $response->getBody(), true);
 
-                if (isset($data['fieldType'])) {
+                if (isset($data['fieldType']) === true) {
                     $this->logger->info(
                             'knn_vector field type already exists',
                             [
@@ -500,7 +501,7 @@ class SolrSchemaService
                     );
 
             // Ensure tenant collection exists.
-            if (!$this->solrService->ensureTenantCollection()) {
+            if ($this->solrService->ensureTenantCollection() === false) {
                 throw new \Exception('Failed to ensure tenant collection exists');
             }
 
@@ -516,7 +517,7 @@ class SolrSchemaService
             $stats['core_fields_created'] = count(self::CORE_METADATA_FIELDS);
 
             // STEP 3: Apply resolved field definitions to SOLR.
-            if (!empty($resolvedFields['fields'])) {
+            if (empty($resolvedFields['fields']) === false) {
                 $this->applySolrFields($resolvedFields['fields'], $force);
                 $stats['fields_created'] = count($resolvedFields['fields']);
             }
@@ -580,7 +581,8 @@ class SolrSchemaService
      * - Schema 67: `versie` = "integer" (values: 123, 456)
      * - **Resolution**: `versie` = "string" (can store both text and numbers)
      *
-     * @param  array $schemas Array of Schema entities to analyze
+     * @param array $schemas Array of Schema entities to analyze
+     *
      * @return array Resolved field definitions with conflict details
      */
     private function analyzeAndResolveFieldConflicts(array $schemas): array
@@ -604,13 +606,13 @@ class SolrSchemaService
             $schemaTitle      = $schema->getTitle();
             $schemaProperties = $schema->getProperties();
 
-            if (empty($schemaProperties)) {
+            if ($schemaProperties === []) {
                 continue;
             }
 
             // $schemaProperties is already an array from getProperties()
             $properties = $schemaProperties;
-            if (!is_array($properties)) {
+            if (is_array($properties) === false) {
                 $this->logger->warning(
                         'Invalid schema properties',
                         [
@@ -629,12 +631,12 @@ class SolrSchemaService
                 // Skip reserved fields and metadata fields.
                 // Cast fieldName to string to handle numeric keys.
                 $fieldNameStr = (string) $fieldName;
-                if (in_array($fieldNameStr, self::RESERVED_FIELDS) || str_starts_with($fieldNameStr, 'self_')) {
+                if (in_array($fieldNameStr, self::RESERVED_FIELDS) === true || str_starts_with($fieldNameStr, 'self_') === true) {
                     continue;
                 }
 
                 // Initialize field tracking.
-                if (!isset($fieldDefinitions[$fieldNameStr])) {
+                if (isset($fieldDefinitions[$fieldNameStr]) === false) {
                     $fieldDefinitions[$fieldNameStr] = [
                         'types'       => [],
                         'schemas'     => [],
@@ -643,7 +645,7 @@ class SolrSchemaService
                 }
 
                 // Track this field type and schema.
-                if (!isset($fieldDefinitions[$fieldNameStr]['types'][$fieldType])) {
+                if (isset($fieldDefinitions[$fieldNameStr]['types'][$fieldType]) === false) {
                     $fieldDefinitions[$fieldNameStr]['types'][$fieldType] = 0;
                 }
 
@@ -689,7 +691,7 @@ class SolrSchemaService
             $solrFieldName = $this->generateSolrFieldName($fieldNameStr, $fieldInfo['definitions'][0]);
             $solrFieldType = $this->determineSolrFieldType(['type' => $resolvedType] + $fieldInfo['definitions'][0]);
 
-            if ($solrFieldName && $solrFieldType) {
+            if ($solrFieldName !== null && $solrFieldType !== null) {
                 // Apply most permissive settings by checking ALL definitions.
                 // If ANY schema has facetable=true, the field should support faceting.
                 // If ANY schema is multi-valued, the field should be multi-valued.
@@ -701,7 +703,7 @@ class SolrSchemaService
                         $isFacetable = true;
                     }
 
-                    if ($this->isMultiValued($definition)) {
+                    if ($this->isMultiValued($definition) === true) {
                         $isMultiValued = true;
                     }
                 }
@@ -712,7 +714,7 @@ class SolrSchemaService
                     'indexed'     => true,
                     'multiValued' => $isMultiValued,
                     'docValues'   => $isFacetable,
-                // docValues enabled when ANY schema needs faceting.
+                // DocValues enabled when ANY schema needs faceting.
                     'facetable'   => $isFacetable,
                 ];
 
@@ -757,7 +759,8 @@ class SolrSchemaService
      * 4. `integer`/`int` - Can only hold whole numbers
      * 5. `boolean` - Can only hold true/false values
      *
-     * @param  array $types List of conflicting field types
+     * @param array $types List of conflicting field types
+     *
      * @return string Most permissive type that can accommodate all values
      */
     private function getMostPermissiveType(array $types): string
@@ -804,7 +807,7 @@ class SolrSchemaService
         $instanceId    = $this->config->getSystemValue('instanceid', 'default');
         $overwriteHost = $this->config->getSystemValue('overwrite.cli.url', '');
 
-        if (!empty($overwriteHost)) {
+        if ($overwriteHost !== '') {
             return 'nc_'.hash('crc32', $overwriteHost);
         }
 
@@ -816,19 +819,20 @@ class SolrSchemaService
     /**
      * Mirror a single OpenRegister schema to SOLR
      *
-     * @param  \OCA\OpenRegister\Db\Schema $schema OpenRegister schema entity
-     * @param  bool                        $force  Force update existing fields
+     * @param \OCA\OpenRegister\Db\Schema $schema OpenRegister schema entity
+     * @param bool                        $force  Force update existing fields
+     *
      * @return array Field mapping results
      */
     private function mirrorSingleSchema($schema, bool $force=false): array
     {
         $schemaProperties = $schema->getProperties();
-        if (empty($schemaProperties)) {
+        if ($schemaProperties === []) {
             return ['fields' => 0, 'message' => 'No properties to mirror'];
         }
 
         $properties = json_decode($schemaProperties, true);
-        if (!is_array($properties)) {
+        if (is_array($properties) === false) {
             return ['fields' => 0, 'message' => 'Invalid schema properties JSON'];
         }
 
@@ -840,7 +844,7 @@ class SolrSchemaService
             $solrFieldName = $this->generateSolrFieldName($fieldName, $fieldDefinition);
             $solrFieldType = $this->determineSolrFieldType($fieldDefinition);
 
-            if ($solrFieldName && $solrFieldType) {
+            if ($solrFieldName !== null && $solrFieldType !== null) {
                 $isFacetable = $fieldDefinition['facetable'] ?? true;
 
                 // **FILE TYPE HANDLING**: File fields should not be indexed to avoid size limits.
@@ -865,7 +869,7 @@ class SolrSchemaService
         }//end foreach
 
         // Apply fields to SOLR collection.
-        if (!empty($solrFields)) {
+        if (empty($solrFields) === false) {
             $this->applySolrFields($solrFields, $force);
         }
 
@@ -896,14 +900,15 @@ class SolrSchemaService
      * - Metadata fields: `self_` prefix (e.g., `self_name`, `self_description`)
      * - Reserved fields: `id`, `uuid`, `self_tenant` (no additional prefix)
      *
-     * @param  string $fieldName       OpenRegister field name
-     * @param  array  $fieldDefinition Field definition from schema
+     * @param string $fieldName       OpenRegister field name
+     * @param array  $fieldDefinition Field definition from schema
+     *
      * @return string SOLR field name with consistent naming
      */
     private function generateSolrFieldName(string $fieldName, array $fieldDefinition): string
     {
         // Don't prefix reserved fields.
-        if (in_array($fieldName, self::RESERVED_FIELDS)) {
+        if (in_array($fieldName, self::RESERVED_FIELDS) === true) {
             return $fieldName;
         }
 

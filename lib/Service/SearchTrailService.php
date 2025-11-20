@@ -165,7 +165,7 @@ class SearchTrailService
                 'error'   => $e->getMessage(),
                 'message' => 'Self-clearing operation failed',
             ];
-        }
+        }//end try
 
     }//end clearExpiredSearchTrails()
 
@@ -517,7 +517,7 @@ class SearchTrailService
                 'error'   => $e->getMessage(),
                 'message' => 'Cleanup operation failed',
             ];
-        }
+        }//end try
 
     }//end cleanupSearchTrails()
 

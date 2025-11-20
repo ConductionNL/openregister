@@ -61,32 +61,44 @@ use PhpOffice\PhpSpreadsheet\IOFactory as SpreadsheetIOFactory;
 class TextExtractionService
 {
     /**
-     * @var int Default chunk size in characters
+     * Default chunk size in characters
+     *
+     * @var int
      */
     private const DEFAULT_CHUNK_SIZE = 1000;
 
     /**
-     * @var int Default overlap size in characters
+     * Default overlap size in characters
+     *
+     * @var int
      */
     private const DEFAULT_CHUNK_OVERLAP = 200;
 
     /**
-     * @var int Maximum chunks per file (safety limit)
+     * Maximum chunks per file (safety limit)
+     *
+     * @var int
      */
     private const MAX_CHUNKS_PER_FILE = 1000;
 
     /**
-     * @var int Minimum chunk size in characters
+     * Minimum chunk size in characters
+     *
+     * @var int
      */
     private const MIN_CHUNK_SIZE = 100;
 
     /**
-     * @var string Recursive character splitting strategy
+     * Recursive character splitting strategy
+     *
+     * @var string
      */
     private const RECURSIVE_CHARACTER = 'RECURSIVE_CHARACTER';
 
     /**
-     * @var string Fixed size splitting strategy
+     * Fixed size splitting strategy
+     *
+     * @var string
      */
     private const FIXED_SIZE = 'FIXED_SIZE';
 
@@ -348,7 +360,7 @@ class TextExtractionService
             'language'            => $language,
             'language_level'      => null,
             'language_confidence' => $confidence,
-            'detection_method'    => $language === null ? null : 'heuristic',
+            'detection_method'    => $this->getDetectionMethod($language),
         ];
 
     }//end detectLanguageSignals()
@@ -433,13 +445,14 @@ class TextExtractionService
     /**
      * Persist textual chunks for a source.
      *
-     * @param         string                         $sourceType      Source type identifier.
-     * @param         int                            $sourceId        Source identifier.
-     * @param         array<int,array<string,mixed>> $chunks          Chunk payloads.
-     * @param         string|null                    $owner           Owner identifier.
-     * @param         string|null                    $organisation    Organisation identifier.
-     * @param         int                            $sourceTimestamp Source modification timestamp.
-     * @param         array<string,mixed>            $payload         Extraction payload for metadata chunk creation.
+     * @param string                         $sourceType      Source type identifier.
+     * @param int                            $sourceId        Source identifier.
+     * @param array<int,array<string,mixed>> $chunks          Chunk payloads.
+     * @param string|null                    $owner           Owner identifier.
+     * @param string|null                    $organisation    Organisation identifier.
+     * @param int                            $sourceTimestamp Source modification timestamp.
+     * @param array<string,mixed>            $payload         Extraction payload for metadata chunk creation.
+     *
      * @phpstan-param non-empty-string $sourceType
      * @psalm-param   non-empty-string $sourceType
      *
@@ -759,10 +772,10 @@ class TextExtractionService
             } else if ($mimeType === 'application/pdf') {
                 // Extract text from PDF using Smalot PdfParser.
                 $extractedText = $this->extractPdf($file);
-            } else if (in_array($mimeType, ['application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/msword'])) {
+            } else if ($this->isWordDocument($mimeType) === true) {
                 // Extract text from DOCX/DOC using PhpWord.
                 $extractedText = $this->extractWord($file);
-            } else if (in_array($mimeType, ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel'])) {
+            } else if ($this->isSpreadsheet($mimeType) === true) {
                 // Extract text from XLSX/XLS using PhpSpreadsheet.
                 $extractedText = $this->extractSpreadsheet($file);
             } else {
@@ -1163,7 +1176,7 @@ class TextExtractionService
         $text = str_replace("\0", '', $text);
 
         // Convert to UTF-8 if it isn't already.
-        if (!mb_check_encoding($text, 'UTF-8')) {
+        if (mb_check_encoding($text, 'UTF-8') === false) {
             $text = mb_convert_encoding($text, 'UTF-8', 'UTF-8');
         }
 
@@ -1199,7 +1212,7 @@ class TextExtractionService
     private function extractPdf(\OCP\Files\File $file): ?string
     {
         // Check if PdfParser library is available.
-        if (!class_exists('Smalot\PdfParser\Parser')) {
+        if (class_exists('Smalot\PdfParser\Parser') === false) {
             $this->logger->warning(
                     '[TextExtractionService] PDF parser library not available',
                     [
@@ -1236,7 +1249,7 @@ class TextExtractionService
             // Clean up.
             fclose($tempFile);
 
-            if (empty($text)) {
+            if ($text === '' || $text === null) {
                 $this->logger->warning(
                         '[TextExtractionService] PDF extraction returned empty text',
                         [
@@ -1281,7 +1294,7 @@ class TextExtractionService
     private function extractWord(\OCP\Files\File $file): ?string
     {
         // Check if PhpWord library is available.
-        if (!class_exists('PhpOffice\PhpWord\IOFactory')) {
+        if (class_exists('PhpOffice\PhpWord\IOFactory') === false) {
             $this->logger->warning(
                     '[TextExtractionService] PhpWord library not available',
                     [
@@ -1315,12 +1328,12 @@ class TextExtractionService
             $text = '';
             foreach ($phpWord->getSections() as $section) {
                 foreach ($section->getElements() as $element) {
-                    if (method_exists($element, 'getText')) {
+                    if (method_exists($element, 'getText') === true) {
                         $text .= $element->getText()."\n";
-                    } else if (method_exists($element, 'getElements')) {
+                    } else if (method_exists($element, 'getElements') === true) {
                         // Handle nested elements (tables, etc.).
                         foreach ($element->getElements() as $childElement) {
-                            if (method_exists($childElement, 'getText')) {
+                            if (method_exists($childElement, 'getText') === true) {
                                 $text .= $childElement->getText()." ";
                             }
                         }
@@ -1333,7 +1346,7 @@ class TextExtractionService
             // Clean up.
             fclose($tempFile);
 
-            if (empty(trim($text))) {
+            if (trim($text) === '' || trim($text) === null) {
                 $this->logger->warning(
                         '[TextExtractionService] Word extraction returned empty text',
                         [
@@ -1378,7 +1391,7 @@ class TextExtractionService
     private function extractSpreadsheet(\OCP\Files\File $file): ?string
     {
         // PhpSpreadsheet should already be installed (in composer.json).
-        if (!class_exists('PhpOffice\PhpSpreadsheet\IOFactory')) {
+        if (class_exists('PhpOffice\PhpSpreadsheet\IOFactory') === false) {
             $this->logger->warning(
                     '[TextExtractionService] PhpSpreadsheet library not available',
                     [
@@ -1432,7 +1445,7 @@ class TextExtractionService
                         $rowData[] = $value;
                     }
 
-                    if (!empty($rowData)) {
+                    if (empty($rowData) === false) {
                         $text .= implode("\t", $rowData)."\n";
                     }
                 }
@@ -1443,7 +1456,7 @@ class TextExtractionService
             // Clean up.
             fclose($tempFile);
 
-            if (empty(trim($text))) {
+            if (trim($text) === '' || trim($text) === null) {
                 $this->logger->warning(
                         '[TextExtractionService] Spreadsheet extraction returned empty text',
                         [
@@ -1534,7 +1547,7 @@ class TextExtractionService
                 [
                     'chunk_count'      => count($chunks),
                     'chunking_time_ms' => $chunkingTime,
-                    'avg_chunk_size'   => count($chunks) > 0 ? round(array_sum(array_map('strlen', array_column($chunks, 'text'))) / count($chunks)) : 0,
+                    'avg_chunk_size'   => $this->calculateAvgChunkSize($chunks),
                 ]
                 );
 
@@ -1621,7 +1634,13 @@ class TextExtractionService
             }
         }//end while
 
-        return array_filter($chunks, fn($c) => !empty(trim($c['text'])));
+        return array_filter(
+            $chunks,
+            function ($c) {
+                $trimmed = trim($c['text']);
+                return $trimmed !== '' && $trimmed !== null;
+            }
+        );
 
     }//end chunkFixedSize()
 
@@ -1701,7 +1720,7 @@ class TextExtractionService
         }
 
         // If no separators left, use fixed size chunking.
-        if (empty($separators)) {
+        if ($separators === []) {
             return $this->chunkFixedSize($text, $chunkSize, $chunkOverlap);
         }
 
@@ -1715,7 +1734,11 @@ class TextExtractionService
         $currentOffset = 0;
 
         foreach ($splits as $split) {
-            $testChunk = $currentChunk === '' ? $split : $currentChunk.$separator.$split;
+            if ($currentChunk === '') {
+                $testChunk = $split;
+            } else {
+                $testChunk = $currentChunk.$separator.$split;
+            }
 
             if (strlen($testChunk) <= $chunkSize) {
                 // Can add to current chunk.
@@ -1775,9 +1798,53 @@ class TextExtractionService
             ];
         }
 
-        return array_filter($chunks, fn($c) => !empty(trim($c['text'])));
+        return array_filter(
+            $chunks,
+            function ($c) {
+                $trimmed = trim($c['text']);
+                return $trimmed !== '' && $trimmed !== null;
+            }
+        );
 
     }//end recursiveSplit()
+
+
+    /**
+     * Check if MIME type is a Word document
+     *
+     * @param string $mimeType MIME type to check
+     *
+     * @return bool True if Word document
+     */
+    private function isWordDocument(string $mimeType): bool
+    {
+        $wordTypes = [
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'application/msword',
+        ];
+
+        return in_array($mimeType, $wordTypes, true) === true;
+
+    }//end isWordDocument()
+
+
+    /**
+     * Check if MIME type is a spreadsheet
+     *
+     * @param string $mimeType MIME type to check
+     *
+     * @return bool True if spreadsheet
+     */
+    private function isSpreadsheet(string $mimeType): bool
+    {
+        $spreadsheetTypes = [
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'application/vnd.ms-excel',
+        ];
+
+        return in_array($mimeType, $spreadsheetTypes, true) === true;
+
+    }//end isSpreadsheet()
 
 
 }//end class

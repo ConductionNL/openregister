@@ -151,8 +151,15 @@ class ImportService
      * @param IGroupManager      $groupManager       The group manager
      * @param IJobList           $jobList            The background job list
      */
-    public function __construct(ObjectEntityMapper $objectEntityMapper, SchemaMapper $schemaMapper, ObjectService $objectService, LoggerInterface $logger, IUserManager $userManager, IGroupManager $groupManager, IJobList $jobList)
-    {
+    public function __construct(
+        ObjectEntityMapper $objectEntityMapper,
+        SchemaMapper $schemaMapper,
+        ObjectService $objectService,
+        LoggerInterface $logger,
+        IUserManager $userManager,
+        IGroupManager $groupManager,
+        IJobList $jobList
+    ) {
         $this->objectEntityMapper = $objectEntityMapper;
         $this->schemaMapper       = $schemaMapper;
         $this->objectService      = $objectService;
@@ -160,10 +167,9 @@ class ImportService
         $this->userManager        = $userManager;
         $this->groupManager       = $groupManager;
         $this->jobList            = $jobList;
-        
+
         // Initialize cache arrays to prevent issues.
         $this->schemaPropertiesCache = [];
-
     }//end __construct()
 
 
@@ -177,13 +183,15 @@ class ImportService
     private function isUserAdmin(?IUser $user): bool
     {
         if ($user === null) {
-            return false; // Anonymous users are never admin
+            // Anonymous users are never admin.
+            return false;
         }
 
         // Check if user is in admin group.
         $adminGroup = $this->groupManager->get('admin');
         if ($adminGroup === null) {
-            return false; // Admin group doesn't exist
+            // Admin group doesn't exist.
+            return false;
         }
 
         return $adminGroup->inGroup($user);
@@ -326,16 +334,30 @@ class ImportService
      * @param int           $chunkSize  Number of rows to process in each chunk (default: 100).
      * @param bool          $validation Whether to validate objects against schema definitions (default: false).
      * @param bool          $events     Whether to dispatch object lifecycle events (default: false).
+     * @param bool          $rbac       Whether to enforce RBAC checks (default: true).
+     * @param bool          $multi      Whether to enable multi-tenancy (default: true).
+     * @param bool          $publish    Whether to publish objects immediately (default: false).
+     * @param IUser|null    $currentUser Current user for RBAC checks (default: null).
      *
      * @return         array<string, array> Summary of import with sheet-based results.
      * @phpstan-return array<string, array{created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
      * @psalm-return   array<string, array{created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
      */
-    public function importFromCsv(string $filePath, ?Register $register=null, ?Schema $schema=null, int $chunkSize=self::DEFAULT_CHUNK_SIZE, bool $validation=false, bool $events=false, bool $rbac=true, bool $multi=true, bool $publish=false, ?IUser $currentUser=null): array
-    {
+    public function importFromCsv(
+        string $filePath,
+        ?Register $register=null,
+        ?Schema $schema=null,
+        int $chunkSize=self::DEFAULT_CHUNK_SIZE,
+        bool $validation=false,
+        bool $events=false,
+        bool $rbac=true,
+        bool $multi=true,
+        bool $publish=false,
+        ?IUser $currentUser=null
+    ): array {
         // Clear caches at the start of each import to prevent stale data issues.
         $this->clearCaches();
-        
+
         // CSV can only handle a single schema.
         if ($schema === null) {
             throw new \InvalidArgumentException('CSV import requires a specific schema');
@@ -349,8 +371,19 @@ class ImportService
         $spreadsheet = $reader->load($filePath);
 
         // Get the sheet title for CSV (usually just 'Worksheet' or similar).
-        $sheetTitle = $spreadsheet->getActiveSheet()->getTitle();
-        $sheetSummary = $this->processCsvSheet($spreadsheet->getActiveSheet(), $register, $schema, $chunkSize, $validation, $events, $rbac, $multi, $publish, $currentUser);
+        $sheetTitle   = $spreadsheet->getActiveSheet()->getTitle();
+        $sheetSummary = $this->processCsvSheet(
+            $spreadsheet->getActiveSheet(),
+            $register,
+            $schema,
+            $chunkSize,
+            $validation,
+            $events,
+            $rbac,
+            $multi,
+            $publish,
+            $currentUser
+        );
 
         // Add schema information to the summary (consistent with Excel import).
         $sheetSummary['schema'] = [

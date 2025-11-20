@@ -235,7 +235,7 @@ abstract class AbstractTool implements ToolInterface
             'user'       => $this->getUserId(),
         ];
 
-        if ($message !== null && $message !== '') {
+        if ($message !== '') {
             $messageText = $message;
         } else {
             $messageText = 'Executing function';

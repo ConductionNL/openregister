@@ -268,7 +268,6 @@ class SchemaTool extends AbstractTool
                         'title'       => $schema->getTitle(),
                         'description' => $schema->getDescription(),
                         'version'     => $schema->getVersion(),
-                        'register'    => $schema->getRegister(),
                     ];
                 },
                 $schemas
@@ -301,7 +300,6 @@ class SchemaTool extends AbstractTool
                 'version'      => $schema->getVersion(),
                 'properties'   => $schema->getProperties(),
                 'required'     => $schema->getRequired(),
-                'register'     => $schema->getRegister(),
                 'allOf'        => $schema->getAllOf(),
                 'oneOf'        => $schema->getOneOf(),
                 'anyOf'        => $schema->getAnyOf(),

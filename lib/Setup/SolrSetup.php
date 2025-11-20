@@ -50,32 +50,44 @@ class SolrSetup
 {
 
     /**
-     * @var LoggerInterface PSR-3 compliant logger for operation tracking
+     * PSR-3 compliant logger for operation tracking
+     *
+     * @var LoggerInterface
      */
     private LoggerInterface $logger;
 
     /**
-     * @var array{host: string, port: int, scheme: string, path: string, username?: string, password?: string} SOLR connection configuration
+     * SOLR connection configuration
+     *
+     * @var array{host: string, port: int, scheme: string, path: string, username?: string, password?: string}
      */
     private array $solrConfig;
 
     /**
-     * @var GuzzleClient HTTP client for SOLR requests (from GuzzleSolrService)
+     * HTTP client for SOLR requests (from GuzzleSolrService)
+     *
+     * @var GuzzleClient
      */
     private GuzzleClient $httpClient;
 
     /**
-     * @var GuzzleSolrService SOLR service for authenticated HTTP client and configuration
+     * SOLR service for authenticated HTTP client and configuration
+     *
+     * @var GuzzleSolrService
      */
     private GuzzleSolrService $solrService;
 
     /**
-     * @var array|null Detailed error information from the last failed operation
+     * Detailed error information from the last failed operation
+     *
+     * @var array|null
      */
     private ?array $lastErrorDetails = null;
 
     /**
-     * @var array Track infrastructure resources created/skipped during setup
+     * Track infrastructure resources created/skipped during setup
+     *
+     * @var array
      */
     private array $infrastructureCreated = [
         'configsets_created'       => [],
@@ -88,7 +100,9 @@ class SolrSetup
     ];
 
     /**
-     * @var array Setup progress tracking with detailed step information
+     * Setup progress tracking with detailed step information
+     *
+     * @var array
      */
     private array $setupProgress = [];
 
@@ -168,6 +182,8 @@ class SolrSetup
      * @param string $status      Step status (started, completed, failed)
      * @param string $description Step description
      * @param array  $details     Additional step details
+     *
+     * @return void
      */
     private function trackStep(int $stepNumber, string $stepName, string $status, string $description, array $details=[]): void
     {
@@ -202,7 +218,8 @@ class SolrSetup
     /**
      * Build SOLR URL using GuzzleSolrService base URL method for consistency
      *
-     * @param  string $path The SOLR API path (e.g., '/admin/info/system')
+     * @param string $path The SOLR API path (e.g., '/admin/info/system')
+     *
      * @return string Complete SOLR URL
      */
     private function buildSolrUrl(string $path): string
@@ -220,6 +237,8 @@ class SolrSetup
      *
      * This ensures that users can see all steps in the setup modal,
      * including ones that haven't been reached yet due to earlier failures.
+     *
+     * @return void
      */
     private function initializeAllSteps(): void
     {
@@ -346,7 +365,7 @@ class SolrSetup
             $this->trackStep(1, 'SOLR Connectivity', 'started', 'Verifying SOLR server connectivity and authentication');
 
             try {
-                if (!$this->verifySolrConnectivity()) {
+                if ($this->verifySolrConnectivity() === false) {
                     $this->trackStep(
                             1,
                             'SOLR Connectivity',
@@ -408,7 +427,7 @@ class SolrSetup
             $this->trackStep(2, 'EnsureTenantConfigSet', 'started', 'Checking and creating tenant configSet "'.$tenantConfigSetName.'"');
 
             try {
-                if (!$this->ensureTenantConfigSet()) {
+                if ($this->ensureTenantConfigSet() === false) {
                     // Use detailed error information from createConfigSet if available.
                     $errorDetails = $this->lastErrorDetails ?? [];
 
@@ -485,7 +504,7 @@ class SolrSetup
             try {
                 $propagationResult = $this->forceConfigSetPropagation($tenantConfigSetName);
 
-                if ($propagationResult['success']) {
+                if ($propagationResult['success'] === true) {
                     $this->trackStep(
                         3,
                         'ConfigSet Propagation',
@@ -569,7 +588,7 @@ class SolrSetup
 
             try {
                 // Ensure tenant collection exists (using tenant-specific configSet).
-                if (!$this->ensureTenantCollectionExists()) {
+                if ($this->ensureTenantCollectionExists() === false) {
                     $tenantConfigSetName = $this->getTenantConfigSetName();
                     $this->trackStep(
                             4,
@@ -638,7 +657,7 @@ class SolrSetup
             $this->trackStep(5, 'Schema Configuration', 'started', 'Configuring schema fields for ObjectEntity metadata');
 
             try {
-                if (!$this->configureSchemaFields()) {
+                if ($this->configureSchemaFields() === false) {
                     $this->trackStep(5, 'Schema Configuration', 'failed', 'Failed to configure schema fields');
 
                     $this->lastErrorDetails = [
@@ -686,7 +705,7 @@ class SolrSetup
             $this->trackStep(6, 'Setup Validation', 'started', 'Validating SOLR setup completion');
 
             try {
-                if (!$this->validateSetup()) {
+                if ($this->validateSetup() === false) {
                     $this->trackStep(6, 'Setup Validation', 'failed', 'Setup validation failed');
 
                     $this->lastErrorDetails = [
@@ -868,13 +887,14 @@ class SolrSetup
     /**
      * Check if all components in a connection test were successful
      *
-     * @param  array $components Components test results
+     * @param array $components Components test results
+     *
      * @return bool True if all components passed
      */
     private function allComponentsSuccessful(array $components): bool
     {
         foreach ($components as $component => $result) {
-            if (!($result['success'] ?? false)) {
+            if (($result['success'] ?? false) === false) {
                 return false;
             }
         }
@@ -897,7 +917,7 @@ class SolrSetup
         $tenantConfigSetName = $this->getTenantConfigSetName();
 
         // Check if configSet already exists.
-        if ($this->configSetExists($tenantConfigSetName)) {
+        if ($this->configSetExists($tenantConfigSetName) === true) {
             $this->logger->info(
                     'Tenant configSet already exists (skipping creation)',
                     [
@@ -905,7 +925,7 @@ class SolrSetup
                     ]
                     );
             // Track existing configSet as skipped (not newly created).
-            if (!in_array($tenantConfigSetName, $this->infrastructureCreated['configsets_skipped'])) {
+            if (in_array($tenantConfigSetName, $this->infrastructureCreated['configsets_skipped']) === false) {
                 $this->infrastructureCreated['configsets_skipped'][] = $tenantConfigSetName;
             }
 
@@ -939,7 +959,8 @@ class SolrSetup
     /**
      * Check if a SOLR configSet exists
      *
-     * @param  string $configSetName Name of the configSet to check
+     * @param string $configSetName Name of the configSet to check
+     *
      * @return bool True if configSet exists, false otherwise
      */
     private function configSetExists(string $configSetName): bool
@@ -1026,8 +1047,9 @@ class SolrSetup
     /**
      * Create a new SOLR configSet based on an existing template
      *
-     * @param  string $newConfigSetName      Name for the new configSet
-     * @param  string $templateConfigSetName Name of the template configSet to copy from
+     * @param string $newConfigSetName      Name for the new configSet
+     * @param string $templateConfigSetName Name of the template configSet to copy from
+     *
      * @return bool True if configSet was created successfully
      */
     private function createConfigSet(string $newConfigSetName, string $templateConfigSetName): bool
@@ -1043,7 +1065,7 @@ class SolrSetup
         // Use GuzzleSolrService's comprehensive connectivity test instead of simple ping.
         try {
             $connectionTest = $this->solrService->testConnection();
-            if ($connectionTest['success']) {
+            if ($connectionTest['success'] === true) {
                 $this->logger->info(
                         'SOLR connectivity test successful',
                         [
@@ -1102,7 +1124,7 @@ class SolrSetup
             ];
 
             // Add authentication if configured.
-            if (!empty($this->solrConfig['username']) && !empty($this->solrConfig['password'])) {
+            if (empty($this->solrConfig['username']) === false && empty($this->solrConfig['password']) === false) {
                 $requestOptions['auth'] = [$this->solrConfig['username'], $this->solrConfig['password']];
                 $this->logger->info(
                         'Using HTTP Basic authentication for SOLR configSet creation',
@@ -1224,7 +1246,7 @@ class SolrSetup
             if ($e instanceof \GuzzleHttp\Exception\RequestException) {
                 $this->lastErrorDetails['guzzle_details']['is_request_exception'] = true;
 
-                if ($e->hasResponse()) {
+                if ($e->hasResponse() === true) {
                     $response       = $e->getResponse();
                     $responseStatus = $response->getStatusCode();
                     $responseBody   = (string) $response->getBody();
@@ -1239,7 +1261,7 @@ class SolrSetup
                     $this->lastErrorDetails['guzzle_response_body']   = $responseBody;
                 }
 
-                if ($e->getRequest()) {
+                if ($e->getRequest() !== null) {
                     $request = $e->getRequest();
                     $this->lastErrorDetails['guzzle_details']['request_method']  = $request->getMethod();
                     $this->lastErrorDetails['guzzle_details']['request_uri']     = (string) $request->getUri();
@@ -1368,7 +1390,7 @@ class SolrSetup
         $tenantCollectionName = $this->getTenantCollectionName();
 
         // Check if tenant collection already exists.
-        if ($this->solrService->collectionExists($tenantCollectionName)) {
+        if ($this->solrService->collectionExists($tenantCollectionName) === true) {
             $this->logger->info(
                     'Tenant collection already exists (skipping creation)',
                     [
@@ -1377,7 +1399,7 @@ class SolrSetup
                     );
 
             // Track existing collection as skipped (not newly created).
-            if (!in_array($tenantCollectionName, $this->infrastructureCreated['collections_skipped'])) {
+            if (in_array($tenantCollectionName, $this->infrastructureCreated['collections_skipped']) === false) {
                 $this->infrastructureCreated['collections_skipped'][] = $tenantCollectionName;
             }
 
@@ -1399,7 +1421,7 @@ class SolrSetup
             $success = $this->createCollectionWithRetry($tenantCollectionName, $tenantConfigSetName);
 
             // Track newly created collection.
-            if ($success && !in_array($tenantCollectionName, $this->infrastructureCreated['collections_created'])) {
+            if ($success === true && in_array($tenantCollectionName, $this->infrastructureCreated['collections_created']) === false) {
                 $this->infrastructureCreated['collections_created'][] = $tenantCollectionName;
             }
 

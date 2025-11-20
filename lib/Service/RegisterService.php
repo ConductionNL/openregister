@@ -281,7 +281,7 @@ class RegisterService
 
                 if ($folderNode !== null) {
                     // Update the entity with the folder ID.
-                    $entity->setFolder($folderNode->getId());
+                    $entity->setFolder((string) $folderNode->getId());
 
                     // Save the entity with the new folder ID.
                     $this->registerMapper->update($entity);
