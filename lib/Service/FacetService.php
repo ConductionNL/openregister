@@ -38,20 +38,20 @@ use Psr\Log\LoggerInterface;
  *
  * **KEY FEATURES**:
  * - 🎯 Smart Fallback: Collection-wide facets when filters return empty
- * - ⚡ Response Caching: Lightning-fast repeated requests  
+ * - ⚡ Response Caching: Lightning-fast repeated requests
  * - 🏗️ Clean Architecture: Separated from ObjectService
  * - 📊 Performance Optimized: Multiple optimization strategies
  * - 🔄 Backwards Compatible: Drop-in replacement for existing faceting
  */
 class FacetService
 {
-    
+
     /** @var int Cache TTL for facet responses (5 minutes) */
     private const FACET_CACHE_TTL = 300;
-    
-    /** @var int Cache TTL for collection-wide facets (15 minutes) */  
+
+    /** @var int Cache TTL for collection-wide facets (15 minutes) */
     private const COLLECTION_FACET_TTL = 900;
-    
+
     /** @var IMemcache|null Distributed cache for facet responses */
     private ?IMemcache $facetCache = null;
 
@@ -60,7 +60,7 @@ class FacetService
      * Constructor for FacetService
      *
      * @param ObjectEntityMapper $objectEntityMapper Object database mapper
-     * @param SchemaMapper       $schemaMapper       Schema database mapper  
+     * @param SchemaMapper       $schemaMapper       Schema database mapper
      * @param RegisterMapper     $registerMapper     Register database mapper
      * @param ICacheFactory      $cacheFactory       Cache factory for distributed caching
      * @param LoggerInterface    $logger             Logger for debugging and monitoring
@@ -68,7 +68,7 @@ class FacetService
     public function __construct(
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly SchemaMapper $schemaMapper,
-        private readonly RegisterMapper $registerMapper, 
+        private readonly RegisterMapper $registerMapper,
         private readonly ICacheFactory $cacheFactory,
         private readonly IUserSession $userSession,
         private readonly LoggerInterface $logger
@@ -97,7 +97,7 @@ class FacetService
      *
      * **STRATEGY**:
      * 1. Check response cache first (lightning-fast repeated requests)
-     * 2. Try facets on current filtered dataset  
+     * 2. Try facets on current filtered dataset
      * 3. If empty + restrictive filters → fall back to collection-wide facets
      * 4. Cache results for future requests
      * 5. Include performance metadata
@@ -107,7 +107,7 @@ class FacetService
      * relevant navigation options regardless of current page or limit.
      *
      * @param array $query Complete query including filters and facet configuration
-     * 
+     *
      * @throws \OCP\DB\Exception If database error occurs
      *
      * @return array Facet results with intelligent fallback and performance metadata
@@ -142,16 +142,16 @@ class FacetService
         
         // **CACHE RESULTS**: Store for future requests.
         $this->cacheFacetResponse($cacheKey, $result);
-        
+
         $this->logger->debug('FacetService completed facet calculation', [
             'executionTime' => $executionTime . 'ms',
             'strategy' => $result['performance_metadata']['strategy'] ?? 'unknown',
             'cacheUsed' => false,
             'totalFacetResults' => $result['performance_metadata']['total_facet_results'] ?? 0
         ]);
-        
+
         return $result;
-        
+
     }//end getFacetsForQuery()
 
 
@@ -164,7 +164,7 @@ class FacetService
      *
      * @param array $facetQuery Query for facet calculation (without pagination)
      * @param array $facetConfig Facet configuration
-     * 
+     *
      * @return array Facet results with fallback metadata
      */
     private function calculateFacetsWithFallback(array $facetQuery, array $facetConfig): array
@@ -175,13 +175,13 @@ class FacetService
         // **STAGE 2**: Check if we got meaningful facets.
         $totalFacetResults = $this->countFacetResults($facets);
         $hasRestrictiveFilters = $this->hasRestrictiveFilters($facetQuery);
-        
+
         $strategy = 'filtered';
         $fallbackUsed = false;
         
         // **INTELLIGENT FALLBACK**: If no facets and we have restrictive filters, try broader query.
         if ($totalFacetResults === 0 && $hasRestrictiveFilters) {
-            
+
             $this->logger->debug('Facets empty with restrictive filters, trying collection-wide fallback', [
                 'originalQuery' => array_keys($facetQuery),
                 'totalResults' => $totalFacetResults
@@ -198,12 +198,12 @@ class FacetService
             // Calculate collection-wide facets.
             $fallbackFacets = $this->objectEntityMapper->getSimpleFacets($collectionQuery);
             $fallbackResults = $this->countFacetResults($fallbackFacets);
-            
+
             if ($fallbackResults > 0) {
                 $facets = $fallbackFacets;
                 $strategy = 'collection_fallback';
                 $fallbackUsed = true;
-                
+
                 $this->logger->info('Smart faceting fallback successful', [
                     'fallbackResults' => $fallbackResults,
                     'originalResults' => $totalFacetResults,
@@ -211,7 +211,7 @@ class FacetService
                 ]);
             }
         }
-        
+
         return [
             'facets' => $facets,
             'performance_metadata' => [
@@ -221,7 +221,7 @@ class FacetService
                 'has_restrictive_filters' => $hasRestrictiveFilters
             ]
         ];
-        
+
     }//end calculateFacetsWithFallback()
 
 
@@ -233,7 +233,7 @@ class FacetService
      *
      * @param array $baseQuery Base query for context (register/schema filters)
      * @param int   $limit     Limit for object field discovery
-     * 
+     *
      * @return array Facetable field configuration
      */
     public function getFacetableFields(array $baseQuery, int $limit = 100): array
@@ -245,17 +245,17 @@ class FacetService
         
         // **PERFORMANCE OPTIMIZATION**: Use pre-computed schema facets.
         $facetableFields = $this->getFacetableFieldsFromSchemas($schemas);
-        
+
         $executionTime = round((microtime(true) - $startTime) * 1000, 2);
-        
+
         $this->logger->debug('Facetable fields discovery completed', [
             'executionTime' => $executionTime . 'ms',
             'schemaCount' => count($schemas),
             'facetableFieldCount' => count($facetableFields['@self'] ?? []) + count($facetableFields['object_fields'] ?? [])
         ]);
-        
+
         return $facetableFields;
-        
+
     }//end getFacetableFields()
 
 
@@ -264,7 +264,7 @@ class FacetService
      *
      * @param array $facetQuery Query for faceting (without pagination)
      * @param array $facetConfig Facet configuration
-     * 
+     *
      * @return string Cache key
      */
     private function generateFacetCacheKey(array $facetQuery, array $facetConfig): string
@@ -287,9 +287,9 @@ class FacetService
             'org' => $orgId,
             'version' => '2.0' // Increment to invalidate when RBAC logic changes
         ];
-        
+
         return 'facet_rbac_' . md5(json_encode($cacheData));
-        
+
     }//end generateFacetCacheKey()
 
 
@@ -297,7 +297,7 @@ class FacetService
      * Get cached facet response
      *
      * @param string $cacheKey Cache key to lookup
-     * 
+     *
      * @return array|null Cached response or null if not found
      */
     private function getCachedFacetResponse(string $cacheKey): ?array
@@ -305,7 +305,7 @@ class FacetService
         if ($this->facetCache === null) {
             return null;
         }
-        
+
         try {
             $cached = $this->facetCache->get($cacheKey);
             if ($cached !== null) {
@@ -317,9 +317,9 @@ class FacetService
         } catch (\Exception $e) {
             // Cache get failed, continue without cache.
         }
-        
+
         return null;
-        
+
     }//end getCachedFacetResponse()
 
 
@@ -328,7 +328,7 @@ class FacetService
      *
      * @param string $cacheKey Cache key
      * @param array  $result   Facet result to cache
-     * 
+     *
      * @return void
      */
     private function cacheFacetResponse(string $cacheKey, array $result): void
@@ -336,14 +336,14 @@ class FacetService
         if ($this->facetCache === null) {
             return;
         }
-        
+
         try {
             // Use different TTL based on strategy.
             $ttl = $result['performance_metadata']['fallback_used'] ?? false ? 
                 self::COLLECTION_FACET_TTL : self::FACET_CACHE_TTL;
-                
+
             $this->facetCache->set($cacheKey, $result, $ttl);
-            
+
             $this->logger->debug('Facet response cached', [
                 'cacheKey' => $cacheKey,
                 'ttl' => $ttl,
@@ -352,7 +352,7 @@ class FacetService
         } catch (\Exception $e) {
             // Cache set failed, continue without caching.
         }
-        
+
     }//end cacheFacetResponse()
 
 
@@ -360,13 +360,13 @@ class FacetService
      * Count total results across all facet buckets
      *
      * @param array $facets Facet data structure
-     * 
+     *
      * @return int Total number of facet results
      */
     private function countFacetResults(array $facets): int
     {
         $total = 0;
-        
+
         foreach ($facets as $facetGroup) {
             if (is_array($facetGroup)) {
                 foreach ($facetGroup as $facet) {
@@ -378,9 +378,9 @@ class FacetService
                 }
             }
         }
-        
+
         return $total;
-        
+
     }//end countFacetResults()
 
 
@@ -388,7 +388,7 @@ class FacetService
      * Check if query has restrictive filters that might eliminate all results
      *
      * @param array $query Query parameters
-     * 
+     *
      * @return bool True if query has restrictive filters
      */
     private function hasRestrictiveFilters(array $query): bool
@@ -404,9 +404,9 @@ class FacetService
                 return true;
             }
         }
-        
+
         return false;
-        
+
     }//end hasRestrictiveFilters()
 
 
@@ -414,14 +414,14 @@ class FacetService
      * Get schemas relevant to the current query (cached for performance)
      *
      * @param array $baseQuery Base query with register/schema filters
-     * 
+     *
      * @return array Array of Schema objects
      */
     private function getSchemasForQuery(array $baseQuery): array
     {
         // Check if specific schemas are filtered in the query.
         $schemaFilter = $baseQuery['@self']['schema'] ?? null;
-        
+
         if ($schemaFilter !== null) {
             // Get specific schemas.
             if (is_array($schemaFilter)) {
@@ -437,7 +437,7 @@ class FacetService
 
         // No specific schema filter - get all schemas for collection-wide facetable discovery.
         return $this->schemaMapper->findAll(null); // null = no limit (get all)
-        
+
     }//end getSchemasForQuery()
 
 
@@ -447,7 +447,7 @@ class FacetService
      * **PERFORMANCE OPTIMIZED**: Uses pre-computed schema facets instead of runtime analysis
      *
      * @param array $schemas Array of Schema objects
-     * 
+     *
      * @return array Facetable field configuration
      */
     private function getFacetableFieldsFromSchemas(array $schemas): array
@@ -462,7 +462,7 @@ class FacetService
             if (!($schema instanceof Schema)) {
                 continue;
             }
-            
+
             try {
                 $schemaFacets = $schema->getFacets();
                 if (!empty($schemaFacets)) {
@@ -492,7 +492,7 @@ class FacetService
         }
 
         return $facetableFields;
-        
+
     }//end getFacetableFieldsFromSchemas()
 
 
