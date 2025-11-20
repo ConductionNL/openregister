@@ -1646,7 +1646,7 @@ class ObjectEntityMapper extends QBMapper
 
             // **PERFORMANCE TIMING**: Organization filtering (suspected bottleneck)
             $orgStart = microtime(true);
-//            $this->applyOrganizationFilters($queryBuilder, 'o', $activeOrganisationUuid, $multi);
+            $this->applyOrganizationFilters($queryBuilder, 'o', $activeOrganisationUuid, $multi);
             $perfTimings['org_filtering'] = round((microtime(true) - $orgStart) * 1000, 2);
 
             $this->logger->info('🏢 ORG FILTERING COMPLETED', [
