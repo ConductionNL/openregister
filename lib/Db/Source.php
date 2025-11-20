@@ -27,6 +27,25 @@ use OCP\AppFramework\Db\Entity;
  * Source entity class
  *
  * Represents a source in the OpenRegister application
+ *
+ * @method string|null getUuid()
+ * @method void setUuid(?string $uuid)
+ * @method string|null getTitle()
+ * @method void setTitle(?string $title)
+ * @method string|null getVersion()
+ * @method void setVersion(?string $version)
+ * @method string|null getDescription()
+ * @method void setDescription(?string $description)
+ * @method string|null getDatabaseUrl()
+ * @method void setDatabaseUrl(?string $databaseUrl)
+ * @method string|null getType()
+ * @method void setType(?string $type)
+ * @method string|null getOrganisation()
+ * @method void setOrganisation(?string $organisation)
+ * @method DateTime|null getUpdated()
+ * @method void setUpdated(?DateTime $updated)
+ * @method DateTime|null getCreated()
+ * @method void setCreated(?DateTime $created)
  */
 class Source extends Entity implements JsonSerializable
 {

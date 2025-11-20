@@ -35,6 +35,16 @@ use Symfony\Component\Uid\Uuid;
  *
  * @package OCA\OpenRegister\Db
  */
+ *
+ * @method Source insert(Entity $entity)
+ * @method Source update(Entity $entity)
+ * @method Source insertOrUpdate(Entity $entity)
+ * @method Source delete(Entity $entity)
+ * @method Source find(int|string $id)
+ * @method Source findEntity(IQueryBuilder $query)
+ * @method Source[] findAll(int|null $limit = null, int|null $offset = null)
+ * @method Source[] findEntities(IQueryBuilder $query)
+ */
 class SourceMapper extends QBMapper
 {
     use MultiTenancyTrait;

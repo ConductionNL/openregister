@@ -33,6 +33,41 @@ use Symfony\Component\Uid\Uuid;
  * Applications can have configurations, registers, and schemas associated with them.
  *
  * @package OCA\OpenRegister\Db
+ *
+ * @method string|null getUuid()
+ * @method void setUuid(?string $uuid)
+ * @method string|null getName()
+ * @method void setName(?string $name)
+ * @method string|null getDescription()
+ * @method void setDescription(?string $description)
+ * @method string|null getVersion()
+ * @method void setVersion(?string $version)
+ * @method string|null getOrganisation()
+ * @method void setOrganisation(?string $organisation)
+ * @method array|null getConfigurations()
+ * @method void setConfigurations(?array $configurations)
+ * @method array|null getRegisters()
+ * @method void setRegisters(?array $registers)
+ * @method array|null getSchemas()
+ * @method void setSchemas(?array $schemas)
+ * @method string|null getOwner()
+ * @method void setOwner(?string $owner)
+ * @method bool|null getActive()
+ * @method void setActive(?bool $active)
+ * @method int|null getStorageQuota()
+ * @method void setStorageQuota(?int $storageQuota)
+ * @method int|null getBandwidthQuota()
+ * @method void setBandwidthQuota(?int $bandwidthQuota)
+ * @method int|null getRequestQuota()
+ * @method void setRequestQuota(?int $requestQuota)
+ * @method array|null getGroups()
+ * @method void setGroups(?array $groups)
+ * @method array|null getAuthorization()
+ * @method void setAuthorization(?array $authorization)
+ * @method DateTime|null getCreated()
+ * @method void setCreated(?DateTime $created)
+ * @method DateTime|null getUpdated()
+ * @method void setUpdated(?DateTime $updated)
  */
 class Application extends Entity implements JsonSerializable
 {

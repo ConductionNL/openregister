@@ -39,6 +39,16 @@ use Symfony\Component\Uid\Uuid;
  *
  * @package OCA\OpenRegister\Db
  */
+ *
+ * @method SearchTrail insert(Entity $entity)
+ * @method SearchTrail update(Entity $entity)
+ * @method SearchTrail insertOrUpdate(Entity $entity)
+ * @method SearchTrail delete(Entity $entity)
+ * @method SearchTrail find(int|string $id)
+ * @method SearchTrail findEntity(IQueryBuilder $query)
+ * @method SearchTrail[] findAll(int|null $limit = null, int|null $offset = null)
+ * @method SearchTrail[] findEntities(IQueryBuilder $query)
+ */
 class SearchTrailMapper extends QBMapper
 {
 

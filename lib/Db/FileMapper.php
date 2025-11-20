@@ -62,6 +62,16 @@ use OCP\IURLGenerator;
  *   published: string|null
  * }
  */
+ *
+ * @method File insert(Entity $entity)
+ * @method File update(Entity $entity)
+ * @method File insertOrUpdate(Entity $entity)
+ * @method File delete(Entity $entity)
+ * @method File find(int|string $id)
+ * @method File findEntity(IQueryBuilder $query)
+ * @method File[] findAll(int|null $limit = null, int|null $offset = null)
+ * @method File[] findEntities(IQueryBuilder $query)
+ */
 class FileMapper extends QBMapper
 {
 

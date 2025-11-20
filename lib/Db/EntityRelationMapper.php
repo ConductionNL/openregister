@@ -18,6 +18,16 @@ use OCP\IDBConnection;
 /**
  * Class EntityRelationMapper
  */
+ *
+ * @method EntityRelation insert(Entity $entity)
+ * @method EntityRelation update(Entity $entity)
+ * @method EntityRelation insertOrUpdate(Entity $entity)
+ * @method EntityRelation delete(Entity $entity)
+ * @method EntityRelation find(int|string $id)
+ * @method EntityRelation findEntity(IQueryBuilder $query)
+ * @method EntityRelation[] findAll(int|null $limit = null, int|null $offset = null)
+ * @method EntityRelation[] findEntities(IQueryBuilder $query)
+ */
 class EntityRelationMapper extends QBMapper
 {
 

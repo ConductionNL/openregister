@@ -93,6 +93,8 @@
 		"twig/twig": "^3.18"
 	},
 	"require-dev": {
+		"nextcloud/coding-standard": "^1.4",
+		"nextcloud/ocp": "^31.0",
 		"phpcsstandards/phpcsextra": "^1.4",
 		"phpmd/phpmd": "^2.15",
 		"phpunit/phpunit": "^10.5",

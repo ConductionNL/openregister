@@ -36,9 +36,14 @@ use OCP\IUserSession;
  *
  * @package OCA\OpenRegister\Db
  *
- * @template-extends QBMapper<Application>
- *
- * @psalm-suppress MissingTemplateParam
+ * @method Application insert(Entity $entity)
+ * @method Application update(Entity $entity)
+ * @method Application insertOrUpdate(Entity $entity)
+ * @method Application delete(Entity $entity)
+ * @method Application find(int|string $id)
+ * @method Application findEntity(IQueryBuilder $query)
+ * @method Application[] findAll(int|null $limit = null, int|null $offset = null)
+ * @method Application[] findEntities(IQueryBuilder $query)
  */
 class ApplicationMapper extends QBMapper
 {

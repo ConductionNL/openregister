@@ -29,6 +29,35 @@ use OCP\AppFramework\Db\Entity;
  * Manages audit trail data and operations
  *
  * @package OCA\OpenRegister\Db
+ *
+ * @method string|null getUuid()
+ * @method void setUuid(?string $uuid)
+ * @method int|null getSchema()
+ * @method void setSchema(?int $schema)
+ * @method int|null getRegister()
+ * @method void setRegister(?int $register)
+ * @method int|null getObject()
+ * @method void setObject(?int $object)
+ * @method int|null getSize()
+ * @method void setSize(?int $size)
+ * @method string|null getObjectUuid()
+ * @method void setObjectUuid(?string $objectUuid)
+ * @method string|null getRegisterUuid()
+ * @method void setRegisterUuid(?string $registerUuid)
+ * @method string|null getSchemaUuid()
+ * @method void setSchemaUuid(?string $schemaUuid)
+ * @method string|null getAction()
+ * @method void setAction(?string $action)
+ * @method array|null getChanged()
+ * @method void setChanged(?array $changed)
+ * @method string|null getUser()
+ * @method void setUser(?string $user)
+ * @method string|null getUserName()
+ * @method void setUserName(?string $userName)
+ * @method DateTime|null getCreated()
+ * @method void setCreated(?DateTime $created)
+ * @method string|null getOrganisation()
+ * @method void setOrganisation(?string $organisation)
  */
 class AuditTrail extends Entity implements JsonSerializable
 {

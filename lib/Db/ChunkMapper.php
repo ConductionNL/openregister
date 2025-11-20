@@ -18,6 +18,16 @@ use OCP\IDBConnection;
 /**
  * Class ChunkMapper
  */
+ *
+ * @method Chunk insert(Entity $entity)
+ * @method Chunk update(Entity $entity)
+ * @method Chunk insertOrUpdate(Entity $entity)
+ * @method Chunk delete(Entity $entity)
+ * @method Chunk find(int|string $id)
+ * @method Chunk findEntity(IQueryBuilder $query)
+ * @method Chunk[] findAll(int|null $limit = null, int|null $offset = null)
+ * @method Chunk[] findEntities(IQueryBuilder $query)
+ */
 class ChunkMapper extends QBMapper
 {
 

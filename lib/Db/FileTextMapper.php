@@ -28,6 +28,16 @@ use OCP\IDBConnection;
  *
  * @template-extends QBMapper<FileText>
  */
+ *
+ * @method FileText insert(Entity $entity)
+ * @method FileText update(Entity $entity)
+ * @method FileText insertOrUpdate(Entity $entity)
+ * @method FileText delete(Entity $entity)
+ * @method FileText find(int|string $id)
+ * @method FileText findEntity(IQueryBuilder $query)
+ * @method FileText[] findAll(int|null $limit = null, int|null $offset = null)
+ * @method FileText[] findEntities(IQueryBuilder $query)
+ */
 class FileTextMapper extends QBMapper
 {
 

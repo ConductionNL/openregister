@@ -18,6 +18,16 @@ use OCP\IDBConnection;
 /**
  * Class GdprEntityMapper
  */
+ *
+ * @method GdprEntity insert(Entity $entity)
+ * @method GdprEntity update(Entity $entity)
+ * @method GdprEntity insertOrUpdate(Entity $entity)
+ * @method GdprEntity delete(Entity $entity)
+ * @method GdprEntity find(int|string $id)
+ * @method GdprEntity findEntity(IQueryBuilder $query)
+ * @method GdprEntity[] findAll(int|null $limit = null, int|null $offset = null)
+ * @method GdprEntity[] findEntities(IQueryBuilder $query)
+ */
 class GdprEntityMapper extends QBMapper
 {
 

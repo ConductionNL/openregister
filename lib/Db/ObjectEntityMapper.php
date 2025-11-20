@@ -54,6 +54,15 @@ use Symfony\Component\Uid\Uuid;
  * The ObjectEntityMapper class
  *
  * @package OCA\OpenRegister\Db
+ *
+ * @method ObjectEntity insert(Entity $entity)
+ * @method ObjectEntity update(Entity $entity)
+ * @method ObjectEntity insertOrUpdate(Entity $entity)
+ * @method ObjectEntity delete(Entity $entity)
+ * @method ObjectEntity find(int|string $id)
+ * @method ObjectEntity findEntity(IQueryBuilder $query)
+ * @method ObjectEntity[] findAll(int|null $limit = null, int|null $offset = null)
+ * @method ObjectEntity[] findEntities(IQueryBuilder $query)
  */
 class ObjectEntityMapper extends QBMapper
 {

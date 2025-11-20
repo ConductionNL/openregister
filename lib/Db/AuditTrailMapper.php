@@ -30,6 +30,16 @@ use Symfony\Component\Uid\Uuid;
  *
  * @package OCA\OpenRegister\Db
  */
+ *
+ * @method AuditTrail insert(Entity $entity)
+ * @method AuditTrail update(Entity $entity)
+ * @method AuditTrail insertOrUpdate(Entity $entity)
+ * @method AuditTrail delete(Entity $entity)
+ * @method AuditTrail find(int|string $id)
+ * @method AuditTrail findEntity(IQueryBuilder $query)
+ * @method AuditTrail[] findAll(int|null $limit = null, int|null $offset = null)
+ * @method AuditTrail[] findEntities(IQueryBuilder $query)
+ */
 class AuditTrailMapper extends QBMapper
 {
 

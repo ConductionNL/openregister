@@ -43,6 +43,27 @@ use InvalidArgumentException;
  * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @version GIT: <git_id>
  * @link    https://www.OpenRegister.app
+ *
+ * @method string|null getUuid()
+ * @method void setUuid(?string $uuid)
+ * @method string|null getType()
+ * @method void setType(?string $type)
+ * @method string|null getSubjectType()
+ * @method void setSubjectType(?string $subjectType)
+ * @method string|null getSubjectId()
+ * @method void setSubjectId(?string $subjectId)
+ * @method string|null getSchemaUuid()
+ * @method void setSchemaUuid(?string $schemaUuid)
+ * @method string|null getRegisterUuid()
+ * @method void setRegisterUuid(?string $registerUuid)
+ * @method string|null getOrganizationUuid()
+ * @method void setOrganizationUuid(?string $organizationUuid)
+ * @method string|null getAction()
+ * @method void setAction(?string $action)
+ * @method DateTime|null getCreated()
+ * @method void setCreated(?DateTime $created)
+ * @method DateTime|null getUpdated()
+ * @method void setUpdated(?DateTime $updated)
  */
 class AuthorizationException extends Entity implements JsonSerializable
 {

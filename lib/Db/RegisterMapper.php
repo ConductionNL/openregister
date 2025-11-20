@@ -39,6 +39,15 @@ use OCA\OpenRegister\Db\ObjectEntityMapper;
  * Handles database operations for Register entities with multi-tenancy support.
  *
  * @package OCA\OpenRegister\Db
+ *
+ * @method Register insert(Entity $entity)
+ * @method Register update(Entity $entity)
+ * @method Register insertOrUpdate(Entity $entity)
+ * @method Register delete(Entity $entity)
+ * @method Register find(int|string $id)
+ * @method Register findEntity(IQueryBuilder $query)
+ * @method Register[] findAll(int|null $limit = null, int|null $offset = null)
+ * @method Register[] findEntities(IQueryBuilder $query)
  */
 class RegisterMapper extends QBMapper
 {

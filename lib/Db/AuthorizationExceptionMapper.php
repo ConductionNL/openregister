@@ -42,6 +42,16 @@ use Symfony\Component\Uid\Uuid;
  * @version GIT: <git_id>
  * @link    https://www.OpenRegister.app
  */
+ *
+ * @method AuthorizationException insert(Entity $entity)
+ * @method AuthorizationException update(Entity $entity)
+ * @method AuthorizationException insertOrUpdate(Entity $entity)
+ * @method AuthorizationException delete(Entity $entity)
+ * @method AuthorizationException find(int|string $id)
+ * @method AuthorizationException findEntity(IQueryBuilder $query)
+ * @method AuthorizationException[] findAll(int|null $limit = null, int|null $offset = null)
+ * @method AuthorizationException[] findEntities(IQueryBuilder $query)
+ */
 class AuthorizationExceptionMapper extends QBMapper
 {
 

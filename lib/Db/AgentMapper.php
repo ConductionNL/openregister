@@ -42,6 +42,16 @@ use Symfony\Component\Uid\Uuid;
  *
  * @psalm-suppress MissingTemplateParam
  */
+ *
+ * @method Agent insert(Entity $entity)
+ * @method Agent update(Entity $entity)
+ * @method Agent insertOrUpdate(Entity $entity)
+ * @method Agent delete(Entity $entity)
+ * @method Agent find(int|string $id)
+ * @method Agent findEntity(IQueryBuilder $query)
+ * @method Agent[] findAll(int|null $limit = null, int|null $offset = null)
+ * @method Agent[] findEntities(IQueryBuilder $query)
+ */
 class AgentMapper extends QBMapper
 {
     use MultiTenancyTrait;

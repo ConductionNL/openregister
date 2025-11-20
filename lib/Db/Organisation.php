@@ -33,6 +33,37 @@ use Symfony\Component\Uid\Uuid;
  * Organisations can define custom roles/groups for role-based access control (RBAC).
  *
  * @package OCA\OpenRegister\Db
+ *
+ * @method string|null getUuid()
+ * @method void setUuid(?string $uuid)
+ * @method string|null getSlug()
+ * @method void setSlug(?string $slug)
+ * @method string|null getName()
+ * @method void setName(?string $name)
+ * @method string|null getDescription()
+ * @method void setDescription(?string $description)
+ * @method array|null getUsers()
+ * @method void setUsers(?array $users)
+ * @method array|null getGroups()
+ * @method void setGroups(?array $groups)
+ * @method string|null getOwner()
+ * @method void setOwner(?string $owner)
+ * @method DateTime|null getCreated()
+ * @method void setCreated(?DateTime $created)
+ * @method DateTime|null getUpdated()
+ * @method void setUpdated(?DateTime $updated)
+ * @method bool|null getActive()
+ * @method void setActive(?bool $active)
+ * @method int|null getStorageQuota()
+ * @method void setStorageQuota(?int $storageQuota)
+ * @method int|null getBandwidthQuota()
+ * @method void setBandwidthQuota(?int $bandwidthQuota)
+ * @method int|null getRequestQuota()
+ * @method void setRequestQuota(?int $requestQuota)
+ * @method array|null getAuthorization()
+ * @method void setAuthorization(?array $authorization)
+ * @method string|null getParent()
+ * @method void setParent(?string $parent)
  */
 class Organisation extends Entity implements JsonSerializable
 {
