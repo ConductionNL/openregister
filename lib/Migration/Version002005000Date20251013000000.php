@@ -38,11 +38,11 @@ class Version002005000Date20251013000000 extends SimpleMigrationStep
          */
         $schema = $schemaClosure();
 
-        // Create openregister_metrics table for tracking operational metrics
+        // Create openregister_metrics table for tracking operational metrics.
         if (!$schema->hasTable('openregister_metrics')) {
             $table = $schema->createTable('openregister_metrics');
 
-            // Primary key
+            // Primary key.
             $table->addColumn(
             'id',
             'bigint',
@@ -53,7 +53,7 @@ class Version002005000Date20251013000000 extends SimpleMigrationStep
             ]
             );
 
-            // Metric type (e.g., 'file_processed', 'embedding_generated', 'search_executed')
+            // Metric type (e.g., 'file_processed', 'embedding_generated', 'search_executed').
             $table->addColumn(
             'metric_type',
             'string',
@@ -63,7 +63,7 @@ class Version002005000Date20251013000000 extends SimpleMigrationStep
             ]
             );
 
-            // Entity type (e.g., 'file', 'object', 'search')
+            // Entity type (e.g., 'file', 'object', 'search').
             $table->addColumn(
             'entity_type',
             'string',
@@ -74,7 +74,7 @@ class Version002005000Date20251013000000 extends SimpleMigrationStep
             ]
             );
 
-            // Entity ID (if applicable)
+            // Entity ID (if applicable).
             $table->addColumn(
             'entity_id',
             'string',
@@ -85,7 +85,7 @@ class Version002005000Date20251013000000 extends SimpleMigrationStep
             ]
             );
 
-            // User who triggered the action
+            // User who triggered the action.
             $table->addColumn(
             'user_id',
             'string',
@@ -96,7 +96,7 @@ class Version002005000Date20251013000000 extends SimpleMigrationStep
             ]
             );
 
-            // Success or failure
+            // Success or failure.
             $table->addColumn(
             'status',
             'string',
@@ -107,7 +107,7 @@ class Version002005000Date20251013000000 extends SimpleMigrationStep
             ]
             );
 
-            // Duration in milliseconds
+            // Duration in milliseconds.
             $table->addColumn(
             'duration_ms',
             'integer',
@@ -117,7 +117,7 @@ class Version002005000Date20251013000000 extends SimpleMigrationStep
             ]
             );
 
-            // Additional metadata (JSON)
+            // Additional metadata (JSON).
             $table->addColumn(
             'metadata',
             'text',
@@ -127,7 +127,7 @@ class Version002005000Date20251013000000 extends SimpleMigrationStep
             ]
             );
 
-            // Error message (if failed)
+            // Error message (if failed).
             $table->addColumn(
             'error_message',
             'text',
@@ -137,7 +137,7 @@ class Version002005000Date20251013000000 extends SimpleMigrationStep
             ]
             );
 
-            // Timestamp
+            // Timestamp.
             $table->addColumn(
             'created_at',
             'bigint',
@@ -146,10 +146,10 @@ class Version002005000Date20251013000000 extends SimpleMigrationStep
             ]
             );
 
-            // Set primary key
+            // Set primary key.
             $table->setPrimaryKey(['id']);
 
-            // Add indexes for common queries
+            // Add indexes for common queries.
             $table->addIndex(['metric_type'], 'idx_metrics_type');
             $table->addIndex(['entity_type'], 'idx_metrics_entity_type');
             $table->addIndex(['status'], 'idx_metrics_status');

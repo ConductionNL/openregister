@@ -17,7 +17,7 @@ class Version1Date20250622212509 extends SimpleMigrationStep
         /** @var ISchemaWrapper $schema */
         $schema = $schemaClosure();
 
-        // 1. Add 'groups' column to existing tables
+        // 1. Add 'groups' column to existing tables.
         $table = $schema->getTable('openregister_objects');
         if (!$table->hasColumn('groups')) {
             $table->addColumn('groups', Types::JSON, [
@@ -65,7 +65,7 @@ class Version1Date20250622212509 extends SimpleMigrationStep
             ]);
         }
 
-        // 2. Create 'openregister_organisations' table
+        // 2. Create 'openregister_organisations' table.
         if (!$schema->hasTable('openregister_organisations')) {
             $table = $schema->createTable('openregister_organisations');
             $table->addColumn('id', Types::INTEGER, [
@@ -93,7 +93,7 @@ class Version1Date20250622212509 extends SimpleMigrationStep
             $table->addUniqueIndex(['uuid'], 'openregister_organisations_uuid_index');
         }
 
-        // 3. Create 'openregister_data_access_profiles' table
+        // 3. Create 'openregister_data_access_profiles' table.
         if (!$schema->hasTable('openregister_data_access_profiles')) {
             $table = $schema->createTable('openregister_data_access_profiles');
             $table->addColumn('id', Types::INTEGER, [
@@ -129,6 +129,6 @@ class Version1Date20250622212509 extends SimpleMigrationStep
 
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
-        // Implementation of postSchemaChange method
+        // Implementation of postSchemaChange method.
     }
 } 

@@ -52,11 +52,11 @@ class Version002003000Date20251013000000 extends SimpleMigrationStep
          */
         $schema = $schemaClosure();
 
-        // Check if table already exists
+        // Check if table already exists.
         if (!$schema->hasTable('openregister_vectors')) {
             $table = $schema->createTable('openregister_vectors');
 
-            // Primary key
+            // Primary key.
             $table->addColumn(
                     'id',
                     'bigint',
@@ -68,7 +68,7 @@ class Version002003000Date20251013000000 extends SimpleMigrationStep
                     ]
                     );
 
-            // Entity information
+            // Entity information.
             $table->addColumn(
                     'entity_type',
                     'string',
@@ -89,7 +89,7 @@ class Version002003000Date20251013000000 extends SimpleMigrationStep
                     ]
                     );
 
-            // Chunk information (for files)
+            // Chunk information (for files).
             $table->addColumn(
                     'chunk_index',
                     'integer',
@@ -119,7 +119,7 @@ class Version002003000Date20251013000000 extends SimpleMigrationStep
                     ]
                     );
 
-            // Vector data
+            // Vector data.
             $table->addColumn(
                     'embedding',
                     'blob',
@@ -148,7 +148,7 @@ class Version002003000Date20251013000000 extends SimpleMigrationStep
                     ]
                     );
 
-            // Metadata
+            // Metadata.
             $table->addColumn(
                     'metadata',
                     'text',
@@ -158,7 +158,7 @@ class Version002003000Date20251013000000 extends SimpleMigrationStep
                     ]
                     );
 
-            // Timestamps
+            // Timestamps.
             $table->addColumn(
                     'created_at',
                     'datetime',
@@ -177,10 +177,10 @@ class Version002003000Date20251013000000 extends SimpleMigrationStep
                     ]
                     );
 
-            // Set primary key
+            // Set primary key.
             $table->setPrimaryKey(['id']);
 
-            // Indexes for performance
+            // Indexes for performance.
             $table->addIndex(['entity_type', 'entity_id'], 'openreg_vec_entity_idx');
             $table->addIndex(['entity_id', 'chunk_index'], 'openreg_vec_chunk_idx');
             $table->addIndex(['embedding_model'], 'openreg_vec_model_idx');

@@ -145,8 +145,8 @@ class Application extends App implements IBootstrap
     {
         include_once __DIR__.'/../../vendor/autoload.php';
 
-        // @TODO: Usually, services are autowired. Les figure out why we need to do this
-        // Register SearchTrail components
+        // @TODO: Usually, services are autowired. Les figure out why we need to do this.
+        // Register SearchTrail components.
         $context->registerService(
                 SearchTrailMapper::class,
                 function ($container) {
@@ -205,13 +205,13 @@ class Application extends App implements IBootstrap
                 }
                 );
 
-        // Register OrganisationMapper (event dispatching removed - handled by cron job)
+        // Register OrganisationMapper (event dispatching removed - handled by cron job).
         // $context->registerService(OrganisationMapper::class, function ($container) {
         // return new OrganisationMapper(
         // $container->get('OCP\IDBConnection')
         // );
         // });
-        // Register ObjectEntityMapper with IGroupManager and IUserManager dependencies
+        // Register ObjectEntityMapper with IGroupManager and IUserManager dependencies.
         $context->registerService(
                 ObjectEntityMapper::class,
                 function ($container) {
@@ -227,13 +227,13 @@ class Application extends App implements IBootstrap
                     $container->get('Psr\Log\LoggerInterface'),
                     $container->get(OrganisationService::class),
                     null
-                    // AuthorizationExceptionService
+                    // AuthorizationExceptionService.
                     );
                 }
         );
 
-        // Register SolrService for advanced search capabilities (disabled due to performance issues)
-        // Issue: Even with lazy loading, DI registration causes performance problems
+        // Register SolrService for advanced search capabilities (disabled due to performance issues).
+        // Issue: Even with lazy loading, DI registration causes performance problems.
         /*
             $context->registerService(
                 SolrService::class,
@@ -248,16 +248,16 @@ class Application extends App implements IBootstrap
                 );
         */
 
-        // Register ObjectCacheService for performance optimization with lightweight SOLR
+        // Register ObjectCacheService for performance optimization with lightweight SOLR.
         $context->registerService(
                 ObjectCacheService::class,
                 function ($container) {
-                    // Break circular dependency by lazy-loading GuzzleSolrService
+                    // Break circular dependency by lazy-loading GuzzleSolrService.
                     $solrService = null;
                     try {
                         $solrService = $container->get(GuzzleSolrService::class);
                     } catch (\Exception $e) {
-                        // If GuzzleSolrService is not available, continue without it
+                        // If GuzzleSolrService is not available, continue without it.
                         $solrService = null;
                     }
 
@@ -273,7 +273,7 @@ class Application extends App implements IBootstrap
                 }
                 );
 
-        // Register FacetService for centralized faceting operations
+        // Register FacetService for centralized faceting operations.
         $context->registerService(
                 FacetService::class,
                 function ($container) {
@@ -288,7 +288,7 @@ class Application extends App implements IBootstrap
                 }
                 );
 
-        // Register SaveObject with consolidated cache services
+        // Register SaveObject with consolidated cache services.
         $context->registerService(
                 SaveObject::class,
                 function ($container) {
@@ -311,7 +311,7 @@ class Application extends App implements IBootstrap
                 }
                 );
 
-        // Register DeleteObject with consolidated cache services
+        // Register DeleteObject with consolidated cache services.
         $context->registerService(
                 DeleteObject::class,
                 function ($container) {
@@ -328,7 +328,7 @@ class Application extends App implements IBootstrap
                 }
                 );
 
-        // Register GetObject with SettingsService dependency
+        // Register GetObject with SettingsService dependency.
         $context->registerService(
                 GetObject::class,
                 function ($container) {
@@ -341,7 +341,7 @@ class Application extends App implements IBootstrap
                 }
                 );
 
-        // Register RenderObject with LoggerInterface dependency
+        // Register RenderObject with LoggerInterface dependency.
         $context->registerService(
                 RenderObject::class,
                 function ($container) {
@@ -360,7 +360,7 @@ class Application extends App implements IBootstrap
                 }
                 );
 
-        // Register OrganisationService with IConfig and IGroupManager dependencies
+        // Register OrganisationService with IConfig and IGroupManager dependencies.
         $context->registerService(
                 OrganisationService::class,
                 function ($container) {
@@ -376,7 +376,7 @@ class Application extends App implements IBootstrap
                 }
                 );
 
-        // Register SaveObjects handler with dependencies
+        // Register SaveObjects handler with dependencies.
         $context->registerService(
                 SaveObjects::class,
                 function ($container) {
@@ -393,7 +393,7 @@ class Application extends App implements IBootstrap
                 }
                 );
 
-        // Register ObjectService with IGroupManager, IUserManager and LoggerInterface dependencies
+        // Register ObjectService with IGroupManager, IUserManager and LoggerInterface dependencies.
         $context->registerService(
                 ObjectService::class,
                 function ($container) {
@@ -427,7 +427,7 @@ class Application extends App implements IBootstrap
                 }
                 );
 
-        // Register ImportService with IUserManager, IGroupManager, and IJobList dependencies
+        // Register ImportService with IUserManager, IGroupManager, and IJobList dependencies.
         $context->registerService(
                 ImportService::class,
                 function ($container) {
@@ -443,7 +443,7 @@ class Application extends App implements IBootstrap
                 }
                 );
 
-        // Register ExportService with IUserManager and IGroupManager dependencies
+        // Register ExportService with IUserManager and IGroupManager dependencies.
         $context->registerService(
                 ExportService::class,
                 function ($container) {
@@ -457,7 +457,7 @@ class Application extends App implements IBootstrap
                 }
                 );
 
-        // Register SolrEventListener for automatic Solr indexing
+        // Register SolrEventListener for automatic Solr indexing.
         $context->registerService(
                 SolrEventListener::class,
                 function ($container) {
@@ -468,7 +468,7 @@ class Application extends App implements IBootstrap
                 }
                 );
 
-        // Register SchemaCacheService for improved schema performance
+        // Register SchemaCacheService for improved schema performance.
         $context->registerService(
                 SchemaCacheService::class,
                 function ($container) {
@@ -480,7 +480,7 @@ class Application extends App implements IBootstrap
                 }
                 );
 
-        // Register SchemaFacetCacheService for predictable facet caching
+        // Register SchemaFacetCacheService for predictable facet caching.
         $context->registerService(
                 SchemaFacetCacheService::class,
                 function ($container) {
@@ -492,7 +492,7 @@ class Application extends App implements IBootstrap
                 }
                 );
 
-        // Register ObjectsProvider for Nextcloud search integration
+        // Register ObjectsProvider for Nextcloud search integration.
         $context->registerService(
                 ObjectsProvider::class,
                 function ($container) {
@@ -505,10 +505,10 @@ class Application extends App implements IBootstrap
                 }
                 );
 
-        // Register ObjectsProvider as a search provider for Nextcloud search
+        // Register ObjectsProvider as a search provider for Nextcloud search.
         $context->registerSearchProvider(ObjectsProvider::class);
 
-        // Register SolrDebugCommand for SOLR debugging
+        // Register SolrDebugCommand for SOLR debugging.
         $context->registerService(
                 SolrDebugCommand::class,
                 function ($container) {
@@ -520,7 +520,7 @@ class Application extends App implements IBootstrap
                 }
                 );
 
-        // Register lightweight GuzzleSolrService directly (no factory needed!)
+        // Register lightweight GuzzleSolrService directly (no factory needed!).
         $context->registerService(
                 GuzzleSolrService::class,
                 function ($container) {
@@ -530,21 +530,21 @@ class Application extends App implements IBootstrap
                     $container->get('OCP\Http\Client\IClientService'),
                     $container->get('OCP\IConfig'),
                     $container->get(SchemaMapper::class),
-                    // Add SchemaMapper for schema-aware mapping
+                    // Add SchemaMapper for schema-aware mapping.
                     $container->get(RegisterMapper::class),
-                    // Add RegisterMapper for register access
+                    // Add RegisterMapper for register access.
                     $container->get(OrganisationService::class),
-                    // Add OrganisationService for multi-tenancy
+                    // Add OrganisationService for multi-tenancy.
                     $container->get(OrganisationMapper::class)
-                    // Add OrganisationMapper for organisation label resolution
+                    // Add OrganisationMapper for organisation label resolution.
                     // Note: RenderObject removed to avoid circular dependency with ObjectCacheService
-                    // ObjectCacheService will be resolved lazily from container to avoid circular dependency
-                    // SolrSchemaService will be resolved lazily to avoid circular dependency
+                    // ObjectCacheService will be resolved lazily from container to avoid circular dependency.
+                    // SolrSchemaService will be resolved lazily to avoid circular dependency.
                     );
                 }
                 );
 
-        // Register SolrObjectService for object-specific SOLR operations
+        // Register SolrObjectService for object-specific SOLR operations.
         $context->registerService(
                 SolrObjectService::class,
                 function ($container) {
@@ -558,7 +558,7 @@ class Application extends App implements IBootstrap
                 }
                 );
 
-        // Register SolrFileService for file-specific SOLR operations
+        // Register SolrFileService for file-specific SOLR operations.
         $context->registerService(
                 SolrFileService::class,
                 function ($container) {
@@ -571,7 +571,7 @@ class Application extends App implements IBootstrap
                 }
                 );
 
-        // Register VectorEmbeddingService for vector embeddings and semantic search
+        // Register VectorEmbeddingService for vector embeddings and semantic search.
         $context->registerService(
                 VectorEmbeddingService::class,
                 function ($container) {
@@ -584,7 +584,7 @@ class Application extends App implements IBootstrap
                 }
                 );
 
-        // Register Vectorization Strategies
+        // Register Vectorization Strategies.
         $context->registerService(
                 FileVectorizationStrategy::class,
                 function ($container) {
@@ -606,7 +606,7 @@ class Application extends App implements IBootstrap
                 }
                 );
 
-        // Register unified VectorizationService with strategies
+        // Register unified VectorizationService with strategies.
         $context->registerService(
                 VectorizationService::class,
                 function ($container) {
@@ -615,7 +615,7 @@ class Application extends App implements IBootstrap
                     $container->get('Psr\Log\LoggerInterface')
                     );
 
-                    // Register strategies
+                    // Register strategies.
                     $service->registerStrategy('file', $container->get(FileVectorizationStrategy::class));
                     $service->registerStrategy('object', $container->get(ObjectVectorizationStrategy::class));
 
@@ -623,7 +623,7 @@ class Application extends App implements IBootstrap
                 }
                 );
 
-        // Register ChatService for AI chat conversations with RAG
+        // Register ChatService for AI chat conversations with RAG.
         $context->registerService(
                 ChatService::class,
                 function ($container) {
@@ -644,7 +644,7 @@ class Application extends App implements IBootstrap
                 }
                 );
 
-        // Register FileTextService for file text extraction and storage
+        // Register FileTextService for file text extraction and storage.
         $context->registerService(
                 FileTextService::class,
                 function ($container) {
@@ -658,7 +658,7 @@ class Application extends App implements IBootstrap
                 }
                 );
 
-        // Register FileChangeListener for automatic file text extraction (async via background jobs)
+        // Register FileChangeListener for automatic file text extraction (async via background jobs).
         $context->registerService(
                 FileChangeListener::class,
                 function ($container) {
@@ -670,7 +670,7 @@ class Application extends App implements IBootstrap
                 }
                 );
 
-        // Register SolrSchemaService for SOLR schema operations
+        // Register SolrSchemaService for SOLR schema operations.
         $context->registerService(
                 SolrSchemaService::class,
                 function ($container) {
@@ -684,7 +684,7 @@ class Application extends App implements IBootstrap
                 }
                 );
 
-        // Register SolrManagementCommand for production SOLR operations
+        // Register SolrManagementCommand for production SOLR operations.
         $context->registerService(
                 SolrManagementCommand::class,
                 function ($container) {
@@ -698,7 +698,7 @@ class Application extends App implements IBootstrap
                 }
                 );
 
-        // Register ToolRegistry for agent function tools
+        // Register ToolRegistry for agent function tools.
         $context->registerService(
                 \OCA\OpenRegister\Service\ToolRegistry::class,
                 function ($container) {
@@ -709,7 +709,7 @@ class Application extends App implements IBootstrap
                 }
                 );
 
-        // Register GitHubService for GitHub API operations
+        // Register GitHubService for GitHub API operations.
         $context->registerService(
                 \OCA\OpenRegister\Service\GitHubService::class,
                 function ($container) {
@@ -722,7 +722,7 @@ class Application extends App implements IBootstrap
                 }
                 );
 
-        // Register GitLabService for GitLab API operations
+        // Register GitLabService for GitLab API operations.
         $context->registerService(
                 \OCA\OpenRegister\Service\GitLabService::class,
                 function ($container) {
@@ -734,21 +734,21 @@ class Application extends App implements IBootstrap
                 }
                 );
 
-        // Register Solr event listeners for automatic indexing
+        // Register Solr event listeners for automatic indexing.
         $context->registerEventListener(ObjectCreatedEvent::class, SolrEventListener::class);
         $context->registerEventListener(ObjectUpdatedEvent::class, SolrEventListener::class);
         $context->registerEventListener(ObjectDeletedEvent::class, SolrEventListener::class);
 
-        // Register Solr event listeners for schema lifecycle management
+        // Register Solr event listeners for schema lifecycle management.
         $context->registerEventListener(SchemaCreatedEvent::class, SolrEventListener::class);
         $context->registerEventListener(SchemaUpdatedEvent::class, SolrEventListener::class);
         $context->registerEventListener(SchemaDeletedEvent::class, SolrEventListener::class);
 
-        // Register FileChangeListener for automatic file text extraction
+        // Register FileChangeListener for automatic file text extraction.
         $context->registerEventListener(NodeCreatedEvent::class, FileChangeListener::class);
         $context->registerEventListener(NodeWrittenEvent::class, FileChangeListener::class);
 
-        // Register ToolRegistrationListener for agent function tools
+        // Register ToolRegistrationListener for agent function tools.
         $context->registerEventListener(ToolRegistrationEvent::class, ToolRegistrationListener::class);
 
     }//end register()
@@ -763,12 +763,12 @@ class Application extends App implements IBootstrap
      */
     public function boot(IBootContext $context): void
     {
-        // Register event listeners for testing and functionality
+        // Register event listeners for testing and functionality.
         $container       = $context->getAppContainer();
         $eventDispatcher = $container->get(IEventDispatcher::class);
         $logger          = $container->get('Psr\Log\LoggerInterface');
 
-        // Log boot process
+        // Log boot process.
         $logger->info(
                 'OpenRegister boot: Registering event listeners',
                 [
@@ -780,10 +780,10 @@ class Application extends App implements IBootstrap
         try {
             $logger->info('OpenRegister boot: Event listeners registered successfully');
 
-            // Register recurring SOLR nightly warmup job
+            // Register recurring SOLR nightly warmup job.
             $jobList = $container->get('OCP\BackgroundJob\IJobList');
 
-            // Check if the nightly warmup job is already registered
+            // Check if the nightly warmup job is already registered.
             if (!$jobList->has(SolrNightlyWarmupJob::class, null)) {
                 $jobList->add(SolrNightlyWarmupJob::class);
                 $logger->info(

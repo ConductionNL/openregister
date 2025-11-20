@@ -59,7 +59,7 @@ class Version1Date20251102180000 extends SimpleMigrationStep
         if ($schema->hasTable('openregister_organisations')) {
             $table = $schema->getTable('openregister_organisations');
 
-            // Only proceed if we have roles column and don't have groups column yet
+            // Only proceed if we have roles column and don't have groups column yet.
             if ($table->hasColumn('roles') && !$table->hasColumn('groups')) {
                 $output->info('   ✓ Ready to migrate roles column to groups');
             }
@@ -87,9 +87,9 @@ class Version1Date20251102180000 extends SimpleMigrationStep
         if ($schema->hasTable('openregister_organisations')) {
             $table = $schema->getTable('openregister_organisations');
 
-            // Check if we need to do the migration
+            // Check if we need to do the migration.
             if ($table->hasColumn('roles') && !$table->hasColumn('groups')) {
-                // Add new groups column
+                // Add new groups column.
                 $table->addColumn(
                         'groups',
                         Types::JSON,
@@ -135,12 +135,12 @@ class Version1Date20251102180000 extends SimpleMigrationStep
 
         $output->info('📋 Migrating data from roles to groups...');
 
-        // Get database connection
+        // Get database connection.
         $connection = \OC::$server->get(\OCP\IDBConnection::class);
 
         try {
-            // Copy data from roles to groups (only where groups is empty or null)
-            // Use try-catch in case roles column doesn't exist
+            // Copy data from roles to groups (only where groups is empty or null).
+            // Use try-catch in case roles column doesn't exist.
             try {
                 $result = $connection->executeUpdate(
                     'UPDATE `*PREFIX*openregister_organisations` SET `groups` = `roles` WHERE (`groups` = \'[]\' OR `groups` IS NULL) AND `roles` IS NOT NULL'
@@ -152,7 +152,7 @@ class Version1Date20251102180000 extends SimpleMigrationStep
                     $output->info('   ℹ️  No data to migrate (already migrated or roles column empty)');
                 }
             } catch (\Exception $copyError) {
-                // roles column might not exist if migration already ran
+                // roles column might not exist if migration already ran.
                 $output->info('   ℹ️  Data migration skipped (roles column may not exist)');
             }
 

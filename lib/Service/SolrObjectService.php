@@ -91,13 +91,13 @@ class SolrObjectService
     {
         $textParts = [];
 
-        // Step 1: Add object UUID and version for context
+        // Step 1: Add object UUID and version for context.
         $textParts[] = "Object ID: ".$object->getUuid();
         if ($object->getVersion() !== null) {
             $textParts[] = "Version: ".$object->getVersion();
         }
 
-        // Step 2: Get and add schema information
+        // Step 2: Get and add schema information.
         try {
             if ($object->getSchema() !== null) {
                 $schema      = $this->schemaMapper->find($object->getSchema());
@@ -116,7 +116,7 @@ class SolrObjectService
                     );
         }
 
-        // Step 3: Get and add register information
+        // Step 3: Get and add register information.
         try {
             if ($object->getRegister() !== null) {
                 $register    = $this->registerMapper->find($object->getRegister());
@@ -135,7 +135,7 @@ class SolrObjectService
                     );
         }
 
-        // Step 4: Extract text from object data
+        // Step 4: Extract text from object data.
         $objectData = $object->getObject();
         if (is_array($objectData)) {
             $extractedText = $this->extractTextFromArray($objectData);
@@ -144,15 +144,15 @@ class SolrObjectService
             }
         }
 
-        // Step 5: Add metadata
+        // Step 5: Add metadata.
         if ($object->getOrganization()) {
             $textParts[] = "Organization: ".$object->getOrganization();
         }
 
-        // Join all parts with newlines for readability
+        // Join all parts with newlines for readability.
         $fullText = implode("\n", $textParts);
 
-        // Log the conversion for debugging
+        // Log the conversion for debugging.
         $this->logger->debug(
                 'Converted object to text for embedding',
                 [
@@ -181,7 +181,7 @@ class SolrObjectService
      */
     private function extractTextFromArray(array $data, string $prefix='', int $depth=0): string
     {
-        // Prevent excessive recursion
+        // Prevent excessive recursion.
         if ($depth > 10) {
             return '';
         }
@@ -189,29 +189,29 @@ class SolrObjectService
         $textParts = [];
 
         foreach ($data as $key => $value) {
-            // Build context path (e.g., "address.street")
+            // Build context path (e.g., "address.street").
             $contextKey = $prefix ? "{$prefix}.{$key}" : (string) $key;
 
-            // Handle different value types
+            // Handle different value types.
             if (is_string($value) && !empty(trim($value))) {
-                // Add field name for context, then value
+                // Add field name for context, then value.
                 $textParts[] = "{$contextKey}: {$value}";
             } else if (is_numeric($value)) {
-                // Include numeric values with context
+                // Include numeric values with context.
                 $textParts[] = "{$contextKey}: {$value}";
             } else if (is_bool($value)) {
-                // Include boolean values
+                // Include boolean values.
                 $boolStr     = $value ? 'true' : 'false';
                 $textParts[] = "{$contextKey}: {$boolStr}";
             } else if (is_array($value) && !empty($value)) {
-                // Recursively process nested arrays
+                // Recursively process nested arrays.
                 $nestedText = $this->extractTextFromArray($value, $contextKey, $depth + 1);
                 if (!empty($nestedText)) {
                     $textParts[] = $nestedText;
                 }
             }
 
-            // Skip null, empty strings, and objects we can't process
+            // Skip null, empty strings, and objects we can't process.
         }//end foreach
 
         return implode("\n", $textParts);
@@ -300,7 +300,7 @@ class SolrObjectService
                 );
 
         // TODO: Move createSolrDocument and indexing logic from GuzzleSolrService
-        // For now, delegate to existing method (will be refactored)
+        // For now, delegate to existing method (will be refactored).
         return $this->guzzleSolrService->indexObject($object, $commit);
 
     }//end indexObject()
@@ -371,7 +371,7 @@ class SolrObjectService
                 ]
                 );
 
-        // Delegate to GuzzleSolrService - will be refactored in later phases
+        // Delegate to GuzzleSolrService - will be refactored in later phases.
         return $this->guzzleSolrService->searchObjectsPaginated($query, $rbac, $multi, $published, $deleted);
 
     }//end searchObjects()
@@ -427,7 +427,7 @@ class SolrObjectService
             ];
         }
 
-        // Get dashboard stats and extract object collection info
+        // Get dashboard stats and extract object collection info.
         $dashboardStats = $this->guzzleSolrService->getDashboardStats();
 
         return [
@@ -576,15 +576,15 @@ class SolrObjectService
     {
         $startTime = microtime(true);
 
-        // Step 1: Convert object to text
+        // Step 1: Convert object to text.
         $text = $this->convertObjectToText($object);
 
         if (empty(trim($text))) {
             throw new \Exception("Object {$object->getId()} has no text content to vectorize");
         }
 
-        // Step 2: Generate embedding using VectorEmbeddingService
-        // The service is already registered in the DI container from Application.php
+        // Step 2: Generate embedding using VectorEmbeddingService.
+        // The service is already registered in the DI container from Application.php.
         $vectorService = \OC::$server->get(VectorEmbeddingService::class);
 
         $embedding = $vectorService->generateEmbedding($text, $provider);
@@ -593,24 +593,24 @@ class SolrObjectService
             throw new \Exception("Failed to generate embedding for object {$object->getId()}");
         }
 
-        // Step 3: Store vector in database
+        // Step 3: Store vector in database.
         $vectorId = $vectorService->storeVector(
             'object',
-        // entity_type
+        // entity_type.
             (string) $object->getId(),
-        // entity_id
+        // entity_id.
             $embedding['embedding'],
-        // embedding array
+        // embedding array.
             $embedding['model'],
-        // model name
+        // model name.
             $embedding['dimensions'],
-        // dimensions
+        // dimensions.
             0,
-        // chunk_index (objects are not chunked)
+        // chunk_index (objects are not chunked).
             1,
-        // total_chunks (always 1 for objects)
+        // total_chunks (always 1 for objects).
             $text,
-        // chunk_text
+        // chunk_text.
             [
                 'uuid'         => $object->getUuid(),
                 'schema_id'    => $object->getSchema(),
@@ -621,7 +621,7 @@ class SolrObjectService
         );
 
         $duration = (microtime(true) - $startTime) * 1000;
-        // milliseconds
+        // milliseconds.
         $this->logger->info(
                 'Object vectorized successfully',
                 [
@@ -675,7 +675,7 @@ class SolrObjectService
                 ]
                 );
 
-        // Step 1: Convert all objects to text
+        // Step 1: Convert all objects to text.
         $textData = $this->convertObjectsToText($objects);
 
         if (empty($textData)) {
@@ -689,13 +689,13 @@ class SolrObjectService
             ];
         }
 
-        // Step 2: Generate embeddings in batch (more efficient)
+        // Step 2: Generate embeddings in batch (more efficient).
         $vectorService = \OC::$server->get(VectorEmbeddingService::class);
 
         $texts      = array_column($textData, 'text');
         $embeddings = $vectorService->generateBatchEmbeddings($texts, $provider);
 
-        // Step 3: Store vectors for each object
+        // Step 3: Store vectors for each object.
         foreach ($textData as $index => $item) {
             $embedding = $embeddings[$index] ?? null;
 
@@ -711,7 +711,7 @@ class SolrObjectService
             }
 
             try {
-                // Find the corresponding object
+                // Find the corresponding object.
                 $object = null;
                 foreach ($objects as $obj) {
                     if ($obj->getId() === $item['object_id']) {
@@ -724,7 +724,7 @@ class SolrObjectService
                     throw new \Exception("Could not find object {$item['object_id']}");
                 }
 
-                // Store vector
+                // Store vector.
                 $vectorId = $vectorService->storeVector(
                     'object',
                     (string) $object->getId(),

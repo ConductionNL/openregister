@@ -63,7 +63,7 @@ class Version1Date20251107180000 extends SimpleMigrationStep
         if ($schema->hasTable('openregister_agents')) {
             $table = $schema->getTable('openregister_agents');
 
-            // Add tools column (JSON array of enabled tool names)
+            // Add tools column (JSON array of enabled tool names).
             if (!$table->hasColumn('tools')) {
                 $table->addColumn(
                         'tools',
@@ -80,7 +80,7 @@ class Version1Date20251107180000 extends SimpleMigrationStep
                 $output->info('ℹ️  tools column already exists in agents table');
             }
 
-            // Add user column (for cron/background job scenarios)
+            // Add user column (for cron/background job scenarios).
             if (!$table->hasColumn('user')) {
                 $table->addColumn(
                         'user',

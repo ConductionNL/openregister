@@ -88,14 +88,14 @@ class DefaultOrganisationManagementTest extends TestCase
     {
         parent::setUp();
         
-        // Create mock objects
+        // Create mock objects.
         $this->organisationMapper = $this->createMock(OrganisationMapper::class);
         $this->userSession = $this->createMock(IUserSession::class);
         $this->session = $this->createMock(ISession::class);
         $this->logger = $this->createMock(LoggerInterface::class);
         $this->mockUser = $this->createMock(IUser::class);
         
-        // Create service instance with mocked dependencies
+        // Create service instance with mocked dependencies.
         $this->organisationService = new OrganisationService(
             $this->organisationMapper,
             $this->userSession,
@@ -132,17 +132,17 @@ class DefaultOrganisationManagementTest extends TestCase
      */
     public function testDefaultOrganisationCreationOnEmptyDatabase(): void
     {
-        // Arrange: Mock user session
+        // Arrange: Mock user session.
         $this->mockUser->method('getUID')->willReturn('alice');
         $this->userSession->method('getUser')->willReturn($this->mockUser);
         
-        // Mock: No default organisation exists initially
+        // Mock: No default organisation exists initially.
         $this->organisationMapper
             ->expects($this->once())
             ->method('findDefault')
             ->willThrowException(new DoesNotExistException('No default organisation found'));
         
-        // Mock: Default organisation creation
+        // Mock: Default organisation creation.
         $defaultOrg = new Organisation();
         $defaultOrg->setName('Default Organisation');
         $defaultOrg->setDescription('Default organisation for users without specific organisation membership');
@@ -156,14 +156,14 @@ class DefaultOrganisationManagementTest extends TestCase
             ->method('createDefault')
             ->willReturn($defaultOrg);
         
-        // Mock: User organisations lookup (empty initially)
+        // Mock: User organisations lookup (empty initially).
         $this->organisationMapper
             ->expects($this->once())
             ->method('findByUserId')
             ->with('alice')
             ->willReturn([]);
         
-        // Mock: Default organisation update with user
+        // Mock: Default organisation update with user.
         $this->organisationMapper
             ->expects($this->once())
             ->method('update')
@@ -174,10 +174,10 @@ class DefaultOrganisationManagementTest extends TestCase
             }))
             ->willReturn($defaultOrg);
 
-        // Act: Get user organisations (should trigger default creation)
+        // Act: Get user organisations (should trigger default creation).
         $organisations = $this->organisationService->getUserOrganisations(false);
 
-        // Assert: Default organisation was created and user was added
+        // Assert: Default organisation was created and user was added.
         $this->assertCount(1, $organisations);
         $this->assertInstanceOf(Organisation::class, $organisations[0]);
         $this->assertEquals('Default Organisation', $organisations[0]->getName());
@@ -196,12 +196,12 @@ class DefaultOrganisationManagementTest extends TestCase
      */
     public function testUserAutoAssignmentToDefaultOrganisation(): void
     {
-        // Arrange: Mock user session for new user 'bob'
+        // Arrange: Mock user session for new user 'bob'.
         $bobUser = $this->createMock(IUser::class);
         $bobUser->method('getUID')->willReturn('bob');
         $this->userSession->method('getUser')->willReturn($bobUser);
         
-        // Mock: Default organisation exists
+        // Mock: Default organisation exists.
         $defaultOrg = new Organisation();
         $defaultOrg->setName('Default Organisation');
         $defaultOrg->setDescription('Default organisation for users without specific organisation membership');
@@ -215,14 +215,14 @@ class DefaultOrganisationManagementTest extends TestCase
             ->method('findDefault')
             ->willReturn($defaultOrg);
         
-        // Mock: Bob has no organisations initially
+        // Mock: Bob has no organisations initially.
         $this->organisationMapper
             ->expects($this->once())
             ->method('findByUserId')
             ->with('bob')
             ->willReturn([]);
         
-        // Mock: Update default organisation to add Bob
+        // Mock: Update default organisation to add Bob.
         $updatedDefaultOrg = clone $defaultOrg;
         $updatedDefaultOrg->addUser('bob');
         
@@ -237,10 +237,10 @@ class DefaultOrganisationManagementTest extends TestCase
             }))
             ->willReturn($updatedDefaultOrg);
 
-        // Act: Get user organisations for Bob
+        // Act: Get user organisations for Bob.
         $organisations = $this->organisationService->getUserOrganisations(false);
 
-        // Assert: Bob was automatically assigned to default organisation
+        // Assert: Bob was automatically assigned to default organisation.
         $this->assertCount(1, $organisations);
         $this->assertInstanceOf(Organisation::class, $organisations[0]);
         $this->assertEquals('Default Organisation', $organisations[0]->getName());
@@ -259,11 +259,11 @@ class DefaultOrganisationManagementTest extends TestCase
      */
     public function testMultipleDefaultOrganisationsPrevention(): void
     {
-        // Arrange: Mock user session
+        // Arrange: Mock user session.
         $this->mockUser->method('getUID')->willReturn('alice');
         $this->userSession->method('getUser')->willReturn($this->mockUser);
         
-        // Mock: Default organisation already exists
+        // Mock: Default organisation already exists.
         $existingDefaultOrg = new Organisation();
         $existingDefaultOrg->setName('Default Organisation');
         $existingDefaultOrg->setIsDefault(true);
@@ -275,10 +275,10 @@ class DefaultOrganisationManagementTest extends TestCase
             ->method('findDefault')
             ->willReturn($existingDefaultOrg);
 
-        // Act: Attempt to ensure default organisation exists (should return existing one)
+        // Act: Attempt to ensure default organisation exists (should return existing one).
         $defaultOrg = $this->organisationService->ensureDefaultOrganisation();
 
-        // Assert: Existing default organisation is returned, no new one created
+        // Assert: Existing default organisation is returned, no new one created.
         $this->assertInstanceOf(Organisation::class, $defaultOrg);
         $this->assertEquals('existing-default-uuid', $defaultOrg->getUuid());
         $this->assertTrue($defaultOrg->getIsDefault());
@@ -295,7 +295,7 @@ class DefaultOrganisationManagementTest extends TestCase
      */
     public function testDatabaseConstraintPreventionOfMultipleDefaults(): void
     {
-        // Arrange: Mock existing default organisation exists
+        // Arrange: Mock existing default organisation exists.
         $existingDefault = new Organisation();
         $existingDefault->setName('Default Organisation');
         $existingDefault->setIsDefault(true);
@@ -306,15 +306,15 @@ class DefaultOrganisationManagementTest extends TestCase
             ->method('findDefault')
             ->willReturn($existingDefault);
 
-        // Mock: createDefault should never be called when default exists
+        // Mock: createDefault should never be called when default exists.
         $this->organisationMapper
             ->expects($this->never())
             ->method('createDefault');
 
-        // Act: Ensure default organisation (should return existing one)
+        // Act: Ensure default organisation (should return existing one).
         $result = $this->organisationService->ensureDefaultOrganisation();
         
-        // Assert: Existing default organisation is returned, no new one created
+        // Assert: Existing default organisation is returned, no new one created.
         $this->assertInstanceOf(Organisation::class, $result);
         $this->assertEquals('existing-default-uuid-456', $result->getUuid());
         $this->assertTrue($result->getIsDefault());
@@ -330,11 +330,11 @@ class DefaultOrganisationManagementTest extends TestCase
      */
     public function testActiveOrganisationAutoSettingWithDefault(): void
     {
-        // Arrange: Mock user session
+        // Arrange: Mock user session.
         $this->mockUser->method('getUID')->willReturn('charlie');
         $this->userSession->method('getUser')->willReturn($this->mockUser);
         
-        // Mock: No active organisation in session initially, then user organisations
+        // Mock: No active organisation in session initially, then user organisations.
         $this->session
             ->method('get')
             ->willReturnMap([
@@ -342,7 +342,7 @@ class DefaultOrganisationManagementTest extends TestCase
                 ['openregister_organisations_charlie', [], []]
             ]);
         
-        // Mock: User has default organisation
+        // Mock: User has default organisation.
         $defaultOrg = new Organisation();
         $defaultOrg->setName('Default Organisation');
         $defaultOrg->setIsDefault(true);
@@ -356,15 +356,15 @@ class DefaultOrganisationManagementTest extends TestCase
             ->with('charlie')
             ->willReturn([$defaultOrg]);
         
-        // Mock: Set active organisation and cache in session
+        // Mock: Set active organisation and cache in session.
         $this->session
             ->expects($this->atLeastOnce())
             ->method('set');
 
-        // Act: Get active organisation
+        // Act: Get active organisation.
         $activeOrg = $this->organisationService->getActiveOrganisation();
 
-        // Assert: Default organisation is set as active
+        // Assert: Default organisation is set as active.
         $this->assertInstanceOf(Organisation::class, $activeOrg);
         $this->assertEquals('default-uuid-456', $activeOrg->getUuid());
         $this->assertTrue($activeOrg->getIsDefault());
@@ -380,13 +380,13 @@ class DefaultOrganisationManagementTest extends TestCase
      */
     public function testDefaultOrganisationMetadataValidation(): void
     {
-        // Arrange: Mock no existing default
+        // Arrange: Mock no existing default.
         $this->organisationMapper
             ->expects($this->once())
             ->method('findDefault')
             ->willThrowException(new DoesNotExistException('No default organisation'));
         
-        // Mock: Default organisation creation with proper metadata
+        // Mock: Default organisation creation with proper metadata.
         $defaultOrg = new Organisation();
         $defaultOrg->setName('Default Organisation');
         $defaultOrg->setDescription('Default organisation for users without specific organisation membership');
@@ -402,10 +402,10 @@ class DefaultOrganisationManagementTest extends TestCase
             ->method('createDefault')
             ->willReturn($defaultOrg);
 
-        // Act: Ensure default organisation
+        // Act: Ensure default organisation.
         $result = $this->organisationService->ensureDefaultOrganisation();
 
-        // Assert: Metadata is correct
+        // Assert: Metadata is correct.
         $this->assertEquals('Default Organisation', $result->getName());
         $this->assertEquals('Default organisation for users without specific organisation membership', $result->getDescription());
         $this->assertTrue($result->getIsDefault());

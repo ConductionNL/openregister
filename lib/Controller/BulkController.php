@@ -89,7 +89,7 @@ class BulkController extends Controller
     public function delete(string $register, string $schema): JSONResponse
     {
         try {
-            // Check if user is admin
+            // Check if user is admin.
             if (!$this->isCurrentUserAdmin()) {
                 return new JSONResponse(
                     ['error' => 'Insufficient permissions. Admin access required.'],
@@ -97,11 +97,11 @@ class BulkController extends Controller
                 );
             }
 
-            // Get request data
+            // Get request data.
             $data  = $this->request->getParams();
             $uuids = $data['uuids'] ?? [];
 
-            // Validate input
+            // Validate input.
             if (empty($uuids) || !is_array($uuids)) {
                 return new JSONResponse(
                     ['error' => 'Invalid input. "uuids" array is required.'],
@@ -109,11 +109,11 @@ class BulkController extends Controller
                 );
             }
 
-            // Set register and schema context
+            // Set register and schema context.
             $this->objectService->setRegister($register);
             $this->objectService->setSchema($schema);
 
-            // Perform bulk delete operation
+            // Perform bulk delete operation.
             $deletedUuids = $this->objectService->deleteObjects($uuids);
 
             return new JSONResponse(
@@ -149,7 +149,7 @@ class BulkController extends Controller
     public function publish(string $register, string $schema): JSONResponse
     {
         try {
-            // Check if user is admin
+            // Check if user is admin.
             if (!$this->isCurrentUserAdmin()) {
                 return new JSONResponse(
                     ['error' => 'Insufficient permissions. Admin access required.'],
@@ -157,12 +157,12 @@ class BulkController extends Controller
                 );
             }
 
-            // Get request data
+            // Get request data.
             $data     = $this->request->getParams();
             $uuids    = $data['uuids'] ?? [];
             $datetime = $data['datetime'] ?? true;
 
-            // Validate input
+            // Validate input.
             if (empty($uuids) || !is_array($uuids)) {
                 return new JSONResponse(
                     ['error' => 'Invalid input. "uuids" array is required.'],
@@ -170,7 +170,7 @@ class BulkController extends Controller
                 );
             }
 
-            // Parse datetime if provided
+            // Parse datetime if provided.
             if ($datetime !== true && $datetime !== false && $datetime !== null) {
                 try {
                     $datetime = new \DateTime($datetime);
@@ -182,11 +182,11 @@ class BulkController extends Controller
                 }
             }
 
-            // Set register and schema context
+            // Set register and schema context.
             $this->objectService->setRegister($register);
             $this->objectService->setSchema($schema);
 
-            // Perform bulk publish operation
+            // Perform bulk publish operation.
             $publishedUuids = $this->objectService->publishObjects($uuids, $datetime);
 
             return new JSONResponse(
@@ -223,7 +223,7 @@ class BulkController extends Controller
     public function depublish(string $register, string $schema): JSONResponse
     {
         try {
-            // Check if user is admin
+            // Check if user is admin.
             if (!$this->isCurrentUserAdmin()) {
                 return new JSONResponse(
                     ['error' => 'Insufficient permissions. Admin access required.'],
@@ -231,12 +231,12 @@ class BulkController extends Controller
                 );
             }
 
-            // Get request data
+            // Get request data.
             $data     = $this->request->getParams();
             $uuids    = $data['uuids'] ?? [];
             $datetime = $data['datetime'] ?? true;
 
-            // Validate input
+            // Validate input.
             if (empty($uuids) || !is_array($uuids)) {
                 return new JSONResponse(
                     ['error' => 'Invalid input. "uuids" array is required.'],
@@ -244,7 +244,7 @@ class BulkController extends Controller
                 );
             }
 
-            // Parse datetime if provided
+            // Parse datetime if provided.
             if ($datetime !== true && $datetime !== false && $datetime !== null) {
                 try {
                     $datetime = new \DateTime($datetime);
@@ -256,11 +256,11 @@ class BulkController extends Controller
                 }
             }
 
-            // Set register and schema context
+            // Set register and schema context.
             $this->objectService->setRegister($register);
             $this->objectService->setSchema($schema);
 
-            // Perform bulk depublish operation
+            // Perform bulk depublish operation.
             $depublishedUuids = $this->objectService->depublishObjects($uuids, $datetime);
 
             return new JSONResponse(
@@ -297,7 +297,7 @@ class BulkController extends Controller
     public function save(string $register, string $schema): JSONResponse
     {
         try {
-            // Check if user is admin
+            // Check if user is admin.
             if (!$this->isCurrentUserAdmin()) {
                 return new JSONResponse(
                     ['error' => 'Insufficient permissions. Admin access required.'],
@@ -305,11 +305,11 @@ class BulkController extends Controller
                 );
             }
 
-            // Get request data
+            // Get request data.
             $data    = $this->request->getParams();
             $objects = $data['objects'] ?? [];
 
-            // Validate input
+            // Validate input.
             if (empty($objects) || !is_array($objects)) {
                 return new JSONResponse(
                     ['error' => 'Invalid input. "objects" array is required.'],
@@ -317,7 +317,7 @@ class BulkController extends Controller
                 );
             }
 
-            // FLEXIBLE SCHEMA HANDLING: Support both single-schema and mixed-schema operations
+            // FLEXIBLE SCHEMA HANDLING: Support both single-schema and mixed-schema operations.
             // Use schema=0 to indicate mixed-schema operations where objects specify their own schemas.
             $isMixedSchemaOperation = ($schema === '0' || $schema === 0);
 
@@ -329,14 +329,14 @@ class BulkController extends Controller
                     objects: $objects,
                     register: $register,
                     schema: null,
-                // Allow objects to specify their own schemas
+                // Allow objects to specify their own schemas.
                     rbac: true,
                     multi: true,
                     validation: true,
                     events: false
                 );
             } else {
-                // Single-schema operation - traditional behavior
+                // Single-schema operation - traditional behavior.
                 $this->objectService->setRegister($register);
                 $this->objectService->setSchema($schema);
 
@@ -383,7 +383,7 @@ class BulkController extends Controller
     public function publishSchema(string $register, string $schema): JSONResponse
     {
         try {
-            // Check if user is admin
+            // Check if user is admin.
             if (!$this->isCurrentUserAdmin()) {
                 return new JSONResponse(
                     ['error' => 'Insufficient permissions. Admin access required.'],
@@ -391,7 +391,7 @@ class BulkController extends Controller
                 );
             }
 
-            // Validate input
+            // Validate input.
             if (!is_numeric($schema)) {
                 return new JSONResponse(
                     ['error' => 'Invalid schema ID. Must be numeric.'],
@@ -399,15 +399,15 @@ class BulkController extends Controller
                 );
             }
 
-            // Get request data
+            // Get request data.
             $data       = $this->request->getParams();
             $publishAll = $data['publishAll'] ?? false;
 
-            // Set register and schema context
+            // Set register and schema context.
             $this->objectService->setRegister($register);
             $this->objectService->setSchema($schema);
 
-            // Perform schema publishing operation
+            // Perform schema publishing operation.
             $result = $this->objectService->publishObjectsBySchema((int) $schema, $publishAll);
 
             return new JSONResponse(
@@ -443,7 +443,7 @@ class BulkController extends Controller
     public function deleteSchema(string $register, string $schema): JSONResponse
     {
         try {
-            // Check if user is admin
+            // Check if user is admin.
             if (!$this->isCurrentUserAdmin()) {
                 return new JSONResponse(
                     ['error' => 'Insufficient permissions. Admin access required.'],
@@ -451,7 +451,7 @@ class BulkController extends Controller
                 );
             }
 
-            // Validate input
+            // Validate input.
             if (!is_numeric($schema)) {
                 return new JSONResponse(
                     ['error' => 'Invalid schema ID. Must be numeric.'],
@@ -459,15 +459,15 @@ class BulkController extends Controller
                 );
             }
 
-            // Get request data
+            // Get request data.
             $data       = $this->request->getParams();
             $hardDelete = $data['hardDelete'] ?? false;
 
-            // Set register and schema context
+            // Set register and schema context.
             $this->objectService->setRegister($register);
             $this->objectService->setSchema($schema);
 
-            // Perform schema deletion operation
+            // Perform schema deletion operation.
             $result = $this->objectService->deleteObjectsBySchema((int) $schema, $hardDelete);
 
             return new JSONResponse(
@@ -502,7 +502,7 @@ class BulkController extends Controller
     public function deleteRegister(string $register): JSONResponse
     {
         try {
-            // Check if user is admin
+            // Check if user is admin.
             if (!$this->isCurrentUserAdmin()) {
                 return new JSONResponse(
                     ['error' => 'Insufficient permissions. Admin access required.'],
@@ -510,7 +510,7 @@ class BulkController extends Controller
                 );
             }
 
-            // Validate input
+            // Validate input.
             if (!is_numeric($register)) {
                 return new JSONResponse(
                     ['error' => 'Invalid register ID. Must be numeric.'],
@@ -518,10 +518,10 @@ class BulkController extends Controller
                 );
             }
 
-            // Set register context
+            // Set register context.
             $this->objectService->setRegister($register);
 
-            // Perform register deletion operation
+            // Perform register deletion operation.
             $result = $this->objectService->deleteObjectsByRegister((int) $register);
 
             return new JSONResponse(
@@ -555,7 +555,7 @@ class BulkController extends Controller
     public function validateSchema(string $schema): JSONResponse
     {
         try {
-            // Check if user is admin
+            // Check if user is admin.
             if (!$this->isCurrentUserAdmin()) {
                 return new JSONResponse(
                     ['error' => 'Insufficient permissions. Admin access required.'],
@@ -563,7 +563,7 @@ class BulkController extends Controller
                 );
             }
 
-            // Validate input
+            // Validate input.
             if (!is_numeric($schema)) {
                 return new JSONResponse(
                     ['error' => 'Invalid schema ID. Must be numeric.'],
@@ -571,7 +571,7 @@ class BulkController extends Controller
                 );
             }
 
-            // Perform schema validation operation and return service result directly
+            // Perform schema validation operation and return service result directly.
             $result = $this->objectService->validateObjectsBySchema((int) $schema);
 
             return new JSONResponse($result);

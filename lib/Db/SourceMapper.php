@@ -34,7 +34,6 @@ use Symfony\Component\Uid\Uuid;
  * Mapper for Source entities with multi-tenancy and RBAC support.
  *
  * @package OCA\OpenRegister\Db
- */
  *
  * @method Source insert(Entity $entity)
  * @method Source update(Entity $entity)
@@ -103,7 +102,7 @@ class SourceMapper extends QBMapper
      */
     public function find(int $id): Source
     {
-        // Verify RBAC permission to read
+        // Verify RBAC permission to read.
         $this->verifyRbacPermission('read', 'source');
 
         $qb = $this->db->getQueryBuilder();
@@ -114,7 +113,7 @@ class SourceMapper extends QBMapper
                 $qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT))
             );
 
-        // Apply organisation filter (all users including admins must have active org)
+        // Apply organisation filter (all users including admins must have active org).
         $this->applyOrganisationFilter($qb);
 
         return $this->findEntity(query: $qb);
@@ -141,7 +140,7 @@ class SourceMapper extends QBMapper
         ?array $searchConditions=[],
         ?array $searchParams=[]
     ): array {
-        // Verify RBAC permission to read
+        // Verify RBAC permission to read.
         $this->verifyRbacPermission('read', 'source');
 
         $qb = $this->db->getQueryBuilder();
@@ -168,7 +167,7 @@ class SourceMapper extends QBMapper
             }
         }
 
-        // Apply organisation filter (all users including admins must have active org)
+        // Apply organisation filter (all users including admins must have active org).
         $this->applyOrganisationFilter($qb);
 
         return $this->findEntities(query: $qb);
@@ -186,11 +185,11 @@ class SourceMapper extends QBMapper
      */
     public function insert(Entity $entity): Entity
     {
-        // Verify RBAC permission to create
+        // Verify RBAC permission to create.
         $this->verifyRbacPermission('create', 'source');
 
         if ($entity instanceof Source) {
-            // Generate UUID if not set
+            // Generate UUID if not set.
             if (empty($entity->getUuid())) {
                 $entity->setUuid(Uuid::v4());
             }
@@ -199,7 +198,7 @@ class SourceMapper extends QBMapper
             $entity->setUpdated(new \DateTime());
         }
 
-        // Auto-set organisation from active session
+        // Auto-set organisation from active session.
         $this->setOrganisationOnCreate($entity);
 
         return parent::insert($entity);
@@ -217,10 +216,10 @@ class SourceMapper extends QBMapper
      */
     public function update(Entity $entity): Entity
     {
-        // Verify RBAC permission to update
+        // Verify RBAC permission to update.
         $this->verifyRbacPermission('update', 'source');
 
-        // Verify user has access to this organisation
+        // Verify user has access to this organisation.
         $this->verifyOrganisationAccess($entity);
 
         if ($entity instanceof Source) {
@@ -242,10 +241,10 @@ class SourceMapper extends QBMapper
      */
     public function delete(Entity $entity): Entity
     {
-        // Verify RBAC permission to delete
+        // Verify RBAC permission to delete.
         $this->verifyRbacPermission('delete', 'source');
 
-        // Verify user has access to this organisation
+        // Verify user has access to this organisation.
         $this->verifyOrganisationAccess($entity);
 
         return parent::delete($entity);

@@ -92,7 +92,7 @@ class ViewHandler
         try {
             unset($data['id'], $data['uuid']);
 
-            // Check if view already exists by name
+            // Check if view already exists by name.
             $existingViews = $this->viewMapper->findAll();
             $existingView  = null;
             foreach ($existingViews as $view) {
@@ -103,7 +103,7 @@ class ViewHandler
             }
 
             if ($existingView !== null) {
-                // Update existing view
+                // Update existing view.
                 $existingView->hydrate($data);
                 if ($owner !== null) {
                     $existingView->setOwner($owner);
@@ -112,7 +112,7 @@ class ViewHandler
                 return $this->viewMapper->update($existingView);
             }
 
-            // Create new view
+            // Create new view.
             $view = new View();
             $view->hydrate($data);
             if ($owner !== null) {

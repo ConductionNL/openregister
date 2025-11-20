@@ -113,14 +113,14 @@ class ExportService
     {
         if ($user === null) {
             return false;
-            // Anonymous users are never admin
+            // Anonymous users are never admin.
         }
 
-        // Check if user is in admin group
+        // Check if user is in admin group.
         $adminGroup = $this->groupManager->get('admin');
         if ($adminGroup === null) {
             return false;
-            // Admin group doesn't exist
+            // Admin group doesn't exist.
         }
 
         return $adminGroup->inGroup($user);
@@ -273,8 +273,8 @@ class ExportService
 
         $row++;
 
-        // Export data using optimized ObjectEntityMapper query for raw ObjectEntity objects
-        // Build filters for ObjectEntityMapper->findAll() method
+        // Export data using optimized ObjectEntityMapper query for raw ObjectEntity objects.
+        // Build filters for ObjectEntityMapper->findAll() method.
         $objectFilters = [];
 
         if ($register !== null) {
@@ -285,37 +285,37 @@ class ExportService
             $objectFilters['schema'] = $schema->getId();
         }
 
-        // Apply additional filters
+        // Apply additional filters.
         foreach ($filters as $key => $value) {
             if (!str_starts_with($key, '@self.')) {
-                // These are JSON object property filters - not supported by findAll
-                // For now, we'll skip them to get basic functionality working
+                // These are JSON object property filters - not supported by findAll.
+                // For now, we'll skip them to get basic functionality working.
                 // TODO: Add support for JSON property filtering in ObjectEntityMapper
                 continue;
             } else {
-                // Metadata filter - remove @self. prefix
+                // Metadata filter - remove @self. prefix.
                 $metaField = substr($key, 6);
                 $objectFilters[$metaField] = $value;
             }
         }
 
-        // Use ObjectService::searchObjects directly with proper RBAC and multi-tenancy filtering
-        // Set a very high limit to get all objects (export needs all data)
+        // Use ObjectService::searchObjects directly with proper RBAC and multi-tenancy filtering.
+        // Set a very high limit to get all objects (export needs all data).
         $query = [
             '@self'           => $objectFilters,
             '_limit'          => 999999,
-        // Very high limit to get all objects
+        // Very high limit to get all objects.
             '_published'      => false,
-        // Export all objects, not just published ones
+        // Export all objects, not just published ones.
             '_includeDeleted' => false,
         ];
 
         $objects = $this->objectService->searchObjects(
             query: $query,
             rbac: true,
-        // Apply RBAC filtering
+        // Apply RBAC filtering.
             multi: true,
-        // Apply multi-tenancy filtering
+        // Apply multi-tenancy filtering.
             ids: null,
             uses: null
         );
@@ -367,7 +367,7 @@ class ExportService
             }
         }
 
-        // REQUIREMENT: Add @self metadata fields only if user is admin
+        // REQUIREMENT: Add @self metadata fields only if user is admin.
         if ($this->isUserAdmin($currentUser)) {
             $metadataFields = [
                 'created',

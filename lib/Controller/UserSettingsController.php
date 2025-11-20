@@ -116,7 +116,7 @@ class UserSettingsController extends Controller
                         );
             }
 
-            // Validate the token
+            // Validate the token.
             $this->gitHubService->setUserToken($token);
             $isValid = $this->gitHubService->validateToken();
 
@@ -169,7 +169,7 @@ class UserSettingsController extends Controller
                 );
             }
 
-            // Validate the token before saving
+            // Validate the token before saving.
             $this->gitHubService->setUserToken($token);
             if ($this->gitHubService->validateToken() === false) {
                 return new JSONResponse(
@@ -178,7 +178,7 @@ class UserSettingsController extends Controller
                 );
             }
 
-            // Save the token (it's already saved by setUserToken)
+            // Save the token (it's already saved by setUserToken).
             $this->logger->info("GitHub token set for user: {$user->getUID()}");
 
             return new JSONResponse(
@@ -219,7 +219,7 @@ class UserSettingsController extends Controller
                 );
             }
 
-            // Clear the token
+            // Clear the token.
             $this->gitHubService->setUserToken(null);
 
             $this->logger->info("GitHub token removed for user: {$user->getUID()}");

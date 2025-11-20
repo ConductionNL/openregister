@@ -88,7 +88,7 @@ class MagicSearchHandler
      */
     public function searchObjects(array $query, Register $register, Schema $schema, string $tableName): array|int
     {
-        // Extract options from query (prefixed with _)
+        // Extract options from query (prefixed with _).
         $limit          = $query['_limit'] ?? null;
         $offset         = $query['_offset'] ?? null;
         $order          = $query['_order'] ?? [];
@@ -98,10 +98,10 @@ class MagicSearchHandler
         $ids            = $query['_ids'] ?? null;
         $count          = $query['_count'] ?? false;
 
-        // Extract metadata from @self
+        // Extract metadata from @self.
         $metadataFilters = $query['@self'] ?? [];
 
-        // Clean the query: remove @self and all properties prefixed with _
+        // Clean the query: remove @self and all properties prefixed with _.
         $objectFilters = array_filter(
                 $query,
                 function ($key) {
@@ -112,7 +112,7 @@ class MagicSearchHandler
 
         $queryBuilder = $this->db->getQueryBuilder();
 
-        // Build base query - different for count vs search
+        // Build base query - different for count vs search.
         if ($count === true) {
             $queryBuilder->selectAlias($queryBuilder->createFunction('COUNT(*)'), 'count')
                 ->from($tableName, 't');
@@ -123,35 +123,35 @@ class MagicSearchHandler
                 ->setFirstResult($offset);
         }
 
-        // Apply basic filters (deleted, published, etc.)
+        // Apply basic filters (deleted, published, etc.).
         $this->applyBasicFilters($queryBuilder, $includeDeleted, $published);
 
-        // Apply metadata filters
+        // Apply metadata filters.
         if (!empty($metadataFilters)) {
             $this->applyMetadataFilters($queryBuilder, $metadataFilters);
         }
 
-        // Apply object field filters (schema-specific columns)
+        // Apply object field filters (schema-specific columns).
         if (!empty($objectFilters)) {
             $this->applyObjectFilters($queryBuilder, $objectFilters, $schema);
         }
 
-        // Apply ID filtering if provided
+        // Apply ID filtering if provided.
         if ($ids !== null && !empty($ids)) {
             $this->applyIdFilters($queryBuilder, $ids);
         }
 
-        // Apply full-text search if provided
+        // Apply full-text search if provided.
         if ($search !== null && trim($search) !== '') {
             $this->applyFullTextSearch($queryBuilder, trim($search), $schema);
         }
 
-        // Apply sorting (skip for count queries)
+        // Apply sorting (skip for count queries).
         if ($count === false && !empty($order)) {
             $this->applySorting($queryBuilder, $order, $schema);
         }
 
-        // Execute query and return results
+        // Execute query and return results.
         if ($count === true) {
             $result = $queryBuilder->executeQuery();
             return (int) $result->fetchOne();
@@ -173,12 +173,12 @@ class MagicSearchHandler
      */
     private function applyBasicFilters(IQueryBuilder $qb, bool $includeDeleted, bool $published): void
     {
-        // Handle deleted filter
+        // Handle deleted filter.
         if ($includeDeleted === false) {
             $qb->andWhere($qb->expr()->isNull('t._deleted'));
         }
 
-        // Handle published filter
+        // Handle published filter.
         if ($published === true) {
             $now = (new \DateTime())->format('Y-m-d H:i:s');
             $qb->andWhere(
@@ -208,7 +208,7 @@ class MagicSearchHandler
     {
         foreach ($filters as $field => $value) {
             $columnName = '_'.$field;
-            // Metadata columns are prefixed with _
+            // Metadata columns are prefixed with _.
             if ($value === 'IS NOT NULL') {
                 $qb->andWhere($qb->expr()->isNotNull("t.{$columnName}"));
             } else if ($value === 'IS NULL') {
@@ -237,7 +237,7 @@ class MagicSearchHandler
         $properties = $schema->getProperties();
 
         foreach ($filters as $field => $value) {
-            // Check if this field exists as a column in the schema
+            // Check if this field exists as a column in the schema.
             if (isset($properties[$field])) {
                 $columnName = $this->sanitizeColumnName($field);
 
@@ -288,7 +288,7 @@ class MagicSearchHandler
         $properties       = $schema->getProperties();
         $searchConditions = $qb->expr()->orX();
 
-        // Search in text-based schema properties
+        // Search in text-based schema properties.
         foreach ($properties as $field => $propertyConfig) {
             if (($propertyConfig['type'] ?? '') === 'string') {
                 $columnName = $this->sanitizeColumnName($field);
@@ -298,7 +298,7 @@ class MagicSearchHandler
             }
         }
 
-        // Also search in metadata text fields
+        // Also search in metadata text fields.
         $searchConditions->add($qb->expr()->like('t._name', $qb->createNamedParameter('%'.$search.'%')));
         $searchConditions->add($qb->expr()->like('t._description', $qb->createNamedParameter('%'.$search.'%')));
         $searchConditions->add($qb->expr()->like('t._summary', $qb->createNamedParameter('%'.$search.'%')));
@@ -328,11 +328,11 @@ class MagicSearchHandler
             }
 
             if (str_starts_with($field, '@self.')) {
-                // Metadata field sorting
+                // Metadata field sorting.
                 $metadataField = '_'.str_replace('@self.', '', $field);
                 $qb->addOrderBy("t.{$metadataField}", $direction);
             } else if (isset($properties[$field])) {
-                // Schema property field sorting
+                // Schema property field sorting.
                 $columnName = $this->sanitizeColumnName($field);
                 $qb->addOrderBy("t.{$columnName}", $direction);
             }
@@ -384,22 +384,22 @@ class MagicSearchHandler
         try {
             $objectEntity = new ObjectEntity();
 
-            // Extract metadata (prefixed with _)
+            // Extract metadata (prefixed with _).
             $metadataData = [];
             $objectData   = [];
 
             foreach ($row as $column => $value) {
                 if (str_starts_with($column, '_')) {
-                    // Metadata column - remove prefix and map to ObjectEntity
+                    // Metadata column - remove prefix and map to ObjectEntity.
                     $metadataField = substr($column, 1);
                     $metadataData[$metadataField] = $value;
                 } else {
-                    // Schema property column - add to object data
+                    // Schema property column - add to object data.
                     $objectData[$column] = $value;
                 }
             }
 
-            // Set metadata properties
+            // Set metadata properties.
             if (isset($metadataData['uuid'])) {
                 $objectEntity->setUuid($metadataData['uuid']);
             }
@@ -452,11 +452,11 @@ class MagicSearchHandler
                 $objectEntity->setDepublished(new \DateTime($metadataData['depublished']));
             }
 
-            // Set register and schema
+            // Set register and schema.
             $objectEntity->setRegister($register->getId());
             $objectEntity->setSchema($schema->getId());
 
-            // Set the object data
+            // Set the object data.
             $objectEntity->setObject($objectData);
 
             return $objectEntity;
@@ -490,7 +490,7 @@ class MagicSearchHandler
      */
     public function countObjects(array $query, Register $register, Schema $schema, string $tableName): int
     {
-        // Use the same search method but force count mode
+        // Use the same search method but force count mode.
         $countQuery           = $query;
         $countQuery['_count'] = true;
 
@@ -513,7 +513,7 @@ class MagicSearchHandler
      */
     public function sizeObjects(array $query, Register $register, Schema $schema, string $tableName): int
     {
-        // Extract filters same as search but calculate size instead of count
+        // Extract filters same as search but calculate size instead of count.
         $includeDeleted = $query['_includeDeleted'] ?? false;
         $published      = $query['_published'] ?? false;
         $ids            = $query['_ids'] ?? null;
@@ -531,7 +531,7 @@ class MagicSearchHandler
         $queryBuilder->select($queryBuilder->func()->sum('t._size'))
             ->from($tableName, 't');
 
-        // Apply same filters as search
+        // Apply same filters as search.
         $this->applyBasicFilters($queryBuilder, $includeDeleted, $published);
 
         if (!empty($metadataFilters)) {
@@ -563,15 +563,15 @@ class MagicSearchHandler
      */
     private function sanitizeColumnName(string $name): string
     {
-        // Convert to lowercase and replace non-alphanumeric with underscores
+        // Convert to lowercase and replace non-alphanumeric with underscores.
         $sanitized = strtolower(preg_replace('/[^a-zA-Z0-9_]/', '_', $name));
 
-        // Ensure it starts with a letter or underscore
+        // Ensure it starts with a letter or underscore.
         if (!preg_match('/^[a-zA-Z_]/', $sanitized)) {
             $sanitized = 'col_'.$sanitized;
         }
 
-        // Limit length to 64 characters (MySQL limit)
+        // Limit length to 64 characters (MySQL limit).
         return substr($sanitized, 0, 64);
 
     }//end sanitizeColumnName()

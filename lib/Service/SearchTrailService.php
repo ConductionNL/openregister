@@ -113,7 +113,7 @@ class SearchTrailService
                 $executionType
             );
 
-            // Self-clearing: automatically clean up old search trails if enabled
+            // Self-clearing: automatically clean up old search trails if enabled.
             if ($this->selfClearingEnabled) {
                 $this->clearExpiredSearchTrails();
             }
@@ -142,7 +142,7 @@ class SearchTrailService
             return [
                 'success'      => true,
                 'deleted'      => $deletedCount ? 1 : 0,
-            // clearLogs returns boolean, not count
+            // clearLogs returns boolean, not count.
                 'cleanup_date' => (new DateTime())->format('Y-m-d H:i:s'),
                 'message'      => "Self-clearing: ".($deletedCount ? "deleted expired search trail entries" : "no expired entries to delete"),
             ];
@@ -187,7 +187,7 @@ class SearchTrailService
             to: $processedConfig['to']
         );
 
-        // Enrich trails with register and schema names
+        // Enrich trails with register and schema names.
         $enrichedTrails = $this->enrichTrailsWithNames($trails);
 
         $total = $this->searchTrailMapper->count(
@@ -222,7 +222,7 @@ class SearchTrailService
     {
         $trail = $this->searchTrailMapper->find($id);
 
-        // Enrich single trail with register and schema names
+        // Enrich single trail with register and schema names.
         $enrichedTrails = $this->enrichTrailsWithNames([$trail]);
 
         return $enrichedTrails[0];
@@ -242,41 +242,41 @@ class SearchTrailService
     {
         $baseStats = $this->searchTrailMapper->getSearchStatistics($from, $to);
 
-        // Add additional calculated metrics
+        // Add additional calculated metrics.
         $baseStats['searches_with_results']    = $baseStats['non_empty_searches'];
         $baseStats['searches_without_results'] = $baseStats['total_searches'] - $baseStats['non_empty_searches'];
         $baseStats['success_rate'] = $baseStats['total_searches'] > 0 ? round(($baseStats['non_empty_searches'] / $baseStats['total_searches']) * 100, 2) : 0;
 
-        // Get unique search terms count
+        // Get unique search terms count.
         $uniqueSearchTermsCount           = $this->searchTrailMapper->getUniqueSearchTermsCount($from, $to);
         $baseStats['unique_search_terms'] = $uniqueSearchTermsCount;
 
-        // Get unique users count
+        // Get unique users count.
         $uniqueUsersCount          = $this->searchTrailMapper->getUniqueUsersCount($from, $to);
         $baseStats['unique_users'] = $uniqueUsersCount;
 
-        // Get session-based statistics
+        // Get session-based statistics.
         $baseStats['avg_searches_per_session']     = $this->searchTrailMapper->getAverageSearchesPerSession($from, $to);
         $baseStats['avg_object_views_per_session'] = $this->searchTrailMapper->getAverageObjectViewsPerSession($from, $to);
 
-        // Get unique organizations count (placeholder for now)
+        // Get unique organizations count (placeholder for now).
         $baseStats['unique_organizations'] = 0;
 
-        // Add query complexity analysis (placeholder implementation)
+        // Add query complexity analysis (placeholder implementation).
         $baseStats['query_complexity'] = [
             'simple'  => $baseStats['total_searches'] > 0 ? round($baseStats['total_searches'] * 0.6) : 0,
             'medium'  => $baseStats['total_searches'] > 0 ? round($baseStats['total_searches'] * 0.3) : 0,
             'complex' => $baseStats['total_searches'] > 0 ? round($baseStats['total_searches'] * 0.1) : 0,
         ];
 
-        // Add period information
+        // Add period information.
         $baseStats['period'] = [
             'from' => $from?->format('Y-m-d H:i:s'),
             'to'   => $to?->format('Y-m-d H:i:s'),
             'days' => $from && $to ? $from->diff($to)->days + 1 : null,
         ];
 
-        // Add daily averages if we have a time period
+        // Add daily averages if we have a time period.
         if ($baseStats['period']['days'] && $baseStats['period']['days'] > 0) {
             $baseStats['daily_averages'] = [
                 'searches_per_day' => round($baseStats['total_searches'] / $baseStats['period']['days'], 2),
@@ -302,7 +302,7 @@ class SearchTrailService
     {
         $terms = $this->searchTrailMapper->getPopularSearchTerms($limit, $from, $to);
 
-        // Add enhanced analytics
+        // Add enhanced analytics.
         $totalSearches = array_sum(array_column($terms, 'count'));
         $enhancedTerms = array_map(
                 function ($term) use ($totalSearches) {
@@ -339,7 +339,7 @@ class SearchTrailService
     {
         $activity = $this->searchTrailMapper->getSearchActivityByTime($interval, $from, $to);
 
-        // Calculate trends and insights
+        // Calculate trends and insights.
         $insights = $this->calculateActivityInsights($activity, $interval);
 
         return [
@@ -377,7 +377,7 @@ class SearchTrailService
                 $stats
                 );
 
-        // Sort by usage percentage
+        // Sort by usage percentage.
         usort(
                 $enhancedStats,
                 function ($a, $b) {
@@ -419,7 +419,7 @@ class SearchTrailService
                 $stats
                 );
 
-        // Aggregate by browser type
+        // Aggregate by browser type.
         $browserStats = $this->aggregateByBrowser($enhancedStats);
 
         return [
@@ -446,13 +446,13 @@ class SearchTrailService
     {
         try {
             // Note: clearLogs() only removes expired entries, ignoring the $before parameter
-            // This maintains consistency with the audit trail cleanup approach
+            // This maintains consistency with the audit trail cleanup approach.
             $deletedCount = $this->searchTrailMapper->clearLogs();
 
             return [
                 'success'      => true,
                 'deleted'      => $deletedCount ? 1 : 0,
-            // clearLogs returns boolean, not count
+            // clearLogs returns boolean, not count.
                 'cleanup_date' => (new DateTime())->format('Y-m-d H:i:s'),
                 'message'      => $deletedCount ? "Successfully deleted expired search trail entries" : "No expired entries to delete",
             ];
@@ -477,7 +477,7 @@ class SearchTrailService
      */
     private function processConfig(array $config): array
     {
-        // Set defaults
+        // Set defaults.
         $processed = [
             'limit'   => 20,
             'offset'  => null,
@@ -489,7 +489,7 @@ class SearchTrailService
             'to'      => null,
         ];
 
-        // Process pagination parameters
+        // Process pagination parameters.
         if (isset($config['limit']) === true) {
             $processed['limit'] = max(1, (int) $config['limit']);
         } else if (isset($config['_limit']) === true) {
@@ -508,31 +508,31 @@ class SearchTrailService
             $processed['page'] = max(1, (int) $config['_page']);
         }
 
-        // Calculate offset from page if provided
+        // Calculate offset from page if provided.
         if ($processed['page'] !== null && $processed['offset'] === null) {
             $processed['offset'] = ($processed['page'] - 1) * $processed['limit'];
         }
 
-        // Calculate page from offset if not provided
+        // Calculate page from offset if not provided.
         if ($processed['page'] === null && $processed['offset'] !== null) {
             $processed['page'] = floor($processed['offset'] / $processed['limit']) + 1;
         }
 
-        // Default page
+        // Default page.
         $processed['page']   = $processed['page'] ?? 1;
         $processed['offset'] = $processed['offset'] ?? 0;
 
-        // Process search parameter
+        // Process search parameter.
         $processed['search'] = $config['search'] ?? $config['_search'] ?? null;
 
-        // Process sort parameters
+        // Process sort parameters.
         if (isset($config['sort']) === true || isset($config['_sort']) === true) {
             $sortField         = $config['sort'] ?? $config['_sort'] ?? 'created';
             $sortOrder         = $config['order'] ?? $config['_order'] ?? 'DESC';
             $processed['sort'] = [$sortField => $sortOrder];
         }
 
-        // Process date filters
+        // Process date filters.
         if (isset($config['from']) === true) {
             try {
                 $processed['from'] = new DateTime($config['from']);
@@ -549,7 +549,7 @@ class SearchTrailService
             }
         }
 
-        // Process filters (exclude system parameters and pagination)
+        // Process filters (exclude system parameters and pagination).
         $excludeKeys = [
             'limit',
             '_limit',
@@ -570,7 +570,7 @@ class SearchTrailService
         ];
 
         foreach ($config as $key => $value) {
-            // Ensure key is a string or integer to avoid "Illegal offset type" error
+            // Ensure key is a string or integer to avoid "Illegal offset type" error.
             if (is_string($key) || is_int($key)) {
                 if (!in_array($key, $excludeKeys) && !str_starts_with($key, '_')) {
                     $processed['filters'][$key] = $value;
@@ -781,7 +781,7 @@ class SearchTrailService
             return $trails;
         }
 
-        // Collect unique register and schema IDs
+        // Collect unique register and schema IDs.
         $registerIds = [];
         $schemaIds   = [];
 
@@ -795,41 +795,41 @@ class SearchTrailService
             }
         }
 
-        // Remove duplicates
+        // Remove duplicates.
         $registerIds = array_unique($registerIds);
         $schemaIds   = array_unique($schemaIds);
 
-        // Fetch register names
+        // Fetch register names.
         $registerNames = [];
         foreach ($registerIds as $registerId) {
             try {
                 $register = $this->registerMapper->find($registerId);
                 $registerNames[$registerId] = $register->getTitle();
             } catch (DoesNotExistException $e) {
-                // Register not found, use fallback
+                // Register not found, use fallback.
                 $registerNames[$registerId] = "Register $registerId";
             } catch (Exception $e) {
-                // Other error, use fallback
+                // Other error, use fallback.
                 $registerNames[$registerId] = "Register $registerId";
             }
         }
 
-        // Fetch schema names
+        // Fetch schema names.
         $schemaNames = [];
         foreach ($schemaIds as $schemaId) {
             try {
                 $schema = $this->schemaMapper->find($schemaId);
                 $schemaNames[$schemaId] = $schema->getTitle();
             } catch (DoesNotExistException $e) {
-                // Schema not found, use fallback
+                // Schema not found, use fallback.
                 $schemaNames[$schemaId] = "Schema $schemaId";
             } catch (Exception $e) {
-                // Other error, use fallback
+                // Other error, use fallback.
                 $schemaNames[$schemaId] = "Schema $schemaId";
             }
         }
 
-        // Enrich the trails with names
+        // Enrich the trails with names.
         foreach ($trails as $trail) {
             if ($trail->getRegister() !== null && isset($registerNames[$trail->getRegister()])) {
                 $trail->setRegisterName($registerNames[$trail->getRegister()]);

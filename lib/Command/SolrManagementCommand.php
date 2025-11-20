@@ -165,7 +165,7 @@ class SolrManagementCommand extends Command
         $output->writeln('🔧 <info>SOLR Management - OpenRegister Production Tool</info>');
         $output->writeln('================================================');
 
-        // Check if SOLR is available
+        // Check if SOLR is available.
         if (!$this->solrService->isAvailable()) {
             $output->writeln('<error>❌ SOLR is not available or not configured</error>');
             $output->writeln('<comment>   Configure SOLR in admin settings first</comment>');
@@ -198,7 +198,7 @@ class SolrManagementCommand extends Command
         $output->writeln('');
 
         try {
-            // Test connection first
+            // Test connection first.
             $connectionResult = $this->solrService->testConnection();
             if (!$connectionResult['success']) {
                 $output->writeln('<error>❌ SOLR connection failed: '.$connectionResult['message'].'</error>');
@@ -210,20 +210,20 @@ class SolrManagementCommand extends Command
             $output->writeln('   Mode: <comment>'.($connectionResult['details']['mode'] ?? 'unknown').'</comment>');
             $output->writeln('');
 
-            // Run comprehensive SOLR setup with corrected schema configuration
+            // Run comprehensive SOLR setup with corrected schema configuration.
             $output->writeln('📋 Running comprehensive SOLR setup with corrected schema configuration...');
             $output->writeln('   • Using self_ prefixes for metadata fields');
             $output->writeln('   • Clean field names (no suffixes) with explicit types');
             $output->writeln('   • Single-valued tenant_id field');
             $output->writeln('');
 
-            // Get SOLR configuration
+            // Get SOLR configuration.
             $solrConfig = $this->settingsService->getSolrSettings();
 
-            // Initialize SolrSetup with proper configuration
+            // Initialize SolrSetup with proper configuration.
             $solrSetup = new SolrSetup($solrConfig, $this->logger);
 
-            // Run complete setup including schema field configuration
+            // Run complete setup including schema field configuration.
             if ($solrSetup->setupSolr()) {
                 $output->writeln('✅ Base SOLR infrastructure and schema configured');
                 $output->writeln('   • ConfigSet: <comment>openregister</comment>');
@@ -231,7 +231,7 @@ class SolrManagementCommand extends Command
                 $output->writeln('   • Schema fields: <comment>22 ObjectEntity metadata fields</comment>');
                 $output->writeln('');
 
-                // Ensure tenant collection
+                // Ensure tenant collection.
                 $output->writeln('🏠 Verifying tenant-specific collection...');
                 if ($this->solrService->ensureTenantCollection()) {
                     $output->writeln('✅ Tenant collection ready with proper schema');
@@ -316,7 +316,7 @@ class SolrManagementCommand extends Command
         $output->writeln('');
 
         try {
-            // Common warming queries
+            // Common warming queries.
             $warmQueries = [
                 ['q' => '*:*', 'rows' => 10, 'description' => 'All documents sample'],
                 ['q' => 'published:[* TO *]', 'rows' => 10, 'description' => 'Published objects'],
@@ -367,7 +367,7 @@ class SolrManagementCommand extends Command
         $issues = 0;
 
         try {
-            // Connection test
+            // Connection test.
             $output->writeln('🔗 <info>Testing connection...</info>');
             $connectionResult = $this->solrService->testConnection();
             if ($connectionResult['success']) {
@@ -379,7 +379,7 @@ class SolrManagementCommand extends Command
                 $issues++;
             }
 
-            // Collection test
+            // Collection test.
             $output->writeln('');
             $output->writeln('🏠 <info>Testing tenant collection...</info>');
             if ($this->solrService->ensureTenantCollection()) {
@@ -392,7 +392,7 @@ class SolrManagementCommand extends Command
                 $issues++;
             }
 
-            // Basic search test
+            // Basic search test.
             $output->writeln('');
             $output->writeln('🔍 <info>Testing search functionality...</info>');
             $searchResult = $this->solrService->searchObjects(['q' => '*:*', 'rows' => 1]);
@@ -404,7 +404,7 @@ class SolrManagementCommand extends Command
                 $issues++;
             }
 
-            // Service statistics
+            // Service statistics.
             $output->writeln('');
             $output->writeln('📊 <info>Service Statistics</info>');
             $stats = $this->solrService->getStats();
@@ -440,7 +440,7 @@ class SolrManagementCommand extends Command
         $output->writeln('📋 <info>Validating SOLR schema compatibility with ObjectEntity...</info>');
         $output->writeln('');
 
-        // Expected fields based on ObjectEntity
+        // Expected fields based on ObjectEntity.
         $expectedFields = [
             'id',
             'uuid',
@@ -460,14 +460,14 @@ class SolrManagementCommand extends Command
             'depublished',
             'tenant_id',
             '_text_',
-        // Full-text search field
+        // Full-text search field.
         ];
 
         try {
-            // Get schema information (this is a simplified check)
+            // Get schema information (this is a simplified check).
             $output->writeln('🔍 Checking field compatibility...');
 
-            // Test a document structure
+            // Test a document structure.
             $testResult = $this->solrService->searchObjects(['q' => '*:*', 'rows' => 1]);
             if ($testResult['success'] && !empty($testResult['data'])) {
                 $sampleDoc       = $testResult['data'][0];

@@ -115,7 +115,7 @@ class GitHubService
             'X-GitHub-Api-Version' => '2022-11-28',
         ];
 
-        // Add authentication token if configured
+        // Add authentication token if configured.
         $token = $this->config->getAppValue('openregister', 'github_api_token', '');
         if (!empty($token)) {
             $headers['Authorization'] = 'Bearer '.$token;
@@ -152,9 +152,9 @@ class GitHubService
     public function searchConfigurations(string $search='', int $page=1, int $perPage=30): array
     {
         try {
-            // Simplified single-phase search strategy to minimize API calls
-            // Search directly for x-openregister content in JSON files
-            // This targets actual config files immediately, avoiding multi-phase searches
+            // Simplified single-phase search strategy to minimize API calls.
+            // Search directly for x-openregister content in JSON files.
+            // This targets actual config files immediately, avoiding multi-phase searches.
             $this->logger->info(
                     'Searching for OpenRegister configurations',
                     [
@@ -164,15 +164,15 @@ class GitHubService
                     ]
                     );
 
-            // Build search query targeting actual configuration files
-            // Search for "x-openregister" content in JSON files
-            // GitHub Code Search looks for exact text matches in file content
-            // We search for the exact property name that should appear in JSON files
+            // Build search query targeting actual configuration files.
+            // Search for "x-openregister" content in JSON files.
+            // GitHub Code Search looks for exact text matches in file content.
+            // We search for the exact property name that should appear in JSON files.
             $searchQuery = '"x-openregister" extension:json';
             if (!empty($search)) {
-                // If search term is provided, add it to the query
-                // GitHub Code Search supports searching in specific repos: repo:owner/repo
-                // Or we can add the search term as additional filter
+                // If search term is provided, add it to the query.
+                // GitHub Code Search supports searching in specific repos: repo:owner/repo.
+                // Or we can add the search term as additional filter.
                 $searchQuery .= ' '.$search;
             }
 
@@ -185,8 +185,8 @@ class GitHubService
                     ]
                     );
 
-            // Use GitHub pagination directly (max 100 per page, 1000 results total)
-            // This uses only 1 Code Search API call per search request
+            // Use GitHub pagination directly (max 100 per page, 1000 results total).
+            // This uses only 1 Code Search API call per search request.
             $response = $this->client->request(
                     'GET',
                     self::API_BASE.'/search/code',
@@ -195,9 +195,9 @@ class GitHubService
                             'q'        => $searchQuery,
                             'page'     => $page,
                             'per_page' => min($perPage, 100),
-            // GitHub max is 100
+            // GitHub max is 100.
                             'sort'     => 'stars',
-            // Sort by repository stars for quality
+            // Sort by repository stars for quality.
                             'order'    => 'desc',
                         ],
                         'headers' => $this->getHeaders(),
@@ -216,7 +216,7 @@ class GitHubService
                     );
             $allResults = [];
 
-            // Process and format results
+            // Process and format results.
             foreach ($data['items'] ?? [] as $item) {
                 $owner         = $item['repository']['owner']['login'];
                 $repo          = $item['repository']['name'];
@@ -224,8 +224,8 @@ class GitHubService
                 $path          = $item['path'];
                 $fileSha       = $item['sha'] ?? null;
 
-                // Get enriched config details (from cache or by fetching from raw.githubusercontent.com)
-                // This doesn't count against API rate limit
+                // Get enriched config details (from cache or by fetching from raw.githubusercontent.com).
+                // This doesn't count against API rate limit.
                 $configDetails = $this->getEnrichedConfigDetails($owner, $repo, $path, $defaultBranch, $fileSha);
 
                 $allResults[] = [
@@ -240,14 +240,14 @@ class GitHubService
                     'branch'       => $defaultBranch,
                     'raw_url'      => "https://raw.githubusercontent.com/{$owner}/{$repo}/{$defaultBranch}/{$path}",
                     'sha'          => $fileSha,
-                    // Repository owner/organization info
+                    // Repository owner/organization info.
                     'organization' => [
                         'name'       => $owner,
                         'avatar_url' => $item['repository']['owner']['avatar_url'] ?? '',
                         'type'       => $item['repository']['owner']['type'] ?? 'User',
                         'url'        => $item['repository']['owner']['html_url'] ?? '',
                     ],
-                    // Config details - enriched from actual file content
+                    // Config details - enriched from actual file content.
                     'config'       => $configDetails,
                 ];
             }//end foreach
@@ -258,13 +258,13 @@ class GitHubService
                         'total_found'      => $data['total_count'] ?? 0,
                         'returned_in_page' => count($allResults),
                         'api_calls_used'   => 1,
-            // Only 1 Code Search API call
+            // Only 1 Code Search API call.
                     ]
                     );
 
             return [
                 'total_count' => $data['total_count'] ?? 0,
-            // GitHub's total count
+            // GitHub's total count.
                 'results'     => $allResults,
                 'page'        => $page,
                 'per_page'    => $perPage,
@@ -273,7 +273,7 @@ class GitHubService
             $errorMessage = $e->getMessage();
             $statusCode   = null;
 
-            // Extract HTTP status code if available
+            // Extract HTTP status code if available.
             if ($e->hasResponse()) {
                 $statusCode = $e->getResponse()->getStatusCode();
             }
@@ -287,7 +287,7 @@ class GitHubService
                     ]
                     );
 
-            // Provide user-friendly error messages based on status code
+            // Provide user-friendly error messages based on status code.
             $userMessage = $this->getGitHubErrorMessage($statusCode, $errorMessage);
             throw new \Exception($userMessage);
         }//end try
@@ -333,7 +333,7 @@ class GitHubService
                 return 'GitHub API is temporarily unavailable. Please try again in a few minutes.';
 
             default:
-                // Return a generic message but don't expose the full raw error
+                // Return a generic message but don't expose the full raw error.
                 if (stripos($rawError, 'rate limit') !== false) {
                     return 'GitHub API rate limit exceeded. Please wait a few minutes or configure an API token in Settings.';
                 }
@@ -361,7 +361,7 @@ class GitHubService
      */
     private function getEnrichedConfigDetails(string $owner, string $repo, string $path, string $branch, ?string $fileSha): array
     {
-        // Default fallback config
+        // Default fallback config.
         $fallbackConfig = [
             'title'       => basename($path, '.json'),
             'description' => '',
@@ -370,11 +370,11 @@ class GitHubService
             'type'        => 'unknown',
         ];
 
-        // If we have a SHA, use it as cache key
+        // If we have a SHA, use it as cache key.
         if ($fileSha !== null) {
             $cacheKey = "config_{$owner}_{$repo}_{$fileSha}";
 
-            // Try to get from cache
+            // Try to get from cache.
             $cached = $this->cache->get($cacheKey);
             if ($cached !== null) {
                 $this->logger->debug('Using cached config details', ['cache_key' => $cacheKey]);
@@ -382,18 +382,18 @@ class GitHubService
             }
         }
 
-        // Not in cache or no SHA available, fetch from GitHub
+        // Not in cache or no SHA available, fetch from GitHub.
         $enriched = $this->enrichConfigurationDetails($owner, $repo, $path, $branch);
 
         if ($enriched === null) {
-            // Enrichment failed, return fallback
+            // Enrichment failed, return fallback.
             return $fallbackConfig;
         }
 
-        // Cache the enriched data (if we have a SHA)
+        // Cache the enriched data (if we have a SHA).
         if ($fileSha !== null) {
             $cacheKey = "config_{$owner}_{$repo}_{$fileSha}";
-            // Cache for 7 days (file content won't change as long as SHA is the same)
+            // Cache for 7 days (file content won't change as long as SHA is the same).
             $this->cache->set($cacheKey, $enriched, 7 * 24 * 60 * 60);
             $this->logger->debug('Cached config details', ['cache_key' => $cacheKey]);
         }
@@ -420,7 +420,7 @@ class GitHubService
     public function enrichConfigurationDetails(string $owner, string $repo, string $path, string $branch='main'): ?array
     {
         try {
-            // Use raw.githubusercontent.com - doesn't count against API rate limit
+            // Use raw.githubusercontent.com - doesn't count against API rate limit.
             $rawUrl = "https://raw.githubusercontent.com/{$owner}/{$repo}/{$branch}/{$path}";
 
             $this->logger->debug(
@@ -454,7 +454,7 @@ class GitHubService
                 return null;
             }
 
-            // Extract relevant metadata
+            // Extract relevant metadata.
             return [
                 'title'        => $data['info']['title'] ?? basename($path, '.json'),
                 'description'  => $data['info']['description'] ?? '',
@@ -573,7 +573,7 @@ class GitHubService
 
             $data = json_decode($response->getBody(), true);
 
-            // Decode base64 content
+            // Decode base64 content.
             if (isset($data['content'])) {
                 $content = base64_decode($data['content']);
                 $json    = json_decode($content, true);
@@ -634,7 +634,7 @@ class GitHubService
                     ]
                     );
 
-            // Search in the repository for configuration files
+            // Search in the repository for configuration files.
             $searchQuery = "repo:{$owner}/{$repo} filename:openregister.json OR filename:*.openregister.json extension:json";
 
             $response = $this->client->request(
@@ -704,7 +704,7 @@ class GitHubService
         try {
             $content = $this->getFileContent($owner, $repo, $path, $branch);
 
-            // Validate that it's a valid OpenRegister configuration
+            // Validate that it's a valid OpenRegister configuration.
             if (!isset($content['openapi']) || !isset($content['x-openregister'])) {
                 $this->logger->debug(
                         'File does not contain required OpenRegister structure',
@@ -756,12 +756,12 @@ class GitHubService
                     [
                         'query'   => [
                             'type'      => 'all',
-            // all, owner, member
+            // all, owner, member.
                             'sort'      => 'updated',
                             'direction' => 'desc',
                             'page'      => $page,
                             'per_page'  => min($perPage, 100),
-            // GitHub max is 100
+            // GitHub max is 100.
                         ],
                         'headers' => $this->getHeaders(),
                     ]
@@ -777,7 +777,7 @@ class GitHubService
                             'full_name'      => $repo['full_name'],
                             'owner'          => $repo['owner']['login'],
                             'owner_type'     => $repo['owner']['type'],
-                        // User or Organization
+                        // User or Organization.
                             'private'        => $repo['private'],
                             'description'    => $repo['description'] ?? '',
                             'default_branch' => $repo['default_branch'] ?? 'main',
@@ -887,7 +887,7 @@ class GitHubService
                     ]
                     );
 
-            // Base64 encode the content (GitHub API requires base64)
+            // Base64 encode the content (GitHub API requires base64).
             $encodedContent = base64_encode($content);
 
             $payload = [
@@ -896,14 +896,14 @@ class GitHubService
                 'branch'  => $branch,
             ];
 
-            // If updating existing file, include SHA
+            // If updating existing file, include SHA.
             if ($fileSha !== null) {
                 $payload['sha'] = $fileSha;
             }
 
-            // URL encode the path for the GitHub API (path may contain slashes, spaces, etc.)
-            // GitHub API expects path segments to be encoded, but slashes should remain as slashes
-            // So we encode each segment separately
+            // URL encode the path for the GitHub API (path may contain slashes, spaces, etc.).
+            // GitHub API expects path segments to be encoded, but slashes should remain as slashes.
+            // So we encode each segment separately.
             $pathSegments        = explode('/', $path);
             $encodedPathSegments = array_map('rawurlencode', $pathSegments);
             $encodedPath         = implode('/', $encodedPathSegments);
@@ -958,7 +958,7 @@ class GitHubService
                 if (isset($errorData['message'])) {
                     $errorMessage = $errorData['message'];
 
-                    // Provide more context for common errors
+                    // Provide more context for common errors.
                     if ($statusCode === 404) {
                         $errorMessage = "Not Found - Repository '{$owner}/{$repo}', branch '{$branch}', or path '{$path}' may not exist or you may not have access";
                     } else if ($statusCode === 403) {
@@ -1001,7 +1001,7 @@ class GitHubService
     public function getFileSha(string $owner, string $repo, string $path, string $branch='main'): ?string
     {
         try {
-            // URL encode the path for the GitHub API (path may contain slashes, spaces, etc.)
+            // URL encode the path for the GitHub API (path may contain slashes, spaces, etc.).
             $pathSegments        = explode('/', $path);
             $encodedPathSegments = array_map('rawurlencode', $pathSegments);
             $encodedPath         = implode('/', $encodedPathSegments);
@@ -1020,10 +1020,10 @@ class GitHubService
             $fileInfo = json_decode($response->getBody(), true);
             return $fileInfo['sha'] ?? null;
         } catch (GuzzleException $e) {
-            // File doesn't exist or other error
+            // File doesn't exist or other error.
             if ($e->hasResponse() && $e->getResponse()->getStatusCode() === 404) {
                 return null;
-                // File doesn't exist, which is fine for new files
+                // File doesn't exist, which is fine for new files.
             }
 
             $this->logger->error(

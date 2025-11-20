@@ -425,7 +425,7 @@ class SettingsController extends Controller
             $validateHandler = $this->container->get('OCA\OpenRegister\Service\ObjectHandlers\ValidateObject');
             $schemaMapper    = $this->container->get('OCA\OpenRegister\Db\SchemaMapper');
 
-            // Get all objects from the system
+            // Get all objects from the system.
             $allObjects = $objectService->findAll();
 
             $validationResults = [
@@ -438,10 +438,10 @@ class SettingsController extends Controller
 
             foreach ($allObjects as $object) {
                 try {
-                    // Get the schema for this object
+                    // Get the schema for this object.
                     $schema = $schemaMapper->find($object->getSchema());
 
-                    // Validate the object against its schema using the ValidateObject handler
+                    // Validate the object against its schema using the ValidateObject handler.
                     $validationResult = $validateHandler->validateObject($object->getObject(), $schema);
 
                     if ($validationResult->isValid() === true) {
@@ -468,7 +468,7 @@ class SettingsController extends Controller
                 }//end try
             }//end foreach
 
-            // Create summary
+            // Create summary.
             $validationResults['summary'] = [
                 'validation_success_rate' => $validationResults['total_objects'] > 0 ? round(($validationResults['valid_objects'] / $validationResults['total_objects']) * 100, 2) : 100,
                 'has_errors'              => $validationResults['invalid_objects'] > 0,
@@ -512,14 +512,14 @@ class SettingsController extends Controller
             $startMemory = memory_get_usage(true);
             $peakMemory  = memory_get_peak_usage(true);
 
-            // Get request parameters from JSON body or query parameters
+            // Get request parameters from JSON body or query parameters.
             $maxObjects = $this->request->getParam('maxObjects', 0);
             $batchSize  = $this->request->getParam('batchSize', 1000);
             $mode       = $this->request->getParam('mode', 'serial');
-            // New mode parameter
+            // New mode parameter.
             $collectErrors = $this->request->getParam('collectErrors', false);
-            // New error collection parameter
-            // Try to get from JSON body if not in query params
+            // New error collection parameter.
+            // Try to get from JSON body if not in query params.
             if ($maxObjects === 0 && $batchSize === 1000) {
                 $input = file_get_contents('php://input');
                 if ($input !== false && $input !== '') {
@@ -533,12 +533,12 @@ class SettingsController extends Controller
                 }
             }
 
-            // Convert string boolean to actual boolean
+            // Convert string boolean to actual boolean.
             if (is_string($collectErrors)) {
                 $collectErrors = filter_var($collectErrors, FILTER_VALIDATE_BOOLEAN);
             }
 
-            // Validate parameters
+            // Validate parameters.
             if (!in_array($mode, ['serial', 'parallel'])) {
                 return new JSONResponse(
                         [
@@ -560,11 +560,11 @@ class SettingsController extends Controller
             $objectService = $this->getObjectService();
             $logger        = \OC::$server->get(\Psr\Log\LoggerInterface::class);
 
-            // Use optimized approach like SOLR warmup - get count first, then process in chunks
+            // Use optimized approach like SOLR warmup - get count first, then process in chunks.
             $objectMapper = \OC::$server->get(\OCA\OpenRegister\Db\ObjectEntityMapper::class);
             $totalObjects = $objectMapper->countSearchObjects([], null, false, false);
 
-            // Apply maxObjects limit if specified
+            // Apply maxObjects limit if specified.
             if ($maxObjects > 0 && $maxObjects < $totalObjects) {
                 $totalObjects = $maxObjects;
             }
@@ -602,7 +602,7 @@ class SettingsController extends Controller
                 ],
             ];
 
-            // Create batch jobs like SOLR warmup
+            // Create batch jobs like SOLR warmup.
             $batchJobs   = [];
             $offset      = 0;
             $batchNumber = 0;
@@ -627,14 +627,14 @@ class SettingsController extends Controller
                     ]
                     );
 
-            // Process batches based on mode
+            // Process batches based on mode.
             if ($mode === 'parallel') {
                 $this->processJobsParallel($batchJobs, $objectMapper, $objectService, $results, $collectErrors, 4, $logger);
             } else {
                 $this->processJobsSerial($batchJobs, $objectMapper, $objectService, $results, $collectErrors, $logger);
             }
 
-            // Calculate final metrics
+            // Calculate final metrics.
             $endTime         = microtime(true);
             $endMemory       = memory_get_usage(true);
             $finalPeakMemory = memory_get_peak_usage(true);
@@ -642,14 +642,14 @@ class SettingsController extends Controller
             $results['stats']['duration_seconds']   = round($endTime - $startTime, 2);
             $results['stats']['objects_per_second'] = $results['stats']['duration_seconds'] > 0 ? round($results['stats']['processed_objects'] / $results['stats']['duration_seconds'], 2) : 0;
 
-            // Add memory usage information
+            // Add memory usage information.
             $results['memory_usage'] = [
                 'start_memory'    => $startMemory,
                 'end_memory'      => $endMemory,
                 'peak_memory'     => max($peakMemory, $finalPeakMemory),
                 'memory_used'     => $endMemory - $startMemory,
                 'peak_percentage' => round((max($peakMemory, $finalPeakMemory) / (1024 * 1024 * 1024)) * 100, 1),
-            // Assume 1GB available
+            // Assume 1GB available.
                 'formatted'       => [
                     'actual_used'     => $this->formatBytes($endMemory - $startMemory),
                     'peak_usage'      => $this->formatBytes(max($peakMemory, $finalPeakMemory)),
@@ -661,7 +661,7 @@ class SettingsController extends Controller
             if ($results['stats']['failed_saves'] > 0) {
                 if ($collectErrors === true) {
                     $results['success'] = $results['stats']['successful_saves'] > 0;
-                    // Partial success if some objects were saved
+                    // Partial success if some objects were saved.
                     $results['message'] = sprintf(
                         'Mass validation completed with %d errors out of %d objects (%d successful)',
                         $results['stats']['failed_saves'],
@@ -742,12 +742,12 @@ class SettingsController extends Controller
             try {
                 $results['stats']['processed_objects']++;
 
-                // Re-save the object to trigger all business logic
-                // This will run validation, transformations, and other handlers
+                // Re-save the object to trigger all business logic.
+                // This will run validation, transformations, and other handlers.
                 $savedObject = $objectService->saveObject(
                     $object->getObject(),
                 [],
-                // extend parameter
+                // extend parameter.
                     $object->getRegister(),
                     $object->getSchema(),
                     $object->getUuid()
@@ -802,8 +802,8 @@ class SettingsController extends Controller
     private function processBatchParallel(array $batch, $objectService, array &$results, bool $collectErrors): void
     {
         // Note: True parallel processing would require process forking or threading
-        // For now, we simulate parallel processing with optimized serial processing
-        // In a real implementation, you might use ReactPHP, Swoole, or similar
+        // For now, we simulate parallel processing with optimized serial processing.
+        // In a real implementation, you might use ReactPHP, Swoole, or similar.
         $batchErrors    = [];
         $batchSuccesses = 0;
 
@@ -811,12 +811,12 @@ class SettingsController extends Controller
             try {
                 $results['stats']['processed_objects']++;
 
-                // Re-save the object to trigger all business logic
-                // This will run validation, transformations, and other handlers
+                // Re-save the object to trigger all business logic.
+                // This will run validation, transformations, and other handlers.
                 $savedObject = $objectService->saveObject(
                     $object->getObject(),
                     [],
-                // extend parameter
+                // extend parameter.
                     $object->getRegister(),
                     $object->getSchema(),
                     $object->getUuid()
@@ -854,7 +854,7 @@ class SettingsController extends Controller
             }//end try
         }//end foreach
 
-        // Update results with batch totals
+        // Update results with batch totals.
         $results['stats']['successful_saves'] += $batchSuccesses;
         $results['stats']['failed_saves']     += count($batchErrors);
         $results['errors'] = array_merge($results['errors'], $batchErrors);
@@ -877,7 +877,7 @@ class SettingsController extends Controller
         foreach ($batchJobs as $batchIndex => $job) {
             $batchStartTime = microtime(true);
 
-            // Get objects for this batch using offset/limit like SOLR warmup
+            // Get objects for this batch using offset/limit like SOLR warmup.
             $objects = $objectMapper->findAll(
                 limit: $job['limit'],
                 offset: $job['offset']
@@ -892,11 +892,11 @@ class SettingsController extends Controller
                     $batchProcessed++;
                     $results['stats']['processed_objects']++;
 
-                    // Re-save the object to trigger all business logic
+                    // Re-save the object to trigger all business logic.
                     $savedObject = $objectService->saveObject(
                         $object->getObject(),
                         [],
-                    // extend parameter
+                    // extend parameter.
                         $object->getRegister(),
                         $object->getSchema(),
                         $object->getUuid()
@@ -938,7 +938,7 @@ class SettingsController extends Controller
             $batchDuration    = microtime(true) - $batchStartTime;
             $objectsPerSecond = $batchDuration > 0 ? round($batchProcessed / $batchDuration, 2) : 0;
 
-            // Log progress every batch like SOLR warmup
+            // Log progress every batch like SOLR warmup.
             $logger->info(
                     '📈 MASS VALIDATION PROGRESS',
                     [
@@ -953,10 +953,10 @@ class SettingsController extends Controller
                     ]
                     );
 
-            // Add batch errors to results
+            // Add batch errors to results.
             $results['errors'] = array_merge($results['errors'], $batchErrors);
 
-            // Memory management every 10 batches
+            // Memory management every 10 batches.
             if ($job['batchNumber'] % 10 === 0) {
                 $logger->debug(
                         '🧹 MEMORY CLEANUP',
@@ -968,7 +968,7 @@ class SettingsController extends Controller
                 gc_collect_cycles();
             }
 
-            // Clear objects from memory
+            // Clear objects from memory.
             unset($objects);
         }//end foreach
 
@@ -988,7 +988,7 @@ class SettingsController extends Controller
      */
     private function processJobsParallel(array $batchJobs, $objectMapper, $objectService, array &$results, bool $collectErrors, int $parallelBatches, $logger): void
     {
-        // Process batches in parallel chunks like SOLR warmup
+        // Process batches in parallel chunks like SOLR warmup.
         $batchChunks = array_chunk($batchJobs, $parallelBatches);
 
         foreach ($batchChunks as $chunkIndex => $chunk) {
@@ -1003,15 +1003,15 @@ class SettingsController extends Controller
 
             $chunkStartTime = microtime(true);
 
-            // Process batches in this chunk (simulated parallel processing)
-            // In a real implementation, this would use actual parallel processing
+            // Process batches in this chunk (simulated parallel processing).
+            // In a real implementation, this would use actual parallel processing.
             $chunkResults = [];
             foreach ($chunk as $job) {
                 $result         = $this->processBatchDirectly($objectMapper, $objectService, $job, $collectErrors);
                 $chunkResults[] = $result;
             }
 
-            // Aggregate results from this chunk
+            // Aggregate results from this chunk.
             foreach ($chunkResults as $result) {
                 $results['stats']['processed_objects'] += $result['processed'];
                 $results['stats']['successful_saves']  += $result['successful'];
@@ -1032,7 +1032,7 @@ class SettingsController extends Controller
                     ]
                     );
 
-            // Memory cleanup after each chunk
+            // Memory cleanup after each chunk.
             gc_collect_cycles();
         }//end foreach
 
@@ -1052,7 +1052,7 @@ class SettingsController extends Controller
     {
         $batchStartTime = microtime(true);
 
-        // Get objects for this batch
+        // Get objects for this batch.
         $objects = $objectMapper->findAll(
             limit: $job['limit'],
             offset: $job['offset']
@@ -1066,11 +1066,11 @@ class SettingsController extends Controller
             try {
                 $batchProcessed++;
 
-                // Re-save the object to trigger all business logic
+                // Re-save the object to trigger all business logic.
                 $savedObject = $objectService->saveObject(
                     $object->getObject(),
                     [],
-                // extend parameter
+                // extend parameter.
                     $object->getRegister(),
                     $object->getSchema(),
                     $object->getUuid()
@@ -1106,7 +1106,7 @@ class SettingsController extends Controller
 
         $batchDuration = microtime(true) - $batchStartTime;
 
-        // Clear objects from memory
+        // Clear objects from memory.
         unset($objects);
 
         return [
@@ -1151,10 +1151,10 @@ class SettingsController extends Controller
     public function predictMassValidationMemory(): JSONResponse
     {
         try {
-            // Get request parameters
+            // Get request parameters.
             $maxObjects = $this->request->getParam('maxObjects', 0);
 
-            // Try to get from JSON body if not in query params
+            // Try to get from JSON body if not in query params.
             if ($maxObjects === 0) {
                 $input = file_get_contents('php://input');
                 if ($input !== false && $input !== '') {
@@ -1165,33 +1165,33 @@ class SettingsController extends Controller
                 }
             }
 
-            // Get current memory usage without loading all objects (much faster)
+            // Get current memory usage without loading all objects (much faster).
             $currentMemory = memory_get_usage(true);
             $memoryLimit   = ini_get('memory_limit');
 
-            // Convert memory limit to bytes
+            // Convert memory limit to bytes.
             $memoryLimitBytes = $this->convertToBytes($memoryLimit);
             $availableMemory  = $memoryLimitBytes - $currentMemory;
 
-            // Use a lightweight approach - estimate based on typical object size
-            // We'll use the maxObjects parameter or provide a reasonable default estimate
+            // Use a lightweight approach - estimate based on typical object size.
+            // We'll use the maxObjects parameter or provide a reasonable default estimate.
             $estimatedObjectCount = $maxObjects > 0 ? $maxObjects : 10000;
-            // Default estimate
-            // Estimate memory usage (rough calculation)
-            // Assume each object uses approximately 50KB in memory during processing
+            // Default estimate.
+            // Estimate memory usage (rough calculation).
+            // Assume each object uses approximately 50KB in memory during processing.
             $estimatedMemoryPerObject = 50 * 1024;
-            // 50KB
+            // 50KB.
             $totalEstimatedMemory = $estimatedObjectCount * $estimatedMemoryPerObject;
 
-            // Determine if prediction is safe
+            // Determine if prediction is safe.
             $predictionSafe = $totalEstimatedMemory < ($availableMemory * 0.8);
-            // Use 80% as safety margin
+            // Use 80% as safety margin.
             $prediction = [
                 'success'                  => true,
                 'prediction_safe'          => $predictionSafe,
                 'objects_to_process'       => $estimatedObjectCount,
                 'total_objects_available'  => 'Unknown (fast mode)',
-            // Don't count all objects for speed
+            // Don't count all objects for speed.
                 'memory_per_object_bytes'  => $estimatedMemoryPerObject,
                 'total_predicted_bytes'    => $totalEstimatedMemory,
                 'current_memory_bytes'     => $currentMemory,
@@ -1216,7 +1216,7 @@ class SettingsController extends Controller
                         'success'         => false,
                         'error'           => 'Failed to predict memory usage: '.$e->getMessage(),
                         'prediction_safe' => true,
-            // Default to safe if we can't predict
+            // Default to safe if we can't predict.
                         'formatted'       => [
                             'total_predicted' => 'Unknown',
                             'available'       => 'Unknown',
@@ -1244,10 +1244,10 @@ class SettingsController extends Controller
         switch ($last) {
             case 'g':
                 $value *= 1024;
-                // no break
+                // no break.
             case 'm':
                 $value *= 1024;
-                // no break
+                // no break.
             case 'k':
                 $value *= 1024;
         }
@@ -1268,10 +1268,10 @@ class SettingsController extends Controller
     public function setupSolr(): JSONResponse
     {
         try {
-            // Get logger for improved logging
+            // Get logger for improved logging.
             $logger = \OC::$server->get(\Psr\Log\LoggerInterface::class);
 
-            // **IMPROVED LOGGING**: Log setup attempt with detailed context
+            // **IMPROVED LOGGING**: Log setup attempt with detailed context.
             $logger->info(
                     '🔧 SOLR setup endpoint called',
                     [
@@ -1281,10 +1281,10 @@ class SettingsController extends Controller
                     ]
                     );
 
-            // Get SOLR settings
+            // Get SOLR settings.
             $solrSettings = $this->settingsService->getSolrSettings();
 
-            // **IMPROVED LOGGING**: Log SOLR configuration (without sensitive data)
+            // **IMPROVED LOGGING**: Log SOLR configuration (without sensitive data).
             $logger->info(
                     '📋 SOLR configuration loaded for setup',
                     [
@@ -1295,14 +1295,14 @@ class SettingsController extends Controller
                     ]
                     );
 
-            // Create SolrSetup using GuzzleSolrService for authenticated HTTP client
+            // Create SolrSetup using GuzzleSolrService for authenticated HTTP client.
             $guzzleSolrService = $this->container->get(\OCA\OpenRegister\Service\GuzzleSolrService::class);
             $setup = new \OCA\OpenRegister\Setup\SolrSetup($guzzleSolrService, $logger);
 
-            // **IMPROVED LOGGING**: Log setup initialization
+            // **IMPROVED LOGGING**: Log setup initialization.
             $logger->info('🏗️ SolrSetup instance created, starting setup process');
 
-            // Run setup
+            // Run setup.
             $setupResult = $setup->setupSolr();
 
             if ($setupResult === true) {
@@ -1310,7 +1310,7 @@ class SettingsController extends Controller
                 $setupProgress         = $setup->getSetupProgress();
                 $infrastructureCreated = $setup->getInfrastructureCreated();
 
-                // **IMPROVED LOGGING**: Log successful setup
+                // **IMPROVED LOGGING**: Log successful setup.
                 $logger->info(
                         '✅ SOLR setup completed successfully',
                         [
@@ -1344,7 +1344,7 @@ class SettingsController extends Controller
                         ]
                         );
             } else {
-                // Get detailed error information and setup progress from SolrSetup
+                // Get detailed error information and setup progress from SolrSetup.
                 $errorDetails  = $setup->getLastErrorDetails();
                 $setupProgress = $setup->getSetupProgress();
 
@@ -1352,7 +1352,7 @@ class SettingsController extends Controller
                     // Get infrastructure info even on failure to show partial progress.
                     $infrastructureCreated = $setup->getInfrastructureCreated();
 
-                    // Use the detailed error information from SolrSetup
+                    // Use the detailed error information from SolrSetup.
                     return new JSONResponse(
                             [
                                 'success'               => false,
@@ -1398,7 +1398,7 @@ class SettingsController extends Controller
                             422
                             );
                 } else {
-                    // Fallback to generic error if no detailed error information is available
+                    // Fallback to generic error if no detailed error information is available.
                     $lastError = error_get_last();
 
                     return new JSONResponse(
@@ -1427,12 +1427,12 @@ class SettingsController extends Controller
                 }//end if
             }//end if
         } catch (\Exception $e) {
-            // Get logger for error logging if not already available
+            // Get logger for error logging if not already available.
             if (!isset($logger)) {
                 $logger = \OC::$server->get(\Psr\Log\LoggerInterface::class);
             }
 
-            // **IMPROVED ERROR LOGGING**: Log detailed setup failure information
+            // **IMPROVED ERROR LOGGING**: Log detailed setup failure information.
             $logger->error(
                     '❌ SOLR setup failed with exception',
                     [
@@ -1444,7 +1444,7 @@ class SettingsController extends Controller
                     ]
                     );
 
-            // Try to get detailed error information from SolrSetup if available
+            // Try to get detailed error information from SolrSetup if available.
             $detailedError = null;
             if (isset($setup)) {
                 try {
@@ -1458,7 +1458,7 @@ class SettingsController extends Controller
                         'total_steps'        => $setupProgress['total_steps'] ?? 5,
                     ];
 
-                    // **IMPROVED LOGGING**: Log setup progress and error details
+                    // **IMPROVED LOGGING**: Log setup progress and error details.
                     $logger->error('📋 SOLR setup failure details', $detailedError);
                 } catch (\Exception $progressException) {
                     $logger->warning(
@@ -1501,7 +1501,7 @@ class SettingsController extends Controller
     public function testSolrSetup(): JSONResponse
     {
         try {
-            // Get SOLR settings directly
+            // Get SOLR settings directly.
             $solrSettings = $this->settingsService->getSolrSettings();
 
             if (!$solrSettings['enabled']) {
@@ -1514,12 +1514,12 @@ class SettingsController extends Controller
                         );
             }
 
-            // Create SolrSetup using GuzzleSolrService for authenticated HTTP client
+            // Create SolrSetup using GuzzleSolrService for authenticated HTTP client.
             $logger            = \OC::$server->get(\Psr\Log\LoggerInterface::class);
             $guzzleSolrService = $this->container->get(\OCA\OpenRegister\Service\GuzzleSolrService::class);
             $setup = new \OCA\OpenRegister\Setup\SolrSetup($guzzleSolrService, $logger);
 
-            // Run setup
+            // Run setup.
             $result = $setup->setupSolr();
 
             if ($result === true) {
@@ -1581,10 +1581,10 @@ class SettingsController extends Controller
                     ]
                     );
 
-            // Get GuzzleSolrService
+            // Get GuzzleSolrService.
             $guzzleSolrService = $this->container->get(\OCA\OpenRegister\Service\GuzzleSolrService::class);
 
-            // Delete the specific collection
+            // Delete the specific collection.
             $result = $guzzleSolrService->deleteCollection($name);
 
             if ($result['success']) {
@@ -1665,7 +1665,7 @@ class SettingsController extends Controller
         try {
             $guzzleSolrService = $this->container->get(\OCA\OpenRegister\Service\GuzzleSolrService::class);
 
-            // Clear the specific collection
+            // Clear the specific collection.
             $result = $guzzleSolrService->clearIndex($name);
 
             if ($result['success']) {
@@ -1716,11 +1716,11 @@ class SettingsController extends Controller
         try {
             $guzzleSolrService = $this->container->get(\OCA\OpenRegister\Service\GuzzleSolrService::class);
 
-            // Get optional parameters from request body
+            // Get optional parameters from request body.
             $maxObjects = (int) ($this->request->getParam('maxObjects', 0));
             $batchSize  = (int) ($this->request->getParam('batchSize', 1000));
 
-            // Validate parameters
+            // Validate parameters.
             if ($batchSize < 1 || $batchSize > 5000) {
                 return new JSONResponse(
                         [
@@ -1743,7 +1743,7 @@ class SettingsController extends Controller
                         );
             }
 
-            // Reindex the specified collection
+            // Reindex the specified collection.
             $result = $guzzleSolrService->reindexAll($maxObjects, $batchSize, $name);
 
             if ($result['success']) {
@@ -1791,8 +1791,8 @@ class SettingsController extends Controller
     public function testSolrConnection(): JSONResponse
     {
         try {
-            // Test only basic SOLR connectivity and authentication
-            // Does NOT test collections, queries, or Zookeeper
+            // Test only basic SOLR connectivity and authentication.
+            // Does NOT test collections, queries, or Zookeeper.
             $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
             $result            = $guzzleSolrService->testConnectivityOnly();
 
@@ -1822,11 +1822,11 @@ class SettingsController extends Controller
     public function getSolrFields(): JSONResponse
     {
         try {
-            // Use SolrSchemaService to get field status for both collections
+            // Use SolrSchemaService to get field status for both collections.
             $solrSchemaService = $this->container->get(\OCA\OpenRegister\Service\SolrSchemaService::class);
             $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
 
-            // Check if SOLR is available first
+            // Check if SOLR is available first.
             if (!$guzzleSolrService->isAvailable()) {
                 return new JSONResponse(
                         [
@@ -1838,11 +1838,11 @@ class SettingsController extends Controller
                         );
             }
 
-            // Get field status for both collections
+            // Get field status for both collections.
             $objectFieldStatus = $solrSchemaService->getObjectCollectionFieldStatus();
             $fileFieldStatus   = $solrSchemaService->getFileCollectionFieldStatus();
 
-            // Combine missing fields from both collections with collection identifier
+            // Combine missing fields from both collections with collection identifier.
             $missingFields = [];
 
             foreach ($objectFieldStatus['missing'] as $fieldName => $fieldInfo) {
@@ -1865,7 +1865,7 @@ class SettingsController extends Controller
                 ];
             }
 
-            // Combine extra fields from both collections
+            // Combine extra fields from both collections.
             $extraFields = [];
 
             foreach ($objectFieldStatus['extra'] as $fieldName) {
@@ -1884,7 +1884,7 @@ class SettingsController extends Controller
                 ];
             }
 
-            // Build comparison result
+            // Build comparison result.
             $comparison = [
                 'total_differences' => count($missingFields) + count($extraFields),
                 'missing_count'     => count($missingFields),
@@ -1934,11 +1934,11 @@ class SettingsController extends Controller
     public function createMissingSolrFields(): JSONResponse
     {
         try {
-            // Get services
+            // Get services.
             $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
             $solrSchemaService = $this->container->get(SolrSchemaService::class);
 
-            // Check if SOLR is available first
+            // Check if SOLR is available first.
             if (!$guzzleSolrService->isAvailable()) {
                 return new JSONResponse(
                         [
@@ -1950,7 +1950,7 @@ class SettingsController extends Controller
                         );
             }
 
-            // Get dry run parameter
+            // Get dry run parameter.
             $dryRun = $this->request->getParam('dry_run', false);
             $dryRun = filter_var($dryRun, FILTER_VALIDATE_BOOLEAN);
 
@@ -1962,7 +1962,7 @@ class SettingsController extends Controller
                 'files'   => null,
             ];
 
-            // Create missing fields for OBJECT collection
+            // Create missing fields for OBJECT collection.
             try {
                 $objectStatus = $solrSchemaService->getObjectCollectionFieldStatus();
                 if (!empty($objectStatus['missing'])) {
@@ -1988,7 +1988,7 @@ class SettingsController extends Controller
                 $totalErrors++;
             }//end try
 
-            // Create missing fields for FILE collection
+            // Create missing fields for FILE collection.
             try {
                 $fileStatus = $solrSchemaService->getFileCollectionFieldStatus();
                 if (!empty($fileStatus['missing'])) {
@@ -2138,7 +2138,7 @@ class SettingsController extends Controller
                         );
             }
 
-            // Create missing fields
+            // Create missing fields.
             $result = $solrSchemaService->mirrorSchemas(force: true);
 
             return new JSONResponse(
@@ -2188,17 +2188,17 @@ class SettingsController extends Controller
                         );
             }
 
-            // Set active collection to file collection temporarily
+            // Set active collection to file collection temporarily.
             $originalCollection = $guzzleSolrService->getActiveCollectionName();
             $guzzleSolrService->setActiveCollection($fileCollection);
 
-            // Create missing file metadata fields using reflection to call private method
+            // Create missing file metadata fields using reflection to call private method.
             $reflection = new \ReflectionClass($solrSchemaService);
             $method     = $reflection->getMethod('ensureFileMetadataFields');
             $method->setAccessible(true);
             $result = $method->invoke($solrSchemaService, true);
 
-            // Restore original collection
+            // Restore original collection.
             $guzzleSolrService->setActiveCollection($originalCollection);
 
             return new JSONResponse(
@@ -2232,10 +2232,10 @@ class SettingsController extends Controller
     public function fixMismatchedSolrFields(): JSONResponse
     {
         try {
-            // Get GuzzleSolrService for field operations
+            // Get GuzzleSolrService for field operations.
             $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
 
-            // Check if SOLR is available first
+            // Check if SOLR is available first.
             if (!$guzzleSolrService->isAvailable()) {
                 return new JSONResponse(
                         [
@@ -2247,11 +2247,11 @@ class SettingsController extends Controller
                         );
             }
 
-            // Get dry run parameter
+            // Get dry run parameter.
             $dryRun = $this->request->getParam('dry_run', false);
             $dryRun = filter_var($dryRun, FILTER_VALIDATE_BOOLEAN);
 
-            // Get expected fields and current SOLR fields for comparison
+            // Get expected fields and current SOLR fields for comparison.
             $expectedFields = $this->getExpectedSchemaFields();
             $fieldsInfo     = $guzzleSolrService->getFieldsConfiguration();
 
@@ -2266,7 +2266,7 @@ class SettingsController extends Controller
                         );
             }
 
-            // Compare fields to find mismatched ones
+            // Compare fields to find mismatched ones.
             $comparison = $this->compareFields(
                 actualFields: $fieldsInfo['fields'] ?? [],
                 expectedFields: $expectedFields
@@ -2283,17 +2283,17 @@ class SettingsController extends Controller
                         );
             }
 
-            // Prepare fields to fix from mismatched fields
+            // Prepare fields to fix from mismatched fields.
             $fieldsToFix = [];
             foreach ($comparison['mismatched'] as $mismatch) {
                 $fieldsToFix[$mismatch['field']] = $mismatch['expected_config'];
             }
 
-            // Debug: Log field count for troubleshooting
-            // Fix the mismatched fields using the dedicated method
+            // Debug: Log field count for troubleshooting.
+            // Fix the mismatched fields using the dedicated method.
             $result = $guzzleSolrService->fixMismatchedFields($fieldsToFix, $dryRun);
 
-            // The fixMismatchedFields method already returns the correct format
+            // The fixMismatchedFields method already returns the correct format.
             return new JSONResponse($result);
         } catch (\Exception $e) {
             return new JSONResponse(
@@ -2317,24 +2317,24 @@ class SettingsController extends Controller
     private function getExpectedSchemaFields(): array
     {
         try {
-            // Start with the core ObjectEntity metadata fields from SolrSetup
+            // Start with the core ObjectEntity metadata fields from SolrSetup.
             $expectedFields = \OCA\OpenRegister\Setup\SolrSetup::getObjectEntityFieldDefinitions();
 
-            // Get SolrSchemaService to analyze user-defined schemas
+            // Get SolrSchemaService to analyze user-defined schemas.
             $solrSchemaService = $this->container->get(\OCA\OpenRegister\Service\SolrSchemaService::class);
             $schemaMapper      = $this->container->get(\OCA\OpenRegister\Db\SchemaMapper::class);
 
-            // Get all schemas
+            // Get all schemas.
             $schemas = $schemaMapper->findAll();
 
-            // Use the existing analyzeAndResolveFieldConflicts method via reflection
+            // Use the existing analyzeAndResolveFieldConflicts method via reflection.
             $reflection = new \ReflectionClass($solrSchemaService);
             $method     = $reflection->getMethod('analyzeAndResolveFieldConflicts');
             $method->setAccessible(true);
 
             $result = $method->invoke($solrSchemaService, $schemas);
 
-            // Merge user-defined schema fields with core metadata fields
+            // Merge user-defined schema fields with core metadata fields.
             $userSchemaFields = $result['fields'] ?? [];
             $expectedFields   = array_merge($expectedFields, $userSchemaFields);
 
@@ -2346,7 +2346,7 @@ class SettingsController extends Controller
                         'error' => $e->getMessage(),
                     ]
                     );
-            // Return at least the core metadata fields even if schema analysis fails
+            // Return at least the core metadata fields even if schema analysis fails.
             return \OCA\OpenRegister\Setup\SolrSetup::getObjectEntityFieldDefinitions();
         }//end try
 
@@ -2366,7 +2366,7 @@ class SettingsController extends Controller
         $extra      = [];
         $mismatched = [];
 
-        // Find missing fields (expected but not in SOLR)
+        // Find missing fields (expected but not in SOLR).
         foreach ($expectedFields as $fieldName => $expectedConfig) {
             if (!isset($actualFields[$fieldName])) {
                 $missing[] = [
@@ -2377,9 +2377,9 @@ class SettingsController extends Controller
             }
         }
 
-        // Find extra fields (in SOLR but not expected) and mismatched configurations
+        // Find extra fields (in SOLR but not expected) and mismatched configurations.
         foreach ($actualFields as $fieldName => $actualField) {
-            // Skip only system fields (but allow self_* metadata fields to be checked)
+            // Skip only system fields (but allow self_* metadata fields to be checked).
             if (str_starts_with($fieldName, '_')) {
                 continue;
             }
@@ -2391,7 +2391,7 @@ class SettingsController extends Controller
                     'actual_config' => $actualField,
                 ];
             } else {
-                // Check for configuration mismatches (type, multiValued, docValues)
+                // Check for configuration mismatches (type, multiValued, docValues).
                 $expectedConfig      = $expectedFields[$fieldName];
                 $expectedType        = $expectedConfig['type'] ?? '';
                 $actualType          = $actualField['type'] ?? '';
@@ -2400,7 +2400,7 @@ class SettingsController extends Controller
                 $expectedDocValues   = $expectedConfig['docValues'] ?? false;
                 $actualDocValues     = $actualField['docValues'] ?? false;
 
-                // Check if any configuration differs
+                // Check if any configuration differs.
                 if ($expectedType !== $actualType
                     || $expectedMultiValued !== $actualMultiValued
                     || $expectedDocValues !== $actualDocValues
@@ -2542,10 +2542,10 @@ class SettingsController extends Controller
     public function discoverSolrFacets(): JSONResponse
     {
         try {
-            // Get GuzzleSolrService from container
+            // Get GuzzleSolrService from container.
             $guzzleSolrService = $this->container->get(\OCA\OpenRegister\Service\GuzzleSolrService::class);
 
-            // Check if SOLR is available
+            // Check if SOLR is available.
             if (!$guzzleSolrService->isAvailable()) {
                 return new JSONResponse(
                         [
@@ -2557,7 +2557,7 @@ class SettingsController extends Controller
                         );
             }
 
-            // Get raw SOLR field information for facet configuration
+            // Get raw SOLR field information for facet configuration.
             $facetableFields = $guzzleSolrService->getRawSolrFieldsForFacetConfiguration();
 
             return new JSONResponse(
@@ -2592,10 +2592,10 @@ class SettingsController extends Controller
     public function getSolrFacetConfigWithDiscovery(): JSONResponse
     {
         try {
-            // Get GuzzleSolrService from container
+            // Get GuzzleSolrService from container.
             $guzzleSolrService = $this->container->get(\OCA\OpenRegister\Service\GuzzleSolrService::class);
 
-            // Check if SOLR is available
+            // Check if SOLR is available.
             if (!$guzzleSolrService->isAvailable()) {
                 return new JSONResponse(
                         [
@@ -2607,20 +2607,20 @@ class SettingsController extends Controller
                         );
             }
 
-            // Get discovered facets
+            // Get discovered facets.
             $discoveredFacets = $guzzleSolrService->getRawSolrFieldsForFacetConfiguration();
 
-            // Get existing configuration
+            // Get existing configuration.
             $existingConfig = $this->settingsService->getSolrFacetConfiguration();
             $existingFacets = $existingConfig['facets'] ?? [];
 
-            // Merge discovered facets with existing configuration
+            // Merge discovered facets with existing configuration.
             $mergedFacets = [
                 '@self'         => [],
                 'object_fields' => [],
             ];
 
-            // Process metadata facets
+            // Process metadata facets.
             if (isset($discoveredFacets['@self'])) {
                 $index = 0;
                 foreach ($discoveredFacets['@self'] as $key => $facetInfo) {
@@ -2646,7 +2646,7 @@ class SettingsController extends Controller
                 }//end foreach
             }//end if
 
-            // Process object field facets
+            // Process object field facets.
             if (isset($discoveredFacets['object_fields'])) {
                 $index = 0;
                 foreach ($discoveredFacets['object_fields'] as $key => $facetInfo) {
@@ -2744,16 +2744,16 @@ class SettingsController extends Controller
     public function warmupSolrIndex(): JSONResponse
     {
         try {
-            // Get request parameters from JSON body or query parameters
+            // Get request parameters from JSON body or query parameters.
             $maxObjects = $this->request->getParam('maxObjects', 0);
             $batchSize  = $this->request->getParam('batchSize', 1000);
             $mode       = $this->request->getParam('mode', 'serial');
-            // New mode parameter
+            // New mode parameter.
             $collectErrors = $this->request->getParam('collectErrors', false);
-            // New error collection parameter
+            // New error collection parameter.
             $schemaIds = $this->request->getParam('selectedSchemas', []);
-            // New schema selection parameter
-            // Try to get from JSON body if not in query params
+            // New schema selection parameter.
+            // Try to get from JSON body if not in query params.
             if ($maxObjects === 0) {
                 $input = file_get_contents('php://input');
                 if ($input !== false && $input !== '') {
@@ -2768,12 +2768,12 @@ class SettingsController extends Controller
                 }
             }
 
-            // Convert string boolean to actual boolean
+            // Convert string boolean to actual boolean.
             if (is_string($collectErrors)) {
                 $collectErrors = filter_var($collectErrors, FILTER_VALIDATE_BOOLEAN);
             }
 
-            // Validate mode parameter
+            // Validate mode parameter.
             if (!in_array($mode, ['serial', 'parallel', 'hyper'])) {
                 return new JSONResponse(
                         [
@@ -2783,7 +2783,7 @@ class SettingsController extends Controller
                         );
             }
 
-            // Debug logging for schema IDs
+            // Debug logging for schema IDs.
             $logger = \OC::$server->get(\Psr\Log\LoggerInterface::class);
             $logger->info(
                     '🔥 WARMUP: Received warmup request',
@@ -2797,12 +2797,12 @@ class SettingsController extends Controller
                     ]
                     );
 
-            // Phase 1: Use GuzzleSolrService directly for SOLR operations
+            // Phase 1: Use GuzzleSolrService directly for SOLR operations.
             $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
             $result            = $guzzleSolrService->warmupIndex([], $maxObjects, $mode, $collectErrors, $batchSize, $schemaIds);
             return new JSONResponse($result);
         } catch (\Exception $e) {
-            // **ERROR VISIBILITY**: Let exceptions bubble up with full details
+            // **ERROR VISIBILITY**: Let exceptions bubble up with full details.
             return new JSONResponse(
                     [
                         'error'           => $e->getMessage(),
@@ -2829,7 +2829,7 @@ class SettingsController extends Controller
     public function getSolrDashboardStats(): JSONResponse
     {
         try {
-            // Phase 1: Use GuzzleSolrService directly for SOLR operations
+            // Phase 1: Use GuzzleSolrService directly for SOLR operations.
             $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
             $stats = $guzzleSolrService->getDashboardStats();
             return new JSONResponse($stats);
@@ -2853,7 +2853,7 @@ class SettingsController extends Controller
     public function manageSolr(string $operation): JSONResponse
     {
         try {
-            // Phase 1: Use GuzzleSolrService directly for SOLR operations
+            // Phase 1: Use GuzzleSolrService directly for SOLR operations.
             $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
 
             switch ($operation) {
@@ -3070,9 +3070,9 @@ class SettingsController extends Controller
             $collections   = [];
             $errorMessage  = null;
 
-            // Check if Solr service is available
+            // Check if Solr service is available.
             try {
-                // Get GuzzleSolrService from container
+                // Get GuzzleSolrService from container.
                 $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
                 $solrAvailable     = $guzzleSolrService->isAvailable();
 
@@ -3080,16 +3080,16 @@ class SettingsController extends Controller
                     // Get Solr system info.
                     $stats = $guzzleSolrService->getDashboardStats();
 
-                    // Try to detect version from Solr admin API
-                    // For now, assume if it's available, it could support vectors
+                    // Try to detect version from Solr admin API.
+                    // For now, assume if it's available, it could support vectors.
                     // TODO: Add actual version detection from Solr admin API
                     $solrVersion   = '9.x (detection pending)';
                     $vectorSupport = false;
-                    // Set to false until we implement it
-                    // Get list of collections from Solr
+                    // Set to false until we implement it.
+                    // Get list of collections from Solr.
                     try {
                         $collectionsList = $guzzleSolrService->listCollections();
-                        // Transform to format expected by frontend (array of objects with 'name' and 'id')
+                        // Transform to format expected by frontend (array of objects with 'name' and 'id').
                         $collections = array_map(
                                 function ($collection) {
                                     return [
@@ -3163,11 +3163,11 @@ class SettingsController extends Controller
     public function getDatabaseInfo(): JSONResponse
     {
         try {
-            // Get database platform information
+            // Get database platform information.
             $platform     = $this->db->getDatabasePlatform();
             $platformName = $platform->getName();
 
-            // Determine database type and version
+            // Determine database type and version.
             $dbType            = 'Unknown';
             $dbVersion         = 'Unknown';
             $vectorSupport     = false;
@@ -3175,7 +3175,7 @@ class SettingsController extends Controller
             $performanceNote   = null;
 
             if (strpos($platformName, 'mysql') !== false || strpos($platformName, 'mariadb') !== false) {
-                // Check if it's MariaDB or MySQL
+                // Check if it's MariaDB or MySQL.
                 try {
                     $stmt    = $this->db->prepare('SELECT VERSION()');
                     $result  = $stmt->execute();
@@ -3195,7 +3195,7 @@ class SettingsController extends Controller
                     $dbVersion = 'Unknown';
                 }
 
-                // MariaDB/MySQL do not support native vector operations
+                // MariaDB/MySQL do not support native vector operations.
                 $vectorSupport     = false;
                 $recommendedPlugin = 'pgvector for PostgreSQL';
                 $performanceNote   = 'Current: Similarity calculated in PHP (slow). Recommended: Migrate to PostgreSQL + pgvector for 10-100x speedup.';
@@ -3212,7 +3212,7 @@ class SettingsController extends Controller
                     $dbVersion = 'Unknown';
                 }
 
-                // Check if pgvector extension is installed
+                // Check if pgvector extension is installed.
                 try {
                     $stmt      = $this->db->prepare("SELECT COUNT(*) FROM pg_extension WHERE extname = 'vector'");
                     $result    = $stmt->execute();
@@ -3286,7 +3286,7 @@ class SettingsController extends Controller
         try {
             $data = $this->request->getParams();
 
-            // Extract the model IDs from the objects sent by frontend
+            // Extract the model IDs from the objects sent by frontend.
             if (isset($data['fireworksConfig']['embeddingModel']) && is_array($data['fireworksConfig']['embeddingModel'])) {
                 $data['fireworksConfig']['embeddingModel'] = $data['fireworksConfig']['embeddingModel']['id'] ?? null;
             }
@@ -3367,12 +3367,12 @@ class SettingsController extends Controller
     public function testEmbedding(): JSONResponse
     {
         try {
-            // Get parameters from request
+            // Get parameters from request.
             $provider = (string) $this->request->getParam('provider');
             $config   = $this->request->getParam('config', []);
             $testText = (string) $this->request->getParam('testText', 'This is a test embedding to verify the LLM configuration.');
 
-            // Validate input
+            // Validate input.
             if (empty($provider) === true) {
                 return new JSONResponse(
                         [
@@ -3395,11 +3395,11 @@ class SettingsController extends Controller
                         );
             }
 
-            // Delegate to VectorEmbeddingService for testing
+            // Delegate to VectorEmbeddingService for testing.
             $vectorService = $this->container->get('OCA\OpenRegister\Service\VectorEmbeddingService');
             $result        = $vectorService->testEmbedding($provider, $config, $testText);
 
-            // Return appropriate status code
+            // Return appropriate status code.
             $statusCode = $result['success'] ? 200 : 400;
             return new JSONResponse($result, $statusCode);
         } catch (\Exception $e) {
@@ -3432,12 +3432,12 @@ class SettingsController extends Controller
     public function testChat(): JSONResponse
     {
         try {
-            // Get parameters from request
+            // Get parameters from request.
             $provider    = (string) $this->request->getParam('provider');
             $config      = $this->request->getParam('config', []);
             $testMessage = (string) $this->request->getParam('testMessage', 'Hello! Please respond with a brief greeting.');
 
-            // Validate input
+            // Validate input.
             if (empty($provider) === true) {
                 return new JSONResponse(
                         [
@@ -3460,11 +3460,11 @@ class SettingsController extends Controller
                         );
             }
 
-            // Delegate to ChatService for testing
+            // Delegate to ChatService for testing.
             $chatService = $this->container->get('OCA\OpenRegister\Service\ChatService');
             $result      = $chatService->testChat($provider, $config, $testMessage);
 
-            // Return appropriate status code
+            // Return appropriate status code.
             $statusCode = $result['success'] ? 200 : 400;
             return new JSONResponse($result, $statusCode);
         } catch (\Exception $e) {
@@ -3514,7 +3514,7 @@ class SettingsController extends Controller
     public function testDolphinConnection(string $apiEndpoint, string $apiKey): JSONResponse
     {
         try {
-            // Validate inputs
+            // Validate inputs.
             if (empty($apiEndpoint) === true || empty($apiKey) === true) {
                 return new JSONResponse(
                         [
@@ -3525,7 +3525,7 @@ class SettingsController extends Controller
                         );
             }
 
-            // Test the connection by making a simple request
+            // Test the connection by making a simple request.
             $ch = curl_init($apiEndpoint.'/health');
             curl_setopt_array(
                     $ch,
@@ -3593,11 +3593,11 @@ class SettingsController extends Controller
     public function getOllamaModels(): JSONResponse
     {
         try {
-            // Get Ollama URL from settings
+            // Get Ollama URL from settings.
             $settings  = $this->settingsService->getLLMSettingsOnly();
             $ollamaUrl = $settings['ollamaConfig']['url'] ?? 'http://localhost:11434';
 
-            // Call Ollama API to get available models
+            // Call Ollama API to get available models.
             $apiUrl = rtrim($ollamaUrl, '/').'/api/tags';
 
             $ch = curl_init($apiUrl);
@@ -3646,7 +3646,7 @@ class SettingsController extends Controller
                         );
             }
 
-            // Format models for frontend dropdown
+            // Format models for frontend dropdown.
             $models = array_map(
                     function ($model) {
                         $name   = $model['name'] ?? 'unknown';
@@ -3670,7 +3670,7 @@ class SettingsController extends Controller
                     $data['models']
                     );
 
-            // Sort by name
+            // Sort by name.
             usort(
                     $models,
                     function ($a, $b) {
@@ -3771,7 +3771,7 @@ class SettingsController extends Controller
         try {
             $data = $this->request->getParams();
 
-            // Extract IDs from objects sent by frontend
+            // Extract IDs from objects sent by frontend.
             if (isset($data['provider']) && is_array($data['provider'])) {
                 $data['provider'] = $data['provider']['id'] ?? null;
             }
@@ -3845,7 +3845,7 @@ class SettingsController extends Controller
         try {
             $data = $this->request->getParams();
 
-            // Extract IDs from objects sent by frontend
+            // Extract IDs from objects sent by frontend.
             if (isset($data['provider']) && is_array($data['provider'])) {
                 $data['provider'] = $data['provider']['id'] ?? null;
             }
@@ -3960,11 +3960,11 @@ class SettingsController extends Controller
         try {
             $solrService = $this->solrServiceFactory->createService();
 
-            // Get required dependencies from container
+            // Get required dependencies from container.
             $objectMapper = $this->container->get(\OCA\OpenRegister\Db\ObjectEntityMapper::class);
             $schemaMapper = $this->container->get(\OCA\OpenRegister\Db\SchemaMapper::class);
 
-            // Run the test
+            // Run the test.
             $results = $solrService->testSchemaAwareMapping($objectMapper, $schemaMapper);
 
             return new JSONResponse($results);
@@ -3997,15 +3997,15 @@ class SettingsController extends Controller
             $rows   = (int) $this->request->getParam('rows', 20);
             $fields = $this->request->getParam('fields', '');
 
-            // Validate parameters
+            // Validate parameters.
             $rows = min(max($rows, 1), 100);
-            // Limit between 1 and 100
+            // Limit between 1 and 100.
             $start = max($start, 0);
 
-            // Get GuzzleSolrService from container
+            // Get GuzzleSolrService from container.
             $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
 
-            // Search documents in SOLR
+            // Search documents in SOLR.
             $result = $guzzleSolrService->inspectIndex($query, $start, $rows, $fields);
 
             if ($result['success']) {
@@ -4066,10 +4066,10 @@ class SettingsController extends Controller
     public function getSolrMemoryPrediction(): JSONResponse
     {
         try {
-            // Get request parameters
+            // Get request parameters.
             $maxObjects = (int) $this->request->getParam('maxObjects', 0);
 
-            // Get GuzzleSolrService for prediction
+            // Get GuzzleSolrService for prediction.
             $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
 
             if (!$guzzleSolrService->isAvailable()) {
@@ -4086,7 +4086,7 @@ class SettingsController extends Controller
                         );
             }
 
-            // Use reflection to call the private method (for API access)
+            // Use reflection to call the private method (for API access).
             $reflection = new \ReflectionClass($guzzleSolrService);
             $method     = $reflection->getMethod('predictWarmupMemoryUsage');
             $method->setAccessible(true);
@@ -4137,7 +4137,7 @@ class SettingsController extends Controller
                     ]
                     );
 
-            // Validate field name
+            // Validate field name.
             if (empty($fieldName) || !is_string($fieldName)) {
                 return new JSONResponse(
                         [
@@ -4148,7 +4148,7 @@ class SettingsController extends Controller
                         );
             }
 
-            // Prevent deletion of critical system fields
+            // Prevent deletion of critical system fields.
             $protectedFields = ['id', '_version_', '_root_', '_text_'];
             if (in_array($fieldName, $protectedFields)) {
                 return new JSONResponse(
@@ -4160,7 +4160,7 @@ class SettingsController extends Controller
                         );
             }
 
-            // Get GuzzleSolrService from container
+            // Get GuzzleSolrService from container.
             $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
             $result            = $guzzleSolrService->deleteField($fieldName);
 
@@ -4235,17 +4235,17 @@ class SettingsController extends Controller
     public function debugTypeFiltering(): JSONResponse
     {
         try {
-            // Get services
+            // Get services.
             $objectService = $this->container->get(\OCA\OpenRegister\Service\ObjectService::class);
             $connection    = $this->container->get(\OCP\IDBConnection::class);
 
-            // Set register and schema context
+            // Set register and schema context.
             $objectService->setRegister('voorzieningen');
             $objectService->setSchema('organisatie');
 
             $results = [];
 
-            // Test 1: Get all organizations
+            // Test 1: Get all organizations.
             $query1  = [
                 '_limit'  => 10,
                 '_page'   => 1,
@@ -4268,7 +4268,7 @@ class SettingsController extends Controller
                         ),
             ];
 
-            // Test 2: Try type filtering with samenwerking
+            // Test 2: Try type filtering with samenwerking.
             $query2  = [
                 '_limit'  => 10,
                 '_page'   => 1,
@@ -4291,7 +4291,7 @@ class SettingsController extends Controller
                         ),
             ];
 
-            // Test 3: Try type filtering with community
+            // Test 3: Try type filtering with community.
             $query3  = [
                 '_limit'  => 10,
                 '_page'   => 1,
@@ -4314,7 +4314,7 @@ class SettingsController extends Controller
                         ),
             ];
 
-            // Test 4: Try type filtering with both types
+            // Test 4: Try type filtering with both types.
             $query4  = [
                 '_limit'  => 10,
                 '_page'   => 1,
@@ -4337,7 +4337,7 @@ class SettingsController extends Controller
                         ),
             ];
 
-            // Test 5: Direct database query to check type field
+            // Test 5: Direct database query to check type field.
             $qb = $connection->getQueryBuilder();
             $qb->select('o.id', 'o.name', 'o.object')
                 ->from('openregister_objects', 'o')
@@ -4603,10 +4603,10 @@ class SettingsController extends Controller
     public function updateSolrCollectionAssignments(?string $objectCollection=null, ?string $fileCollection=null): JSONResponse
     {
         try {
-            // Get current SOLR settings
+            // Get current SOLR settings.
             $solrSettings = $this->settingsService->getSolrSettingsOnly();
 
-            // Update collection assignments
+            // Update collection assignments.
             if ($objectCollection !== null) {
                 $solrSettings['objectCollection'] = $objectCollection;
             }
@@ -4615,7 +4615,7 @@ class SettingsController extends Controller
                 $solrSettings['fileCollection'] = $fileCollection;
             }
 
-            // Save updated settings
+            // Save updated settings.
             $this->settingsService->updateSolrSettingsOnly($solrSettings);
 
             return new JSONResponse(
@@ -4667,10 +4667,10 @@ class SettingsController extends Controller
                         );
             }
 
-            // Get VectorEmbeddingService from container
+            // Get VectorEmbeddingService from container.
             $vectorService = $this->container->get(VectorEmbeddingService::class);
 
-            // Perform semantic search
+            // Perform semantic search.
             $results = $vectorService->semanticSearch($query, $limit, $filters, $provider);
 
             return new JSONResponse(
@@ -4730,10 +4730,10 @@ class SettingsController extends Controller
                         );
             }
 
-            // Get VectorEmbeddingService from container
+            // Get VectorEmbeddingService from container.
             $vectorService = $this->container->get(VectorEmbeddingService::class);
 
-            // Perform hybrid search
+            // Perform hybrid search.
             $result = $vectorService->hybridSearch($query, $solrFilters, $limit, $weights, $provider);
 
             return new JSONResponse(
@@ -4769,10 +4769,10 @@ class SettingsController extends Controller
     public function getVectorStats(): JSONResponse
     {
         try {
-            // Get VectorEmbeddingService from container
+            // Get VectorEmbeddingService from container.
             $vectorService = $this->container->get(VectorEmbeddingService::class);
 
-            // Get statistics
+            // Get statistics.
             $stats = $vectorService->getVectorStats();
 
             return new JSONResponse(
@@ -4807,18 +4807,18 @@ class SettingsController extends Controller
     public function warmupFiles(): JSONResponse
     {
         try {
-            // Get request parameters
+            // Get request parameters.
             $maxFiles    = (int) $this->request->getParam('max_files', 100);
             $batchSize   = (int) $this->request->getParam('batch_size', 50);
             $fileTypes   = $this->request->getParam('file_types', []);
             $skipIndexed = $this->request->getParam('skip_indexed', true);
             $mode        = $this->request->getParam('mode', 'parallel');
 
-            // Validate parameters
+            // Validate parameters.
             $maxFiles = min($maxFiles, 5000);
-            // Max 5000 files
+            // Max 5000 files.
             $batchSize = min($batchSize, 500);
-            // Max 500 per batch
+            // Max 500 per batch.
             $this->logger->info(
                     '[SettingsController] Starting file warmup',
                     [
@@ -4828,7 +4828,7 @@ class SettingsController extends Controller
                     ]
                     );
 
-            // Get FileTextService and GuzzleSolrService
+            // Get FileTextService and GuzzleSolrService.
             $fileTextService   = $this->container->get(\OCA\OpenRegister\Service\FileTextService::class);
             $guzzleSolrService = $this->container->get(\OCA\OpenRegister\Service\GuzzleSolrService::class);
             $fileTextMapper    = $this->container->get(\OCA\OpenRegister\Db\FileTextMapper::class);
@@ -4851,7 +4851,7 @@ class SettingsController extends Controller
                 }
             }
 
-            // If no files to process, return early
+            // If no files to process, return early.
             if (empty($filesToProcess)) {
                 return new JSONResponse(
                         [
@@ -4864,7 +4864,7 @@ class SettingsController extends Controller
                         );
             }
 
-            // Process files in batches
+            // Process files in batches.
             $totalIndexed = 0;
             $totalFailed  = 0;
             $allErrors    = [];
@@ -4885,7 +4885,7 @@ class SettingsController extends Controller
                         'indexed'         => $totalIndexed,
                         'failed'          => $totalFailed,
                         'errors'          => array_slice($allErrors, 0, 20),
-            // First 20 errors
+            // First 20 errors.
                         'mode'            => $mode,
                     ]
                     );
@@ -4976,14 +4976,14 @@ class SettingsController extends Controller
     public function reindexFiles(): JSONResponse
     {
         try {
-            // Get all completed file texts
+            // Get all completed file texts.
             $fileTextMapper    = $this->container->get(\OCA\OpenRegister\Db\FileTextMapper::class);
             $guzzleSolrService = $this->container->get(\OCA\OpenRegister\Service\GuzzleSolrService::class);
 
             $maxFiles  = (int) $this->request->getParam('max_files', 1000);
             $batchSize = (int) $this->request->getParam('batch_size', 100);
 
-            // Get all completed extractions
+            // Get all completed extractions.
             $allFiles = $fileTextMapper->findByStatus('completed', $maxFiles, 0);
             $fileIds  = array_map(fn($ft) => $ft->getFileId(), $allFiles);
 
@@ -4997,7 +4997,7 @@ class SettingsController extends Controller
                         );
             }
 
-            // Process in batches
+            // Process in batches.
             $totalIndexed = 0;
             $totalFailed  = 0;
             $allErrors    = [];
@@ -5099,24 +5099,24 @@ class SettingsController extends Controller
     public function getFileExtractionStats(): JSONResponse
     {
         try {
-            // Get total files from Nextcloud filecache (bypasses rights logic)
+            // Get total files from Nextcloud filecache (bypasses rights logic).
             $fileMapper            = $this->container->get(\OCA\OpenRegister\Db\FileMapper::class);
             $totalFilesInNextcloud = $fileMapper->countAllFiles();
             $totalFilesSize        = $fileMapper->getTotalFilesSize();
 
-            // Get extraction statistics from our file_texts table
+            // Get extraction statistics from our file_texts table.
             $fileTextMapper = $this->container->get(\OCA\OpenRegister\Db\FileTextMapper::class);
             $dbStats        = $fileTextMapper->getStats();
 
-            // Get SOLR statistics
+            // Get SOLR statistics.
             $guzzleSolrService = $this->container->get(\OCA\OpenRegister\Service\GuzzleSolrService::class);
             $solrStats         = $guzzleSolrService->getFileIndexStats();
 
-            // Calculate storage in MB
+            // Calculate storage in MB.
             $extractedTextStorageMB = round($dbStats['total_text_size'] / 1024 / 1024, 2);
             $totalFilesStorageMB    = round($totalFilesSize / 1024 / 1024, 2);
 
-            // Calculate untracked files (files in Nextcloud not yet discovered)
+            // Calculate untracked files (files in Nextcloud not yet discovered).
             $untrackedFiles = $totalFilesInNextcloud - $dbStats['total'];
 
             return new JSONResponse(
@@ -5124,11 +5124,11 @@ class SettingsController extends Controller
                         'success'                => true,
                         'totalFiles'             => $totalFilesInNextcloud,
                         'processedFiles'         => $dbStats['completed'],
-            // Files successfully extracted (status='completed')
+            // Files successfully extracted (status='completed').
                         'pendingFiles'           => $dbStats['pending'],
-            // Files discovered and waiting for extraction
+            // Files discovered and waiting for extraction.
                         'untrackedFiles'         => max(0, $untrackedFiles),
-            // Files not yet discovered
+            // Files not yet discovered.
                         'totalChunks'            => $solrStats['total_chunks'] ?? 0,
                         'extractedTextStorageMB' => number_format($extractedTextStorageMB, 2),
                         'totalFilesStorageMB'    => number_format($totalFilesStorageMB, 2),
@@ -5140,7 +5140,7 @@ class SettingsController extends Controller
                     ]
                     );
         } catch (\Exception $e) {
-            // Return zeros instead of error to avoid breaking UI
+            // Return zeros instead of error to avoid breaking UI.
             return new JSONResponse(
                     [
                         'success'                => true,
@@ -5179,7 +5179,7 @@ class SettingsController extends Controller
             $gitlabToken = $this->config->getValueString('openregister', 'gitlab_api_token', '');
             $gitlabUrl   = $this->config->getValueString('openregister', 'gitlab_api_url', '');
 
-            // Mask tokens for security (only show first/last few characters)
+            // Mask tokens for security (only show first/last few characters).
             $maskedGithubToken = $githubToken ? $this->maskToken($githubToken) : '';
             $maskedGitlabToken = $gitlabToken ? $this->maskToken($gitlabToken) : '';
 
@@ -5216,14 +5216,14 @@ class SettingsController extends Controller
             $data = $this->request->getParams();
 
             if (isset($data['github_token'])) {
-                // Only save if not masked
+                // Only save if not masked.
                 if (!str_contains($data['github_token'], '***')) {
                     $this->config->setValueString('openregister', 'github_api_token', $data['github_token']);
                 }
             }
 
             if (isset($data['gitlab_token'])) {
-                // Only save if not masked
+                // Only save if not masked.
                 if (!str_contains($data['gitlab_token'], '***')) {
                     $this->config->setValueString('openregister', 'gitlab_api_token', $data['gitlab_token']);
                 }
@@ -5275,7 +5275,7 @@ class SettingsController extends Controller
                         );
             }
 
-            // Test the token by making a simple API call
+            // Test the token by making a simple API call.
             $client   = \OC::$server->get(\OCP\Http\Client\IClientService::class)->newClient();
             $response = $client->get(
                     'https://api.github.com/user',
@@ -5336,15 +5336,15 @@ class SettingsController extends Controller
                         );
             }
 
-            // Ensure API URL doesn't end with slash
+            // Ensure API URL doesn't end with slash.
             $apiUrl = rtrim($apiUrl, '/');
 
-            // Default to gitlab.com if no URL provided
+            // Default to gitlab.com if no URL provided.
             if (empty($apiUrl)) {
                 $apiUrl = 'https://gitlab.com/api/v4';
             }
 
-            // Test the token by making a simple API call
+            // Test the token by making a simple API call.
             $client   = \OC::$server->get(\OCP\Http\Client\IClientService::class)->newClient();
             $response = $client->get(
                     $apiUrl.'/user',

@@ -53,14 +53,14 @@ class Version1Date20250831120000 extends SimpleMigrationStep
          */
         $schema = $schemaClosure();
 
-        // Check if the search trails table exists
+        // Check if the search trails table exists.
         if ($schema->hasTable('openregister_search_trails') === false) {
             return null;
         }
 
         $table = $schema->getTable('openregister_search_trails');
 
-        // Add size column if it doesn't exist
+        // Add size column if it doesn't exist.
         if ($table->hasColumn('size') === false) {
             $table->addColumn(
                     'size',

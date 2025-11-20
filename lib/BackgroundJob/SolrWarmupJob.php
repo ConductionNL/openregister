@@ -65,7 +65,7 @@ class SolrWarmupJob extends QueuedJob
     {
         $startTime = microtime(true);
 
-        // Parse job arguments with defaults
+        // Parse job arguments with defaults.
         $maxObjects    = $arguments['maxObjects'] ?? self::DEFAULT_MAX_OBJECTS;
         $mode          = $arguments['mode'] ?? self::DEFAULT_MODE;
         $collectErrors = $arguments['collectErrors'] ?? false;
@@ -88,7 +88,7 @@ class SolrWarmupJob extends QueuedJob
                 );
 
         try {
-            // Get required services
+            // Get required services.
             /*
              * @var GuzzleSolrService $solrService
              */
@@ -99,7 +99,7 @@ class SolrWarmupJob extends QueuedJob
              */
             $schemaMapper = \OC::$server->get(SchemaMapper::class);
 
-            // Check if SOLR is available before proceeding
+            // Check if SOLR is available before proceeding.
             if (!$this->isSolrAvailable($solrService, $logger)) {
                 $logger->warning(
                         'SOLR Warmup Job skipped - SOLR not available',
@@ -111,7 +111,7 @@ class SolrWarmupJob extends QueuedJob
                 return;
             }
 
-            // Get all schemas for comprehensive warmup
+            // Get all schemas for comprehensive warmup.
             $schemas = $schemaMapper->findAll();
 
             $logger->info(
@@ -123,7 +123,7 @@ class SolrWarmupJob extends QueuedJob
                     ]
                     );
 
-            // Execute the warmup
+            // Execute the warmup.
             $result = $solrService->warmupIndex(
                 schemas: $schemas,
                 maxObjects: $maxObjects,
@@ -176,7 +176,7 @@ class SolrWarmupJob extends QueuedJob
                     ]
                     );
 
-            // Re-throw to mark job as failed
+            // Re-throw to mark job as failed.
             throw $e;
         }//end try
 

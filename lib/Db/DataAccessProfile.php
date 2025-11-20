@@ -107,22 +107,22 @@ class DataAccessProfile extends Entity implements JsonSerializable
      */
     public function __toString(): string
     {
-        // Return the name if available, otherwise return a descriptive string
+        // Return the name if available, otherwise return a descriptive string.
         if ($this->name !== null && $this->name !== '') {
             return $this->name;
         }
 
-        // Fallback to UUID if available
+        // Fallback to UUID if available.
         if ($this->uuid !== null && $this->uuid !== '') {
             return $this->uuid;
         }
 
-        // Fallback to ID if available
+        // Fallback to ID if available.
         if ($this->id !== null) {
             return 'DataAccessProfile #'.$this->id;
         }
 
-        // Final fallback
+        // Final fallback.
         return 'Data Access Profile';
 
     }//end __toString()

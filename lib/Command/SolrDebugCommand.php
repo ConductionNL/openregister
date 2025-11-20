@@ -152,7 +152,7 @@ class SolrDebugCommand extends Command
     {
         $output->writeln('<info>📋 Tenant Information</info>');
 
-        // Generate tenant ID the same way as SolrService
+        // Generate tenant ID the same way as SolrService.
         $instanceId    = $this->config->getSystemValue('instanceid', 'default');
         $overwriteHost = $this->config->getSystemValue('overwrite.cli.url', '');
 
@@ -166,7 +166,7 @@ class SolrDebugCommand extends Command
         $output->writeln("  Overwrite Host: <comment>".($overwriteHost ?: 'not set')."</comment>");
         $output->writeln("  Generated Tenant ID: <comment>$tenantId</comment>");
 
-        // Get SOLR settings
+        // Get SOLR settings.
         $solrSettings       = $this->settingsService->getSolrSettings();
         $baseCoreName       = $solrSettings['core'] ?? 'openregister';
         $tenantSpecificCore = $baseCoreName.'_'.$tenantId;
@@ -204,7 +204,7 @@ class SolrDebugCommand extends Command
             $output->writeln("    Core: <comment>{$solrSettings['core']}</comment>");
             $output->writeln("    Scheme: <comment>{$solrSettings['scheme']}</comment>");
 
-            // Test setup
+            // Test setup.
             $setup  = new SolrSetup($solrSettings, $this->logger);
             $result = $setup->setupSolr();
 
@@ -234,7 +234,7 @@ class SolrDebugCommand extends Command
         $output->writeln('<info>🔗 Testing SOLR Connection</info>');
 
         try {
-            // Get SOLR service via direct DI injection
+            // Get SOLR service via direct DI injection.
             $container   = \OC::$server->getRegisteredAppContainer('openregister');
             $solrService = $container->get(GuzzleSolrService::class);
 
@@ -257,7 +257,7 @@ class SolrDebugCommand extends Command
                 $output->writeln("  Tenant ID: <comment>{$connectionResult['details']['tenant_id']}</comment>");
                 $output->writeln("  Mode: <comment>{$connectionResult['details']['mode']}</comment>");
 
-                // Test tenant collection creation
+                // Test tenant collection creation.
                 $output->writeln('');
                 $output->writeln('<info>🏗️ Testing tenant collection creation...</info>');
                 if ($solrService->ensureTenantCollection()) {
@@ -298,7 +298,7 @@ class SolrDebugCommand extends Command
                 return;
             }
 
-            // Test direct SOLR admin API calls
+            // Test direct SOLR admin API calls.
             $this->testSolrAdminAPI($output, $solrSettings);
         } catch (\Exception $e) {
             $output->writeln("<error>❌ Core check failed: {$e->getMessage()}</error>");
@@ -319,7 +319,7 @@ class SolrDebugCommand extends Command
      */
     private function testSolrAdminAPI(OutputInterface $output, array $solrSettings): void
     {
-        // Test cores listing (standalone SOLR)
+        // Test cores listing (standalone SOLR).
         $coresUrl = sprintf(
             '%s://%s:%d%s/admin/cores?action=STATUS&wt=json',
             $solrSettings['scheme'],
@@ -345,7 +345,7 @@ class SolrDebugCommand extends Command
             $output->writeln('  <comment>❓ Cores API not available (might be SolrCloud)</comment>');
         }
 
-        // Test collections listing (SolrCloud)
+        // Test collections listing (SolrCloud).
         $collectionsUrl = sprintf(
             '%s://%s:%d%s/admin/collections?action=CLUSTERSTATUS&wt=json',
             $solrSettings['scheme'],
@@ -370,7 +370,7 @@ class SolrDebugCommand extends Command
             $output->writeln('  <comment>❓ Collections API not available (might be standalone)</comment>');
         }
 
-        // Test configSets listing
+        // Test configSets listing.
         $configSetsUrl = sprintf(
             '%s://%s:%d%s/admin/configs?action=LIST&wt=json',
             $solrSettings['scheme'],

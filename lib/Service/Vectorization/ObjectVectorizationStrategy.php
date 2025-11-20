@@ -98,7 +98,7 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
                 ]
                 );
 
-        // Get objects using ObjectService with view support
+        // Get objects using ObjectService with view support.
         $objects = $this->objectService->searchObjects(
             query: [
                 '_limit'  => $limit,
@@ -111,7 +111,7 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
             views: $views
         );
 
-        // searchObjects returns array of ObjectEntity objects directly
+        // searchObjects returns array of ObjectEntity objects directly.
         $this->logger->debug(
                 '[ObjectVectorizationStrategy] Fetched objects',
                 [
@@ -133,16 +133,16 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
      */
     public function extractVectorizationItems($entity): array
     {
-        // Get object data
+        // Get object data.
         $objectData = is_array($entity) ? $entity : $entity->jsonSerialize();
 
-        // Get vectorization config
+        // Get vectorization config.
         $config = $this->settingsService->getObjectSettingsOnly();
 
-        // Serialize object to text
+        // Serialize object to text.
         $text = $this->serializeObject($objectData, $config);
 
-        // Objects produce a single vectorization item
+        // Objects produce a single vectorization item.
         return [
             [
                 'text'  => $text,
@@ -166,7 +166,7 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
         $objectData = is_array($entity) ? $entity : $entity->jsonSerialize();
         $objectId   = $objectData['id'] ?? 'unknown';
 
-        // DEBUG: Log what we're receiving
+        // DEBUG: Log what we're receiving.
         $this->logger->debug(
                 '[ObjectVectorizationStrategy] Preparing metadata',
                 [
@@ -178,16 +178,16 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
                 ]
                 );
 
-        // Extract title/name - check multiple possible fields
+        // Extract title/name - check multiple possible fields.
         $title = $objectData['title'] ?? $objectData['name'] ?? $objectData['_name'] ?? $objectData['summary'] ?? $this->extractFirstStringField($objectData)
-        // Try to find ANY string field
+        // Try to find ANY string field.
             ?? 'Object #'.$objectId;
 
-        // Extract description - check common variants
+        // Extract description - check common variants.
         $description = $objectData['description'] ?? $objectData['_description'] ?? $objectData['Beschrijving']
-        // Dutch variant
+        // Dutch variant.
             ?? $objectData['beschrijving']
-        // Lowercase variant
+        // Lowercase variant.
             ?? $objectData['summary'] ?? $objectData['_summary'] ?? '';
 
         return [
@@ -196,24 +196,24 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
             'chunk_index'         => 0,
             'total_chunks'        => 1,
             'chunk_text'          => substr($item['text'], 0, 500),
-        // Preview
+        // Preview.
             'additional_metadata' => [
                 'object_id'    => $objectId,
                 'object_title' => $title,
-        // ADDED for display
+        // ADDED for display.
                 'title'        => $title,
-        // ADDED for backward compatibility
+        // ADDED for backward compatibility.
                 'name'         => $title,
-        // ADDED for alternative lookup
+        // ADDED for alternative lookup.
                 'description'  => $description,
-        // ADDED for context
-                // Check both direct fields and @self metadata
+        // ADDED for context.
+                // Check both direct fields and @self metadata.
                 'register'     => $objectData['_register'] ?? $objectData['register'] ?? $objectData['@self']['register'] ?? null,
                 'register_id'  => $objectData['_register'] ?? $objectData['register'] ?? $objectData['@self']['register'] ?? null,
                 'schema'       => $objectData['_schema'] ?? $objectData['schema'] ?? $objectData['@self']['schema'] ?? null,
                 'schema_id'    => $objectData['_schema'] ?? $objectData['schema'] ?? $objectData['@self']['schema'] ?? null,
                 'uuid'         => $objectData['uuid'] ?? $objectData['_uuid'] ?? $objectData['@self']['id']
-        // Fallback to @self.id
+        // Fallback to @self.id.
                     ?? null,
                 'uri'          => $objectData['uri'] ?? $objectData['_uri'] ?? $objectData['@self']['uri'] ?? null,
             ],
@@ -234,21 +234,21 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
      */
     private function extractFirstStringField(array $objectData): ?string
     {
-        // Skip metadata fields (prefixed with _ or @)
-        // Look for short, meaningful strings (< 100 chars)
+        // Skip metadata fields (prefixed with _ or @).
+        // Look for short, meaningful strings (< 100 chars).
         foreach ($objectData as $key => $value) {
-            // Skip metadata and system fields
+            // Skip metadata and system fields.
             if (str_starts_with($key, '_') || str_starts_with($key, '@')) {
                 continue;
             }
 
-            // Skip known non-title fields
+            // Skip known non-title fields.
             $skipFields = ['id', 'uuid', 'description', 'Beschrijving', 'beschrijving', 'content', 'text'];
             if (in_array(strtolower($key), array_map('strtolower', $skipFields))) {
                 continue;
             }
 
-            // Check if it's a short string (likely a title/identifier)
+            // Check if it's a short string (likely a title/identifier).
             if (is_string($value) && strlen($value) > 0 && strlen($value) < 100) {
                 return $value;
             }
@@ -285,7 +285,7 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
     private function serializeObject(array $object, array $config): string
     {
         // TODO: Implement configurable serialization
-        // For now, just JSON encode with pretty print for readability
+        // For now, just JSON encode with pretty print for readability.
         $includeMetadata  = $config['includeMetadata'] ?? true;
         $includeRelations = $config['includeRelations'] ?? true;
         $maxNestingDepth  = $config['maxNestingDepth'] ?? 10;
@@ -300,8 +300,8 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
                 ]
                 );
 
-        // Simple JSON serialization
-        // Future enhancement: smart serialization based on schema
+        // Simple JSON serialization.
+        // Future enhancement: smart serialization based on schema.
         return json_encode($object, JSON_PRETTY_PRINT);
 
     }//end serializeObject()

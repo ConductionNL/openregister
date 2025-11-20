@@ -75,7 +75,7 @@ class Version1Date20251114130000 extends SimpleMigrationStep
     {
         $output->info('🔄 Migrating extend values to allOf...');
 
-        // Find all schemas with extend field set
+        // Find all schemas with extend field set.
         $qb = $this->connection->getQueryBuilder();
         $qb->select('id', 'extend')
             ->from('openregister_schemas')
@@ -89,10 +89,10 @@ class Version1Date20251114130000 extends SimpleMigrationStep
             $id     = $row['id'];
             $extend = $row['extend'];
 
-            // Convert extend to allOf (single parent becomes array with one element)
+            // Convert extend to allOf (single parent becomes array with one element).
             $allOf = json_encode([$extend]);
 
-            // Update the schema
+            // Update the schema.
             $updateQb = $this->connection->getQueryBuilder();
             $updateQb->update('openregister_schemas')
                 ->set('all_of', $updateQb->createNamedParameter($allOf))
@@ -133,11 +133,11 @@ class Version1Date20251114130000 extends SimpleMigrationStep
 
         $output->info('🔧 Removing deprecated extend column...');
 
-        // Remove extend field from schemas table
+        // Remove extend field from schemas table.
         if ($schema->hasTable('openregister_schemas')) {
             $table = $schema->getTable('openregister_schemas');
 
-            // Remove extend column if it exists
+            // Remove extend column if it exists.
             if ($table->hasColumn('extend')) {
                 $table->dropColumn('extend');
 

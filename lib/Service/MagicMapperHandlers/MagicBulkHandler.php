@@ -73,7 +73,7 @@ class MagicBulkHandler
         private readonly IDBConnection $db,
         private readonly LoggerInterface $logger
     ) {
-        // Try to get max_allowed_packet from database configuration
+        // Try to get max_allowed_packet from database configuration.
         $this->initializeMaxPacketSize();
 
     }//end __construct()
@@ -112,13 +112,13 @@ class MagicBulkHandler
         $savedUuids   = [];
         $updatedUuids = [];
 
-        // Prepare objects for dynamic table structure
+        // Prepare objects for dynamic table structure.
         $preparedObjects = $this->prepareObjectsForDynamicTable($objects, $register, $schema);
 
-        // Separate into insert and update operations
+        // Separate into insert and update operations.
         [$insertObjects, $updateObjects] = $this->categorizeObjectsForSave($preparedObjects, $tableName);
 
-        // Execute bulk operations
+        // Execute bulk operations.
         if (!empty($insertObjects)) {
             $insertedUuids = $this->bulkInsertToDynamicTable($insertObjects, $tableName);
             $savedUuids    = array_merge($savedUuids, $insertedUuids);
@@ -193,10 +193,10 @@ class MagicBulkHandler
 
             if ($affectedRows > 0) {
                 $deletedUuids = $uuids;
-                // Assume all were deleted successfully
+                // Assume all were deleted successfully.
             }
         } else {
-            // Perform hard delete
+            // Perform hard delete.
             $qb = $this->db->getQueryBuilder();
 
             $qb->delete($tableName)
@@ -206,7 +206,7 @@ class MagicBulkHandler
 
             if ($affectedRows > 0) {
                 $deletedUuids = $uuids;
-                // Assume all were deleted successfully
+                // Assume all were deleted successfully.
             }
         }//end if
 
@@ -237,7 +237,7 @@ class MagicBulkHandler
         $publishedValue = null;
         if ($datetime === false) {
             $publishedValue = null;
-            // Unpublish
+            // Unpublish.
         } else if ($datetime instanceof \DateTime) {
             $publishedValue = $datetime->format('Y-m-d H:i:s');
         } else {
@@ -284,7 +284,7 @@ class MagicBulkHandler
         $depublishedValue = null;
         if ($datetime === false) {
             $depublishedValue = null;
-            // Remove depublication
+            // Remove depublication.
         } else if ($datetime instanceof \DateTime) {
             $depublishedValue = $datetime->format('Y-m-d H:i:s');
         } else {
@@ -327,10 +327,10 @@ class MagicBulkHandler
         foreach ($objects as $object) {
             $preparedObject = [];
 
-            // Extract @self metadata
+            // Extract @self metadata.
             $selfData = $object['@self'] ?? [];
 
-            // Map metadata to prefixed columns
+            // Map metadata to prefixed columns.
             $preparedObject['_uuid']         = $selfData['id'] ?? $object['id'] ?? Uuid::v4()->toRfc4122();
             $preparedObject['_register']     = $register->getId();
             $preparedObject['_schema']       = $schema->getId();
@@ -347,12 +347,12 @@ class MagicBulkHandler
             $preparedObject['_slug']         = $selfData['slug'] ?? null;
             $preparedObject['_uri']          = $selfData['uri'] ?? null;
 
-            // Map schema properties to columns
+            // Map schema properties to columns.
             foreach ($properties as $propertyName => $propertyConfig) {
                 $columnName = $this->sanitizeColumnName($propertyName);
                 $value      = $object[$propertyName] ?? null;
 
-                // Convert complex values for database storage
+                // Convert complex values for database storage.
                 if (is_array($value) || is_object($value)) {
                     $preparedObject[$columnName] = json_encode($value);
                 } else {
@@ -382,10 +382,10 @@ class MagicBulkHandler
             return [[], []];
         }
 
-        // Get UUIDs to check for existing objects
+        // Get UUIDs to check for existing objects.
         $uuids = array_column($objects, '_uuid');
 
-        // Find existing objects
+        // Find existing objects.
         $qb = $this->db->getQueryBuilder();
         $qb->select('_uuid')
             ->from($tableName, 't')
@@ -394,7 +394,7 @@ class MagicBulkHandler
         $result        = $qb->executeQuery();
         $existingUuids = array_column($result->fetchAll(), '_uuid');
 
-        // Categorize objects
+        // Categorize objects.
         $insertObjects = [];
         $updateObjects = [];
 
@@ -430,7 +430,7 @@ class MagicBulkHandler
         $insertedUuids = [];
         $chunkSize     = $this->calculateOptimalChunkSize($objects);
 
-        // Process in chunks to prevent packet size issues
+        // Process in chunks to prevent packet size issues.
         $chunks = array_chunk($objects, $chunkSize);
 
         foreach ($chunks as $chunk) {
@@ -457,12 +457,12 @@ class MagicBulkHandler
             return [];
         }
 
-        // Get columns from first object
+        // Get columns from first object.
         $columns       = array_keys($chunk[0]);
         $columnList    = '`'.implode('`, `', $columns).'`';
         $insertedUuids = [];
 
-        // Build VALUES clause
+        // Build VALUES clause.
         $valuesClause = [];
         $parameters   = [];
         $paramIndex   = 0;
@@ -478,13 +478,13 @@ class MagicBulkHandler
 
             $valuesClause[] = '('.implode(',', $rowValues).')';
 
-            // Collect UUID for return
+            // Collect UUID for return.
             if (isset($objectData['_uuid'])) {
                 $insertedUuids[] = $objectData['_uuid'];
             }
         }
 
-        // Execute bulk insert
+        // Execute bulk insert.
         $sql = "INSERT INTO `{$tableName}` ({$columnList}) VALUES ".implode(',', $valuesClause);
 
         try {
@@ -535,7 +535,7 @@ class MagicBulkHandler
             $qb = $this->db->getQueryBuilder();
             $qb->update($tableName, 't');
 
-            // Set all columns except UUID
+            // Set all columns except UUID.
             foreach ($objectData as $column => $value) {
                 if ($column !== '_uuid') {
                     $qb->set("t.{$column}", $qb->createNamedParameter($value));
@@ -558,7 +558,7 @@ class MagicBulkHandler
                             'error'     => $e->getMessage(),
                         ]
                         );
-                // Continue with other objects
+                // Continue with other objects.
             }
         }//end foreach
 
@@ -580,7 +580,7 @@ class MagicBulkHandler
             return 50;
         }
 
-        // Sample objects to estimate size
+        // Sample objects to estimate size.
         $sampleSize = min(10, count($objects));
         $totalSize  = 0;
 
@@ -591,11 +591,11 @@ class MagicBulkHandler
 
         $averageSize = $totalSize / $sampleSize;
 
-        // Calculate safe chunk size based on packet size
+        // Calculate safe chunk size based on packet size.
         $maxPacketSize = $this->getMaxAllowedPacketSize() * $this->maxPacketSizeBuffer;
         $safeChunkSize = intval($maxPacketSize / $averageSize);
 
-        // Keep within reasonable bounds
+        // Keep within reasonable bounds.
         return max(5, min(500, $safeChunkSize));
 
     }//end calculateOptimalChunkSize()
@@ -616,10 +616,10 @@ class MagicBulkHandler
                 return (int) $result['Value'];
             }
         } catch (\Exception $e) {
-            // Log error but continue with default
+            // Log error but continue with default.
         }
 
-        // Default fallback value (16MB)
+        // Default fallback value (16MB).
         return 16777216;
 
     }//end getMaxAllowedPacketSize()
@@ -635,25 +635,25 @@ class MagicBulkHandler
         try {
             $maxPacketSize = $this->getMaxAllowedPacketSize();
 
-            // Adjust buffer based on detected packet size
+            // Adjust buffer based on detected packet size.
             if ($maxPacketSize > 67108864) {
-                // > 64MB
+                // > 64MB.
                 $this->maxPacketSizeBuffer = 0.6;
-                // 60% buffer
+                // 60% buffer.
             } else if ($maxPacketSize > 33554432) {
-                // > 32MB
+                // > 32MB.
                 $this->maxPacketSizeBuffer = 0.5;
-                // 50% buffer
+                // 50% buffer.
             } else if ($maxPacketSize > 16777216) {
-                // > 16MB
+                // > 16MB.
                 $this->maxPacketSizeBuffer = 0.4;
-                // 40% buffer
+                // 40% buffer.
             } else {
                 $this->maxPacketSizeBuffer = 0.3;
-                // 30% buffer for smaller packet sizes
+                // 30% buffer for smaller packet sizes.
             }
         } catch (\Exception $e) {
-            // Use default buffer on error
+            // Use default buffer on error.
         }//end try
 
     }//end initializeMaxPacketSize()
@@ -668,15 +668,15 @@ class MagicBulkHandler
      */
     private function sanitizeColumnName(string $name): string
     {
-        // Convert to lowercase and replace non-alphanumeric with underscores
+        // Convert to lowercase and replace non-alphanumeric with underscores.
         $sanitized = strtolower(preg_replace('/[^a-zA-Z0-9_]/', '_', $name));
 
-        // Ensure it starts with a letter or underscore
+        // Ensure it starts with a letter or underscore.
         if (!preg_match('/^[a-zA-Z_]/', $sanitized)) {
             $sanitized = 'col_'.$sanitized;
         }
 
-        // Limit length to 64 characters (MySQL limit)
+        // Limit length to 64 characters (MySQL limit).
         return substr($sanitized, 0, 64);
 
     }//end sanitizeColumnName()

@@ -92,7 +92,7 @@ class AgentHandler
         try {
             unset($data['id'], $data['uuid']);
 
-            // Check if agent already exists by name
+            // Check if agent already exists by name.
             $existingAgents = $this->agentMapper->findAll();
             $existingAgent  = null;
             foreach ($existingAgents as $agent) {
@@ -103,7 +103,7 @@ class AgentHandler
             }
 
             if ($existingAgent !== null) {
-                // Update existing agent
+                // Update existing agent.
                 $existingAgent->hydrate($data);
                 if ($owner !== null) {
                     $existingAgent->setOwner($owner);
@@ -112,7 +112,7 @@ class AgentHandler
                 return $this->agentMapper->update($existingAgent);
             }
 
-            // Create new agent
+            // Create new agent.
             $agent = new Agent();
             $agent->hydrate($data);
             if ($owner !== null) {

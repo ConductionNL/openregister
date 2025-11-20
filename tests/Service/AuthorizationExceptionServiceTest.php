@@ -308,7 +308,7 @@ class AuthorizationExceptionServiceTest extends TestCase
         $inclusion->setType(AuthorizationException::TYPE_INCLUSION);
         $inclusion->setPriority(5);
 
-        // Exclusion should be evaluated first due to higher priority
+        // Exclusion should be evaluated first due to higher priority.
         $this->mapper->method('findApplicableExceptions')
             ->willReturn([$exclusion, $inclusion]);
 
@@ -394,7 +394,7 @@ class AuthorizationExceptionServiceTest extends TestCase
         $result = $this->service->getUserExceptions('test-user');
 
         $this->assertCount(2, $result);
-        // Should be sorted by priority (group exception first with priority 10)
+        // Should be sorted by priority (group exception first with priority 10).
         $this->assertEquals(10, $result[0]->getPriority());
         $this->assertEquals(5, $result[1]->getPriority());
 

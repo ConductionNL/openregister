@@ -93,7 +93,7 @@ class FileSearchController extends Controller
                         );
             }
 
-            // Build SOLR query
+            // Build SOLR query.
             $solrQuery = [
                 'q'     => "text_content:($query)",
                 'rows'  => $limit,
@@ -102,13 +102,13 @@ class FileSearchController extends Controller
                 'sort'  => 'score desc',
             ];
 
-            // Add file type filter if specified
+            // Add file type filter if specified.
             if (!empty($fileTypes)) {
                 $typeFilter      = implode(' OR ', array_map(fn($t) => "mime_type:\"$t\"", $fileTypes));
                 $solrQuery['fq'] = $typeFilter;
             }
 
-            // Execute SOLR search
+            // Execute SOLR search.
             $queryUrl   = $this->guzzleSolrService->buildSolrBaseUrl()."/{$fileCollection}/select";
             $solrConfig = $this->settingsService->getSettings()['solr'] ?? [];
 
@@ -117,7 +117,7 @@ class FileSearchController extends Controller
                 'timeout' => $solrConfig['timeout'] ?? 30,
             ];
 
-            // Add authentication
+            // Add authentication.
             if (!empty($solrConfig['username']) && !empty($solrConfig['password'])) {
                 $requestOptions['auth'] = [$solrConfig['username'], $solrConfig['password']];
             }
@@ -129,7 +129,7 @@ class FileSearchController extends Controller
             $results  = $result['response']['docs'] ?? [];
             $numFound = $result['response']['numFound'] ?? 0;
 
-            // Group results by file_id
+            // Group results by file_id.
             $groupedResults = [];
             foreach ($results as $doc) {
                 $fileId = $doc['file_id'];
@@ -204,7 +204,7 @@ class FileSearchController extends Controller
                         );
             }
 
-            // Use existing semanticSearch method from VectorEmbeddingService
+            // Use existing semanticSearch method from VectorEmbeddingService.
             $results = $this->vectorService->semanticSearch(
                 query: $query,
                 limit: $limit,
@@ -266,7 +266,7 @@ class FileSearchController extends Controller
                         );
             }
 
-            // Use existing hybridSearch method from VectorEmbeddingService
+            // Use existing hybridSearch method from VectorEmbeddingService.
             $results = $this->vectorService->hybridSearch(
                 query: $query,
                 limit: $limit,

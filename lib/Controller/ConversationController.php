@@ -157,11 +157,11 @@ class ConversationController extends Controller
     public function index(): JSONResponse
     {
         try {
-            // Get active organisation
+            // Get active organisation.
             $organisation     = $this->organisationService->getActiveOrganisation();
             $organisationUuid = $organisation?->getUuid();
 
-            // Get query parameters
+            // Get query parameters.
             $params      = $this->request->getParams();
             $limit       = (int) ($params['limit'] ?? $params['_limit'] ?? 50);
             $offset      = (int) ($params['offset'] ?? $params['_offset'] ?? 0);
@@ -177,28 +177,28 @@ class ConversationController extends Controller
                     $offset
                 );
 
-                // Count total archived conversations
+                // Count total archived conversations.
                 $total = $this->conversationMapper->countDeletedByUser(
                     $this->userId,
                     $organisationUuid
                 );
             } else {
-                // Fetch only active (non-deleted) conversations
+                // Fetch only active (non-deleted) conversations.
                 $conversations = $this->conversationMapper->findByUser(
                     $this->userId,
                     $organisationUuid,
                     false,
-                // includeDeleted = false
+                // includeDeleted = false.
                     $limit,
                     $offset
                 );
 
-                // Count total active conversations
+                // Count total active conversations.
                 $total = $this->conversationMapper->countByUser(
                     $this->userId,
                     $organisationUuid,
                     false
-                // includeDeleted = false
+                // includeDeleted = false.
                 );
             }//end if
 
@@ -247,14 +247,14 @@ class ConversationController extends Controller
     public function show(string $uuid): JSONResponse
     {
         try {
-            // Find conversation
+            // Find conversation.
             $conversation = $this->conversationMapper->findByUuid($uuid);
 
-            // Get active organisation
+            // Get active organisation.
             $organisation     = $this->organisationService->getActiveOrganisation();
             $organisationUuid = $organisation?->getUuid();
 
-            // Check access rights using mapper method
+            // Check access rights using mapper method.
             if (!$this->conversationMapper->canUserAccessConversation($conversation, $this->userId, $organisationUuid)) {
                 return new JSONResponse(
                         [
@@ -265,9 +265,9 @@ class ConversationController extends Controller
                         );
             }
 
-            // Build response without messages
+            // Build response without messages.
             $response = $conversation->jsonSerialize();
-            // Get message count separately for efficiency
+            // Get message count separately for efficiency.
             $response['messageCount'] = $this->messageMapper->countByConversation($conversation->getId());
 
             return new JSONResponse($response, 200);
@@ -316,14 +316,14 @@ class ConversationController extends Controller
     public function messages(string $uuid): JSONResponse
     {
         try {
-            // Find conversation
+            // Find conversation.
             $conversation = $this->conversationMapper->findByUuid($uuid);
 
-            // Get active organisation
+            // Get active organisation.
             $organisation     = $this->organisationService->getActiveOrganisation();
             $organisationUuid = $organisation?->getUuid();
 
-            // Check access rights using mapper method
+            // Check access rights using mapper method.
             if (!$this->conversationMapper->canUserAccessConversation($conversation, $this->userId, $organisationUuid)) {
                 return new JSONResponse(
                         [
@@ -334,19 +334,19 @@ class ConversationController extends Controller
                         );
             }
 
-            // Get query parameters for pagination
+            // Get query parameters for pagination.
             $params = $this->request->getParams();
             $limit  = (int) ($params['limit'] ?? $params['_limit'] ?? 50);
             $offset = (int) ($params['offset'] ?? $params['_offset'] ?? 0);
 
-            // Get messages with pagination
+            // Get messages with pagination.
             $messages = $this->messageMapper->findByConversation(
                 $conversation->getId(),
                 $limit,
                 $offset
             );
 
-            // Get total count
+            // Get total count.
             $total = $this->messageMapper->countByConversation($conversation->getId());
 
             return new JSONResponse(
@@ -399,23 +399,23 @@ class ConversationController extends Controller
     public function create(): JSONResponse
     {
         try {
-            // Get request data
+            // Get request data.
             $data = $this->request->getParams();
 
-            // Get active organisation
+            // Get active organisation.
             $organisation = $this->organisationService->getActiveOrganisation();
 
-            // Get agent ID (handle both agentId and agentUuid)
+            // Get agent ID (handle both agentId and agentUuid).
             $agentId = null;
             if (isset($data['agentId'])) {
                 $agentId = $data['agentId'];
             } else if (isset($data['agentUuid'])) {
-                // Look up agent by UUID to get ID
+                // Look up agent by UUID to get ID.
                 try {
                     $agent   = $this->agentMapper->findByUuid($data['agentUuid']);
                     $agentId = $agent->getId();
                 } catch (\Exception $e) {
-                    // If agent not found, log and continue with null agentId
+                    // If agent not found, log and continue with null agentId.
                     $this->logger->warning(
                             '[ConversationController] Agent UUID not found',
                             [
@@ -425,7 +425,7 @@ class ConversationController extends Controller
                 }
             }
 
-            // Generate unique title if not provided
+            // Generate unique title if not provided.
             $title = $data['title'] ?? null;
             if ($title === null && $agentId !== null) {
                 $title = $this->chatService->ensureUniqueTitle(
@@ -435,7 +435,7 @@ class ConversationController extends Controller
                 );
             }
 
-            // Create new conversation
+            // Create new conversation.
             $conversation = new Conversation();
             $conversation->setUuid(Uuid::v4()->toRfc4122());
             $conversation->setUserId($this->userId);
@@ -446,7 +446,7 @@ class ConversationController extends Controller
             $conversation->setCreated(new DateTime());
             $conversation->setUpdated(new DateTime());
 
-            // Save to database
+            // Save to database.
             $conversation = $this->conversationMapper->insert($conversation);
 
             $this->logger->info(
@@ -495,10 +495,10 @@ class ConversationController extends Controller
     public function update(string $uuid): JSONResponse
     {
         try {
-            // Find conversation
+            // Find conversation.
             $conversation = $this->conversationMapper->findByUuid($uuid);
 
-            // Check modify rights using mapper method
+            // Check modify rights using mapper method.
             if (!$this->conversationMapper->canUserModifyConversation($conversation, $this->userId)) {
                 return new JSONResponse(
                         [
@@ -509,11 +509,11 @@ class ConversationController extends Controller
                         );
             }
 
-            // Get request data
+            // Get request data.
             $data = $this->request->getParams();
 
-            // SECURITY: Only update allowed fields to prevent tampering with immutable fields
-            // Immutable fields (organisation, owner, userId, agentId, created) are NOT updated
+            // SECURITY: Only update allowed fields to prevent tampering with immutable fields.
+            // Immutable fields (organisation, owner, userId, agentId, created) are NOT updated.
             if (isset($data['title'])) {
                 $conversation->setTitle($data['title']);
             }
@@ -524,7 +524,7 @@ class ConversationController extends Controller
 
             $conversation->setUpdated(new DateTime());
 
-            // Save to database
+            // Save to database.
             $conversation = $this->conversationMapper->update($conversation);
 
             $this->logger->info(
@@ -580,10 +580,10 @@ class ConversationController extends Controller
     public function destroy(string $uuid): JSONResponse
     {
         try {
-            // Find conversation
+            // Find conversation.
             $conversation = $this->conversationMapper->findByUuid($uuid);
 
-            // Check modify rights using mapper method
+            // Check modify rights using mapper method.
             if (!$this->conversationMapper->canUserModifyConversation($conversation, $this->userId)) {
                 return new JSONResponse(
                         [
@@ -594,9 +594,9 @@ class ConversationController extends Controller
                         );
             }
 
-            // Check if already soft-deleted (archived)
+            // Check if already soft-deleted (archived).
             if ($conversation->getDeletedAt() !== null) {
-                // Already archived - perform permanent delete
+                // Already archived - perform permanent delete.
                 $this->logger->info(
                         '[ConversationController] Permanently deleting archived conversation',
                         [
@@ -604,13 +604,13 @@ class ConversationController extends Controller
                         ]
                         );
 
-                // Delete feedback first
+                // Delete feedback first.
                 $this->feedbackMapper->deleteByConversation($conversation->getId());
 
-                // Delete messages
+                // Delete messages.
                 $this->messageMapper->deleteByConversation($conversation->getId());
 
-                // Delete conversation
+                // Delete conversation.
                 $this->conversationMapper->delete($conversation);
 
                 $this->logger->info(
@@ -628,7 +628,7 @@ class ConversationController extends Controller
                         200
                         );
             } else {
-                // First delete - perform soft delete (archive)
+                // First delete - perform soft delete (archive).
                 $conversation = $this->conversationMapper->softDelete($conversation->getId());
 
                 $this->logger->info(
@@ -692,10 +692,10 @@ class ConversationController extends Controller
     public function restore(string $uuid): JSONResponse
     {
         try {
-            // Find conversation
+            // Find conversation.
             $conversation = $this->conversationMapper->findByUuid($uuid);
 
-            // Check modify rights using mapper method
+            // Check modify rights using mapper method.
             if (!$this->conversationMapper->canUserModifyConversation($conversation, $this->userId)) {
                 return new JSONResponse(
                         [
@@ -706,7 +706,7 @@ class ConversationController extends Controller
                         );
             }
 
-            // Restore
+            // Restore.
             $conversation = $this->conversationMapper->restore($conversation->getId());
 
             $this->logger->info(
@@ -762,10 +762,10 @@ class ConversationController extends Controller
     public function destroyPermanent(string $uuid): JSONResponse
     {
         try {
-            // Find conversation
+            // Find conversation.
             $conversation = $this->conversationMapper->findByUuid($uuid);
 
-            // Check modify rights using mapper method
+            // Check modify rights using mapper method.
             if (!$this->conversationMapper->canUserModifyConversation($conversation, $this->userId)) {
                 return new JSONResponse(
                         [
@@ -776,10 +776,10 @@ class ConversationController extends Controller
                         );
             }
 
-            // Delete messages first
+            // Delete messages first.
             $this->messageMapper->deleteByConversation($conversation->getId());
 
-            // Delete conversation
+            // Delete conversation.
             $this->conversationMapper->delete($conversation);
 
             $this->logger->info(

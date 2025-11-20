@@ -12,8 +12,11 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 
 /**
+ * Class FeedbackMapper
+ *
+ * @package OCA\OpenRegister\Db
+ *
  * @template-extends QBMapper<Feedback>
- */
  *
  * @method Feedback insert(Entity $entity)
  * @method Feedback update(Entity $entity)
@@ -40,12 +43,12 @@ class FeedbackMapper extends QBMapper
      */
     public function insert(Entity $entity): Entity
     {
-        // Generate UUID if not set
+        // Generate UUID if not set.
         if (empty($entity->getUuid())) {
             $entity->setUuid(\Symfony\Component\Uid\Uuid::v4()->toRfc4122());
         }
 
-        // Set timestamps
+        // Set timestamps.
         $now = new \DateTime();
         if ($entity->getCreated() === null) {
             $entity->setCreated($now);

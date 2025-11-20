@@ -114,8 +114,8 @@ class ToolRegistrationListener implements IEventListener
             return;
         }
 
-        // Register built-in OpenRegister tools
-        // Using tool's getName() and getDescription() to avoid duplication
+        // Register built-in OpenRegister tools.
+        // Using tool's getName() and getDescription() to avoid duplication.
         $event->registerTool(
                 'openregister.register',
                 $this->registerTool,

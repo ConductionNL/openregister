@@ -432,7 +432,7 @@ class Configuration extends Entity implements JsonSerializable
     {
         $jsonFields = $this->getJsonFields();
 
-        // Map 'application' to 'app' for frontend compatibility
+        // Map 'application' to 'app' for frontend compatibility.
         if (isset($object['application']) && !isset($object['app'])) {
             $object['app'] = $object['application'];
         }
@@ -442,7 +442,7 @@ class Configuration extends Entity implements JsonSerializable
                 $value = null;
             }
 
-            // Skip 'application' as it's already mapped to 'app'
+            // Skip 'application' as it's already mapped to 'app'.
             if ($key === 'application') {
                 continue;
             }
@@ -476,7 +476,7 @@ class Configuration extends Entity implements JsonSerializable
             'type'               => $this->type,
             'app'                => $this->app,
             'application'        => $this->app,
-        // Alias for frontend compatibility
+        // Alias for frontend compatibility.
             'version'            => $this->version,
             'sourceType'         => $this->sourceType,
             'sourceUrl'          => $this->sourceUrl,
@@ -574,22 +574,22 @@ class Configuration extends Entity implements JsonSerializable
      */
     public function __toString(): string
     {
-        // Return the title if available, otherwise return a descriptive string
+        // Return the title if available, otherwise return a descriptive string.
         if ($this->title !== null && $this->title !== '') {
             return $this->title;
         }
 
-        // Fallback to type if available
+        // Fallback to type if available.
         if ($this->type !== null && $this->type !== '') {
             return 'Config: '.$this->type;
         }
 
-        // Fallback to ID if available
+        // Fallback to ID if available.
         if ($this->id !== null) {
             return 'Configuration #'.$this->id;
         }
 
-        // Final fallback
+        // Final fallback.
         return 'Configuration';
 
     }//end __toString()

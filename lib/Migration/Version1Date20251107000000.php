@@ -56,7 +56,7 @@ class Version1Date20251107000000 extends SimpleMigrationStep
         if ($schema->hasTable('openregister_organisations')) {
             $table = $schema->getTable('openregister_organisations');
 
-            // Check if roles column still exists
+            // Check if roles column still exists.
             if ($table->hasColumn('roles')) {
                 $output->info('🗑️  Removing deprecated roles column from organisations table...');
 

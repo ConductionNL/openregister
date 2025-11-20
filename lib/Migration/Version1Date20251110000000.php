@@ -71,9 +71,9 @@ class Version1Date20251110000000 extends SimpleMigrationStep
 
         $output->info('🏗️  Adding organisation hierarchy support...');
 
-        // ============================================================
-        // Add parent column to openregister_organisations
-        // ============================================================
+        // ============================================================.
+        // Add parent column to openregister_organisations.
+        // ============================================================.
         if ($schema->hasTable('openregister_organisations')) {
             $table = $schema->getTable('openregister_organisations');
 
@@ -97,7 +97,7 @@ class Version1Date20251110000000 extends SimpleMigrationStep
                 $output->info('  ℹ️  organisations.parent column already exists');
             }
 
-            // Add index for fast parent lookups (used in recursive queries)
+            // Add index for fast parent lookups (used in recursive queries).
             if (!$table->hasIndex('parent_organisation_idx')) {
                 $output->info('  📝 Adding index on parent column');
 

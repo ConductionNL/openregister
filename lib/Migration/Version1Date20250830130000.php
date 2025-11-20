@@ -50,11 +50,11 @@ class Version1Date20250830130000 extends SimpleMigrationStep
          */
         $schema = $schemaClosure();
 
-        // Check if the objects table exists
+        // Check if the objects table exists.
         if ($schema->hasTable('openregister_objects') === true) {
             $table = $schema->getTable('openregister_objects');
 
-            // Add schemaVersion column if it doesn't exist
+            // Add schemaVersion column if it doesn't exist.
             if ($table->hasColumn('schemaVersion') === false) {
                 $table->addColumn(
                         'schemaVersion',

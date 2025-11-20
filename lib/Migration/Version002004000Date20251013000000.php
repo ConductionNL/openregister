@@ -38,11 +38,11 @@ class Version002004000Date20251013000000 extends SimpleMigrationStep
          */
         $schema = $schemaClosure();
 
-        // Create openregister_chat_history table for conversation storage
+        // Create openregister_chat_history table for conversation storage.
         if (!$schema->hasTable('openregister_chat_history')) {
             $table = $schema->createTable('openregister_chat_history');
 
-            // Primary key
+            // Primary key.
             $table->addColumn(
             'id',
             'bigint',
@@ -53,7 +53,7 @@ class Version002004000Date20251013000000 extends SimpleMigrationStep
             ]
             );
 
-            // User who sent the message
+            // User who sent the message.
             $table->addColumn(
             'user_id',
             'string',
@@ -63,7 +63,7 @@ class Version002004000Date20251013000000 extends SimpleMigrationStep
             ]
             );
 
-            // User message
+            // User message.
             $table->addColumn(
             'user_message',
             'text',
@@ -72,7 +72,7 @@ class Version002004000Date20251013000000 extends SimpleMigrationStep
             ]
             );
 
-            // AI response
+            // AI response.
             $table->addColumn(
             'ai_response',
             'text',
@@ -81,7 +81,7 @@ class Version002004000Date20251013000000 extends SimpleMigrationStep
             ]
             );
 
-            // Context sources used for the response (JSON array)
+            // Context sources used for the response (JSON array).
             $table->addColumn(
             'context_sources',
             'text',
@@ -91,7 +91,7 @@ class Version002004000Date20251013000000 extends SimpleMigrationStep
             ]
             );
 
-            // User feedback (positive, negative, or null)
+            // User feedback (positive, negative, or null).
             $table->addColumn(
             'feedback',
             'string',
@@ -102,7 +102,7 @@ class Version002004000Date20251013000000 extends SimpleMigrationStep
             ]
             );
 
-            // Timestamp
+            // Timestamp.
             $table->addColumn(
             'created_at',
             'bigint',
@@ -112,10 +112,10 @@ class Version002004000Date20251013000000 extends SimpleMigrationStep
             ]
             );
 
-            // Set primary key
+            // Set primary key.
             $table->setPrimaryKey(['id']);
 
-            // Add indexes for common queries
+            // Add indexes for common queries.
             $table->addIndex(['user_id'], 'idx_chat_user_id');
             $table->addIndex(['created_at'], 'idx_chat_created_at');
             $table->addIndex(['user_id', 'created_at'], 'idx_chat_user_created');

@@ -153,19 +153,19 @@ class ToolRegistry
      */
     public function registerTool(string $id, ToolInterface $tool, array $metadata): void
     {
-        // Validate ID format (should be app_name.tool_name)
+        // Validate ID format (should be app_name.tool_name).
         if (!preg_match('/^[a-z0-9_]+\.[a-z0-9_]+$/', $id)) {
             throw new \InvalidArgumentException(
                 "Invalid tool ID format: {$id}. Must be 'app_name.tool_name'"
             );
         }
 
-        // Check if already registered
+        // Check if already registered.
         if (isset($this->tools[$id])) {
             throw new \InvalidArgumentException("Tool already registered: {$id}");
         }
 
-        // Validate required metadata
+        // Validate required metadata.
         $required = ['name', 'description', 'icon', 'app'];
         foreach ($required as $field) {
             if (!isset($metadata[$field])) {
@@ -173,7 +173,7 @@ class ToolRegistry
             }
         }
 
-        // Register the tool
+        // Register the tool.
         $this->tools[$id] = [
             'tool'     => $tool,
             'metadata' => $metadata,

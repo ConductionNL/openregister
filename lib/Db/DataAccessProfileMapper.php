@@ -21,6 +21,12 @@ namespace OCA\OpenRegister\Db;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\IDBConnection;
 
+/**
+ * Class DataAccessProfileMapper
+ *
+ * Mapper for DataAccessProfile entities.
+ *
+ * @package OCA\OpenRegister\Db
  *
  * @method DataAccessProfile insert(Entity $entity)
  * @method DataAccessProfile update(Entity $entity)

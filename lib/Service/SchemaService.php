@@ -112,14 +112,14 @@ class SchemaService
     {
         $this->logger->info('Starting schema exploration for schema ID: '.$schemaId);
 
-        // Get the schema to validate it exists
+        // Get the schema to validate it exists.
         try {
             $schema = $this->schemaMapper->find($schemaId);
         } catch (\Exception $e) {
             throw new \Exception('Schema not found with ID: '.$schemaId);
         }
 
-        // Get all objects for this schema
+        // Get all objects for this schema.
         $objects = $this->objectEntityMapper->findBySchema($schemaId);
 
         $this->logger->info('Found '.count($objects).' objects to analyze');
@@ -137,10 +137,10 @@ class SchemaService
             ];
         }
 
-        // Analyze all object data
+        // Analyze all object data.
         $propertyAnalysis = $this->analyzeObjectProperties($objects, $schema->getProperties());
 
-        // Generate suggestions for both new and existing properties
+        // Generate suggestions for both new and existing properties.
         $newPropertySuggestions      = $this->generateSuggestions($propertyAnalysis['discovered'], $schema->getProperties());
         $existingPropertySuggestions = $this->analyzeExistingProperties($schema->getProperties(), $propertyAnalysis['discovered'], $propertyAnalysis['usage_stats']);
 
@@ -184,23 +184,23 @@ class SchemaService
         foreach ($objects as $object) {
             $objectData = $object->getObject();
 
-            // Skip the '@self' metadata field in analysis
+            // Skip the '@self' metadata field in analysis.
             unset($objectData['@self']);
 
             foreach ($objectData as $propertyName => $propertyValue) {
-                // Track usage count
+                // Track usage count.
                 if (!isset($usageStats['counts'][$propertyName])) {
                     $usageStats['counts'][$propertyName] = 0;
                 }
 
                 $usageStats['counts'][$propertyName]++;
 
-                // Skip if null or empty
+                // Skip if null or empty.
                 if ($propertyValue === null || $propertyValue === '') {
                     continue;
                 }
 
-                // Analyze data type and characteristics
+                // Analyze data type and characteristics.
                 $propertyAnalysis = $this->analyzePropertyValue($propertyValue);
 
                 if (!isset($discoveredProperties[$propertyName])) {
@@ -221,15 +221,15 @@ class SchemaService
                     ];
                 }
 
-                // Merge type analysis
+                // Merge type analysis.
                 $this->mergePropertyAnalysis($discoveredProperties[$propertyName], $propertyAnalysis);
 
-                // Track total usage for percentage calculation
+                // Track total usage for percentage calculation.
                 $discoveredProperties[$propertyName]['usage_count']++;
             }//end foreach
         }//end foreach
 
-        // Calculate usage percentages
+        // Calculate usage percentages.
         $totalObjects = count($objects);
         foreach ($usageStats['counts'] as $propertyName => $count) {
             $usageStats['percentages'][$propertyName] = round(($count / $totalObjects) * 100, 2);
@@ -269,18 +269,18 @@ class SchemaService
             'string_patterns'  => [],
         ];
 
-        // Determine data type
+        // Determine data type.
         $type = gettype($value);
         $analysis['types'][] = $type;
 
-        // Type-specific analysis
+        // Type-specific analysis.
         switch ($type) {
             case 'string':
                 $length = strlen($value);
                 $analysis['max_length'] = $length;
                 $analysis['min_length'] = $length;
 
-                // Detect format based on string patterns
+                // Detect format based on string patterns.
                 $analysis['detected_format']   = $this->detectStringFormat($value);
                 $analysis['string_patterns'][] = $this->analyzeStringPattern($value);
                 break;
@@ -298,7 +298,7 @@ class SchemaService
                     break;
                 }
 
-                // Analyze array structure
+                // Analyze array structure.
                 $analysis['array_structure'] = $this->analyzezArrayStructure($value);
                 break;
 
@@ -324,7 +324,7 @@ class SchemaService
      */
     private function detectStringFormat(string $value): ?string
     {
-        // Date formats
+        // Date formats.
         if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) {
             $parsed = DateTime::createFromFormat('Y-m-d', $value);
             if ($parsed && $parsed->format('Y-m-d') === $value) {
@@ -340,52 +340,52 @@ class SchemaService
             }
         }
 
-        // RFC3339 format
+        // RFC3339 format.
         if (preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/', $value)) {
             return 'date-time';
         }
 
-        // UUID format
+        // UUID format.
         if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value)) {
             return 'uuid';
         }
 
-        // Email format
+        // Email format.
         if (filter_var($value, FILTER_VALIDATE_EMAIL)) {
             return 'email';
         }
 
-        // URL format
+        // URL format.
         if (filter_var($value, FILTER_VALIDATE_URL)) {
             return 'url';
         }
 
-        // Time format (HH:MM:SS)
+        // Time format (HH:MM:SS).
         if (preg_match('/^\d{2}:\d{2}:\d{2}$/', $value)) {
             return 'time';
         }
 
-        // Duration format (ISO 8601 duration like PT1H30M)
+        // Duration format (ISO 8601 duration like PT1H30M).
         if (preg_match('/^P(\d+Y)?(\d+M)?(\d+D)?(T(\d+H)?(\d+M)?(\d+S)?)?$/', $value)) {
             return 'duration';
         }
 
-        // Color format (hex, rgb, etc.)
+        // Color format (hex, rgb, etc.).
         if (preg_match('/^#[0-9a-fA-F]{6}$/', $value)) {
             return 'color';
         }
 
-        // Hostname format
+        // Hostname format.
         if (preg_match('/^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/', $value)) {
             return 'hostname';
         }
 
-        // IPv4 format
+        // IPv4 format.
         if (filter_var($value, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
             return 'ipv4';
         }
 
-        // IPv6 format
+        // IPv6 format.
         if (filter_var($value, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
             return 'ipv6';
         }
@@ -406,7 +406,7 @@ class SchemaService
     {
         $patterns = [];
 
-        // Check for numeric strings (could be integers)
+        // Check for numeric strings (could be integers).
         if (is_numeric($value)) {
             if (ctype_digit($value)) {
                 $patterns[] = 'integer_string';
@@ -415,12 +415,12 @@ class SchemaService
             }
         }
 
-        // Check for boolean-like strings
+        // Check for boolean-like strings.
         if (in_array(strtolower($value), ['true', 'false', 'yes', 'no', 'on', 'off', '1', '0'])) {
             $patterns[] = 'boolean_string';
         }
 
-        // Check for enum-like patterns (camelCase, PascalCase, etc.)
+        // Check for enum-like patterns (camelCase, PascalCase, etc.).
         if (preg_match('/^[a-z]+[A-Z][a-zA-Z]*$/', $value)) {
             $patterns[] = 'camelCase';
         }
@@ -437,12 +437,12 @@ class SchemaService
             $patterns[] = 'SCREAMING_SNAKE_CASE';
         }
 
-        // Check for filename patterns
+        // Check for filename patterns.
         if (preg_match('/^[^<>:"/\\|?*]+\.[a-zA-Z0-9]+$/', $value)) {
             $patterns[] = 'filename';
         }
 
-        // Check for directory patterns
+        // Check for directory patterns.
         if (str_contains($value, '/') || str_contains($value, '\\')) {
             $patterns[] = 'path';
         }
@@ -462,14 +462,14 @@ class SchemaService
      */
     private function mergePropertyAnalysis(array &$existingAnalysis, array $newAnalysis): void
     {
-        // Merge types
+        // Merge types.
         foreach ($newAnalysis['types'] as $type) {
             if (!in_array($type, $existingAnalysis['types'])) {
                 $existingAnalysis['types'][] = $type;
             }
         }
 
-        // Add unique examples (limit to avoid memory issues)
+        // Add unique examples (limit to avoid memory issues).
         if (count($existingAnalysis['examples']) >= 10) {
             $existingAnalysis['examples'][] = $newAnalysis['examples'][0];
             $existingAnalysis['examples']   = array_unique($existingAnalysis['examples'], SORT_REGULAR);
@@ -484,7 +484,7 @@ class SchemaService
             $existingAnalysis['examples'] = array_slice($existingAnalysis['examples'], 0, 5);
         }
 
-        // Update length ranges
+        // Update length ranges.
         if (isset($newAnalysis['max_length']) && $newAnalysis['max_length'] > $existingAnalysis['max_length']) {
             $existingAnalysis['max_length'] = $newAnalysis['max_length'];
         }
@@ -493,7 +493,7 @@ class SchemaService
             $existingAnalysis['min_length'] = $newAnalysis['min_length'];
         }
 
-        // Merge detected formats (if consistent patterns emerge)
+        // Merge detected formats (if consistent patterns emerge).
         if (isset($newAnalysis['detected_format']) && $newAnalysis['detected_format']) {
             $existingAnalysis['detected_format'] = $this->consolidateFormatDetection(
                 $existingAnalysis['detected_format'] ?? null,
@@ -501,14 +501,14 @@ class SchemaService
             );
         }
 
-        // Merge string patterns
+        // Merge string patterns.
         if (!empty($newAnalysis['string_patterns'])) {
             $existingAnalysis['string_patterns'] = array_unique(
                 array_merge($existingAnalysis['string_patterns'] ?? [], $newAnalysis['string_patterns'])
             );
         }
 
-        // Merge numeric ranges
+        // Merge numeric ranges.
         if (!empty($newAnalysis['numeric_range'])) {
             $existingAnalysis['numeric_range'] = $this->mergeNumericRanges(
                 $existingAnalysis['numeric_range'] ?? null,
@@ -516,7 +516,7 @@ class SchemaService
             );
         }
 
-        // Merge object structure analysis
+        // Merge object structure analysis.
         if ($newAnalysis['object_structure']) {
             if (!$existingAnalysis['object_structure']) {
                 $existingAnalysis['object_structure'] = $newAnalysis['object_structure'];
@@ -525,7 +525,7 @@ class SchemaService
             }
         }
 
-        // Merge array structure analysis
+        // Merge array structure analysis.
         if ($newAnalysis['array_structure']) {
             if (!$existingAnalysis['array_structure']) {
                 $existingAnalysis['array_structure'] = $newAnalysis['array_structure'];
@@ -545,17 +545,17 @@ class SchemaService
      */
     private function consolidateFormatDetection(?string $existingFormat, string $newFormat): ?string
     {
-        // If existing format is null, use the new format
+        // If existing format is null, use the new format.
         if ($existingFormat === null) {
             return $newFormat;
         }
 
-        // If formats match, keep the format
+        // If formats match, keep the format.
         if ($existingFormat === $newFormat) {
             return $existingFormat;
         }
 
-        // If formats differ, prioritize more specific formats
+        // If formats differ, prioritize more specific formats.
         $formatPriority = [
             'date-time' => 10,
             'date'      => 9,
@@ -592,15 +592,15 @@ class SchemaService
             return $newRange;
         }
 
-        // Ensure类型匹配
+        // Ensure类型匹配.
         if ($existingRange['type'] !== $newRange['type']) {
-            // Handle type promotion (integer -> number)
+            // Handle type promotion (integer -> number).
             if ($existingRange['type'] === 'integer' && $newRange['type'] === 'number') {
                 $existingRange['type'] = 'number';
             } else if ($existingRange['type'] === 'number' && $newRange['type'] === 'integer') {
-                // Keep as number
+                // Keep as number.
             } else {
-                // Incompatible types, default to number
+                // Incompatible types, default to number.
                 return ['type' => 'number', 'min' => min($existingRange['min'], $newRange['min']), 'max' => max($existingRange['max'], $newRange['max'])];
             }
         }
@@ -650,7 +650,7 @@ class SchemaService
             ];
         }
 
-        // It's an associative array, analyze as object
+        // It's an associative array, analyze as object.
         return [
             'type'   => 'associative',
             'keys'   => array_keys($array),
@@ -699,7 +699,7 @@ class SchemaService
     private function mergeObjectStructures(array &$existingStructure, array $newStructure): void
     {
         if ($newStructure['type'] === 'object' && $existingStructure['type'] === 'object') {
-            // Merge keys
+            // Merge keys.
             $existingStructure['keys']      = array_unique(array_merge($existingStructure['keys'], $newStructure['keys']));
             $existingStructure['key_count'] = count($existingStructure['keys']);
         }
@@ -724,17 +724,17 @@ class SchemaService
         $existingPropertyNames = array_keys($existingProperties);
 
         foreach ($discoveredProperties as $propertyName => $analysis) {
-            // Skip properties that already exist in the schema
+            // Skip properties that already exist in the schema.
             if (in_array($propertyName, $existingPropertyNames)) {
                 continue;
             }
 
-            // Skip internal/metadata properties
+            // Skip internal/metadata properties.
             if ($this->isInternalProperty($propertyName)) {
                 continue;
             }
 
-            // Calculate confidence based on usage percentage
+            // Calculate confidence based on usage percentage.
             $usagePercentage = $analysis['usage_percentage'] ?? 0;
             $confidence      = 'low';
 
@@ -744,7 +744,7 @@ class SchemaService
                 $confidence = 'medium';
             }
 
-            // Determine recommended type
+            // Determine recommended type.
             $recommendedType = $this->recommendPropertyType($analysis);
 
             $suggestion = [
@@ -757,7 +757,7 @@ class SchemaService
                 'max_length'       => $analysis['max_length'] > 0 ? $analysis['max_length'] : null,
                 'min_length'       => isset($analysis['min_length']) && $analysis['min_length'] < PHP_INT_MAX ? $analysis['min_length'] : null,
                 'nullable'         => true,
-            // Default to nullable unless evidence suggests otherwise
+            // Default to nullable unless evidence suggests otherwise.
                 'description'      => 'Property discovered through object analysis',
                 'detected_format'  => $analysis['detected_format'] ?? null,
                 'string_patterns'  => $analysis['string_patterns'] ?? [],
@@ -765,26 +765,26 @@ class SchemaService
                 'type_variations'  => count($analysis['types']) > 1 ? $analysis['types'] : null,
             ];
 
-            // Add specific type recommendations
+            // Add specific type recommendations.
             if ($recommendedType === 'string' && $analysis['max_length'] > 0) {
                 $suggestion['maxLength'] = min($analysis['max_length'] * 2, 1000);
-                // Allow some buffer
+                // Allow some buffer.
             }
 
-            // Handle enum-like properties
+            // Handle enum-like properties.
             if ($this->detectEnumLike($analysis)) {
                 $suggestion['type']        = 'string';
                 $suggestion['enum']        = $this->extractEnumValues($analysis['examples']);
                 $suggestion['description'] = 'Enum-like property with predefined values';
             }
 
-            // Handle nested objects
+            // Handle nested objects.
             if (!empty($analysis['object_structure']) && $analysis['object_structure']['type'] === 'object') {
                 $suggestion['type']       = 'object';
                 $suggestion['properties'] = $this->generateNestedProperties($analysis['object_structure']);
             }
 
-            // Handle arrays
+            // Handle arrays.
             if (!empty($analysis['array_structure']) && $analysis['array_structure']['type'] === 'list') {
                 $suggestion['type']  = 'array';
                 $suggestion['items'] = $this->generateArrayItemType($analysis['array_structure']);
@@ -793,7 +793,7 @@ class SchemaService
             $suggestions[] = $suggestion;
         }//end foreach
 
-        // Sort suggestions by confidence and usage
+        // Sort suggestions by confidence and usage.
         usort(
                 $suggestions,
                 function ($a, $b) {
@@ -830,7 +830,7 @@ class SchemaService
         $improvements = [];
 
         foreach ($existingProperties as $propertyName => $propertyConfig) {
-            // Skip if we don't have analysis data for this property
+            // Skip if we don't have analysis data for this property.
             if (!isset($discoveredProperties[$propertyName])) {
                 continue;
             }
@@ -866,7 +866,7 @@ class SchemaService
             }//end if
         }//end foreach
 
-        // Sort improvements by confidence and usage
+        // Sort improvements by confidence and usage.
         usort(
                 $improvements,
                 function ($a, $b) {
@@ -901,7 +901,7 @@ class SchemaService
         $suggestions     = [];
         $recommendedType = $this->recommendPropertyType($analysis);
 
-        // Type mismatch check
+        // Type mismatch check.
         $currentType = $currentConfig['type'] ?? null;
         if ($currentType && $currentType !== $recommendedType) {
             $issues[]      = "type_mismatch";
@@ -914,7 +914,7 @@ class SchemaService
             ];
         }
 
-        // Missing constraints for strings
+        // Missing constraints for strings.
         if ($recommendedType === 'string' || $currentType === 'string') {
             $actualType    = $currentType ?: $recommendedType;
             $suggestConfig = [];
@@ -960,7 +960,7 @@ class SchemaService
                 }
             }
 
-            // Check for missing pattern
+            // Check for missing pattern.
             if (!empty($analysis['string_patterns'])) {
                 $currentPattern = $currentConfig['pattern'] ?? null;
                 $mainPattern    = $analysis['string_patterns'][0];
@@ -977,14 +977,14 @@ class SchemaService
             }
         }//end if
 
-        // Missing constraints for numbers
+        // Missing constraints for numbers.
         if ($recommendedType === 'number' || $recommendedType === 'integer' || $currentType === 'number' || $currentType === 'integer') {
             $actualType = $currentType ?: $recommendedType;
 
             if (isset($analysis['numeric_range'])) {
                 $range = $analysis['numeric_range'];
 
-                // Check for missing minimum
+                // Check for missing minimum.
                 $currentMin = $currentConfig['minimum'] ?? null;
                 if (!$currentMin && $range['min'] !== $range['max']) {
                     $issues[]      = "missing_minimum";
@@ -1006,7 +1006,7 @@ class SchemaService
                     ];
                 }
 
-                // Check for missing maximum
+                // Check for missing maximum.
                 $currentMax = $currentConfig['maximum'] ?? null;
                 if (!$currentMax && $range['min'] !== $range['max']) {
                     $issues[]      = "missing_maximum";
@@ -1121,7 +1121,7 @@ class SchemaService
                 case 'date-time':
                 case 'time':
                     return 'string';
-                // Dates are typically strings in JSON Schema
+                // Dates are typically strings in JSON Schema.
                 case 'email':
                 case 'url':
                 case 'hostname':
@@ -1136,13 +1136,13 @@ class SchemaService
             }
         }
 
-        // Check for boolean-like string patterns
+        // Check for boolean-like string patterns.
         $stringPatterns = $analysis['string_patterns'] ?? [];
         if (in_array('boolean_string', $stringPatterns, true)) {
             return 'boolean';
         }
 
-        // Check for numeric string patterns
+        // Check for numeric string patterns.
         if (in_array('integer_string', $stringPatterns, true)) {
             return 'integer';
         }
@@ -1151,13 +1151,13 @@ class SchemaService
             return 'number';
         }
 
-        // If we have strong evidence for one type, use it
+        // If we have strong evidence for one type, use it.
         if (count($types) === 1) {
             $primaryType = $types[0];
 
             switch ($primaryType) {
                 case 'string':
-                    // Check if it's a numeric string
+                    // Check if it's a numeric string.
                     if (in_array('integer_string', $stringPatterns, true)) {
                         return 'integer';
                     }
@@ -1179,18 +1179,18 @@ class SchemaService
                     return 'object';
                 default:
                     return 'string';
-                // Default fallback
+                // Default fallback.
             }//end switch
         }//end if
 
-        // If multiple types detected, analyze the dominance
+        // If multiple types detected, analyze the dominance.
         $typeCounts = array_count_values($types);
         arsort($typeCounts);
         $dominantType = array_key_first($typeCounts);
 
-        // Check pattern consistency for string-dominated fields
+        // Check pattern consistency for string-dominated fields.
         if ($dominantType === 'string') {
-            // If most values are consistently numeric strings, recommend number/integer
+            // If most values are consistently numeric strings, recommend number/integer.
             if (in_array('integer_string', $stringPatterns, true)
                 && !in_array('float_string', $stringPatterns, true)
             ) {
@@ -1202,7 +1202,7 @@ class SchemaService
             return 'string';
         }
 
-        // For non-string dominant types, use the dominant type
+        // For non-string dominant types, use the dominant type.
         switch ($dominantType) {
             case 'integer':
                 return 'integer';
@@ -1233,18 +1233,18 @@ class SchemaService
     {
         $examples = $analysis['examples'];
 
-        // Need at least 3 examples to detect enum pattern
+        // Need at least 3 examples to detect enum pattern.
         if (count($examples) < 3) {
             return false;
         }
 
-        // Count unique values
+        // Count unique values.
         $uniqueValues  = array_unique($examples);
         $totalExamples = count($examples);
         $uniqueCount   = count($uniqueValues);
 
-        // If we have relatively few unique values compared to total examples
-        // and all examples are strings, likely enum-like
+        // If we have relatively few unique values compared to total examples.
+        // and all examples are strings, likely enum-like.
         return $uniqueCount <= ($totalExamples / 2) &&
                !empty($analysis['types']) &&
                $analysis['types'][0] === 'string';
@@ -1289,7 +1289,7 @@ class SchemaService
             foreach ($objectStructure['keys'] as $key) {
                 $properties[$key] = [
                     'type'        => 'string',
-                // Default assumption
+                // Default assumption.
                     'description' => 'Nested property discovered through analysis',
                 ];
             }
@@ -1352,22 +1352,22 @@ class SchemaService
         $this->logger->info('Updating schema '.$schemaId.' with '.count($propertyUpdates).' property updates');
 
         try {
-            // Get existing schema
+            // Get existing schema.
             $schema = $this->schemaMapper->find($schemaId);
             $existingProperties = $schema->getProperties();
 
-            // Merge new properties with existing ones
+            // Merge new properties with existing ones.
             foreach ($propertyUpdates as $propertyName => $propertyDefinition) {
                 $existingProperties[$propertyName] = $propertyDefinition;
             }
 
-            // Update schema properties
+            // Update schema properties.
             $schema->setProperties($existingProperties);
 
-            // Regenerate facets if schema has facet generation enabled
+            // Regenerate facets if schema has facet generation enabled.
             $schema->regenerateFacetsFromProperties();
 
-            // Save updated schema
+            // Save updated schema.
             $updatedSchema = $this->schemaMapper->update($schema);
 
             $this->logger->info('Schema '.$schemaId.' successfully updated with exploration results');

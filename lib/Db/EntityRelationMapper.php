@@ -17,7 +17,6 @@ use OCP\IDBConnection;
 
 /**
  * Class EntityRelationMapper
- */
  *
  * @method EntityRelation insert(Entity $entity)
  * @method EntityRelation update(Entity $entity)

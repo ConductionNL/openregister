@@ -88,7 +88,7 @@ class AuthorizationExceptionMapperTest extends TestCase
         $exception->setPriority(5);
         $exception->setDescription('Test inclusion');
 
-        // Mock the database insert operation
+        // Mock the database insert operation.
         $this->expectDatabaseInsert($exception);
 
         $result = $this->mapper->createException($exception, 'creator-user');
@@ -114,7 +114,7 @@ class AuthorizationExceptionMapperTest extends TestCase
         $exception->setType(AuthorizationException::TYPE_EXCLUSION);
         $exception->setDescription('Updated description');
 
-        // Mock the database update operation
+        // Mock the database update operation.
         $this->expectDatabaseUpdate($exception);
 
         $result = $this->mapper->updateException($exception);
@@ -132,8 +132,8 @@ class AuthorizationExceptionMapperTest extends TestCase
      */
     public function testFindApplicableExceptions(): void
     {
-        // This test would require more complex database mocking
-        // In a real test environment, you would set up test data
+        // This test would require more complex database mocking.
+        // In a real test environment, you would set up test data.
         
         $exceptions = $this->mapper->findApplicableExceptions(
             AuthorizationException::SUBJECT_TYPE_USER,
@@ -171,7 +171,7 @@ class AuthorizationExceptionMapperTest extends TestCase
      */
     public function testFindByUuid(): void
     {
-        // In a real test, this would throw DoesNotExistException if no record exists
+        // In a real test, this would throw DoesNotExistException if no record exists.
         $this->expectException(DoesNotExistException::class);
         
         $this->mapper->findByUuid('non-existent-uuid');
@@ -206,7 +206,7 @@ class AuthorizationExceptionMapperTest extends TestCase
      */
     public function testDeactivateException(): void
     {
-        // This would require mocking the findByUuid method to return an exception
+        // This would require mocking the findByUuid method to return an exception.
         $this->expectException(DoesNotExistException::class);
         
         $this->mapper->deactivateException('non-existent-uuid');
@@ -221,7 +221,7 @@ class AuthorizationExceptionMapperTest extends TestCase
      */
     public function testActivateException(): void
     {
-        // This would require mocking the findByUuid method to return an exception
+        // This would require mocking the findByUuid method to return an exception.
         $this->expectException(DoesNotExistException::class);
         
         $this->mapper->activateException('non-existent-uuid');
@@ -236,7 +236,7 @@ class AuthorizationExceptionMapperTest extends TestCase
      */
     public function testDeleteByUuid(): void
     {
-        // This would require mocking the findByUuid method to return an exception
+        // This would require mocking the findByUuid method to return an exception.
         $this->expectException(DoesNotExistException::class);
         
         $this->mapper->deleteByUuid('non-existent-uuid');
@@ -253,11 +253,11 @@ class AuthorizationExceptionMapperTest extends TestCase
      */
     private function expectDatabaseInsert(AuthorizationException $exception): void
     {
-        // In a real test setup, you would mock the database connection
-        // and query builder to expect specific insert operations
-        // For now, we'll just ensure the method returns the exception
+        // In a real test setup, you would mock the database connection.
+        // and query builder to expect specific insert operations.
+        // For now, we'll just ensure the method returns the exception.
         
-        // This is a simplified mock - in practice you'd mock QBMapper::insert()
+        // This is a simplified mock - in practice you'd mock QBMapper::insert().
 
     }//end expectDatabaseInsert()
 
@@ -271,10 +271,10 @@ class AuthorizationExceptionMapperTest extends TestCase
      */
     private function expectDatabaseUpdate(AuthorizationException $exception): void
     {
-        // In a real test setup, you would mock the database connection
-        // and query builder to expect specific update operations
+        // In a real test setup, you would mock the database connection.
+        // and query builder to expect specific update operations.
         
-        // This is a simplified mock - in practice you'd mock QBMapper::update()
+        // This is a simplified mock - in practice you'd mock QBMapper::update().
 
     }//end expectDatabaseUpdate()
 

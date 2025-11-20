@@ -163,7 +163,7 @@ class EntityOrganisationAssignmentTest extends TestCase
     {
         parent::setUp();
         
-        // Create mock objects
+        // Create mock objects.
         $this->organisationMapper = $this->createMock(OrganisationMapper::class);
         $this->registerMapper = $this->createMock(RegisterMapper::class);
         $this->schemaMapper = $this->createMock(SchemaMapper::class);
@@ -176,7 +176,7 @@ class EntityOrganisationAssignmentTest extends TestCase
         $this->logger = $this->createMock(LoggerInterface::class);
         $this->mockUser = $this->createMock(IUser::class);
         
-        // Create service instances
+        // Create service instances.
         $this->organisationService = new OrganisationService(
             $this->organisationMapper,
             $this->userSession,
@@ -191,10 +191,10 @@ class EntityOrganisationAssignmentTest extends TestCase
             $this->organisationService
         );
         
-        // Mock dependencies for ObjectService (simplified for testing)
+        // Mock dependencies for ObjectService (simplified for testing).
         $this->objectService = $this->createMock(ObjectService::class);
         
-        // Create controller instances
+        // Create controller instances.
         $this->registersController = new RegistersController(
             'openregister',
             $this->request,
@@ -262,11 +262,11 @@ class EntityOrganisationAssignmentTest extends TestCase
      */
     public function testRegisterCreationWithActiveOrganisation(): void
     {
-        // Arrange: Mock user session
+        // Arrange: Mock user session.
         $this->mockUser->method('getUID')->willReturn('alice');
         $this->userSession->method('getUser')->willReturn($this->mockUser);
         
-        // Mock: Active organisation
+        // Mock: Active organisation.
         $acmeOrg = new Organisation();
         $acmeOrg->setName('ACME Corporation');
         $acmeOrg->setUuid('acme-uuid-123');
@@ -283,13 +283,13 @@ class EntityOrganisationAssignmentTest extends TestCase
             ->with('acme-uuid-123')
             ->willReturn($acmeOrg);
         
-        // Mock: Register creation data
+        // Mock: Register creation data.
         $registerData = [
             'title' => 'ACME Employee Register',
             'description' => 'Employee data for ACME Corp'
         ];
         
-        // Mock: Created register
+        // Mock: Created register.
         $createdRegister = new Register();
         $createdRegister->setTitle('ACME Employee Register');
         $createdRegister->setDescription('Employee data for ACME Corp');
@@ -312,10 +312,10 @@ class EntityOrganisationAssignmentTest extends TestCase
             }))
             ->willReturn($createdRegister);
 
-        // Act: Create register via service
+        // Act: Create register via service.
         $result = $this->registerService->createFromArray($registerData);
 
-        // Assert: Register assigned to active organisation
+        // Assert: Register assigned to active organisation.
         $this->assertInstanceOf(Register::class, $result);
         $this->assertEquals('acme-uuid-123', $result->getOrganisation());
         $this->assertEquals('alice', $result->getOwner());
@@ -332,17 +332,17 @@ class EntityOrganisationAssignmentTest extends TestCase
      */
     public function testSchemaCreationWithActiveOrganisation(): void
     {
-        // Arrange: Mock user session
+        // Arrange: Mock user session.
         $this->mockUser->method('getUID')->willReturn('alice');
         $this->userSession->method('getUser')->willReturn($this->mockUser);
         
-        // Mock: Active organisation
+        // Mock: Active organisation.
         $this->session
             ->method('get')
             ->with('openregister_active_organisation_alice')
             ->willReturn('acme-uuid-123');
         
-        // Mock: Schema creation data
+        // Mock: Schema creation data.
         $schemaData = [
             'title' => 'Employee Schema',
             'description' => 'Schema for employee data',
@@ -352,7 +352,7 @@ class EntityOrganisationAssignmentTest extends TestCase
             ]
         ];
         
-        // Mock: Created schema
+        // Mock: Created schema.
         $createdSchema = new Schema();
         $createdSchema->setTitle('Employee Schema');
         $createdSchema->setDescription('Schema for employee data');
@@ -361,7 +361,7 @@ class EntityOrganisationAssignmentTest extends TestCase
         $createdSchema->setOwner('alice');
         $createdSchema->setUuid('schema-uuid-789');
         
-        // Mock: Updated schema with organisation
+        // Mock: Updated schema with organisation.
         $updatedSchema = clone $createdSchema;
         $updatedSchema->setOrganisation('acme-uuid-123');
         
@@ -380,10 +380,10 @@ class EntityOrganisationAssignmentTest extends TestCase
             }))
             ->willReturn($updatedSchema);
 
-        // Act: Create schema via controller
+        // Act: Create schema via controller.
         $response = $this->schemasController->create($schemaData);
 
-        // Assert: Schema assigned to active organisation
+        // Assert: Schema assigned to active organisation.
         $this->assertInstanceOf(JSONResponse::class, $response);
         $this->assertEquals(200, $response->getStatus());
         
@@ -403,11 +403,11 @@ class EntityOrganisationAssignmentTest extends TestCase
      */
     public function testObjectCreationWithActiveOrganisation(): void
     {
-        // Arrange: Mock user session
+        // Arrange: Mock user session.
         $this->mockUser->method('getUID')->willReturn('alice');
         $this->userSession->method('getUser')->willReturn($this->mockUser);
         
-        // Mock: Register and schema exist in same organisation
+        // Mock: Register and schema exist in same organisation.
         $register = new Register();
         $register->setUuid('register-uuid-456');
         $register->setOrganisation('acme-uuid-123');
@@ -416,7 +416,7 @@ class EntityOrganisationAssignmentTest extends TestCase
         $schema->setUuid('schema-uuid-789');
         $schema->setOrganisation('acme-uuid-123');
         
-        // Mock: Object creation via service
+        // Mock: Object creation via service.
         $objectData = [
             'name' => 'John Doe',
             'email' => 'john@acme.com'
@@ -435,15 +435,15 @@ class EntityOrganisationAssignmentTest extends TestCase
             ->method('saveObject')
             ->willReturn($createdObject);
 
-        // Mock: Request parameters for controller
+        // Mock: Request parameters for controller.
         $this->request
             ->method('getParams')
             ->willReturn($objectData);
 
-        // Act: Create object via controller
+        // Act: Create object via controller.
         $response = $this->objectsController->create('register-uuid-456', 'schema-uuid-789', $this->objectService);
 
-        // Assert: Object assigned to active organisation
+        // Assert: Object assigned to active organisation.
         $this->assertInstanceOf(JSONResponse::class, $response);
         $this->assertEquals(200, $response->getStatus());
         
@@ -463,12 +463,12 @@ class EntityOrganisationAssignmentTest extends TestCase
      */
     public function testEntityAccessWithinSameOrganisation(): void
     {
-        // Arrange: Mock user session (Bob is member of ACME)
+        // Arrange: Mock user session (Bob is member of ACME).
         $bobUser = $this->createMock(IUser::class);
         $bobUser->method('getUID')->willReturn('bob');
         $this->userSession->method('getUser')->willReturn($bobUser);
         
-        // Mock: Bob belongs to ACME organisation
+        // Mock: Bob belongs to ACME organisation.
         $acmeOrg = new Organisation();
         $acmeOrg->setUuid('acme-uuid-123');
         $acmeOrg->setUsers(['alice', 'bob']);
@@ -478,7 +478,7 @@ class EntityOrganisationAssignmentTest extends TestCase
             ->with('bob')
             ->willReturn([$acmeOrg]);
         
-        // Mock: ACME register
+        // Mock: ACME register.
         $acmeRegister = new Register();
         $acmeRegister->setId(1);
         $acmeRegister->setUuid('acme-register-uuid');
@@ -492,10 +492,10 @@ class EntityOrganisationAssignmentTest extends TestCase
             ->with(1)
             ->willReturn($acmeRegister);
 
-        // Act: Bob accesses ACME register
+        // Act: Bob accesses ACME register.
         $register = $this->registerService->find(1);
 
-        // Assert: Bob can access register in same organisation
+        // Assert: Bob can access register in same organisation.
         $this->assertInstanceOf(Register::class, $register);
         $this->assertEquals('acme-uuid-123', $register->getOrganisation());
         $this->assertEquals('ACME Register', $register->getTitle());
@@ -511,12 +511,12 @@ class EntityOrganisationAssignmentTest extends TestCase
      */
     public function testEntityAccessAcrossOrganisations(): void
     {
-        // Arrange: Mock user session (Charlie not in ACME)
+        // Arrange: Mock user session (Charlie not in ACME).
         $charlieUser = $this->createMock(IUser::class);
         $charlieUser->method('getUID')->willReturn('charlie');
         $this->userSession->method('getUser')->willReturn($charlieUser);
         
-        // Mock: Charlie belongs to different organisation
+        // Mock: Charlie belongs to different organisation.
         $defaultOrg = new Organisation();
         $defaultOrg->setUuid('default-org-uuid');
         $defaultOrg->setUsers(['charlie']);
@@ -526,7 +526,7 @@ class EntityOrganisationAssignmentTest extends TestCase
             ->with('charlie')
             ->willReturn([$defaultOrg]);
         
-        // Mock: ACME register (different organisation)
+        // Mock: ACME register (different organisation).
         $acmeRegister = new Register();
         $acmeRegister->setId(1);
         $acmeRegister->setOrganisation('acme-uuid-123'); // Different org
@@ -537,7 +537,7 @@ class EntityOrganisationAssignmentTest extends TestCase
             ->with(1)
             ->willThrowException(new DoesNotExistException('Register not accessible'));
 
-        // Act & Assert: Charlie cannot access ACME register
+        // Act & Assert: Charlie cannot access ACME register.
         $this->expectException(DoesNotExistException::class);
         $this->expectExceptionMessage('Register not accessible');
         
@@ -554,36 +554,36 @@ class EntityOrganisationAssignmentTest extends TestCase
      */
     public function testCrossOrganisationObjectCreation(): void
     {
-        // Arrange: Mock user session
+        // Arrange: Mock user session.
         $charlieUser = $this->createMock(IUser::class);
         $charlieUser->method('getUID')->willReturn('charlie');
         $this->userSession->method('getUser')->willReturn($charlieUser);
         
-        // Mock: Charlie's active organisation is different from target register
+        // Mock: Charlie's active organisation is different from target register.
         $this->session
             ->method('get')
             ->with('openregister_active_organisation_charlie')
             ->willReturn('default-org-uuid'); // Charlie's org
         
-        // Mock: Target register belongs to ACME organisation
+        // Mock: Target register belongs to ACME organisation.
         $acmeRegister = new Register();
         $acmeRegister->setOrganisation('acme-uuid-123'); // ACME org
         
-        // Mock: Object creation should fail due to organisation mismatch
+        // Mock: Object creation should fail due to organisation mismatch.
         $this->objectService
             ->expects($this->once())
             ->method('saveObject')
             ->willThrowException(new \Exception('Permission denied: Cross-organisation object creation'));
 
-        // Mock: Request data
+        // Mock: Request data.
         $this->request
             ->method('getParams')
             ->willReturn(['name' => 'Unauthorized User']);
 
-        // Act: Attempt to create object in different organisation's register
+        // Act: Attempt to create object in different organisation's register.
         $response = $this->objectsController->create('acme-register-uuid', 'acme-schema-uuid', $this->objectService);
 
-        // Assert: Creation denied
+        // Assert: Creation denied.
         $this->assertInstanceOf(JSONResponse::class, $response);
         $this->assertEquals(403, $response->getStatus());
         
@@ -602,19 +602,19 @@ class EntityOrganisationAssignmentTest extends TestCase
      */
     public function testEntityOrganisationAssignmentValidation(): void
     {
-        // Arrange: Mock active organisation check
+        // Arrange: Mock active organisation check.
         $this->session
             ->method('get')
             ->with('openregister_active_organisation_alice')
             ->willReturn('valid-org-uuid');
         
-        // Mock: Organisation service validates assignment
+        // Mock: Organisation service validates assignment.
         $result = $this->organisationService->getOrganisationForNewEntity();
         
-        // Act: Get organisation for new entity
+        // Act: Get organisation for new entity.
         $organisationUuid = $this->organisationService->getOrganisationForNewEntity();
 
-        // Assert: Valid organisation UUID returned
+        // Assert: Valid organisation UUID returned.
         $this->assertNotNull($organisationUuid);
         $this->assertIsString($organisationUuid);
     }
@@ -629,13 +629,13 @@ class EntityOrganisationAssignmentTest extends TestCase
      */
     public function testBulkEntityOperationsWithOrganisationContext(): void
     {
-        // Arrange: Mock user organisations
+        // Arrange: Mock user organisations.
         $userOrgs = [
             'org1-uuid' => 'Organisation 1',
             'org2-uuid' => 'Organisation 2'
         ];
         
-        // Mock: Entity filtering by organisation
+        // Mock: Entity filtering by organisation.
         $this->objectEntityMapper
             ->expects($this->once())
             ->method('findAll')
@@ -650,14 +650,14 @@ class EntityOrganisationAssignmentTest extends TestCase
             )
             ->willReturn([]);
 
-        // Act: Perform bulk operation with organisation filtering
+        // Act: Perform bulk operation with organisation filtering.
         $results = $this->objectEntityMapper->findAll(
             null, // limit
             null, // offset  
             ['organisation' => array_keys($userOrgs)] // organisation filter
         );
 
-        // Assert: Results respect organisation boundaries
+        // Assert: Results respect organisation boundaries.
         $this->assertIsArray($results);
     }
 
@@ -671,20 +671,20 @@ class EntityOrganisationAssignmentTest extends TestCase
      */
     public function testEntityOrganisationInheritance(): void
     {
-        // Arrange: Parent entities with organisation
+        // Arrange: Parent entities with organisation.
         $parentRegister = new Register();
         $parentRegister->setOrganisation('parent-org-uuid');
         
         $parentSchema = new Schema();
         $parentSchema->setOrganisation('parent-org-uuid');
         
-        // Mock: Object inherits organisation from parents
+        // Mock: Object inherits organisation from parents.
         $childObject = new ObjectEntity();
         $childObject->setRegister($parentRegister->getUuid());
         $childObject->setSchema($parentSchema->getUuid());
         $childObject->setOrganisation('parent-org-uuid'); // Inherited
         
-        // Assert: Organisation inheritance maintained
+        // Assert: Organisation inheritance maintained.
         $this->assertEquals('parent-org-uuid', $childObject->getOrganisation());
         $this->assertEquals($parentRegister->getOrganisation(), $childObject->getOrganisation());
         $this->assertEquals($parentSchema->getOrganisation(), $childObject->getOrganisation());

@@ -35,12 +35,12 @@ class ImportServiceTest extends TestCase
     {
         parent::setUp();
 
-        // Create mock dependencies
+        // Create mock dependencies.
         $this->objectService = $this->createMock(ObjectService::class);
         $this->objectEntityMapper = $this->createMock(ObjectEntityMapper::class);
         $this->schemaMapper = $this->createMock(SchemaMapper::class);
 
-        // Create ImportService instance
+        // Create ImportService instance.
         $this->importService = new ImportService(
             $this->objectEntityMapper,
             $this->schemaMapper,
@@ -53,7 +53,7 @@ class ImportServiceTest extends TestCase
      */
     public function testImportFromCsvWithBatchSaving(): void
     {
-        // Create test data
+        // Create test data.
         $register = $this->createMock(Register::class);
         $register->method('getId')->willReturn(1);
         $register->method('getTitle')->willReturn('Test Register');
@@ -68,19 +68,19 @@ class ImportServiceTest extends TestCase
             'active' => ['type' => 'boolean'],
         ]);
 
-        // Create mock saved objects
+        // Create mock saved objects.
         $savedObject1 = $this->createMock(ObjectEntity::class);
         $savedObject1->method('getUuid')->willReturn('uuid-1');
         
         $savedObject2 = $this->createMock(ObjectEntity::class);
         $savedObject2->method('getUuid')->willReturn('uuid-2');
 
-        // Mock ObjectService saveObjects method
+        // Mock ObjectService saveObjects method.
         $this->objectService->expects($this->once())
             ->method('saveObjects')
             ->with(
                 $this->callback(function ($objects) {
-                    // Verify that objects have correct structure
+                    // Verify that objects have correct structure.
                     if (count($objects) !== 2) {
                         return false;
                     }
@@ -100,16 +100,16 @@ class ImportServiceTest extends TestCase
             )
             ->willReturn([$savedObject1, $savedObject2]);
 
-        // Create temporary CSV file for testing
+        // Create temporary CSV file for testing.
         $csvContent = "name,age,active\nJohn Doe,30,true\nJane Smith,25,false";
         $tempFile = tempnam(sys_get_temp_dir(), 'test_csv_');
         file_put_contents($tempFile, $csvContent);
 
         try {
-            // Test the import
+            // Test the import.
             $result = $this->importService->importFromCsv($tempFile, $register, $schema);
 
-            // Verify the result structure
+            // Verify the result structure.
             $this->assertIsArray($result);
             $this->assertCount(1, $result); // One sheet
             
@@ -119,18 +119,18 @@ class ImportServiceTest extends TestCase
             $this->assertArrayHasKey('errors', $sheetResult);
             $this->assertArrayHasKey('schema', $sheetResult);
 
-            // Verify the counts
+            // Verify the counts.
             $this->assertEquals(2, $sheetResult['found']);
             $this->assertCount(2, $sheetResult['created']);
             $this->assertCount(0, $sheetResult['errors']);
 
-            // Verify schema information
+            // Verify schema information.
             $this->assertEquals(1, $sheetResult['schema']['id']);
             $this->assertEquals('Test Schema', $sheetResult['schema']['title']);
             $this->assertEquals('test-schema', $sheetResult['schema']['slug']);
 
         } finally {
-            // Clean up temporary file
+            // Clean up temporary file.
             unlink($tempFile);
         }
     }
@@ -140,7 +140,7 @@ class ImportServiceTest extends TestCase
      */
     public function testImportFromCsvWithErrors(): void
     {
-        // Create test data
+        // Create test data.
         $register = $this->createMock(Register::class);
         $register->method('getId')->willReturn(1);
 
@@ -150,21 +150,21 @@ class ImportServiceTest extends TestCase
         $schema->method('getSlug')->willReturn('test-schema');
         $schema->method('getProperties')->willReturn([]);
 
-        // Mock ObjectService to throw an exception
+        // Mock ObjectService to throw an exception.
         $this->objectService->expects($this->once())
             ->method('saveObjects')
             ->willThrowException(new \Exception('Database connection failed'));
 
-        // Create temporary CSV file for testing
+        // Create temporary CSV file for testing.
         $csvContent = "name,age\nJohn Doe,30\nJane Smith,25";
         $tempFile = tempnam(sys_get_temp_dir(), 'test_csv_');
         file_put_contents($tempFile, $csvContent);
 
         try {
-            // Test the import
+            // Test the import.
             $result = $this->importService->importFromCsv($tempFile, $register, $schema);
 
-            // Verify the result structure
+            // Verify the result structure.
             $this->assertIsArray($result);
             $this->assertCount(1, $result);
             
@@ -172,7 +172,7 @@ class ImportServiceTest extends TestCase
             $this->assertArrayHasKey('errors', $sheetResult);
             $this->assertGreaterThan(0, count($sheetResult['errors']));
 
-            // Verify that batch save error is included
+            // Verify that batch save error is included.
             $hasBatchError = false;
             foreach ($sheetResult['errors'] as $error) {
                 if (isset($error['row']) && $error['row'] === 'batch') {
@@ -184,7 +184,7 @@ class ImportServiceTest extends TestCase
             $this->assertTrue($hasBatchError, 'Batch save error should be included in results');
 
         } finally {
-            // Clean up temporary file
+            // Clean up temporary file.
             unlink($tempFile);
         }
     }
@@ -194,7 +194,7 @@ class ImportServiceTest extends TestCase
      */
     public function testImportFromCsvWithEmptyFile(): void
     {
-        // Create test data
+        // Create test data.
         $register = $this->createMock(Register::class);
         $register->method('getId')->willReturn(1);
 
@@ -203,16 +203,16 @@ class ImportServiceTest extends TestCase
         $schema->method('getTitle')->willReturn('Test Schema');
         $schema->method('getSlug')->willReturn('test-schema');
 
-        // Create temporary CSV file with only headers
+        // Create temporary CSV file with only headers.
         $csvContent = "name,age,active\n";
         $tempFile = tempnam(sys_get_temp_dir(), 'test_csv_');
         file_put_contents($tempFile, $csvContent);
 
         try {
-            // Test the import
+            // Test the import.
             $result = $this->importService->importFromCsv($tempFile, $register, $schema);
 
-            // Verify the result structure
+            // Verify the result structure.
             $this->assertIsArray($result);
             $this->assertCount(1, $result);
             
@@ -220,7 +220,7 @@ class ImportServiceTest extends TestCase
             $this->assertArrayHasKey('found', $sheetResult);
             $this->assertArrayHasKey('errors', $sheetResult);
 
-            // Verify that no data rows error is included
+            // Verify that no data rows error is included.
             $this->assertEquals(0, $sheetResult['found']);
             $this->assertGreaterThan(0, count($sheetResult['errors']));
 
@@ -235,7 +235,7 @@ class ImportServiceTest extends TestCase
             $this->assertTrue($hasNoDataError, 'No data rows error should be included in results');
 
         } finally {
-            // Clean up temporary file
+            // Clean up temporary file.
             unlink($tempFile);
         }
     }
@@ -250,7 +250,7 @@ class ImportServiceTest extends TestCase
 
         $register = $this->createMock(Register::class);
         
-        // Create temporary CSV file
+        // Create temporary CSV file.
         $csvContent = "name,age\nJohn Doe,30";
         $tempFile = tempnam(sys_get_temp_dir(), 'test_csv_');
         file_put_contents($tempFile, $csvContent);
@@ -267,7 +267,7 @@ class ImportServiceTest extends TestCase
      */
     public function testImportFromCsvAsync(): void
     {
-        // Create test data
+        // Create test data.
         $register = $this->createMock(Register::class);
         $register->method('getId')->willReturn(1);
 
@@ -277,7 +277,7 @@ class ImportServiceTest extends TestCase
         $schema->method('getSlug')->willReturn('test-schema');
         $schema->method('getProperties')->willReturn(['name' => ['type' => 'string']]);
 
-        // Mock ObjectService
+        // Mock ObjectService.
         $savedObject = $this->createMock(ObjectEntity::class);
         $savedObject->method('getUuid')->willReturn('uuid-1');
 
@@ -285,19 +285,19 @@ class ImportServiceTest extends TestCase
             ->method('saveObjects')
             ->willReturn([$savedObject]);
 
-        // Create temporary CSV file
+        // Create temporary CSV file.
         $csvContent = "name\nJohn Doe";
         $tempFile = tempnam(sys_get_temp_dir(), 'test_csv_');
         file_put_contents($tempFile, $csvContent);
 
         try {
-            // Test the async import
+            // Test the async import.
             $promise = $this->importService->importFromCsvAsync($tempFile, $register, $schema);
             
-            // Verify it's a PromiseInterface
+            // Verify it's a PromiseInterface.
             $this->assertInstanceOf(PromiseInterface::class, $promise);
 
-            // Resolve the promise to get the result
+            // Resolve the promise to get the result.
             $result = null;
             $promise->then(
                 function ($value) use (&$result) {
@@ -305,8 +305,8 @@ class ImportServiceTest extends TestCase
                 }
             );
 
-            // For testing purposes, we'll manually resolve it
-            // In a real async environment, this would be handled by the event loop
+            // For testing purposes, we'll manually resolve it.
+            // In a real async environment, this would be handled by the event loop.
             $this->assertNotNull($promise);
 
         } finally {

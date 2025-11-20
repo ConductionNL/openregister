@@ -79,7 +79,7 @@ class FileTextExtractionJob extends QueuedJob
             return;
         }
 
-        // Validate argument
+        // Validate argument.
         if (isset($argument['file_id']) === false) {
             $this->logger->error(
                     '[FileTextExtractionJob] Missing file_id in job arguments',
@@ -103,8 +103,8 @@ class FileTextExtractionJob extends QueuedJob
         $startTime = microtime(true);
 
         try {
-            // Check if extraction is still needed
-            // (file might have been processed by another job or deleted)
+            // Check if extraction is still needed.
+            // (file might have been processed by another job or deleted).
             if ($this->fileTextService->needsExtraction($fileId) === false) {
                 $this->logger->info(
                         '[FileTextExtractionJob] Extraction no longer needed',
@@ -116,7 +116,7 @@ class FileTextExtractionJob extends QueuedJob
                 return;
             }
 
-            // Extract and store text
+            // Extract and store text.
             $result = $this->fileTextService->extractAndStoreFileText($fileId);
 
             $processingTime = round((microtime(true) - $startTime) * 1000, 2);

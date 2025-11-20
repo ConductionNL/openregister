@@ -102,41 +102,41 @@ class MagicOrganizationHandler
         ?string $activeOrganisationUuid=null,
         bool $multi=true
     ): void {
-        // If multitenancy is disabled, skip all organization filtering
+        // If multitenancy is disabled, skip all organization filtering.
         if ($multi === false || !$this->isMultiTenancyEnabled()) {
             return;
         }
 
-        // Get current user to check if they're admin
+        // Get current user to check if they're admin.
         $user   = $this->userSession->getUser();
         $userId = $user ? $user->getUID() : null;
 
         if ($userId === null) {
-            // For unauthenticated requests, show published objects only
+            // For unauthenticated requests, show published objects only.
             $this->applyUnauthenticatedOrganizationAccess($qb, $tableAlias);
             return;
         }
 
-        // Use provided active organization UUID or return (no filtering)
+        // Use provided active organization UUID or return (no filtering).
         if ($activeOrganisationUuid === null) {
             return;
         }
 
-        // Check if this is the system-wide default organization
+        // Check if this is the system-wide default organization.
         $systemDefaultOrgUuid = $this->getSystemDefaultOrganizationUuid();
         $isSystemDefaultOrg   = ($activeOrganisationUuid === $systemDefaultOrgUuid);
 
         if ($user !== null) {
             $userGroups = $this->groupManager->getUserGroupIds($user);
 
-            // Check if user is admin and admin override is enabled
+            // Check if user is admin and admin override is enabled.
             if (in_array('admin', $userGroups)) {
                 if ($this->isAdminOverrideEnabled()) {
                     return;
-                    // No filtering for admin users when override is enabled
+                    // No filtering for admin users when override is enabled.
                 }
 
-                // If admin override is disabled, apply organization filtering for admin users
+                // If admin override is disabled, apply organization filtering for admin users.
                 if ($activeOrganisationUuid === null) {
                     return;
                     // No filtering if no active organization.
@@ -147,21 +147,21 @@ class MagicOrganizationHandler
                     // Admin with default org sees everything.
                 }
 
-                // Continue with organization filtering for non-default org
+                // Continue with organization filtering for non-default org.
             }
         }//end if
 
         $organizationColumn = $tableAlias.'._organisation';
 
-        // Build organization filter conditions
+        // Build organization filter conditions.
         $orgConditions = $qb->expr()->orX();
 
-        // Objects explicitly belonging to the user's organization
+        // Objects explicitly belonging to the user's organization.
         $orgConditions->add(
             $qb->expr()->eq($organizationColumn, $qb->createNamedParameter($activeOrganisationUuid))
         );
 
-        // Include published objects from any organization if configured to do so
+        // Include published objects from any organization if configured to do so.
         if ($this->shouldPublishedObjectsBypassMultiTenancy()) {
             $now = (new \DateTime())->format('Y-m-d H:i:s');
             $orgConditions->add(
@@ -199,7 +199,7 @@ class MagicOrganizationHandler
         $multitenancyConfig = $this->appConfig->getValueString('openregister', 'multitenancy', '');
         if (empty($multitenancyConfig)) {
             return false;
-            // Default to false for security
+            // Default to false for security.
         }
 
         $multitenancyData = json_decode($multitenancyConfig, true);
@@ -218,7 +218,7 @@ class MagicOrganizationHandler
      */
     private function applyUnauthenticatedOrganizationAccess(IQueryBuilder $qb, string $tableAlias): void
     {
-        // For unauthenticated requests, show only published objects
+        // For unauthenticated requests, show only published objects.
         $now = (new \DateTime())->format('Y-m-d H:i:s');
         $qb->andWhere(
             $qb->expr()->andX(
@@ -242,7 +242,7 @@ class MagicOrganizationHandler
     private function getSystemDefaultOrganizationUuid(): ?string
     {
         try {
-            // Get default organisation UUID from configuration (not deprecated is_default column)
+            // Get default organisation UUID from configuration (not deprecated is_default column).
             $defaultUuid = $this->appConfig->getValueString('openregister', 'defaultOrganisation', '');
             return $defaultUuid !== '' ? $defaultUuid : null;
         } catch (\Exception $e) {
@@ -286,7 +286,7 @@ class MagicOrganizationHandler
         $rbacConfig = $this->appConfig->getValueString('openregister', 'rbac', '');
         if (empty($rbacConfig)) {
             return true;
-            // Default to true if no RBAC config exists
+            // Default to true if no RBAC config exists.
         }
 
         $rbacData = json_decode($rbacConfig, true);
@@ -307,8 +307,8 @@ class MagicOrganizationHandler
             return null;
         }
 
-        // This would typically come from OrganisationService
-        // For now, return null and let the caller provide it
+        // This would typically come from OrganisationService.
+        // For now, return null and let the caller provide it.
         return null;
 
     }//end getCurrentUserActiveOrganization()
@@ -326,8 +326,8 @@ class MagicOrganizationHandler
      */
     public function userBelongsToOrganization(string $userId, string $organizationId, Register $register, Schema $schema): bool
     {
-        // This would implement organization membership checks
-        // For now, simplified implementation
+        // This would implement organization membership checks.
+        // For now, simplified implementation.
         return true;
 
     }//end userBelongsToOrganization()

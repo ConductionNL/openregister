@@ -140,23 +140,23 @@ class AgentsController extends Controller
     public function index(): JSONResponse
     {
         try {
-            // Get active organisation
+            // Get active organisation.
             $organisation     = $this->organisationService->getActiveOrganisation();
             $organisationUuid = $organisation?->getUuid();
 
             $params = $this->request->getParams();
 
-            // Extract pagination parameters
+            // Extract pagination parameters.
             $limit  = isset($params['_limit']) ? (int) $params['_limit'] : 50;
             $offset = isset($params['_offset']) ? (int) $params['_offset'] : 0;
             $page   = isset($params['_page']) ? (int) $params['_page'] : null;
 
-            // Convert page to offset if provided
+            // Convert page to offset if provided.
             if ($page !== null) {
                 $offset = ($page - 1) * $limit;
             }
 
-            // Get agents with RBAC filtering (handled in mapper)
+            // Get agents with RBAC filtering (handled in mapper).
             $agents = $organisationUuid !== null ? $this->agentMapper->findByOrganisation($organisationUuid, $this->userId, $limit, $offset) : $this->agentMapper->findAll($limit, $offset);
 
             return new JSONResponse(['results' => $agents], Http::STATUS_OK);
@@ -195,7 +195,7 @@ class AgentsController extends Controller
         try {
             $agent = $this->agentMapper->find($id);
 
-            // Check access rights using mapper method
+            // Check access rights using mapper method.
             if (!$this->agentMapper->canUserAccessAgent($agent, $this->userId)) {
                 return new JSONResponse(
                     ['error' => 'Access denied to this agent'],
@@ -236,27 +236,27 @@ class AgentsController extends Controller
             $data = $this->request->getParams();
             unset($data['_route']);
 
-            // Set active organisation UUID (users cannot manually set organization)
+            // Set active organisation UUID (users cannot manually set organization).
             $organisation         = $this->organisationService->getActiveOrganisation();
             $data['organisation'] = $organisation?->getUuid();
 
-            // Set owner
+            // Set owner.
             $data['owner'] = $this->userId;
 
-            // Set default values for new properties if not provided
+            // Set default values for new properties if not provided.
             if (!isset($data['isPrivate']) && !isset($data['is_private'])) {
                 $data['isPrivate'] = true;
-                // Private by default
+                // Private by default.
             }
 
             if (!isset($data['searchFiles']) && !isset($data['search_files'])) {
                 $data['searchFiles'] = true;
-                // Search files by default
+                // Search files by default.
             }
 
             if (!isset($data['searchObjects']) && !isset($data['search_objects'])) {
                 $data['searchObjects'] = true;
-                // Search objects by default
+                // Search objects by default.
             }
 
             $agent = $this->agentMapper->createFromArray($data);
@@ -304,7 +304,7 @@ class AgentsController extends Controller
         try {
             $agent = $this->agentMapper->find($id);
 
-            // Check if user can modify this agent using mapper method
+            // Check if user can modify this agent using mapper method.
             if (!$this->agentMapper->canUserModifyAgent($agent, $this->userId)) {
                 return new JSONResponse(
                     ['error' => 'You do not have permission to modify this agent'],
@@ -314,22 +314,22 @@ class AgentsController extends Controller
 
             $data = $this->request->getParams();
 
-            // Remove internal parameters and immutable fields to prevent tampering
+            // Remove internal parameters and immutable fields to prevent tampering.
             unset($data['_route']);
             unset($data['id']);
             unset($data['created']);
 
-            // Preserve current organisation and owner (security: prevent privilege escalation)
+            // Preserve current organisation and owner (security: prevent privilege escalation).
             $currentOrganisation = $agent->getOrganisation();
             $currentOwner        = $agent->getOwner();
 
             unset($data['organisation']);
             unset($data['owner']);
 
-            // Update agent properties via hydration
+            // Update agent properties via hydration.
             $agent->hydrate($data);
 
-            // Restore preserved immutable values
+            // Restore preserved immutable values.
             $agent->setOrganisation($currentOrganisation);
             $agent->setOwner($currentOwner);
 
@@ -390,7 +390,7 @@ class AgentsController extends Controller
         try {
             $agent = $this->agentMapper->find($id);
 
-            // Check if user can modify (delete) this agent using mapper method
+            // Check if user can modify (delete) this agent using mapper method.
             if (!$this->agentMapper->canUserModifyAgent($agent, $this->userId)) {
                 return new JSONResponse(
                     ['error' => 'You do not have permission to delete this agent'],

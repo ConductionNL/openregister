@@ -38,7 +38,7 @@ class ConversationTitleGenerationTest extends TestCase
         $this->messageMapper = new MessageMapper($this->db, \OC::$server->get(ITimeFactory::class));
         $this->agentMapper = new AgentMapper($this->db);
 
-        // Create test agent
+        // Create test agent.
         $this->testAgent = new Agent();
         $this->testAgent->setUuid('test-agent-title-' . uniqid());
         $this->testAgent->setName('Title Generator Agent');
@@ -55,7 +55,7 @@ class ConversationTitleGenerationTest extends TestCase
                 $this->agentMapper->delete($this->testAgent);
             }
         } catch (\Exception $e) {
-            // Ignore cleanup errors
+            // Ignore cleanup errors.
         }
 
         parent::tearDown();
@@ -74,7 +74,7 @@ class ConversationTitleGenerationTest extends TestCase
 
         $this->assertEquals('New Conversation', $created->getTitle());
 
-        // Cleanup
+        // Cleanup.
         $this->conversationMapper->delete($created);
     }
 
@@ -89,14 +89,14 @@ class ConversationTitleGenerationTest extends TestCase
 
         $created = $this->conversationMapper->insert($conversation);
 
-        // Simulate title generation
+        // Simulate title generation.
         $generatedTitle = 'Discussion about documentation';
         $created->setTitle($generatedTitle);
         $updated = $this->conversationMapper->update($created);
 
         $this->assertEquals($generatedTitle, $updated->getTitle());
 
-        // Cleanup
+        // Cleanup.
         $this->conversationMapper->delete($updated);
     }
 
@@ -110,7 +110,7 @@ class ConversationTitleGenerationTest extends TestCase
         $conversation->setAgentId($this->testAgent->getId());
         $conversation = $this->conversationMapper->insert($conversation);
 
-        // Add initial messages
+        // Add initial messages.
         $msg1 = new Message();
         $msg1->setUuid('test-msg-1-' . uniqid());
         $msg1->setConversationId($conversation->getId());
@@ -125,8 +125,8 @@ class ConversationTitleGenerationTest extends TestCase
         $msg2->setContent('To configure authentication settings, navigate to the admin panel...');
         $msg2 = $this->messageMapper->insert($msg2);
 
-        // Simulate title generation based on message content
-        // In real implementation, ChatService would call LLM to generate title
+        // Simulate title generation based on message content.
+        // In real implementation, ChatService would call LLM to generate title.
         $generatedTitle = 'Authentication Configuration Help';
 
         $conversation->setTitle($generatedTitle);
@@ -139,7 +139,7 @@ class ConversationTitleGenerationTest extends TestCase
         $this->assertEquals('Authentication Configuration Help', $updated->getTitle());
         $this->assertTrue($updated->getMetadata()['title_generated']);
 
-        // Cleanup
+        // Cleanup.
         $this->messageMapper->delete($msg1);
         $this->messageMapper->delete($msg2);
         $this->conversationMapper->delete($updated);
@@ -155,7 +155,7 @@ class ConversationTitleGenerationTest extends TestCase
         $conversation->setAgentId($this->testAgent->getId());
         $conversation = $this->conversationMapper->insert($conversation);
 
-        // Store metadata about title generation
+        // Store metadata about title generation.
         $conversation->setMetadata([
             'title_generated' => true,
             'title_generated_at' => date('Y-m-d H:i:s'),
@@ -171,7 +171,7 @@ class ConversationTitleGenerationTest extends TestCase
         $this->assertEquals('New Conversation', $metadata['original_title']);
         $this->assertEquals('AI-Generated Title', $updated->getTitle());
 
-        // Cleanup
+        // Cleanup.
         $this->conversationMapper->delete($updated);
     }
 
@@ -185,20 +185,20 @@ class ConversationTitleGenerationTest extends TestCase
         $conversation->setAgentId($this->testAgent->getId());
         $conversation = $this->conversationMapper->insert($conversation);
 
-        // First update (auto-generated)
+        // First update (auto-generated).
         $conversation->setTitle('First Generated Title');
         $conversation->setMetadata(['title_updates' => 1]);
         $updated1 = $this->conversationMapper->update($conversation);
         $this->assertEquals('First Generated Title', $updated1->getTitle());
 
-        // Second update (user-provided or regenerated)
+        // Second update (user-provided or regenerated).
         $updated1->setTitle('User Edited Title');
         $updated1->setMetadata(['title_updates' => 2, 'user_edited' => true]);
         $updated2 = $this->conversationMapper->update($updated1);
         $this->assertEquals('User Edited Title', $updated2->getTitle());
         $this->assertTrue($updated2->getMetadata()['user_edited']);
 
-        // Cleanup
+        // Cleanup.
         $this->conversationMapper->delete($updated2);
     }
 
@@ -210,15 +210,15 @@ class ConversationTitleGenerationTest extends TestCase
         $conversation->setOrganisation(1);
         $conversation->setAgentId($this->testAgent->getId());
 
-        // Test very long title (should be truncated or handled appropriately)
+        // Test very long title (should be truncated or handled appropriately).
         $longTitle = str_repeat('This is a very long conversation title about many different topics ', 10);
         $conversation->setTitle($longTitle);
         $created = $this->conversationMapper->insert($conversation);
 
-        // Verify title was stored (may be truncated based on DB schema)
+        // Verify title was stored (may be truncated based on DB schema).
         $this->assertNotEmpty($created->getTitle());
 
-        // Cleanup
+        // Cleanup.
         $this->conversationMapper->delete($created);
     }
 
@@ -230,14 +230,14 @@ class ConversationTitleGenerationTest extends TestCase
         $conversation->setOrganisation(1);
         $conversation->setAgentId($this->testAgent->getId());
 
-        // Title with special characters
+        // Title with special characters.
         $specialTitle = 'How to use <tags> & "quotes" in API? 🚀';
         $conversation->setTitle($specialTitle);
         $created = $this->conversationMapper->insert($conversation);
 
         $this->assertEquals($specialTitle, $created->getTitle());
 
-        // Cleanup
+        // Cleanup.
         $this->conversationMapper->delete($created);
     }
 
@@ -252,10 +252,10 @@ class ConversationTitleGenerationTest extends TestCase
 
         $created = $this->conversationMapper->insert($conversation);
 
-        // Empty title should be stored as is or have a default
+        // Empty title should be stored as is or have a default.
         $this->assertIsString($created->getTitle());
 
-        // Cleanup
+        // Cleanup.
         $this->conversationMapper->delete($created);
     }
 }

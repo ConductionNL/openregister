@@ -56,30 +56,30 @@ class PerformanceScalabilityTest extends TestCase
      */
     public function testLargeOrganisationWithManyUsers(): void
     {
-        // Arrange: Create organisation with 100+ users
+        // Arrange: Create organisation with 100+ users.
         $largeOrg = new Organisation();
         $largeOrg->setName('Large Organisation');
         $largeOrg->setUuid('large-org-uuid');
         
-        // Generate 150 user IDs
+        // Generate 150 user IDs.
         $users = [];
         for ($i = 1; $i <= 150; $i++) {
             $users[] = "user{$i}";
         }
         $largeOrg->setUsers($users);
         
-        // Mock: Database performance with large dataset
+        // Mock: Database performance with large dataset.
         $this->organisationMapper->expects($this->once())
             ->method('findByUuid')
             ->with('large-org-uuid')
             ->willReturn($largeOrg);
 
-        // Act: Operations should handle large user list efficiently
+        // Act: Operations should handle large user list efficiently.
         $startTime = microtime(true);
         $result = $this->organisationService->getOrganisation('large-org-uuid');
         $endTime = microtime(true);
         
-        // Assert: Performance within acceptable bounds
+        // Assert: Performance within acceptable bounds.
         $this->assertInstanceOf(Organisation::class, $result);
         $this->assertCount(150, $result->getUserIds());
         $this->assertLessThan(1.0, $endTime - $startTime); // Should complete under 1 second
@@ -90,7 +90,7 @@ class PerformanceScalabilityTest extends TestCase
      */
     public function testUserWithManyOrganisations(): void
     {
-        // Arrange: User belongs to 60 organisations
+        // Arrange: User belongs to 60 organisations.
         $user = $this->createMock(IUser::class);
         $user->method('getUID')->willReturn('power_user');
         $this->userSession->method('getUser')->willReturn($user);
@@ -105,22 +105,22 @@ class PerformanceScalabilityTest extends TestCase
             $organisations[] = $org;
         }
         
-        // Mock: Database query with many results
+        // Mock: Database query with many results.
         $this->organisationMapper->expects($this->once())
             ->method('findByUserId')
             ->with('power_user')
             ->willReturn($organisations);
 
-        // Act: Get user organisations
+        // Act: Get user organisations.
         $startTime = microtime(true);
         $userOrgs = $this->organisationService->getUserOrganisations(false);
         $endTime = microtime(true);
         
-        // Assert: Handle many organisations efficiently
+        // Assert: Handle many organisations efficiently.
         $this->assertCount(60, $userOrgs);
         $this->assertLessThan(0.5, $endTime - $startTime); // Should be fast
         
-        // Test oldest organisation selection (performance critical)
+        // Test oldest organisation selection (performance critical).
         $this->assertEquals('Organisation 1', $userOrgs[0]->getName());
     }
 
@@ -129,7 +129,7 @@ class PerformanceScalabilityTest extends TestCase
      */
     public function testConcurrentActiveOrganisationChanges(): void
     {
-        // Arrange: Simulate concurrent requests
+        // Arrange: Simulate concurrent requests.
         $user = $this->createMock(IUser::class);
         $user->method('getUID')->willReturn('concurrent_user');
         $this->userSession->method('getUser')->willReturn($user);
@@ -140,7 +140,7 @@ class PerformanceScalabilityTest extends TestCase
             'org3-uuid' => new Organisation()
         ];
         
-        // Mock: Multiple rapid set operations
+        // Mock: Multiple rapid set operations.
         $this->session->expects($this->exactly(3))
             ->method('set')
             ->withConsecutive(
@@ -149,19 +149,19 @@ class PerformanceScalabilityTest extends TestCase
                 ['openregister_active_organisation_concurrent_user', 'org3-uuid']
             );
 
-        // Mock: Organisation validation
+        // Mock: Organisation validation.
         $this->organisationMapper->method('findByUuid')
             ->willReturnCallback(function($uuid) use ($orgs) {
                 return $orgs[$uuid] ?? null;
             });
 
-        // Act: Rapid consecutive changes
+        // Act: Rapid consecutive changes.
         $results = [];
         foreach (array_keys($orgs) as $orgUuid) {
             $results[] = $this->organisationService->setActiveOrganisation($orgUuid);
         }
 
-        // Assert: All operations succeed
+        // Assert: All operations succeed.
         $this->assertCount(3, $results);
         $this->assertTrue($results[0]);
         $this->assertTrue($results[1]);
@@ -173,7 +173,7 @@ class PerformanceScalabilityTest extends TestCase
      */
     public function testDatabaseQueryOptimization(): void
     {
-        // Arrange: Large dataset query
+        // Arrange: Large dataset query.
         $this->organisationMapper->expects($this->once())
             ->method('getStatistics')
             ->willReturn([
@@ -182,10 +182,10 @@ class PerformanceScalabilityTest extends TestCase
                 'active_organisations' => 8500
             ]);
 
-        // Act: Get statistics (should be optimized)
+        // Act: Get statistics (should be optimized).
         $stats = $this->organisationMapper->getStatistics();
 
-        // Assert: Statistics retrieved efficiently
+        // Assert: Statistics retrieved efficiently.
         $this->assertIsArray($stats);
         $this->assertEquals(10000, $stats['total_organisations']);
         $this->assertGreaterThan(0, $stats['active_organisations']);
@@ -196,18 +196,18 @@ class PerformanceScalabilityTest extends TestCase
      */
     public function testMemoryUsageWithLargeUserLists(): void
     {
-        // Arrange: Organisation with very large user list
+        // Arrange: Organisation with very large user list.
         $massiveOrg = new Organisation();
         $massiveOrg->setName('Massive Organisation');
         
-        // Generate 1000 users
+        // Generate 1000 users.
         $massiveUserList = [];
         for ($i = 1; $i <= 1000; $i++) {
             $massiveUserList[] = "massive_user_{$i}";
         }
         $massiveOrg->setUsers($massiveUserList);
 
-        // Act & Assert: Memory usage should be reasonable
+        // Act & Assert: Memory usage should be reasonable.
         $memoryBefore = memory_get_usage();
         
         $userCount = count($massiveOrg->getUserIds());
@@ -226,30 +226,30 @@ class PerformanceScalabilityTest extends TestCase
      */
     public function testCacheEffectivenessUnderLoad(): void
     {
-        // Arrange: Heavy load simulation
+        // Arrange: Heavy load simulation.
         $user = $this->createMock(IUser::class);
         $user->method('getUID')->willReturn('load_test_user');
         $this->userSession->method('getUser')->willReturn($user);
         
         $cachedOrgs = [new Organisation()];
         
-        // Mock: Database should only be hit once
+        // Mock: Database should only be hit once.
         $this->organisationMapper->expects($this->once())
             ->method('findByUserId')
             ->willReturn($cachedOrgs);
         
-        // Mock: Cache hits
+        // Mock: Cache hits.
         $this->session->method('get')
             ->with('openregister_organisations_load_test_user')
             ->willReturn($cachedOrgs);
 
-        // Act: Multiple rapid requests (simulating load)
+        // Act: Multiple rapid requests (simulating load).
         $results = [];
         for ($i = 0; $i < 10; $i++) {
             $results[] = $this->organisationService->getUserOrganisations(true); // Use cache
         }
 
-        // Assert: Cache effectiveness
+        // Assert: Cache effectiveness.
         $this->assertCount(10, $results);
         foreach ($results as $result) {
             $this->assertEquals($cachedOrgs, $result);

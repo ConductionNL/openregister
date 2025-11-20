@@ -43,13 +43,13 @@ class AgentChatWithViewFilteringTest extends TestCase
         $this->conversationMapper = new ConversationMapper($this->db, \OC::$server->get(ITimeFactory::class));
         $this->messageMapper = new MessageMapper($this->db, \OC::$server->get(ITimeFactory::class));
 
-        // Mock services for ChatService
+        // Mock services for ChatService.
         $organisationService = $this->createMock(OrganisationService::class);
         $viewService = $this->createMock(ViewService::class);
         $logger = $this->createMock(LoggerInterface::class);
 
-        // Initialize ChatService (constructor might vary based on actual implementation)
-        // This is a placeholder - adjust based on actual ChatService dependencies
+        // Initialize ChatService (constructor might vary based on actual implementation).
+        // This is a placeholder - adjust based on actual ChatService dependencies.
         $this->chatService = new ChatService(
             $this->conversationMapper,
             $this->messageMapper,
@@ -59,7 +59,7 @@ class AgentChatWithViewFilteringTest extends TestCase
             $logger
         );
 
-        // Create test agent with specific view filters
+        // Create test agent with specific view filters.
         $this->testAgent = new Agent();
         $this->testAgent->setUuid('test-agent-view-' . uniqid());
         $this->testAgent->setName('View Filtered Agent');
@@ -72,7 +72,7 @@ class AgentChatWithViewFilteringTest extends TestCase
         $this->testAgent->setEnableRag(true);
         $this->testAgent = $this->agentMapper->insert($this->testAgent);
 
-        // Create test conversation
+        // Create test conversation.
         $this->testConversation = new Conversation();
         $this->testConversation->setUuid('test-conv-view-' . uniqid());
         $this->testConversation->setTitle('View Filtered Chat');
@@ -92,7 +92,7 @@ class AgentChatWithViewFilteringTest extends TestCase
                 $this->agentMapper->delete($this->testAgent);
             }
         } catch (\Exception $e) {
-            // Ignore cleanup errors
+            // Ignore cleanup errors.
         }
 
         parent::tearDown();
@@ -100,7 +100,7 @@ class AgentChatWithViewFilteringTest extends TestCase
 
     public function testAgentWithViewFiltering(): void
     {
-        // Verify agent has view filtering configured
+        // Verify agent has view filtering configured.
         $this->assertNotEmpty($this->testAgent->getViews());
         $this->assertCount(2, $this->testAgent->getViews());
         $this->assertContains('view-uuid-1', $this->testAgent->getViews());
@@ -109,7 +109,7 @@ class AgentChatWithViewFilteringTest extends TestCase
 
     public function testAgentSearchSettings(): void
     {
-        // Test agent with files only
+        // Test agent with files only.
         $filesOnlyAgent = new Agent();
         $filesOnlyAgent->setUuid('test-agent-files-' . uniqid());
         $filesOnlyAgent->setName('Files Only Agent');
@@ -123,7 +123,7 @@ class AgentChatWithViewFilteringTest extends TestCase
         $this->assertTrue($filesOnlyAgent->getSearchFiles());
         $this->assertFalse($filesOnlyAgent->getSearchObjects());
 
-        // Test agent with objects only
+        // Test agent with objects only.
         $objectsOnlyAgent = new Agent();
         $objectsOnlyAgent->setUuid('test-agent-objs-' . uniqid());
         $objectsOnlyAgent->setName('Objects Only Agent');
@@ -137,14 +137,14 @@ class AgentChatWithViewFilteringTest extends TestCase
         $this->assertFalse($objectsOnlyAgent->getSearchFiles());
         $this->assertTrue($objectsOnlyAgent->getSearchObjects());
 
-        // Cleanup
+        // Cleanup.
         $this->agentMapper->delete($filesOnlyAgent);
         $this->agentMapper->delete($objectsOnlyAgent);
     }
 
     public function testAgentWithNoViewsAllowsAllData(): void
     {
-        // Agent with no view restrictions
+        // Agent with no view restrictions.
         $unrestricted = new Agent();
         $unrestricted->setUuid('test-agent-unrestricted-' . uniqid());
         $unrestricted->setName('Unrestricted Agent');
@@ -158,13 +158,13 @@ class AgentChatWithViewFilteringTest extends TestCase
 
         $this->assertEmpty($unrestricted->getViews() ?? []);
 
-        // Cleanup
+        // Cleanup.
         $this->agentMapper->delete($unrestricted);
     }
 
     public function testMessageStorageWithAgentConfiguration(): void
     {
-        // Create a user message
+        // Create a user message.
         $userMsg = new Message();
         $userMsg->setUuid('test-msg-user-' . uniqid());
         $userMsg->setConversationId($this->testConversation->getId());
@@ -172,7 +172,7 @@ class AgentChatWithViewFilteringTest extends TestCase
         $userMsg->setContent('Tell me about the documentation');
         $userMsg = $this->messageMapper->insert($userMsg);
 
-        // Simulate assistant response with sources filtered by agent's views
+        // Simulate assistant response with sources filtered by agent's views.
         $assistantMsg = new Message();
         $assistantMsg->setUuid('test-msg-asst-' . uniqid());
         $assistantMsg->setConversationId($this->testConversation->getId());
@@ -196,11 +196,11 @@ class AgentChatWithViewFilteringTest extends TestCase
         ]);
         $assistantMsg = $this->messageMapper->insert($assistantMsg);
 
-        // Verify messages were stored correctly
+        // Verify messages were stored correctly.
         $messages = $this->messageMapper->findByConversation($this->testConversation->getId());
         $this->assertGreaterThanOrEqual(2, count($messages));
 
-        // Verify assistant message has correct sources
+        // Verify assistant message has correct sources.
         $foundAssistant = null;
         foreach ($messages as $msg) {
             if ($msg->getUuid() === $assistantMsg->getUuid()) {
@@ -213,20 +213,20 @@ class AgentChatWithViewFilteringTest extends TestCase
         $this->assertNotEmpty($foundAssistant->getSources());
         $this->assertCount(2, $foundAssistant->getSources());
 
-        // Verify sources are within agent's view scope
+        // Verify sources are within agent's view scope.
         $sources = $foundAssistant->getSources();
         $viewUuids = array_column($sources, 'view_uuid');
         $this->assertContains('view-uuid-1', $viewUuids);
         $this->assertContains('view-uuid-2', $viewUuids);
 
-        // Cleanup
+        // Cleanup.
         $this->messageMapper->delete($userMsg);
         $this->messageMapper->delete($assistantMsg);
     }
 
     public function testConversationMetadataStoresAgentConfiguration(): void
     {
-        // Update conversation with metadata about agent configuration at time of creation
+        // Update conversation with metadata about agent configuration at time of creation.
         $this->testConversation->setMetadata([
             'agent_uuid' => $this->testAgent->getUuid(),
             'agent_name' => $this->testAgent->getName(),
@@ -245,11 +245,11 @@ class AgentChatWithViewFilteringTest extends TestCase
 
     public function testAgentViewConfigurationPersistence(): void
     {
-        // Modify agent views
+        // Modify agent views.
         $this->testAgent->setViews(['view-uuid-3', 'view-uuid-4', 'view-uuid-5']);
         $updated = $this->agentMapper->update($this->testAgent);
 
-        // Retrieve and verify
+        // Retrieve and verify.
         $found = $this->agentMapper->find($updated->getId());
         $this->assertCount(3, $found->getViews());
         $this->assertContains('view-uuid-3', $found->getViews());

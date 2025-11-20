@@ -89,10 +89,10 @@ class FilesController extends Controller
         string $id
     ): JSONResponse {
         try {
-            // Get the raw files from the file service
+            // Get the raw files from the file service.
             $files = $this->fileService->getFiles(object: $id);
 
-            // Format the files with pagination using request parameters
+            // Format the files with pagination using request parameters.
             $formattedFiles = $this->fileService->formatFiles($files, $this->request->getParams());
 
             return new JSONResponse($formattedFiles);
@@ -230,7 +230,7 @@ class FilesController extends Controller
         try {
             $data = $this->request->getParams();
 
-            // Validate required parameters
+            // Validate required parameters.
             if (empty($data['name']) === true) {
                 return new JSONResponse(['error' => 'File name is required'], 400);
             }
@@ -239,13 +239,13 @@ class FilesController extends Controller
                 return new JSONResponse(['error' => 'File content is required'], 400);
             }
 
-            // Extract parameters with defaults
+            // Extract parameters with defaults.
             $fileName = (string) $data['name'];
             $content  = (string) $data['content'];
             $share    = isset($data['share']) && $data['share'] === true;
             $tags     = $data['tags'] ?? [];
 
-            // Ensure tags is an array
+            // Ensure tags is an array.
             if (is_string($tags) === true) {
                 $tags = explode(',', $tags);
                 $tags = array_map('trim', $tags);
@@ -306,7 +306,7 @@ class FilesController extends Controller
                 throw new Exception('No files uploaded');
             }
 
-            // Normalize single file upload to array structure
+            // Normalize single file upload to array structure.
             if (isset($files['name']) === true && is_array($files['name']) === false) {
                 $tags = $data['tags'] ?? '';
                 if (!is_array($tags)) {
@@ -323,7 +323,7 @@ class FilesController extends Controller
                     'tags'     => $tags,
                 ];
             } else if (isset($files['name']) === true && is_array($files['name']) === true) {
-                // Loop through each file using the count of 'name'
+                // Loop through each file using the count of 'name'.
                 for ($i = 0; $i < count($files['name']); $i++) {
                     $tags = $data['tags'][$i] ?? '';
                     if (!is_array($tags)) {
@@ -355,23 +355,23 @@ class FilesController extends Controller
             // Create file using the uploaded file's content and name.
             $results = [];
             foreach ($uploadedFiles as $file) {
-                // Check for upload errors first
+                // Check for upload errors first.
                 if (isset($file['error']) === true && $file['error'] !== UPLOAD_ERR_OK) {
                     throw new Exception('File upload error for '.$file['name'].': '.$this->getUploadErrorMessage($file['error']));
                 }
 
-                // Verify the temporary file exists and is readable
+                // Verify the temporary file exists and is readable.
                 if (file_exists($file['tmp_name']) === false || is_readable($file['tmp_name']) === false) {
                     throw new Exception('Temporary file not found or not readable for: '.$file['name']);
                 }
 
-                // Read the file content with error handling
+                // Read the file content with error handling.
                 $content = file_get_contents($file['tmp_name']);
                 if ($content === false) {
                     throw new Exception('Failed to read uploaded file content for: '.$file['name']);
                 }
 
-                // Create file
+                // Create file.
                 $results[] = $this->fileService->addFile(
                     objectEntity: $object,
                     fileName: $file['name'],
@@ -419,9 +419,9 @@ class FilesController extends Controller
 
         try {
             $data = $this->request->getParams();
-            // Ensure tags is set to empty array if not provided
+            // Ensure tags is set to empty array if not provided.
             $tags = $data['tags'] ?? [];
-            // Content is optional for metadata-only updates
+            // Content is optional for metadata-only updates.
             $content = $data['content'] ?? null;
             $result  = $this->fileService->updateFile($fileId, $content, $tags, $this->objectService->getObject());
             return new JSONResponse($this->fileService->formatFile($result));
@@ -565,14 +565,14 @@ class FilesController extends Controller
     public function downloadById(int $fileId): mixed
     {
         try {
-            // Get the file using the file service
+            // Get the file using the file service.
             $file = $this->fileService->getFileById($fileId);
 
             if ($file === null) {
                 return new JSONResponse(['error' => 'File not found'], 404);
             }
 
-            // Stream the file content back to the client
+            // Stream the file content back to the client.
             return $this->fileService->streamFile($file);
         } catch (NotFoundException $e) {
             return new JSONResponse(['error' => 'File not found'], 404);
@@ -595,7 +595,7 @@ class FilesController extends Controller
      */
     private function getUploadErrorMessage(int $errorCode): string
     {
-        // Map PHP upload error codes to human-readable messages
+        // Map PHP upload error codes to human-readable messages.
         return match ($errorCode) {
             UPLOAD_ERR_INI_SIZE => 'The uploaded file exceeds the upload_max_filesize directive in php.ini',
             UPLOAD_ERR_FORM_SIZE => 'The uploaded file exceeds the MAX_FILE_SIZE directive in the HTML form',
@@ -623,23 +623,23 @@ class FilesController extends Controller
      */
     private function parseBool(mixed $value): bool
     {
-        // If already boolean, return as-is
+        // If already boolean, return as-is.
         if (is_bool($value) === true) {
             return $value;
         }
 
-        // Handle string values
+        // Handle string values.
         if (is_string($value) === true) {
             $value = strtolower(trim($value));
             return in_array($value, ['true', '1', 'on', 'yes'], true);
         }
 
-        // Handle numeric values
+        // Handle numeric values.
         if (is_numeric($value) === true) {
             return (bool) $value;
         }
 
-        // Fallback to false for other types
+        // Fallback to false for other types.
         return false;
 
     }//end parseBool()
@@ -657,18 +657,18 @@ class FilesController extends Controller
      */
     private function normalizeTags(mixed $tags): array
     {
-        // If already an array, just trim values
+        // If already an array, just trim values.
         if (is_array($tags) === true) {
             return array_map('trim', $tags);
         }
 
-        // If string, split by comma and trim
+        // If string, split by comma and trim.
         if (is_string($tags) === true) {
             $tags = explode(',', $tags);
             return array_map('trim', $tags);
         }
 
-        // Default to empty array
+        // Default to empty array.
         return [];
 
     }//end normalizeTags()

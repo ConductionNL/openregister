@@ -63,15 +63,15 @@ class Version1Date20250903150000 extends SimpleMigrationStep
          */
         $schema = $schemaClosure();
 
-        // Skip if table already exists
+        // Skip if table already exists.
         if ($schema->hasTable('openregister_authorization_exceptions') === true) {
             return null;
         }
 
-        // Create the authorization exceptions table
+        // Create the authorization exceptions table.
         $table = $schema->createTable('openregister_authorization_exceptions');
 
-        // Primary key
+        // Primary key.
         $table->addColumn(
                 'id',
                 Types::BIGINT,
@@ -82,7 +82,7 @@ class Version1Date20250903150000 extends SimpleMigrationStep
                 ]
                 );
 
-        // Unique identifier for the authorization exception
+        // Unique identifier for the authorization exception.
         $table->addColumn(
                 'uuid',
                 Types::STRING,
@@ -93,7 +93,7 @@ class Version1Date20250903150000 extends SimpleMigrationStep
                 ]
                 );
 
-        // Type of exception: inclusion or exclusion
+        // Type of exception: inclusion or exclusion.
         $table->addColumn(
                 'type',
                 Types::STRING,
@@ -104,7 +104,7 @@ class Version1Date20250903150000 extends SimpleMigrationStep
                 ]
                 );
 
-        // Subject type: user or group
+        // Subject type: user or group.
         $table->addColumn(
                 'subject_type',
                 Types::STRING,
@@ -115,7 +115,7 @@ class Version1Date20250903150000 extends SimpleMigrationStep
                 ]
                 );
 
-        // Subject ID: the actual user ID or group ID
+        // Subject ID: the actual user ID or group ID.
         $table->addColumn(
                 'subject_id',
                 Types::STRING,
@@ -126,7 +126,7 @@ class Version1Date20250903150000 extends SimpleMigrationStep
                 ]
                 );
 
-        // Schema UUID this exception applies to (nullable for global exceptions)
+        // Schema UUID this exception applies to (nullable for global exceptions).
         $table->addColumn(
                 'schema_uuid',
                 Types::STRING,
@@ -137,7 +137,7 @@ class Version1Date20250903150000 extends SimpleMigrationStep
                 ]
                 );
 
-        // Register UUID this exception applies to (nullable)
+        // Register UUID this exception applies to (nullable).
         $table->addColumn(
                 'register_uuid',
                 Types::STRING,
@@ -148,7 +148,7 @@ class Version1Date20250903150000 extends SimpleMigrationStep
                 ]
                 );
 
-        // Organization UUID this exception applies to (nullable)
+        // Organization UUID this exception applies to (nullable).
         $table->addColumn(
                 'organization_uuid',
                 Types::STRING,
@@ -159,7 +159,7 @@ class Version1Date20250903150000 extends SimpleMigrationStep
                 ]
                 );
 
-        // CRUD action this exception applies to
+        // CRUD action this exception applies to.
         $table->addColumn(
                 'action',
                 Types::STRING,
@@ -170,7 +170,7 @@ class Version1Date20250903150000 extends SimpleMigrationStep
                 ]
                 );
 
-        // Priority for exception resolution (higher = more important)
+        // Priority for exception resolution (higher = more important).
         $table->addColumn(
                 'priority',
                 Types::INTEGER,
@@ -181,7 +181,7 @@ class Version1Date20250903150000 extends SimpleMigrationStep
                 ]
                 );
 
-        // Whether the exception is active
+        // Whether the exception is active.
         $table->addColumn(
                 'active',
                 Types::BOOLEAN,
@@ -192,7 +192,7 @@ class Version1Date20250903150000 extends SimpleMigrationStep
                 ]
                 );
 
-        // Human readable description of the exception
+        // Human readable description of the exception.
         $table->addColumn(
                 'description',
                 Types::TEXT,
@@ -202,7 +202,7 @@ class Version1Date20250903150000 extends SimpleMigrationStep
                 ]
                 );
 
-        // User who created the exception
+        // User who created the exception.
         $table->addColumn(
                 'created_by',
                 Types::STRING,
@@ -213,7 +213,7 @@ class Version1Date20250903150000 extends SimpleMigrationStep
                 ]
                 );
 
-        // Timestamps
+        // Timestamps.
         $table->addColumn(
                 'created_at',
                 Types::DATETIME,
@@ -232,10 +232,10 @@ class Version1Date20250903150000 extends SimpleMigrationStep
                 ]
                 );
 
-        // Set primary key
+        // Set primary key.
         $table->setPrimaryKey(['id']);
 
-        // Create indexes for performance
+        // Create indexes for performance.
         $table->addUniqueIndex(['uuid'], 'openregister_auth_exceptions_uuid');
         $table->addIndex(['type'], 'openregister_auth_exceptions_type');
         $table->addIndex(['subject_type', 'subject_id'], 'openregister_auth_exceptions_subject');
@@ -246,7 +246,7 @@ class Version1Date20250903150000 extends SimpleMigrationStep
         $table->addIndex(['active'], 'openregister_auth_exceptions_active');
         $table->addIndex(['priority'], 'openregister_auth_exceptions_priority');
 
-        // Composite indexes for common queries
+        // Composite indexes for common queries.
         $table->addIndex(['subject_type', 'subject_id', 'action', 'active'], 'openregister_auth_exceptions_lookup');
         $table->addIndex(['schema_uuid', 'action', 'active'], 'openregister_auth_exceptions_schema_lookup');
 

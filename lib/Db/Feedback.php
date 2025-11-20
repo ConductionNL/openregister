@@ -48,7 +48,7 @@ class Feedback extends Entity implements JsonSerializable
 
     protected string $type = '';
 
-    // 'positive' or 'negative'
+    // 'positive' or 'negative'.
     protected ?string $comment = null;
 
     protected ?\DateTime $created = null;

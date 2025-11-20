@@ -460,11 +460,11 @@ class Agent extends Entity implements JsonSerializable
      */
     public function hydrate(array $object): self
     {
-        // Set UUID - generate if not provided
+        // Set UUID - generate if not provided.
         if (isset($object['uuid']) && !empty($object['uuid'])) {
             $this->setUuid($object['uuid']);
         } else {
-            // Generate new UUID if not provided
+            // Generate new UUID if not provided.
             $this->setUuid(Uuid::v4()->toRfc4122());
         }
 

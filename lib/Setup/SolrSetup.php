@@ -104,7 +104,7 @@ class SolrSetup
         $this->solrService = $solrService;
         $this->logger      = $logger;
 
-        // Get authenticated HTTP client and configuration from GuzzleSolrService
+        // Get authenticated HTTP client and configuration from GuzzleSolrService.
         $this->httpClient = $solrService->getHttpClient();
         $this->solrConfig = $solrService->getSolrConfig();
 
@@ -180,7 +180,7 @@ class SolrSetup
             'details'     => $details,
         ];
 
-        // Update or add the step
+        // Update or add the step.
         $found = false;
         foreach ($this->setupProgress['steps'] as &$step) {
             if ($step['step_number'] === $stepNumber) {
@@ -207,8 +207,8 @@ class SolrSetup
      */
     private function buildSolrUrl(string $path): string
     {
-        // Use GuzzleSolrService's buildSolrBaseUrl method for consistency
-        // This ensures URL building logic is centralized and consistent
+        // Use GuzzleSolrService's buildSolrBaseUrl method for consistency.
+        // This ensures URL building logic is centralized and consistent.
         $baseUrl = $this->solrService->buildSolrBaseUrl();
         return $baseUrl.$path;
 
@@ -277,10 +277,10 @@ class SolrSetup
      */
     private function getTenantConfigSetName(): string
     {
-        // Use the configSet from configuration (defaults to '_default')
+        // Use the configSet from configuration (defaults to '_default').
         $configSetName = $this->solrConfig['configSet'] ?? '_default';
 
-        // If using _default, return it as-is (no tenant suffix needed)
+        // If using _default, return it as-is (no tenant suffix needed).
         if ($configSetName === '_default') {
             $this->logger->info(
                     'Using _default ConfigSet for maximum compatibility',
@@ -293,7 +293,7 @@ class SolrSetup
             return '_default';
         }
 
-        // For custom configSets, append tenant ID to make it tenant-specific
+        // For custom configSets, append tenant ID to make it tenant-specific.
         $tenantSpecificName = $configSetName.'_'.$this->getTenantId();
         $this->logger->info(
                 'Using custom tenant-specific ConfigSet',
@@ -328,7 +328,7 @@ class SolrSetup
     {
         $this->logger->info('Starting SOLR setup for OpenRegister multi-tenant architecture (SolrCloud mode)');
 
-        // Initialize setup progress tracking
+        // Initialize setup progress tracking.
         $this->setupProgress = [
             'started_at'      => date('Y-m-d H:i:s'),
             'completed_at'    => null,
@@ -338,11 +338,11 @@ class SolrSetup
             'steps'           => [],
         ];
 
-        // Initialize all steps as pending to show complete progress
+        // Initialize all steps as pending to show complete progress.
         $this->initializeAllSteps();
 
         try {
-            // Step 1: Verify SOLR connectivity
+            // Step 1: Verify SOLR connectivity.
             $this->trackStep(1, 'SOLR Connectivity', 'started', 'Verifying SOLR server connectivity and authentication');
 
             try {
@@ -403,13 +403,13 @@ class SolrSetup
                 return false;
             }//end try
 
-            // Step 2: Ensure tenant configSet exists
+            // Step 2: Ensure tenant configSet exists.
             $tenantConfigSetName = $this->getTenantConfigSetName();
             $this->trackStep(2, 'EnsureTenantConfigSet', 'started', 'Checking and creating tenant configSet "'.$tenantConfigSetName.'"');
 
             try {
                 if (!$this->ensureTenantConfigSet()) {
-                    // Use detailed error information from createConfigSet if available
+                    // Use detailed error information from createConfigSet if available.
                     $errorDetails = $this->lastErrorDetails ?? [];
 
                     $this->trackStep(
@@ -430,7 +430,7 @@ class SolrSetup
                             ]
                             );
 
-                    // Enhanced error details for configSet failure
+                    // Enhanced error details for configSet failure.
                     if ($this->lastErrorDetails === null) {
                         $this->lastErrorDetails = [
                             'operation'       => 'ensureTenantConfigSet',
@@ -479,7 +479,7 @@ class SolrSetup
                 return false;
             }//end try
 
-            // Step 3: Force ConfigSet Propagation (always run for safety)
+            // Step 3: Force ConfigSet Propagation (always run for safety).
             $this->trackStep(3, 'ConfigSet Propagation', 'started', 'Forcing configSet propagation across SOLR cluster nodes');
 
             try {
@@ -563,12 +563,12 @@ class SolrSetup
                 $this->setupProgress['completed_steps']++;
             }//end try
 
-            // Step 4: Ensure tenant collection exists
+            // Step 4: Ensure tenant collection exists.
             $tenantCollectionName = $this->getTenantCollectionName();
             $this->trackStep(4, 'Collection Creation', 'started', 'Checking and creating tenant collection "'.$tenantCollectionName.'"');
 
             try {
-                // Ensure tenant collection exists (using tenant-specific configSet)
+                // Ensure tenant collection exists (using tenant-specific configSet).
                 if (!$this->ensureTenantCollectionExists()) {
                     $tenantConfigSetName = $this->getTenantConfigSetName();
                     $this->trackStep(
@@ -583,7 +583,7 @@ class SolrSetup
                             ]
                             );
 
-                    // Enhanced error details for collection failure
+                    // Enhanced error details for collection failure.
                     if ($this->lastErrorDetails === null) {
                         $this->lastErrorDetails = [
                             'primary_error'      => 'Failed to create tenant collection "'.$tenantCollectionName.'"',
@@ -634,7 +634,7 @@ class SolrSetup
                 return false;
             }//end try
 
-            // Step 5: Configure schema fields
+            // Step 5: Configure schema fields.
             $this->trackStep(5, 'Schema Configuration', 'started', 'Configuring schema fields for ObjectEntity metadata');
 
             try {
@@ -682,7 +682,7 @@ class SolrSetup
                 return false;
             }//end try
 
-            // Step 6: Validate setup
+            // Step 6: Validate setup.
             $this->trackStep(6, 'Setup Validation', 'started', 'Validating SOLR setup completion');
 
             try {
@@ -731,7 +731,7 @@ class SolrSetup
                 return false;
             }//end try
 
-            // Mark setup as completed successfully
+            // Mark setup as completed successfully.
             $this->setupProgress['completed_at'] = date('Y-m-d H:i:s');
             $this->setupProgress['success']      = true;
 
@@ -767,7 +767,7 @@ class SolrSetup
                     ]
                     );
 
-            // Store general failure details if no specific error was captured
+            // Store general failure details if no specific error was captured.
             if ($this->lastErrorDetails === null) {
                 $this->lastErrorDetails = [
                     'operation'       => 'setupSolr',
@@ -796,8 +796,8 @@ class SolrSetup
     private function verifySolrConnectivity(): bool
     {
         try {
-            // **SETUP-OPTIMIZED**: Use connectivity-only test for setup scenarios
-            // Collections don't exist yet during setup, so we only test SOLR/Zookeeper connectivity
+            // **SETUP-OPTIMIZED**: Use connectivity-only test for setup scenarios.
+            // Collections don't exist yet during setup, so we only test SOLR/Zookeeper connectivity.
             $connectionTest = $this->solrService->testConnectivityOnly();
             $isConnected    = $connectionTest['success'] ?? false;
 
@@ -821,7 +821,7 @@ class SolrSetup
                         ]
                         );
 
-                // Store detailed error information for better troubleshooting
+                // Store detailed error information for better troubleshooting.
                 $this->lastErrorDetails = [
                     'operation'              => 'verifySolrConnectivity',
                     'error_type'             => 'connectivity_test_failure',
@@ -849,7 +849,7 @@ class SolrSetup
                     ]
                     );
 
-            // Store detailed error information
+            // Store detailed error information.
             $this->lastErrorDetails = [
                 'operation'       => 'verifySolrConnectivity',
                 'error_type'      => 'connectivity_exception',
@@ -896,7 +896,7 @@ class SolrSetup
     {
         $tenantConfigSetName = $this->getTenantConfigSetName();
 
-        // Check if configSet already exists
+        // Check if configSet already exists.
         if ($this->configSetExists($tenantConfigSetName)) {
             $this->logger->info(
                     'Tenant configSet already exists (skipping creation)',
@@ -904,13 +904,13 @@ class SolrSetup
                         'configSet' => $tenantConfigSetName,
                     ]
                     );
-            // Track existing configSet as skipped (not newly created)
+            // Track existing configSet as skipped (not newly created).
             if (!in_array($tenantConfigSetName, $this->infrastructureCreated['configsets_skipped'])) {
                 $this->infrastructureCreated['configsets_skipped'][] = $tenantConfigSetName;
             }
 
-            // Even for existing configSets, force propagation to ensure availability
-            // This handles cases where configSet exists but isn't fully propagated
+            // Even for existing configSets, force propagation to ensure availability.
+            // This handles cases where configSet exists but isn't fully propagated.
             $propagationResult = $this->forceConfigSetPropagation($tenantConfigSetName);
             $this->logger->info(
                     'ConfigSet propagation attempted for existing configSet',
@@ -923,7 +923,7 @@ class SolrSetup
             return true;
         }//end if
 
-        // Upload configSet from ZIP file (bypasses trusted configSet authentication)
+        // Upload configSet from ZIP file (bypasses trusted configSet authentication).
         $this->logger->info(
                 'Uploading tenant configSet from ZIP file',
                 [
@@ -957,7 +957,7 @@ class SolrSetup
         try {
             $requestOptions = ['timeout' => 10];
 
-            // Add authentication if configured
+            // Add authentication if configured.
             if (!empty($this->solrConfig['username']) && !empty($this->solrConfig['password'])) {
                 $requestOptions['auth'] = [$this->solrConfig['username'], $this->solrConfig['password']];
             }
@@ -1032,7 +1032,7 @@ class SolrSetup
      */
     private function createConfigSet(string $newConfigSetName, string $templateConfigSetName): bool
     {
-        // First, test basic SOLR connectivity before attempting configSet creation
+        // First, test basic SOLR connectivity before attempting configSet creation.
         $this->logger->info(
                 'Testing SOLR connectivity before configSet creation',
                 [
@@ -1040,7 +1040,7 @@ class SolrSetup
                 ]
                 );
 
-        // Use GuzzleSolrService's comprehensive connectivity test instead of simple ping
+        // Use GuzzleSolrService's comprehensive connectivity test instead of simple ping.
         try {
             $connectionTest = $this->solrService->testConnection();
             if ($connectionTest['success']) {
@@ -1059,7 +1059,7 @@ class SolrSetup
                             'details'      => $connectionTest['details'] ?? [],
                         ]
                         );
-                // Continue anyway - connectivity test might fail but configSet creation might still work
+                // Continue anyway - connectivity test might fail but configSet creation might still work.
             }
         } catch (\Exception $e) {
             $this->logger->warning(
@@ -1069,10 +1069,10 @@ class SolrSetup
                         'exception_type' => get_class($e),
                     ]
                     );
-            // Continue anyway - connectivity test might not be available but admin endpoints might work
+            // Continue anyway - connectivity test might not be available but admin endpoints might work.
         }//end try
 
-        // Use SolrCloud ConfigSets API for configSet creation with authentication
+        // Use SolrCloud ConfigSets API for configSet creation with authentication.
         $url = $this->buildSolrUrl(
                 sprintf(
                 '/admin/configs?action=CREATE&name=%s&baseConfigSet=%s&wt=json',
@@ -1092,7 +1092,7 @@ class SolrSetup
                 );
 
         try {
-            // Use Guzzle HTTP client with proper timeout, headers, and authentication for SolrCloud
+            // Use Guzzle HTTP client with proper timeout, headers, and authentication for SolrCloud.
             $requestOptions = [
                 'timeout' => 30,
                 'headers' => [
@@ -1101,7 +1101,7 @@ class SolrSetup
                 ],
             ];
 
-            // Add authentication if configured
+            // Add authentication if configured.
             if (!empty($this->solrConfig['username']) && !empty($this->solrConfig['password'])) {
                 $requestOptions['auth'] = [$this->solrConfig['username'], $this->solrConfig['password']];
                 $this->logger->info(
@@ -1135,7 +1135,7 @@ class SolrSetup
                         ]
                         );
 
-                // Store detailed error information for API response
+                // Store detailed error information for API response.
                 $this->lastErrorDetails = [
                     'operation'              => 'createConfigSet',
                     'error_type'             => 'http_error',
@@ -1153,7 +1153,7 @@ class SolrSetup
 
             $data = json_decode((string) $response->getBody(), true);
         } catch (\Exception $e) {
-            // Enhanced exception logging for HTTP client issues
+            // Enhanced exception logging for HTTP client issues.
             $logData = [
                 'configSet'      => $newConfigSetName,
                 'template'       => $templateConfigSetName,
@@ -1164,7 +1164,7 @@ class SolrSetup
                 'line'           => $e->getLine(),
             ];
 
-            // Extract additional details from Guzzle exceptions
+            // Extract additional details from Guzzle exceptions.
             if ($e instanceof \GuzzleHttp\Exception\RequestException) {
                 $logData['guzzle_request_exception'] = true;
                 if ($e->hasResponse()) {
@@ -1182,13 +1182,13 @@ class SolrSetup
                 }
             }
 
-            // Check for authentication issues
+            // Check for authentication issues.
             if (strpos($e->getMessage(), '401') !== false || strpos($e->getMessage(), 'Unauthorized') !== false) {
                 $logData['authentication_issue'] = true;
                 $logData['has_credentials']      = !empty($this->solrConfig['username']) && !empty($this->solrConfig['password']);
             }
 
-            // Check for network connectivity issues
+            // Check for network connectivity issues.
             if (strpos($e->getMessage(), 'Connection refused') !== false
                 || strpos($e->getMessage(), 'Could not resolve host') !== false
                 || strpos($e->getMessage(), 'timeout') !== false
@@ -1208,7 +1208,7 @@ class SolrSetup
 
             $this->logger->error('Failed to create configSet - HTTP request failed', $logData);
 
-            // Store detailed error information for API response
+            // Store detailed error information for API response.
             $this->lastErrorDetails = [
                 'operation'      => 'createConfigSet',
                 'configSet'      => $newConfigSetName,
@@ -1220,7 +1220,7 @@ class SolrSetup
                 'guzzle_details' => [],
             ];
 
-            // Add Guzzle-specific details if available
+            // Add Guzzle-specific details if available.
             if ($e instanceof \GuzzleHttp\Exception\RequestException) {
                 $this->lastErrorDetails['guzzle_details']['is_request_exception'] = true;
 
@@ -1229,12 +1229,12 @@ class SolrSetup
                     $responseStatus = $response->getStatusCode();
                     $responseBody   = (string) $response->getBody();
 
-                    // Store in guzzle_details for comprehensive logging
+                    // Store in guzzle_details for comprehensive logging.
                     $this->lastErrorDetails['guzzle_details']['response_status']  = $responseStatus;
                     $this->lastErrorDetails['guzzle_details']['response_body']    = $responseBody;
                     $this->lastErrorDetails['guzzle_details']['response_headers'] = $response->getHeaders();
 
-                    // Also store at top level for step tracking consistency
+                    // Also store at top level for step tracking consistency.
                     $this->lastErrorDetails['guzzle_response_status'] = $responseStatus;
                     $this->lastErrorDetails['guzzle_response_body']   = $responseBody;
                 }
@@ -1247,7 +1247,7 @@ class SolrSetup
                 }
             }//end if
 
-            // Add specific error categorization
+            // Add specific error categorization.
             if (strpos($e->getMessage(), '401') !== false || strpos($e->getMessage(), 'Unauthorized') !== false) {
                 $this->lastErrorDetails['error_category']  = 'authentication_failure';
                 $this->lastErrorDetails['has_credentials'] = !empty($this->solrConfig['username']) && !empty($this->solrConfig['password']);
@@ -1275,7 +1275,7 @@ class SolrSetup
                     ]
                     );
 
-            // Store detailed error information for API response
+            // Store detailed error information for API response.
             $this->lastErrorDetails = [
                 'operation'        => 'createConfigSet',
                 'configSet'        => $newConfigSetName,
@@ -1303,7 +1303,7 @@ class SolrSetup
             return true;
         }
 
-        // Extract detailed error information from SOLR response
+        // Extract detailed error information from SOLR response.
         $errorMsg     = $data['error']['msg'] ?? 'Unknown SOLR error';
         $errorCode    = $data['error']['code'] ?? $status;
         $errorDetails = $data['error']['metadata'] ?? [];
@@ -1329,7 +1329,7 @@ class SolrSetup
                 ]
                 );
 
-        // Store detailed error information for API response
+        // Store detailed error information for API response.
         $this->lastErrorDetails = [
             'operation'            => 'createConfigSet',
             'configSet'            => $newConfigSetName,
@@ -1367,7 +1367,7 @@ class SolrSetup
     {
         $tenantCollectionName = $this->getTenantCollectionName();
 
-        // Check if tenant collection already exists
+        // Check if tenant collection already exists.
         if ($this->solrService->collectionExists($tenantCollectionName)) {
             $this->logger->info(
                     'Tenant collection already exists (skipping creation)',
@@ -1376,7 +1376,7 @@ class SolrSetup
                     ]
                     );
 
-            // Track existing collection as skipped (not newly created)
+            // Track existing collection as skipped (not newly created).
             if (!in_array($tenantCollectionName, $this->infrastructureCreated['collections_skipped'])) {
                 $this->infrastructureCreated['collections_skipped'][] = $tenantCollectionName;
             }
@@ -1384,7 +1384,7 @@ class SolrSetup
             return true;
         }
 
-        // Create tenant collection using the tenant-specific configSet
+        // Create tenant collection using the tenant-specific configSet.
         $tenantConfigSetName = $this->getTenantConfigSetName();
         $this->logger->info(
                 'Creating tenant collection',
@@ -1395,17 +1395,17 @@ class SolrSetup
                 );
 
         try {
-            // Attempt collection creation with retry logic for configSet propagation delays
+            // Attempt collection creation with retry logic for configSet propagation delays.
             $success = $this->createCollectionWithRetry($tenantCollectionName, $tenantConfigSetName);
 
-            // Track newly created collection
+            // Track newly created collection.
             if ($success && !in_array($tenantCollectionName, $this->infrastructureCreated['collections_created'])) {
                 $this->infrastructureCreated['collections_created'][] = $tenantCollectionName;
             }
 
             return $success;
         } catch (\GuzzleHttp\Exception\GuzzleException $e) {
-            // Capture Guzzle HTTP errors (network, timeout, etc.)
+            // Capture Guzzle HTTP errors (network, timeout, etc.).
             $this->lastErrorDetails = [
                 'primary_error'     => 'HTTP request to SOLR failed',
                 'error_type'        => 'guzzle_http_error',
@@ -1428,30 +1428,30 @@ class SolrSetup
             $this->logger->error('Guzzle HTTP error during collection creation', $this->lastErrorDetails);
             return false;
         } catch (\Exception $e) {
-            // Capture SOLR API errors (400 responses, validation errors, etc.)
+            // Capture SOLR API errors (400 responses, validation errors, etc.).
             $solrResponse  = null;
             $errorCategory = 'solr_api_error';
             $retryDetails  = null;
 
-            // Try to extract retry details and SOLR response from nested exception
+            // Try to extract retry details and SOLR response from nested exception.
             if ($e->getPrevious() && $e->getPrevious()->getMessage()) {
                 $possibleJson    = $e->getPrevious()->getMessage();
                 $decodedResponse = json_decode($possibleJson, true);
                 if (json_last_error() === JSON_ERROR_NONE) {
-                    // Check if this is retry details from createCollectionWithRetry
+                    // Check if this is retry details from createCollectionWithRetry.
                     if (isset($decodedResponse['attempts']) && isset($decodedResponse['attempt_timestamps'])) {
                         $retryDetails  = $decodedResponse;
                         $solrResponse  = $decodedResponse['last_solr_response'] ?? null;
                         $errorCategory = 'solr_validation_error';
                     } else {
-                        // Regular SOLR response
+                        // Regular SOLR response.
                         $solrResponse  = $decodedResponse;
                         $errorCategory = 'solr_validation_error';
                     }
                 }
             }
 
-            // Log the collection creation failure with full details
+            // Log the collection creation failure with full details.
             $this->logger->error(
                     'Collection creation failed',
                     [
@@ -1507,7 +1507,7 @@ class SolrSetup
     {
         $attempt          = 0;
         $baseDelaySeconds = 2;
-        // Start with 2 second delay
+        // Start with 2 second delay.
         $startTime    = time();
         $retryDetails = [
             'attempts'            => 0,
@@ -1556,17 +1556,17 @@ class SolrSetup
                 $errorMessage     = $e->getMessage();
                 $isConfigSetError = $this->isConfigSetPropagationError($errorMessage);
 
-                // Capture the detailed error information
+                // Capture the detailed error information.
                 $retryDetails['last_error'] = $errorMessage;
 
-                // Try to extract SOLR response from the exception
+                // Try to extract SOLR response from the exception.
                 if ($e->getPrevious() && $e->getPrevious()->getMessage()) {
                     try {
                         $solrResponse = json_decode($e->getPrevious()->getMessage(), true);
                         if ($solrResponse && json_last_error() === JSON_ERROR_NONE) {
                             $retryDetails['last_solr_response'] = $solrResponse;
 
-                            // Log the actual SOLR error for debugging
+                            // Log the actual SOLR error for debugging.
                             $this->logger->error(
                                     'SOLR API returned error response',
                                     [
@@ -1580,7 +1580,7 @@ class SolrSetup
                                     );
                         }
                     } catch (\Exception $jsonException) {
-                        // If not JSON, store as string
+                        // If not JSON, store as string.
                         $retryDetails['last_solr_response'] = $e->getPrevious()->getMessage();
                     }//end try
                 }//end if
@@ -1598,7 +1598,7 @@ class SolrSetup
                         ]
                         );
 
-                // If this is the last attempt, provide user-friendly propagation error with retry details
+                // If this is the last attempt, provide user-friendly propagation error with retry details.
                 if ($attempt >= $maxAttempts && $isConfigSetError) {
                     $totalElapsed = time() - $startTime;
                     $retryDetails['total_elapsed_seconds'] = $totalElapsed;
@@ -1615,7 +1615,7 @@ class SolrSetup
                     throw $e;
                 }
 
-                // Calculate exponential backoff delay: 2, 4, 8, 16 seconds
+                // Calculate exponential backoff delay: 2, 4, 8, 16 seconds.
                 $delaySeconds = $baseDelaySeconds * pow(2, $attempt - 1);
                 $retryDetails['total_delay_seconds'] += $delaySeconds;
 
@@ -1634,7 +1634,7 @@ class SolrSetup
             }//end try
         }//end while
 
-        // Should not reach here due to exception throwing above
+        // Should not reach here due to exception throwing above.
         return false;
 
     }//end createCollectionWithRetry()
@@ -1648,18 +1648,18 @@ class SolrSetup
      */
     private function isConfigSetPropagationError(string $errorMessage): bool
     {
-        // Only treat as propagation errors if they specifically mention propagation/availability issues
+        // Only treat as propagation errors if they specifically mention propagation/availability issues.
         $propagationErrorPatterns = [
             'configset does not exist',
             'Config does not exist',
             'Could not find configSet',
             'configSet not found',
             'ConfigSet propagation timeout',
-        // Our own timeout message
+        // Our own timeout message.
         ];
 
-        // "Underlying core creation failed" is NOT a propagation issue - it's a core creation failure
-        // This should fail immediately, not retry
+        // "Underlying core creation failed" is NOT a propagation issue - it's a core creation failure.
+        // This should fail immediately, not retry.
         foreach ($propagationErrorPatterns as $pattern) {
             if (stripos($errorMessage, $pattern) !== false) {
                 return true;
@@ -1692,7 +1692,7 @@ class SolrSetup
         $successCount     = 0;
         $operationResults = [];
 
-        // Method 1: List configSets to trigger cache refresh
+        // Method 1: List configSets to trigger cache refresh.
         $listOperation = [
             'name'          => 'configset_list_refresh',
             'description'   => 'List ConfigSets API call to trigger cache refresh',
@@ -1737,7 +1737,7 @@ class SolrSetup
 
         $operationResults['configset_list_refresh'] = $listOperation;
 
-        // Method 2: Check cluster status to trigger ZooKeeper sync
+        // Method 2: Check cluster status to trigger ZooKeeper sync.
         $clusterOperation = [
             'name'          => 'cluster_status_sync',
             'description'   => 'Cluster Status API call to trigger ZooKeeper sync',
@@ -1791,7 +1791,7 @@ class SolrSetup
                 ]
                 );
 
-        // Give a moment for any triggered propagation to begin
+        // Give a moment for any triggered propagation to begin.
         if ($successCount > 0) {
             sleep(1);
         }
@@ -1826,7 +1826,7 @@ class SolrSetup
         try {
             $requestOptions = ['timeout' => 10];
 
-            // Add authentication if configured
+            // Add authentication if configured.
             if (!empty($this->solrConfig['username']) && !empty($this->solrConfig['password'])) {
                 $requestOptions['auth'] = [$this->solrConfig['username'], $this->solrConfig['password']];
             }
@@ -1859,7 +1859,7 @@ class SolrSetup
                 return false;
             }
 
-            // Collection exists if it's in the cluster status
+            // Collection exists if it's in the cluster status.
             $exists = isset($data['cluster']['collections'][$collectionName]);
 
             $this->logger->debug(
@@ -1929,7 +1929,7 @@ class SolrSetup
                         ]
                         );
 
-                // Store detailed error information for API response
+                // Store detailed error information for API response.
                 $this->lastErrorDetails = [
                     'operation'       => 'createCollection',
                     'collection'      => $collectionName,
@@ -1982,7 +1982,7 @@ class SolrSetup
                     ]
                     );
 
-                // Track newly created collection
+                // Track newly created collection.
                 if (!in_array($collectionName, $this->infrastructureCreated['collections_created'])) {
                     $this->infrastructureCreated['collections_created'][] = $collectionName;
                 }
@@ -1990,7 +1990,7 @@ class SolrSetup
                 return true;
             }
 
-            // Extract detailed error information from SOLR response
+            // Extract detailed error information from SOLR response.
             $errorMsg     = $data['error']['msg'] ?? 'Unknown SOLR error';
             $errorCode    = $data['error']['code'] ?? $status;
             $errorDetails = $data['error']['metadata'] ?? [];
@@ -2009,7 +2009,7 @@ class SolrSetup
                     ]
                     );
 
-            // Store detailed error information for API response
+            // Store detailed error information for API response.
             $this->lastErrorDetails = [
                 'operation'            => 'createCollection',
                 'collection'           => $collectionName,
@@ -2043,7 +2043,7 @@ class SolrSetup
                     ]
                     );
 
-            // Store detailed error information for API response
+            // Store detailed error information for API response.
             $this->lastErrorDetails = [
                 'operation'      => 'createCollection',
                 'collection'     => $collectionName,
@@ -2071,7 +2071,7 @@ class SolrSetup
      */
     private function uploadConfigSet(string $configSetName): bool
     {
-        // Path to our packaged configSet ZIP file (fixed version with proper XML structure)
+        // Path to our packaged configSet ZIP file (fixed version with proper XML structure).
         $zipPath = __DIR__.'/../../resources/solr/openregister-configset-fixed.zip';
 
         if (!file_exists($zipPath)) {
@@ -2116,7 +2116,7 @@ class SolrSetup
                 );
 
         try {
-            // Read ZIP file contents
+            // Read ZIP file contents.
             $zipContents = file_get_contents($zipPath);
             if ($zipContents === false) {
                 $this->logger->error(
@@ -2137,7 +2137,7 @@ class SolrSetup
                 return false;
             }
 
-            // Upload ZIP file via POST request
+            // Upload ZIP file via POST request.
             $requestOptions = [
                 'timeout' => 30,
                 'headers' => [
@@ -2207,14 +2207,14 @@ class SolrSetup
                         ]
                         );
 
-                // Track newly created configSet
+                // Track newly created configSet.
                 if (!in_array($configSetName, $this->infrastructureCreated['configsets_created'])) {
                     $this->infrastructureCreated['configsets_created'][] = $configSetName;
                 }
 
-                // Force configSet propagation immediately after successful upload
-                // This proactively triggers cache refresh and ZooKeeper sync to reduce
-                // the likelihood of propagation delays when creating collections
+                // Force configSet propagation immediately after successful upload.
+                // This proactively triggers cache refresh and ZooKeeper sync to reduce.
+                // the likelihood of propagation delays when creating collections.
                 $propagationResult = $this->forceConfigSetPropagation($configSetName);
                 $this->logger->info(
                         'ConfigSet propagation attempted after upload',
@@ -2227,7 +2227,7 @@ class SolrSetup
                 return true;
             }//end if
 
-            // Handle SOLR API errors
+            // Handle SOLR API errors.
             $errorCode    = $data['error']['code'] ?? $status;
             $errorMsg     = $data['error']['msg'] ?? 'Unknown SOLR error';
             $errorDetails = $data['error']['metadata'] ?? [];
@@ -2312,7 +2312,7 @@ class SolrSetup
             return false;
         }
 
-        // Core exists if it's in the status response
+        // Core exists if it's in the status response.
         return isset($data['status'][$coreName]);
 
     }//end coreExists()
@@ -2386,7 +2386,7 @@ class SolrSetup
     {
         $this->logger->info('Configuring SOLR schema fields for ObjectEntity metadata');
 
-        // Get all field definitions including self_* metadata fields
+        // Get all field definitions including self_* metadata fields.
         $fieldDefinitions = self::getObjectEntityFieldDefinitions();
 
         $this->logger->info(
@@ -2433,7 +2433,7 @@ class SolrSetup
             }
         }//end foreach
 
-        // Update the step tracking with detailed field information
+        // Update the step tracking with detailed field information.
         $this->trackStep(
                 4,
                 'Schema Configuration',
@@ -2460,7 +2460,7 @@ class SolrSetup
      */
     private function addOrUpdateSchemaFieldWithTracking(string $fieldName, array $fieldConfig): array
     {
-        // First, try to add the field
+        // First, try to add the field.
         $addResult = $this->addSchemaFieldWithResult($fieldName, $fieldConfig);
 
         if ($addResult['success']) {
@@ -2471,7 +2471,7 @@ class SolrSetup
             ];
         }
 
-        // If add failed because field exists, try to update/replace
+        // If add failed because field exists, try to update/replace.
         if (strpos($addResult['error'] ?? '', 'already exists') !== false
             || strpos($addResult['error'] ?? '', 'Field') !== false
         ) {
@@ -2484,7 +2484,7 @@ class SolrSetup
                     'details' => $updateResult,
                 ];
             } else {
-                // Field exists but couldn't be updated - might be same config
+                // Field exists but couldn't be updated - might be same config.
                 return [
                     'success' => true,
                     'action'  => 'skipped',
@@ -2493,7 +2493,7 @@ class SolrSetup
             }
         }
 
-        // Both add and update failed
+        // Both add and update failed.
         return [
             'success' => false,
             'action'  => 'failed',
@@ -2658,14 +2658,14 @@ class SolrSetup
             'errors'         => [],
         ];
 
-        // Build SOLR URL helper
+        // Build SOLR URL helper.
         $buildUrl = function (string $path) use ($solrConfig): string {
             $host     = $solrConfig['host'] ?? 'localhost';
             $port     = $solrConfig['port'] ?? null;
             $scheme   = $solrConfig['scheme'] ?? 'http';
             $basePath = $solrConfig['path'] ?? '/solr';
 
-            // Handle Kubernetes service names and port logic
+            // Handle Kubernetes service names and port logic.
             if (strpos($host, '.svc.cluster.local') !== false) {
                 return sprintf('%s://%s%s%s', $scheme, $host, $basePath, $path);
             } else {
@@ -2681,7 +2681,7 @@ class SolrSetup
 
         foreach ($fieldDefinitions as $fieldName => $fieldConfig) {
             try {
-                // Try to add the field first
+                // Try to add the field first.
                 $addPayload = [
                     'add-field' => array_merge(['name' => $fieldName], $fieldConfig),
                 ];
@@ -2704,7 +2704,7 @@ class SolrSetup
                     }
                 }
 
-                // If add failed, try to replace
+                // If add failed, try to replace.
                 $replacePayload = [
                     'replace-field' => array_merge(['name' => $fieldName], $fieldConfig),
                 ];
@@ -2727,7 +2727,7 @@ class SolrSetup
                     }
                 }
 
-                // Both add and replace failed
+                // Both add and replace failed.
                 $results['fields_failed']++;
                 $results['errors'][] = "Failed to add/update field: {$fieldName}";
                 $logger->warning(
@@ -2785,7 +2785,7 @@ class SolrSetup
     public static function getObjectEntityFieldDefinitions(): array
     {
         return [
-            // **CRITICAL**: Core tenant field with self_ prefix (consistent naming)
+            // **CRITICAL**: Core tenant field with self_ prefix (consistent naming).
             'self_tenant'         => [
                 'type'        => 'string',
                 'stored'      => true,
@@ -2793,17 +2793,17 @@ class SolrSetup
                 'multiValued' => false,
                 'required'    => true,
                 'docValues'   => true,
-        // Enable faceting for tenant filtering
+        // Enable faceting for tenant filtering.
             ],
 
-            // Metadata fields with self_ prefix (consistent with legacy mapping)
+            // Metadata fields with self_ prefix (consistent with legacy mapping).
             'self_object_id'      => [
                 'type'        => 'pint',
                 'stored'      => true,
                 'indexed'     => true,
                 'multiValued' => false,
                 'docValues'   => false,
-            // Not useful for faceting
+            // Not useful for faceting.
             ],
             'self_uuid'           => [
                 'type'        => 'string',
@@ -2811,17 +2811,17 @@ class SolrSetup
                 'indexed'     => true,
                 'multiValued' => false,
                 'docValues'   => false,
-            // Not useful for faceting
+            // Not useful for faceting.
             ],
 
-            // Context fields
+            // Context fields.
             'self_register'       => [
                 'type'        => 'pint',
                 'stored'      => true,
                 'indexed'     => true,
                 'multiValued' => false,
                 'docValues'   => true,
-            // Enable faceting
+            // Enable faceting.
             ],
             'self_schema'         => [
                 'type'        => 'pint',
@@ -2829,7 +2829,7 @@ class SolrSetup
                 'indexed'     => true,
                 'multiValued' => false,
                 'docValues'   => true,
-            // Enable faceting
+            // Enable faceting.
             ],
             'self_schema_version' => [
                 'type'        => 'string',
@@ -2837,17 +2837,17 @@ class SolrSetup
                 'indexed'     => true,
                 'multiValued' => false,
                 'docValues'   => true,
-            // Enable faceting
+            // Enable faceting.
             ],
 
-            // Ownership and metadata
+            // Ownership and metadata.
             'self_owner'          => [
                 'type'        => 'string',
                 'stored'      => true,
                 'indexed'     => true,
                 'multiValued' => false,
                 'docValues'   => false,
-            // Not useful for faceting - used for ownership tracking
+            // Not useful for faceting - used for ownership tracking.
             ],
             'self_organisation'   => [
                 'type'        => 'string',
@@ -2855,7 +2855,7 @@ class SolrSetup
                 'indexed'     => true,
                 'multiValued' => false,
                 'docValues'   => true,
-            // Enable faceting
+            // Enable faceting.
             ],
             'self_application'    => [
                 'type'        => 'string',
@@ -2863,17 +2863,17 @@ class SolrSetup
                 'indexed'     => true,
                 'multiValued' => false,
                 'docValues'   => true,
-            // Enable faceting
+            // Enable faceting.
             ],
 
-            // Core object fields (no suffixes needed when explicitly defined)
+            // Core object fields (no suffixes needed when explicitly defined).
             'self_name'           => [
                 'type'        => 'string',
                 'stored'      => true,
                 'indexed'     => true,
                 'multiValued' => false,
                 'docValues'   => false,
-            // Not useful for faceting - used for search
+            // Not useful for faceting - used for search.
             ],
             'self_description'    => [
                 'type'        => 'text_general',
@@ -2881,7 +2881,7 @@ class SolrSetup
                 'indexed'     => true,
                 'multiValued' => false,
                 'docValues'   => false,
-            // Not useful for faceting - used for search
+            // Not useful for faceting - used for search.
             ],
             'self_summary'        => [
                 'type'        => 'text_general',
@@ -2926,14 +2926,14 @@ class SolrSetup
                 'multiValued' => false,
             ],
 
-            // Timestamps (SOLR date format)
+            // Timestamps (SOLR date format).
             'self_created'        => [
                 'type'        => 'pdate',
                 'stored'      => true,
                 'indexed'     => true,
                 'multiValued' => false,
                 'docValues'   => true,
-            // Enable faceting for date ranges
+            // Enable faceting for date ranges.
             ],
             'self_updated'        => [
                 'type'        => 'pdate',
@@ -2941,7 +2941,7 @@ class SolrSetup
                 'indexed'     => true,
                 'multiValued' => false,
                 'docValues'   => true,
-            // Enable faceting for date ranges
+            // Enable faceting for date ranges.
             ],
             'self_published'      => [
                 'type'        => 'pdate',
@@ -2949,7 +2949,7 @@ class SolrSetup
                 'indexed'     => true,
                 'multiValued' => false,
                 'docValues'   => true,
-            // Enable faceting for date ranges
+            // Enable faceting for date ranges.
             ],
             'self_depublished'    => [
                 'type'        => 'pdate',
@@ -2957,10 +2957,10 @@ class SolrSetup
                 'indexed'     => true,
                 'multiValued' => false,
                 'docValues'   => true,
-            // Enable faceting for date ranges
+            // Enable faceting for date ranges.
             ],
 
-            // **NEW**: UUID relation fields for clean object relationships
+            // **NEW**: UUID relation fields for clean object relationships.
             'self_relations'      => [
                 'type'        => 'string',
                 'stored'      => true,
@@ -2993,12 +2993,12 @@ class SolrSetup
      */
     private function addOrUpdateSchemaField(string $fieldName, array $fieldConfig): bool
     {
-        // Try to add the field first (will fail if it already exists)
+        // Try to add the field first (will fail if it already exists).
         if ($this->addSchemaField($fieldName, $fieldConfig)) {
             return true;
         }
 
-        // If add failed, try to replace the existing field
+        // If add failed, try to replace the existing field.
         return $this->replaceSchemaField($fieldName, $fieldConfig);
 
     }//end addOrUpdateSchemaField()
@@ -3156,7 +3156,7 @@ class SolrSetup
     {
         $tenantCollectionName = $this->getTenantCollectionName();
 
-        // Check tenant configSet exists
+        // Check tenant configSet exists.
         $tenantConfigSetName = $this->getTenantConfigSetName();
         if (!$this->configSetExists($tenantConfigSetName)) {
             $this->logger->error(
@@ -3168,7 +3168,7 @@ class SolrSetup
             return false;
         }
 
-        // Check tenant collection exists
+        // Check tenant collection exists.
         if (!$this->solrService->collectionExists($tenantCollectionName)) {
             $this->logger->error(
                     'Validation failed: tenant collection missing',
@@ -3179,7 +3179,7 @@ class SolrSetup
             return false;
         }
 
-        // Test tenant collection query functionality
+        // Test tenant collection query functionality.
         if (!$this->testCollectionQuery($tenantCollectionName)) {
             $this->logger->error(
                     'Validation failed: tenant collection query test failed',
@@ -3226,7 +3226,7 @@ class SolrSetup
             return false;
         }
 
-        // Valid response should have a response header with status 0
+        // Valid response should have a response header with status 0.
         return ($data['responseHeader']['status'] ?? -1) === 0;
 
     }//end testCollectionQuery()
@@ -3262,7 +3262,7 @@ class SolrSetup
             return false;
         }
 
-        // Valid response should have a response header with status 0
+        // Valid response should have a response header with status 0.
         return ($data['responseHeader']['status'] ?? -1) === 0;
 
     }//end testCoreQuery()

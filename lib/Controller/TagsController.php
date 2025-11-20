@@ -61,7 +61,7 @@ class TagsController extends Controller
      */
     public function getAllTags(): JSONResponse
     {
-        // Use the FileService to fetch all tags
+        // Use the FileService to fetch all tags.
         return new JSONResponse($this->fileService->getAllTags());
 
     }//end getAllTags()

@@ -1,5 +1,5 @@
 <?php
-// phpcs:ignoreFile
+// phpcs:ignoreFile.
 /**
  * OpenRegister Migration
  *

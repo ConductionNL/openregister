@@ -92,7 +92,7 @@ class SourceHandler
         try {
             unset($data['id'], $data['uuid']);
 
-            // Check if source already exists by name
+            // Check if source already exists by name.
             $existingSources = $this->sourceMapper->findAll();
             $existingSource  = null;
             foreach ($existingSources as $source) {
@@ -103,7 +103,7 @@ class SourceHandler
             }
 
             if ($existingSource !== null) {
-                // Update existing source
+                // Update existing source.
                 $existingSource->hydrate($data);
                 if ($owner !== null) {
                     $existingSource->setOwner($owner);
@@ -112,7 +112,7 @@ class SourceHandler
                 return $this->sourceMapper->update($existingSource);
             }
 
-            // Create new source
+            // Create new source.
             $source = new Source();
             $source->hydrate($data);
             if ($owner !== null) {

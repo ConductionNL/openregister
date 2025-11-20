@@ -154,26 +154,26 @@ class SchemaCacheService
     {
         $cacheKey = $this->buildCacheKey($schemaId, self::CACHE_KEY_SCHEMA);
 
-        // Check in-memory cache first
+        // Check in-memory cache first.
         if (isset(self::$memoryCache[$cacheKey])) {
             $this->logger->debug('Schema cache hit (memory)', ['schemaId' => $schemaId]);
             return self::$memoryCache[$cacheKey];
         }
 
-        // Check database cache
+        // Check database cache.
         $cachedData = $this->getCachedData($schemaId, self::CACHE_KEY_SCHEMA);
         if ($cachedData !== null) {
-            // Reconstruct schema object from cached data
+            // Reconstruct schema object from cached data.
             $schema = $this->reconstructSchemaFromCache($cachedData);
             if ($schema !== null) {
-                // Store in memory cache for future requests
+                // Store in memory cache for future requests.
                 self::$memoryCache[$cacheKey] = $schema;
                 $this->logger->debug('Schema cache hit (database)', ['schemaId' => $schemaId]);
                 return $schema;
             }
         }
 
-        // Load from database and cache
+        // Load from database and cache.
         try {
             $schema = $this->schemaMapper->find($schemaId);
             $this->cacheSchema($schema);
@@ -198,14 +198,14 @@ class SchemaCacheService
      */
     public function clearSchemaCache(int $schemaId): void
     {
-        // Clear from in-memory cache
+        // Clear from in-memory cache.
         foreach (self::$memoryCache as $key => $value) {
             if (strpos($key, 'schema_'.$schemaId) !== false) {
                 unset(self::$memoryCache[$key]);
             }
         }
 
-        // Clear from database cache
+        // Clear from database cache.
         $sql = 'DELETE FROM '.self::CACHE_TABLE.' WHERE schema_id = ?';
         try {
             $this->db->executeQuery($sql, [$schemaId]);
@@ -241,7 +241,7 @@ class SchemaCacheService
         $schemas     = [];
         $uncachedIds = [];
 
-        // Check cache for each schema
+        // Check cache for each schema.
         foreach ($schemaIds as $schemaId) {
             $schema = $this->getSchema($schemaId);
             if ($schema !== null) {
@@ -251,7 +251,7 @@ class SchemaCacheService
             }
         }
 
-        // Batch load uncached schemas
+        // Batch load uncached schemas.
         if (!empty($uncachedIds)) {
             $loadedSchemas = $this->schemaMapper->findMultiple($uncachedIds);
             foreach ($loadedSchemas as $schema) {
@@ -281,15 +281,15 @@ class SchemaCacheService
     {
         $cacheKey = $this->buildCacheKey($schemaId, self::CACHE_KEY_FACETABLE_FIELDS);
 
-        // Check in-memory cache first
+        // Check in-memory cache first.
         if (isset(self::$memoryCache[$cacheKey])) {
             return self::$memoryCache[$cacheKey];
         }
 
-        // Check database cache
+        // Check database cache.
         $cachedData = $this->getCachedData($schemaId, self::CACHE_KEY_FACETABLE_FIELDS);
         if ($cachedData !== null) {
-            // Store in memory cache
+            // Store in memory cache.
             self::$memoryCache[$cacheKey] = $cachedData;
             return $cachedData;
         }
@@ -314,7 +314,7 @@ class SchemaCacheService
     {
         $this->setCachedData($schemaId, self::CACHE_KEY_FACETABLE_FIELDS, $facetableFields, $ttl);
 
-        // Also store in memory cache
+        // Also store in memory cache.
         $cacheKey = $this->buildCacheKey($schemaId, self::CACHE_KEY_FACETABLE_FIELDS);
         self::$memoryCache[$cacheKey] = $facetableFields;
 
@@ -338,11 +338,11 @@ class SchemaCacheService
 
         $this->setCachedData($schemaId, self::CACHE_KEY_SCHEMA, $schemaData, $ttl);
 
-        // Store in memory cache
+        // Store in memory cache.
         $cacheKey = $this->buildCacheKey($schemaId, self::CACHE_KEY_SCHEMA);
         self::$memoryCache[$cacheKey] = $schema;
 
-        // Also cache computed properties
+        // Also cache computed properties.
         $this->cacheSchemaConfiguration($schema, $ttl);
         $this->cacheSchemaProperties($schema, $ttl);
 
@@ -403,15 +403,15 @@ class SchemaCacheService
         $startTime      = microtime(true);
         $deletedEntries = 0;
 
-        // Remove from database cache (if table exists)
+        // Remove from database cache (if table exists).
         try {
             $qb = $this->db->getQueryBuilder();
             $qb->delete(self::CACHE_TABLE)
                 ->where($qb->expr()->eq('schema_id', $qb->createNamedParameter($schemaId)));
             $deletedEntries = $qb->executeStatement();
         } catch (\Exception $e) {
-            // If the cache table doesn't exist yet, just log a debug message and continue
-            // This allows the app to work even if the migration hasn't been run yet
+            // If the cache table doesn't exist yet, just log a debug message and continue.
+            // This allows the app to work even if the migration hasn't been run yet.
             $this->logger->debug(
                     'Schema cache table does not exist yet, skipping database cache invalidation',
                     [
@@ -421,7 +421,7 @@ class SchemaCacheService
                     );
         }
 
-        // Remove from memory cache (always safe to do)
+        // Remove from memory cache (always safe to do).
         $cacheKeys = [
             $this->buildCacheKey($schemaId, self::CACHE_KEY_SCHEMA),
             $this->buildCacheKey($schemaId, self::CACHE_KEY_FACETABLE_FIELDS),
@@ -477,12 +477,12 @@ class SchemaCacheService
     {
         $startTime = microtime(true);
 
-        // Clear database cache
+        // Clear database cache.
         $qb = $this->db->getQueryBuilder();
         $qb->delete(self::CACHE_TABLE);
         $deletedEntries = $qb->executeStatement();
 
-        // Clear memory cache
+        // Clear memory cache.
         $memoryCacheSize   = count(self::$memoryCache);
         self::$memoryCache = [];
 
@@ -650,11 +650,11 @@ class SchemaCacheService
             return null;
         }
 
-        // Check if expired
+        // Check if expired.
         if ($result['expires'] !== null) {
             $expires = new \DateTime($result['expires']);
             if ($expires <= new \DateTime()) {
-                // Cache expired, remove it
+                // Cache expired, remove it.
                 $this->removeCachedData($schemaId, $cacheKey);
                 return null;
             }
@@ -679,16 +679,16 @@ class SchemaCacheService
      */
     private function setCachedData(int $schemaId, string $cacheKey, mixed $data, int $ttl): void
     {
-        // Enforce maximum cache TTL for office environments
+        // Enforce maximum cache TTL for office environments.
         $ttl = min($ttl, self::MAX_CACHE_TTL);
 
         $now     = new \DateTime();
         $expires = $ttl > 0 ? (clone $now)->add(new \DateInterval("PT{$ttl}S")) : null;
 
-        // Use INSERT ... ON DUPLICATE KEY UPDATE for MySQL/MariaDB compatibility
+        // Use INSERT ... ON DUPLICATE KEY UPDATE for MySQL/MariaDB compatibility.
         $qb = $this->db->getQueryBuilder();
 
-        // First, try to update existing record
+        // First, try to update existing record.
         $qb->update(self::CACHE_TABLE)
             ->set('cache_data', $qb->createNamedParameter(json_encode($data)))
             ->set('updated', $qb->createNamedParameter($now, 'datetime'))
@@ -698,7 +698,7 @@ class SchemaCacheService
 
         $updated = $qb->executeStatement();
 
-        // If no rows updated, insert new record
+        // If no rows updated, insert new record.
         if ($updated === 0) {
             $qb = $this->db->getQueryBuilder();
             $qb->insert(self::CACHE_TABLE)

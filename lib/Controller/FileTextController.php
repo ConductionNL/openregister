@@ -178,7 +178,7 @@ class FileTextController extends Controller
         try {
             $limit = (int) $this->request->getParam('limit', 100);
             $limit = min($limit, 500);
-            // Max 500 files at once
+            // Max 500 files at once.
             $result = $this->fileTextService->processPendingFiles($limit);
 
             return new JSONResponse(

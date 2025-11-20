@@ -134,7 +134,7 @@ class SchemaCompositionIntegrationTest extends TestCase
             try {
                 $this->client->delete("/index.php/apps/openregister/api/schemas/{$schemaId}");
             } catch (\Exception $e) {
-                // Ignore cleanup errors
+                // Ignore cleanup errors.
             }
         }
 
@@ -142,7 +142,7 @@ class SchemaCompositionIntegrationTest extends TestCase
             try {
                 $this->client->delete("/index.php/apps/openregister/api/registers/{$this->registerId}");
             } catch (\Exception $e) {
-                // Ignore cleanup errors
+                // Ignore cleanup errors.
             }
         }
 
@@ -169,7 +169,7 @@ class SchemaCompositionIntegrationTest extends TestCase
                 }
             }
         } catch (\Exception $e) {
-            // Ignore errors
+            // Ignore errors.
         }
     }//end cleanupTestRegister()
 
@@ -206,7 +206,7 @@ class SchemaCompositionIntegrationTest extends TestCase
      */
     public function testBasicAllOfSingleParent(): void
     {
-        // Create parent schema
+        // Create parent schema.
         $parent = $this->createSchema([
             'title' => 'Person',
             'properties' => [
@@ -216,7 +216,7 @@ class SchemaCompositionIntegrationTest extends TestCase
             'required' => ['firstName'],
         ]);
 
-        // Create child with allOf
+        // Create child with allOf.
         $child = $this->createSchema([
             'title' => 'Employee',
             'allOf' => [$parent['id']],
@@ -226,12 +226,12 @@ class SchemaCompositionIntegrationTest extends TestCase
             'required' => ['employeeId'],
         ]);
 
-        // Verify properties merged
+        // Verify properties merged.
         $this->assertArrayHasKey('firstName', $child['properties']);
         $this->assertArrayHasKey('lastName', $child['properties']);
         $this->assertArrayHasKey('employeeId', $child['properties']);
         
-        // Verify required merged
+        // Verify required merged.
         $this->assertContains('firstName', $child['required']);
         $this->assertContains('employeeId', $child['required']);
     }//end testBasicAllOfSingleParent()
@@ -244,7 +244,7 @@ class SchemaCompositionIntegrationTest extends TestCase
      */
     public function testAllOfMultipleParents(): void
     {
-        // Create first parent: Contactable
+        // Create first parent: Contactable.
         $contactable = $this->createSchema([
             'title' => 'Contactable',
             'properties' => [
@@ -254,7 +254,7 @@ class SchemaCompositionIntegrationTest extends TestCase
             'required' => ['email'],
         ]);
 
-        // Create second parent: Addressable
+        // Create second parent: Addressable.
         $addressable = $this->createSchema([
             'title' => 'Addressable',
             'properties' => [
@@ -264,7 +264,7 @@ class SchemaCompositionIntegrationTest extends TestCase
             'required' => ['city'],
         ]);
 
-        // Create child inheriting from both
+        // Create child inheriting from both.
         $child = $this->createSchema([
             'title' => 'Customer',
             'allOf' => [$contactable['id'], $addressable['id']],
@@ -274,14 +274,14 @@ class SchemaCompositionIntegrationTest extends TestCase
             'required' => ['customerNumber'],
         ]);
 
-        // Verify all properties from both parents
+        // Verify all properties from both parents.
         $this->assertArrayHasKey('email', $child['properties']);
         $this->assertArrayHasKey('phone', $child['properties']);
         $this->assertArrayHasKey('street', $child['properties']);
         $this->assertArrayHasKey('city', $child['properties']);
         $this->assertArrayHasKey('customerNumber', $child['properties']);
         
-        // Verify all required fields
+        // Verify all required fields.
         $this->assertContains('email', $child['required']);
         $this->assertContains('city', $child['required']);
         $this->assertContains('customerNumber', $child['required']);
@@ -295,7 +295,7 @@ class SchemaCompositionIntegrationTest extends TestCase
      */
     public function testAllOfStricterValidation(): void
     {
-        // Parent with basic validation
+        // Parent with basic validation.
         $parent = $this->createSchema([
             'title' => 'BaseString',
             'properties' => [
@@ -307,7 +307,7 @@ class SchemaCompositionIntegrationTest extends TestCase
             ],
         ]);
 
-        // Child adds stricter constraints (should succeed)
+        // Child adds stricter constraints (should succeed).
         $child = $this->createSchema([
             'title' => 'StrictString',
             'allOf' => [$parent['id']],
@@ -319,7 +319,7 @@ class SchemaCompositionIntegrationTest extends TestCase
             ],
         ]);
 
-        // Should be created successfully
+        // Should be created successfully.
         $this->assertEquals('StrictString', $child['title']);
         $this->assertEquals(5, $child['properties']['field']['minLength']);
         $this->assertEquals(50, $child['properties']['field']['maxLength']);
@@ -333,7 +333,7 @@ class SchemaCompositionIntegrationTest extends TestCase
      */
     public function testAllOfMetadataOverride(): void
     {
-        // Parent with metadata
+        // Parent with metadata.
         $parent = $this->createSchema([
             'title' => 'BaseEntity',
             'properties' => [
@@ -346,7 +346,7 @@ class SchemaCompositionIntegrationTest extends TestCase
             ],
         ]);
 
-        // Child overrides metadata (should succeed)
+        // Child overrides metadata (should succeed).
         $child = $this->createSchema([
             'title' => 'SpecialEntity',
             'allOf' => [$parent['id']],
@@ -372,7 +372,7 @@ class SchemaCompositionIntegrationTest extends TestCase
      */
     public function testAllOfMultiLevelChain(): void
     {
-        // Base schema
+        // Base schema.
         $base = $this->createSchema([
             'title' => 'Base',
             'properties' => [
@@ -380,7 +380,7 @@ class SchemaCompositionIntegrationTest extends TestCase
             ],
         ]);
 
-        // Middle composes base
+        // Middle composes base.
         $middle = $this->createSchema([
             'title' => 'Middle',
             'allOf' => [$base['id']],
@@ -389,7 +389,7 @@ class SchemaCompositionIntegrationTest extends TestCase
             ],
         ]);
 
-        // Final composes middle
+        // Final composes middle.
         $final = $this->createSchema([
             'title' => 'Final',
             'allOf' => [$middle['id']],
@@ -398,7 +398,7 @@ class SchemaCompositionIntegrationTest extends TestCase
             ],
         ]);
 
-        // Should have all three properties
+        // Should have all three properties.
         $this->assertArrayHasKey('baseField', $final['properties']);
         $this->assertArrayHasKey('middleField', $final['properties']);
         $this->assertArrayHasKey('finalField', $final['properties']);
@@ -423,7 +423,7 @@ class SchemaCompositionIntegrationTest extends TestCase
             ],
         ]);
 
-        // Try to change type (should fail)
+        // Try to change type (should fail).
         $response = $this->client->post('/index.php/apps/openregister/api/schemas', [
             'json' => [
                 'title' => 'TypeChild',
@@ -455,7 +455,7 @@ class SchemaCompositionIntegrationTest extends TestCase
             ],
         ]);
 
-        // Try to decrease minLength (should fail)
+        // Try to decrease minLength (should fail).
         $response = $this->client->post('/index.php/apps/openregister/api/schemas', [
             'json' => [
                 'title' => 'MinLengthChild',
@@ -489,7 +489,7 @@ class SchemaCompositionIntegrationTest extends TestCase
             ],
         ]);
 
-        // Try to increase maxLength (should fail)
+        // Try to increase maxLength (should fail).
         $response = $this->client->post('/index.php/apps/openregister/api/schemas', [
             'json' => [
                 'title' => 'MaxLengthChild',
@@ -523,7 +523,7 @@ class SchemaCompositionIntegrationTest extends TestCase
             ],
         ]);
 
-        // Try to add enum values (should fail)
+        // Try to add enum values (should fail).
         $response = $this->client->post('/index.php/apps/openregister/api/schemas', [
             'json' => [
                 'title' => 'EnumChild',
@@ -557,7 +557,7 @@ class SchemaCompositionIntegrationTest extends TestCase
             ],
         ]);
 
-        // Restrict enum values (should succeed)
+        // Restrict enum values (should succeed).
         $child = $this->createSchema([
             'title' => 'EnumChild2',
             'allOf' => [$parent['id']],
@@ -589,7 +589,7 @@ class SchemaCompositionIntegrationTest extends TestCase
             ],
         ]);
 
-        // Try to change format (should fail)
+        // Try to change format (should fail).
         $response = $this->client->post('/index.php/apps/openregister/api/schemas', [
             'json' => [
                 'title' => 'FormatChild',

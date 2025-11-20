@@ -222,11 +222,11 @@ class AgentTool extends AbstractTool implements ToolInterface
                     ]
                     );
 
-            // Get agents via mapper (RBAC is enforced in mapper)
+            // Get agents via mapper (RBAC is enforced in mapper).
             $agents = $this->agentMapper->findAll($limit, $offset);
             $total  = $this->agentMapper->count();
 
-            // Convert to array
+            // Convert to array.
             $results = array_map(fn ($agent) => $agent->jsonSerialize(), $agents);
 
             return $this->formatSuccess(
@@ -263,7 +263,7 @@ class AgentTool extends AbstractTool implements ToolInterface
         try {
             $this->logger->info('[AgentTool] Getting agent', ['uuid' => $uuid]);
 
-            // Find agent (RBAC enforced in mapper)
+            // Find agent (RBAC enforced in mapper).
             $agent = $this->agentMapper->findByUuid($uuid);
 
             return $this->formatSuccess(
@@ -305,7 +305,7 @@ class AgentTool extends AbstractTool implements ToolInterface
         try {
             $this->logger->info('[AgentTool] Creating agent', ['name' => $name]);
 
-            // Create agent entity
+            // Create agent entity.
             $agent = new Agent();
             $agent->setName($name);
 
@@ -321,12 +321,12 @@ class AgentTool extends AbstractTool implements ToolInterface
                 $agent->setSystemPrompt($systemPrompt);
             }
 
-            // Set current user as owner if we have agent context
+            // Set current user as owner if we have agent context.
             if ($this->agent) {
                 $agent->setOwner($this->agent->getOwner());
             }
 
-            // Save via mapper (RBAC and organisation are enforced in mapper)
+            // Save via mapper (RBAC and organisation are enforced in mapper).
             $agent = $this->agentMapper->insert($agent);
 
             return $this->formatSuccess(
@@ -366,10 +366,10 @@ class AgentTool extends AbstractTool implements ToolInterface
         try {
             $this->logger->info('[AgentTool] Updating agent', ['uuid' => $uuid]);
 
-            // Find agent (RBAC enforced in mapper)
+            // Find agent (RBAC enforced in mapper).
             $agent = $this->agentMapper->findByUuid($uuid);
 
-            // Update fields
+            // Update fields.
             if ($name !== null) {
                 $agent->setName($name);
             }
@@ -382,7 +382,7 @@ class AgentTool extends AbstractTool implements ToolInterface
                 $agent->setSystemPrompt($systemPrompt);
             }
 
-            // Save changes (RBAC enforced in mapper)
+            // Save changes (RBAC enforced in mapper).
             $agent = $this->agentMapper->update($agent);
 
             return $this->formatSuccess(
@@ -417,11 +417,11 @@ class AgentTool extends AbstractTool implements ToolInterface
         try {
             $this->logger->info('[AgentTool] Deleting agent', ['uuid' => $uuid]);
 
-            // Find agent (RBAC enforced in mapper)
+            // Find agent (RBAC enforced in mapper).
             $agent = $this->agentMapper->findByUuid($uuid);
             $name  = $agent->getName();
 
-            // Delete (RBAC enforced in mapper)
+            // Delete (RBAC enforced in mapper).
             $this->agentMapper->delete($agent);
 
             return $this->formatSuccess(
@@ -455,10 +455,10 @@ class AgentTool extends AbstractTool implements ToolInterface
      */
     public function executeFunction(string $functionName, array $parameters, ?string $userId=null): array
     {
-        // Convert snake_case to camelCase for PSR compliance
+        // Convert snake_case to camelCase for PSR compliance.
         $methodName = lcfirst(str_replace('_', '', ucwords($functionName, '_')));
 
-        // Call the method directly (LLPhant-compatible)
+        // Call the method directly (LLPhant-compatible).
         return $this->$methodName(...array_values($parameters));
 
     }//end executeFunction()

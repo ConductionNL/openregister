@@ -62,14 +62,14 @@ class FileChangeListener implements IEventListener
      */
     public function handle(Event $event): void
     {
-        // Only handle NodeCreatedEvent and NodeWrittenEvent
+        // Only handle NodeCreatedEvent and NodeWrittenEvent.
         if (!$event instanceof NodeCreatedEvent && !$event instanceof NodeWrittenEvent) {
             return;
         }
 
         $node = $event->getNode();
 
-        // Only process files, not folders
+        // Only process files, not folders.
         if (!$node instanceof File) {
             return;
         }
@@ -78,8 +78,8 @@ class FileChangeListener implements IEventListener
         $fileName = $node->getName();
         $filePath = $node->getPath();
 
-        // Only process OpenRegister files to avoid unnecessary processing
-        // OpenRegister files are stored in paths containing 'OpenRegister/files'
+        // Only process OpenRegister files to avoid unnecessary processing.
+        // OpenRegister files are stored in paths containing 'OpenRegister/files'.
         if (strpos($filePath, 'OpenRegister/files') === false
             && strpos($filePath, '/Open Registers/') === false
         ) {
@@ -103,9 +103,9 @@ class FileChangeListener implements IEventListener
                 ]
                 );
 
-        // Queue background job for text extraction (non-blocking)
+        // Queue background job for text extraction (non-blocking).
         try {
-            // Check if extraction is needed (to avoid unnecessary background jobs)
+            // Check if extraction is needed (to avoid unnecessary background jobs).
             if ($this->fileTextService->needsExtraction($fileId)) {
                 $this->logger->info(
                         '[FileChangeListener] Queueing text extraction job',
@@ -115,8 +115,8 @@ class FileChangeListener implements IEventListener
                         ]
                         );
 
-                // Queue the background job with file_id as argument
-                // The job will run asynchronously without blocking this request
+                // Queue the background job with file_id as argument.
+                // The job will run asynchronously without blocking this request.
                 $this->jobList->add(FileTextExtractionJob::class, ['file_id' => $fileId]);
 
                 $this->logger->debug(

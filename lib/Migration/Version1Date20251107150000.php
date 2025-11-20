@@ -132,7 +132,7 @@ class Version1Date20251107150000 extends SimpleMigrationStep
             $table->addIndex(['organisation'], 'openregister_feedback_org');
             $table->addIndex(['type'], 'openregister_feedback_type');
 
-            // Composite index for finding existing feedback by message and user
+            // Composite index for finding existing feedback by message and user.
             $table->addIndex(['message_id', 'user_id'], 'openregister_feedback_msg_user');
 
             return $schema;

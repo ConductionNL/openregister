@@ -71,7 +71,7 @@ class SettingsControllerTest extends TestCase
      */
     public function testSolrConnectionTestReturnsValidJson(): void
     {
-        // Mock successful connection test
+        // Mock successful connection test.
         $this->settingsService
             ->method('testSolrConnection')
             ->willReturn([
@@ -85,10 +85,10 @@ class SettingsControllerTest extends TestCase
 
         $response = $this->controller->testSolrConnection();
 
-        // Verify response type
+        // Verify response type.
         $this->assertInstanceOf(JSONResponse::class, $response);
 
-        // Verify response structure
+        // Verify response structure.
         $data = $response->getData();
         $this->assertIsArray($data);
         $this->assertArrayHasKey('success', $data);
@@ -107,14 +107,14 @@ class SettingsControllerTest extends TestCase
      */
     public function testSolrConnectionTestHandlesServiceExceptions(): void
     {
-        // Mock service throwing an exception (like our json_decode bug)
+        // Mock service throwing an exception (like our json_decode bug).
         $this->settingsService
             ->method('testSolrConnection')
             ->willThrowException(new \TypeError('json_decode(): Argument #1 ($json) must be of type string, GuzzleHttp\Psr7\Stream given'));
 
         $response = $this->controller->testSolrConnection();
 
-        // Should still return valid JSON response, not throw exception
+        // Should still return valid JSON response, not throw exception.
         $this->assertInstanceOf(JSONResponse::class, $response);
 
         $data = $response->getData();
@@ -132,7 +132,7 @@ class SettingsControllerTest extends TestCase
      */
     public function testSolrSetupReturnsValidJson(): void
     {
-        // Mock successful setup
+        // Mock successful setup.
         $this->settingsService
             ->method('setupSolr')
             ->willReturn(true);
@@ -155,12 +155,12 @@ class SettingsControllerTest extends TestCase
      */
     public function testSolrSetupHandlesFailures(): void
     {
-        // Mock setup failure
+        // Mock setup failure.
         $this->settingsService
             ->method('setupSolr')
             ->willReturn(false);
 
-        // Mock getSolrSettings to return test configuration
+        // Mock getSolrSettings to return test configuration.
         $this->settingsService
             ->method('getSolrSettings')
             ->willReturn([
@@ -180,17 +180,17 @@ class SettingsControllerTest extends TestCase
         $this->assertArrayHasKey('message', $data);
         $this->assertFalse($data['success']);
         
-        // Verify enhanced error reporting structure
+        // Verify enhanced error reporting structure.
         $this->assertArrayHasKey('error_details', $data);
         $this->assertArrayHasKey('possible_causes', $data['error_details']);
         $this->assertArrayHasKey('configuration_used', $data['error_details']);
         $this->assertArrayHasKey('troubleshooting_steps', $data['error_details']);
         
-        // Verify port 0 is not included in generated URLs
+        // Verify port 0 is not included in generated URLs.
         $generatedUrl = $data['error_details']['configuration_used']['generated_url'];
         $this->assertStringNotContainsString(':0', $generatedUrl, 'Generated URL should not contain port 0');
         
-        // Verify Kubernetes service name handling
+        // Verify Kubernetes service name handling.
         $this->assertStringContainsString('con-solr-solrcloud-common.solr.svc.cluster.local', $generatedUrl);
         $this->assertStringNotContainsString(':0', $generatedUrl);
     }
@@ -202,12 +202,12 @@ class SettingsControllerTest extends TestCase
      */
     public function testSolrSetupErrorReportingWithRegularHostname(): void
     {
-        // Mock setup failure
+        // Mock setup failure.
         $this->settingsService
             ->method('setupSolr')
             ->willReturn(false);
 
-        // Mock getSolrSettings with regular hostname and explicit port
+        // Mock getSolrSettings with regular hostname and explicit port.
         $this->settingsService
             ->method('getSolrSettings')
             ->willReturn([
@@ -221,7 +221,7 @@ class SettingsControllerTest extends TestCase
 
         $data = $response->getData();
         
-        // Verify port is included for regular hostnames
+        // Verify port is included for regular hostnames.
         $generatedUrl = $data['error_details']['configuration_used']['generated_url'];
         $this->assertStringContainsString(':8983', $generatedUrl, 'Generated URL should contain explicit port for regular hostnames');
         $this->assertStringContainsString('solr.example.com:8983', $generatedUrl);
@@ -234,12 +234,12 @@ class SettingsControllerTest extends TestCase
      */
     public function testSolrSetupErrorReportingWithPortZero(): void
     {
-        // Mock setup failure
+        // Mock setup failure.
         $this->settingsService
             ->method('setupSolr')
             ->willReturn(false);
 
-        // Mock getSolrSettings with port 0 (the problematic case)
+        // Mock getSolrSettings with port 0 (the problematic case).
         $this->settingsService
             ->method('getSolrSettings')
             ->willReturn([
@@ -253,12 +253,12 @@ class SettingsControllerTest extends TestCase
 
         $data = $response->getData();
         
-        // Verify port 0 is not included in URLs
+        // Verify port 0 is not included in URLs.
         $generatedUrl = $data['error_details']['configuration_used']['generated_url'];
         $this->assertStringNotContainsString(':0', $generatedUrl, 'Generated URL should not contain port 0');
         $this->assertStringContainsString('http://localhost/solr/admin/configs', $generatedUrl);
         
-        // Verify troubleshooting steps mention port configuration
+        // Verify troubleshooting steps mention port configuration.
         $troubleshootingSteps = $data['error_details']['troubleshooting_steps'];
         $this->assertIsArray($troubleshootingSteps);
         $portCheckFound = false;
@@ -278,12 +278,12 @@ class SettingsControllerTest extends TestCase
      */
     public function testSolrSetupErrorReportingComprehensiveness(): void
     {
-        // Mock setup failure
+        // Mock setup failure.
         $this->settingsService
             ->method('setupSolr')
             ->willReturn(false);
 
-        // Mock getSolrSettings
+        // Mock getSolrSettings.
         $this->settingsService
             ->method('getSolrSettings')
             ->willReturn([
@@ -298,31 +298,31 @@ class SettingsControllerTest extends TestCase
         $data = $response->getData();
         $errorDetails = $data['error_details'];
         
-        // Verify all required error detail sections are present
+        // Verify all required error detail sections are present.
         $requiredSections = ['primary_error', 'possible_causes', 'configuration_used', 'troubleshooting_steps', 'last_system_error'];
         foreach ($requiredSections as $section) {
             $this->assertArrayHasKey($section, $errorDetails, "Error details should contain '{$section}' section");
         }
         
-        // Verify possible causes include key scenarios
+        // Verify possible causes include key scenarios.
         $possibleCauses = $errorDetails['possible_causes'];
         $this->assertIsArray($possibleCauses);
         $this->assertGreaterThan(3, count($possibleCauses), 'Should provide multiple possible causes');
         
-        // Check for specific important causes
+        // Check for specific important causes.
         $causesText = implode(' ', $possibleCauses);
         $this->assertStringContainsString('permissions', $causesText, 'Should mention permission issues');
         $this->assertStringContainsString('SolrCloud', $causesText, 'Should mention SolrCloud mode issues');
         $this->assertStringContainsString('connectivity', $causesText, 'Should mention connectivity issues');
         
-        // Verify configuration details are accurate
+        // Verify configuration details are accurate.
         $configUsed = $errorDetails['configuration_used'];
         $this->assertEquals('solr-test', $configUsed['host']);
         $this->assertEquals('8983', $configUsed['port']);
         $this->assertEquals('https', $configUsed['scheme']);
         $this->assertEquals('/custom-solr', $configUsed['path']);
         
-        // Verify generated URL uses provided configuration
+        // Verify generated URL uses provided configuration.
         $this->assertStringContainsString('https://solr-test:8983/custom-solr', $configUsed['generated_url']);
     }
 
@@ -333,12 +333,12 @@ class SettingsControllerTest extends TestCase
      */
     public function testSolrSetupErrorReportingWithStringPortZero(): void
     {
-        // Mock setup failure
+        // Mock setup failure.
         $this->settingsService
             ->method('setupSolr')
             ->willReturn(false);
 
-        // Mock getSolrSettings with string port '0' (common when saved from UI)
+        // Mock getSolrSettings with string port '0' (common when saved from UI).
         $this->settingsService
             ->method('getSolrSettings')
             ->willReturn([
@@ -352,11 +352,11 @@ class SettingsControllerTest extends TestCase
 
         $data = $response->getData();
         
-        // Verify string port '0' is not included in URLs
+        // Verify string port '0' is not included in URLs.
         $generatedUrl = $data['error_details']['configuration_used']['generated_url'];
         $this->assertStringNotContainsString(':0', $generatedUrl, 'Generated URL should not contain string port "0"');
         
-        // Verify Kubernetes service name is handled correctly
+        // Verify Kubernetes service name is handled correctly.
         $this->assertStringContainsString('con-solr-solrcloud-common.solr.svc.cluster.local', $generatedUrl);
         $this->assertStringNotContainsString(':', $generatedUrl, 'Kubernetes service URL should not contain any port');
     }
@@ -368,12 +368,12 @@ class SettingsControllerTest extends TestCase
      */
     public function testSolrSetupErrorReportingWithEmptyStringPort(): void
     {
-        // Mock setup failure
+        // Mock setup failure.
         $this->settingsService
             ->method('setupSolr')
             ->willReturn(false);
 
-        // Mock getSolrSettings with empty string port
+        // Mock getSolrSettings with empty string port.
         $this->settingsService
             ->method('getSolrSettings')
             ->willReturn([
@@ -387,7 +387,7 @@ class SettingsControllerTest extends TestCase
 
         $data = $response->getData();
         
-        // Verify empty string port results in no port in URL
+        // Verify empty string port results in no port in URL.
         $generatedUrl = $data['error_details']['configuration_used']['generated_url'];
         $this->assertStringNotContainsString(':8983', $generatedUrl, 'URL should not contain default port when port is empty string');
         $this->assertStringNotContainsString(':', $generatedUrl, 'URL should not contain any port when port is empty string');
@@ -515,13 +515,13 @@ class SettingsControllerTest extends TestCase
             ->method('updateRbacSettings')
             ->willReturn(true);
 
-        // Test GET
+        // Test GET.
         $response = $this->controller->getRbacSettings();
         $this->assertInstanceOf(JSONResponse::class, $response);
         $data = $response->getData();
         $this->assertArrayHasKey('enabled', $data);
 
-        // Test PUT
+        // Test PUT.
         $response = $this->controller->updateRbacSettings();
         $this->assertInstanceOf(JSONResponse::class, $response);
         $data = $response->getData();
@@ -549,11 +549,11 @@ class SettingsControllerTest extends TestCase
             ->method('updateMultitenancySettings')
             ->willReturn(true);
 
-        // Test GET
+        // Test GET.
         $response = $this->controller->getMultitenancySettings();
         $this->assertInstanceOf(JSONResponse::class, $response);
 
-        // Test PUT
+        // Test PUT.
         $response = $this->controller->updateMultitenancySettings();
         $this->assertInstanceOf(JSONResponse::class, $response);
     }
@@ -579,11 +579,11 @@ class SettingsControllerTest extends TestCase
             ->method('updateRetentionSettings')
             ->willReturn(true);
 
-        // Test GET
+        // Test GET.
         $response = $this->controller->getRetentionSettings();
         $this->assertInstanceOf(JSONResponse::class, $response);
 
-        // Test PUT
+        // Test PUT.
         $response = $this->controller->updateRetentionSettings();
         $this->assertInstanceOf(JSONResponse::class, $response);
     }
@@ -696,7 +696,7 @@ class SettingsControllerTest extends TestCase
      */
     public function testAllEndpointsReturnJsonResponse(): void
     {
-        // Mock all service methods to return valid data
+        // Mock all service methods to return valid data.
         $this->settingsService->method('testSolrConnection')->willReturn(['success' => true]);
         $this->settingsService->method('setupSolr')->willReturn(true);
         $this->settingsService->method('testSolrSetup')->willReturn(['success' => true]);
@@ -721,9 +721,9 @@ class SettingsControllerTest extends TestCase
         $this->settingsService->method('updatePublishingOptions')->willReturn(true);
         $this->settingsService->method('rebase')->willReturn(true);
 
-        // Test all major endpoints (based on routes.php)
+        // Test all major endpoints (based on routes.php).
         $endpoints = [
-            // Core settings
+            // Core settings.
             'load',
             'update', 
             'updatePublishingOptions',
@@ -731,7 +731,7 @@ class SettingsControllerTest extends TestCase
             'stats',
             'getStatistics',
             
-            // SOLR endpoints
+            // SOLR endpoints.
             'testSolrConnection',
             'setupSolr',
             'testSolrSetup',
@@ -741,24 +741,24 @@ class SettingsControllerTest extends TestCase
             'warmupSolrIndex',
             'testSchemaMapping',
             
-            // Cache endpoints
+            // Cache endpoints.
             'getCacheStats',
             'clearCache',
             'warmupNamesCache',
             
-            // RBAC endpoints
+            // RBAC endpoints.
             'getRbacSettings',
             'updateRbacSettings',
             
-            // Multitenancy endpoints
+            // Multitenancy endpoints.
             'getMultitenancySettings',
             'updateMultitenancySettings',
             
-            // Retention endpoints
+            // Retention endpoints.
             'getRetentionSettings',
             'updateRetentionSettings',
             
-            // Version info
+            // Version info.
             'getVersionInfo'
         ];
 
@@ -773,11 +773,11 @@ class SettingsControllerTest extends TestCase
                         "Method {$method} should return JSONResponse"
                     );
                     
-                    // Verify response data is serializable (no objects, resources, etc.)
+                    // Verify response data is serializable (no objects, resources, etc.).
                     $data = $response->getData();
                     $this->assertIsArray($data, "Method {$method} should return array data");
                     
-                    // Verify JSON encoding works (would catch circular references, etc.)
+                    // Verify JSON encoding works (would catch circular references, etc.).
                     $json = json_encode($data);
                     $this->assertNotFalse($json, "Method {$method} data should be JSON encodable");
                     

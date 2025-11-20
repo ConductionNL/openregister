@@ -1,5 +1,5 @@
 <?php
-// phpcs:ignoreFile
+// phpcs:ignoreFile.
 /**
  * Migration to add and modify columns in various tables and drop unused tables.
  *
@@ -46,10 +46,10 @@ class Version1Date20250607093617 extends SimpleMigrationStep
         /** @var ISchemaWrapper $schema */
         $schema = $schemaClosure();
 
-        // Update the openregister_configurations table
+        // Update the openregister_configurations table.
         $table = $schema->getTable('openregister_audit_trails');
 
-        // Add the expires column if it doesn't exist
+        // Add the expires column if it doesn't exist.
         if (!$table->hasColumn('expires')) {
             $table->addColumn('expires', Types::DATETIME, [
                 'notnull' => false,

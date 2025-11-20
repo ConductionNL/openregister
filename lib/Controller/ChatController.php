@@ -179,15 +179,15 @@ class ChatController extends Controller
     public function sendMessage(): JSONResponse
     {
         try {
-            // Get request parameters
+            // Get request parameters.
             $conversationUuid = (string) $this->request->getParam('conversation');
             $agentUuid        = (string) $this->request->getParam('agentUuid');
             $message          = (string) $this->request->getParam('message');
             $selectedViews    = $this->request->getParam('views') ?: [];
-            // Array of view UUIDs
+            // Array of view UUIDs.
             $selectedTools = $this->request->getParam('tools') ?: [];
-            // Array of tool UUIDs
-            // Get RAG configuration settings
+            // Array of tool UUIDs.
+            // Get RAG configuration settings.
             $ragSettings = [
                 'includeObjects'    => $this->request->getParam('includeObjects') ?? true,
                 'includeFiles'      => $this->request->getParam('includeFiles') ?? true,
@@ -214,11 +214,11 @@ class ChatController extends Controller
                     ]
                     );
 
-            // Load or create conversation
+            // Load or create conversation.
             $conversation = null;
 
             if (!empty($conversationUuid)) {
-                // Load existing conversation by UUID
+                // Load existing conversation by UUID.
                 try {
                     $conversation = $this->conversationMapper->findByUuid($conversationUuid);
                 } catch (\Exception $e) {
@@ -231,10 +231,10 @@ class ChatController extends Controller
                             );
                 }
             } else if (!empty($agentUuid)) {
-                // Create new conversation with specified agent
+                // Create new conversation with specified agent.
                 $organisation = $this->organisationService->getActiveOrganisation();
 
-                // Look up agent by UUID
+                // Look up agent by UUID.
                 try {
                     $agent = $this->agentMapper->findByUuid($agentUuid);
                 } catch (\Exception $e) {
@@ -247,7 +247,7 @@ class ChatController extends Controller
                             );
                 }
 
-                // Generate unique default title
+                // Generate unique default title.
                 $defaultTitle = $this->chatService->ensureUniqueTitle(
                     'New Conversation',
                     $this->userId,
@@ -280,7 +280,7 @@ class ChatController extends Controller
                         );
             }//end if
 
-            // Verify user has access
+            // Verify user has access.
             if ($conversation->getUserId() !== $this->userId) {
                 return new JSONResponse(
                         [
@@ -291,7 +291,7 @@ class ChatController extends Controller
                         );
             }
 
-            // Process message through ChatService
+            // Process message through ChatService.
             $result = $this->chatService->processMessage(
                 $conversation->getId(),
                 $this->userId,
@@ -301,7 +301,7 @@ class ChatController extends Controller
                 $ragSettings
             );
 
-            // Add conversation UUID to result for frontend
+            // Add conversation UUID to result for frontend.
             $result['conversation'] = $conversation->getUuid();
 
             return new JSONResponse($result, 200);
@@ -337,7 +337,7 @@ class ChatController extends Controller
     public function getHistory(): JSONResponse
     {
         try {
-            // Get conversation ID from request
+            // Get conversation ID from request.
             $conversationId = (int) $this->request->getParam('conversationId');
 
             if (empty($conversationId)) {
@@ -350,10 +350,10 @@ class ChatController extends Controller
                         );
             }
 
-            // Get conversation
+            // Get conversation.
             $conversation = $this->conversationMapper->find($conversationId);
 
-            // Verify ownership
+            // Verify ownership.
             if ($conversation->getUserId() !== $this->userId) {
                 return new JSONResponse(
                         [
@@ -364,7 +364,7 @@ class ChatController extends Controller
                         );
             }
 
-            // Get messages
+            // Get messages.
             $limit  = (int) ($this->request->getParam('limit') ?? 100);
             $offset = (int) ($this->request->getParam('offset') ?? 0);
 
@@ -414,7 +414,7 @@ class ChatController extends Controller
     public function clearHistory(): JSONResponse
     {
         try {
-            // Get conversation ID from request
+            // Get conversation ID from request.
             $conversationId = (int) $this->request->getParam('conversationId');
 
             if (empty($conversationId)) {
@@ -427,10 +427,10 @@ class ChatController extends Controller
                         );
             }
 
-            // Get conversation
+            // Get conversation.
             $conversation = $this->conversationMapper->find($conversationId);
 
-            // Verify ownership
+            // Verify ownership.
             if ($conversation->getUserId() !== $this->userId) {
                 return new JSONResponse(
                         [
@@ -441,7 +441,7 @@ class ChatController extends Controller
                         );
             }
 
-            // Soft delete conversation
+            // Soft delete conversation.
             $this->conversationMapper->softDelete($conversationId);
 
             $this->logger->info(
@@ -496,11 +496,11 @@ class ChatController extends Controller
     public function sendFeedback(string $conversationUuid, int $messageId): JSONResponse
     {
         try {
-            // Get request parameters
+            // Get request parameters.
             $type    = (string) $this->request->getParam('type');
             $comment = (string) $this->request->getParam('comment', '');
 
-            // Validate feedback type
+            // Validate feedback type.
             if (!in_array($type, ['positive', 'negative'], true)) {
                 return new JSONResponse(
                         [
@@ -511,10 +511,10 @@ class ChatController extends Controller
                         );
             }
 
-            // Get conversation by UUID
+            // Get conversation by UUID.
             $conversation = $this->conversationMapper->findByUuid($conversationUuid);
 
-            // Verify user has access to this conversation
+            // Verify user has access to this conversation.
             if ($conversation->getUserId() !== $this->userId) {
                 return new JSONResponse(
                         [
@@ -525,7 +525,7 @@ class ChatController extends Controller
                         );
             }
 
-            // Get message and verify it belongs to this conversation
+            // Get message and verify it belongs to this conversation.
             $message = $this->messageMapper->find($messageId);
 
             if ($message->getConversationId() !== $conversation->getId()) {
@@ -538,15 +538,15 @@ class ChatController extends Controller
                         );
             }
 
-            // Get active organisation
+            // Get active organisation.
             $organisation     = $this->organisationService->getActiveOrganisation();
             $organisationUuid = $organisation?->getUuid();
 
-            // Check if feedback already exists for this message
+            // Check if feedback already exists for this message.
             $existingFeedback = $this->feedbackMapper->findByMessage($messageId, $this->userId);
 
             if ($existingFeedback !== null) {
-                // Update existing feedback
+                // Update existing feedback.
                 $existingFeedback->setType($type);
                 $existingFeedback->setComment($comment);
 
@@ -562,7 +562,7 @@ class ChatController extends Controller
                         ]
                         );
             } else {
-                // Create new feedback
+                // Create new feedback.
                 $feedback = new Feedback();
                 $feedback->setMessageId($messageId);
                 $feedback->setConversationId($conversation->getId());
@@ -620,19 +620,19 @@ class ChatController extends Controller
     public function getChatStats(): JSONResponse
     {
         try {
-            // Get agent count
+            // Get agent count.
             $qb = $this->db->getQueryBuilder();
             $qb->select($qb->func()->count('id', 'total'))
                 ->from('openregister_agents');
             $totalAgents = (int) $qb->executeQuery()->fetchOne();
 
-            // Get conversation count
+            // Get conversation count.
             $qb = $this->db->getQueryBuilder();
             $qb->select($qb->func()->count('id', 'total'))
                 ->from('openregister_conversations');
             $totalConversations = (int) $qb->executeQuery()->fetchOne();
 
-            // Get message count
+            // Get message count.
             $qb = $this->db->getQueryBuilder();
             $qb->select($qb->func()->count('id', 'total'))
                 ->from('openregister_messages');

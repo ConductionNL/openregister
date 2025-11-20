@@ -63,7 +63,7 @@ class Version1Date20251107160000 extends SimpleMigrationStep
         if ($schema->hasTable('openregister_file_texts')) {
             $table = $schema->getTable('openregister_file_texts');
 
-            // Add UUID column if it doesn't exist
+            // Add UUID column if it doesn't exist.
             if (!$table->hasColumn('uuid')) {
                 $table->addColumn(
                         'uuid',
@@ -75,7 +75,7 @@ class Version1Date20251107160000 extends SimpleMigrationStep
                         ]
                         );
 
-                // Add index for UUID lookups
+                // Add index for UUID lookups.
                 if (!$table->hasIndex('file_texts_uuid_idx')) {
                     $table->addIndex(['uuid'], 'file_texts_uuid_idx');
                 }
@@ -108,7 +108,7 @@ class Version1Date20251107160000 extends SimpleMigrationStep
         $output->info('Generating UUIDs for existing file_texts records...');
 
         // Note: UUID generation for existing records will be handled by the
-        // FileTextMapper when records are accessed/updated, to avoid
+        // FileTextMapper when records are accessed/updated, to avoid.
         // potential timeout issues with large datasets.
         $output->info('✅ Migration complete - UUIDs will be generated on-demand');
 

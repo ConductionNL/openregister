@@ -89,7 +89,7 @@ class MagicFacetHandler
 
         $facets = [];
 
-        // Process metadata facets (@self)
+        // Process metadata facets (@self).
         if (isset($facetConfig['@self']) && is_array($facetConfig['@self'])) {
             $facets['@self'] = [];
             foreach ($facetConfig['@self'] as $field => $config) {
@@ -97,7 +97,7 @@ class MagicFacetHandler
             }
         }
 
-        // Process schema property facets
+        // Process schema property facets.
         $objectFacetConfig = array_filter(
                 $facetConfig,
                 function ($key) {
@@ -129,7 +129,7 @@ class MagicFacetHandler
     {
         $type       = $config['type'] ?? 'terms';
         $columnName = '_'.$field;
-        // Metadata columns are prefixed with _
+        // Metadata columns are prefixed with _.
         switch ($type) {
             case 'terms':
                 return $this->getTermsFacet($columnName, $baseQuery, $tableName);
@@ -165,7 +165,7 @@ class MagicFacetHandler
         $type       = $config['type'] ?? 'terms';
         $columnName = $this->sanitizeColumnName($field);
 
-        // Verify field exists in schema
+        // Verify field exists in schema.
         $properties = $schema->getProperties();
         if (!isset($properties[$field])) {
             return [];
@@ -211,7 +211,7 @@ class MagicFacetHandler
             ->orderBy('count', 'DESC')
             ->setMaxResults($limit);
 
-        // Apply base query filters
+        // Apply base query filters.
         $this->applyBaseFilters($qb, $baseQuery);
 
         try {
@@ -268,7 +268,7 @@ class MagicFacetHandler
     {
         $qb = $this->db->getQueryBuilder();
 
-        // Generate date truncation based on interval
+        // Generate date truncation based on interval.
         $dateFormat = $this->getDateFormatForInterval($interval);
         $dateTrunc  = "DATE_FORMAT({$columnName}, '{$dateFormat}')";
 
@@ -279,7 +279,7 @@ class MagicFacetHandler
             ->groupBy('period')
             ->orderBy('period', 'ASC');
 
-        // Apply base query filters
+        // Apply base query filters.
         $this->applyBaseFilters($qb, $baseQuery);
 
         try {
@@ -338,7 +338,7 @@ class MagicFacetHandler
     private function getRangeFacet(string $columnName, array $ranges, array $baseQuery, string $tableName): array
     {
         if (empty($ranges)) {
-            // Auto-generate ranges based on data distribution
+            // Auto-generate ranges based on data distribution.
             $ranges = $this->generateAutoRanges($columnName, $tableName);
         }
 
@@ -354,7 +354,7 @@ class MagicFacetHandler
                 ->from($tableName, 't')
                 ->where($qb->expr()->isNotNull($columnName));
 
-            // Add range conditions
+            // Add range conditions.
             if ($from !== null) {
                 $qb->andWhere($qb->expr()->gte($columnName, $qb->createNamedParameter($from)));
             }
@@ -363,7 +363,7 @@ class MagicFacetHandler
                 $qb->andWhere($qb->expr()->lt($columnName, $qb->createNamedParameter($to)));
             }
 
-            // Apply base query filters
+            // Apply base query filters.
             $this->applyBaseFilters($qb, $baseQuery);
 
             try {
@@ -408,7 +408,7 @@ class MagicFacetHandler
      */
     private function applyBaseFilters(IQueryBuilder $qb, array $baseQuery): void
     {
-        // Apply basic filters
+        // Apply basic filters.
         $includeDeleted = $baseQuery['_includeDeleted'] ?? false;
         $published      = $baseQuery['_published'] ?? false;
 
@@ -430,7 +430,7 @@ class MagicFacetHandler
             );
         }
 
-        // Apply metadata filters (@self)
+        // Apply metadata filters (@self).
         if (isset($baseQuery['@self']) && is_array($baseQuery['@self'])) {
             foreach ($baseQuery['@self'] as $field => $value) {
                 $columnName = '_'.$field;
@@ -447,7 +447,7 @@ class MagicFacetHandler
             }
         }
 
-        // Apply object field filters
+        // Apply object field filters.
         $objectFilters = array_filter(
                 $baseQuery,
                 function ($key) {
@@ -624,14 +624,14 @@ class MagicFacetHandler
                 return '%Y-%m-%d';
             case 'week':
                 return '%Y-%u';
-            // Year-week
+            // Year-week.
             case 'month':
                 return '%Y-%m';
             case 'year':
                 return '%Y';
             default:
                 return '%Y-%m';
-            // Default to month
+            // Default to month.
         }
 
     }//end getDateFormatForInterval()
@@ -648,7 +648,7 @@ class MagicFacetHandler
     private function generateAutoRanges(string $columnName, string $tableName): array
     {
         try {
-            // Get min and max values
+            // Get min and max values.
             $qb = $this->db->getQueryBuilder();
             $qb->select(
                 $qb->createFunction("MIN({$columnName}) as min_val"),
@@ -668,7 +668,7 @@ class MagicFacetHandler
             $max   = (float) $stats['max_val'];
             $range = $max - $min;
 
-            // Generate 5 equal ranges
+            // Generate 5 equal ranges.
             $numRanges = 5;
             $step      = $range / $numRanges;
             $ranges    = [];
@@ -710,15 +710,15 @@ class MagicFacetHandler
      */
     private function sanitizeColumnName(string $name): string
     {
-        // Convert to lowercase and replace non-alphanumeric with underscores
+        // Convert to lowercase and replace non-alphanumeric with underscores.
         $sanitized = strtolower(preg_replace('/[^a-zA-Z0-9_]/', '_', $name));
 
-        // Ensure it starts with a letter or underscore
+        // Ensure it starts with a letter or underscore.
         if (!preg_match('/^[a-zA-Z_]/', $sanitized)) {
             $sanitized = 'col_'.$sanitized;
         }
 
-        // Limit length to 64 characters (MySQL limit)
+        // Limit length to 64 characters (MySQL limit).
         return substr($sanitized, 0, 64);
 
     }//end sanitizeColumnName()

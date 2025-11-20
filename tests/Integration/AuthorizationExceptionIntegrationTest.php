@@ -65,8 +65,8 @@ class AuthorizationExceptionIntegrationTest extends TestCase
     {
         parent::setUp();
 
-        // In a real test, these would be injected from the DI container
-        // For now, we'll create simplified instances for demonstration
+        // In a real test, these would be injected from the DI container.
+        // For now, we'll create simplified instances for demonstration.
         
         $this->authorizationExceptionService = $this->createMock(AuthorizationExceptionService::class);
         $this->authorizationExceptionMapper = $this->createMock(AuthorizationExceptionMapper::class);
@@ -86,7 +86,7 @@ class AuthorizationExceptionIntegrationTest extends TestCase
      */
     public function testAmbtenaarGroupCanReadGebruikObjectsFromOtherOrganizations(): void
     {
-        // Create an inclusion exception for the ambtenaar group
+        // Create an inclusion exception for the ambtenaar group.
         $exception = new AuthorizationException();
         $exception->setUuid('ambtenaar-gebruik-inclusion');
         $exception->setType(AuthorizationException::TYPE_INCLUSION);
@@ -98,12 +98,12 @@ class AuthorizationExceptionIntegrationTest extends TestCase
         $exception->setDescription('Allow ambtenaar group to read gebruik objects from all organizations');
         $exception->setActive(true);
 
-        // Mock the service to return this exception for ambtenaar group members
+        // Mock the service to return this exception for ambtenaar group members.
         $this->authorizationExceptionService
             ->method('evaluateUserPermission')
             ->willReturnCallback(function ($userId, $action, $schemaUuid) {
                 if ($action === 'read' && $schemaUuid === 'gebruik-schema-uuid') {
-                    // Simulate checking if user is in ambtenaar group
+                    // Simulate checking if user is in ambtenaar group.
                     $userGroups = $this->getUserGroups($userId);
                     if (in_array('ambtenaar', $userGroups)) {
                         return true; // Grant access via inclusion
@@ -112,7 +112,7 @@ class AuthorizationExceptionIntegrationTest extends TestCase
                 return null; // No exception applies
             });
 
-        // Test: User in ambtenaar group should have read access to gebruik objects
+        // Test: User in ambtenaar group should have read access to gebruik objects.
         $result = $this->authorizationExceptionService->evaluateUserPermission(
             'ambtenaar-user-1',
             'read',
@@ -123,7 +123,7 @@ class AuthorizationExceptionIntegrationTest extends TestCase
 
         $this->assertTrue($result, 'Ambtenaar user should have read access to gebruik objects');
 
-        // Test: User NOT in ambtenaar group should NOT have this special access
+        // Test: User NOT in ambtenaar group should NOT have this special access.
         $result = $this->authorizationExceptionService->evaluateUserPermission(
             'regular-user',
             'read',
@@ -147,7 +147,7 @@ class AuthorizationExceptionIntegrationTest extends TestCase
      */
     public function testSpecificUserExcludedFromGroupPermissions(): void
     {
-        // Create an exclusion exception for a specific user
+        // Create an exclusion exception for a specific user.
         $exception = new AuthorizationException();
         $exception->setUuid('user-exclusion-example');
         $exception->setType(AuthorizationException::TYPE_EXCLUSION);
@@ -159,7 +159,7 @@ class AuthorizationExceptionIntegrationTest extends TestCase
         $exception->setDescription('Deny specific user update access despite group membership');
         $exception->setActive(true);
 
-        // Mock the service to return this exception for the specific user
+        // Mock the service to return this exception for the specific user.
         $this->authorizationExceptionService
             ->method('evaluateUserPermission')
             ->willReturnCallback(function ($userId, $action, $schemaUuid) {
@@ -171,7 +171,7 @@ class AuthorizationExceptionIntegrationTest extends TestCase
                 return null; // No exception applies
             });
 
-        // Test: The problematic user should be denied access
+        // Test: The problematic user should be denied access.
         $result = $this->authorizationExceptionService->evaluateUserPermission(
             'problematic-user',
             'update',
@@ -180,7 +180,7 @@ class AuthorizationExceptionIntegrationTest extends TestCase
 
         $this->assertFalse($result, 'Problematic user should be denied access via exclusion');
 
-        // Test: Other users in the same group should not be affected
+        // Test: Other users in the same group should not be affected.
         $result = $this->authorizationExceptionService->evaluateUserPermission(
             'other-group-member',
             'update',
@@ -202,7 +202,7 @@ class AuthorizationExceptionIntegrationTest extends TestCase
      */
     public function testPriorityBasedExceptionResolution(): void
     {
-        // Create multiple exceptions for the same user with different priorities
+        // Create multiple exceptions for the same user with different priorities.
         $lowPriorityInclusion = new AuthorizationException();
         $lowPriorityInclusion->setType(AuthorizationException::TYPE_INCLUSION);
         $lowPriorityInclusion->setPriority(5);
@@ -211,11 +211,11 @@ class AuthorizationExceptionIntegrationTest extends TestCase
         $highPriorityExclusion->setType(AuthorizationException::TYPE_EXCLUSION);
         $highPriorityExclusion->setPriority(10);
 
-        // Mock the service to simulate priority-based resolution
+        // Mock the service to simulate priority-based resolution.
         $this->authorizationExceptionService
             ->method('evaluateUserPermission')
             ->willReturnCallback(function ($userId, $action, $schemaUuid) {
-                // Simulate finding both exceptions but exclusion has higher priority
+                // Simulate finding both exceptions but exclusion has higher priority.
                 return false; // High priority exclusion wins
             });
 
@@ -249,14 +249,14 @@ class AuthorizationExceptionIntegrationTest extends TestCase
         $exception->setPriority(8);
         $exception->setDescription('Allow contractors to create projects only in client organization');
 
-        // Mock the service to check organization context
+        // Mock the service to check organization context.
         $this->authorizationExceptionService
             ->method('evaluateUserPermission')
             ->willReturnCallback(function ($userId, $action, $schemaUuid, $registerUuid, $organizationUuid) {
                 if ($organizationUuid === 'client-org-uuid' && 
                     $action === 'create' && 
                     $schemaUuid === 'project-schema-uuid') {
-                    // Check if user is in contractors group
+                    // Check if user is in contractors group.
                     $userGroups = $this->getUserGroups($userId);
                     if (in_array('contractors', $userGroups)) {
                         return true; // Grant access in this organization
@@ -265,7 +265,7 @@ class AuthorizationExceptionIntegrationTest extends TestCase
                 return null; // No exception applies
             });
 
-        // Test: Contractor should have create access in client organization
+        // Test: Contractor should have create access in client organization.
         $result = $this->authorizationExceptionService->evaluateUserPermission(
             'contractor-user',
             'create',
@@ -276,7 +276,7 @@ class AuthorizationExceptionIntegrationTest extends TestCase
 
         $this->assertTrue($result, 'Contractor should have create access in client organization');
 
-        // Test: Same contractor should NOT have access in different organization
+        // Test: Same contractor should NOT have access in different organization.
         $result = $this->authorizationExceptionService->evaluateUserPermission(
             'contractor-user',
             'create',
@@ -300,13 +300,13 @@ class AuthorizationExceptionIntegrationTest extends TestCase
      */
     public function testCompleteObjectPermissionCheck(): void
     {
-        // Create a mock object
+        // Create a mock object.
         $object = new ObjectEntity();
         $object->setUuid('test-object-uuid');
         $object->setSchema('sensitive-data-schema');
         $object->setOwner('data-owner');
 
-        // Create a mock schema
+        // Create a mock schema.
         $schema = new Schema();
         $schema->setUuid('sensitive-data-schema');
         $schema->setAuthorization([
@@ -314,11 +314,11 @@ class AuthorizationExceptionIntegrationTest extends TestCase
             'update' => ['data-managers'],
         ]);
 
-        // Mock the object mapper to use authorization exceptions
+        // Mock the object mapper to use authorization exceptions.
         $this->objectEntityMapper
             ->method('checkObjectPermission')
             ->willReturnCallback(function ($userId, $action, $object, $schema) {
-                // First check exceptions (highest priority)
+                // First check exceptions (highest priority).
                 $exceptionResult = $this->authorizationExceptionService->evaluateUserPermission(
                     $userId,
                     $action,
@@ -329,12 +329,12 @@ class AuthorizationExceptionIntegrationTest extends TestCase
                     return $exceptionResult; // Exception overrides normal RBAC
                 }
 
-                // Fall back to normal RBAC checks
+                // Fall back to normal RBAC checks.
                 if ($object->getOwner() === $userId) {
                     return true; // Owner always has access
                 }
 
-                // Check schema authorization
+                // Check schema authorization.
                 $authorization = $schema->getAuthorization();
                 $allowedGroups = $authorization[$action] ?? [];
                 $userGroups = $this->getUserGroups($userId);
@@ -342,7 +342,7 @@ class AuthorizationExceptionIntegrationTest extends TestCase
                 return !empty(array_intersect($userGroups, $allowedGroups));
             });
 
-        // Test: Owner should always have access
+        // Test: Owner should always have access.
         $result = $this->objectEntityMapper->checkObjectPermission(
             'data-owner',
             'read',
@@ -352,7 +352,7 @@ class AuthorizationExceptionIntegrationTest extends TestCase
 
         $this->assertTrue($result, 'Object owner should always have access');
 
-        // Test: User with group permission should have access
+        // Test: User with group permission should have access.
         $result = $this->objectEntityMapper->checkObjectPermission(
             'analyst-user', // Assume this user is in 'data-analysts' group
             'read',
@@ -362,7 +362,7 @@ class AuthorizationExceptionIntegrationTest extends TestCase
 
         $this->assertTrue($result, 'User in authorized group should have access');
 
-        // Test: User without group permission should be denied
+        // Test: User without group permission should be denied.
         $result = $this->objectEntityMapper->checkObjectPermission(
             'random-user',
             'update',
@@ -384,8 +384,8 @@ class AuthorizationExceptionIntegrationTest extends TestCase
      */
     private function getUserGroups(string $userId): array
     {
-        // This would normally query the actual group manager
-        // For testing, we'll return simulated group memberships
+        // This would normally query the actual group manager.
+        // For testing, we'll return simulated group memberships.
         
         $groupMemberships = [
             'ambtenaar-user-1' => ['ambtenaar', 'users'],

@@ -55,11 +55,11 @@ class Version1Date20251107140000 extends SimpleMigrationStep
          */
         $schema = $schemaClosure();
 
-        // Check if the configurations table exists
+        // Check if the configurations table exists.
         if ($schema->hasTable('openregister_configurations') === true) {
             $table = $schema->getTable('openregister_configurations');
 
-            // Add views column if it doesn't exist
+            // Add views column if it doesn't exist.
             if ($table->hasColumn('views') === false) {
                 $table->addColumn(
                     'views',
@@ -71,7 +71,7 @@ class Version1Date20251107140000 extends SimpleMigrationStep
                 );
             }
 
-            // Add agents column if it doesn't exist
+            // Add agents column if it doesn't exist.
             if ($table->hasColumn('agents') === false) {
                 $table->addColumn(
                     'agents',
@@ -83,7 +83,7 @@ class Version1Date20251107140000 extends SimpleMigrationStep
                 );
             }
 
-            // Add sources column if it doesn't exist
+            // Add sources column if it doesn't exist.
             if ($table->hasColumn('sources') === false) {
                 $table->addColumn(
                     'sources',
@@ -95,7 +95,7 @@ class Version1Date20251107140000 extends SimpleMigrationStep
                 );
             }
 
-            // Add applications column if it doesn't exist
+            // Add applications column if it doesn't exist.
             if ($table->hasColumn('applications') === false) {
                 $table->addColumn(
                     'applications',

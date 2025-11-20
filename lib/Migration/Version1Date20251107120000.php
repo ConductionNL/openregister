@@ -51,15 +51,15 @@ class Version1Date20251107120000 extends SimpleMigrationStep
          */
         $schema = $schemaClosure();
 
-        // Check if the configurations table exists
+        // Check if the configurations table exists.
         if ($schema->hasTable('openregister_configurations')) {
             $table = $schema->getTable('openregister_configurations');
 
-            // Update the type column to have a default value
+            // Update the type column to have a default value.
             if ($table->hasColumn('type')) {
                 $column = $table->getColumn('type');
 
-                // Set default value for the type column
+                // Set default value for the type column.
                 $column->setDefault('default');
                 $column->setNotnull(true);
 

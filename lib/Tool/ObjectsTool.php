@@ -223,10 +223,10 @@ class ObjectsTool extends AbstractTool
         }
 
         try {
-            // Convert snake_case to camelCase for PSR compliance
+            // Convert snake_case to camelCase for PSR compliance.
             $methodName = lcfirst(str_replace('_', '', ucwords($functionName, '_')));
 
-            // Call the method directly (LLPhant-compatible)
+            // Call the method directly (LLPhant-compatible).
             return $this->$methodName(...array_values($parameters));
         } catch (\Exception $e) {
             $this->log($functionName, $parameters, 'error', $e->getMessage());
@@ -262,9 +262,9 @@ class ObjectsTool extends AbstractTool
 
         $result = $this->objectService->findAll(
             null,
-        // registerId
+        // registerId.
             null,
-        // schemaId
+        // schemaId.
             $limit,
             $offset,
             $filters
@@ -379,16 +379,16 @@ class ObjectsTool extends AbstractTool
      */
     public function updateObject(string $id, array $data): array
     {
-        // Get existing object
+        // Get existing object.
         $existingObject = $this->objectService->findObject($id);
 
-        // Merge new data with existing data
+        // Merge new data with existing data.
         $mergedData = array_merge(
             $existingObject->getObject(),
             $data
         );
 
-        // Update object
+        // Update object.
         $object = $this->objectService->saveObject(
             registerId: $existingObject->getRegister(),
             schemaId: $existingObject->getSchema(),

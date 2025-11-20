@@ -41,7 +41,7 @@ use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 use Throwable;
 
-// Document parsing libraries
+// Document parsing libraries.
 use Smalot\PdfParser\Parser as PdfParser;
 use PhpOffice\PhpWord\IOFactory as WordIOFactory;
 use PhpOffice\PhpSpreadsheet\IOFactory as SpreadsheetIOFactory;
@@ -713,9 +713,9 @@ class TextExtractionService
                 ]
                 );
 
-        // Get the file node from Nextcloud
+        // Get the file node from Nextcloud.
         try {
-            // Get file by ID using Nextcloud's file system
+            // Get file by ID using Nextcloud's file system.
             $nodes = $this->rootFolder->getById($fileId);
 
             if (empty($nodes) === true) {
@@ -728,10 +728,10 @@ class TextExtractionService
                 throw new Exception("Node is not a file");
             }
 
-            // Extract text based on mime type
+            // Extract text based on mime type.
             $extractedText = null;
 
-            // Text-based files that can be read directly
+            // Text-based files that can be read directly.
             $textMimeTypes = [
                 'text/plain',
                 'text/markdown',
@@ -746,7 +746,7 @@ class TextExtractionService
             ];
 
             if (in_array($mimeType, $textMimeTypes) === true || strpos($mimeType, 'text/') === 0) {
-                // Read text file directly
+                // Read text file directly.
                 $extractedText = $file->getContent();
 
                 $this->logger->debug(
@@ -757,16 +757,16 @@ class TextExtractionService
                         ]
                         );
             } else if ($mimeType === 'application/pdf') {
-                // Extract text from PDF using Smalot PdfParser
+                // Extract text from PDF using Smalot PdfParser.
                 $extractedText = $this->extractPdf($file);
             } else if (in_array($mimeType, ['application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/msword'])) {
-                // Extract text from DOCX/DOC using PhpWord
+                // Extract text from DOCX/DOC using PhpWord.
                 $extractedText = $this->extractWord($file);
             } else if (in_array($mimeType, ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel'])) {
-                // Extract text from XLSX/XLS using PhpSpreadsheet
+                // Extract text from XLSX/XLS using PhpSpreadsheet.
                 $extractedText = $this->extractSpreadsheet($file);
             } else {
-                // Unsupported file type
+                // Unsupported file type.
                 $this->logger->info(
                         '[TextExtractionService] Unsupported file type',
                         [
@@ -816,40 +816,40 @@ class TextExtractionService
      */
     private function needsExtraction(?FileText $existingFileText, array $ncFile, bool $forceReExtract): bool
     {
-        // Never extracted before
+        // Never extracted before.
         if ($existingFileText === null) {
             return true;
         }
 
-        // Force re-extraction requested
+        // Force re-extraction requested.
         if ($forceReExtract === true) {
             $this->logger->info('[TextExtractionService] Force re-extraction requested', ['fileId' => $ncFile['fileid']]);
             return true;
         }
 
-        // File is pending extraction
+        // File is pending extraction.
         if ($existingFileText->getExtractionStatus() === 'pending') {
             $this->logger->info('[TextExtractionService] File is pending extraction', ['fileId' => $ncFile['fileid']]);
             return true;
         }
 
-        // Previous extraction failed
+        // Previous extraction failed.
         if ($existingFileText->getExtractionStatus() === 'failed') {
             $this->logger->info('[TextExtractionService] Previous extraction failed, retrying', ['fileId' => $ncFile['fileid']]);
             return true;
         }
 
-        // File is currently processing (should not re-extract to avoid conflicts)
+        // File is currently processing (should not re-extract to avoid conflicts).
         if ($existingFileText->getExtractionStatus() === 'processing') {
             $this->logger->info('[TextExtractionService] File is currently being processed, skipping', ['fileId' => $ncFile['fileid']]);
             return false;
         }
 
-        // Check if file was modified since extraction
+        // Check if file was modified since extraction.
         $extractedAt = $existingFileText->getExtractedAt();
         if ($extractedAt !== null) {
             $fileMtime = $ncFile['mtime'];
-            // Unix timestamp from oc_filecache
+            // Unix timestamp from oc_filecache.
             $extractedTimestamp = $extractedAt->getTimestamp();
 
             if ($fileMtime > $extractedTimestamp) {
@@ -865,7 +865,7 @@ class TextExtractionService
             }
         }
 
-        // File is up-to-date
+        // File is up-to-date.
         return false;
 
     }//end needsExtraction()
@@ -888,14 +888,14 @@ class TextExtractionService
         $this->logger->info('[TextExtractionService] Discovering untracked files', ['limit' => $limit]);
 
         try {
-            // Get untracked files from Nextcloud
+            // Get untracked files from Nextcloud.
             $untrackedFiles = $this->fileMapper->findUntrackedFiles($limit);
             $discovered     = 0;
             $failed         = 0;
 
             foreach ($untrackedFiles as $ncFile) {
                 try {
-                    // Create a new FileText record for this untracked file
+                    // Create a new FileText record for this untracked file.
                     $fileText = new FileText();
                     $fileText->setFileId($ncFile['fileid']);
                     $fileText->setFilePath($ncFile['path'] ?? '');
@@ -969,7 +969,7 @@ class TextExtractionService
     {
         $this->logger->info('[TextExtractionService] Extracting pending files', ['limit' => $limit]);
 
-        // Get files already marked as pending
+        // Get files already marked as pending.
         $pendingFiles = $this->fileTextMapper->findByStatus('pending', $limit);
 
         $this->logger->info(
@@ -993,7 +993,7 @@ class TextExtractionService
                         ]
                         );
 
-                // Trigger extraction for this file
+                // Trigger extraction for this file.
                 $this->extractFile($fileText->getFileId(), false);
                 $processed++;
             } catch (Exception $e) {
@@ -1006,7 +1006,7 @@ class TextExtractionService
                         ]
                         );
 
-                // Mark as failed
+                // Mark as failed.
                 $fileText->setExtractionStatus('failed');
                 $fileText->setExtractionError($e->getMessage());
                 $fileText->setUpdatedAt(new DateTime());
@@ -1082,7 +1082,7 @@ class TextExtractionService
         $stats          = $this->fileTextMapper->getStats();
         $untrackedCount = $this->fileMapper->countUntrackedFiles();
 
-        // Calculate total files (tracked + untracked)
+        // Calculate total files (tracked + untracked).
         $totalFiles  = $stats['total'] + $untrackedCount;
         $objectCount = $this->getTableCountSafe('openregister_objects');
         $entityCount = $this->getTableCountSafe('openregister_entities');
@@ -1096,7 +1096,7 @@ class TextExtractionService
             'totalChunks'     => $stats['totalChunks'],
             'totalObjects'    => $objectCount,
             'totalEntities'   => $entityCount,
-            // Keep original field names for backward compatibility
+            // Keep original field names for backward compatibility.
             'total'           => $stats['total'],
             'pending'         => $stats['pending'],
             'processing'      => $stats['processing'],
@@ -1159,29 +1159,29 @@ class TextExtractionService
      */
     private function sanitizeText(string $text): string
     {
-        // Remove NULL bytes
+        // Remove NULL bytes.
         $text = str_replace("\0", '', $text);
 
-        // Convert to UTF-8 if it isn't already
+        // Convert to UTF-8 if it isn't already.
         if (!mb_check_encoding($text, 'UTF-8')) {
             $text = mb_convert_encoding($text, 'UTF-8', 'UTF-8');
         }
 
-        // Remove invalid UTF-8 sequences
+        // Remove invalid UTF-8 sequences.
         $text = mb_convert_encoding($text, 'UTF-8', 'UTF-8');
 
-        // Replace problematic characters that MySQL/MariaDB can't handle
-        // These include characters outside the Basic Multilingual Plane (BMP)
+        // Replace problematic characters that MySQL/MariaDB can't handle.
+        // These include characters outside the Basic Multilingual Plane (BMP).
         $text = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $text);
 
-        // Replace 4-byte UTF-8 characters (emoji, etc.) with a space if using utf8mb3
-        // This prevents "Incorrect string value" errors
+        // Replace 4-byte UTF-8 characters (emoji, etc.) with a space if using utf8mb3.
+        // This prevents "Incorrect string value" errors.
         $text = preg_replace('/[\x{10000}-\x{10FFFF}]/u', ' ', $text);
 
-        // Normalize whitespace
+        // Normalize whitespace.
         $text = preg_replace('/\s+/u', ' ', $text);
 
-        // Trim
+        // Trim.
         return trim($text);
 
     }//end sanitizeText()
@@ -1198,7 +1198,7 @@ class TextExtractionService
      */
     private function extractPdf(\OCP\Files\File $file): ?string
     {
-        // Check if PdfParser library is available
+        // Check if PdfParser library is available.
         if (!class_exists('Smalot\PdfParser\Parser')) {
             $this->logger->warning(
                     '[TextExtractionService] PDF parser library not available',
@@ -1218,22 +1218,22 @@ class TextExtractionService
                     ]
                     );
 
-            // Get file content
+            // Get file content.
             $content = $file->getContent();
 
-            // Create temporary file for PdfParser (it requires a file path)
+            // Create temporary file for PdfParser (it requires a file path).
             $tempFile = tmpfile();
             $tempPath = stream_get_meta_data($tempFile)['uri'];
             fwrite($tempFile, $content);
 
-            // Parse PDF
+            // Parse PDF.
             $parser = new PdfParser();
             $pdf    = $parser->parseFile($tempPath);
 
-            // Extract text
+            // Extract text.
             $text = $pdf->getText();
 
-            // Clean up
+            // Clean up.
             fclose($tempFile);
 
             if (empty($text)) {
@@ -1280,7 +1280,7 @@ class TextExtractionService
      */
     private function extractWord(\OCP\Files\File $file): ?string
     {
-        // Check if PhpWord library is available
+        // Check if PhpWord library is available.
         if (!class_exists('PhpOffice\PhpWord\IOFactory')) {
             $this->logger->warning(
                     '[TextExtractionService] PhpWord library not available',
@@ -1300,25 +1300,25 @@ class TextExtractionService
                     ]
                     );
 
-            // Get file content
+            // Get file content.
             $content = $file->getContent();
 
-            // Create temporary file for PhpWord
+            // Create temporary file for PhpWord.
             $tempFile = tmpfile();
             $tempPath = stream_get_meta_data($tempFile)['uri'];
             fwrite($tempFile, $content);
 
-            // Load Word document
+            // Load Word document.
             $phpWord = WordIOFactory::load($tempPath);
 
-            // Extract text from all sections
+            // Extract text from all sections.
             $text = '';
             foreach ($phpWord->getSections() as $section) {
                 foreach ($section->getElements() as $element) {
                     if (method_exists($element, 'getText')) {
                         $text .= $element->getText()."\n";
                     } else if (method_exists($element, 'getElements')) {
-                        // Handle nested elements (tables, etc.)
+                        // Handle nested elements (tables, etc.).
                         foreach ($element->getElements() as $childElement) {
                             if (method_exists($childElement, 'getText')) {
                                 $text .= $childElement->getText()." ";
@@ -1330,7 +1330,7 @@ class TextExtractionService
                 }
             }
 
-            // Clean up
+            // Clean up.
             fclose($tempFile);
 
             if (empty(trim($text))) {
@@ -1377,7 +1377,7 @@ class TextExtractionService
      */
     private function extractSpreadsheet(\OCP\Files\File $file): ?string
     {
-        // PhpSpreadsheet should already be installed (in composer.json)
+        // PhpSpreadsheet should already be installed (in composer.json).
         if (!class_exists('PhpOffice\PhpSpreadsheet\IOFactory')) {
             $this->logger->warning(
                     '[TextExtractionService] PhpSpreadsheet library not available',
@@ -1397,18 +1397,18 @@ class TextExtractionService
                     ]
                     );
 
-            // Get file content
+            // Get file content.
             $content = $file->getContent();
 
-            // Create temporary file for PhpSpreadsheet
+            // Create temporary file for PhpSpreadsheet.
             $tempFile = tmpfile();
             $tempPath = stream_get_meta_data($tempFile)['uri'];
             fwrite($tempFile, $content);
 
-            // Load spreadsheet
+            // Load spreadsheet.
             $spreadsheet = SpreadsheetIOFactory::load($tempPath);
 
-            // Extract text from all sheets
+            // Extract text from all sheets.
             $text = '';
             foreach ($spreadsheet->getAllSheets() as $sheet) {
                 $text .= "Sheet: ".$sheet->getTitle()."\n";
@@ -1416,7 +1416,7 @@ class TextExtractionService
                 $highestRow    = $sheet->getHighestRow();
                 $highestColumn = $sheet->getHighestColumn();
 
-                // Iterate through rows and columns
+                // Iterate through rows and columns.
                 for ($row = 1; $row <= $highestRow; $row++) {
                     $rowData = [];
                     for ($col = 'A'; $col !== $highestColumn; $col++) {
@@ -1426,7 +1426,7 @@ class TextExtractionService
                         }
                     }
 
-                    // Add last column
+                    // Add last column.
                     $value = $sheet->getCell($highestColumn.$row)->getValue();
                     if ($value !== null && $value !== '') {
                         $rowData[] = $value;
@@ -1440,7 +1440,7 @@ class TextExtractionService
                 $text .= "\n";
             }//end foreach
 
-            // Clean up
+            // Clean up.
             fclose($tempFile);
 
             if (empty(trim($text))) {
@@ -1505,17 +1505,17 @@ class TextExtractionService
 
         $startTime = microtime(true);
 
-        // Clean the text first
+        // Clean the text first.
         $text = $this->cleanText($text);
 
-        // Choose chunking strategy
+        // Choose chunking strategy.
         $chunks = match ($strategy) {
             self::FIXED_SIZE => $this->chunkFixedSize($text, $chunkSize, $chunkOverlap),
             self::RECURSIVE_CHARACTER => $this->chunkRecursive($text, $chunkSize, $chunkOverlap),
             default => $this->chunkRecursive($text, $chunkSize, $chunkOverlap)
         };
 
-        // Respect max chunks limit
+        // Respect max chunks limit.
         if (count($chunks) > self::MAX_CHUNKS_PER_FILE) {
             $this->logger->warning(
                     '[TextExtractionService] File exceeds max chunks, truncating',
@@ -1552,13 +1552,13 @@ class TextExtractionService
      */
     private function cleanText(string $text): string
     {
-        // Remove null bytes
+        // Remove null bytes.
         $text = str_replace("\0", '', $text);
 
-        // Normalize line endings
+        // Normalize line endings.
         $text = str_replace(["\r\n", "\r"], "\n", $text);
 
-        // Remove excessive whitespace but preserve paragraph breaks
+        // Remove excessive whitespace but preserve paragraph breaks.
         $text = preg_replace('/[ \t]+/', ' ', $text);
         $text = preg_replace('/\n{3,}/', "\n\n", $text);
 
@@ -1592,10 +1592,10 @@ class TextExtractionService
         $offset = 0;
 
         while ($offset < strlen($text)) {
-            // Extract chunk
+            // Extract chunk.
             $chunk = substr($text, $offset, $chunkSize);
 
-            // Try to break at word boundary if not at end
+            // Try to break at word boundary if not at end.
             if ($offset + $chunkSize < strlen($text)) {
                 $lastSpace = strrpos($chunk, ' ');
                 if ($lastSpace !== false && $lastSpace > $chunkSize * 0.8) {
@@ -1615,7 +1615,7 @@ class TextExtractionService
 
             $offset += $chunkLength - $chunkOverlap;
 
-            // Prevent infinite loop
+            // Prevent infinite loop.
             if ($offset <= 0) {
                 $offset = $chunkLength;
             }
@@ -1644,7 +1644,7 @@ class TextExtractionService
      */
     private function chunkRecursive(string $text, int $chunkSize, int $chunkOverlap): array
     {
-        // If text is already small enough, return it
+        // If text is already small enough, return it.
         if (strlen($text) <= $chunkSize) {
             return [
                 [
@@ -1655,21 +1655,21 @@ class TextExtractionService
             ];
         }
 
-        // Define separators in order of preference
+        // Define separators in order of preference.
         $separators = [
             "\n\n",
-        // Paragraphs
+        // Paragraphs.
             "\n",
-        // Lines
+        // Lines.
             ". ",
-        // Sentences
+        // Sentences.
             "! ",
             "? ",
             "; ",
             ", ",
-        // Clauses
+        // Clauses.
             " ",
-        // Words
+        // Words.
         ];
 
         return $this->recursiveSplit($text, $separators, $chunkSize, $chunkOverlap);
@@ -1689,7 +1689,7 @@ class TextExtractionService
      */
     private function recursiveSplit(string $text, array $separators, int $chunkSize, int $chunkOverlap): array
     {
-        // If text is small enough, return it
+        // If text is small enough, return it.
         if (strlen($text) <= $chunkSize) {
             return [
                 [
@@ -1700,16 +1700,16 @@ class TextExtractionService
             ];
         }
 
-        // If no separators left, use fixed size chunking
+        // If no separators left, use fixed size chunking.
         if (empty($separators)) {
             return $this->chunkFixedSize($text, $chunkSize, $chunkOverlap);
         }
 
-        // Try splitting with current separator
+        // Try splitting with current separator.
         $separator = array_shift($separators);
         $splits    = explode($separator, $text);
 
-        // Rebuild chunks
+        // Rebuild chunks.
         $chunks        = [];
         $currentChunk  = '';
         $currentOffset = 0;
@@ -1718,10 +1718,10 @@ class TextExtractionService
             $testChunk = $currentChunk === '' ? $split : $currentChunk.$separator.$split;
 
             if (strlen($testChunk) <= $chunkSize) {
-                // Can add to current chunk
+                // Can add to current chunk.
                 $currentChunk = $testChunk;
             } else {
-                // Current chunk is full
+                // Current chunk is full.
                 if ($currentChunk !== '') {
                     $chunkLength = strlen($currentChunk);
 
@@ -1735,7 +1735,7 @@ class TextExtractionService
 
                     $currentOffset += $chunkLength;
 
-                    // Add overlap from end of previous chunk
+                    // Add overlap from end of previous chunk.
                     if ($chunkOverlap > 0 && strlen($currentChunk) > $chunkOverlap) {
                         $overlapText    = substr($currentChunk, -$chunkOverlap);
                         $currentChunk   = $overlapText.$separator.$split;
@@ -1744,11 +1744,11 @@ class TextExtractionService
                         $currentChunk = $split;
                     }
                 } else {
-                    // Single split is too large, need to split it further
+                    // Single split is too large, need to split it further.
                     if (strlen($split) > $chunkSize) {
                         $subChunks = $this->recursiveSplit($split, $separators, $chunkSize, $chunkOverlap);
 
-                        // Adjust offsets
+                        // Adjust offsets.
                         foreach ($subChunks as $subChunk) {
                             $chunks[] = [
                                 'text'         => $subChunk['text'],
@@ -1766,7 +1766,7 @@ class TextExtractionService
             }//end if
         }//end foreach
 
-        // Don't forget the last chunk
+        // Don't forget the last chunk.
         if ($currentChunk !== '' && strlen(trim($currentChunk)) >= self::MIN_CHUNK_SIZE) {
             $chunks[] = [
                 'text'         => trim($currentChunk),

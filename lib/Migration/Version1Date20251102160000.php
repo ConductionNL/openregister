@@ -62,7 +62,7 @@ class Version1Date20251102160000 extends SimpleMigrationStep
         if (!$schema->hasTable('openregister_agents')) {
             $table = $schema->createTable('openregister_agents');
 
-            // Primary key
+            // Primary key.
             $table->addColumn(
                     'id',
                     Types::BIGINT,
@@ -74,7 +74,7 @@ class Version1Date20251102160000 extends SimpleMigrationStep
                     );
             $table->setPrimaryKey(['id']);
 
-            // UUID for external reference
+            // UUID for external reference.
             $table->addColumn(
                     'uuid',
                     Types::STRING,
@@ -86,7 +86,7 @@ class Version1Date20251102160000 extends SimpleMigrationStep
                     );
             $table->addUniqueIndex(['uuid'], 'agents_uuid_index');
 
-            // Basic information
+            // Basic information.
             $table->addColumn(
                     'name',
                     Types::STRING,
@@ -118,7 +118,7 @@ class Version1Date20251102160000 extends SimpleMigrationStep
                     ]
                     );
 
-            // LLM Configuration
+            // LLM Configuration.
             $table->addColumn(
                     'provider',
                     Types::STRING,
@@ -181,7 +181,7 @@ class Version1Date20251102160000 extends SimpleMigrationStep
                     ]
                     );
 
-            // Ownership
+            // Ownership.
             $table->addColumn(
                     'organisation',
                     Types::BIGINT,
@@ -206,7 +206,7 @@ class Version1Date20251102160000 extends SimpleMigrationStep
                     );
             $table->addIndex(['owner'], 'agents_owner_index');
 
-            // Status
+            // Status.
             $table->addColumn(
                     'active',
                     Types::BOOLEAN,
@@ -217,7 +217,7 @@ class Version1Date20251102160000 extends SimpleMigrationStep
                     ]
                     );
 
-            // RAG Configuration
+            // RAG Configuration.
             $table->addColumn(
                     'enable_rag',
                     Types::BOOLEAN,
@@ -269,7 +269,7 @@ class Version1Date20251102160000 extends SimpleMigrationStep
                     ]
                     );
 
-            // Resource Quotas
+            // Resource Quotas.
             $table->addColumn(
                     'request_quota',
                     Types::INTEGER,
@@ -290,7 +290,7 @@ class Version1Date20251102160000 extends SimpleMigrationStep
                     ]
                     );
 
-            // Access Control
+            // Access Control.
             $table->addColumn(
                     'groups',
                     Types::JSON,
@@ -301,7 +301,7 @@ class Version1Date20251102160000 extends SimpleMigrationStep
                     ]
                     );
 
-            // Timestamps
+            // Timestamps.
             $table->addColumn(
                     'created',
                     Types::DATETIME,

@@ -135,7 +135,7 @@ class ObjectServiceRbacTest extends TestCase
     {
         parent::setUp();
 
-        // Mock all dependencies
+        // Mock all dependencies.
         $this->userSession = $this->createMock(IUserSession::class);
         $this->groupManager = $this->createMock(IGroupManager::class);
         $this->userManager = $this->createMock(IUserManager::class);
@@ -150,7 +150,7 @@ class ObjectServiceRbacTest extends TestCase
         $this->fileService = $this->createMock(FileService::class);
         $this->searchTrailService = $this->createMock(SearchTrailService::class);
 
-        // Create ObjectService with mocked dependencies
+        // Create ObjectService with mocked dependencies.
         $this->objectService = new ObjectService(
             $this->deleteHandler,
             $this->getHandler,
@@ -169,7 +169,7 @@ class ObjectServiceRbacTest extends TestCase
             null  // depublishHandler
         );
 
-        // Create test schema
+        // Create test schema.
         $this->mockSchema = new Schema();
         $this->mockSchema->setId(1);
         $this->mockSchema->setTitle('Test Schema');
@@ -180,23 +180,23 @@ class ObjectServiceRbacTest extends TestCase
      */
     public function testHasPermissionUnauthenticatedUser(): void
     {
-        // Setup: No authenticated user
+        // Setup: No authenticated user.
         $this->userSession->method('getUser')->willReturn(null);
 
-        // Create open access schema
+        // Create open access schema.
         $schema = new Schema();
         $schema->setAuthorization([]);
 
-        // Test using reflection to access private method
+        // Test using reflection to access private method.
         $reflection = new \ReflectionClass($this->objectService);
         $hasPermissionMethod = $reflection->getMethod('hasPermission');
         $hasPermissionMethod->setAccessible(true);
 
-        // Unauthenticated users should have access to open schemas
+        // Unauthenticated users should have access to open schemas.
         $this->assertTrue($hasPermissionMethod->invoke($this->objectService, $schema, 'read'));
         $this->assertTrue($hasPermissionMethod->invoke($this->objectService, $schema, 'create'));
 
-        // Test with schema that allows public read
+        // Test with schema that allows public read.
         $publicReadSchema = new Schema();
         $publicReadSchema->setAuthorization(['read' => ['public']]);
         
@@ -209,7 +209,7 @@ class ObjectServiceRbacTest extends TestCase
      */
     public function testHasPermissionAuthenticatedUser(): void
     {
-        // Setup: Authenticated user with groups
+        // Setup: Authenticated user with groups.
         $this->mockUser->method('getUID')->willReturn('testuser');
         $this->userSession->method('getUser')->willReturn($this->mockUser);
         $this->userManager->method('get')->with('testuser')->willReturn($this->mockUser);
@@ -217,7 +217,7 @@ class ObjectServiceRbacTest extends TestCase
             ->with($this->mockUser)
             ->willReturn(['editors', 'viewers']);
 
-        // Create schema with group-based permissions
+        // Create schema with group-based permissions.
         $schema = new Schema();
         $schema->setAuthorization([
             'create' => ['editors', 'managers'],
@@ -226,12 +226,12 @@ class ObjectServiceRbacTest extends TestCase
             'delete' => ['managers']
         ]);
 
-        // Test using reflection to access private method
+        // Test using reflection to access private method.
         $reflection = new \ReflectionClass($this->objectService);
         $hasPermissionMethod = $reflection->getMethod('hasPermission');
         $hasPermissionMethod->setAccessible(true);
 
-        // User in editors and viewers groups should have appropriate permissions
+        // User in editors and viewers groups should have appropriate permissions.
         $this->assertTrue($hasPermissionMethod->invoke($this->objectService, $schema, 'create')); // editors can create
         $this->assertTrue($hasPermissionMethod->invoke($this->objectService, $schema, 'read'));   // viewers can read
         $this->assertTrue($hasPermissionMethod->invoke($this->objectService, $schema, 'update')); // editors can update
@@ -243,7 +243,7 @@ class ObjectServiceRbacTest extends TestCase
      */
     public function testHasPermissionAdminOverride(): void
     {
-        // Setup: Admin user
+        // Setup: Admin user.
         $this->mockUser->method('getUID')->willReturn('admin');
         $this->userSession->method('getUser')->willReturn($this->mockUser);
         $this->userManager->method('get')->with('admin')->willReturn($this->mockUser);
@@ -251,7 +251,7 @@ class ObjectServiceRbacTest extends TestCase
             ->with($this->mockUser)
             ->willReturn(['admin', 'users']);
 
-        // Create restrictive schema
+        // Create restrictive schema.
         $schema = new Schema();
         $schema->setAuthorization([
             'create' => ['staff'],
@@ -260,12 +260,12 @@ class ObjectServiceRbacTest extends TestCase
             'delete' => ['staff']
         ]);
 
-        // Test using reflection to access private method
+        // Test using reflection to access private method.
         $reflection = new \ReflectionClass($this->objectService);
         $hasPermissionMethod = $reflection->getMethod('hasPermission');
         $hasPermissionMethod->setAccessible(true);
 
-        // Admin should bypass all restrictions
+        // Admin should bypass all restrictions.
         $this->assertTrue($hasPermissionMethod->invoke($this->objectService, $schema, 'create'));
         $this->assertTrue($hasPermissionMethod->invoke($this->objectService, $schema, 'read'));
         $this->assertTrue($hasPermissionMethod->invoke($this->objectService, $schema, 'update'));
@@ -277,7 +277,7 @@ class ObjectServiceRbacTest extends TestCase
      */
     public function testHasPermissionObjectOwnerOverride(): void
     {
-        // Setup: Regular user (not in authorized groups)
+        // Setup: Regular user (not in authorized groups).
         $this->mockUser->method('getUID')->willReturn('objectowner');
         $this->userSession->method('getUser')->willReturn($this->mockUser);
         $this->userManager->method('get')->with('objectowner')->willReturn($this->mockUser);
@@ -285,7 +285,7 @@ class ObjectServiceRbacTest extends TestCase
             ->with($this->mockUser)
             ->willReturn(['users']); // Not in any authorized groups
 
-        // Create restrictive schema
+        // Create restrictive schema.
         $schema = new Schema();
         $schema->setAuthorization([
             'create' => ['staff'],
@@ -294,22 +294,22 @@ class ObjectServiceRbacTest extends TestCase
             'delete' => ['managers']
         ]);
 
-        // Test using reflection to access private method
+        // Test using reflection to access private method.
         $reflection = new \ReflectionClass($this->objectService);
         $hasPermissionMethod = $reflection->getMethod('hasPermission');
         $hasPermissionMethod->setAccessible(true);
 
-        // User should not have access normally
+        // User should not have access normally.
         $this->assertFalse($hasPermissionMethod->invoke($this->objectService, $schema, 'read', null, null));
         $this->assertFalse($hasPermissionMethod->invoke($this->objectService, $schema, 'update', null, null));
         $this->assertFalse($hasPermissionMethod->invoke($this->objectService, $schema, 'delete', null, null));
 
-        // Same user should have access when they own the object
+        // Same user should have access when they own the object.
         $this->assertTrue($hasPermissionMethod->invoke($this->objectService, $schema, 'read', null, 'objectowner'));
         $this->assertTrue($hasPermissionMethod->invoke($this->objectService, $schema, 'update', null, 'objectowner'));
         $this->assertTrue($hasPermissionMethod->invoke($this->objectService, $schema, 'delete', null, 'objectowner'));
 
-        // Different owner should not grant access
+        // Different owner should not grant access.
         $this->assertFalse($hasPermissionMethod->invoke($this->objectService, $schema, 'read', null, 'differentowner'));
     }
 
@@ -318,7 +318,7 @@ class ObjectServiceRbacTest extends TestCase
      */
     public function testCheckPermissionSuccess(): void
     {
-        // Setup: User with appropriate permissions
+        // Setup: User with appropriate permissions.
         $this->mockUser->method('getUID')->willReturn('editor');
         $this->mockUser->method('getDisplayName')->willReturn('Editor User');
         $this->userSession->method('getUser')->willReturn($this->mockUser);
@@ -336,17 +336,17 @@ class ObjectServiceRbacTest extends TestCase
             'delete' => ['managers']
         ]);
 
-        // Test using reflection to access private method
+        // Test using reflection to access private method.
         $reflection = new \ReflectionClass($this->objectService);
         $checkPermissionMethod = $reflection->getMethod('checkPermission');
         $checkPermissionMethod->setAccessible(true);
 
-        // Should not throw exception for authorized actions
+        // Should not throw exception for authorized actions.
         $checkPermissionMethod->invoke($this->objectService, $schema, 'create');
         $checkPermissionMethod->invoke($this->objectService, $schema, 'read');
         $checkPermissionMethod->invoke($this->objectService, $schema, 'update');
 
-        // This assertion passes if no exception was thrown
+        // This assertion passes if no exception was thrown.
         $this->assertTrue(true);
     }
 
@@ -355,7 +355,7 @@ class ObjectServiceRbacTest extends TestCase
      */
     public function testCheckPermissionException(): void
     {
-        // Setup: User without delete permissions
+        // Setup: User without delete permissions.
         $this->mockUser->method('getUID')->willReturn('editor');
         $this->mockUser->method('getDisplayName')->willReturn('Editor User');
         $this->userSession->method('getUser')->willReturn($this->mockUser);
@@ -373,12 +373,12 @@ class ObjectServiceRbacTest extends TestCase
             'delete' => ['managers'] // Editor cannot delete
         ]);
 
-        // Test using reflection to access private method
+        // Test using reflection to access private method.
         $reflection = new \ReflectionClass($this->objectService);
         $checkPermissionMethod = $reflection->getMethod('checkPermission');
         $checkPermissionMethod->setAccessible(true);
 
-        // Should throw exception for unauthorized action
+        // Should throw exception for unauthorized action.
         $this->expectException(\Exception::class);
         $this->expectExceptionMessage("User 'Editor User' does not have permission to 'delete' objects in schema 'Test Schema'");
         
@@ -390,7 +390,7 @@ class ObjectServiceRbacTest extends TestCase
      */
     public function testCheckPermissionObjectOwnerOverride(): void
     {
-        // Setup: User without delete permissions but is object owner
+        // Setup: User without delete permissions but is object owner.
         $this->mockUser->method('getUID')->willReturn('editor');
         $this->mockUser->method('getDisplayName')->willReturn('Editor User');
         $this->userSession->method('getUser')->willReturn($this->mockUser);
@@ -405,12 +405,12 @@ class ObjectServiceRbacTest extends TestCase
             'delete' => ['managers'] // Editor cannot delete normally
         ]);
 
-        // Test using reflection to access private method
+        // Test using reflection to access private method.
         $reflection = new \ReflectionClass($this->objectService);
         $checkPermissionMethod = $reflection->getMethod('checkPermission');
         $checkPermissionMethod->setAccessible(true);
 
-        // Should throw exception for unauthorized action normally
+        // Should throw exception for unauthorized action normally.
         $this->expectException(\Exception::class);
         $checkPermissionMethod->invoke($this->objectService, $schema, 'delete', null, null);
     }
@@ -420,7 +420,7 @@ class ObjectServiceRbacTest extends TestCase
      */
     public function testCheckPermissionObjectOwnerHasAccess(): void
     {
-        // Setup: User without delete permissions but is object owner
+        // Setup: User without delete permissions but is object owner.
         $this->mockUser->method('getUID')->willReturn('editor');
         $this->mockUser->method('getDisplayName')->willReturn('Editor User');
         $this->userSession->method('getUser')->willReturn($this->mockUser);
@@ -435,15 +435,15 @@ class ObjectServiceRbacTest extends TestCase
             'delete' => ['managers'] // Editor cannot delete normally
         ]);
 
-        // Test using reflection to access private method
+        // Test using reflection to access private method.
         $reflection = new \ReflectionClass($this->objectService);
         $checkPermissionMethod = $reflection->getMethod('checkPermission');
         $checkPermissionMethod->setAccessible(true);
 
-        // Should NOT throw exception when user is object owner
+        // Should NOT throw exception when user is object owner.
         $checkPermissionMethod->invoke($this->objectService, $schema, 'delete', null, 'editor');
         
-        // This assertion passes if no exception was thrown
+        // This assertion passes if no exception was thrown.
         $this->assertTrue(true);
     }
 
@@ -452,8 +452,8 @@ class ObjectServiceRbacTest extends TestCase
      */
     public function testCreateOperationPermissionCheck(): void
     {
-        // This would test the integration with actual CRUD operations
-        // but we'll focus on the permission logic itself
+        // This would test the integration with actual CRUD operations.
+        // but we'll focus on the permission logic itself.
         
         $this->mockUser->method('getUID')->willReturn('contributor');
         $this->userSession->method('getUser')->willReturn($this->mockUser);
@@ -470,15 +470,15 @@ class ObjectServiceRbacTest extends TestCase
             'delete' => ['managers']
         ]);
 
-        // Test using reflection
+        // Test using reflection.
         $reflection = new \ReflectionClass($this->objectService);
         $hasPermissionMethod = $reflection->getMethod('hasPermission');
         $hasPermissionMethod->setAccessible(true);
 
-        // Contributor should be able to create
+        // Contributor should be able to create.
         $this->assertTrue($hasPermissionMethod->invoke($this->objectService, $schema, 'create'));
         
-        // But not update or delete
+        // But not update or delete.
         $this->assertFalse($hasPermissionMethod->invoke($this->objectService, $schema, 'update'));
         $this->assertFalse($hasPermissionMethod->invoke($this->objectService, $schema, 'delete'));
     }
@@ -501,12 +501,12 @@ class ObjectServiceRbacTest extends TestCase
             'create' => ['editors']
         ]);
 
-        // Test using reflection
+        // Test using reflection.
         $reflection = new \ReflectionClass($this->objectService);
         $hasPermissionMethod = $reflection->getMethod('hasPermission');
         $hasPermissionMethod->setAccessible(true);
 
-        // User with no groups should have no permissions
+        // User with no groups should have no permissions.
         $this->assertFalse($hasPermissionMethod->invoke($this->objectService, $schema, 'read'));
         $this->assertFalse($hasPermissionMethod->invoke($this->objectService, $schema, 'create'));
     }
@@ -518,32 +518,32 @@ class ObjectServiceRbacTest extends TestCase
     {
         $this->userSession->method('getUser')->willReturn(null);
         
-        // Test open access schema
+        // Test open access schema.
         $openSchema = new Schema();
         $openSchema->setAuthorization([]);
 
-        // Test restricted schema  
+        // Test restricted schema.  
         $restrictedSchema = new Schema();
         $restrictedSchema->setAuthorization([
             'read' => ['users']
         ]);
 
-        // Test public access schema
+        // Test public access schema.
         $publicSchema = new Schema();
         $publicSchema->setAuthorization([
             'read' => ['public']
         ]);
 
-        // Test using reflection
+        // Test using reflection.
         $reflection = new \ReflectionClass($this->objectService);
         $hasPermissionMethod = $reflection->getMethod('hasPermission');
         $hasPermissionMethod->setAccessible(true);
 
-        // Null user should have access to open and public schemas
+        // Null user should have access to open and public schemas.
         $this->assertTrue($hasPermissionMethod->invoke($this->objectService, $openSchema, 'read'));
         $this->assertTrue($hasPermissionMethod->invoke($this->objectService, $publicSchema, 'read'));
         
-        // But not to restricted schemas
+        // But not to restricted schemas.
         $this->assertFalse($hasPermissionMethod->invoke($this->objectService, $restrictedSchema, 'read'));
     }
 } 

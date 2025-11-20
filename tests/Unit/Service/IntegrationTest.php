@@ -85,12 +85,12 @@ class IntegrationTest extends TestCase
      */
     public function testRbacIntegrationWithMultiTenancy(): void
     {
-        // Arrange: User with specific organisation context
+        // Arrange: User with specific organisation context.
         $user = $this->createMock(IUser::class);
         $user->method('getUID')->willReturn('alice');
         $this->userSession->method('getUser')->willReturn($user);
 
-        // Mock: Organisation with RBAC-enabled schema
+        // Mock: Organisation with RBAC-enabled schema.
         $acmeOrg = new Organisation();
         $acmeOrg->setUuid('acme-org-uuid');
         $acmeOrg->setUsers(['alice', 'bob']);
@@ -105,14 +105,14 @@ class IntegrationTest extends TestCase
             'delete' => ['managers']
         ]);
         
-        // Mock: Object in same organisation with RBAC rules
+        // Mock: Object in same organisation with RBAC rules.
         $protectedObject = new ObjectEntity();
         $protectedObject->setUuid('protected-object-uuid');
         $protectedObject->setSchema($rbacSchema->getId());
         $protectedObject->setOrganisation('acme-org-uuid');
         $protectedObject->setOwner('alice');
         
-        // Mock: RBAC permission check within organisation context
+        // Mock: RBAC permission check within organisation context.
         $this->objectEntityMapper->expects($this->once())
             ->method('findAll')
             ->with(
@@ -125,14 +125,14 @@ class IntegrationTest extends TestCase
             )
             ->willReturn([$protectedObject]);
 
-        // Act: Search within organisation with RBAC filtering
+        // Act: Search within organisation with RBAC filtering.
         $results = $this->objectEntityMapper->findAll(
             null, // limit
             null, // offset
             ['organisation' => 'acme-org-uuid'] // Organisation filter
         );
 
-        // Assert: RBAC and multi-tenancy work together
+        // Assert: RBAC and multi-tenancy work together.
         $this->assertCount(1, $results);
         $this->assertEquals('protected-object-uuid', $results[0]->getUuid());
         $this->assertEquals('acme-org-uuid', $results[0]->getOrganisation());
@@ -143,12 +143,12 @@ class IntegrationTest extends TestCase
      */
     public function testSearchFilteringByOrganisation(): void
     {
-        // Arrange: User with access to specific organisations
+        // Arrange: User with access to specific organisations.
         $user = $this->createMock(IUser::class);
         $user->method('getUID')->willReturn('alice');
         $this->userSession->method('getUser')->willReturn($user);
 
-        // Mock: User belongs to multiple organisations
+        // Mock: User belongs to multiple organisations.
         $orgs = [
             $this->createOrganisation('org1-uuid', 'Organisation 1'),
             $this->createOrganisation('org2-uuid', 'Organisation 2')
@@ -158,7 +158,7 @@ class IntegrationTest extends TestCase
             ->with('alice')
             ->willReturn($orgs);
 
-        // Mock: Search results from different organisations
+        // Mock: Search results from different organisations.
         $org1Objects = [
             $this->createObject('obj1-uuid', 'org1-uuid'),
             $this->createObject('obj2-uuid', 'org1-uuid')
@@ -168,7 +168,7 @@ class IntegrationTest extends TestCase
             $this->createObject('obj3-uuid', 'org2-uuid')
         ];
         
-        // Mock: Search with organisation filtering
+        // Mock: Search with organisation filtering.
         $this->objectEntityMapper->expects($this->once())
             ->method('findAll')
             ->with(
@@ -183,17 +183,17 @@ class IntegrationTest extends TestCase
             )
             ->willReturn(array_merge($org1Objects, $org2Objects));
 
-        // Mock: Request parameters
+        // Mock: Request parameters.
         $this->request->method('getParam')
             ->willReturnMap([
                 ['q', '', 'test'],
                 ['organisation', [], ['org1-uuid', 'org2-uuid']]
             ]);
 
-        // Act: Search across user's organisations
+        // Act: Search across user's organisations.
         $response = $this->searchController->index();
 
-        // Assert: Results filtered by organisation membership
+        // Assert: Results filtered by organisation membership.
         $this->assertInstanceOf(JSONResponse::class, $response);
         $this->assertEquals(200, $response->getStatus());
         
@@ -206,24 +206,24 @@ class IntegrationTest extends TestCase
      */
     public function testAuditTrailOrganisationContext(): void
     {
-        // Arrange: User performs actions in specific organisation context
+        // Arrange: User performs actions in specific organisation context.
         $user = $this->createMock(IUser::class);
         $user->method('getUID')->willReturn('alice');
         $this->userSession->method('getUser')->willReturn($user);
 
-        // Mock: Active organisation context
+        // Mock: Active organisation context.
         $this->session->method('get')
             ->with('openregister_active_organisation_alice')
             ->willReturn('audit-org-uuid');
 
-        // Mock: Audit trail entries with organisation context
+        // Mock: Audit trail entries with organisation context.
         $auditEntries = [
             $this->createAuditTrail('audit1-uuid', 'create', 'alice', 'audit-org-uuid'),
             $this->createAuditTrail('audit2-uuid', 'update', 'alice', 'audit-org-uuid'),
             $this->createAuditTrail('audit3-uuid', 'delete', 'alice', 'audit-org-uuid')
         ];
         
-        // Mock: Audit trail query with organisation filtering
+        // Mock: Audit trail query with organisation filtering.
         $this->auditTrailMapper->expects($this->once())
             ->method('findAll')
             ->with(
@@ -236,21 +236,21 @@ class IntegrationTest extends TestCase
             )
             ->willReturn($auditEntries);
 
-        // Act: Get audit trails for organisation context
+        // Act: Get audit trails for organisation context.
         $trails = $this->auditTrailMapper->findAll(
             null, // limit
             null, // offset
             ['organisation' => 'audit-org-uuid'] // Organisation context
         );
 
-        // Assert: Audit trails include organisation context
+        // Assert: Audit trails include organisation context.
         $this->assertCount(3, $trails);
         foreach ($trails as $trail) {
             $this->assertEquals('audit-org-uuid', $trail->getOrganisation());
             $this->assertEquals('alice', $trail->getUser());
         }
         
-        // Verify action types
+        // Verify action types.
         $actions = array_map(function($trail) { return $trail->getAction(); }, $trails);
         $this->assertContains('create', $actions);
         $this->assertContains('update', $actions);
@@ -262,26 +262,26 @@ class IntegrationTest extends TestCase
      */
     public function testCrossOrganisationAccessPrevention(): void
     {
-        // Arrange: User tries to access data from different organisation
+        // Arrange: User tries to access data from different organisation.
         $user = $this->createMock(IUser::class);
         $user->method('getUID')->willReturn('bob');
         $this->userSession->method('getUser')->willReturn($user);
 
-        // Mock: Bob belongs to Organisation A
+        // Mock: Bob belongs to Organisation A.
         $bobOrgs = [$this->createOrganisation('orgA-uuid', 'Organisation A')];
         
         $this->organisationMapper->method('findByUserId')
             ->with('bob')
             ->willReturn($bobOrgs);
 
-        // Mock: Attempt to search Organisation B's data
+        // Mock: Attempt to search Organisation B's data.
         $this->objectEntityMapper->expects($this->once())
             ->method('findAll')
             ->with(
                 $this->anything(),
                 $this->anything(),
                 $this->callback(function($filters) {
-                    // Should only include Bob's organisations
+                    // Should only include Bob's organisations.
                     return isset($filters['organisation']) && 
                            $filters['organisation'] === ['orgA-uuid'] &&
                            !in_array('orgB-uuid', (array)$filters['organisation']);
@@ -289,14 +289,14 @@ class IntegrationTest extends TestCase
             )
             ->willReturn([]); // No results from different org
 
-        // Act: Search should be filtered by user's organisations
+        // Act: Search should be filtered by user's organisations.
         $results = $this->objectEntityMapper->findAll(
             null,
             null, 
             ['organisation' => ['orgA-uuid']] // Only Bob's orgs
         );
 
-        // Assert: Access is properly restricted
+        // Assert: Access is properly restricted.
         $this->assertEmpty($results); // No cross-organisation access
     }
 
@@ -305,35 +305,35 @@ class IntegrationTest extends TestCase
      */
     public function testMultiTenancyWithComplexRelationships(): void
     {
-        // Arrange: Complex object relationships within organisation
+        // Arrange: Complex object relationships within organisation.
         $orgUuid = 'complex-org-uuid';
         
-        // Mock: Related objects all within same organisation
+        // Mock: Related objects all within same organisation.
         $parentObject = $this->createObject('parent-uuid', $orgUuid);
         $childObjects = [
             $this->createObject('child1-uuid', $orgUuid),
             $this->createObject('child2-uuid', $orgUuid)
         ];
         
-        // Set up relationships
+        // Set up relationships.
         $parentObject->setObject([
             'name' => 'Parent Object',
             'children' => ['child1-uuid', 'child2-uuid']
         ]);
         
-        // Mock: Organisation service validates all objects in same org
+        // Mock: Organisation service validates all objects in same org.
         $this->objectEntityMapper->method('findAll')
             ->willReturn(array_merge([$parentObject], $childObjects));
 
-        // Act: Verify all related objects are in same organisation
+        // Act: Verify all related objects are in same organisation.
         $allObjects = $this->objectEntityMapper->findAll();
         
-        // Assert: Relationship integrity within organisation
+        // Assert: Relationship integrity within organisation.
         foreach ($allObjects as $object) {
             $this->assertEquals($orgUuid, $object->getOrganisation());
         }
         
-        // Verify parent-child relationships maintained
+        // Verify parent-child relationships maintained.
         $parentData = $parentObject->getObject();
         $this->assertArrayHasKey('children', $parentData);
         $this->assertContains('child1-uuid', $parentData['children']);

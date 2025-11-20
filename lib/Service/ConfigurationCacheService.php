@@ -100,17 +100,17 @@ class ConfigurationCacheService
         $orgUuid    = $activeOrg->getUuid();
         $sessionKey = self::SESSION_KEY_PREFIX.$orgUuid;
 
-        // Check if configurations are cached in session
+        // Check if configurations are cached in session.
         $cachedData = $this->session->get($sessionKey);
         if ($cachedData !== null) {
-            // Configurations are cached, unserialize and return
+            // Configurations are cached, unserialize and return.
             return unserialize($cachedData);
         }
 
-        // Not cached, fetch from database
+        // Not cached, fetch from database.
         $configurations = $this->configurationMapper->findAll();
 
-        // Cache in session
+        // Cache in session.
         $this->session->set($sessionKey, serialize($configurations));
 
         return $configurations;
@@ -136,7 +136,7 @@ class ConfigurationCacheService
         $orgUuid    = $activeOrg->getUuid();
         $sessionKey = self::SESSION_KEY_PREFIX.$orgUuid;
 
-        // Remove from session
+        // Remove from session.
         $this->session->remove($sessionKey);
 
     }//end invalidateCache()
@@ -167,7 +167,7 @@ class ConfigurationCacheService
      */
     public function clearAllCaches(): void
     {
-        // Get all session keys and remove those that match our prefix
+        // Get all session keys and remove those that match our prefix.
         $sessionKeys = $this->session->getKeys();
         foreach ($sessionKeys as $key) {
             if (strpos($key, self::SESSION_KEY_PREFIX) === 0) {

@@ -29,7 +29,7 @@ echo "- API: /apps/openregister/api/settings/solr/fields/create\n\n";
 echo "Exiting without making changes...\n";
 exit(1);
 
-// Get collection name from command line or use default
+// Get collection name from command line or use default.
 $collectionName = $argv[1] ?? 'openregister_nc_f0e53393';
 $solrBaseUrl    = 'http://nextcloud-dev-solr:8983/solr';
 
@@ -43,25 +43,25 @@ echo "==========================================\n\n";
  * Based on ObjectEntity.php metadata properties
  */
 $fieldDefinitions = [
-    // **CRITICAL**: Core tenant field with self_ prefix (consistent naming)
+    // **CRITICAL**: Core tenant field with self_ prefix (consistent naming).
     'self_tenant'         => [
         'type'        => 'string',
         'stored'      => true,
         'indexed'     => true,
         'multiValued' => false,
         'docValues'   => false,
-// Not useful for faceting
+// Not useful for faceting.
         'description' => 'Tenant identifier for multi-tenancy',
     ],
 
-    // Metadata fields with self_ prefix (consistent with legacy mapping)
+    // Metadata fields with self_ prefix (consistent with legacy mapping).
     'self_object_id'      => [
         'type'        => 'pint',
         'stored'      => true,
         'indexed'     => true,
         'multiValued' => false,
         'docValues'   => false,
-    // Not useful for faceting
+    // Not useful for faceting.
         'description' => 'Database object ID',
     ],
     'self_uuid'           => [
@@ -70,11 +70,11 @@ $fieldDefinitions = [
         'indexed'     => true,
         'multiValued' => false,
         'docValues'   => false,
-    // Not useful for faceting
+    // Not useful for faceting.
         'description' => 'Object UUID',
     ],
 
-    // Context fields
+    // Context fields.
     'self_register'       => [
         'type'        => 'pint',
         'stored'      => true,
@@ -100,7 +100,7 @@ $fieldDefinitions = [
         'description' => 'Schema version',
     ],
 
-    // Ownership and metadata
+    // Ownership and metadata.
     'self_owner'          => [
         'type'        => 'string',
         'stored'      => true,
@@ -126,14 +126,14 @@ $fieldDefinitions = [
         'description' => 'Application name',
     ],
 
-    // Core object fields (no suffixes needed when explicitly defined)
+    // Core object fields (no suffixes needed when explicitly defined).
     'self_name'           => [
         'type'        => 'string',
         'stored'      => true,
         'indexed'     => true,
         'multiValued' => false,
         'docValues'   => false,
-    // Not useful for faceting - used for search
+    // Not useful for faceting - used for search.
         'description' => 'Object name',
     ],
     'self_description'    => [
@@ -142,7 +142,7 @@ $fieldDefinitions = [
         'indexed'     => true,
         'multiValued' => false,
         'docValues'   => false,
-    // Not useful for faceting - used for search
+    // Not useful for faceting - used for search.
         'description' => 'Object description (full-text searchable)',
     ],
     'self_summary'        => [
@@ -151,7 +151,7 @@ $fieldDefinitions = [
         'indexed'     => true,
         'multiValued' => false,
         'docValues'   => false,
-    // Not useful for faceting - used for search
+    // Not useful for faceting - used for search.
         'description' => 'Object summary',
     ],
     'self_image'          => [
@@ -160,7 +160,7 @@ $fieldDefinitions = [
         'indexed'     => false,
         'multiValued' => false,
         'docValues'   => false,
-    // Not useful for faceting
+    // Not useful for faceting.
         'description' => 'Object image reference',
     ],
     'self_slug'           => [
@@ -169,7 +169,7 @@ $fieldDefinitions = [
         'indexed'     => true,
         'multiValued' => false,
         'docValues'   => false,
-    // Not useful for faceting
+    // Not useful for faceting.
         'description' => 'Object URL slug',
     ],
     'self_uri'            => [
@@ -178,7 +178,7 @@ $fieldDefinitions = [
         'indexed'     => true,
         'multiValued' => false,
         'docValues'   => false,
-    // Not useful for faceting
+    // Not useful for faceting.
         'description' => 'Object URI',
     ],
     'self_version'        => [
@@ -187,7 +187,7 @@ $fieldDefinitions = [
         'indexed'     => true,
         'multiValued' => false,
         'docValues'   => false,
-    // Not useful for faceting
+    // Not useful for faceting.
         'description' => 'Object version',
     ],
     'self_size'           => [
@@ -196,7 +196,7 @@ $fieldDefinitions = [
         'indexed'     => false,
         'multiValued' => false,
         'docValues'   => false,
-    // Not useful for faceting
+    // Not useful for faceting.
         'description' => 'Object size',
     ],
     'self_folder'         => [
@@ -205,11 +205,11 @@ $fieldDefinitions = [
         'indexed'     => true,
         'multiValued' => false,
         'docValues'   => false,
-    // Not useful for faceting
+    // Not useful for faceting.
         'description' => 'Object folder path',
     ],
 
-    // Timestamps (SOLR date format)
+    // Timestamps (SOLR date format).
     'self_created'        => [
         'type'        => 'pdate',
         'stored'      => true,
@@ -243,7 +243,7 @@ $fieldDefinitions = [
         'description' => 'Depublished timestamp',
     ],
 
-    // **NEW**: UUID relation fields for clean object relationships
+    // **NEW**: UUID relation fields for clean object relationships.
     'self_relations'      => [
         'type'        => 'string',
         'stored'      => true,
@@ -275,7 +275,7 @@ function applySchemaField($collectionName, $solrBaseUrl, $fieldName, $fieldConfi
 {
     $url = "{$solrBaseUrl}/{$collectionName}/schema";
 
-    // Try to add field first
+    // Try to add field first.
     $addPayload = [
         'add-field' => array_merge(['name' => $fieldName], $fieldConfig),
     ];
@@ -287,7 +287,7 @@ function applySchemaField($collectionName, $solrBaseUrl, $fieldName, $fieldConfi
         return true;
     }
 
-    // If add failed, try to replace
+    // If add failed, try to replace.
     $replacePayload = [
         'replace-field' => array_merge(['name' => $fieldName], $fieldConfig),
     ];
@@ -341,7 +341,7 @@ function makeHttpRequest($url, $payload)
 }//end makeHttpRequest()
 
 
-// Apply all field configurations
+// Apply all field configurations.
 $successCount = 0;
 $totalFields  = count($fieldDefinitions);
 
@@ -351,7 +351,7 @@ foreach ($fieldDefinitions as $fieldName => $fieldConfig) {
     $description = $fieldConfig['description'] ?? '';
     echo "🔧 {$fieldName} ({$description}): ";
 
-    // Remove description from field config (not a SOLR field property)
+    // Remove description from field config (not a SOLR field property).
     unset($fieldConfig['description']);
 
     if (applySchemaField($collectionName, $solrBaseUrl, $fieldName, $fieldConfig)) {

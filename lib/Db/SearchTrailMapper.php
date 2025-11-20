@@ -38,7 +38,6 @@ use Symfony\Component\Uid\Uuid;
  * for search analytics and optimization.
  *
  * @package OCA\OpenRegister\Db
- */
  *
  * @method SearchTrail insert(Entity $entity)
  * @method SearchTrail update(Entity $entity)
@@ -120,10 +119,10 @@ class SearchTrailMapper extends QBMapper
         $qb->select('*')
             ->from($this->getTableName());
 
-        // Apply filters
+        // Apply filters.
         $this->applyFilters($qb, $filters);
 
-        // Apply search term
+        // Apply search term.
         if ($search !== null) {
             $qb->andWhere(
                 $qb->expr()->orX(
@@ -134,7 +133,7 @@ class SearchTrailMapper extends QBMapper
             );
         }
 
-        // Apply date filters
+        // Apply date filters.
         if ($from !== null) {
             $qb->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($from->format('Y-m-d H:i:s'))));
         }
@@ -143,7 +142,7 @@ class SearchTrailMapper extends QBMapper
             $qb->andWhere($qb->expr()->lte('created', $qb->createNamedParameter($to->format('Y-m-d H:i:s'))));
         }
 
-        // Apply sorting
+        // Apply sorting.
         if (empty($sort) === false) {
             foreach ($sort as $field => $direction) {
                 $qb->addOrderBy($field, $direction);
@@ -152,7 +151,7 @@ class SearchTrailMapper extends QBMapper
             $qb->orderBy('created', 'DESC');
         }
 
-        // Apply pagination
+        // Apply pagination.
         if ($limit !== null) {
             $qb->setMaxResults($limit);
         }
@@ -187,10 +186,10 @@ class SearchTrailMapper extends QBMapper
         $qb->select($qb->func()->count('*'))
             ->from($this->getTableName());
 
-        // Apply filters
+        // Apply filters.
         $this->applyFilters($qb, $filters);
 
-        // Apply search term
+        // Apply search term.
         if ($search !== null) {
             $qb->andWhere(
                 $qb->expr()->orX(
@@ -201,7 +200,7 @@ class SearchTrailMapper extends QBMapper
             );
         }
 
-        // Apply date filters
+        // Apply date filters.
         if ($from !== null) {
             $qb->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($from->format('Y-m-d H:i:s'))));
         }
@@ -245,16 +244,16 @@ class SearchTrailMapper extends QBMapper
         $searchTrail->setTotalResults($totalResults);
         $searchTrail->setResponseTime((int) round($responseTime));
 
-        // Extract and set search parameters
+        // Extract and set search parameters.
         $this->extractSearchParameters($searchTrail, $searchQuery);
 
-        // Set request information
+        // Set request information.
         $this->setRequestInformation($searchTrail);
 
-        // Set user information
+        // Set user information.
         $this->setUserInformation($searchTrail);
 
-        // Calculate and set the size of the search trail entry, with a minimum default of 14 bytes
+        // Calculate and set the size of the search trail entry, with a minimum default of 14 bytes.
         $serializedSize = strlen(serialize($searchTrail->jsonSerialize()));
         $searchTrail->setSize(max($serializedSize, 14));
 
@@ -275,7 +274,7 @@ class SearchTrailMapper extends QBMapper
     {
         $qb = $this->db->getQueryBuilder();
 
-        // Base query for time period
+        // Base query for time period.
         $qb->select(
                 [
                     $qb->func()->count('*', 'total_searches'),
@@ -287,7 +286,7 @@ class SearchTrailMapper extends QBMapper
             ->addSelect($qb->createFunction('COUNT(CASE WHEN total_results > 0 THEN 1 END) AS non_empty_searches'))
             ->from($this->getTableName());
 
-        // Apply date filters
+        // Apply date filters.
         if ($from !== null) {
             $qb->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($from->format('Y-m-d H:i:s'))));
         }
@@ -339,7 +338,7 @@ class SearchTrailMapper extends QBMapper
             ->orderBy('search_count', 'DESC')
             ->setMaxResults($limit);
 
-        // Apply date filters
+        // Apply date filters.
         if ($from !== null) {
             $qb->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($from->format('Y-m-d H:i:s'))));
         }
@@ -380,7 +379,7 @@ class SearchTrailMapper extends QBMapper
     {
         $qb = $this->db->getQueryBuilder();
 
-        // Format date based on interval
+        // Format date based on interval.
         $dateFormat = match ($interval) {
             'hour' => '%Y-%m-%d %H:00:00',
             'day' => '%Y-%m-%d',
@@ -400,11 +399,11 @@ class SearchTrailMapper extends QBMapper
             ->groupBy('date_period')
             ->orderBy('date_period', 'ASC');
 
-        // Add date formatting based on database type
+        // Add date formatting based on database type.
         if ($this->db->getDatabasePlatform()->getName() === 'mysql') {
             $qb->addSelect($qb->createFunction("DATE_FORMAT(created, '{$dateFormat}') AS date_period"));
         } else {
-            // For SQLite and PostgreSQL - convert MySQL format to SQLite format
+            // For SQLite and PostgreSQL - convert MySQL format to SQLite format.
             $sqliteFormat = match ($interval) {
                 'hour' => '%Y-%m-%d %H:00:00',
                 'day' => '%Y-%m-%d',
@@ -416,7 +415,7 @@ class SearchTrailMapper extends QBMapper
             $qb->addSelect($qb->createFunction("strftime('{$sqliteFormat}', created) AS date_period"));
         }
 
-        // Apply date filters
+        // Apply date filters.
         if ($from !== null) {
             $qb->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($from->format('Y-m-d H:i:s'))));
         }
@@ -471,7 +470,7 @@ class SearchTrailMapper extends QBMapper
             ->groupBy('register', 'schema', 'register_uuid', 'schema_uuid')
             ->orderBy('search_count', 'DESC');
 
-        // Apply date filters
+        // Apply date filters.
         if ($from !== null) {
             $qb->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($from->format('Y-m-d H:i:s'))));
         }
@@ -529,7 +528,7 @@ class SearchTrailMapper extends QBMapper
             ->orderBy('search_count', 'DESC')
             ->setMaxResults($limit);
 
-        // Apply date filters
+        // Apply date filters.
         if ($from !== null) {
             $qb->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($from->format('Y-m-d H:i:s'))));
         }
@@ -574,7 +573,7 @@ class SearchTrailMapper extends QBMapper
             ->where($qb->expr()->isNotNull('search_term'))
             ->andWhere($qb->expr()->neq('search_term', $qb->createNamedParameter('')));
 
-        // Apply date filters
+        // Apply date filters.
         if ($from !== null) {
             $qb->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($from->format('Y-m-d H:i:s'))));
         }
@@ -609,7 +608,7 @@ class SearchTrailMapper extends QBMapper
             ->where($qb->expr()->isNotNull('user'))
             ->andWhere($qb->expr()->neq('user', $qb->createNamedParameter('')));
 
-        // Apply date filters
+        // Apply date filters.
         if ($from !== null) {
             $qb->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($from->format('Y-m-d H:i:s'))));
         }
@@ -647,7 +646,7 @@ class SearchTrailMapper extends QBMapper
             ->where($qb->expr()->isNotNull('session'))
             ->andWhere($qb->expr()->neq('session', $qb->createNamedParameter('')));
 
-        // Apply date filters
+        // Apply date filters.
         if ($from !== null) {
             $qb->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($from->format('Y-m-d H:i:s'))));
         }
@@ -691,7 +690,7 @@ class SearchTrailMapper extends QBMapper
             ->andWhere($qb->expr()->isNotNull('session'))
             ->andWhere($qb->expr()->neq('session', $qb->createNamedParameter('')));
 
-        // Apply date filters
+        // Apply date filters.
         if ($from !== null) {
             $qb->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($from->format('Y-m-d H:i:s'))));
         }
@@ -725,21 +724,21 @@ class SearchTrailMapper extends QBMapper
     public function clearLogs(): bool
     {
         try {
-            // Get the query builder for database operations
+            // Get the query builder for database operations.
             $qb = $this->db->getQueryBuilder();
 
-            // Build the delete query to remove expired search trail logs that have the 'expires' column set
+            // Build the delete query to remove expired search trail logs that have the 'expires' column set.
             $qb->delete($this->getTableName())
                 ->where($qb->expr()->isNotNull('expires'))
                 ->andWhere($qb->expr()->lt('expires', $qb->createFunction('NOW()')));
 
-            // Execute the query and get the number of affected rows
+            // Execute the query and get the number of affected rows.
             $result = $qb->executeStatement();
 
-            // Return true if any rows were affected (i.e., any logs were deleted)
+            // Return true if any rows were affected (i.e., any logs were deleted).
             return $result > 0;
         } catch (\Exception $e) {
-            // Log the error for debugging purposes
+            // Log the error for debugging purposes.
             \OC::$server->getLogger()->error(
                     'Failed to clear expired search trail logs: '.$e->getMessage(),
                     [
@@ -748,7 +747,7 @@ class SearchTrailMapper extends QBMapper
                     ]
                     );
 
-            // Re-throw the exception so the caller knows something went wrong
+            // Re-throw the exception so the caller knows something went wrong.
             throw $e;
         }//end try
 
@@ -767,19 +766,19 @@ class SearchTrailMapper extends QBMapper
     public function clearAllLogs(): bool
     {
         try {
-            // Get the query builder for database operations
+            // Get the query builder for database operations.
             $qb = $this->db->getQueryBuilder();
 
-            // Build the delete query to remove ALL search trail logs
+            // Build the delete query to remove ALL search trail logs.
             $qb->delete($this->getTableName());
 
-            // Execute the query and get the number of affected rows
+            // Execute the query and get the number of affected rows.
             $result = $qb->executeStatement();
 
-            // Return true if any rows were affected (i.e., any logs were deleted)
+            // Return true if any rows were affected (i.e., any logs were deleted).
             return $result > 0;
         } catch (\Exception $e) {
-            // Log the error for debugging purposes
+            // Log the error for debugging purposes.
             \OC::$server->getLogger()->error(
                     'Failed to clear all search trail logs: '.$e->getMessage(),
                     [
@@ -788,7 +787,7 @@ class SearchTrailMapper extends QBMapper
                     ]
                     );
 
-            // Re-throw the exception so the caller knows something went wrong
+            // Re-throw the exception so the caller knows something went wrong.
             throw $e;
         }//end try
 
@@ -805,7 +804,7 @@ class SearchTrailMapper extends QBMapper
      */
     private function applyFilters(IQueryBuilder $qb, array $filters): void
     {
-        // Valid column names for SearchTrail
+        // Valid column names for SearchTrail.
         $validColumns = [
             'id',
             'uuid',
@@ -840,7 +839,7 @@ class SearchTrailMapper extends QBMapper
         ];
 
         foreach ($filters as $field => $value) {
-            // Skip system variables and ensure valid column names
+            // Skip system variables and ensure valid column names.
             if (str_starts_with($field, '_') || !in_array($field, $validColumns)) {
                 continue;
             }
@@ -850,7 +849,7 @@ class SearchTrailMapper extends QBMapper
             } else if ($value === 'IS NULL') {
                 $qb->andWhere($qb->expr()->isNull($field));
             } else if (is_array($value)) {
-                // Handle array values like ['IS NULL', '']
+                // Handle array values like ['IS NULL', ''].
                 $conditions = [];
                 foreach ($value as $val) {
                     if ($val === 'IS NULL') {
@@ -866,7 +865,7 @@ class SearchTrailMapper extends QBMapper
                     $qb->andWhere($qb->expr()->orX(...$conditions));
                 }
             } else {
-                // Handle comma-separated values
+                // Handle comma-separated values.
                 if (is_string($value) && strpos($value, ',') !== false) {
                     $values = array_map('trim', explode(',', $value));
                     $qb->andWhere($qb->expr()->in($field, $qb->createNamedParameter($values, IQueryBuilder::PARAM_STR_ARRAY)));
@@ -889,20 +888,20 @@ class SearchTrailMapper extends QBMapper
      */
     private function extractSearchParameters(SearchTrail $searchTrail, array $query): void
     {
-        // Extract search term
+        // Extract search term.
         $searchTerm = $query['_search'] ?? null;
         $searchTrail->setSearchTerm($searchTerm);
 
-        // Extract pagination parameters
+        // Extract pagination parameters.
         $searchTrail->setPage($query['_page'] ?? null);
         $searchTrail->setLimit($query['_limit'] ?? null);
         $searchTrail->setOffset($query['_offset'] ?? null);
 
-        // Extract facet parameters
+        // Extract facet parameters.
         $searchTrail->setFacetsRequested(isset($query['_facets']));
         $searchTrail->setFacetableRequested(isset($query['_facetable']) && $query['_facetable'] === true);
 
-        // Extract metadata filters
+        // Extract metadata filters.
         $metadataFilters = $query['@self'] ?? [];
         if (isset($metadataFilters['register'])) {
             $searchTrail->setRegister(is_numeric($metadataFilters['register']) ? (int) $metadataFilters['register'] : null);
@@ -914,7 +913,7 @@ class SearchTrailMapper extends QBMapper
             $searchTrail->setSchemaUuid(is_string($metadataFilters['schema']) ? $metadataFilters['schema'] : null);
         }
 
-        // Extract sort parameters
+        // Extract sort parameters.
         $sortParams = [];
         if (isset($query['_order'])) {
             $sortParams = is_array($query['_order']) ? $query['_order'] : [$query['_order']];
@@ -922,10 +921,10 @@ class SearchTrailMapper extends QBMapper
 
         $searchTrail->setSortParameters($sortParams);
 
-        // Extract published filter
+        // Extract published filter.
         $searchTrail->setPublishedOnly($query['_published'] ?? false);
 
-        // Extract non-system parameters as filters
+        // Extract non-system parameters as filters.
         $filters = [];
         foreach ($query as $key => $value) {
             if (strpos($key, '_') !== 0 && $key !== '@self') {
@@ -935,7 +934,7 @@ class SearchTrailMapper extends QBMapper
 
         $searchTrail->setFilters($filters);
 
-        // Store original query parameters (excluding system parameters)
+        // Store original query parameters (excluding system parameters).
         $queryParams = [];
         foreach ($query as $key => $value) {
             if (strpos($key, '_') !== 0) {
@@ -1009,10 +1008,10 @@ class SearchTrailMapper extends QBMapper
         $qb->select($qb->func()->sum('size'))
             ->from($this->getTableName());
 
-        // Apply filters
+        // Apply filters.
         $this->applyFilters($qb, $filters);
 
-        // Apply search term
+        // Apply search term.
         if ($search !== null) {
             $qb->andWhere(
                 $qb->expr()->orX(
@@ -1023,7 +1022,7 @@ class SearchTrailMapper extends QBMapper
             );
         }
 
-        // Apply date filters
+        // Apply date filters.
         if ($from !== null) {
             $qb->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($from->format('Y-m-d H:i:s'))));
         }
@@ -1056,13 +1055,13 @@ class SearchTrailMapper extends QBMapper
     public function setExpiryDate(int $retentionMs): int
     {
         try {
-            // Convert milliseconds to seconds for DateTime calculation
+            // Convert milliseconds to seconds for DateTime calculation.
             $retentionSeconds = intval($retentionMs / 1000);
 
-            // Get the query builder
+            // Get the query builder.
             $qb = $this->db->getQueryBuilder();
 
-            // Update search trails that don't have an expiry date set
+            // Update search trails that don't have an expiry date set.
             $qb->update($this->getTableName())
                 ->set(
                        'expires',
@@ -1072,10 +1071,10 @@ class SearchTrailMapper extends QBMapper
                        )
                 ->where($qb->expr()->isNull('expires'));
 
-            // Execute the update and return number of affected rows
+            // Execute the update and return number of affected rows.
             return $qb->executeStatement();
         } catch (\Exception $e) {
-            // Log the error for debugging purposes
+            // Log the error for debugging purposes.
             \OC::$server->getLogger()->error(
                     'Failed to set expiry dates for search trails: '.$e->getMessage(),
                     [
@@ -1084,7 +1083,7 @@ class SearchTrailMapper extends QBMapper
                     ]
                     );
 
-            // Re-throw the exception so the caller knows something went wrong
+            // Re-throw the exception so the caller knows something went wrong.
             throw $e;
         }//end try
 

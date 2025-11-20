@@ -3,7 +3,7 @@
  * Test object metadata from searchObjects
  */
 
-// Quick test via curl to ObjectService
+// Quick test via curl to ObjectService.
 $url = 'http://localhost/index.php/apps/openregister/api/objects?_limit=1&_schemas[]=306';
 
 $ch = curl_init($url);

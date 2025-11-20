@@ -84,7 +84,7 @@ class GitLabService
         $this->config = $config;
         $this->logger = $logger;
 
-        // Allow configuration of GitLab URL (app-level setting takes precedence over system setting)
+        // Allow configuration of GitLab URL (app-level setting takes precedence over system setting).
         $this->apiBase = $this->config->getAppValue('openregister', 'gitlab_api_url', '');
         if (empty($this->apiBase)) {
             $this->apiBase = $this->config->getSystemValue('gitlab_api_url', 'https://gitlab.com/api/v4');
@@ -102,7 +102,7 @@ class GitLabService
     {
         $headers = [];
 
-        // Add authentication token if configured
+        // Add authentication token if configured.
         $token = $this->config->getAppValue('openregister', 'gitlab_api_token', '');
         if (!empty($token)) {
             $headers['PRIVATE-TOKEN'] = $token;
@@ -130,8 +130,8 @@ class GitLabService
     public function searchConfigurations(string $search='', int $page=1, int $perPage=30): array
     {
         try {
-            // Build search query
-            // Always search for x-openregister, optionally filter by additional terms
+            // Build search query.
+            // Always search for x-openregister, optionally filter by additional terms.
             if (!empty($search)) {
                 $searchQuery = 'x-openregister '.$search;
             } else {
@@ -163,11 +163,11 @@ class GitLabService
 
             $items = json_decode($response->getBody(), true);
 
-            // Return search results without fetching file contents
-            // File contents will be fetched only when user selects a specific configuration
+            // Return search results without fetching file contents.
+            // File contents will be fetched only when user selects a specific configuration.
             $results = [];
             foreach ($items as $item) {
-                // Extract project ID and file path
+                // Extract project ID and file path.
                 if (isset($item['project_id']) && isset($item['path'])) {
                     $results[] = [
                         'project_id' => $item['project_id'],
@@ -175,7 +175,7 @@ class GitLabService
                         'ref'        => $item['ref'] ?? 'main',
                         'url'        => $item['data'] ?? '',
                         'name'       => basename($item['path'], '.json'),
-                        // Config details will be loaded on-demand when importing
+                        // Config details will be loaded on-demand when importing.
                         'config'     => [
                             'title'       => basename($item['path'], '.json'),
                             'description' => '',
@@ -287,7 +287,7 @@ class GitLabService
                     ]
                     );
 
-            // URL encode the file path
+            // URL encode the file path.
             $encodedPath = urlencode($path);
 
             $response = $this->client->request(
@@ -349,7 +349,7 @@ class GitLabService
                     ]
                     );
 
-            // Get repository tree
+            // Get repository tree.
             $response = $this->client->request(
                     'GET',
                     $this->apiBase."/projects/{$projectId}/repository/tree",
@@ -367,7 +367,7 @@ class GitLabService
 
             $files = [];
             foreach ($tree as $item) {
-                // Check if file matches naming convention
+                // Check if file matches naming convention.
                 if ($item['type'] === 'blob'
                     && (str_ends_with($item['path'], 'openregister.json')
                     || str_contains($item['path'], '.openregister.json'))
@@ -472,7 +472,7 @@ class GitLabService
         try {
             $content = $this->getFileContent($projectId, $path, $ref);
 
-            // Validate that it's a valid OpenRegister configuration
+            // Validate that it's a valid OpenRegister configuration.
             if (!isset($content['openapi']) || !isset($content['x-openregister'])) {
                 $this->logger->debug(
                         'File does not contain required OpenRegister structure',

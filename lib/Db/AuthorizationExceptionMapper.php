@@ -41,7 +41,6 @@ use Symfony\Component\Uid\Uuid;
  * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @version GIT: <git_id>
  * @link    https://www.OpenRegister.app
- */
  *
  * @method AuthorizationException insert(Entity $entity)
  * @method AuthorizationException update(Entity $entity)
@@ -90,12 +89,12 @@ class AuthorizationExceptionMapper extends QBMapper
      */
     public function createException(AuthorizationException $exception, string $userId): AuthorizationException
     {
-        // Generate UUID if not set
+        // Generate UUID if not set.
         if ($exception->getUuid() === null) {
             $exception->setUuid(Uuid::v4()->toRfc4122());
         }
 
-        // Set creation metadata
+        // Set creation metadata.
         $exception->setCreatedBy($userId);
         $exception->setCreatedAt(new \DateTime());
         $exception->setUpdatedAt(new \DateTime());
@@ -117,7 +116,7 @@ class AuthorizationExceptionMapper extends QBMapper
      */
     public function updateException(AuthorizationException $exception): AuthorizationException
     {
-        // Update the timestamp
+        // Update the timestamp.
         $exception->setUpdatedAt(new \DateTime());
 
         return $this->update($exception);
@@ -202,19 +201,19 @@ class AuthorizationExceptionMapper extends QBMapper
     ): array {
         $qb = $this->db->getQueryBuilder();
 
-        // Base conditions
+        // Base conditions.
         $qb->select('*')
             ->from($this->getTableName())
             ->where($qb->expr()->eq('subject_type', $qb->createNamedParameter($subjectType)))
             ->andWhere($qb->expr()->eq('subject_id', $qb->createNamedParameter($subjectId)))
             ->andWhere($qb->expr()->eq('action', $qb->createNamedParameter($action)));
 
-        // Active filter
+        // Active filter.
         if ($activeOnly === true) {
             $qb->andWhere($qb->expr()->eq('active', $qb->createNamedParameter(true, IQueryBuilder::PARAM_BOOL)));
         }
 
-        // Schema filter (null means applies to all schemas)
+        // Schema filter (null means applies to all schemas).
         if ($schemaUuid !== null) {
             $qb->andWhere(
                 $qb->expr()->orX(
@@ -224,7 +223,7 @@ class AuthorizationExceptionMapper extends QBMapper
             );
         }
 
-        // Register filter (null means applies to all registers)
+        // Register filter (null means applies to all registers).
         if ($registerUuid !== null) {
             $qb->andWhere(
                 $qb->expr()->orX(
@@ -234,7 +233,7 @@ class AuthorizationExceptionMapper extends QBMapper
             );
         }
 
-        // Organization filter (null means applies to all organizations)
+        // Organization filter (null means applies to all organizations).
         if ($organizationUuid !== null) {
             $qb->andWhere(
                 $qb->expr()->orX(
@@ -244,7 +243,7 @@ class AuthorizationExceptionMapper extends QBMapper
             );
         }
 
-        // Order by priority (highest first), then by creation date (newest first)
+        // Order by priority (highest first), then by creation date (newest first).
         $qb->orderBy('priority', 'DESC')
             ->addOrderBy('created_at', 'DESC');
 
@@ -443,7 +442,7 @@ class AuthorizationExceptionMapper extends QBMapper
         $qb->select($qb->func()->count('*'))
             ->from($this->getTableName());
 
-        // Apply criteria filters
+        // Apply criteria filters.
         if (isset($criteria['type']) && $criteria['type'] !== '') {
             $qb->andWhere($qb->expr()->eq('type', $qb->createNamedParameter($criteria['type'])));
         }

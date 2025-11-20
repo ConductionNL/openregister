@@ -50,7 +50,7 @@ class Version002006000Date20251013000000 extends SimpleMigrationStep
         if (!$schema->hasTable('openregister_file_texts')) {
             $table = $schema->createTable('openregister_file_texts');
 
-            // Primary key
+            // Primary key.
             $table->addColumn(
                     'id',
                     'bigint',
@@ -62,7 +62,7 @@ class Version002006000Date20251013000000 extends SimpleMigrationStep
                     ]
                     );
 
-            // Nextcloud file reference
+            // Nextcloud file reference.
             $table->addColumn(
                     'file_id',
                     'bigint',
@@ -74,7 +74,7 @@ class Version002006000Date20251013000000 extends SimpleMigrationStep
                     ]
                     );
 
-            // File metadata
+            // File metadata.
             $table->addColumn(
                     'file_path',
                     'string',
@@ -126,14 +126,14 @@ class Version002006000Date20251013000000 extends SimpleMigrationStep
                     ]
                     );
 
-            // Extracted text content
+            // Extracted text content.
             $table->addColumn(
                     'text_content',
                     'text',
                     [
                         'notnull' => false,
                         'length'  => 16777215,
-            // MEDIUMTEXT (16MB)
+            // MEDIUMTEXT (16MB).
                         'comment' => 'Extracted text content from file',
                     ]
                     );
@@ -149,7 +149,7 @@ class Version002006000Date20251013000000 extends SimpleMigrationStep
                     ]
                     );
 
-            // Extraction metadata
+            // Extraction metadata.
             $table->addColumn(
                     'extraction_method',
                     'string',
@@ -181,7 +181,7 @@ class Version002006000Date20251013000000 extends SimpleMigrationStep
                     ]
                     );
 
-            // Processing flags
+            // Processing flags.
             $table->addColumn(
                     'chunked',
                     'boolean',
@@ -223,7 +223,7 @@ class Version002006000Date20251013000000 extends SimpleMigrationStep
                     ]
                     );
 
-            // Timestamps
+            // Timestamps.
             $table->addColumn(
                     'created_at',
                     'datetime',
@@ -251,10 +251,10 @@ class Version002006000Date20251013000000 extends SimpleMigrationStep
                     ]
                     );
 
-            // Set primary key
+            // Set primary key.
             $table->setPrimaryKey(['id']);
 
-            // Create indexes for performance
+            // Create indexes for performance.
             $table->addIndex(['file_id'], 'file_texts_file_id_idx');
             $table->addIndex(['extraction_status'], 'file_texts_status_idx');
             $table->addIndex(['mime_type'], 'file_texts_mime_idx');
@@ -262,7 +262,7 @@ class Version002006000Date20251013000000 extends SimpleMigrationStep
             $table->addIndex(['vectorized'], 'file_texts_vector_idx');
             $table->addIndex(['created_at'], 'file_texts_created_idx');
 
-            // Unique constraint on file_id
+            // Unique constraint on file_id.
             $table->addUniqueIndex(['file_id'], 'file_texts_file_id_unique');
         }//end if
 

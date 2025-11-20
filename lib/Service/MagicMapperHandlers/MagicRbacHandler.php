@@ -95,77 +95,77 @@ class MagicRbacHandler
         ?string $userId = null,
         bool $rbac = true
     ): void {
-        // If RBAC is disabled, skip all permission filtering
+        // If RBAC is disabled, skip all permission filtering.
         if ($rbac === false || !$this->isRbacEnabled()) {
             return;
         }
 
-        // Get current user if not provided
+        // Get current user if not provided.
         if ($userId === null) {
             $user = $this->userSession->getUser();
             if ($user === null) {
-                // For unauthenticated requests, apply public access rules
+                // For unauthenticated requests, apply public access rules.
                 $this->applyUnauthenticatedAccess($qb, $schema, $tableAlias);
                 return;
             }
             $userId = $user->getUID();
         }
 
-        // Get user object and groups
+        // Get user object and groups.
         $userObj = $this->userManager->get($userId);
         if ($userObj === null) {
-            // User doesn't exist, handle as unauthenticated
+            // User doesn't exist, handle as unauthenticated.
             $this->applyUnauthenticatedAccess($qb, $schema, $tableAlias);
             return;
         }
 
         $userGroups = $this->groupManager->getUserGroupIds($userObj);
 
-        // Admin users see everything if admin override is enabled
+        // Admin users see everything if admin override is enabled.
         if (in_array('admin', $userGroups) && $this->isAdminOverrideEnabled()) {
             return; // No filtering needed for admin users
         }
 
-        // Build conditions for read access
+        // Build conditions for read access.
         $readConditions = $qb->expr()->orX();
 
-        // 1. Check schema authorization configuration
+        // 1. Check schema authorization configuration.
         $authorization = $schema->getAuthorization();
         
         if (empty($authorization) || $authorization === '{}') {
-            // No authorization configured - open access
+            // No authorization configured - open access.
             return;
         }
 
         $authConfig = is_string($authorization) ? json_decode($authorization, true) : $authorization;
         if (!is_array($authConfig)) {
-            // Invalid authorization config - default to open access
+            // Invalid authorization config - default to open access.
             return;
         }
 
-        // 2. User is the object owner
+        // 2. User is the object owner.
         $readConditions->add(
             $qb->expr()->eq("{$tableAlias}._owner", $qb->createNamedParameter($userId))
         );
 
-        // 3. Check read permissions in authorization config
+        // 3. Check read permissions in authorization config.
         $readPerms = $authConfig['read'] ?? [];
         if (is_array($readPerms)) {
-            // Check if user's groups are in the authorized groups for read action
+            // Check if user's groups are in the authorized groups for read action.
             foreach ($userGroups as $groupId) {
                 if (in_array($groupId, $readPerms)) {
-                    // User has read permission through group membership
+                    // User has read permission through group membership.
                     return; // No filtering needed
                 }
             }
             
-            // Check for public read access
+            // Check for public read access.
             if (in_array('public', $readPerms)) {
                 return; // No filtering needed for public access
             }
         }
 
-        // Removed automatic published object access - this should be handled via explicit published filter
+        // Removed automatic published object access - this should be handled via explicit published filter.
 
         $qb->andWhere($readConditions);
     }
@@ -184,24 +184,24 @@ class MagicRbacHandler
         $authorization = $schema->getAuthorization();
         
         if (empty($authorization) || $authorization === '{}') {
-            // No authorization - public access allowed
+            // No authorization - public access allowed.
             return;
         }
 
         $authConfig = is_string($authorization) ? json_decode($authorization, true) : $authorization;
         if (!is_array($authConfig)) {
-            // Invalid config - no automatic access, use explicit published filter
+            // Invalid config - no automatic access, use explicit published filter.
             return;
         }
 
         $readPerms = $authConfig['read'] ?? [];
         
-        // Check for explicit public read access
+        // Check for explicit public read access.
         if (is_array($readPerms) && in_array('public', $readPerms)) {
             return; // Full public access - no filtering needed
         }
         
-        // No automatic published object access - use explicit published filter
+        // No automatic published object access - use explicit published filter.
     }
 
     /**

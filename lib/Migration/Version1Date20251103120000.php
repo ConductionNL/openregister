@@ -48,15 +48,15 @@ class Version1Date20251103120000 extends SimpleMigrationStep
          */
         $schema = $schemaClosure();
 
-        // Check if old table exists and new table doesn't
+        // Check if old table exists and new table doesn't.
         if ($schema->hasTable('openregister_views') === true && $schema->hasTable('openregister_view') === false) {
-            // Get the old table
+            // Get the old table.
             $oldTable = $schema->getTable('openregister_views');
 
-            // Create new table with same structure
+            // Create new table with same structure.
             $newTable = $schema->createTable('openregister_view');
 
-            // Copy all columns from old table to new table
+            // Copy all columns from old table to new table.
             foreach ($oldTable->getColumns() as $column) {
                 $newColumn = $newTable->addColumn(
                     $column->getName(),
@@ -75,20 +75,20 @@ class Version1Date20251103120000 extends SimpleMigrationStep
                 }
             }//end foreach
 
-            // Copy primary key
+            // Copy primary key.
             if ($oldTable->hasPrimaryKey() === true) {
                 $newTable->setPrimaryKey($oldTable->getPrimaryKey()->getColumns());
             }
 
-            // Copy indexes with renamed index names to avoid collisions
-            // Replace 'views_' with 'view_' to reflect singular table name
+            // Copy indexes with renamed index names to avoid collisions.
+            // Replace 'views_' with 'view_' to reflect singular table name.
             foreach ($oldTable->getIndexes() as $index) {
                 if ($index->isPrimary() === false) {
-                    // Rename index: views_* -> view_*
+                    // Rename index: views_* -> view_*.
                     $oldIndexName = $index->getName();
                     $newIndexName = str_replace('views_', 'view_', $oldIndexName);
 
-                    // Build options array only with available options
+                    // Build options array only with available options.
                     $options = [];
                     if ($index->hasOption('lengths')) {
                         $options['lengths'] = $index->getOption('lengths');
@@ -130,13 +130,13 @@ class Version1Date20251103120000 extends SimpleMigrationStep
         $schema = $schemaClosure();
 
         if ($schema->hasTable('openregister_views') === true && $schema->hasTable('openregister_view') === true) {
-            // Copy data
+            // Copy data.
             $connection = \OC::$server->getDatabaseConnection();
             $connection->executeQuery('INSERT INTO `*PREFIX*openregister_view` SELECT * FROM `*PREFIX*openregister_views`');
 
             $output->info('Copied data from openregister_views to openregister_view');
 
-            // Drop old table
+            // Drop old table.
             $schema->dropTable('openregister_views');
 
             $output->info('Dropped old table openregister_views');

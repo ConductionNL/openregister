@@ -14,19 +14,19 @@ require_once __DIR__ . '/../vendor/autoload.php';
 use OCA\OpenRegister\AppInfo\Application;
 use OCP\AppFramework\App;
 
-// Initialize Nextcloud app context
+// Initialize Nextcloud app context.
 \OC::$CLI = true;
 \OC::$WEBROOT = '/var/www/html';
 
 try {
-    // Bootstrap Nextcloud
+    // Bootstrap Nextcloud.
     require_once '/var/www/html/lib/base.php';
     
-    // Get application container
+    // Get application container.
     $app = \OC::$server->query(Application::class);
     $container = $app->getContainer();
     
-    // Get services
+    // Get services.
     $chatService = $container->get(\OCA\OpenRegister\Service\ChatService::class);
     $conversationMapper = $container->get(\OCA\OpenRegister\Db\ConversationMapper::class);
     $agentMapper = $container->get(\OCA\OpenRegister\Db\AgentMapper::class);
@@ -34,7 +34,7 @@ try {
     
     echo "=== RAG CHAT TEST ===\n\n";
     
-    // 1. Find Agent 4
+    // 1. Find Agent 4.
     echo "Step 1: Loading Agent 4...\n";
     $agent = $agentMapper->findByUuid('9966ab0a-f168-41ce-be82-fd1111f107e0');
     echo "✓ Agent loaded: {$agent->getName()}\n";
@@ -44,7 +44,7 @@ try {
     echo "  - Include files: " . ($agent->getRagIncludeFiles() ? 'YES' : 'NO') . "\n";
     echo "  - Views: " . json_encode($agent->getViews()) . "\n\n";
     
-    // 2. Create a test conversation
+    // 2. Create a test conversation.
     echo "Step 2: Creating conversation...\n";
     $organisation = $organisationService->getActiveOrganisation();
     
@@ -56,7 +56,7 @@ try {
     $conversation = $conversationMapper->insert($conversation);
     echo "✓ Conversation created: {$conversation->getUuid()}\n\n";
     
-    // 3. Send test message
+    // 3. Send test message.
     echo "Step 3: Sending message: 'Wat is de kleur van Mokum?'\n";
     $result = $chatService->processMessage(
         $conversation->getId(),
@@ -69,7 +69,7 @@ try {
     echo "Message: " . ($result['message'] ?? 'NO MESSAGE') . "\n";
     echo "─────────────────────────────────────────\n\n";
     
-    // 4. Check sources
+    // 4. Check sources.
     echo "Step 4: Analyzing sources...\n";
     $sources = $result['sources'] ?? [];
     echo "Sources found: " . count($sources) . "\n\n";
@@ -86,7 +86,7 @@ try {
         echo "⚠️  WARNING: No sources found! RAG may not be working.\n\n";
     }
     
-    // 5. Check if answer is correct
+    // 5. Check if answer is correct.
     echo "Step 5: Validation...\n";
     $message = strtolower($result['message'] ?? '');
     if (strpos($message, 'blauw') !== false) {

@@ -148,7 +148,7 @@ class View extends Entity implements JsonSerializable
      */
     public function __construct()
     {
-        // Add types for automatic JSON (de)serialization
+        // Add types for automatic JSON (de)serialization.
         $this->addType('organisation', 'string');
         $this->addType('isPublic', 'boolean');
         $this->addType('isDefault', 'boolean');
@@ -238,27 +238,27 @@ class View extends Entity implements JsonSerializable
             'favoredBy'              => $favoredBy,
             'quota'                  => [
                 'storage'   => null,
-        // To be set via admin configuration
+        // To be set via admin configuration.
                 'bandwidth' => null,
-        // To be set via admin configuration
+        // To be set via admin configuration.
                 'requests'  => null,
-        // To be set via admin configuration
+        // To be set via admin configuration.
                 'users'     => null,
-        // To be set via admin configuration
+        // To be set via admin configuration.
                 'groups'    => null,
-        // To be set via admin configuration
+        // To be set via admin configuration.
             ],
             'usage'                  => [
                 'storage'   => 0,
-            // To be calculated from actual usage
+            // To be calculated from actual usage.
                 'bandwidth' => 0,
-            // To be calculated from actual usage
+            // To be calculated from actual usage.
                 'requests'  => 0,
-            // To be calculated from actual usage (query executions)
+            // To be calculated from actual usage (query executions).
                 'users'     => count($favoredBy),
-            // Number of users who favorited this view
+            // Number of users who favorited this view.
                 'groups'    => 0,
-            // Views don't have groups
+            // Views don't have groups.
             ],
             'created'                => isset($this->created) === true ? $this->created->format('c') : null,
             'updated'                => isset($this->updated) === true ? $this->updated->format('c') : null,

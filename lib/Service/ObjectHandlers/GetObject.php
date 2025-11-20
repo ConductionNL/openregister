@@ -103,7 +103,7 @@ class GetObject
             $object = $this->hydrateFiles($object, $this->fileService->getFiles($object));
         }
 
-        // Create an audit trail for the 'read' action if audit trails are enabled
+        // Create an audit trail for the 'read' action if audit trails are enabled.
         if ($this->isAuditTrailsEnabled()) {
             $log = $this->auditTrailMapper->createAuditTrail(null, $object, 'read');
             $object->setLastLog($log->jsonSerialize());
@@ -147,7 +147,7 @@ class GetObject
             $object = $this->hydrateFiles($object, $this->fileService->getFiles($object));
         }
 
-        // No audit trail creation - this is a silent read
+        // No audit trail creation - this is a silent read.
         return $object;
 
     }//end findSilent()
@@ -415,7 +415,7 @@ class GetObject
             $retentionSettings = $this->settingsService->getRetentionSettingsOnly();
             return $retentionSettings['auditTrailsEnabled'] ?? true;
         } catch (\Exception $e) {
-            // If we can't get settings, default to enabled for safety
+            // If we can't get settings, default to enabled for safety.
             return true;
         }
 

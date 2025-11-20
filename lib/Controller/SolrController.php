@@ -83,7 +83,7 @@ class SolrController extends Controller
         ?string $provider=null
     ): JSONResponse {
         try {
-            // Validate input
+            // Validate input.
             if (empty(trim($query))) {
                 return new JSONResponse(
                         [
@@ -104,10 +104,10 @@ class SolrController extends Controller
                         );
             }
 
-            // Get VectorEmbeddingService from container
+            // Get VectorEmbeddingService from container.
             $vectorService = $this->container->get(VectorEmbeddingService::class);
 
-            // Perform semantic search
+            // Perform semantic search.
             $results = $vectorService->semanticSearch($query, $limit, $filters, $provider);
 
             return new JSONResponse(
@@ -170,7 +170,7 @@ class SolrController extends Controller
         ?string $provider=null
     ): JSONResponse {
         try {
-            // Validate input
+            // Validate input.
             if (empty(trim($query))) {
                 return new JSONResponse(
                         [
@@ -191,7 +191,7 @@ class SolrController extends Controller
                         );
             }
 
-            // Validate weights
+            // Validate weights.
             $solrWeight   = $weights['solr'] ?? 0.5;
             $vectorWeight = $weights['vector'] ?? 0.5;
 
@@ -205,10 +205,10 @@ class SolrController extends Controller
                         );
             }
 
-            // Get VectorEmbeddingService from container
+            // Get VectorEmbeddingService from container.
             $vectorService = $this->container->get(VectorEmbeddingService::class);
 
-            // Perform hybrid search
+            // Perform hybrid search.
             $result = $vectorService->hybridSearch($query, $solrFilters, $limit, $weights, $provider);
 
             return new JSONResponse(
@@ -259,10 +259,10 @@ class SolrController extends Controller
     public function getVectorStats(): JSONResponse
     {
         try {
-            // Get VectorEmbeddingService from container
+            // Get VectorEmbeddingService from container.
             $vectorService = $this->container->get(VectorEmbeddingService::class);
 
-            // Get statistics
+            // Get statistics.
             $stats = $vectorService->getVectorStats();
 
             return new JSONResponse(
@@ -307,7 +307,7 @@ class SolrController extends Controller
     public function testVectorEmbedding(): JSONResponse
     {
         try {
-            // Get request parameters
+            // Get request parameters.
             $params   = $this->request->getParams();
             $provider = $params['provider'] ?? null;
             $config   = $params['config'] ?? [];
@@ -334,15 +334,15 @@ class SolrController extends Controller
                         );
             }
 
-            // Get VectorEmbeddingService from container
+            // Get VectorEmbeddingService from container.
             $vectorService = $this->container->get(VectorEmbeddingService::class);
 
-            // Build embedding configuration based on provider
+            // Build embedding configuration based on provider.
             $embeddingConfig = [
                 'provider' => $provider,
             ];
 
-            // Add provider-specific configuration
+            // Add provider-specific configuration.
             switch ($provider) {
                 case 'openai':
                     if (empty($config['apiKey'])) {
@@ -381,7 +381,7 @@ class SolrController extends Controller
                     break;
             }//end switch
 
-            // Log the test attempt
+            // Log the test attempt.
             $this->logger->info(
                     'Testing vector embedding generation',
                     [
@@ -391,7 +391,7 @@ class SolrController extends Controller
                     ]
                     );
 
-            // Generate test embedding with custom config
+            // Generate test embedding with custom config.
             $startTime = microtime(true);
             $embedding = $vectorService->generateEmbeddingWithCustomConfig($testText, $embeddingConfig);
             $duration  = round((microtime(true) - $startTime) * 1000, 2);
@@ -406,7 +406,7 @@ class SolrController extends Controller
                         );
             }
 
-            // Return success with metadata
+            // Return success with metadata.
             return new JSONResponse(
                     [
                         'success'   => true,
@@ -418,7 +418,7 @@ class SolrController extends Controller
                             'textLength'  => strlen($testText),
                             'duration_ms' => $duration,
                             'firstValues' => array_slice($embedding, 0, 5),
-            // First 5 values as preview
+            // First 5 values as preview.
                         ],
                         'timestamp' => date('c'),
                     ]
@@ -752,14 +752,14 @@ class SolrController extends Controller
     public function vectorizeObject(int $objectId, ?string $provider=null): JSONResponse
     {
         try {
-            // Get services from container
+            // Get services from container.
             $objectMapper      = $this->container->get(ObjectEntityMapper::class);
             $solrObjectService = $this->container->get(SolrObjectService::class);
 
-            // Fetch the object
+            // Fetch the object.
             $object = $objectMapper->find($objectId);
 
-            // Vectorize the object
+            // Vectorize the object.
             $result = $solrObjectService->vectorizeObject($object, $provider);
 
             return new JSONResponse(
@@ -817,7 +817,7 @@ class SolrController extends Controller
         ?string $provider=null
     ): JSONResponse {
         try {
-            // Validate limits
+            // Validate limits.
             if ($limit < 1 || $limit > 1000) {
                 return new JSONResponse(
                         [
@@ -838,11 +838,11 @@ class SolrController extends Controller
                         );
             }
 
-            // Get services from container
+            // Get services from container.
             $objectMapper      = $this->container->get(ObjectEntityMapper::class);
             $solrObjectService = $this->container->get(SolrObjectService::class);
 
-            // Build query conditions
+            // Build query conditions.
             $conditions = [];
             if ($schemaId !== null) {
                 $conditions['schema'] = $schemaId;
@@ -852,7 +852,7 @@ class SolrController extends Controller
                 $conditions['register'] = $registerId;
             }
 
-            // Fetch objects with conditions
+            // Fetch objects with conditions.
             // Note: This is a simplified example - adjust based on actual ObjectEntityMapper methods
             $objects = $objectMapper->findAll($limit, $offset);
 
@@ -870,7 +870,7 @@ class SolrController extends Controller
                         );
             }
 
-            // Vectorize the objects
+            // Vectorize the objects.
             $result = $solrObjectService->vectorizeObjects($objects, $provider);
 
             return new JSONResponse(
@@ -928,17 +928,17 @@ class SolrController extends Controller
     public function getVectorizationStats(): JSONResponse
     {
         try {
-            // Get services from container
+            // Get services from container.
             $vectorService = $this->container->get(VectorEmbeddingService::class);
             $objectMapper  = $this->container->get(ObjectEntityMapper::class);
 
-            // Get vector stats
+            // Get vector stats.
             $vectorStats = $vectorService->getVectorStats();
 
-            // Get total object count efficiently (don't load all objects into memory!)
+            // Get total object count efficiently (don't load all objects into memory!).
             $totalObjects = $objectMapper->countAll();
 
-            // Calculate progress
+            // Calculate progress.
             $vectorizedObjects = $vectorStats['object_vectors'] ?? 0;
             $progress          = $totalObjects > 0 ? round(($vectorizedObjects / $totalObjects) * 100, 2) : 0;
 
