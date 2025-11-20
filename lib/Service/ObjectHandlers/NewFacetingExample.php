@@ -400,8 +400,8 @@ class NewFacetingExample
                 // Main category filter.
                 'priority' => ['type' => 'terms'],
                 // Priority filter.
-                // Note: Avoid too many facets as they impact performance
-                // Note: Date histograms and ranges are more expensive than terms
+                // Note: Avoid too many facets as they impact performance.
+                // Note: Date histograms and ranges are more expensive than terms.
             ],
         ];
 

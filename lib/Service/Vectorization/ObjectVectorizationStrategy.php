@@ -284,7 +284,7 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
      */
     private function serializeObject(array $object, array $config): string
     {
-        // TODO: Implement configurable serialization
+        // TODO: Implement configurable serialization.
         // For now, just JSON encode with pretty print for readability.
         $includeMetadata  = $config['includeMetadata'] ?? true;
         $includeRelations = $config['includeRelations'] ?? true;

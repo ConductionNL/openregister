@@ -1284,7 +1284,7 @@ class RenderObject
         $properties = $schema->getProperties();
 
         // Use array_filter to get properties with inversedBy configurations.
-        // TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property
+                        // TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property.
         $inversedProperties = array_filter(
                 $properties,
                 function ($property) {

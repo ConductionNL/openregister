@@ -1840,7 +1840,7 @@ class ObjectsController extends Controller
                 $schemas = explode(',', $schemas);
             }
 
-            // TODO: Implement proper counting logic
+                // TODO: Implement proper counting logic.
             // For now, return a placeholder.
             $count = 0;
 

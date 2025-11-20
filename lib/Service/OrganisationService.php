@@ -342,7 +342,7 @@ class OrganisationService
         $userId = $user->getUID();
 
         // Temporarily disable caching to avoid serialization issues.
-        // TODO: Implement proper object serialization/deserialization later
+        // TODO: Implement proper object serialization/deserialization later.
         // Get from database.
         $organisations = $this->organisationMapper->findByUserId($userId);
 

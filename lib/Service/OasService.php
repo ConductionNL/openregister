@@ -441,7 +441,7 @@ class OasService
             }
         }
 
-        // Note: By default, NO extended endpoints are included
+        // Note: By default, NO extended endpoints are included.
         // To include them, add them to INCLUDED_EXTENDED_ENDPOINTS constant.
         // This ensures a clean, minimal API specification focused on core CRUD operations.
 

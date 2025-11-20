@@ -70,7 +70,7 @@ class Version1Date20250830120000 extends SimpleMigrationStep
                             );
                 }
 
-                // Note: We'll copy data in postSchemaChange, then drop the old column
+                // Note: We'll copy data in postSchemaChange, then drop the old column.
             }
 
             // Add 'schemas' column if it doesn't exist.

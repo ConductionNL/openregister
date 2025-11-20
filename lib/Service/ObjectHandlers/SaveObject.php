@@ -184,7 +184,7 @@ class SaveObject
         // Extract the last part of path/URL references.
         $slug = $cleanReference;
         if (str_contains($cleanReference, '/')) {
-            // For references like "#/components/schemas/Contactgegevens" or "http://example.com/schemas/contactgegevens"
+            // For references like "#/components/schemas/Contactgegevens" or "http://example.com/schemas/contactgegevens".
             $slug = substr($cleanReference, strrpos($cleanReference, '/') + 1);
         }
 
@@ -267,7 +267,7 @@ class SaveObject
         // Extract the last part of path/URL references.
         $slug = $reference;
         if (str_contains($reference, '/')) {
-            // For references like "http://example.com/registers/publication"
+            // For references like "http://example.com/registers/publication".
             $slug = substr($reference, strrpos($reference, '/') + 1);
         }
 
@@ -1090,7 +1090,7 @@ class SaveObject
         // 2. objectConfiguration.handling: "cascade" (stores IDs in parent) - results in IDs stored in parent.
         // Objects with only $ref and nested-object handling remain in the data.
         // BUT skip if they have writeBack enabled (those are handled by write-back method).
-        // TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property
+                        // TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property.
         $objectProperties = array_filter(
           $properties,
           function (array $property) {
@@ -1108,7 +1108,7 @@ class SaveObject
 
         // Same logic for array properties - cascade if they have inversedBy OR cascade handling.
         // BUT skip if they have writeBack enabled (those are handled by write-back method).
-        // TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property
+                        // TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property.
         $arrayObjectProperties = array_filter(
           $properties,
           function (array $property) {
@@ -1383,7 +1383,7 @@ class SaveObject
         }
 
         // Find properties that have inversedBy configuration with writeBack enabled.
-        // TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property
+                        // TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property.
         $writeBackProperties = array_filter(
           $properties,
           function (array $property) {
@@ -1712,7 +1712,7 @@ class SaveObject
             }
         }
 
-        // NOTE: Do NOT sanitize here - let validation happen first in ObjectService
+        // NOTE: Do NOT sanitize here - let validation happen first in ObjectService.
         // Sanitization will happen after validation but before cascading operations.
         // If UUID is provided, try to find and update existing object.
         if ($uuid !== null) {
@@ -2001,7 +2001,7 @@ class SaveObject
         // Hydrate name and description from schema configuration.
         $this->hydrateObjectMetadata($existingObject, $schema);
 
-        // NOTE: Relations are already updated in prepareObjectForCreation() - no need to update again
+        // NOTE: Relations are already updated in prepareObjectForCreation() - no need to update again.
         // Duplicate call would overwrite relations after handleInverseRelationsWriteBack removes properties.
         return $existingObject;
 

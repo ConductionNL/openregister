@@ -155,7 +155,7 @@ class SolrSchemaService
         'self_deleted'        => 'string',
     // JSON storage - not indexed, only for reconstruction.
         // AI/ML vector metadata fields.
-        // Note: Actual vector data is stored in oc_openregister_vectors table for efficiency
+        // Note: Actual vector data is stored in oc_openregister_vectors table for efficiency.
         // These fields track vectorization status for hybrid search coordination.
         'vector_indexed'      => 'boolean',
     // Whether this object has vector embeddings.

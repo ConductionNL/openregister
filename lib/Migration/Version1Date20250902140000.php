@@ -61,7 +61,7 @@ class Version1Date20250902140000 extends SimpleMigrationStep
         $table = $schema->getTable('openregister_objects');
 
         // Skip complex index creation for now to avoid MySQL key length issues.
-        // TODO: Add indexes after app is enabled
+        // TODO: Add indexes after app is enabled.
         $output->info('Skipping complex index creation to avoid MySQL key length issues');
 
         // Multi-tenancy organization filtering (critical for performance).
@@ -94,7 +94,7 @@ class Version1Date20250902140000 extends SimpleMigrationStep
         }
 
         // Skip super-performance index creation for now to avoid MySQL key length issues.
-        // TODO: Add indexes after app is enabled
+        // TODO: Add indexes after app is enabled.
         $output->info('Skipping super-performance index creation to avoid MySQL key length issues');
 
         return $schema;

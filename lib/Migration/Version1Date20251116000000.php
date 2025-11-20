@@ -657,7 +657,7 @@ class Version1Date20251116000000 extends SimpleMigrationStep
         $table->addIndex(['email_id'], 'entity_relations_email_idx');
         $table->addIndex(['anonymized'], 'entity_relations_anon_idx');
 
-        // NOTE: Foreign key constraints removed to avoid migration issues
+        // NOTE: Foreign key constraints removed to avoid migration issues.
         // The indexes above provide query performance benefits.
         // Foreign key constraints can be added in a separate migration if needed.
         // Referential integrity is maintained at the application level.

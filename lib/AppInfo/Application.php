@@ -207,7 +207,7 @@ class Application extends App implements IBootstrap
 
         // Register OrganisationMapper (event dispatching removed - handled by cron job).
         // $context->registerService(OrganisationMapper::class, function ($container) {
-        // return new OrganisationMapper(
+        // return new OrganisationMapper(.
         // $container->get('OCP\IDBConnection')
         // );
         // });
@@ -537,7 +537,7 @@ class Application extends App implements IBootstrap
                     // Add OrganisationService for multi-tenancy.
                     $container->get(OrganisationMapper::class)
                     // Add OrganisationMapper for organisation label resolution.
-                    // Note: RenderObject removed to avoid circular dependency with ObjectCacheService
+                    // Note: RenderObject removed to avoid circular dependency with ObjectCacheService.
                     // ObjectCacheService will be resolved lazily from container to avoid circular dependency.
                     // SolrSchemaService will be resolved lazily to avoid circular dependency.
                     );

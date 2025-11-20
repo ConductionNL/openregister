@@ -80,7 +80,7 @@ class Version1Date20250903170000 extends SimpleMigrationStep
         $output->info('=== OpenRegister Performance Index Migration ===');
 
         // **CRITICAL SINGLE-COLUMN INDEXES** for direct lookups.
-        // Note: Using column length limits to avoid MySQL 3072 byte key limit
+        // Note: Using column length limits to avoid MySQL 3072 byte key limit.
         $singleColumnIndexes = [
             'uuid'        => ['name' => 'objects_uuid_perf_idx', 'length' => null],
             'slug'        => ['name' => 'objects_slug_perf_idx', 'length' => 191],
@@ -108,7 +108,7 @@ class Version1Date20250903170000 extends SimpleMigrationStep
         $output->info("Skipping 'name', 'summary', 'description' indexes due to MySQL key size limits");
 
         // Skip complex index creation for now to avoid MySQL key length issues.
-        // TODO: Add indexes after app is enabled
+        // TODO: Add indexes after app is enabled.
         $output->info('Skipping complex index creation to avoid MySQL key length issues');
 
         // Skip other complex indexes that may cause key size issues.

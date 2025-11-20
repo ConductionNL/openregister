@@ -441,7 +441,7 @@ class VectorEmbeddingService
             $generator = $this->getEmbeddingGenerator($config);
 
             // Generate embeddings individually for each text.
-            // Note: For true batch processing, use LLPhant's Document system
+                // Note: For true batch processing, use LLPhant's Document system.
             $results = [];
             foreach ($texts as $index => $text) {
                 try {
@@ -562,7 +562,7 @@ class VectorEmbeddingService
             }
 
             // Prepare atomic update document to add embedding fields to existing document.
-            // Using Solr atomic updates: https://solr.apache.org/guide/solr/latest/indexing-guide/partial-document-updates.html
+                // Using Solr atomic updates: https://solr.apache.org/guide/solr/latest/indexing-guide/partial-document-updates.html.
             $updateDocument = [
                 'id'                => $documentId,
                 $vectorField        => ['set' => $embedding],
@@ -1177,7 +1177,7 @@ class VectorEmbeddingService
             }
 
             // PERFORMANCE OPTIMIZATION: Limit vectors fetched to reduce PHP similarity calculations.
-            // TODO: Replace with proper database-level vector search (PostgreSQL + pgvector)
+            // TODO: Replace with proper database-level vector search (PostgreSQL + pgvector).
             // For now, limit to most recent vectors to improve performance.
             // This is a temporary fix until we migrate to a database with native vector operations.
             $maxVectors = $filters['max_vectors'] ?? 500;

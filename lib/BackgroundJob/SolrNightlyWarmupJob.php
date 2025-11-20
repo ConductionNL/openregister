@@ -74,7 +74,7 @@ class SolrNightlyWarmupJob extends TimedJob
         $this->setInterval(self::DEFAULT_INTERVAL);
 
         // Set the job to run at 00:00 UTC by default.
-        // Note: Nextcloud will handle timezone conversion based on server settings
+        // Note: Nextcloud will handle timezone conversion based on server settings.
         $this->setTimeSensitivity(\OCP\BackgroundJob\IJob::TIME_SENSITIVE);
 
     }//end __construct()

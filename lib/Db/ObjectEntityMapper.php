@@ -668,7 +668,7 @@ class ObjectEntityMapper extends QBMapper
             $qb->andWhere($qb->expr()->eq('1', $qb->createNamedParameter('0'))); // Always false
             return;
         }
-        // Note: If $exceptionResult is true (inclusion), we still apply normal RBAC as additional conditions
+        // Note: If $exceptionResult is true (inclusion), we still apply normal RBAC as additional conditions.
         // If $exceptionResult is null, we proceed with normal RBAC.
 
         // Build conditions for read access.
@@ -1931,7 +1931,7 @@ class ObjectEntityMapper extends QBMapper
             $queryBuilder = $this->searchHandler->applyFullTextSearch($queryBuilder, trim($search));
         }
 
-        // Note: We don't apply sorting for count queries as it's not needed and would be inefficient
+        // Note: We don't apply sorting for count queries as it's not needed and would be inefficient.
 
         $result = $queryBuilder->executeQuery();
         return (int) $result->fetchOne();

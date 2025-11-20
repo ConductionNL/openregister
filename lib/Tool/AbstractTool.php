@@ -163,7 +163,7 @@ abstract class AbstractTool implements ToolInterface
             return $params;
         }
 
-        // TODO: Implement view filtering in mappers
+        // TODO: Implement view filtering in mappers.
         // View filtering allows agents to only see data filtered by predefined views.
         // For now, this is disabled as the mappers don't have a 'views' column yet.
         // $params['_views'] = $views;

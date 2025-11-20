@@ -801,7 +801,7 @@ class SettingsController extends Controller
      */
     private function processBatchParallel(array $batch, $objectService, array &$results, bool $collectErrors): void
     {
-        // Note: True parallel processing would require process forking or threading
+            // Note: True parallel processing would require process forking or threading.
         // For now, we simulate parallel processing with optimized serial processing.
         // In a real implementation, you might use ReactPHP, Swoole, or similar.
         $batchErrors    = [];
@@ -3082,7 +3082,7 @@ class SettingsController extends Controller
 
                     // Try to detect version from Solr admin API.
                     // For now, assume if it's available, it could support vectors.
-                    // TODO: Add actual version detection from Solr admin API
+                    // TODO: Add actual version detection from Solr admin API.
                     $solrVersion   = '9.x (detection pending)';
                     $vectorSupport = false;
                     // Set to false until we implement it.
