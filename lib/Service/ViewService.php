@@ -146,6 +146,7 @@ class ViewService
      * @param bool       $isPublic    Whether the view is public
      * @param bool       $isDefault   Whether the view is default
      * @param array      $query       The query parameters
+     * @param array|null $favoredBy   Array of user IDs who favor this view
      *
      * @return View The updated view
      *
@@ -231,7 +232,7 @@ class ViewService
 
             if ($favor === true) {
                 // Add user to favoredBy if not already there.
-                if (!in_array($owner, $favoredBy)) {
+                if (in_array($owner, $favoredBy, true) === false) {
                     $favoredBy[] = $owner;
                 }
             } else {

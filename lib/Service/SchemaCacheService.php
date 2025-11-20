@@ -155,7 +155,7 @@ class SchemaCacheService
         $cacheKey = $this->buildCacheKey($schemaId, self::CACHE_KEY_SCHEMA);
 
         // Check in-memory cache first.
-        if (isset(self::$memoryCache[$cacheKey])) {
+        if (isset(self::$memoryCache[$cacheKey]) === true) {
             $this->logger->debug('Schema cache hit (memory)', ['schemaId' => $schemaId]);
             return self::$memoryCache[$cacheKey];
         }
@@ -234,7 +234,7 @@ class SchemaCacheService
      */
     public function getSchemas(array $schemaIds): array
     {
-        if (empty($schemaIds)) {
+        if ($schemaIds === []) {
             return [];
         }
 
@@ -252,7 +252,7 @@ class SchemaCacheService
         }
 
         // Batch load uncached schemas.
-        if (!empty($uncachedIds)) {
+        if (empty($uncachedIds) === false) {
             $loadedSchemas = $this->schemaMapper->findMultiple($uncachedIds);
             foreach ($loadedSchemas as $schema) {
                 $schemas[$schema->getId()] = $schema;
@@ -282,7 +282,7 @@ class SchemaCacheService
         $cacheKey = $this->buildCacheKey($schemaId, self::CACHE_KEY_FACETABLE_FIELDS);
 
         // Check in-memory cache first.
-        if (isset(self::$memoryCache[$cacheKey])) {
+        if (isset(self::$memoryCache[$cacheKey]) === true) {
             return self::$memoryCache[$cacheKey];
         }
 
@@ -451,10 +451,13 @@ class SchemaCacheService
     /**
      * Invalidate cache for a specific schema (legacy method)
      *
+     * @param int $schemaId The schema ID to invalidate
+     *
+     * @return void
+     *
+     * @throws \OCP\DB\Exception If a database error occurs
+     *
      * @deprecated Use invalidateForSchemaChange() instead
-     * @param      int $schemaId The schema ID to invalidate
-     * @return     void
-     * @throws     \OCP\DB\Exception If a database error occurs
      */
     public function invalidateSchema(int $schemaId): void
     {
@@ -682,8 +685,12 @@ class SchemaCacheService
         // Enforce maximum cache TTL for office environments.
         $ttl = min($ttl, self::MAX_CACHE_TTL);
 
-        $now     = new \DateTime();
-        $expires = $ttl > 0 ? (clone $now)->add(new \DateInterval("PT{$ttl}S")) : null;
+        $now = new \DateTime();
+        if ($ttl > 0) {
+            $expires = (clone $now)->add(new \DateInterval("PT{$ttl}S"));
+        } else {
+            $expires = null;
+        }
 
         // Use INSERT ... ON DUPLICATE KEY UPDATE for MySQL/MariaDB compatibility.
         $qb = $this->db->getQueryBuilder();
@@ -798,11 +805,11 @@ class SchemaCacheService
             $schema->setOrganisation($cachedData['organisation']);
             $schema->setOwner($cachedData['owner']);
 
-            if ($cachedData['created']) {
+            if (isset($cachedData['created']) === true && $cachedData['created'] !== null && $cachedData['created'] !== '') {
                 $schema->setCreated(new \DateTime($cachedData['created']));
             }
 
-            if ($cachedData['updated']) {
+            if (isset($cachedData['updated']) === true && $cachedData['updated'] !== null && $cachedData['updated'] !== '') {
                 $schema->setUpdated(new \DateTime($cachedData['updated']));
             }
 

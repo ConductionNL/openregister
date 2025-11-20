@@ -144,6 +144,10 @@ class ObjectServiceFacetExample
      */
     public function ecommerceFacetedSearch(): array
     {
+        if ($this->isAuditTrailsEnabled() === true) {
+            // Audit trails enabled.
+        }
+
         $query = [
             // Product filters.
             '@self'      => [
@@ -384,7 +388,7 @@ class ObjectServiceFacetExample
                 'facet_count'    => count($legacyResults),
                 'results'        => $legacyResults,
             ],
-            'performance_improvement' => $legacyTime > 0 ? ($legacyTime - $newTime) / $legacyTime * 100 : 0,
+            'performance_improvement' => $this->calculatePerformanceImprovement($legacyTime, $newTime),
         ];
 
     }//end performanceComparison()
@@ -529,7 +533,7 @@ class ObjectServiceFacetExample
         $filters = [];
 
         // Extract metadata filters.
-        if (isset($query['@self'])) {
+        if (isset($query['@self']) === true) {
             foreach ($query['@self'] as $field => $value) {
                 $filters['metadata_'.$field] = [
                     'field' => $field,
@@ -541,7 +545,7 @@ class ObjectServiceFacetExample
 
         // Extract object field filters.
         foreach ($query as $field => $value) {
-            if (!str_starts_with($field, '_') && $field !== '@self') {
+            if (str_starts_with($field, '_') === false && $field !== '@self') {
                 $filters[$field] = [
                     'field' => $field,
                     'value' => $value,

@@ -243,8 +243,8 @@ class SchemaTool extends AbstractTool
     /**
      * List schemas
      *
-     * @param int         $limit   Result limit
-     * @param int         $offset  Result offset
+     * @param int         $limit    Result limit
+     * @param int         $offset   Result offset
      * @param string|null $register Register filter
      *
      * @return array Result with list of schemas
@@ -318,7 +318,10 @@ class SchemaTool extends AbstractTool
     /**
      * Create a new schema
      *
-     * @param array $parameters Function parameters
+     * @param string     $title       Schema title
+     * @param array      $properties  Schema properties
+     * @param string     $description Schema description
+     * @param array|null $required    Required properties
      *
      * @return array Result with created schema
      *
@@ -356,7 +359,11 @@ class SchemaTool extends AbstractTool
     /**
      * Update an existing schema
      *
-     * @param array $parameters Function parameters
+     * @param string      $id          Schema ID
+     * @param string|null $title       Schema title
+     * @param string|null $description Schema description
+     * @param array|null  $properties  Schema properties
+     * @param array|null  $required    Required properties
      *
      * @return array Result with updated schema
      *
@@ -402,7 +409,7 @@ class SchemaTool extends AbstractTool
     /**
      * Delete a schema
      *
-     * @param array $parameters Function parameters
+     * @param string $id Schema ID
      *
      * @return array Result of deletion
      *

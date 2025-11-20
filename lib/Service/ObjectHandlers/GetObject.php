@@ -104,7 +104,7 @@ class GetObject
         }
 
         // Create an audit trail for the 'read' action if audit trails are enabled.
-        if ($this->isAuditTrailsEnabled()) {
+        if ($this->isAuditTrailsEnabled() === true) {
             $log = $this->auditTrailMapper->createAuditTrail(null, $object, 'read');
             $object->setLastLog($log->jsonSerialize());
         }

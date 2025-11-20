@@ -135,7 +135,7 @@ class VectorizationService
             // Strategy fetches entities to process.
             $entities = $strategy->fetchEntities($options);
 
-            if (empty($entities)) {
+            if ($entities === []) {
                 return [
                     'success'        => true,
                     'message'        => 'No entities found to vectorize',
@@ -169,7 +169,7 @@ class VectorizationService
                     $vectorized += $result['vectorized'];
                     $failed     += $result['failed'];
 
-                    if (!empty($result['errors'])) {
+                    if (empty($result['errors']) === false) {
                         $errors = array_merge($errors, $result['errors']);
                     }
                 } catch (\Exception $e) {
@@ -244,7 +244,7 @@ class VectorizationService
         // For files: N items (one per chunk).
         $items = $strategy->extractVectorizationItems($entity);
 
-        if (empty($items)) {
+        if ($items === []) {
             return [
                 'total_items' => 0,
                 'vectorized'  => 0,
@@ -272,7 +272,7 @@ class VectorizationService
                     foreach ($batch as $index => $item) {
                         $embeddingData = $embeddings[$index] ?? null;
 
-                        if ($embeddingData && isset($embeddingData['embedding']) && $embeddingData['embedding'] !== null) {
+                        if ($embeddingData !== null && isset($embeddingData['embedding']) === true && $embeddingData['embedding'] !== null) {
                             $this->storeVector($entity, $item, $embeddingData, $strategy);
                             $vectorized++;
                         } else {
@@ -363,7 +363,7 @@ class VectorizationService
      */
     private function getStrategy(string $entityType): VectorizationStrategyInterface
     {
-        if (!isset($this->strategies[$entityType])) {
+        if (isset($this->strategies[$entityType]) === false) {
             throw new \Exception("No vectorization strategy registered for entity type: {$entityType}");
         }
 
