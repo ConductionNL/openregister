@@ -371,6 +371,67 @@ If you find issues during testing:
 4. Include sample input that caused the issue
 5. Report to the development team with all details
 
+## UI Testing Checklist
+
+After rebuilding frontend (`npm run build`), verify the UI improvements:
+
+### Visual Elements
+- [ ] Icons are 64x64px with colored background
+- [ ] Icons have rounded corners (12px border-radius)
+- [ ] Toggle switches appear on the right side
+- [ ] Toggle switches work correctly (on/off state)
+- [ ] Tool items have borders and hover effects
+- [ ] App badges display correctly (UPPERCASE styling)
+- [ ] Typography is clear and readable
+- [ ] Layout is responsive and properly aligned
+
+### Interaction
+- [ ] Toggle switches are clickable and toggle properly
+- [ ] Entire tool item is hoverable
+- [ ] Hover effects show background color change
+- [ ] Border color changes on hover
+- [ ] Subtle shadow appears on hover
+- [ ] Animations are smooth
+
+### Functionality
+- [ ] Tools can be enabled/disabled via toggle
+- [ ] Enabled state persists after saving agent
+- [ ] Tool metadata displays correctly (name, description, icon, app)
+- [ ] Loading state shows spinner while fetching tools
+- [ ] Error handling works if tools fail to load
+
+## Common UI Issues Fixed
+
+### Issue 1: Checkbox Not Working
+**Problem**: Users couldn't check/uncheck tool checkboxes in the agent editor.
+
+**Root Cause**: The checkbox was nested inside complex markup with icon and description, interfering with click events.
+
+**Solution**: Restructured the tool item layout:
+- Icon now sits **outside** the checkbox/toggle
+- Toggle switch positioned on the right
+- Description is separate from toggle
+- Added proper flexbox layout for better visual hierarchy
+
+### Issue 2: Icon Size & Positioning
+**Problem**: Icons were too small (20px) and positioned incorrectly.
+
+**Solution**: 
+- Increased icon size to **64px** (prominent and visible)
+- Positioned icon **to the left** of all content
+- Added colored background for visual separation
+- Improved visual hierarchy with proper spacing
+
+### Issue 3: Visual Polish
+**Problem**: UI looked cramped and unprofessional.
+
+**Solution**:
+- Changed checkboxes to toggle switches (more intuitive)
+- Added borders and hover effects
+- Improved spacing (16px padding)
+- Enhanced typography (larger tool names, better descriptions)
+- Professional app badge styling (UPPERCASE, letter spacing)
+
 ## Next Steps
 
 After successful testing:
@@ -378,4 +439,5 @@ After successful testing:
 2. Monitor usage and performance
 3. Create additional tools as needed
 4. Update documentation based on user feedback
+5. Rebuild frontend to apply UI improvements (`npm run build`)
 

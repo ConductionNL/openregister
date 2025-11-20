@@ -2062,6 +2062,109 @@ Set the check interval in Nextcloud admin settings (in seconds, 0 to disable):
 - Alternatively, remove the entity from the configuration to make it editable
 - For local configurations, edit through the configuration itself
 
+## LLM Configuration Settings
+
+The LLM Configuration page displays information about your AI stack configuration, including embedding providers, chat providers, and database status.
+
+### Database Status Tile
+
+The database status tile shows your database type, version, and vector search capability to help you optimize performance.
+
+#### What It Shows
+
+The tile displays:
+- **Database Type**: MariaDB, MySQL, PostgreSQL, or SQLite
+- **Database Version**: Current version number
+- **Vector Support**: Whether native vector operations are supported
+- **Recommended Plugin**: Suggests pgvector for PostgreSQL
+- **Performance Note**: Guidance on optimization
+
+#### Database Detection
+
+The system automatically detects:
+- **MariaDB**: Identified by 'MariaDB' string in version
+- **MySQL**: Identified when version doesn't contain 'MariaDB'
+- **PostgreSQL**: Detected via platform name and extension queries
+- **SQLite**: Detected via platform name
+
+#### Vector Support Check
+
+- **MariaDB/MySQL**: No native vector support (always shows warning)
+- **PostgreSQL**: Checks for `pgvector` extension installation
+- **SQLite**: No vector support (not recommended for production)
+
+#### Performance Recommendations
+
+| Database | Vector Support | Performance Note |
+|----------|----------------|------------------|
+| **MariaDB** | ✗ | PHP similarity (slow) → migrate to PostgreSQL |
+| **MySQL** | ✗ | PHP similarity (slow) → migrate to PostgreSQL |
+| **PostgreSQL (no pgvector)** | ✗ | Install: `CREATE EXTENSION vector;` |
+| **PostgreSQL (with pgvector)** | ✓ | Optimal: Database-level vector ops |
+| **SQLite** | ✗ | Not recommended for production |
+
+#### Visual Indicators
+
+**When using MariaDB/MySQL**:
+- Database card has **orange border** (warning)
+- Plugin text is **orange** (warning)
+- Performance note shows current limitations
+
+**When using PostgreSQL + pgvector**:
+- Database card has **normal styling**
+- Plugin text is **green** (success)
+- Performance note shows "Optimal"
+
+#### API Endpoint
+
+The database information is available via:
+
+```bash
+GET /api/settings/database
+```
+
+**Response Example** (MariaDB):
+```json
+{
+  "success": true,
+  "database": {
+    "type": "MariaDB",
+    "version": "10.6.23",
+    "platform": "mysql",
+    "vectorSupport": false,
+    "recommendedPlugin": "pgvector for PostgreSQL",
+    "performanceNote": "Current: Similarity calculated in PHP (slow). Recommended: Migrate to PostgreSQL + pgvector for 10-100x speedup."
+  }
+}
+```
+
+**Response Example** (PostgreSQL with pgvector):
+```json
+{
+  "success": true,
+  "database": {
+    "type": "PostgreSQL",
+    "version": "16.1",
+    "platform": "postgres",
+    "vectorSupport": true,
+    "recommendedPlugin": "pgvector (installed ✓)",
+    "performanceNote": "Optimal: Using database-level vector operations for fast semantic search."
+  }
+}
+```
+
+#### Benefits
+
+1. **Visibility**: Immediately see if you have optimal vector search setup
+2. **Guidance**: Clear recommendation to migrate to PostgreSQL + pgvector
+3. **Performance Awareness**: Links slow performance to database limitation
+4. **Actionable**: Know what to do (install pgvector or migrate)
+5. **Status At-A-Glance**: See full AI stack configuration in one view
+
+#### Accessing the Database Tile
+
+Navigate to **Settings → OpenRegister → LLM Configuration** to view the database status tile alongside your embedding and chat provider information.
+
 ## Changelog
 
 ### Version 0.2.10 (2025-01-16)

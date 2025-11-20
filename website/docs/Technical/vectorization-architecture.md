@@ -1,8 +1,19 @@
+---
+title: Vectorization Architecture
+sidebar_position: 2
+description: Unified vectorization architecture using Strategy Pattern for files and objects
+keywords:
+  - Open Register
+  - Vectorization
+  - Embeddings
+  - Strategy Pattern
+---
+
 # Vectorization Architecture
 
 ## Overview
 
-The OpenRegister app uses a unified vectorization architecture based on the **Strategy Pattern** to eliminate code duplication and provide a consistent API for vectorizing different entity types (files, objects, etc.).
+OpenRegister uses a unified vectorization architecture based on the **Strategy Pattern** to eliminate code duplication and provide a consistent API for vectorizing different entity types (files, objects, etc.).
 
 ## Architecture
 
@@ -19,7 +30,7 @@ VectorizationService (Generic Core)
 
 ### 1. VectorizationService
 
-**Location:** 'lib/Service/VectorizationService.php'
+**Location:** `lib/Service/VectorizationService.php`
 
 **Responsibilities:**
 - Batch processing with error handling
@@ -35,19 +46,323 @@ public function vectorizeBatch(string $entityType, array $options): array
 
 ### 2. VectorizationStrategyInterface
 
-**Location:** 'lib/Service/Vectorization/VectorizationStrategyInterface.php'
+**Location:** `lib/Service/Vectorization/VectorizationStrategyInterface.php`
 
 **Contract:**
-- 'fetchEntities()' - Get entities to vectorize
-- 'extractVectorizationItems()' - Extract text items from entity
-- 'prepareVectorMetadata()' - Prepare metadata for storage
-- 'getEntityIdentifier()' - Get entity ID for logging
+```php
+interface VectorizationStrategyInterface
+{
+    // Fetch entities to process
+    public function fetchEntities(array $options): array;
+    
+    // Extract text items from entity (1 for objects, N for file chunks)
+    public function extractVectorizationItems($entity): array;
+    
+    // Prepare metadata for vector storage
+    public function prepareVectorMetadata($entity, array $item): array;
+    
+    // Get entity identifier (for logging)
+    public function getEntityIdentifier($entity);
+}
+```
 
 ### 3. Strategies
 
 #### FileVectorizationStrategy
 
-**Location:** 'lib/Service/Vectorization/FileVectorizationStrategy.php'
+**Location:** `lib/Service/Vectorization/FileVectorizationStrategy.php`
+
+**File-specific logic:**
+- Fetches files with `status='completed'` and chunks
+- Filters by MIME types
+- Extracts chunks from `chunks_json`
+- Prepares metadata with file path, offsets, etc.
+
+#### ObjectVectorizationStrategy
+
+**Location:** `lib/Service/Vectorization/ObjectVectorizationStrategy.php`
+
+**Object-specific logic:**
+- Fetches objects by views/schemas
+- Serializes object data to text
+- Prepares metadata with object schema, relations, etc.
+
+## Benefits
+
+### 1. Code Reduction
+- **Before:** ~820 lines across two services
+- **After:** ~350 lines core + ~150 per strategy
+- **Savings:** ~40% less code for 2 entity types, more as we add types
+
+### 2. Consistency
+- Same batch processing logic
+- Same error handling
+- Same progress tracking
+- Same API structure
+
+### 3. Extensibility
+
+Adding new entity types is straightforward:
+
+```php
+// 1. Create strategy
+class ChatMessageStrategy implements VectorizationStrategyInterface {
+    public function fetchEntities($options) { /* fetch emails */ }
+    public function extractVectorizationItems($email) { /* extract subject + body */ }
+    public function prepareVectorMetadata($email, $item) { /* email metadata */ }
+    public function getEntityIdentifier($email) { return $email->getId(); }
+}
+
+// 2. Register
+$strategy = new ChatMessageStrategy($chatMapper, $logger);
+$vectorizationService->registerStrategy('chat_message', $strategy);
+
+// 3. Use
+$result = $vectorizationService->vectorizeBatch('chat_message', [
+    'conversation_id' => 123,
+    'batch_size' => 50,
+]);
+```
+
+### 4. Testability
+- Test generic logic once
+- Test strategies independently
+- Mock strategies easily
+
+## Usage Examples
+
+### File Vectorization
+
+```php
+// FileExtractionController
+public function vectorizeBatch(): JSONResponse
+{
+    $result = $this->vectorizationService->vectorizeBatch('file', [
+        'mode' => 'parallel',
+        'max_files' => 100,
+        'batch_size' => 50,
+        'file_types' => ['application/pdf'],
+    ]);
+    return new JSONResponse(['success' => true, 'data' => $result]);
+}
+```
+
+### Object Vectorization
+
+```php
+// ObjectsController
+public function vectorizeBatch(): JSONResponse
+{
+    $result = $vectorizationService->vectorizeBatch('object', [
+        'mode' => 'serial',
+        'views' => [1, 2, 3],
+        'batch_size' => 25,
+    ]);
+    return new JSONResponse(['success' => true, 'data' => $result]);
+}
+```
+
+## Vector Storage
+
+Vectors are stored in the `oc_openregister_vectors` table with the following structure:
+
+### Database Schema
+
+```sql
+CREATE TABLE oc_openregister_vectors (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    
+    -- Entity information
+    entity_type VARCHAR(50) NOT NULL,        -- 'object' or 'file'
+    entity_id VARCHAR(255) NOT NULL,         -- UUID of object or file
+    
+    -- Chunk information (for files)
+    chunk_index INT DEFAULT 0,               -- 0 for objects, N for file chunks
+    total_chunks INT DEFAULT 1,              -- 1 for objects, N for files
+    chunk_text MEDIUMTEXT,                   -- The actual text that was embedded
+    
+    -- Vector data
+    embedding BLOB NOT NULL,                 -- Binary vector data
+    embedding_model VARCHAR(100) NOT NULL,   -- 'text-embedding-ada-002', etc.
+    embedding_dimensions INT NOT NULL,       -- 1536 for OpenAI ada-002
+    
+    -- Metadata
+    metadata JSON,                           -- Additional searchable metadata
+    
+    -- Timestamps
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    -- Indexes for performance
+    INDEX idx_entity (entity_type, entity_id),
+    INDEX idx_chunk (entity_id, chunk_index),
+    INDEX idx_model (embedding_model),
+    INDEX idx_created (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+```
+
+### Field Descriptions
+
+- `id`: Primary key
+- `entity_type`: 'file' or 'object'
+- `entity_id`: ID of the source entity
+- `chunk_index`: Index of chunk within entity (for files)
+- `total_chunks`: Total number of chunks for entity
+- `chunk_text`: Text content that was vectorized
+- `embedding`: Vector embedding (stored as JSON or binary)
+- `embedding_model`: Model used for embedding
+- `embedding_dimensions`: Dimension count (e.g., 768, 1536, 4096)
+- `metadata`: Additional metadata (JSON)
+
+## Document Chunking Strategy
+
+### Chunking Parameters
+
+| Parameter | Value | Reasoning |
+|-----------|-------|-----------|
+| `chunk_size` | 1000 tokens (~750 words) | Balances context vs. specificity |
+| `chunk_overlap` | 200 tokens (~150 words) | Preserves context across chunks |
+| `max_chunks_per_file` | 1000 | Safety limit to prevent memory issues |
+| `min_chunk_size` | 100 tokens | Skip tiny chunks that lack context |
+
+### Chunking by Document Type
+
+#### 1. **Technical Documentation** (Code, API docs)
+```php
+[
+    'chunk_size' => 800,
+    'chunk_overlap' => 200,
+    'respect_code_blocks' => true,
+    'split_on' => ['###', '##', '```', '\n\n']
+]
+```
+
+#### 2. **Legal Documents** (Contracts, policies)
+```php
+[
+    'chunk_size' => 600,
+    'chunk_overlap' => 150,
+    'respect_sections' => true,
+    'split_on' => ['Article', 'Section', 'Clause', '\n\n']
+]
+```
+
+#### 3. **Articles & Reports**
+```php
+[
+    'chunk_size' => 1200,
+    'chunk_overlap' => 200,
+    'split_on' => ['##', '\n\n\n', '\n\n']
+]
+```
+
+#### 4. **Spreadsheets & Tables**
+```php
+[
+    'chunk_size' => 500,
+    'chunk_overlap' => 50,
+    'preserve_rows' => true,
+    'include_headers' => true
+]
+```
+
+## File Processing Pipeline
+
+### Step 1: File Upload
+```
+User uploads file → FileService validates → Store in Nextcloud files
+```
+
+### Step 2: Text Extraction
+Files are processed to extract text content using LLPhant document loaders, supporting:
+- PDF (via pdftotext or Smalot\PdfParser)
+- Word (via PhpOffice\PhpWord)
+- Excel (via PhpOffice\PhpSpreadsheet)
+- PowerPoint (via PhpOffice\PhpPresentation)
+- Images (via Tesseract OCR)
+- Text files (direct reading)
+
+### Step 3: Chunking
+Large documents are split into manageable chunks with overlap to preserve context:
+- Chunks are sized based on document type
+- Overlap ensures continuity between chunks
+- Each chunk maintains metadata about its position
+
+### Step 4: Vector Generation
+- Generate embeddings for each chunk using configured embedding provider
+- Store vectors in database with metadata
+- Index chunks in Solr fileCollection for hybrid search
+
+### Step 5: Linking
+Store relationships:
+- File → Chunks (1:N)
+- Object → Files (1:N)
+- Chunks → Vectors (1:1)
+
+## Integration with Vector Search
+
+Vectorized entities can be searched using semantic similarity:
+
+1. **Generate query embedding** using VectorEmbeddingService
+2. **Search vectors** using selected backend (PHP, PostgreSQL, or Solr)
+3. **Return top N matches** sorted by similarity
+4. **Retrieve source entities** using entity_type and entity_id
+
+See [Vector Search Backends](./vector-search-backends.md) for details on search backends.
+
+## Hybrid Search Architecture
+
+OpenRegister supports hybrid search combining keyword (SOLR) and semantic (vector) search:
+
+### Search Flow
+
+```
+User Query
+    │
+    ├─→ Keyword Search (SOLR)
+    │   └─→ Full-text matching
+    │       Faceting
+    │       Filtering
+    │
+    ├─→ Semantic Search (Vectors)
+    │   └─→ Generate query embedding
+    │       Similarity search
+    │       Return top K results
+    │
+    └─→ Merge & Rank Results
+        └─→ Combine by relevance
+            Deduplicate
+            Re-rank using scores
+            Return unified results
+```
+
+## Performance Considerations
+
+### 1. **Token Limits**
+- OpenAI ada-002: 8,191 tokens max
+- OpenAI text-3: 8,191 tokens max
+- Always chunk before limits
+
+### 2. **API Costs**
+- OpenAI ada-002: $0.0001 per 1K tokens
+- For 1M tokens: ~$0.10
+- Cache embeddings to avoid re-generation
+
+### 3. **Processing Time**
+- PDF extraction: ~1-2 seconds per page
+- Chunking: < 100ms per document
+- Embedding generation: ~200ms per chunk (OpenAI)
+- Parallel processing: 4-8 chunks simultaneously
+
+### 4. **Storage**
+- Vector (1536 dimensions): ~6KB per embedding
+- 1M file chunks: ~6GB vector storage
+- Use compressed storage for large deployments
+
+## Related Documentation
+
+- [Vector Search Backends](./vector-search-backends.md) - Vector search backend options
+- [Services Architecture](../development/services-architecture.md) - Overall service architecture
 
 **File-specific logic:**
 - Fetches files with completed extractions
