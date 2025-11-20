@@ -9,6 +9,7 @@ export class ConfigurationEntity implements TConfiguration {
 	id: string
 	title: string
 	description: string | null
+	version?: string | null
 	type: string
 	application: string
 	owner: string
@@ -17,11 +18,25 @@ export class ConfigurationEntity implements TConfiguration {
 	schemas?: number[]
 	created: string
 	updated: string
+	isLocal?: boolean
+	sourceType?: string
+	sourceUrl?: string | null
+	localVersion?: string | null
+	remoteVersion?: string | null
+	syncEnabled?: boolean
+	syncInterval?: number
+	syncStatus?: string
+	lastSyncDate?: string | null
+	githubRepo?: string | null
+	githubBranch?: string | null
+	githubPath?: string | null
+	app?: string
 
 	constructor(configuration: TConfiguration) {
 		this.id = configuration.id || ''
 		this.title = configuration.title || ''
 		this.description = configuration.description || null
+		this.version = configuration.version ?? null
 		this.type = configuration.type || ''
 		this.application = configuration.application || ''
 		this.owner = configuration.owner || ''
@@ -30,6 +45,20 @@ export class ConfigurationEntity implements TConfiguration {
 		this.schemas = configuration.schemas || []
 		this.created = configuration.created || ''
 		this.updated = configuration.updated || ''
+		// Configuration management properties
+		this.isLocal = configuration.isLocal
+		this.sourceType = configuration.sourceType
+		this.sourceUrl = configuration.sourceUrl ?? null
+		this.localVersion = configuration.localVersion ?? null
+		this.remoteVersion = configuration.remoteVersion ?? null
+		this.syncEnabled = configuration.syncEnabled
+		this.syncInterval = configuration.syncInterval
+		this.syncStatus = configuration.syncStatus
+		this.lastSyncDate = configuration.lastSyncDate ?? null
+		this.githubRepo = configuration.githubRepo ?? null
+		this.githubBranch = configuration.githubBranch ?? null
+		this.githubPath = configuration.githubPath ?? null
+		this.app = configuration.app
 	}
 
 	/**

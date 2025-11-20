@@ -32,9 +32,14 @@ use OCP\AppFramework\Http\JSONResponse;
  *
  * Requirements for using this trait:
  * - The entity must have an 'organisation' property (string UUID)
- * - The mapper must inject OrganisationService
- * - The mapper must inject IGroupManager (for RBAC)
- * - The mapper must inject IUserSession (for current user)
+ * - The mapper must inject OrganisationService ($this->organisationService)
+ * - The mapper must inject IGroupManager ($this->groupManager - for RBAC)
+ * - The mapper must inject IUserSession ($this->userSession - for current user)
+ * - The mapper must have access to IDBConnection via $this->db (from QBMapper parent)
+ * 
+ * Optional dependencies for advanced features:
+ * - IAppConfig ($this->appConfig) - for multitenancy config settings
+ * - LoggerInterface ($this->logger) - for debug logging
  *
  * @package OCA\OpenRegister\Db
  */
@@ -118,51 +123,226 @@ trait MultiTenancyTrait
 
 
     /**
-     * Apply organisation filter to a query builder.
+     * Apply organisation filter to a query builder with advanced multi-tenancy support.
      *
-     * Filters results to show entities from the active organisation AND all parent organisations.
-     * This enables hierarchical organisation support where children can view parent resources.
-     * This applies to ALL users including admins - admins must set an active organisation.
+     * This method provides comprehensive organisation filtering including:
+     * - Hierarchical organisation support (active org + all parents)
+     * - Published object bypass for multi-tenancy (objects table only)
+     * - Admin override capabilities
+     * - System default organisation special handling
+     * - NULL organisation legacy data access for admins
+     * - Unauthenticated request handling
      *
-     * Example:
+     * Features:
+     * 1. Hierarchical Access: Users see entities from their active org AND parent orgs
+     * 2. Published Objects: Can bypass multi-tenancy if configured (objects table only)
+     * 3. Admin Override: Admins can see all entities if enabled in config
+     * 4. Default Org: Special behavior for system-wide default organisation
+     * 5. Legacy Data: Admins can access NULL organisation entities
+     *
+     * Example hierarchy:
      * - Organisation A (root)
      * - Organisation B (parent: A)
      * - Organisation C (parent: B)
-     * 
      * When C is active, entities from A, B, and C are visible.
      *
      * @param IQueryBuilder $qb              The query builder
      * @param string        $columnName      The column name for organisation (default: 'organisation')
-     * @param bool          $allowNullOrg    Whether to include entities with null organisation
+     * @param bool          $allowNullOrg    Whether admins can see NULL organisation entities
+     * @param string        $tableAlias      Optional table alias for published/depublished columns
+     * @param bool          $enablePublished Whether to enable published object bypass (objects table only)
      *
      * @return void
      */
-    protected function applyOrganisationFilter(IQueryBuilder $qb, string $columnName='organisation', bool $allowNullOrg=false): void
-    {
-        // Get active organisation + all parents
-        $orgUuids = $this->getActiveOrganisationUuids();
+    protected function applyOrganisationFilter(
+        IQueryBuilder $qb, 
+        string $columnName = 'organisation', 
+        bool $allowNullOrg = false,
+        string $tableAlias = '',
+        bool $enablePublished = false
+    ): void {
+        // Check if multitenancy is enabled (if appConfig is available)
+        if (isset($this->appConfig)) {
+            $multitenancyConfig = $this->appConfig->getValueString('openregister', 'multitenancy', '');
+            if (!empty($multitenancyConfig)) {
+                $multitenancyData = json_decode($multitenancyConfig, true);
+                $multitenancyEnabled = $multitenancyData['enabled'] ?? true;
+                
+                if (!$multitenancyEnabled) {
+                    // Multitenancy is disabled, no filtering
+                    if (isset($this->logger)) {
+                        $this->logger->debug('[MultiTenancyTrait] Multitenancy disabled, skipping filter');
+                    }
+                    return;
+                }
+            }
+        }
         
-        if (empty($orgUuids)) {
-            // No active organisation, return empty results
-            // Admins must also have an active organisation set
-            $qb->andWhere($qb->expr()->eq('1', $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT)));
+        // Get current user
+        $user = $this->userSession->getUser();
+        $userId = $user ? $user->getUID() : null;
+
+        // For unauthenticated requests, no automatic access
+        if ($userId === null) {
+            if (isset($this->logger)) {
+                $this->logger->debug('[MultiTenancyTrait] Unauthenticated request, no automatic access');
+            }
             return;
         }
 
-        if ($allowNullOrg) {
-            // Allow entities with matching organisations OR null organisation
-            $qb->andWhere(
-                $qb->expr()->orX(
-                    $qb->expr()->in($columnName, $qb->createNamedParameter($orgUuids, IQueryBuilder::PARAM_STR_ARRAY)),
-                    $qb->expr()->isNull($columnName)
+        // Get active organisation UUIDs (active + all parents)
+        $activeOrganisationUuids = $this->getActiveOrganisationUuids();
+        
+        // Build fully qualified column name
+        $organisationColumn = $tableAlias ? $tableAlias . '.' . $columnName : $columnName;
+        
+        // Check if published objects should bypass multi-tenancy (objects table only)
+        $publishedBypassEnabled = false;
+        if ($enablePublished && isset($this->appConfig)) {
+            $multitenancyConfig = $this->appConfig->getValueString('openregister', 'multitenancy', '');
+            if (!empty($multitenancyConfig)) {
+                $multitenancyData = json_decode($multitenancyConfig, true);
+                $publishedBypassEnabled = $multitenancyData['publishedObjectsBypassMultiTenancy'] ?? false;
+            }
+        }
+        
+        // CASE 1: No active organisation set
+        if (empty($activeOrganisationUuids)) {
+            if (isset($this->logger)) {
+                $this->logger->debug('[MultiTenancyTrait] No active organisation', [
+                    'publishedBypassEnabled' => $publishedBypassEnabled
+                ]);
+            }
+            
+            // Build conditions for users without active organisation
+            $orgConditions = $qb->expr()->orX();
+
+            // Check if user is admin
+            $userGroups = $this->groupManager->getUserGroupIds($user);
+            $isAdmin = in_array('admin', $userGroups);
+
+            // Admins can see NULL organisation entities (legacy data)
+            if ($isAdmin && $allowNullOrg) {
+                $orgConditions->add($qb->expr()->isNull($organisationColumn));
+            }
+
+            // Include published objects if bypass is enabled (objects table only)
+            if ($publishedBypassEnabled && $enablePublished) {
+                $now = (new \DateTime())->format('Y-m-d H:i:s');
+                $publishedColumn = $tableAlias ? $tableAlias . '.published' : 'published';
+                $depublishedColumn = $tableAlias ? $tableAlias . '.depublished' : 'depublished';
+                
+                $orgConditions->add(
+                    $qb->expr()->andX(
+                        $qb->expr()->isNotNull($publishedColumn),
+                        $qb->expr()->lte($publishedColumn, $qb->createNamedParameter($now)),
+                        $qb->expr()->orX(
+                            $qb->expr()->isNull($depublishedColumn),
+                            $qb->expr()->gt($depublishedColumn, $qb->createNamedParameter($now))
+                        )
+                    )
+                );
+            }
+
+            // If no conditions were added, deny all access
+            if ($orgConditions->count() === 0) {
+                $qb->andWhere($qb->expr()->eq('1', $qb->createNamedParameter('0'))); // Always false
+            } else {
+                $qb->andWhere($orgConditions);
+            }
+            return;
+        }
+        
+        // CASE 2: Active organisation(s) set - check for system default organisation
+        // Get default organisation UUID from configuration (not deprecated is_default column)
+        $systemDefaultOrgUuid = null;
+        if (isset($this->organisationService)) {
+            $systemDefaultOrgUuid = $this->organisationService->getDefaultOrganisationId();
+        }
+
+        // Check if active organisation is the system default
+        $isSystemDefaultOrg = $systemDefaultOrgUuid !== null && 
+                             in_array($systemDefaultOrgUuid, $activeOrganisationUuids);
+
+        // Check admin status and admin override setting
+        $userGroups = $this->groupManager->getUserGroupIds($user);
+        $isAdmin = in_array('admin', $userGroups);
+        
+        $adminOverrideEnabled = false;
+        if ($isAdmin && isset($this->appConfig)) {
+            $multitenancyConfig = $this->appConfig->getValueString('openregister', 'multitenancy', '');
+            if (!empty($multitenancyConfig)) {
+                $multitenancyData = json_decode($multitenancyConfig, true);
+                $adminOverrideEnabled = $multitenancyData['adminOverride'] ?? false;
+            }
+        }
+        
+        // Apply admin override logic
+        if ($isAdmin && $adminOverrideEnabled) {
+            // Admin override enabled - admins see everything
+            if (isset($this->logger)) {
+                $this->logger->debug('[MultiTenancyTrait] Admin override enabled, no filtering');
+            }
+            return;
+        }
+        
+        // If admin has system default organisation, they see everything (backward compatibility)
+        if ($isAdmin && $isSystemDefaultOrg) {
+            if (isset($this->logger)) {
+                $this->logger->debug('[MultiTenancyTrait] Admin with default org, no filtering');
+            }
+            return;
+        }
+
+        // Build organisation filter conditions
+        $orgConditions = $qb->expr()->orX();
+
+        // Include entities from active organisation(s) and parents
+        $orgConditions->add(
+            $qb->expr()->in($organisationColumn, $qb->createNamedParameter($activeOrganisationUuids, IQueryBuilder::PARAM_STR_ARRAY))
+        );
+        
+        if (isset($this->logger)) {
+            $this->logger->debug('[MultiTenancyTrait] Added organisation filter', [
+                'organisationCount' => count($activeOrganisationUuids),
+                'columnName' => $columnName,
+                'tableAlias' => $tableAlias
+            ]);
+        }
+
+        // Include published objects if bypass is enabled (objects table only)
+        if ($publishedBypassEnabled && $enablePublished) {
+            $now = (new \DateTime())->format('Y-m-d H:i:s');
+            $publishedColumn = $tableAlias ? $tableAlias . '.published' : 'published';
+            $depublishedColumn = $tableAlias ? $tableAlias . '.depublished' : 'depublished';
+            
+            $orgConditions->add(
+                $qb->expr()->andX(
+                    $qb->expr()->isNotNull($publishedColumn),
+                    $qb->expr()->lte($publishedColumn, $qb->createNamedParameter($now)),
+                    $qb->expr()->orX(
+                        $qb->expr()->isNull($depublishedColumn),
+                        $qb->expr()->gt($depublishedColumn, $qb->createNamedParameter($now))
+                    )
                 )
             );
-        } else {
-            // Only allow entities with matching organisations (active + parents)
-            $qb->andWhere(
-                $qb->expr()->in($columnName, $qb->createNamedParameter($orgUuids, IQueryBuilder::PARAM_STR_ARRAY))
-            );
+            
+            if (isset($this->logger)) {
+                $this->logger->debug('[MultiTenancyTrait] Added published objects bypass');
+            }
         }
+
+        // Include NULL organisation entities for admins with default org (legacy data)
+        if ($isSystemDefaultOrg && $isAdmin && $allowNullOrg) {
+            $orgConditions->add($qb->expr()->isNull($organisationColumn));
+            
+            if (isset($this->logger)) {
+                $this->logger->debug('[MultiTenancyTrait] Added NULL org access for admin with default org');
+            }
+        }
+
+        // Apply the conditions
+        $qb->andWhere($orgConditions);
 
     }//end applyOrganisationFilter()
 

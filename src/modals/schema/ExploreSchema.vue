@@ -231,7 +231,7 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 							<div v-if="suggestion.string_patterns && suggestion.string_patterns.length > 0" class="detail-item">
 								<span class="detail-label">{{ t('openregister', 'Patterns:') }}</span>
 								<span class="detail-value">
-									<span v-for="(pattern, index) in suggestion.string_patterns" :key="`pattern-${index}`" class="pattern-tag">
+									<span v-for="(pattern, patternIndex) in suggestion.string_patterns" :key="`pattern-${patternIndex}`" class="pattern-tag">
 										{{ pattern }}
 									</span>
 								</span>
@@ -252,7 +252,7 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 						<div v-if="suggestion.improvement_status === 'existing' && suggestion.issues && suggestion.issues.length > 0" class="improvement-details">
 							<h5>{{ t('openregister', 'Detected Issues:') }}</h5>
 							<div class="issues-list">
-								<div v-for="(issue, index) in getIssueDetails(suggestion.issues)" :key="`issue-${index}`" class="issue-item">
+								<div v-for="(issue, issueIndex) in getIssueDetails(suggestion.issues)" :key="`issue-${issueIndex}`" class="issue-item">
 									<div class="issue-badge" :class="'issue-' + issue.type">
 										{{ getIssueLabel(issue.type) }}
 									</div>
@@ -264,7 +264,7 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 
 							<h5>{{ t('openregister', 'Recommendations:') }}</h5>
 							<div class="suggestions-list">
-								<div v-for="(suggestion_item, index) in suggestion.suggestions" :key="`suggestion-${index}`" class="suggestion-item">
+								<div v-for="(suggestion_item, suggestionIndex) in suggestion.suggestions" :key="`suggestion-${suggestionIndex}`" class="suggestion-item">
 									<div class="suggestion-field">
 										<strong>{{ suggestion_item.field }}:</strong>
 									</div>
@@ -284,7 +284,7 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 								<h5>{{ t('openregister', 'Sample Values:') }}</h5>
 							</div>
 							<div class="example-values">
-								<span v-for="(example, index) in suggestion.examples" :key="`example-${index}`" class="example-tag">
+								<span v-for="(example, exampleIndex) in suggestion.examples" :key="`example-${exampleIndex}`" class="example-tag">
 									{{ formatExample(example) }}
 								</span>
 							</div>

@@ -94,11 +94,16 @@ return [
         ['name' => 'settings#updateOrganisationSettings', 'url' => '/api/settings/organisation', 'verb' => 'PUT'],
         
         ['name' => 'settings#getLLMSettings', 'url' => '/api/settings/llm', 'verb' => 'GET'],
+        ['name' => 'settings#getDatabaseInfo', 'url' => '/api/settings/database', 'verb' => 'GET'],
+        ['name' => 'settings#getSolrInfo', 'url' => '/api/settings/solr-info', 'verb' => 'GET'],
         ['name' => 'settings#updateLLMSettings', 'url' => '/api/settings/llm', 'verb' => 'POST'],
         ['name' => 'settings#patchLLMSettings', 'url' => '/api/settings/llm', 'verb' => 'PATCH'],
         ['name' => 'settings#updateLLMSettings', 'url' => '/api/settings/llm', 'verb' => 'PUT'],
         ['name' => 'settings#testEmbedding', 'url' => '/api/vectors/test-embedding', 'verb' => 'POST'],
         ['name' => 'settings#testChat', 'url' => '/api/llm/test-chat', 'verb' => 'POST'],
+        ['name' => 'settings#getOllamaModels', 'url' => '/api/llm/ollama-models', 'verb' => 'GET'],
+        ['name' => 'settings#checkEmbeddingModelMismatch', 'url' => '/api/vectors/check-model-mismatch', 'verb' => 'GET'],
+        ['name' => 'settings#clearAllEmbeddings', 'url' => '/api/vectors/clear-all', 'verb' => 'DELETE'],
         ['name' => 'settings#getFileSettings', 'url' => '/api/settings/files', 'verb' => 'GET'],
         ['name' => 'settings#updateFileSettings', 'url' => '/api/settings/files', 'verb' => 'PATCH'],
         ['name' => 'settings#updateFileSettings', 'url' => '/api/settings/files', 'verb' => 'PUT'],
@@ -135,6 +140,12 @@ return [
         ['name' => 'settings#updateRetentionSettings', 'url' => '/api/settings/retention', 'verb' => 'PUT'],
         
         ['name' => 'settings#getVersionInfo', 'url' => '/api/settings/version', 'verb' => 'GET'],
+        
+        // API Tokens for GitHub and GitLab
+        ['name' => 'settings#getApiTokens', 'url' => '/api/settings/api-tokens', 'verb' => 'GET'],
+        ['name' => 'settings#saveApiTokens', 'url' => '/api/settings/api-tokens', 'verb' => 'POST'],
+        ['name' => 'settings#testGitHubToken', 'url' => '/api/settings/api-tokens/test/github', 'verb' => 'POST'],
+        ['name' => 'settings#testGitLabToken', 'url' => '/api/settings/api-tokens/test/gitlab', 'verb' => 'POST'],
         
         // Statistics endpoint  
         ['name' => 'settings#getStatistics', 'url' => '/api/settings/statistics', 'verb' => 'GET'],
@@ -255,6 +266,7 @@ return [
         // Registers
         ['name' => 'registers#export', 'url' => '/api/registers/{id}/export', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'registers#import', 'url' => '/api/registers/{id}/import', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'registers#publishToGitHub', 'url' => '/api/registers/{id}/publish/github', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'registers#schemas', 'url' => '/api/registers/{id}/schemas', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'registers#stats', 'url' => '/api/registers/{id}/stats', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'oas#generate', 'url' => '/api/registers/{id}/oas', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
@@ -263,7 +275,24 @@ return [
         ['name' => 'configuration#checkVersion', 'url' => '/api/configurations/{id}/check-version', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
         ['name' => 'configuration#preview', 'url' => '/api/configurations/{id}/preview', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
         ['name' => 'configuration#import', 'url' => '/api/configurations/{id}/import', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
-        ['name' => 'configuration#export', 'url' => '/api/configurations/{id}/export', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
+        ['name' => 'configuration#export', 'url' => '/api/configurations/{id}/export', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
+        
+        // Configuration discovery endpoints
+        ['name' => 'configuration#discover', 'url' => '/api/configurations/discover', 'verb' => 'GET'],
+        ['name' => 'configuration#enrichDetails', 'url' => '/api/configurations/enrich', 'verb' => 'GET'],
+        ['name' => 'configuration#getGitHubBranches', 'url' => '/api/configurations/github/branches', 'verb' => 'GET'],
+        ['name' => 'configuration#getGitHubRepositories', 'url' => '/api/configurations/github/repositories', 'verb' => 'GET'],
+        ['name' => 'configuration#getGitHubConfigurations', 'url' => '/api/configurations/github/files', 'verb' => 'GET'],
+        ['name' => 'configuration#getGitLabBranches', 'url' => '/api/configurations/gitlab/branches', 'verb' => 'GET'],
+        ['name' => 'configuration#getGitLabConfigurations', 'url' => '/api/configurations/gitlab/files', 'verb' => 'GET'],
+        
+        // Configuration import endpoints
+        ['name' => 'configuration#importFromGitHub', 'url' => '/api/configurations/import/github', 'verb' => 'POST'],
+        ['name' => 'configuration#importFromGitLab', 'url' => '/api/configurations/import/gitlab', 'verb' => 'POST'],
+        ['name' => 'configuration#importFromUrl', 'url' => '/api/configurations/import/url', 'verb' => 'POST'],
+        
+        // Configuration publish endpoints
+        ['name' => 'configuration#publishToGitHub', 'url' => '/api/configurations/{id}/publish/github', 'verb' => 'POST'],
         
         // User Settings - GitHub Integration
         ['name' => 'userSettings#getGitHubTokenStatus', 'url' => '/api/user-settings/github/status', 'verb' => 'GET'],

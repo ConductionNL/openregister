@@ -1,5 +1,5 @@
 <script setup>
-import { dashboardStore, registerStore, navigationStore } from '../../store/store.js'
+import { dashboardStore, registerStore, navigationStore, configurationStore } from '../../store/store.js'
 import formatBytes from '../../services/formatBytes.js'
 </script>
 
@@ -129,25 +129,33 @@ import formatBytes from '../../services/formatBytes.js'
 
 			<!-- Schemas Tab Content -->
 			<div v-else class="cardGrid">
-				<div v-if="!register.schemas?.length" class="emptyContainer">
+				<div v-if="loadingSchemas" class="loadingContainer">
+					<NcLoadingIcon :size="32" />
+					<span>Loading schemas...</span>
+				</div>
+				<div v-else-if="!loadedSchemas?.length" class="emptyContainer">
 					<NcEmptyContent
 						:title="t('openregister', 'No schemas found')"
 						icon="icon-folder">
 						<template #action>
-							<NcButton @click="navigationStore.setModal('editRegister')">
+							<NcButton v-if="!managingConfiguration" @click="navigationStore.setModal('editRegister')">
 								{{ t('openregister', 'Add Schema') }}
 							</NcButton>
 						</template>
 					</NcEmptyContent>
 				</div>
 				<div v-else class="cardGrid">
-					<div v-for="schema in register.schemas" :key="schema.id" class="card">
+					<div v-for="schema in loadedSchemas" :key="schema.id" class="card">
 						<div class="cardHeader">
 							<h3>
 								<FileCodeOutline :size="20" />
 								{{ schema.title }}
+								<span v-if="managingConfiguration" v-tooltip.bottom="'Managed by configuration: ' + managingConfiguration.title" class="managedBadge">
+									<Database :size="16" />
+									Managed
+								</span>
 							</h3>
-							<NcActions :primary="true" menu-name="Schema Actions">
+							<NcActions v-if="!managingConfiguration" :primary="true" menu-name="Schema Actions">
 								<template #icon>
 									<DotsHorizontal :size="20" />
 								</template>
@@ -195,6 +203,7 @@ import VueApexCharts from 'vue-apexcharts'
 import FileCodeOutline from 'vue-material-design-icons/FileCodeOutline.vue'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
+import Database from 'vue-material-design-icons/Database.vue'
 
 export default {
 	name: 'RegisterDetail',
@@ -209,12 +218,16 @@ export default {
 		FileCodeOutline,
 		DotsHorizontal,
 		Pencil,
+		Database,
 	},
 	data() {
 		return {
 			registerStats: null,
 			statsLoading: false,
 			statsError: null,
+			loadedSchemas: [],
+			loadingSchemas: false,
+			managingConfiguration: null,
 		}
 	},
 	computed: {
@@ -309,6 +322,16 @@ export default {
 			}
 		},
 	},
+	watch: {
+		register: {
+			handler() {
+				// Reload schemas and check configuration when register changes
+				this.loadSchemas()
+				this.checkManagingConfiguration()
+			},
+			deep: true,
+		},
+	},
 	async mounted() {
 		// If we have a register ID but no data, fetch dashboard data
 		if (registerStore.getRegisterItem?.id && !this.register) {
@@ -328,6 +351,10 @@ export default {
 		if (registerStore.getRegisterItem?.id) {
 			await this.loadRegisterStats()
 		}
+
+		// Load schemas and check for managing configuration
+		await this.loadSchemas()
+		await this.checkManagingConfiguration()
 	},
 	methods: {
 		/**
@@ -375,6 +402,66 @@ export default {
 		editSchema(schema) {
 			registerStore.setSchemaItem(schema)
 			navigationStore.setModal('editSchema')
+		},
+		/**
+		 * Load full schema details from schema IDs
+		 * @return {Promise<void>}
+		 */
+		async loadSchemas() {
+			if (!this.register?.schemas || !Array.isArray(this.register.schemas) || this.register.schemas.length === 0) {
+				this.loadedSchemas = []
+				return
+			}
+
+			this.loadingSchemas = true
+			try {
+				// Fetch all schemas in parallel
+				const promises = this.register.schemas.map(async schemaId => {
+					try {
+						const response = await fetch(`/index.php/apps/openregister/api/schemas/${schemaId}`)
+						if (response.ok) {
+							return await response.json()
+						}
+						return null
+					} catch (error) {
+						console.error(`Failed to load schema ${schemaId}:`, error)
+						return null
+					}
+				})
+
+				const schemas = await Promise.all(promises)
+				this.loadedSchemas = schemas.filter(Boolean) // Remove null entries
+			} catch (error) {
+				console.error('Error loading schemas:', error)
+				this.loadedSchemas = []
+			} finally {
+				this.loadingSchemas = false
+			}
+		},
+		/**
+		 * Check if this register is managed by a configuration
+		 * @return {Promise<void>}
+		 */
+		async checkManagingConfiguration() {
+			if (!this.register?.id) {
+				this.managingConfiguration = null
+				return
+			}
+
+			try {
+				// Check all configurations to see if any manages this register
+				const configurations = configurationStore.configurationList || []
+				for (const config of configurations) {
+					if (config.registers && Array.isArray(config.registers) && config.registers.includes(this.register.id)) {
+						this.managingConfiguration = config
+						return
+					}
+				}
+				this.managingConfiguration = null
+			} catch (error) {
+				console.error('Error checking managing configuration:', error)
+				this.managingConfiguration = null
+			}
 		},
 	},
 }
@@ -429,6 +516,20 @@ export default {
 	padding: 20px;
 	box-shadow: 0 2px 8px var(--color-box-shadow);
 	border: 1px solid var(--color-border);
+}
+
+.managedBadge {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 4px 8px;
+	background: var(--color-primary-element-light);
+	color: var(--color-primary-element-text);
+	border-radius: 12px;
+	font-size: 0.75rem;
+	font-weight: 600;
+	margin-left: 8px;
+	vertical-align: middle;
 }
 
 .cardHeader {

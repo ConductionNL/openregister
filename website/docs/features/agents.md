@@ -210,9 +210,16 @@ To enable tools for an agent:
 
 1. Open the Edit Agent modal
 2. Navigate to the **Tools** tab
-3. Check the tools you want to enable
+3. Toggle the switches for the tools you want to enable
 4. Optionally set a **Default User** for cron/background scenarios
 5. Save the agent
+
+**Tool Selection Interface:**
+- Tools are displayed with **64px icons** for easy identification
+- Each tool shows its **name**, **description**, and **app badge**
+- **Toggle switches** on the right allow easy enable/disable
+- Tools are grouped by app for better organization
+- Hover effects provide visual feedback
 
 ### Security & Permissions
 
@@ -261,6 +268,47 @@ Enable only the list/get functions for a safe, read-only assistant:
   'isPrivate': false
 }
 ```
+
+### Default User Configuration
+
+The **Default User** setting allows you to specify which user's context and permissions should be used when the agent runs without an active user session (e.g., scheduled tasks, background jobs, cron executions).
+
+#### Location
+
+The Default User field is located in the **Settings tab** of the agent configuration, alongside other core agent settings like name, type, and prompt.
+
+#### User Selection
+
+Instead of manually typing a username, you can now:
+
+- **Search and select** from a dropdown list of available users
+- **See display names** instead of just user IDs
+- **Filter by organisation** - only users from the active organisation are shown
+- **Autocomplete** - type to filter matching users
+- **Validation** - only existing, valid users can be selected
+
+#### Organisation Filtering
+
+The user picker automatically filters users based on the active organisation:
+
+- If the organisation has specific users configured → Only those users are shown
+- If the organisation has no user list → All Nextcloud users are shown (fallback)
+
+#### When Default User is Used
+
+The default user's context is used when:
+- Agent runs via scheduled tasks (cron jobs)
+- Background jobs execute agent functions
+- No active user session exists
+- API calls are made without user authentication
+
+#### Benefits
+
+- **No typos**: Can't misspell usernames
+- **Better security**: Can't assign non-existent users
+- **Organisation-aware**: Respects user boundaries
+- **Easier selection**: Click instead of type
+- **Better visibility**: See full names, not just IDs
 
 ### Best Practices
 

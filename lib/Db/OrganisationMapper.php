@@ -101,7 +101,7 @@ class OrganisationMapper extends QBMapper
                 $qb->expr()->in('uuid', $qb->createNamedParameter($uuids, IQueryBuilder::PARAM_STR_ARRAY))
             );
 
-        $result = $qb->executeQuery();
+        $result = $qb->execute();
         $organisations = [];
         
         while ($row = $result->fetch()) {
@@ -643,7 +643,7 @@ class OrganisationMapper extends QBMapper
         try {
             $stmt = $this->db->prepare($sql);
             $stmt->bindValue(':org_uuid', $organisationUuid);
-            $result = $stmt->executeQuery();
+            $result = $stmt->execute();
             
             $parents = [];
             while ($row = $result->fetch()) {
@@ -721,7 +721,7 @@ class OrganisationMapper extends QBMapper
         try {
             $stmt = $this->db->prepare($sql);
             $stmt->bindValue(':org_uuid', $organisationUuid);
-            $result = $stmt->executeQuery();
+            $result = $stmt->execute();
             
             $children = [];
             while ($row = $result->fetch()) {
@@ -900,9 +900,9 @@ class OrganisationMapper extends QBMapper
      */
     private function getTablePrefix(): string
     {
-        // Get table prefix from database configuration
+        // Get table prefix from Nextcloud system configuration
         // Default is 'oc_' but can be customized per installation
-        return $this->db->getPrefix();
+        return \OC::$server->getSystemConfig()->getValue('dbtableprefix', 'oc_');
 
     }//end getTablePrefix()
 

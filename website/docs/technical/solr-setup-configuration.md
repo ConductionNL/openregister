@@ -757,4 +757,458 @@ docker exec master-solr-1 curl \
 3. Implement network-level access controls
 4. Regular security updates for SOLR and ZooKeeper
 
+## Dense Vector Configuration
+
+OpenRegister supports Solr 9+ dense vector search for semantic similarity operations. The system automatically configures vector fields when setting up collections.
+
+### Requirements
+
+- **Solr Version**: 9.0+ (dense vector support introduced in Solr 9.0)
+- **Field Type**: `knn_vector` (DenseVectorField)
+- **Field Name**: `_embedding_` (reserved system field, hardcoded)
+
+### Automatic Configuration
+
+When running Solr setup, the system automatically:
+
+1. Creates `knn_vector` field type with appropriate dimensions
+2. Configures `_embedding_` field in both file and object collections
+3. Sets up supporting fields for vector metadata
+
+### Field Configuration
+
+**Vector Field Type**:
+```xml
+<fieldType name="knn_vector" class="solr.DenseVectorField" 
+           vectorDimension="4096" 
+           similarityFunction="cosine" 
+           knnAlgorithm="hnsw"/>
+```
+
+**Vector Field**:
+```xml
+<field name="_embedding_" type="knn_vector" indexed="true" stored="true" multiValued="false"/>
+```
+
+**Important Notes**:
+- `_embedding_` is a reserved system field and cannot be changed
+- Field type must be `knn_vector`, not `pfloat` or other types
+- Vector dimensions should match your embedding model (default: 4096 for Ollama)
+- The field is single-valued (not multiValued) - one vector per document
+
+### Vector Storage
+
+Vectors are stored directly in existing collections:
+- **Files**: Stored in `fileCollection` alongside file chunks
+- **Objects**: Stored in `objectCollection` alongside object data
+
+This enables:
+- Single source of truth for each entity
+- Full document retrieval without additional lookups
+- Atomic updates to existing documents
+
+### KNN Search
+
+Once configured, semantic search uses Solr's KNN query parser:
+
+```
+{!knn f=_embedding_ topK=10}[query_vector_array]
+```
+
+This returns the 10 most similar documents based on cosine similarity.
+
+### Troubleshooting
+
+**Error: "multiple values encountered for non multiValued field _embedding_"**
+
+This indicates the field was incorrectly configured as `pfloat` instead of `knn_vector`. Solution:
+
+```bash
+# Run Solr setup to fix schema
+docker exec -u 33 master-nextcloud-1 php occ openregister:solr:manage setup
+```
+
+**Error: Field type not found**
+
+Ensure Solr version is 9.0+ and run setup to create the field type automatically.
+
+**Performance Issues**
+
+- Verify HNSW indexing is enabled
+- Check vector dimensions match your embedding model
+- Monitor Solr performance metrics
+
+## File Warmup API
+
+The File Warmup API provides endpoints for bulk file processing, text extraction, chunking, and SOLR indexing. These endpoints enable efficient batch operations for indexing large numbers of files.
+
+### Endpoints
+
+#### 1. Warmup Files
+
+**POST** `/api/solr/warmup/files`
+
+Bulk process and index files in SOLR file collection.
+
+**Request Body:**
+```json
+{
+  "max_files": 1000,
+  "batch_size": 100,
+  "file_types": ["application/pdf", "text/plain"],
+  "skip_indexed": true,
+  "mode": "parallel"
+}
+```
+
+**Parameters:**
+- `max_files` (optional): Maximum number of files to process (default: 1000)
+- `batch_size` (optional): Number of files to process per batch (default: 100)
+- `file_types` (optional): Array of MIME types to filter (e.g., `["application/pdf"]`)
+- `skip_indexed` (optional): Skip files already indexed in Solr (default: true)
+- `mode` (optional): Processing mode - "parallel" or "sequential" (default: "parallel")
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "File warmup completed",
+  "files_processed": 847,
+  "indexed": 844,
+  "failed": 3,
+  "errors": ["File 123: No extracted text available"],
+  "mode": "parallel"
+}
+```
+
+#### 2. Index Specific File
+
+**POST** `/api/solr/files/{fileId}/index`
+
+Index a single file in SOLR.
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "File indexed successfully",
+  "file_id": 5213
+}
+```
+
+#### 3. Reindex All Files
+
+**POST** `/api/solr/files/reindex`
+
+Reindex all files that have completed text extraction.
+
+**Request Body:**
+```json
+{
+  "max_files": 1000,
+  "batch_size": 100
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Reindex completed",
+  "files_processed": 500,
+  "indexed": 497,
+  "failed": 3,
+  "errors": []
+}
+```
+
+#### 4. Get File Index Statistics
+
+**GET** `/api/solr/files/stats`
+
+Get statistics about indexed files.
+
+**Response:**
+```json
+{
+  "success": true,
+  "total_chunks": 4235,
+  "unique_files": 847,
+  "mime_types": {
+    "application/pdf": 500,
+    "text/plain": 200,
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": 147
+  },
+  "collection": "openregister_files"
+}
+```
+
+### Usage Examples
+
+#### cURL: Warmup Files
+
+```bash
+curl -X POST -u 'admin:admin' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "max_files": 500,
+    "batch_size": 50,
+    "file_types": ["application/pdf"],
+    "skip_indexed": true
+  }' \
+  http://master-nextcloud-1/index.php/apps/openregister/api/solr/warmup/files
+```
+
+#### cURL: Index Specific File
+
+```bash
+curl -X POST -u 'admin:admin' \
+  http://master-nextcloud-1/index.php/apps/openregister/api/solr/files/5213/index
+```
+
+#### cURL: Get Stats
+
+```bash
+curl -u 'admin:admin' \
+  http://master-nextcloud-1/index.php/apps/openregister/api/solr/files/stats
+```
+
+### Error Handling
+
+All endpoints return proper HTTP status codes:
+- **200**: Success
+- **422**: Unprocessable (e.g., file has no extracted text)
+- **500**: Internal server error
+
+Error responses include:
+```json
+{
+  "success": false,
+  "message": "Error description here"
+}
+```
+
+### Implementation Details
+
+The warmup endpoints are implemented in `SettingsController.php`:
+
+1. **`warmupFiles()`**: Gets files that need indexing, filters by MIME type if specified, processes in batches, returns comprehensive results
+2. **`indexFile(int $fileId)`**: Indexes a single file, returns success/failure
+3. **`reindexFiles()`**: Gets all completed file texts, reindexes in batches, returns statistics
+4. **`getFileIndexStats()`**: Queries SOLR for statistics, returns chunk counts and file counts
+
+### Integration with Frontend
+
+These endpoints are used by:
+1. **SOLR Configuration Modal** - File warmup UI
+2. **File Management Dialog** - Individual file indexing
+3. **Dashboard** - Statistics display
+
+## Published-Only Indexing Strategy
+
+OpenRegister implements a **published-only indexing strategy** for Apache Solr search functionality. This means that only objects with a `published` date are indexed to Solr, ensuring that search results only contain publicly available content.
+
+### Implementation Details
+
+#### Current Behavior
+
+- **Single Object Indexing**: The `indexObject()` method checks if an object has a `published` date before indexing
+- **Bulk Indexing**: Both `bulkIndexFromDatabase()` and `bulkIndexFromDatabaseOptimized()` methods filter out unpublished objects
+- **Search Results**: Only published objects appear in search results since unpublished objects are not indexed
+
+#### Code Locations
+
+The published-only logic is implemented in:
+
+- `lib/Service/GuzzleSolrService.php::indexObject()` - Single object indexing
+- `lib/Service/GuzzleSolrService.php::bulkIndexFromDatabase()` - Bulk indexing (serial mode)
+- `lib/Service/GuzzleSolrService.php::bulkIndexFromDatabaseOptimized()` - Bulk indexing (optimized mode)
+
+#### Database vs Solr Counts
+
+The system tracks two different counts:
+
+1. **Published Count**: Number of objects in the database with a `published` date (from `oc_openregister_objects` table)
+2. **Indexed Count**: Number of documents actually indexed in Solr (should match published count)
+
+These counts are displayed in the Solr Configuration dashboard to help administrators monitor indexing status.
+
+### Benefits
+
+1. **Relevant Search Results**: Users only see content that is meant to be public
+2. **Performance**: Smaller Solr index size improves search performance
+3. **Security**: Unpublished/draft content is not accidentally exposed through search
+4. **Resource Efficiency**: Reduced storage and memory usage in Solr
+
+### Monitoring
+
+#### Dashboard Statistics
+
+The Solr Configuration dashboard shows:
+- **Indexed Documents**: Number of documents in Solr
+- **Published Objects Available**: Total number of published objects in the database
+
+If these numbers don't match, it indicates that some published objects haven't been indexed yet.
+
+#### Logging
+
+The system logs when unpublished objects are skipped:
+- Single objects: `DEBUG` level - 'Skipping indexing of unpublished object'
+- Bulk operations: `INFO` level - 'Skipped unpublished objects in batch'
+
+### Configuration
+
+No additional configuration is required. The published-only indexing is enabled by default and works automatically based on the `published` field in object entities.
+
+### Troubleshooting
+
+#### Common Issues
+
+1. **Mismatched Counts**: If indexed count < published count
+   - Run a Solr warmup to re-index all published objects
+   - Check Solr logs for indexing errors
+
+2. **Objects Not Appearing in Search**: 
+   - Verify the object has a `published` date set
+   - Check if the object was indexed after being published
+   - Run a manual re-index if needed
+
+3. **Performance Issues**:
+   - Monitor the published vs indexed ratio
+   - Consider batch size adjustments for bulk operations
+
+#### Debugging
+
+Enable debug logging to see which objects are being skipped:
+
+```php
+// In your Nextcloud config
+'loglevel' => 0, // Debug level
+```
+
+Look for log entries containing:
+- 'Skipping indexing of unpublished object'
+- 'Skipped unpublished objects in batch'
+
+### Future Considerations
+
+#### TODO: Full Object Indexing
+
+There are TODO comments in the code indicating that in the future, we may want to index all objects to Solr for comprehensive search capabilities. This would require:
+
+1. **Access Control**: Implementing proper access control in search queries
+2. **Filtering**: Adding published/unpublished filters to search results
+3. **Performance**: Handling larger index sizes
+4. **Security**: Ensuring unpublished content is properly protected
+
+## Collection-Specific Endpoints
+
+OpenRegister uses RESTful collection-specific endpoints for Solr collection management operations. Collection names are specified as URL parameters, following REST principles.
+
+### Endpoints
+
+#### 1. Delete Specific Collection
+
+```http
+DELETE /api/solr/collections/{name}
+```
+
+**Controller Method:** `SettingsController::deleteSpecificSolrCollection(string $name)`
+
+**Example:**
+```bash
+curl -X DELETE "http://nextcloud.local/index.php/apps/openregister/api/solr/collections/nc_test_collection" \
+  -u "admin:admin"
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Collection deleted successfully",
+  "collection": "nc_test_collection"
+}
+```
+
+#### 2. Clear Specific Collection
+
+```http
+POST /api/solr/collections/{name}/clear
+```
+
+**Controller Method:** `SettingsController::clearSpecificCollection(string $name)`
+
+**Example:**
+```bash
+curl -X POST "http://nextcloud.local/index.php/apps/openregister/api/solr/collections/nc_test_collection/clear" \
+  -u "admin:admin"
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Collection cleared successfully",
+  "collection": "nc_test_collection"
+}
+```
+
+#### 3. Reindex Specific Collection
+
+```http
+POST /api/solr/collections/{name}/reindex
+```
+
+**Controller Method:** `SettingsController::reindexSpecificCollection(string $name)`
+
+**Example:**
+```bash
+curl -X POST "http://nextcloud.local/index.php/apps/openregister/api/solr/collections/nc_test_collection/reindex" \
+  -u "admin:admin"
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Reindex completed successfully",
+  "stats": {
+    "processed_objects": 1250,
+    "duration_seconds": 4.5
+  },
+  "collection": "nc_test_collection"
+}
+```
+
+### Benefits
+
+#### RESTful Design
+- Collection name is now part of the URL path, following REST principles
+- Resources are clearly identified by their URLs
+- HTTP verbs (DELETE, POST) indicate the action
+
+#### Improved API Clarity
+- No ambiguity about which collection is being operated on
+- Collection name is explicit in every request
+- Easier to read API logs and debug issues
+
+#### Better Error Handling
+- 404 errors now correctly indicate "collection not found"
+- URL validation happens at the routing level
+- Clearer separation between route parameters and request body
+
+### Migration from Old Endpoints
+
+The following old endpoints have been removed:
+
+- ❌ `POST /api/solr/reindex` (replaced by `/api/solr/collections/{name}/reindex`)
+- ❌ `POST /api/settings/solr/clear` (replaced by `/api/solr/collections/{name}/clear`)
+- ❌ `DELETE /api/solr/collection/delete` (replaced by `DELETE /api/solr/collections/{name}`)
+
+### Related Documentation
+
+- [Vector Search Backends](./vector-search-backends.md) - Complete vector backend guide
+- [Vectorization Architecture](./vectorization-architecture.md) - How vectors are generated
+- [Solr Development Troubleshooting](../development/solr-development.md) - Development troubleshooting guide
+
 This comprehensive setup process ensures reliable, performant, and maintainable SOLR integration with proper tenant isolation and pre-configured system fields for optimal runtime performance.

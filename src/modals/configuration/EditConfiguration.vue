@@ -37,30 +37,37 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 							@update:value="updateDescription" />
 
 						<div class="selectField">
-							<label for="application-select">Owner Application</label>
+							<label for="type-select">Type</label>
 							<NcSelect
-								id="application-select"
-								v-model="selectedApplication"
-								:options="applicationOptions"
-								label="name"
-								track-by="id"
+								id="type-select"
+								v-model="selectedType"
+								:options="typeOptions"
+								label="label"
+								track-by="value"
 								:label-outside="true"
-								placeholder="Select owner application (optional)..."
-								@input="updateApplication">
-								<template #option="{ name, description }">
+								placeholder="Select configuration type..."
+								@input="updateType">
+								<template #option="{ label, description }">
 									<div class="option-content">
-										<span class="option-title">{{ name }}</span>
+										<span class="option-title">{{ label }}</span>
 										<span v-if="description" class="option-description">{{ description }}</span>
 									</div>
 								</template>
 							</NcSelect>
-							<p v-if="selectedApplication" class="field-hint">
-								Owner: {{ selectedApplication.name }}
-							</p>
-							<p v-else class="field-hint">
-								The application that owns this configuration (optional)
+							<p class="field-hint">
+								Configuration type (default, application, etc.)
 							</p>
 						</div>
+
+						<NcTextField
+							label="App ID"
+							placeholder="myapp"
+							:value="configurationStore.configurationItem?.app || ''"
+							@update:value="updateApp">
+							<template #helper-text-message>
+								<p>Application identifier for this configuration (optional)</p>
+							</template>
+						</NcTextField>
 
 						<!-- Organisation is automatically set to active organisation by backend -->
 					</div>
@@ -85,7 +92,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 								label="title"
 								track-by="id"
 								:label-outside="true"
-								:filterable="false"
+								:filterable="true"
 								placeholder="Search registers..."
 								:close-on-select="false"
 								@search-change="searchRegisters"
@@ -117,7 +124,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 								label="title"
 								track-by="id"
 								:label-outside="true"
-								:filterable="false"
+								:filterable="true"
 								placeholder="Search schemas..."
 								:close-on-select="false"
 								@search-change="searchSchemas"
@@ -149,7 +156,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 								label="title"
 								track-by="id"
 								:label-outside="true"
-								:filterable="false"
+								:filterable="true"
 								placeholder="Search objects..."
 								:close-on-select="false"
 								:disabled="selectedRegisters.length === 0 && selectedSchemas.length === 0"
@@ -184,7 +191,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 								label="title"
 								track-by="id"
 								:label-outside="true"
-								:filterable="false"
+								:filterable="true"
 								placeholder="Search data sources..."
 								:close-on-select="false"
 								@search-change="searchSources"
@@ -216,7 +223,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 								label="name"
 								track-by="id"
 								:label-outside="true"
-								:filterable="false"
+								:filterable="true"
 								placeholder="Search agents..."
 								:close-on-select="false"
 								@search-change="searchAgents"
@@ -248,7 +255,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 								label="name"
 								track-by="id"
 								:label-outside="true"
-								:filterable="false"
+								:filterable="true"
 								placeholder="Search views..."
 								:close-on-select="false"
 								@search-change="searchViews"
@@ -280,7 +287,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 								label="name"
 								track-by="id"
 								:label-outside="true"
-								:filterable="false"
+								:filterable="true"
 								placeholder="Search applications..."
 								:close-on-select="false"
 								@search-change="searchApplications"
@@ -344,6 +351,42 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 								<p>The URL to the remote configuration file (JSON or YAML)</p>
 							</template>
 						</NcTextField>
+
+						<NcTextField
+							label="Version"
+							placeholder="1.0.0"
+							:value="configurationStore.configurationItem?.version || ''"
+							@update:value="updateVersion">
+							<template #helper-text-message>
+								<p>Semantic version (e.g., 1.0.0, 2.1.3)</p>
+							</template>
+						</NcTextField>
+
+						<div class="selectField">
+							<label for="application-select">Owner Application</label>
+							<NcSelect
+								id="application-select"
+								v-model="selectedApplication"
+								:options="applicationOptions"
+								label="name"
+								track-by="id"
+								:label-outside="true"
+								placeholder="Select owner application (optional)..."
+								@input="updateApplication">
+								<template #option="{ name, description }">
+									<div class="option-content">
+										<span class="option-title">{{ name }}</span>
+										<span v-if="description" class="option-description">{{ description }}</span>
+									</div>
+								</template>
+							</NcSelect>
+							<p v-if="selectedApplication" class="field-hint">
+								Owner: {{ selectedApplication.name }}
+							</p>
+							<p v-else class="field-hint">
+								The application that owns this configuration (optional)
+							</p>
+						</div>
 
 						<NcTextField
 							label="Local Version"
@@ -463,6 +506,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 <script>
 import {
 	NcButton,
+	NcCheckboxRadioSwitch,
 	NcDialog,
 	NcLoadingIcon,
 	NcNoteCard,
@@ -484,6 +528,7 @@ export default {
 	components: {
 		NcDialog,
 		NcButton,
+		NcCheckboxRadioSwitch,
 		NcLoadingIcon,
 		NcNoteCard,
 		NcSelect,
@@ -511,6 +556,7 @@ export default {
 			selectedViews: [],
 			selectedManagedApplications: [],
 			selectedApplication: null,
+			selectedType: null,
 			// Management tab selections
 			selectedSourceType: null,
 			selectedNotificationGroups: [],
@@ -553,6 +599,13 @@ export default {
 				{ value: 'url', label: 'URL', description: 'Configuration from any URL' },
 			]
 		},
+		typeOptions() {
+			return [
+				{ value: 'default', label: 'Default', description: 'Standard configuration type' },
+				{ value: 'application', label: 'Application', description: 'Application-specific configuration' },
+				{ value: 'manual', label: 'Manual', description: 'Manually created configuration' },
+			]
+		},
 		notificationGroupOptions() {
 			// In a real implementation, this would fetch from Nextcloud groups API
 			// For now, return common groups
@@ -585,6 +638,9 @@ export default {
 			configurationStore.configurationItem = {
 				title: '',
 				description: null,
+				type: 'default',
+				app: '',
+				version: '1.0.0', // Default semantic version
 				application: '',
 				owner: '',
 				organisation: null,
@@ -596,6 +652,7 @@ export default {
 				views: [],
 				// Management tab defaults
 				sourceType: 'local',
+				isLocal: true, // New configurations are local by default
 				sourceUrl: null,
 				localVersion: '1.0.0',
 				remoteVersion: null,
@@ -612,6 +669,7 @@ export default {
 			this.selectedAgents = []
 			this.selectedViews = []
 			this.selectedApplication = null
+			this.selectedType = this.typeOptions[0] // 'default'
 			// Management tab defaults
 			this.selectedSourceType = this.sourceTypeOptions[0] // 'local'
 			this.selectedNotificationGroups = []
@@ -632,6 +690,25 @@ export default {
 				configurationStore.configurationItem = {}
 			}
 			configurationStore.configurationItem.description = value
+		},
+		updateVersion(value) {
+			if (!configurationStore.configurationItem) {
+				configurationStore.configurationItem = {}
+			}
+			configurationStore.configurationItem.version = value
+		},
+		updateType(value) {
+			if (!configurationStore.configurationItem) {
+				configurationStore.configurationItem = {}
+			}
+			configurationStore.configurationItem.type = value ? value.value : 'default'
+			this.selectedType = value
+		},
+		updateApp(value) {
+			if (!configurationStore.configurationItem) {
+				configurationStore.configurationItem = {}
+			}
+			configurationStore.configurationItem.app = value || ''
 		},
 		updateApplication(value) {
 			if (!configurationStore.configurationItem) {
@@ -759,6 +836,15 @@ export default {
 				}
 				// Organisation is automatically set by backend based on active organisation
 
+				// Load Settings tab selections
+				if (item.type) {
+					this.selectedType = this.typeOptions.find(
+						t => t.value === item.type,
+					) || this.typeOptions[0] // Default to 'default'
+				} else {
+					this.selectedType = this.typeOptions[0] // Default to 'default'
+				}
+
 				// Load Management tab selections
 				if (item.sourceType) {
 					this.selectedSourceType = this.sourceTypeOptions.find(
@@ -773,6 +859,7 @@ export default {
 
 				// Load selected registers by fetching them individually
 				if (item.registers && Array.isArray(item.registers) && item.registers.length > 0) {
+					this.loadingRegisters = true
 					try {
 						const promises = item.registers.map(id =>
 							fetch(`/index.php/apps/openregister/api/registers/${id}`).then(r => r.json()),
@@ -780,11 +867,14 @@ export default {
 						this.selectedRegisters = await Promise.all(promises)
 					} catch (error) {
 						console.error('Error loading selected registers:', error)
+					} finally {
+						this.loadingRegisters = false
 					}
 				}
 
 				// Load selected schemas by fetching them individually
 				if (item.schemas && Array.isArray(item.schemas) && item.schemas.length > 0) {
+					this.loadingSchemas = true
 					try {
 						const promises = item.schemas.map(id =>
 							fetch(`/index.php/apps/openregister/api/schemas/${id}`).then(r => r.json()),
@@ -792,11 +882,14 @@ export default {
 						this.selectedSchemas = await Promise.all(promises)
 					} catch (error) {
 						console.error('Error loading selected schemas:', error)
+					} finally {
+						this.loadingSchemas = false
 					}
 				}
 
 				// Load selected objects by fetching them individually
 				if (item.objects && Array.isArray(item.objects) && item.objects.length > 0) {
+					this.loadingObjects = true
 					try {
 						const promises = item.objects.map(id =>
 							fetch(`/index.php/apps/openregister/api/objects/${id}`).then(r => r.json()),
@@ -804,11 +897,14 @@ export default {
 						this.selectedObjects = await Promise.all(promises)
 					} catch (error) {
 						console.error('Error loading selected objects:', error)
+					} finally {
+						this.loadingObjects = false
 					}
 				}
 
 				// Load selected sources by fetching them individually
 				if (item.sources && Array.isArray(item.sources) && item.sources.length > 0) {
+					this.loadingSources = true
 					try {
 						const promises = item.sources.map(id =>
 							fetch(`/index.php/apps/openregister/api/sources/${id}`).then(r => r.json()),
@@ -816,11 +912,14 @@ export default {
 						this.selectedSources = await Promise.all(promises)
 					} catch (error) {
 						console.error('Error loading selected sources:', error)
+					} finally {
+						this.loadingSources = false
 					}
 				}
 
 				// Load selected agents by fetching them individually
 				if (item.agents && Array.isArray(item.agents) && item.agents.length > 0) {
+					this.loadingAgents = true
 					try {
 						const promises = item.agents.map(id =>
 							fetch(`/index.php/apps/openregister/api/agents/${id}`).then(r => r.json()),
@@ -828,11 +927,14 @@ export default {
 						this.selectedAgents = await Promise.all(promises)
 					} catch (error) {
 						console.error('Error loading selected agents:', error)
+					} finally {
+						this.loadingAgents = false
 					}
 				}
 
 				// Load selected views by fetching them individually
 				if (item.views && Array.isArray(item.views) && item.views.length > 0) {
+					this.loadingViews = true
 					try {
 						const promises = item.views.map(id =>
 							fetch(`/index.php/apps/openregister/api/views/${id}`).then(r => r.json()),
@@ -840,11 +942,14 @@ export default {
 						this.selectedViews = await Promise.all(promises)
 					} catch (error) {
 						console.error('Error loading selected views:', error)
+					} finally {
+						this.loadingViews = false
 					}
 				}
 
 				// Load selected managed applications by fetching them individually
 				if (item.applications && Array.isArray(item.applications) && item.applications.length > 0) {
+					this.loadingApplications = true
 					try {
 						const promises = item.applications.map(id =>
 							fetch(`/index.php/apps/openregister/api/applications/${id}`).then(r => r.json()),
@@ -852,6 +957,8 @@ export default {
 						this.selectedManagedApplications = await Promise.all(promises)
 					} catch (error) {
 						console.error('Error loading selected applications:', error)
+					} finally {
+						this.loadingApplications = false
 					}
 				}
 			}

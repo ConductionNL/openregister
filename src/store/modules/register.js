@@ -71,9 +71,9 @@ export const useRegisterStore = defineStore('register', {
 		/* istanbul ignore next */ // ignore this for Jest until moved into a service
 		async refreshRegisterList(search = null) {
 			console.log('RegisterStore: Starting refreshRegisterList')
-			let endpoint = '/index.php/apps/openregister/api/registers'
+			let endpoint = '/index.php/apps/openregister/api/registers?_extend=schemas'
 			if (search !== null && search !== '') {
-				endpoint = endpoint + '?_search=' + encodeURIComponent(search)
+				endpoint = endpoint + '&_search=' + encodeURIComponent(search)
 			}
 			const response = await fetch(endpoint, {
 				method: 'GET',

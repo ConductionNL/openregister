@@ -60,6 +60,18 @@ use Symfony\Component\Uid\Uuid;
  * @method void setGithubBranch(?string $githubBranch)
  * @method string|null getGithubPath()
  * @method void setGithubPath(?string $githubPath)
+ * @method bool getIsLocal()
+ * @method void setIsLocal(bool $isLocal)
+ * @method bool getSyncEnabled()
+ * @method void setSyncEnabled(bool $syncEnabled)
+ * @method int getSyncInterval()
+ * @method void setSyncInterval(int $syncInterval)
+ * @method DateTime|null getLastSyncDate()
+ * @method void setLastSyncDate(?DateTime $lastSyncDate)
+ * @method string getSyncStatus()
+ * @method void setSyncStatus(string $syncStatus)
+ * @method string|null getOpenregister()
+ * @method void setOpenregister(?string $openregister)
  * @method array|null getRegisters()
  * @method void setRegisters(?array $registers)
  * @method array|null getSchemas()
@@ -199,6 +211,54 @@ class Configuration extends Entity implements JsonSerializable
     protected $githubPath = null;
 
     /**
+     * Whether this configuration is maintained locally (true) or imported from external source (false)
+     * Local configurations are created/maintained in this installation
+     * External configurations are imported and synchronized from remote sources
+     *
+     * @var bool
+     */
+    protected bool $isLocal = true;
+
+    /**
+     * Whether automatic synchronization is enabled for this configuration
+     * Only applicable for external configurations (isLocal = false)
+     *
+     * @var bool
+     */
+    protected bool $syncEnabled = false;
+
+    /**
+     * Synchronization interval in hours
+     * How often to check for updates from the source
+     *
+     * @var int
+     */
+    protected int $syncInterval = 24;
+
+    /**
+     * Last time the configuration was synchronized with its source
+     *
+     * @var DateTime|null
+     */
+    protected ?DateTime $lastSyncDate = null;
+
+    /**
+     * Status of the last synchronization attempt
+     * Possible values: 'success', 'failed', 'pending', 'never'
+     *
+     * @var string
+     */
+    protected string $syncStatus = 'never';
+
+    /**
+     * Required OpenRegister version constraint (Composer notation)
+     * Examples: '^v8.14.0', '~1.2.0', '>=1.0.0 <2.0.0'
+     *
+     * @var string|null
+     */
+    protected ?string $openregister = null;
+
+    /**
      * Array of register IDs managed by this configuration
      *
      * @var array|null
@@ -298,6 +358,12 @@ class Configuration extends Entity implements JsonSerializable
         $this->addType('githubRepo', 'string');
         $this->addType('githubBranch', 'string');
         $this->addType('githubPath', 'string');
+        $this->addType('isLocal', 'boolean');
+        $this->addType('syncEnabled', 'boolean');
+        $this->addType('syncInterval', 'integer');
+        $this->addType('lastSyncDate', 'datetime');
+        $this->addType('syncStatus', 'string');
+        $this->addType('openregister', 'string');
         $this->addType('registers', 'json');
         $this->addType('schemas', 'json');
         $this->addType('objects', 'json');
@@ -421,6 +487,12 @@ class Configuration extends Entity implements JsonSerializable
             'githubRepo'         => $this->githubRepo,
             'githubBranch'       => $this->githubBranch,
             'githubPath'         => $this->githubPath,
+            'isLocal'            => $this->isLocal,
+            'syncEnabled'        => $this->syncEnabled,
+            'syncInterval'       => $this->syncInterval,
+            'lastSyncDate'       => ($this->lastSyncDate !== null) ? $this->lastSyncDate->format('c') : null,
+            'syncStatus'         => $this->syncStatus,
+            'openregister'       => $this->openregister,
             'organisation'       => $this->organisation,
             'owner'              => $this->owner,
             'registers'          => $this->registers,

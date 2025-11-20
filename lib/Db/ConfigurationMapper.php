@@ -128,7 +128,7 @@ class ConfigurationMapper extends QBMapper
             ->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
 
         // Apply organisation filter (all users including admins must have active org)
-        //$this->applyOrganisationFilter($qb);
+        $this->applyOrganisationFilter($qb);
 
         return $this->findEntity($qb);
 
@@ -160,7 +160,7 @@ class ConfigurationMapper extends QBMapper
             ->orderBy('created', 'DESC');
 
         // Apply organisation filter
-        //$this->applyOrganisationFilter($qb);
+        $this->applyOrganisationFilter($qb);
 
         return $this->findEntities($qb);
 
@@ -192,11 +192,147 @@ class ConfigurationMapper extends QBMapper
             ->orderBy('created', 'DESC');
 
         // Apply organisation filter
-        //$this->applyOrganisationFilter($qb);
+        $this->applyOrganisationFilter($qb);
 
         return $this->findEntities($qb);
 
     }//end findByApp()
+
+
+    /**
+     * Find configuration by source URL
+     *
+     * This method finds a configuration by its source URL, which serves as a unique
+     * identifier for configurations loaded from files or remote sources.
+     *
+     * @param string $sourceUrl Source URL to search for
+     *
+     * @return Configuration|null The configuration entity or null if not found
+     * @throws \Exception If user doesn't have read permission
+     *
+     * @since 0.2.10
+     */
+    public function findBySourceUrl(string $sourceUrl): ?Configuration
+    {
+        // Verify RBAC permission to read
+        $this->verifyRbacPermission('read', 'configuration');
+
+        $qb = $this->db->getQueryBuilder();
+
+        $qb->select('*')
+            ->from($this->tableName)
+            ->where($qb->expr()->eq('source_url', $qb->createNamedParameter($sourceUrl, IQueryBuilder::PARAM_STR)))
+            ->orderBy('created', 'DESC')
+            ->setMaxResults(1);
+
+        // Apply organisation filter
+        $this->applyOrganisationFilter($qb);
+
+        try {
+            return $this->findEntity($qb);
+        } catch (DoesNotExistException $e) {
+            // No configuration found with this source URL
+            return null;
+        }
+
+    }//end findBySourceUrl()
+
+
+    /**
+     * Find configurations that have sync enabled
+     *
+     * This method finds all configurations that should be synchronized automatically
+     *
+     * @param int $limit  Maximum number of results
+     * @param int $offset Offset for pagination
+     *
+     * @return Configuration[] Array of configuration entities
+     * @throws \Exception If user doesn't have read permission
+     *
+     * @since 0.2.10
+     */
+    public function findBySyncEnabled(int $limit = 50, int $offset = 0): array
+    {
+        // Verify RBAC permission to read
+        $this->verifyRbacPermission('read', 'configuration');
+
+        $qb = $this->db->getQueryBuilder();
+
+        $qb->select('*')
+            ->from($this->tableName)
+            ->where($qb->expr()->eq('sync_enabled', $qb->createNamedParameter(true, IQueryBuilder::PARAM_BOOL)))
+            ->orderBy('last_sync_date', 'ASC') // Oldest first for priority sync
+            ->setMaxResults($limit)
+            ->setFirstResult($offset);
+
+        // Apply organisation filter
+        $this->applyOrganisationFilter($qb);
+
+        return $this->findEntities($qb);
+
+    }//end findBySyncEnabled()
+
+
+    /**
+     * Find configurations by local/external status
+     *
+     * @param bool $isLocal  True for local configurations, false for external
+     * @param int  $limit    Maximum number of results
+     * @param int  $offset   Offset for pagination
+     *
+     * @return Configuration[] Array of configuration entities
+     * @throws \Exception If user doesn't have read permission
+     *
+     * @since 0.2.10
+     */
+    public function findByIsLocal(bool $isLocal, int $limit = 50, int $offset = 0): array
+    {
+        // Verify RBAC permission to read
+        $this->verifyRbacPermission('read', 'configuration');
+
+        $qb = $this->db->getQueryBuilder();
+
+        $qb->select('*')
+            ->from($this->tableName)
+            ->where($qb->expr()->eq('is_local', $qb->createNamedParameter($isLocal, IQueryBuilder::PARAM_BOOL)))
+            ->orderBy('created', 'DESC')
+            ->setMaxResults($limit)
+            ->setFirstResult($offset);
+
+        // Apply organisation filter
+        $this->applyOrganisationFilter($qb);
+
+        return $this->findEntities($qb);
+
+    }//end findByIsLocal()
+
+
+    /**
+     * Update synchronization status for a configuration
+     *
+     * @param int       $id          Configuration ID
+     * @param string    $status      Sync status: 'success', 'failed', 'pending'
+     * @param \DateTime $syncDate    Synchronization timestamp
+     * @param string    $message     Optional message about the sync result
+     *
+     * @return Configuration The updated configuration
+     * @throws \Exception If configuration not found or user doesn't have permission
+     *
+     * @since 0.2.10
+     */
+    public function updateSyncStatus(int $id, string $status, \DateTime $syncDate, string $message = ''): Configuration
+    {
+        // Verify RBAC permission to update
+        $this->verifyRbacPermission('update', 'configuration');
+
+        $configuration = $this->find($id);
+        $configuration->setSyncStatus($status);
+        $configuration->setLastSyncDate($syncDate);
+        $configuration->setUpdated(new \DateTime());
+
+        return $this->update($configuration);
+
+    }//end updateSyncStatus()
 
 
     /**
@@ -449,7 +585,7 @@ class ConfigurationMapper extends QBMapper
         }
 
         // Apply organisation filter (all users including admins must have active org)
-        //$this->applyOrganisationFilter($qb);
+        $this->applyOrganisationFilter($qb);
 
         // Execute the query and return the results.
         return $this->findEntities($qb);

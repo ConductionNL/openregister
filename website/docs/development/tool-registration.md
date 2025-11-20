@@ -717,10 +717,84 @@ class ToolRegistry
 }
 ```
 
+## Implementation Summary
+
+### Architecture Overview
+
+The tool registration system uses a plugin architecture that allows any Nextcloud app to register custom tools:
+
+```mermaid
+graph TD
+    A[Nextcloud Apps] --> B[ToolRegistrationEvent]
+    B --> C[ToolRegistry]
+    C --> D[ChatService]
+    D --> E[LLM with Function Calling]
+    E --> F[Tool Functions]
+    F --> G[App Services]
+    
+    H[Frontend EditAgent] --> I[GET /api/agents/tools]
+    I --> C
+    
+    J[Agent Configuration] --> D
+```
+
+### Key Components
+
+**Backend:**
+- `ToolRegistry` - Central service managing all available tools
+- `ToolRegistrationEvent` - Event dispatched when tools are collected
+- `ToolRegistrationListener` - Registers OpenRegister's built-in tools
+- `ChatService` - Uses ToolRegistry for dynamic tool loading
+- `AgentsController` - API endpoint `/api/agents/tools` for frontend
+
+**Frontend:**
+- `EditAgent.vue` - Dynamically loads available tools
+- Displays tool name, description, icon, and app badge
+- Supports toggle switches for enabling/disabling tools
+
+### Built-in Tools
+
+OpenRegister provides three built-in tools:
+- `openregister.register` - Manage registers
+- `openregister.schema` - Manage schemas
+- `openregister.objects` - Manage objects
+
+### UI Improvements
+
+The tool selection interface features:
+- **64px icons** with colored backgrounds for visual prominence
+- **Toggle switches** instead of checkboxes for better UX
+- **Enhanced styling** with hover effects, borders, and spacing
+- **App badges** showing the source app for each tool
+- **Responsive layout** with proper alignment and typography
+
+### Security Features
+
+- RBAC enforcement at tool level
+- Organization boundary respect
+- User context for permissions
+- Input validation in all tools
+- Audit trail logging
+
+### Benefits
+
+**For End Users:**
+- Agents can perform real actions (not just chat)
+- Multi-app functionality in single conversation
+- Secure with proper permission checks
+
+**For Developers:**
+- Simple API to add new capabilities
+- Reuse existing services
+- Comprehensive documentation
+- Working examples to follow
+
 ## Further Reading
 
 - [OpenAI Function Calling](https://platform.openai.com/docs/guides/function-calling)
 - [LLPhant Documentation](https://llphant.gitbook.io/llphant)
 - [OpenRegister Agent Documentation](../features/agents.md)
+- [Tool Metadata Architecture](./tool-metadata-architecture.md) - Deep dive into metadata architecture
+- [Tool Testing Guide](./tool-registration-testing.md) - Comprehensive testing procedures
 - [Nextcloud App Development](https://docs.nextcloud.com/server/latest/developer_manual/)
 

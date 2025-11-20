@@ -248,14 +248,33 @@ class Schema extends Entity implements JsonSerializable
     protected ?array $groups = [];
 
     /**
-     * The ID or UUID of the parent schema that this schema extends.
-     * When set, this schema inherits all properties from the parent schema
-     * and can override or add new properties. Only the differences (delta)
-     * are stored in this schema's properties field.
+     * Array of schema references that this schema must validate against (all schemas).
+     * Implements JSON Schema 'allOf' for multiple inheritance/composition.
+     * The instance must validate against ALL schemas in the array.
+     * Only additional constraints are allowed (Liskov Substitution Principle).
+     * Metadata (title, description, order) can be overridden.
      *
-     * @var string|null The ID, UUID, or slug of the parent schema
+     * @var array|null Array of schema IDs, UUIDs, or slugs
      */
-    protected ?string $extend = null;
+    protected ?array $allOf = null;
+
+    /**
+     * Array of schema references where instance must validate against exactly one.
+     * Implements JSON Schema 'oneOf' for mutually exclusive options.
+     * The instance must validate against EXACTLY ONE schema in the array.
+     *
+     * @var array|null Array of schema IDs, UUIDs, or slugs
+     */
+    protected ?array $oneOf = null;
+
+    /**
+     * Array of schema references where instance must validate against at least one.
+     * Implements JSON Schema 'anyOf' for flexible composition.
+     * The instance must validate against AT LEAST ONE schema in the array.
+     *
+     * @var array|null Array of schema IDs, UUIDs, or slugs
+     */
+    protected ?array $anyOf = null;
 
 
     /**
@@ -277,6 +296,9 @@ class Schema extends Entity implements JsonSerializable
         $this->addType(fieldName: 'properties', type: 'json');
         $this->addType(fieldName: 'archive', type: 'json');
         $this->addType(fieldName: 'facets', type: 'json');
+        $this->addType(fieldName: 'allOf', type: 'json');
+        $this->addType(fieldName: 'oneOf', type: 'json');
+        $this->addType(fieldName: 'anyOf', type: 'json');
         $this->addType(fieldName: 'source', type: 'string');
         $this->addType(fieldName: 'hardValidation', type: Types::BOOLEAN);
         $this->addType(fieldName: 'immutable', type: Types::BOOLEAN);
@@ -291,7 +313,6 @@ class Schema extends Entity implements JsonSerializable
         $this->addType(fieldName: 'deleted', type: 'datetime');
         $this->addType(fieldName: 'configuration', type: 'json');
         $this->addType(fieldName: 'groups', type: 'json');
-        $this->addType(fieldName: 'extend', type: 'string');
 
     }//end __construct()
 
@@ -682,7 +703,9 @@ class Schema extends Entity implements JsonSerializable
             'authorization'  => $this->authorization,
             'deleted'        => $deleted,
             'configuration'  => $this->configuration,
-            'extend'         => $this->extend,
+            'allOf'          => $this->allOf,
+            'oneOf'          => $this->oneOf,
+            'anyOf'          => $this->anyOf,
         ];
 
     }//end jsonSerialize()
@@ -1275,37 +1298,103 @@ class Schema extends Entity implements JsonSerializable
 
 
     /**
-     * Get the ID or UUID of the parent schema that this schema extends
+     * Get the array of schema references that this schema must validate against (allOf)
      *
-     * Returns null if this schema does not extend another schema.
-     * When set, this schema inherits properties from the parent schema.
+     * The instance must validate against ALL schemas in the array.
+     * This implements JSON Schema 'allOf' for multiple inheritance/composition.
      *
-     * @return string|null The ID, UUID, or slug of the parent schema
+     * @return array|null Array of schema IDs, UUIDs, or slugs
      */
-    public function getExtend(): ?string
+    public function getAllOf(): ?array
     {
-        return $this->extend;
+        return $this->allOf;
 
-    }//end getExtend()
+    }//end getAllOf()
 
 
     /**
-     * Set the ID or UUID of the parent schema that this schema extends
+     * Set the array of schema references that this schema must validate against (allOf)
      *
-     * When set, this schema will inherit all properties from the parent schema
-     * and can override or add new properties. Only the differences (delta) will
-     * be stored in this schema's properties field.
+     * The instance must validate against ALL schemas in the array.
+     * Only additional constraints are allowed (Liskov Substitution Principle).
+     * Metadata (title, description, order) can be overridden.
      *
-     * @param string|null $extend The ID, UUID, or slug of the parent schema
+     * @param array|null $allOf Array of schema IDs, UUIDs, or slugs
      *
      * @return void
      */
-    public function setExtend(?string $extend): void
+    public function setAllOf(?array $allOf): void
     {
-        $this->extend = $extend;
-        $this->markFieldUpdated('extend');
+        $this->allOf = $allOf;
+        $this->markFieldUpdated('allOf');
 
-    }//end setExtend()
+    }//end setAllOf()
+
+
+    /**
+     * Get the array of schema references where instance must validate against exactly one (oneOf)
+     *
+     * The instance must validate against EXACTLY ONE schema in the array.
+     * This implements JSON Schema 'oneOf' for mutually exclusive options.
+     *
+     * @return array|null Array of schema IDs, UUIDs, or slugs
+     */
+    public function getOneOf(): ?array
+    {
+        return $this->oneOf;
+
+    }//end getOneOf()
+
+
+    /**
+     * Set the array of schema references where instance must validate against exactly one (oneOf)
+     *
+     * The instance must validate against EXACTLY ONE schema in the array.
+     * This implements JSON Schema 'oneOf' for mutually exclusive options.
+     *
+     * @param array|null $oneOf Array of schema IDs, UUIDs, or slugs
+     *
+     * @return void
+     */
+    public function setOneOf(?array $oneOf): void
+    {
+        $this->oneOf = $oneOf;
+        $this->markFieldUpdated('oneOf');
+
+    }//end setOneOf()
+
+
+    /**
+     * Get the array of schema references where instance must validate against at least one (anyOf)
+     *
+     * The instance must validate against AT LEAST ONE schema in the array.
+     * This implements JSON Schema 'anyOf' for flexible composition.
+     *
+     * @return array|null Array of schema IDs, UUIDs, or slugs
+     */
+    public function getAnyOf(): ?array
+    {
+        return $this->anyOf;
+
+    }//end getAnyOf()
+
+
+    /**
+     * Set the array of schema references where instance must validate against at least one (anyOf)
+     *
+     * The instance must validate against AT LEAST ONE schema in the array.
+     * This implements JSON Schema 'anyOf' for flexible composition.
+     *
+     * @param array|null $anyOf Array of schema IDs, UUIDs, or slugs
+     *
+     * @return void
+     */
+    public function setAnyOf(?array $anyOf): void
+    {
+        $this->anyOf = $anyOf;
+        $this->markFieldUpdated('anyOf');
+
+    }//end setAnyOf()
 
 
     /**

@@ -51,40 +51,17 @@ class Version1Date20251102170000 extends SimpleMigrationStep
         /** @var ISchemaWrapper $schema */
         $schema = $schemaClosure();
 
-        $output->info('🔧 Adding schema extension support...');
+        $output->info('⚠️  Schema extension (extend column) is deprecated - skipping migration');
+        $output->info('   Schema inheritance now uses allOf, oneOf, and anyOf fields instead');
 
-        // Add extend field to schemas table
-        if ($schema->hasTable('openregister_schemas')) {
-            $table = $schema->getTable('openregister_schemas');
-            
-            // Add extend field (stores parent schema identifier)
-            if (!$table->hasColumn('extend')) {
-                $table->addColumn('extend', Types::STRING, [
-                    'notnull' => false,
-                    'length' => 255,
-                    'default' => null,
-                    'comment' => 'ID, UUID, or slug of the parent schema that this schema extends'
-                ]);
-                
-                // Add index for faster lookups of child schemas
-                $table->addIndex(['extend'], 'schemas_extend_index');
-                
-                $output->info('   ✓ Added extend column to schemas table');
-                $output->info('   ✓ Added index for extend lookups');
-                $output->info('✅ Schema extension support added successfully');
-                $output->info('🎯 Features enabled:');
-                $output->info('   • Schema inheritance/extension');
-                $output->info('   • Delta storage (only differences stored)');
-                $output->info('   • Automatic property merging on retrieval');
-                $output->info('   • Multi-level inheritance support');
-            } else {
-                $output->info('⚠️  Extend column already exists in schemas table');
-            }
-        } else {
-            $output->info('⚠️  Schemas table does not exist!');
-        }
+        // DEPRECATED: The extend column functionality has been replaced by JSON Schema
+        // composition using allOf, oneOf, and anyOf fields. This migration is kept
+        // for backwards compatibility but no longer adds the extend column.
+        //
+        // If the extend column exists from a previous installation, it will remain
+        // but is no longer used by the application.
 
-        return $schema;
+        return null;
 
     }//end changeSchema()
 
