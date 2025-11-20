@@ -87,7 +87,7 @@ class ObjectsTool extends AbstractTool
      */
     public function getDescription(): string
     {
-        return 'Manage objects in OpenRegister. Objects are data records that conform to schemas. '.'Use this tool to search, view, create, update, or delete objects.';
+        return 'Manage objects: search, view, create, update, or delete objects. Objects are data records conforming to schemas.';
 
     }//end getDescription()
 
@@ -218,7 +218,7 @@ class ObjectsTool extends AbstractTool
     {
         $this->log($functionName, $parameters);
 
-        if (!$this->hasUserContext($userId)) {
+        if ($this->hasUserContext($userId) === false) {
             return $this->formatError('No user context available. Tool cannot execute without user session.');
         }
 
@@ -239,7 +239,11 @@ class ObjectsTool extends AbstractTool
     /**
      * Search for objects
      *
-     * @param array $parameters Function parameters
+     * @param int         $limit    Result limit
+     * @param int         $offset   Result offset
+     * @param string|null $register Register filter
+     * @param string|null $schema   Schema filter
+     * @param string|null $query    Search query
      *
      * @return array Result with list of objects
      */
@@ -254,7 +258,7 @@ class ObjectsTool extends AbstractTool
             $filters['schema'] = $schema;
         }
 
-        if ($query !== null && !empty($query)) {
+        if ($query !== null && $query !== '') {
             $filters['_search'] = $query;
         }
 
@@ -262,9 +266,9 @@ class ObjectsTool extends AbstractTool
 
         $result = $this->objectService->findAll(
             null,
-        // registerId.
+            // Register ID.
             null,
-        // schemaId.
+            // Schema ID.
             $limit,
             $offset,
             $filters
@@ -299,7 +303,7 @@ class ObjectsTool extends AbstractTool
     /**
      * Get a specific object
      *
-     * @param array $parameters Function parameters
+     * @param string $id Object ID
      *
      * @return array Result with object details
      *
@@ -330,7 +334,9 @@ class ObjectsTool extends AbstractTool
     /**
      * Create a new object
      *
-     * @param array $parameters Function parameters
+     * @param string $register Register identifier
+     * @param string $schema   Schema identifier
+     * @param array  $data     Object data
      *
      * @return array Result with created object
      *
@@ -371,7 +377,8 @@ class ObjectsTool extends AbstractTool
     /**
      * Update an existing object
      *
-     * @param array $parameters Function parameters
+     * @param string $id   Object ID
+     * @param array  $data Object data
      *
      * @return array Result with updated object
      *
@@ -413,7 +420,7 @@ class ObjectsTool extends AbstractTool
     /**
      * Delete an object
      *
-     * @param array $parameters Function parameters
+     * @param string $id Object ID
      *
      * @return array Result of deletion
      *

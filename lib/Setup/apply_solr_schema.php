@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Apply SOLR Schema Configuration for OpenRegister
  *
@@ -9,14 +10,14 @@
  * - SOLR Configuration > Field Management
  * - API: /apps/openregister/api/settings/solr/fields/create
  *
- * @deprecated Use the field management UI/API instead
  * @category   Setup
  * @package    OCA\OpenRegister\Setup
- * @author     OpenRegister Team
+ * @author     OpenRegister Team <info@conduction.nl>
  * @copyright  2024 OpenRegister
- * @license    AGPL-3.0-or-later
+ * @license    AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  * @version    1.0.0
  * @link       https://github.com/OpenRegister/OpenRegister
+ * @deprecated Use the field management UI/API instead
  */
 
 echo "⚠️  DEPRECATED SCRIPT\n";
@@ -42,6 +43,7 @@ echo "==========================================\n\n";
  * ObjectEntity field definitions for SOLR schema
  * Based on ObjectEntity.php metadata properties
  */
+
 $fieldDefinitions = [
     // **CRITICAL**: Core tenant field with self_ prefix (consistent naming).
     'self_tenant'         => [
@@ -270,6 +272,13 @@ $fieldDefinitions = [
 
 /**
  * Apply schema field configuration
+ *
+ * @param string $collectionName Collection name
+ * @param string $solrBaseUrl    SOLR base URL
+ * @param string $fieldName      Field name
+ * @param array  $fieldConfig    Field configuration
+ *
+ * @return bool Success status
  */
 function applySchemaField($collectionName, $solrBaseUrl, $fieldName, $fieldConfig)
 {
@@ -282,7 +291,7 @@ function applySchemaField($collectionName, $solrBaseUrl, $fieldName, $fieldConfi
 
     $result = makeHttpRequest($url, $addPayload);
 
-    if ($result['success']) {
+    if ($result['success'] === true) {
         echo "✅ Added field: {$fieldName}\n";
         return true;
     }
@@ -294,7 +303,7 @@ function applySchemaField($collectionName, $solrBaseUrl, $fieldName, $fieldConfi
 
     $result = makeHttpRequest($url, $replacePayload);
 
-    if ($result['success']) {
+    if ($result['success'] === true) {
         echo "✅ Updated field: {$fieldName}\n";
         return true;
     } else {
@@ -307,6 +316,11 @@ function applySchemaField($collectionName, $solrBaseUrl, $fieldName, $fieldConfi
 
 /**
  * Make HTTP request to SOLR
+ *
+ * @param string $url     Request URL
+ * @param array  $payload Request payload
+ *
+ * @return array Response data
  */
 function makeHttpRequest($url, $payload)
 {
@@ -334,7 +348,11 @@ function makeHttpRequest($url, $payload)
     }
 
     $success = ($data['responseHeader']['status'] ?? -1) === 0;
-    $error   = $success ? null : ($data['error']['msg'] ?? 'Unknown error');
+    if ($success === true) {
+        $error = null;
+    } else {
+        $error = $data['error']['msg'] ?? 'Unknown error';
+    }
 
     return ['success' => $success, 'error' => $error, 'data' => $data];
 
@@ -354,7 +372,7 @@ foreach ($fieldDefinitions as $fieldName => $fieldConfig) {
     // Remove description from field config (not a SOLR field property).
     unset($fieldConfig['description']);
 
-    if (applySchemaField($collectionName, $solrBaseUrl, $fieldName, $fieldConfig)) {
+    if (applySchemaField($collectionName, $solrBaseUrl, $fieldName, $fieldConfig) === true) {
         $successCount++;
     }
 }

@@ -87,7 +87,7 @@ class RegisterTool extends AbstractTool
      */
     public function getDescription(): string
     {
-        return 'Manage registers in OpenRegister. Registers are collections that organize schemas and objects. '.'Use this tool to list, view, create, update, or delete registers.';
+        return 'Manage registers: list, view, create, update, or delete registers. Registers organize schemas and objects.';
 
     }//end getDescription()
 
@@ -210,7 +210,7 @@ class RegisterTool extends AbstractTool
     {
         $this->log($functionName, $parameters);
 
-        if (!$this->hasUserContext($userId)) {
+        if ($this->hasUserContext($userId) === false) {
             return $this->formatError('No user context available. Tool cannot execute without user session.');
         }
 
@@ -267,7 +267,7 @@ class RegisterTool extends AbstractTool
     /**
      * Get a specific register
      *
-     * @param array $parameters Function parameters
+     * @param string $id Register ID
      *
      * @return array Result with register details
      *
@@ -298,7 +298,9 @@ class RegisterTool extends AbstractTool
     /**
      * Create a new register
      *
-     * @param array $parameters Function parameters
+     * @param string      $title       Register title
+     * @param string      $description Register description
+     * @param string|null $slug        Register slug
      *
      * @return array Result with created register
      *
@@ -334,7 +336,9 @@ class RegisterTool extends AbstractTool
     /**
      * Update an existing register
      *
-     * @param array $parameters Function parameters
+     * @param string      $id          Register ID
+     * @param string|null $title       Register title
+     * @param string|null $description Register description
      *
      * @return array Result with updated register
      *
@@ -351,7 +355,7 @@ class RegisterTool extends AbstractTool
             $data['description'] = $description;
         }
 
-        if (empty($data)) {
+        if ($data === []) {
             throw new \InvalidArgumentException('No update data provided');
         }
 
@@ -374,7 +378,7 @@ class RegisterTool extends AbstractTool
     /**
      * Delete a register
      *
-     * @param array $parameters Function parameters
+     * @param string $id Register ID
      *
      * @return array Result of deletion
      *

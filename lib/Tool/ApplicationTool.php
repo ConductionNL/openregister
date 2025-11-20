@@ -84,7 +84,7 @@ class ApplicationTool extends AbstractTool implements ToolInterface
      */
     public function getDescription(): string
     {
-        return 'Manage applications in OpenRegister. Applications represent software modules or systems within an organisation. Use this tool to list, view, create, update, or delete applications. Operations respect RBAC permissions and organisation boundaries.';
+        return 'Manage applications: list, view, create, update, or delete applications with RBAC permissions and organisation boundaries.';
 
     }//end getDescription()
 
@@ -102,7 +102,7 @@ class ApplicationTool extends AbstractTool implements ToolInterface
         return [
             [
                 'name'        => 'list_applications',
-                'description' => 'List all applications accessible to the current user in their organisation. Returns basic information about each application. Use filters to narrow results.',
+                'description' => 'List all accessible applications. Returns basic information. Use filters to narrow results.',
                 'parameters'  => [
                     'type'       => 'object',
                     'properties' => [
@@ -120,7 +120,7 @@ class ApplicationTool extends AbstractTool implements ToolInterface
             ],
             [
                 'name'        => 'get_application',
-                'description' => 'Get detailed information about a specific application by its UUID. Returns full application data including name, description, metadata, and configuration.',
+                'description' => 'Get detailed application information by UUID. Returns name, description, metadata, and configuration.',
                 'parameters'  => [
                     'type'       => 'object',
                     'properties' => [
@@ -134,7 +134,7 @@ class ApplicationTool extends AbstractTool implements ToolInterface
             ],
             [
                 'name'        => 'create_application',
-                'description' => 'Create a new application in the current organisation. Requires a unique name and can include description, metadata, and configuration.',
+                'description' => 'Create a new application. Requires unique name. Can include description, metadata, and configuration.',
                 'parameters'  => [
                     'type'       => 'object',
                     'properties' => [
@@ -156,7 +156,7 @@ class ApplicationTool extends AbstractTool implements ToolInterface
             ],
             [
                 'name'        => 'update_application',
-                'description' => 'Update an existing application. Only the owner or users with update permission can modify applications. Provide the UUID and fields to update.',
+                'description' => 'Update application (owner/update permission required). Provide UUID and fields to update.',
                 'parameters'  => [
                     'type'       => 'object',
                     'properties' => [
@@ -182,7 +182,7 @@ class ApplicationTool extends AbstractTool implements ToolInterface
             ],
             [
                 'name'        => 'delete_application',
-                'description' => 'Delete an application permanently. Only the owner or users with delete permission can remove applications. This action cannot be undone.',
+                'description' => 'Permanently delete application (owner/delete permission required). Cannot be undone.',
                 'parameters'  => [
                     'type'       => 'object',
                     'properties' => [

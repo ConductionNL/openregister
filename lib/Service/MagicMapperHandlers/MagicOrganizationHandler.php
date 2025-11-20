@@ -103,13 +103,17 @@ class MagicOrganizationHandler
         bool $multi=true
     ): void {
         // If multitenancy is disabled, skip all organization filtering.
-        if ($multi === false || !$this->isMultiTenancyEnabled()) {
+        if ($multi === false || $this->isMultiTenancyEnabled() === false) {
             return;
         }
 
         // Get current user to check if they're admin.
-        $user   = $this->userSession->getUser();
-        $userId = $user ? $user->getUID() : null;
+        $user = $this->userSession->getUser();
+        if ($user !== null) {
+            $userId = $user->getUID();
+        } else {
+            $userId = null;
+        }
 
         if ($userId === null) {
             // For unauthenticated requests, show published objects only.
@@ -130,8 +134,8 @@ class MagicOrganizationHandler
             $userGroups = $this->groupManager->getUserGroupIds($user);
 
             // Check if user is admin and admin override is enabled.
-            if (in_array('admin', $userGroups)) {
-                if ($this->isAdminOverrideEnabled()) {
+            if (in_array('admin', $userGroups, true) === true) {
+                if ($this->isAdminOverrideEnabled() === true) {
                     return;
                     // No filtering for admin users when override is enabled.
                 }
@@ -162,7 +166,7 @@ class MagicOrganizationHandler
         );
 
         // Include published objects from any organization if configured to do so.
-        if ($this->shouldPublishedObjectsBypassMultiTenancy()) {
+        if ($this->shouldPublishedObjectsBypassMultiTenancy() === true) {
             $now = (new \DateTime())->format('Y-m-d H:i:s');
             $orgConditions->add(
                 $qb->expr()->andX(
@@ -197,7 +201,7 @@ class MagicOrganizationHandler
     private function shouldPublishedObjectsBypassMultiTenancy(): bool
     {
         $multitenancyConfig = $this->appConfig->getValueString('openregister', 'multitenancy', '');
-        if (empty($multitenancyConfig)) {
+        if ($multitenancyConfig === '') {
             return false;
             // Default to false for security.
         }
@@ -244,7 +248,11 @@ class MagicOrganizationHandler
         try {
             // Get default organisation UUID from configuration (not deprecated is_default column).
             $defaultUuid = $this->appConfig->getValueString('openregister', 'defaultOrganisation', '');
-            return $defaultUuid !== '' ? $defaultUuid : null;
+            if ($defaultUuid !== '') {
+                return $defaultUuid;
+            }
+
+            return null;
         } catch (\Exception $e) {
             $this->logger->error(
                     'Failed to get system default organization from configuration',
@@ -266,7 +274,7 @@ class MagicOrganizationHandler
     private function isMultiTenancyEnabled(): bool
     {
         $multitenancyConfig = $this->appConfig->getValueString('openregister', 'multitenancy', '');
-        if (empty($multitenancyConfig)) {
+        if ($multitenancyConfig === '') {
             return false;
         }
 
@@ -284,7 +292,7 @@ class MagicOrganizationHandler
     private function isAdminOverrideEnabled(): bool
     {
         $rbacConfig = $this->appConfig->getValueString('openregister', 'rbac', '');
-        if (empty($rbacConfig)) {
+        if ($rbacConfig === '') {
             return true;
             // Default to true if no RBAC config exists.
         }
@@ -344,7 +352,7 @@ class MagicOrganizationHandler
     public function setDefaultOrganization(array $objects, string $defaultOrgUuid): array
     {
         foreach ($objects as &$object) {
-            if (!isset($object['_organisation']) || empty($object['_organisation'])) {
+            if (isset($object['_organisation']) === false || $object['_organisation'] === '') {
                 $object['_organisation'] = $defaultOrgUuid;
             }
         }

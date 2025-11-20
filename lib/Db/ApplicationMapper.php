@@ -213,7 +213,7 @@ class ApplicationMapper extends QBMapper
         }
 
         // Apply search conditions.
-        if (!empty($searchConditions)) {
+        if (empty($searchConditions) === false) {
             $qb->andWhere($qb->expr()->orX(...$searchConditions));
             foreach ($searchParams as $key => $value) {
                 $qb->setParameter($key, $value);
@@ -243,7 +243,7 @@ class ApplicationMapper extends QBMapper
 
         if ($entity instanceof Application) {
             // Generate UUID if not set.
-            if (empty($entity->getUuid())) {
+            if (empty($entity->getUuid()) === true) {
                 $entity->setUuid(\Symfony\Component\Uid\Uuid::v4()->toRfc4122());
             }
 

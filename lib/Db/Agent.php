@@ -420,7 +420,7 @@ class Agent extends Entity implements JsonSerializable
             $this->invitedUsers = [];
         }
 
-        if (!in_array($userId, $this->invitedUsers, true)) {
+        if (in_array($userId, $this->invitedUsers, true) === false) {
             $this->invitedUsers[] = $userId;
             $this->markFieldUpdated('invitedUsers');
         }
@@ -461,7 +461,7 @@ class Agent extends Entity implements JsonSerializable
     public function hydrate(array $object): self
     {
         // Set UUID - generate if not provided.
-        if (isset($object['uuid']) && !empty($object['uuid'])) {
+        if (isset($object['uuid']) === true && empty($object['uuid']) === false) {
             $this->setUuid($object['uuid']);
         } else {
             // Generate new UUID if not provided.
@@ -540,11 +540,7 @@ class Agent extends Entity implements JsonSerializable
             'user'                   => $this->user,
             'created'                => $this->created?->format('Y-m-d\TH:i:s\Z'),
             'updated'                => $this->updated?->format('Y-m-d\TH:i:s\Z'),
-            'managedByConfiguration' => $this->managedByConfiguration !== null ? [
-                'id'    => $this->managedByConfiguration->getId(),
-                'uuid'  => $this->managedByConfiguration->getUuid(),
-                'title' => $this->managedByConfiguration->getTitle(),
-            ] : null,
+            'managedByConfiguration' => $this->getManagedByConfigurationData(),
         ];
 
     }//end jsonSerialize()
@@ -635,6 +631,26 @@ class Agent extends Entity implements JsonSerializable
         return null;
 
     }//end getManagedByConfiguration()
+
+
+    /**
+     * Get managed by configuration data for JSON serialization
+     *
+     * @return array|null Configuration data or null
+     */
+    private function getManagedByConfigurationData(): ?array
+    {
+        if ($this->managedByConfiguration !== null) {
+            return [
+                'id'    => $this->managedByConfiguration->getId(),
+                'uuid'  => $this->managedByConfiguration->getUuid(),
+                'title' => $this->managedByConfiguration->getTitle(),
+            ];
+        }
+
+        return null;
+
+    }//end getManagedByConfigurationData()
 
 
 }//end class

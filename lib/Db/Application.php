@@ -45,15 +45,15 @@ use Symfony\Component\Uid\Uuid;
  * @method string|null getOrganisation()
  * @method void setOrganisation(?string $organisation)
  * @method array|null getConfigurations()
- * @method void setConfigurations(?array $configurations)
+ * @method self setConfigurations(?array $configurations)
  * @method array|null getRegisters()
- * @method void setRegisters(?array $registers)
+ * @method self setRegisters(?array $registers)
  * @method array|null getSchemas()
- * @method void setSchemas(?array $schemas)
+ * @method self setSchemas(?array $schemas)
  * @method string|null getOwner()
  * @method void setOwner(?string $owner)
  * @method bool|null getActive()
- * @method void setActive(?bool $active)
+ * @method self setActive(?bool $active)
  * @method int|null getStorageQuota()
  * @method void setStorageQuota(?int $storageQuota)
  * @method int|null getBandwidthQuota()
@@ -61,9 +61,9 @@ use Symfony\Component\Uid\Uuid;
  * @method int|null getRequestQuota()
  * @method void setRequestQuota(?int $requestQuota)
  * @method array|null getGroups()
- * @method void setGroups(?array $groups)
+ * @method self setGroups(?array $groups)
  * @method array|null getAuthorization()
- * @method void setAuthorization(?array $authorization)
+ * @method self setAuthorization(?array $authorization)
  * @method DateTime|null getCreated()
  * @method void setCreated(?DateTime $created)
  * @method DateTime|null getUpdated()
@@ -575,13 +575,9 @@ class Application extends Entity implements JsonSerializable
                 'groups'    => count($groups),
             ],
             'authorization'          => $this->authorization ?? $this->getDefaultAuthorization(),
-            'created'                => $this->created ? $this->created->format('c') : null,
-            'updated'                => $this->updated ? $this->updated->format('c') : null,
-            'managedByConfiguration' => $this->managedByConfiguration !== null ? [
-                'id'    => $this->managedByConfiguration->getId(),
-                'uuid'  => $this->managedByConfiguration->getUuid(),
-                'title' => $this->managedByConfiguration->getTitle(),
-            ] : null,
+            'created'                => $this->getCreatedFormatted(),
+            'updated'                => $this->getUpdatedFormatted(),
+            'managedByConfiguration' => $this->getManagedByConfigurationData(),
         ];
 
     }//end jsonSerialize()
@@ -692,6 +688,58 @@ class Application extends Entity implements JsonSerializable
         return null;
 
     }//end getManagedByConfiguration()
+
+
+    /**
+     * Get formatted created date for JSON serialization
+     *
+     * @return string|null Formatted date or null
+     */
+    private function getCreatedFormatted(): ?string
+    {
+        if ($this->created !== null) {
+            return $this->created->format('c');
+        }
+
+        return null;
+
+    }//end getCreatedFormatted()
+
+
+    /**
+     * Get formatted updated date for JSON serialization
+     *
+     * @return string|null Formatted date or null
+     */
+    private function getUpdatedFormatted(): ?string
+    {
+        if ($this->updated !== null) {
+            return $this->updated->format('c');
+        }
+
+        return null;
+
+    }//end getUpdatedFormatted()
+
+
+    /**
+     * Get managed by configuration data for JSON serialization
+     *
+     * @return array|null Configuration data or null
+     */
+    private function getManagedByConfigurationData(): ?array
+    {
+        if ($this->managedByConfiguration !== null) {
+            return [
+                'id'    => $this->managedByConfiguration->getId(),
+                'uuid'  => $this->managedByConfiguration->getUuid(),
+                'title' => $this->managedByConfiguration->getTitle(),
+            ];
+        }
+
+        return null;
+
+    }//end getManagedByConfigurationData()
 
 
 }//end class
