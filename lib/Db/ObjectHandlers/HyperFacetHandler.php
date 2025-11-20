@@ -706,14 +706,14 @@ class HyperFacetHandler
             $queryBuilder->andWhere($queryBuilder->expr()->eq('organisation', $queryBuilder->createNamedParameter($baseQuery['@self']['organisation'])));
         }
         
-        // 3. THIRD: Apply other indexed filters
+        // 3. THIRD: Apply other indexed filters.
         $includeDeleted = $baseQuery['_includeDeleted'] ?? false;
-        if (!$includeDeleted) {
+        if ($includeDeleted === false) {
             $queryBuilder->andWhere($queryBuilder->expr()->isNull('deleted'));
         }
         
         $published = $baseQuery['_published'] ?? false;
-        if ($published) {
+        if ($published === true) {
             $now = (new \DateTime())->format('Y-m-d H:i:s');
             $queryBuilder->andWhere(
                 $queryBuilder->expr()->andX(

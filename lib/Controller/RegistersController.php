@@ -526,11 +526,11 @@ class RegistersController extends Controller
                     $content = ob_get_clean();
                     return new DataDownloadResponse($content, $filename, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
                 case 'csv':
-                    // CSV exports require a specific schema
+                    // CSV exports require a specific schema.
                     $schemaId = $this->request->getParam('schema');
 
-                    if (!$schemaId) {
-                        // If no schema specified, return error (CSV cannot handle multiple schemas)
+                    if ($schemaId === null || $schemaId === '') {
+                        // If no schema specified, return error (CSV cannot handle multiple schemas).
                         return new JSONResponse(data: ['error' => 'CSV export requires a specific schema to be selected'], statusCode: 400);
                     }
 
@@ -724,9 +724,9 @@ class RegistersController extends Controller
                 return new JSONResponse(['error' => 'No file uploaded'], 400);
             }
 
-            // Dynamically determine import type if not provided
+            // Dynamically determine import type if not provided.
             $type = $this->request->getParam('type');
-            if (!$type) {
+            if ($type === null || $type === '') {
                 $mimeType  = $uploadedFile['type'] ?? '';
                 $filename  = $uploadedFile['name'] ?? '';
                 $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
@@ -782,10 +782,10 @@ class RegistersController extends Controller
                     break;
                 case 'csv':
                     // Import from CSV and get summary (now returns sheet-based format)
-                    // For CSV, schema MUST be specified in the request
+                    // For CSV, schema MUST be specified in the request.
                     $schemaId = $this->request->getParam('schema');
 
-                    if (!$schemaId) {
+                    if ($schemaId === null || $schemaId === '') {
                         return new JSONResponse(['error' => 'Schema parameter is required for CSV imports. Please specify ?schema=105 in your request.'], 400);
                     }
 
@@ -902,10 +902,10 @@ class RegistersController extends Controller
     public function stats(int $id): JSONResponse
     {
         try {
-            // Get the register with stats
+            // Get the register with stats.
             $register = $this->registerService->find($id);
 
-            if (!$register) {
+            if ($register === null) {
                 return new JSONResponse(['error' => 'Register not found'], 404);
             }
 

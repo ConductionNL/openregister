@@ -126,7 +126,7 @@ class Version1Date20250828120000 extends SimpleMigrationStep
                 }
             }
 
-            if ($allColumnsExist) {
+            if ($allColumnsExist === true) {
                 try {
                     $sql = "CREATE INDEX {$indexName} ON {$tableName} (".implode(', ', $columns).")";
                     $connection->executeStatement($sql);

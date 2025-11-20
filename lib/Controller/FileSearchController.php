@@ -80,10 +80,10 @@ class FileSearchController extends Controller
                         );
             }
 
-            // Get file collection
+            // Get file collection.
             $settings       = $this->settingsService->getSettings();
             $fileCollection = $settings['solr']['fileCollection'] ?? null;
-            if (!$fileCollection) {
+            if ($fileCollection === null || $fileCollection === '') {
                 return new JSONResponse(
                         [
                             'success' => false,

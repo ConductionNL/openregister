@@ -167,10 +167,10 @@ class ValidateObject
                     return $propertySchema;
                 }
 
-                // Try to resolve the schema
+                // Try to resolve the schema.
                 $referencedSchema = $this->findSchemaBySlug($schemaSlug);
-                if ($referencedSchema) {
-                    // Get the referenced schema object and recursively process it
+                if ($referencedSchema !== null) {
+                    // Get the referenced schema object and recursively process it.
                     $referencedSchemaObject = $referencedSchema->getSchemaObject($this->urlGenerator);
 
                     $newVisited     = array_merge($visited, [$schemaSlug]);
@@ -424,15 +424,15 @@ class ValidateObject
                 'type' => 'object',
             ];
 
-            if ($originalProperties) {
+            if ($originalProperties !== null && !empty($originalProperties)) {
                 $objectTypeSchema->properties = $originalProperties;
             }
 
-            if ($originalRequired) {
+            if ($originalRequired !== null && !empty($originalRequired)) {
                 $objectTypeSchema->required = $originalRequired;
             }
 
-            if ($originalRef) {
+            if ($originalRef !== null && $originalRef !== '') {
                 $objectTypeSchema->{'$ref'} = $originalRef;
             }
 
@@ -736,8 +736,8 @@ class ValidateObject
             }
         }
 
-        // Special handling for array items - more aggressive transformation
-        if ($isArrayItems) {
+        // Special handling for array items - more aggressive transformation.
+        if ($isArrayItems === true) {
             return $this->transformArrayItemsForValidation($cleanedProperty);
         }
 
@@ -904,9 +904,9 @@ class ValidateObject
     private function findSchemaBySlug(string $slug): ?Schema
     {
         try {
-            // Try direct slug match first using the find method which supports slug lookups
+            // Try direct slug match first using the find method which supports slug lookups.
             $schema = $this->schemaMapper->find($slug);
-            if ($schema) {
+            if ($schema !== null) {
                 return $schema;
             }
         } catch (Exception $e) {

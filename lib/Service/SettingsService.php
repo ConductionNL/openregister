@@ -1636,7 +1636,7 @@ class SettingsService
                     $isValidResponse = true;
                 }
 
-                if (!$isValidResponse) {
+                if ($isValidResponse === false) {
                     return [
                         'success' => false,
                         'message' => 'SOLR admin endpoint returned invalid response',
@@ -2061,8 +2061,8 @@ class SettingsService
                     ]
                     );
 
-            // **ERROR COLLECTION MODE**: Return errors in response if collectErrors is true
-            if ($collectErrors) {
+            // **ERROR COLLECTION MODE**: Return errors in response if collectErrors is true.
+            if ($collectErrors === true) {
                 return [
                     'success' => false,
                     'message' => 'SOLR warmup failed with errors (collected mode)',

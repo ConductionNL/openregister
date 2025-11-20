@@ -689,8 +689,8 @@ class RenderObject
     {
         $isArrayProperty = ($propertyConfig['type'] ?? '') === 'array';
 
-        if ($isArrayProperty) {
-            // Handle array of files
+        if ($isArrayProperty === true) {
+            // Handle array of files.
             if (!is_array($propertyValue)) {
                 return $propertyValue;
                 // Return unchanged if not an array
@@ -1421,8 +1421,8 @@ class RenderObject
                     $inversedObjects
                     );
 
-            // Set the inversed property value based on whether it's an array or single value
-            if ($isArray) {
+            // Set the inversed property value based on whether it's an array or single value.
+            if ($isArray === true) {
                 $objectData[$propertyName] = $inversedUuids;
             } else {
                 $objectData[$propertyName] = !empty($inversedUuids) ? end($inversedUuids) : null;

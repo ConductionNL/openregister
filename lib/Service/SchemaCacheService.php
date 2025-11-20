@@ -646,7 +646,7 @@ class SchemaCacheService
             ->andWhere($qb->expr()->eq('cache_key', $qb->createNamedParameter($cacheKey)));
 
         $result = $qb->executeQuery()->fetch();
-        if (!$result) {
+        if ($result === false || $result === null) {
             return null;
         }
 

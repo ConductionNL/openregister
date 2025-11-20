@@ -299,14 +299,14 @@ class ApplicationTool extends AbstractTool implements ToolInterface
         try {
             $this->logger->info('[ApplicationTool] Creating application', ['name' => $name]);
 
-            // Create application entity
+            // Create application entity.
             $application = new Application();
             $application->setName($name);
-            if ($description) {
+            if ($description !== null && $description !== '') {
                 $application->setDescription($description);
             }
 
-            if ($domain) {
+            if ($domain !== null && $domain !== '') {
                 $application->setDomain($domain);
             }
 

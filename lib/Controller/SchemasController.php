@@ -669,10 +669,10 @@ class SchemasController extends Controller
     public function stats(int $id): JSONResponse
     {
         try {
-            // Get the schema
+            // Get the schema.
             $schema = $this->schemaMapper->find($id);
 
-            if (!$schema) {
+            if ($schema === null) {
                 return new JSONResponse(['error' => 'Schema not found'], 404);
             }
 

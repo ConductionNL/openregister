@@ -168,8 +168,8 @@ trait MultiTenancyTrait
                 $multitenancyData    = json_decode($multitenancyConfig, true);
                 $multitenancyEnabled = $multitenancyData['enabled'] ?? true;
 
-                if (!$multitenancyEnabled) {
-                    // Multitenancy is disabled, no filtering
+                if ($multitenancyEnabled === false) {
+                    // Multitenancy is disabled, no filtering.
                     if (isset($this->logger)) {
                         $this->logger->debug('[MultiTenancyTrait] Multitenancy disabled, skipping filter');
                     }

@@ -313,8 +313,8 @@ class SolrController extends Controller
             $config   = $params['config'] ?? [];
             $testText = $params['testText'] ?? 'This is a test embedding generation.';
 
-            // Validate provider
-            if (!$provider) {
+            // Validate provider.
+            if ($provider === null || $provider === '') {
                 return new JSONResponse(
                         [
                             'success' => false,
@@ -396,7 +396,7 @@ class SolrController extends Controller
             $embedding = $vectorService->generateEmbeddingWithCustomConfig($testText, $embeddingConfig);
             $duration  = round((microtime(true) - $startTime) * 1000, 2);
 
-            if (!$embedding) {
+            if ($embedding === null || empty($embedding)) {
                 return new JSONResponse(
                         [
                             'success' => false,

@@ -167,9 +167,9 @@ class ConversationController extends Controller
             $offset      = (int) ($params['offset'] ?? $params['_offset'] ?? 0);
             $showDeleted = filter_var($params['_deleted'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
-            // Fetch conversations based on deleted filter
-            if ($showDeleted) {
-                // Fetch only deleted/archived conversations
+            // Fetch conversations based on deleted filter.
+            if ($showDeleted === true) {
+                // Fetch only deleted/archived conversations.
                 $conversations = $this->conversationMapper->findDeletedByUser(
                     $this->userId,
                     $organisationUuid,

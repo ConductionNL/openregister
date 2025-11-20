@@ -255,7 +255,7 @@ class Version1Date20251106120000 extends SimpleMigrationStep
             }
         }//end if
 
-        if ($updated) {
+        if ($updated === true) {
             $output->info('');
             $output->info('🎉 Multi-tenancy organisation columns updated successfully!');
             $output->info('📊 Summary:');

@@ -589,8 +589,8 @@ class FileMapper extends QBMapper
         $exists = $result->fetch();
         $result->closeCursor();
 
-        // If token exists, generate a new one recursively
-        if ($exists) {
+        // If token exists, generate a new one recursively.
+        if ($exists === true) {
             return $this->generateShareToken();
         }
 
@@ -789,7 +789,7 @@ class FileMapper extends QBMapper
         $fileInfo = $result->fetch();
         $result->closeCursor();
 
-        if (!$fileInfo) {
+        if ($fileInfo === false || $fileInfo === null) {
             throw new \Exception("File with ID $fileId not found in filecache");
         }
 

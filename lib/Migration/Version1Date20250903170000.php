@@ -115,8 +115,8 @@ class Version1Date20250903170000 extends SimpleMigrationStep
         $output->info('Skipping complex multi-column indexes to avoid MySQL key size limits');
         $output->info('Focus on basic indexes that provide maximum performance benefit');
 
-        // Log completion
-        if ($changed) {
+        // Log completion.
+        if ($changed === true) {
             $output->info('=== Performance Index Migration Completed Successfully ===');
             $output->info('Expected performance improvement: 80-95% reduction in query time');
             $output->info('Target: 30 second queries should now run in <1 second');

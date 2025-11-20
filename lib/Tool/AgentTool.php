@@ -309,15 +309,15 @@ class AgentTool extends AbstractTool implements ToolInterface
             $agent = new Agent();
             $agent->setName($name);
 
-            if ($description) {
+            if ($description !== null && $description !== '') {
                 $agent->setDescription($description);
             }
 
-            if ($type) {
+            if ($type !== null && $type !== '') {
                 $agent->setType($type);
             }
 
-            if ($systemPrompt) {
+            if ($systemPrompt !== null && $systemPrompt !== '') {
                 $agent->setSystemPrompt($systemPrompt);
             }
 

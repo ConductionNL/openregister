@@ -137,7 +137,7 @@ class OrganisationController extends Controller
         try {
             $success = $this->organisationService->setActiveOrganisation($uuid);
 
-            if ($success) {
+            if ($success === true) {
                 $activeOrg = $this->organisationService->getActiveOrganisation();
 
                 return new JSONResponse(
@@ -287,10 +287,10 @@ class OrganisationController extends Controller
             $requestData = $this->request->getParams();
             $userId      = $requestData['userId'] ?? null;
 
-            // Join organisation with optional userId parameter
+            // Join organisation with optional userId parameter.
             $success = $this->organisationService->joinOrganisation($uuid, $userId);
 
-            if ($success) {
+            if ($success === true) {
                 return new JSONResponse(
                         [
                             'message' => 'Successfully joined organisation',
@@ -345,7 +345,7 @@ class OrganisationController extends Controller
 
             $success = $this->organisationService->leaveOrganisation($uuid, $userId);
 
-            if ($success) {
+            if ($success === true) {
                 $message = $userId ? "Successfully removed user from organisation" : "Successfully left organisation";
                 return new JSONResponse(
                         [

@@ -754,8 +754,8 @@ class SaveObjects
             $selfData = $object['@self'] ?? [];
             $schemaId = $selfData['schema'] ?? null;
 
-            // Allow objects without schema ID to pass through - they'll be caught in transformation
-            if (!$schemaId) {
+            // Allow objects without schema ID to pass through - they'll be caught in transformation.
+            if ($schemaId === null || $schemaId === '') {
                 $preparedObjects[$index] = $object;
                 continue;
             }
@@ -821,7 +821,7 @@ class SaveObjects
                         'publishedFromCsv' => false
                     ]);
                     $tempEntity->setPublished(new DateTime());
-                } else if ($publishedFromCsv) {
+                } else if ($publishedFromCsv === true) {
                     $this->logger->debug('Skipping auto-publish - published date provided from CSV (mixed schema)', [
                         'schema' => $schema->getTitle(),
                         'publishedFromCsv' => true,
@@ -1032,7 +1032,7 @@ class SaveObjects
                             'publishedFromCsv' => false
                         ]);
                         $tempEntity->setPublished(new DateTime());
-                    } else if ($publishedFromCsv) {
+                    } else if ($publishedFromCsv === true) {
                         $this->logger->debug('Skipping auto-publish - published date provided from CSV', [
                             'schema' => $schemaObj->getTitle(),
                             'publishedFromCsv' => true,
@@ -1535,7 +1535,7 @@ class SaveObjects
             if (isset($savedArray['uuid'])) {
                 try {
                     $objEntity = $this->objectEntityMapper->find($savedArray['uuid']);
-                    if ($objEntity) {
+                    if ($objEntity !== null) {
                         $allSavedObjects[] = $objEntity;
                     }
                 } catch (\Exception $e) {
@@ -1637,7 +1637,7 @@ class SaveObjects
                 $writeBack = $finalWriteBack;
             }
             
-            if ($inversedBy) {
+            if ($inversedBy !== null && $inversedBy !== '') {
                 
                 $analysis['inverseProperties'][$propertyName] = [
                     'inversedBy' => $inversedBy,
@@ -1701,7 +1701,7 @@ class SaveObjects
         foreach ($preparedObjects as $index => &$object) {
             $selfData   = $object['@self'] ?? [];
             $objectUuid = $selfData['id'] ?? null;
-            if ($objectUuid) {
+            if ($objectUuid !== null && $objectUuid !== '') {
                 $objectsByUuid[$objectUuid] = &$object;
             }
         }
@@ -2476,10 +2476,10 @@ class SaveObjects
         $allRelatedIds = [];
         $objectRelationsMap = []; // Track which objects need which related objects
         
-        // First pass: collect all related object IDs
+        // First pass: collect all related object IDs.
         foreach ($savedObjects as $index => $savedObject) {
             $schema = $schemaCache[$savedObject->getSchema()] ?? null;
-            if (!$schema) {
+            if ($schema === null) {
                 continue;
             }
 
@@ -2533,7 +2533,7 @@ class SaveObjects
             }
             
             $schema = $schemaCache[$savedObject->getSchema()] ?? null;
-            if (!$schema) {
+            if ($schema === null) {
                 continue;
             }
             
@@ -2748,8 +2748,8 @@ class SaveObjects
                                   isset($propertyConfig['items']['type']) &&
                                   $propertyConfig['items']['type'] === 'object';
 
-                if ($isArrayOfObjects) {
-                    // For arrays of objects, scan each item for relations
+                if ($isArrayOfObjects === true) {
+                    // For arrays of objects, scan each item for relations.
                     foreach ($value as $index => $item) {
                         if (is_array($item)) {
                             $itemRelations = $this->scanForRelations(
@@ -2800,12 +2800,12 @@ class SaveObjects
                     }
                 }
 
-                // If not determined by schema, check for reference patterns
-                if (!$shouldTreatAsRelation) {
+                // If not determined by schema, check for reference patterns.
+                if ($shouldTreatAsRelation === false) {
                     $shouldTreatAsRelation = $this->isReference($value);
                 }
 
-                if ($shouldTreatAsRelation) {
+                if ($shouldTreatAsRelation === true) {
                     $relations[$currentPath] = $value;
                 }
             }//end if
