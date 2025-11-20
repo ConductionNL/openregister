@@ -310,7 +310,7 @@ class AuthorizationException extends Entity implements JsonSerializable
      */
     public function setType(?string $type): void
     {
-        if ($type !== null && !$this->isValidType($type)) {
+        if ($type !== null && $this->isValidType($type) === false) {
             throw new InvalidArgumentException(
                 'Invalid exception type: '.$type.'. Valid types are: '.implode(', ', self::getValidTypes())
             );
@@ -332,7 +332,7 @@ class AuthorizationException extends Entity implements JsonSerializable
      */
     public function setSubjectType(?string $subjectType): void
     {
-        if ($subjectType !== null && !$this->isValidSubjectType($subjectType)) {
+        if ($subjectType !== null && $this->isValidSubjectType($subjectType) === false) {
             throw new InvalidArgumentException(
                 'Invalid subject type: '.$subjectType.'. Valid types are: '.implode(', ', self::getValidSubjectTypes())
             );
@@ -354,7 +354,7 @@ class AuthorizationException extends Entity implements JsonSerializable
      */
     public function setAction(?string $action): void
     {
-        if ($action !== null && !$this->isValidAction($action)) {
+        if ($action !== null && $this->isValidAction($action) === false) {
             throw new InvalidArgumentException(
                 'Invalid action: '.$action.'. Valid actions are: '.implode(', ', self::getValidActions())
             );
@@ -434,7 +434,7 @@ class AuthorizationException extends Entity implements JsonSerializable
         ?string $organizationUuid=null
     ): bool {
         // Must be active.
-        if (!$this->active) {
+        if ($this->active === false) {
             return false;
         }
 

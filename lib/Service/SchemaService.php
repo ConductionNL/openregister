@@ -311,8 +311,8 @@ class SchemaService
 
             case 'object':
             case 'array':
-                if (is_object($value) === true
-                    || (is_array($value) === true && empty($value) === false && array_is_list($value) === false)
+                if (is_object($value) === true ||
+                    (is_array($value) === true && empty($value) === false && array_is_list($value) === false)
                 ) {
                     $analysis['object_structure'] = $this->analyzeObjectStructure($value);
                 }

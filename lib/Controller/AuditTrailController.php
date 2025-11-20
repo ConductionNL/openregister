@@ -19,6 +19,7 @@
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\LogService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -36,14 +37,16 @@ class AuditTrailController extends Controller
     /**
      * Constructor for AuditTrailController
      *
-     * @param string     $appName    The name of the app
-     * @param IRequest   $request    The request object
-     * @param LogService $logService The log service
+     * @param string           $appName          The name of the app
+     * @param IRequest         $request          The request object
+     * @param LogService       $logService       The log service
+     * @param AuditTrailMapper $auditTrailMapper The audit trail mapper
      */
     public function __construct(
         string $appName,
         IRequest $request,
-        private readonly LogService $logService
+        private readonly LogService $logService,
+        private readonly AuditTrailMapper $auditTrailMapper
     ) {
         parent::__construct($appName, $request);
 
@@ -442,11 +445,8 @@ class AuditTrailController extends Controller
     public function clearAll(): JSONResponse
     {
         try {
-            // Get the audit trail mapper from the container.
-            $auditTrailMapper = \OC::$server->get('OCA\OpenRegister\Db\AuditTrailMapper');
-
-                    // Use the clearAllLogs method from the mapper.
-                    $result = $auditTrailMapper->clearAllLogs();
+            // Use the clearAllLogs method from the mapper.
+            $result = $this->auditTrailMapper->clearAllLogs();
 
             if ($result === true) {
                 return new JSONResponse(

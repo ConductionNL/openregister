@@ -159,14 +159,14 @@ abstract class AbstractTool implements ToolInterface
         }
 
         $views = $this->agent->getViews();
-        if ($views === null || empty($views)) {
+        if ($views === null || $views === []) {
             return $params;
         }
 
         // TODO: Implement view filtering in mappers.
         // View filtering allows agents to only see data filtered by predefined views.
         // For now, this is disabled as the mappers don't have a 'views' column yet.
-        // $params['_views'] = $views;
+        // $params['_views'] = $views;.
         return $params;
 
     }//end applyViewFilters()
@@ -235,11 +235,17 @@ abstract class AbstractTool implements ToolInterface
             'user'       => $this->getUserId(),
         ];
 
+        if ($message !== null && $message !== '') {
+            $messageText = $message;
+        } else {
+            $messageText = 'Executing function';
+        }
+
         $logMessage = sprintf(
             '[Tool:%s] %s: %s',
             $this->getName(),
             $functionName,
-            $message ?: 'Executing function'
+            $messageText
         );
 
         switch ($level) {
@@ -270,7 +276,7 @@ abstract class AbstractTool implements ToolInterface
     protected function validateParameters(array $parameters, array $required): void
     {
         foreach ($required as $param) {
-            if (!isset($parameters[$param])) {
+            if (isset($parameters[$param]) === false) {
                 throw new \InvalidArgumentException("Missing required parameter: {$param}");
             }
         }
@@ -296,7 +302,7 @@ abstract class AbstractTool implements ToolInterface
         // Convert snake_case to camelCase.
         $camelCaseMethod = lcfirst(str_replace('_', '', ucwords($name, '_')));
 
-        if (method_exists($this, $camelCaseMethod)) {
+        if (method_exists($this, $camelCaseMethod) === true) {
             // Get method reflection to understand parameter types.
             $reflection = new \ReflectionMethod($this, $camelCaseMethod);
             $parameters = $reflection->getParameters();
@@ -310,7 +316,7 @@ abstract class AbstractTool implements ToolInterface
                 $paramName = $param->getName();
 
                 // Get value from either named argument or positional argument.
-                if ($isAssociative && isset($arguments[$paramName])) {
+                if ($isAssociative === true && isset($arguments[$paramName]) === true) {
                     $value = $arguments[$paramName];
                 } else {
                     $value = $arguments[$index] ?? null;
@@ -319,11 +325,15 @@ abstract class AbstractTool implements ToolInterface
                 // Handle string 'null' from LLM.
                 if ($value === 'null' || $value === null) {
                     // Use default value if available, otherwise null.
-                    $value = $param->isDefaultValueAvailable() ? $param->getDefaultValue() : null;
-                } else if ($param->hasType()) {
+                    if ($param->isDefaultValueAvailable() === true) {
+                        $value = $param->getDefaultValue();
+                    } else {
+                        $value = null;
+                    }
+                } else if ($param->hasType() === true) {
                     // Cast to the expected type.
                     $type = $param->getType();
-                    if ($type && $type instanceof \ReflectionNamedType) {
+                    if ($type !== null && $type instanceof \ReflectionNamedType) {
                         $typeName = $type->getName();
                         if ($typeName === 'int') {
                             $value = (int) $value;
@@ -334,7 +344,11 @@ abstract class AbstractTool implements ToolInterface
                         } else if ($typeName === 'string') {
                             $value = (string) $value;
                         } else if ($typeName === 'array') {
-                            $value = is_array($value) ? $value : [];
+                            if (is_array($value) === true) {
+                                $value = $value;
+                            } else {
+                                $value = [];
+                            }
                         }
                     }
                 }//end if
@@ -346,7 +360,7 @@ abstract class AbstractTool implements ToolInterface
 
             // LLPhant expects tool results to be JSON strings, not arrays.
             // Convert array results to JSON for LLM consumption.
-            if (is_array($result)) {
+            if (is_array($result) === true) {
                 return json_encode($result);
             }
 

@@ -211,7 +211,7 @@ class ConfigurationCheckJob extends TimedJob
             }//end foreach
 
             $this->logger->info(
-                "Configuration check job completed: "."{$checked} checked, {$updated} updated, {$failed} failed"
+                "Configuration check job completed: {$checked} checked, {$updated} updated, {$failed} failed"
             );
         } catch (Exception $e) {
             $this->logger->error('Configuration check job failed: '.$e->getMessage());

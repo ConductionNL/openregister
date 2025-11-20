@@ -124,7 +124,7 @@ class UserSettingsController extends Controller
                     [
                         'hasToken' => true,
                         'isValid'  => $isValid,
-                        'message'  => $isValid ? 'Token is valid' : 'Token is invalid or expired',
+                        'message'  => $isValid === true ? 'Token is valid' : 'Token is invalid or expired',
                     ],
                     200
                     );

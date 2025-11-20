@@ -83,14 +83,14 @@ class MagicFacetHandler
      */
     public function getFacets(array $facetConfig, array $baseQuery, Register $register, Schema $schema, string $tableName): array
     {
-        if (empty($facetConfig)) {
+        if ($facetConfig === []) {
             return [];
         }
 
         $facets = [];
 
         // Process metadata facets (@self).
-        if (isset($facetConfig['@self']) && is_array($facetConfig['@self'])) {
+        if (isset($facetConfig['@self']) === true && is_array($facetConfig['@self']) === true) {
             $facets['@self'] = [];
             foreach ($facetConfig['@self'] as $field => $config) {
                 $facets['@self'][$field] = $this->getMetadataFieldFacet($field, $config, $baseQuery, $tableName);
@@ -167,7 +167,7 @@ class MagicFacetHandler
 
         // Verify field exists in schema.
         $properties = $schema->getProperties();
-        if (!isset($properties[$field])) {
+        if (isset($properties[$field]) === false) {
             return [];
         }
 
@@ -337,7 +337,7 @@ class MagicFacetHandler
      */
     private function getRangeFacet(string $columnName, array $ranges, array $baseQuery, string $tableName): array
     {
-        if (empty($ranges)) {
+        if ($ranges === []) {
             // Auto-generate ranges based on data distribution.
             $ranges = $this->generateAutoRanges($columnName, $tableName);
         }
@@ -431,7 +431,7 @@ class MagicFacetHandler
         }
 
         // Apply metadata filters (@self).
-        if (isset($baseQuery['@self']) && is_array($baseQuery['@self'])) {
+        if (isset($baseQuery['@self']) === true && is_array($baseQuery['@self']) === true) {
             foreach ($baseQuery['@self'] as $field => $value) {
                 $columnName = '_'.$field;
 
@@ -439,7 +439,7 @@ class MagicFacetHandler
                     $qb->andWhere($qb->expr()->isNotNull("t.{$columnName}"));
                 } else if ($value === 'IS NULL') {
                     $qb->andWhere($qb->expr()->isNull("t.{$columnName}"));
-                } else if (is_array($value)) {
+                } else if (is_array($value) === true) {
                     $qb->andWhere($qb->expr()->in("t.{$columnName}", $qb->createNamedParameter($value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
                 } else {
                     $qb->andWhere($qb->expr()->eq("t.{$columnName}", $qb->createNamedParameter($value)));
@@ -463,7 +463,7 @@ class MagicFacetHandler
                 $qb->andWhere($qb->expr()->isNotNull("t.{$columnName}"));
             } else if ($value === 'IS NULL') {
                 $qb->andWhere($qb->expr()->isNull("t.{$columnName}"));
-            } else if (is_array($value)) {
+            } else if (is_array($value) === true) {
                 $qb->andWhere($qb->expr()->in("t.{$columnName}", $qb->createNamedParameter($value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
             } else {
                 $qb->andWhere($qb->expr()->eq("t.{$columnName}", $qb->createNamedParameter($value)));
@@ -660,7 +660,7 @@ class MagicFacetHandler
             $result = $qb->executeQuery();
             $stats  = $result->fetch();
 
-            if (!$stats || $stats['min_val'] === null || $stats['max_val'] === null) {
+            if ($stats === false || $stats['min_val'] === null || $stats['max_val'] === null) {
                 return [];
             }
 
@@ -675,10 +675,20 @@ class MagicFacetHandler
 
             for ($i = 0; $i < $numRanges; $i++) {
                 $from = $min + ($i * $step);
-                $to   = ($i === $numRanges - 1) ? null : $min + (($i + 1) * $step);
+                if ($i === $numRanges - 1) {
+                    $to = null;
+                } else {
+                    $to = $min + (($i + 1) * $step);
+                }
+
+                if ($to === null) {
+                    $key = "{$from}+";
+                } else {
+                    $key = "{$from}-{$to}";
+                }
 
                 $ranges[] = [
-                    'key'  => $to === null ? "{$from}+" : "{$from}-{$to}",
+                    'key'  => $key,
                     'from' => $from,
                     'to'   => $to,
                 ];
@@ -714,7 +724,7 @@ class MagicFacetHandler
         $sanitized = strtolower(preg_replace('/[^a-zA-Z0-9_]/', '_', $name));
 
         // Ensure it starts with a letter or underscore.
-        if (!preg_match('/^[a-zA-Z_]/', $sanitized)) {
+        if (preg_match('/^[a-zA-Z_]/', $sanitized) === 0) {
             $sanitized = 'col_'.$sanitized;
         }
 

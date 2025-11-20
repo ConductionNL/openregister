@@ -1,4 +1,18 @@
 <?php
+
+/**
+ * OpenRegisterAdmin
+ *
+ * Admin settings page for OpenRegister application.
+ *
+ * @category  Settings
+ * @package   OCA\OpenRegister\Settings
+ * @author    OpenRegister Team <info@conduction.nl>
+ * @copyright 2024 OpenRegister
+ * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @link      https://github.com/OpenRegister/OpenRegister
+ */
+
 namespace OCA\OpenRegister\Settings;
 
 use OCP\AppFramework\Http\TemplateResponse;
@@ -6,14 +20,38 @@ use OCP\IConfig;
 use OCP\IL10N;
 use OCP\Settings\ISettings;
 
+/**
+ * OpenRegisterAdmin
+ *
+ * Admin settings implementation for OpenRegister.
+ *
+ * @category Settings
+ * @package  OCA\OpenRegister\Settings
+ */
 class OpenRegisterAdmin implements ISettings
 {
 
+    /**
+     * Localization helper
+     *
+     * @var IL10N $l Localization helper
+     */
     private IL10N $l;
 
+    /**
+     * Config service
+     *
+     * @var IConfig $config Config service
+     */
     private IConfig $config;
 
 
+    /**
+     * Constructor
+     *
+     * @param IConfig $config Config service
+     * @param IL10N   $l      Localization helper
+     */
     public function __construct(IConfig $config, IL10N $l)
     {
         $this->config = $config;
@@ -23,7 +61,9 @@ class OpenRegisterAdmin implements ISettings
 
 
     /**
-     * @return TemplateResponse
+     * Get the admin settings form
+     *
+     * @return TemplateResponse Template response
      */
     public function getForm()
     {
@@ -36,6 +76,11 @@ class OpenRegisterAdmin implements ISettings
     }//end getForm()
 
 
+    /**
+     * Get the section identifier
+     *
+     * @return string Section identifier
+     */
     public function getSection()
     {
         // Name of the previously created section.
@@ -46,11 +91,12 @@ class OpenRegisterAdmin implements ISettings
 
 
     /**
-     * @return int whether the form should be rather on the top or bottom of
-     * the admin section. The forms are arranged in ascending order of the
-     * priority values. It is required to return a value between 0 and 100.
+     * Get the priority of this settings form
      *
-     * E.g.: 70
+     * The form position in the admin section. Forms are arranged in ascending order
+     * of priority values. Must return a value between 0 and 100.
+     *
+     * @return int Priority value between 0 and 100
      */
     public function getPriority()
     {

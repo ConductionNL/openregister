@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/*
+/**
  * File Text Extraction Background Job
  *
  * One-time background job that extracts text from uploaded files asynchronously.
@@ -11,9 +11,9 @@ declare(strict_types=1);
  *
  * @category  BackgroundJob
  * @package   OCA\OpenRegister\BackgroundJob
- * @author    OpenRegister Team
+ * @author    OpenRegister Team <info@conduction.nl>
  * @copyright 2024 OpenRegister
- * @license   AGPL-3.0-or-later
+ * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  * @link      https://github.com/OpenRegister/OpenRegister
  */
 

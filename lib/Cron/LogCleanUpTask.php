@@ -5,7 +5,7 @@
  * This file contains the background job for cleaning up expired audit trail logs
  * in the OpenRegister application.
  *
- * @category Background Jobs
+ * @category Background_Jobs
  * @package  OCA\OpenRegister\Cron
  *
  * @author    Conduction Development Team <dev@conductio.nl>

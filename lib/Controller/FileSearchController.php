@@ -2,9 +2,17 @@
 
 declare(strict_types=1);
 
-/*
- * SPDX-FileCopyrightText: 2024 Nextcloud GmbH and Nextcloud contributors
- * SPDX-License-Identifier: AGPL-3.0-or-later
+/**
+ * FileSearchController
+ *
+ * Controller for file search operations.
+ *
+ * @category  Controller
+ * @package   OCA\OpenRegister\Controller
+ * @author    Nextcloud contributors <info@nextcloud.com>
+ * @copyright 2024 Nextcloud GmbH and Nextcloud contributors
+ * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @link      https://github.com/nextcloud/server
  */
 
 namespace OCA\OpenRegister\Controller;

@@ -84,7 +84,7 @@ class AgentTool extends AbstractTool implements ToolInterface
      */
     public function getDescription(): string
     {
-        return 'Manage AI agents in OpenRegister. Agents are AI assistants that can perform tasks, answer questions, and interact with data. Use this tool to list, view, create, update, or delete agents. Operations respect RBAC permissions, organisation boundaries, and privacy settings.';
+        return 'Manage AI agents: list, view, create, update, or delete agents with RBAC permissions and organisation boundaries.';
 
     }//end getDescription()
 
@@ -102,7 +102,7 @@ class AgentTool extends AbstractTool implements ToolInterface
         return [
             [
                 'name'        => 'list_agents',
-                'description' => 'List all agents accessible to the current user in their organisation. Returns basic information about each agent including name, type, and status. Respects privacy settings.',
+                'description' => 'List all agents accessible to current user. Returns name, type, status with privacy settings respected.',
                 'parameters'  => [
                     'type'       => 'object',
                     'properties' => [
@@ -120,7 +120,7 @@ class AgentTool extends AbstractTool implements ToolInterface
             ],
             [
                 'name'        => 'get_agent',
-                'description' => 'Get detailed information about a specific agent by its UUID. Returns full agent configuration including system prompt, model settings, and enabled tools.',
+                'description' => 'Get detailed agent information by UUID. Returns configuration, system prompt, model settings, and tools.',
                 'parameters'  => [
                     'type'       => 'object',
                     'properties' => [
@@ -134,7 +134,7 @@ class AgentTool extends AbstractTool implements ToolInterface
             ],
             [
                 'name'        => 'create_agent',
-                'description' => 'Create a new AI agent in the current organisation. Requires a name and system prompt. Can configure model, temperature, tools, and privacy settings.',
+                'description' => 'Create a new AI agent. Requires name and system prompt. Configure model, temperature, tools, and privacy.',
                 'parameters'  => [
                     'type'       => 'object',
                     'properties' => [
@@ -186,7 +186,7 @@ class AgentTool extends AbstractTool implements ToolInterface
             ],
             [
                 'name'        => 'delete_agent',
-                'description' => 'Delete an agent permanently. Only the owner can delete agents. This will also delete all conversations associated with the agent. This action cannot be undone.',
+                'description' => 'Permanently delete agent (owner only). Deletes all associated conversations. Cannot be undone.',
                 'parameters'  => [
                     'type'       => 'object',
                     'properties' => [
@@ -322,7 +322,7 @@ class AgentTool extends AbstractTool implements ToolInterface
             }
 
             // Set current user as owner if we have agent context.
-            if ($this->agent) {
+            if ($this->agent !== null) {
                 $agent->setOwner($this->agent->getOwner());
             }
 

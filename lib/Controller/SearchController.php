@@ -34,10 +34,14 @@ use OCA\OpenRegister\Service\SolrService;
 class SearchController extends Controller
 {
 
-    // phpcs:ignore Squiz.Commenting.VariableComment.Missing.
+    /**
+     * @var ISearch The Nextcloud search service
+     */
     private readonly ISearch $searchService;
 
-    // phpcs:ignore Squiz.Commenting.VariableComment.Missing.
+    /**
+     * @var SolrService The SOLR search service
+     */
     private readonly SolrService $solrService;
 
 

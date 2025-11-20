@@ -87,7 +87,7 @@ class SchemaTool extends AbstractTool
      */
     public function getDescription(): string
     {
-        return 'Manage schemas in OpenRegister. Schemas define the structure and validation rules for objects. '.'Use this tool to list, view, create, update, or delete schemas.';
+        return 'Manage schemas: list, view, create, update, or delete schemas. Schemas define structure and validation rules.';
 
     }//end getDescription()
 
@@ -222,7 +222,7 @@ class SchemaTool extends AbstractTool
     {
         $this->log($functionName, $parameters);
 
-        if (!$this->hasUserContext($userId)) {
+        if ($this->hasUserContext($userId) === false) {
             return $this->formatError('No user context available. Tool cannot execute without user session.');
         }
 
@@ -243,7 +243,9 @@ class SchemaTool extends AbstractTool
     /**
      * List schemas
      *
-     * @param array $parameters Function parameters
+     * @param int         $limit   Result limit
+     * @param int         $offset  Result offset
+     * @param string|null $register Register filter
      *
      * @return array Result with list of schemas
      */
@@ -280,7 +282,7 @@ class SchemaTool extends AbstractTool
     /**
      * Get a specific schema
      *
-     * @param array $parameters Function parameters
+     * @param string $id Schema ID
      *
      * @return array Result with schema details
      *
