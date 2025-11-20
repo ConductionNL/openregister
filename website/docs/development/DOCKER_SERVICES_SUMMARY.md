@@ -15,8 +15,9 @@ sidebar_position: 11
 | **MariaDB** | ✅ Included | Internal | Database storage | Yes |
 | **Solr** | ✅ Included | 8983 | Full-text search | Yes |
 | **ZooKeeper** | ✅ Included (prod) | 2181 | Solr coordination | Production only |
-| **Ollama** | ✅ Included | 11434 | Local LLM (AI) | Optional |
+| **Ollama** | ✅ Included | 11434 | Local LLM (custom API) | Optional |
 | **Presidio Analyzer** | ✅ Included | 5001 | NER/PII detection | Optional |
+| **TGI/vLLM** | ✅ Available (separate compose) | 8081/8082 | Local LLM (OpenAI API) | Optional |
 
 ### 📝 Optional API Services (Separate Deployment Required)
 
@@ -292,14 +293,37 @@ docker exec -it openregister-presidio-analyzer \
 - **Development**: `docker-compose.dev.yml`
 - **Ollama-specific**: `docker-compose.ollama.yml` (alternative config)
 
+## OpenAI-Compatible Local LLM
+
+**NEW**: You can now run Mistral and other Hugging Face models with an **OpenAI-compatible API** using **TGI** or **vLLM**:
+
+```bash
+# Start TGI with Mistral (OpenAI-compatible API)
+docker-compose -f docker-compose.huggingface.yml up -d tgi-mistral
+
+# Test OpenAI-compatible endpoint
+curl http://localhost:8081/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{"model": "mistral", "messages": [{"role": "user", "content": "Hello!"}]}'
+```
+
+**Benefits**:
+- ✅ Works with LLPhant (PHP OpenAI client)
+- ✅ Drop-in replacement for OpenAI API
+- ✅ Privacy-first (100% local)
+- ✅ No API costs
+
+See [Hugging Face TGI Setup](./huggingface-tgi-setup.md) for complete guide.
+
 ## Related Documentation
 
 - [Presidio Setup for Dutch](./presidio-setup.md) - Detailed Presidio configuration
 - [Docker Services Overview](./docker-services.md) - Complete service documentation
+- [Hugging Face TGI Setup](./huggingface-tgi-setup.md) - OpenAI-compatible local LLM
 - [NER & NLP Concepts](../features/ner-nlp-concepts.md) - Understanding entity recognition
 - [Text Extraction](../features/text-extraction-enhanced.md) - File processing pipeline
 
 ---
 
-**Quick Answer**: ✅ Yes, Solr, Ollama, and Presidio are included in docker-compose. Dolphin is an external API service configured in settings, not a Docker container.
+**Quick Answer**: ✅ Yes, Solr, Ollama, and Presidio are included in docker-compose. TGI/vLLM available via separate docker-compose file for OpenAI-compatible API. Dolphin requires separate deployment (custom container).
 

@@ -206,7 +206,7 @@ import { dashboardStore, registerStore, navigationStore, configurationStore } fr
 									</tr>
 								</thead>
 								<tbody>
-									<tr v-for="(schema, index) in getDisplayedSchemas(register)" :key="schema.id">
+									<tr v-for="schema in getDisplayedSchemas(register)" :key="schema.id">
 										<td>{{ schema.title }}</td>
 										<td>{{ schema.type || 'object' }}</td>
 									</tr>
@@ -390,7 +390,6 @@ import { dashboardStore, registerStore, navigationStore, configurationStore } fr
 <script>
 import { NcAppContent, NcEmptyContent, NcLoadingIcon, NcActions, NcActionButton, NcCheckboxRadioSwitch, NcButton } from '@nextcloud/vue'
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
-import FileCodeOutline from 'vue-material-design-icons/FileCodeOutline.vue'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
@@ -421,7 +420,6 @@ export default {
 		NcCheckboxRadioSwitch,
 		NcButton,
 		DatabaseOutline,
-		FileCodeOutline,
 		DotsHorizontal,
 		Pencil,
 		TrashCanOutline,

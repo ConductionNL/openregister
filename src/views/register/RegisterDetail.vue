@@ -1,5 +1,5 @@
 <script setup>
-import { dashboardStore, registerStore, navigationStore, schemaStore, configurationStore } from '../../store/store.js'
+import { dashboardStore, registerStore, navigationStore, configurationStore } from '../../store/store.js'
 import formatBytes from '../../services/formatBytes.js'
 </script>
 

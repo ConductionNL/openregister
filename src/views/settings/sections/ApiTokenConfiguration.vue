@@ -295,16 +295,9 @@ import { showSuccess, showError } from '@nextcloud/dialogs'
  *
  * Manages GitHub and GitLab API tokens for configuration discovery
  *
- * @category Settings
- * @package
- *
  * @author   Conduction Development Team <info@conduction.nl>
  * @copyright 2025 Conduction B.V.
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * @version  GIT: <git_id>
- *
- * @link     https://www.OpenRegister.nl
+ * @license  EUPL-1.2
  */
 export default {
 	name: 'ApiTokenConfiguration',
