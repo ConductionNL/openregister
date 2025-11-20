@@ -2,9 +2,21 @@
 
 declare(strict_types=1);
 
-/*
- * SPDX-FileCopyrightText: 2024 Nextcloud GmbH and Nextcloud contributors
- * SPDX-License-Identifier: AGPL-3.0-or-later
+/**
+ * OpenRegister File Text Controller
+ *
+ * Controller for file text management operations.
+ *
+ * @category Controller
+ * @package  OCA\OpenRegister\Controller
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://www.OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Controller;
@@ -58,10 +70,11 @@ class FileTextController extends Controller
     /**
      * Get extracted text for a file
      *
+     * @param int $fileId Nextcloud file ID
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @param  int $fileId Nextcloud file ID
      * @return JSONResponse File text data
      */
     public function getFileText(int $fileId): JSONResponse
@@ -110,10 +123,11 @@ class FileTextController extends Controller
     /**
      * Extract text from a file (force re-extraction)
      *
+     * @param int $fileId Nextcloud file ID
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @param  int $fileId Nextcloud file ID
      * @return JSONResponse Extraction result
      */
     public function extractFileText(int $fileId): JSONResponse
@@ -253,10 +267,11 @@ class FileTextController extends Controller
     /**
      * Delete file text by file ID
      *
+     * @param int $fileId Nextcloud file ID
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @param  int $fileId Nextcloud file ID
      * @return JSONResponse Deletion result
      */
     public function deleteFileText(int $fileId): JSONResponse
@@ -294,12 +309,13 @@ class FileTextController extends Controller
     /**
      * Process extracted files and index their chunks to SOLR
      *
+     * @param int|null $limit        Maximum number of files to process
+     * @param int|null $chunkSize    Chunk size in characters
+     * @param int|null $chunkOverlap Overlap between chunks in characters
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @param  int|null $limit        Maximum number of files to process
-     * @param  int|null $chunkSize    Chunk size in characters
-     * @param  int|null $chunkOverlap Overlap between chunks in characters
      * @return JSONResponse Processing result with statistics
      */
     public function processAndIndexExtracted(?int $limit=null, ?int $chunkSize=null, ?int $chunkOverlap=null): JSONResponse
@@ -340,12 +356,13 @@ class FileTextController extends Controller
     /**
      * Process and index a single extracted file
      *
+     * @param int      $fileId       File ID
+     * @param int|null $chunkSize    Chunk size in characters
+     * @param int|null $chunkOverlap Overlap between chunks in characters
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @param  int      $fileId       File ID
-     * @param  int|null $chunkSize    Chunk size in characters
-     * @param  int|null $chunkOverlap Overlap between chunks in characters
      * @return JSONResponse Processing result
      */
     public function processAndIndexFile(int $fileId, ?int $chunkSize=null, ?int $chunkOverlap=null): JSONResponse

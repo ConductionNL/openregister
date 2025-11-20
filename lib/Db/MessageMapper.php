@@ -41,7 +41,7 @@ use OCP\IDBConnection;
  * @method Message find(int|string $id)
  * @method Message findEntity(IQueryBuilder $query)
  * @method Message[] findAll(int|null $limit = null, int|null $offset = null)
- * @method Message[] findEntities(IQueryBuilder $query)
+ * @method list<Message> findEntities(IQueryBuilder $query)
  */
 class MessageMapper extends QBMapper
 {

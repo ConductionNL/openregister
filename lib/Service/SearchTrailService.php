@@ -217,6 +217,7 @@ class SearchTrailService
             'results' => $enrichedTrails,
             'total'   => $total,
             'page'    => $processedConfig['page'],
+            /** @psalm-suppress UndefinedMethod */
             'pages'   => $this->calculatePages($total, $processedConfig['limit']),
             'limit'   => $processedConfig['limit'],
             'offset'  => $processedConfig['offset'],

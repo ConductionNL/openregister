@@ -291,7 +291,10 @@ class MySQLJsonService implements IDatabaseJsonService
                 // Handle complex filters (after/before).
                 $builder = $this->jsonFilterArray(builder: $builder, filter: $filter, values: $value);
                 continue;
-            } else if (is_array($value) === true) {
+            }
+
+            // @psalm-suppress RedundantCondition.
+            if (is_array($value) === true) {
                 // Handle array of values with IN clause and contains check.
                 $builder->createNamedParameter(
                     value: $value,
@@ -305,7 +308,9 @@ class MySQLJsonService implements IDatabaseJsonService
             }
 
             // Handle simple equality filter.
-            if (is_bool($value) === true) {
+            // After handling arrays and special string values, $value can still be bool, string, int, float, etc.
+            // @psalm-suppress TypeDoesNotContainType - $value can be bool, string, int, float, null, etc. at this point.
+            if (is_bool($value)) {
                 $builder->createNamedParameter(
                     value: $value,
                     type: IQueryBuilder::PARAM_BOOL,

@@ -37,9 +37,9 @@ class Version1Date20250830130000 extends SimpleMigrationStep
     /**
      * Change the database schema
      *
-     * @param IOutput       $output        Output for the migration process
-     * @param Closure       $schemaClosure The schema closure
-     * @param array<string> $options       Migration options
+     * @param IOutput                 $output        Output for the migration process
+     * @param Closure                 $schemaClosure The schema closure
+     * @param array<array-key, mixed> $options       Migration options
      *
      * @return ISchemaWrapper|null The modified schema
      */

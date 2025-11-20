@@ -177,7 +177,6 @@ class SolrObjectService
      * This method traverses the object data structure and extracts all
      * string values, building a coherent text representation.
      *
-     *
      * @param array  $data   The data to extract text from
      * @param string $prefix Optional prefix for nested keys (for context)
      * @param int    $depth  Current recursion depth (limit to prevent infinite loops)
@@ -430,7 +429,15 @@ class SolrObjectService
      *
      * @throws \Exception If objectCollection is not configured
      *
-     * @psalm-return array{available: false|mixed, collection?: string, document_count?: 0|mixed, total_objects?: 0|mixed, published_objects?: 0|mixed, collection_info?: mixed|null, error?: 'objectCollection not configured'}
+     * @psalm-return array{
+     *     available: false|mixed,
+     *     collection?: string,
+     *     document_count?: 0|mixed,
+     *     total_objects?: 0|mixed,
+     *     published_objects?: 0|mixed,
+     *     collection_info?: mixed|null,
+     *     error?: 'objectCollection not configured'
+     * }
      */
     public function getObjectStats(): array
     {
@@ -689,6 +696,7 @@ class SolrObjectService
                 'Starting batch object vectorization',
                 [
                     'total_objects' => count($objects),
+                    // @psalm-suppress UndefinedMethod.
                     'provider'      => $this->getProviderOrDefault($provider),
                 ]
                 );

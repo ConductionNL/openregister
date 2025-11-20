@@ -31,7 +31,9 @@ use Symfony\Component\Uid\Uuid;
  * @method Webhook find(int $id)
  * @method Webhook findEntity(IQueryBuilder $query)
  * @method Webhook[] findAll(int|null $limit = null, int|null $offset = null)
- * @method Webhook[] findEntities(IQueryBuilder $query)
+ * @method list<Webhook> findEntities(IQueryBuilder $query)
+ *
+ * @template-extends QBMapper<Webhook>
  */
 class WebhookMapper extends QBMapper
 {
@@ -104,6 +106,51 @@ class WebhookMapper extends QBMapper
         return $this->findEntity($qb);
 
     }//end findByUuid()
+
+
+    /**
+     * Find all webhooks
+     *
+     * @return Webhook[]
+     */
+    public function findAll(): array
+    {
+        $qb = $this->db->getQueryBuilder();
+
+        $qb->select('*')
+            ->from($this->getTableName());
+
+        // Apply organisation filter.
+        $this->applyOrganisationFilter($qb);
+
+        return $this->findEntities($qb);
+
+    }//end findAll()
+
+
+    /**
+     * Find a single webhook by ID
+     *
+     * @param int $id Webhook ID
+     *
+     * @return Webhook
+     * @throws DoesNotExistException
+     * @throws MultipleObjectsReturnedException
+     */
+    public function find(int $id): Webhook
+    {
+        $qb = $this->db->getQueryBuilder();
+
+        $qb->select('*')
+            ->from($this->getTableName())
+            ->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
+
+        // Apply organisation filter.
+        $this->applyOrganisationFilter($qb);
+
+        return $this->findEntity($qb);
+
+    }//end find()
 
 
     /**

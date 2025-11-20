@@ -485,7 +485,23 @@ class AuthorizationException extends Entity implements JsonSerializable
      *
      * @return (bool|int|null|string)[] Serialized authorization exception data
      *
-     * @psalm-return array{id: int, uuid: null|string, type: null|string, subjectType: null|string, subjectId: null|string, schemaUuid: null|string, registerUuid: null|string, organizationUuid: null|string, action: null|string, priority: int|null, active: bool|null, description: null|string, createdBy: null|string, createdAt: null|string, updatedAt: null|string}
+     * @psalm-return array{
+     *     id: int,
+     *     uuid: null|string,
+     *     type: null|string,
+     *     subjectType: null|string,
+     *     subjectId: null|string,
+     *     schemaUuid: null|string,
+     *     registerUuid: null|string,
+     *     organizationUuid: null|string,
+     *     action: null|string,
+     *     priority: int|null,
+     *     active: bool|null,
+     *     description: null|string,
+     *     createdBy: null|string,
+     *     createdAt: null|string,
+     *     updatedAt: null|string
+     * }
      */
     public function jsonSerialize(): array
     {

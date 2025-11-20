@@ -506,7 +506,40 @@ class Agent extends Entity implements JsonSerializable
      *
      * @return (array|null|scalar)[] The serialized data
      *
-     * @psalm-return array{id: int, uuid: null|string, name: null|string, description: null|string, type: null|string, provider: null|string, model: null|string, prompt: null|string, temperature: float|null, maxTokens: int|null, configuration: array|null, organisation: null|string, owner: null|string, active: bool, enableRag: bool, ragSearchMode: null|string, ragNumSources: int|null, ragIncludeFiles: bool, ragIncludeObjects: bool, requestQuota: int|null, tokenQuota: int|null, views: array|null, searchFiles: bool|null, searchObjects: bool|null, isPrivate: bool|null, invitedUsers: array|null, groups: array|null, tools: array|null, user: null|string, created: null|string, updated: null|string, managedByConfiguration: array|null}
+     * @psalm-return array{
+     *     id: int,
+     *     uuid: null|string,
+     *     name: null|string,
+     *     description: null|string,
+     *     type: null|string,
+     *     provider: null|string,
+     *     model: null|string,
+     *     prompt: null|string,
+     *     temperature: float|null,
+     *     maxTokens: int|null,
+     *     configuration: array|null,
+     *     organisation: null|string,
+     *     owner: null|string,
+     *     active: bool,
+     *     enableRag: bool,
+     *     ragSearchMode: null|string,
+     *     ragNumSources: int|null,
+     *     ragIncludeFiles: bool,
+     *     ragIncludeObjects: bool,
+     *     requestQuota: int|null,
+     *     tokenQuota: int|null,
+     *     views: array|null,
+     *     searchFiles: bool|null,
+     *     searchObjects: bool|null,
+     *     isPrivate: bool|null,
+     *     invitedUsers: array|null,
+     *     groups: array|null,
+     *     tools: array|null,
+     *     user: null|string,
+     *     created: null|string,
+     *     updated: null|string,
+     *     managedByConfiguration: array|null
+     * }
      */
     public function jsonSerialize(): array
     {

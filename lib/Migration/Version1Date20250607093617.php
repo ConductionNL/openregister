@@ -36,7 +36,7 @@ class Version1Date20250607093617 extends SimpleMigrationStep
      *
      * @param IOutput        $output Output for the migration process
      * @param Closure       $schemaClosure The schema closure
-     * @param array<string> $options Migration options
+     * @param array<array-key, mixed> $options Migration options
      *
      * @phpstan-return ISchemaWrapper|null
      *

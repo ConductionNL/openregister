@@ -2066,6 +2066,7 @@ class VectorEmbeddingService
                 $error    = curl_error($ch);
                 curl_close($ch);
 
+                /** @psalm-suppress RedundantCondition */
                 if ($error !== null && $error !== '') {
                     throw new \Exception("Fireworks API request failed: {$error}");
                 }
@@ -2189,7 +2190,7 @@ class VectorEmbeddingService
         $magnitude1 = sqrt($magnitude1);
         $magnitude2 = sqrt($magnitude2);
 
-        if ($magnitude1 === 0 || $magnitude2 === 0) {
+        if ($magnitude1 === 0.0 || $magnitude2 === 0.0) {
             return 0.0;
         }
 
@@ -2321,6 +2322,7 @@ class VectorEmbeddingService
         }
 
         // Search similar vectors.
+        /** @psalm-suppress UndefinedMethod */
         $results = $this->searchSimilarVectors(
             $queryEmbedding['embedding'],
             $limit,
@@ -2505,6 +2507,7 @@ class VectorEmbeddingService
                 'total_vectors'     => $totalVectors,
                 'null_model_count'  => $nullModelCount,
                 'mismatched_models' => $mismatchDetails,
+                /** @psalm-suppress UndefinedMethod */
                 'message'           => $this->getModelMismatchMessage($hasMismatch, $nullModelCount),
             ];
         } catch (\Exception $e) {

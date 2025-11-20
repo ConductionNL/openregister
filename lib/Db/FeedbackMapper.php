@@ -2,6 +2,23 @@
 
 declare(strict_types=1);
 
+/**
+ * OpenRegister Feedback Mapper
+ *
+ * Mapper for Feedback entities to handle database operations.
+ *
+ * @category Database
+ * @package  OCA\OpenRegister\Db
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://www.OpenRegister.app
+ */
+
 namespace OCA\OpenRegister\Db;
 
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -31,6 +48,11 @@ class FeedbackMapper extends QBMapper
 {
 
 
+    /**
+     * Constructor for FeedbackMapper
+     *
+     * @param IDBConnection $db Database connection
+     */
     public function __construct(IDBConnection $db)
     {
         parent::__construct($db, 'openregister_feedback', Feedback::class);
@@ -40,11 +62,15 @@ class FeedbackMapper extends QBMapper
 
     /**
      * Override insert to generate UUID and timestamps
+     *
+     * @param Entity $entity Entity to insert
+     *
+     * @return Entity Inserted entity
      */
     public function insert(Entity $entity): Entity
     {
         // Generate UUID if not set.
-        if (empty($entity->getUuid())) {
+        if (empty($entity->getUuid()) === true) {
             $entity->setUuid(\Symfony\Component\Uid\Uuid::v4()->toRfc4122());
         }
 
@@ -63,6 +89,10 @@ class FeedbackMapper extends QBMapper
 
     /**
      * Override update to set updated timestamp
+     *
+     * @param Entity $entity Entity to update
+     *
+     * @return Entity Updated entity
      */
     public function update(Entity $entity): Entity
     {
@@ -74,6 +104,10 @@ class FeedbackMapper extends QBMapper
 
     /**
      * Find feedback by UUID
+     *
+     * @param string $uuid UUID to search for
+     *
+     * @return Feedback Found feedback entity
      *
      * @throws DoesNotExistException
      * @throws MultipleObjectsReturnedException
@@ -226,6 +260,8 @@ class FeedbackMapper extends QBMapper
      * Delete all feedback for a message
      *
      * @param int $messageId Message ID
+     *
+     * @return void
      */
     public function deleteByMessage(int $messageId): void
     {
@@ -243,6 +279,8 @@ class FeedbackMapper extends QBMapper
      * Delete all feedback for a conversation
      *
      * @param int $conversationId Conversation ID
+     *
+     * @return void
      */
     public function deleteByConversation(int $conversationId): void
     {

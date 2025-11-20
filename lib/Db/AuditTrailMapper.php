@@ -571,20 +571,36 @@ class AuditTrailMapper extends QBMapper
                     // Handle register exclusion.
                     if (isset($combination['register']) === true) {
                         $orConditions->add($qb->expr()->isNull('register'));
-                        $orConditions->add($qb->expr()->neq('register', $qb->createNamedParameter($combination['register'], IQueryBuilder::PARAM_INT)));
+                        $orConditions->add(
+                            $qb->expr()->neq(
+                                'register',
+                                $qb->createNamedParameter(
+                                    $combination['register'],
+                                    IQueryBuilder::PARAM_INT
+                                )
+                            )
+                        );
                     }
 
                     // Handle schema exclusion.
                     if (isset($combination['schema']) === true) {
                         $orConditions->add($qb->expr()->isNull('schema'));
-                        $orConditions->add($qb->expr()->neq('schema', $qb->createNamedParameter($combination['schema'], IQueryBuilder::PARAM_INT)));
-                    }
+                        $orConditions->add(
+                            $qb->expr()->neq(
+                                'schema',
+                                $qb->createNamedParameter(
+                                    $combination['schema'],
+                                    IQueryBuilder::PARAM_INT
+                                )
+                            )
+                        );
+                    }//end if
 
                     // Add the OR conditions to the main query.
                     if ($orConditions->count() > 0) {
                         $qb->andWhere($orConditions);
-                    }
-                }
+                    }//end if
+                }//end foreach
             }//end if
 
             $result = $qb->executeQuery()->fetch();
@@ -681,7 +697,7 @@ class AuditTrailMapper extends QBMapper
             // Initialize data structure.
             foreach ($results as $row) {
                 $date = $row['date'];
-                if (!isset($dateData[$date])) {
+                if (isset($dateData[$date]) === false) {
                     $dateData[$date] = array_fill_keys($actions, 0);
                 }
 
@@ -878,7 +894,11 @@ class AuditTrailMapper extends QBMapper
 
             // Calculate percentages.
             foreach ($actionData as &$action) {
-                $action['percentage'] = $total > 0 ? round(($action['count'] / $total) * 100, 2) : 0;
+                if ($total > 0) {
+                    $action['percentage'] = round(($action['count'] / $total) * 100, 2);
+                } else {
+                    $action['percentage'] = 0;
+                }
             }
 
             return [
@@ -1105,7 +1125,7 @@ class AuditTrailMapper extends QBMapper
                 $qb->andWhere($qb->expr()->isNotNull($field));
             } else if ($value === 'IS NULL') {
                 $qb->andWhere($qb->expr()->isNull($field));
-            } else if (is_array($value)) {
+            } else if (is_array($value) === true) {
                 // Handle array values like ['IS NULL', ''].
                 $conditions = [];
                 foreach ($value as $val) {
@@ -1118,7 +1138,7 @@ class AuditTrailMapper extends QBMapper
                     }
                 }
 
-                if (!empty($conditions)) {
+                if (empty($conditions) === false) {
                     $qb->andWhere($qb->expr()->orX(...$conditions));
                 }
             } else {
@@ -1195,7 +1215,7 @@ class AuditTrailMapper extends QBMapper
                 $qb->andWhere($qb->expr()->isNotNull($field));
             } else if ($value === 'IS NULL') {
                 $qb->andWhere($qb->expr()->isNull($field));
-            } else if (is_array($value)) {
+            } else if (is_array($value) === true) {
                 // Handle array values like ['IS NULL', ''].
                 $conditions = [];
                 foreach ($value as $val) {
@@ -1208,7 +1228,7 @@ class AuditTrailMapper extends QBMapper
                     }
                 }
 
-                if (!empty($conditions)) {
+                if (empty($conditions) === false) {
                     $qb->andWhere($qb->expr()->orX(...$conditions));
                 }
             } else {

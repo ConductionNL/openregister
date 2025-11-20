@@ -229,7 +229,8 @@ class ViewService
     public function toggleFavorite(int | string $id, string $owner, bool $favor): View
     {
         try {
-            $view      = $this->find($id, $owner);
+            $view = $this->find($id, $owner);
+            // @psalm-suppress RedundantCondition.
             $favoredBy = $view->getFavoredBy() ?? [];
 
             if ($favor === true) {
@@ -237,11 +238,14 @@ class ViewService
                 if (in_array($owner, $favoredBy, true) === false) {
                     $favoredBy[] = $owner;
                 }
+
+                //end if
             } else {
                 // Remove user from favoredBy.
                 $favoredBy = array_values(array_filter($favoredBy, fn($userId) => $userId !== $owner));
             }
 
+            // End if.
             $view->setFavoredBy($favoredBy);
             return $this->viewMapper->update($view);
         } catch (Exception $e) {

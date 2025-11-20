@@ -1,0 +1,320 @@
+<?php
+
+declare(strict_types=1);
+
+/**
+ * SPDX-FileCopyrightText: 2024 Nextcloud GmbH and Nextcloud contributors
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
+namespace OCA\OpenRegister\Listener;
+
+use OCA\OpenRegister\Event\AgentCreatedEvent;
+use OCA\OpenRegister\Event\AgentDeletedEvent;
+use OCA\OpenRegister\Event\AgentUpdatedEvent;
+use OCA\OpenRegister\Event\ApplicationCreatedEvent;
+use OCA\OpenRegister\Event\ApplicationDeletedEvent;
+use OCA\OpenRegister\Event\ApplicationUpdatedEvent;
+use OCA\OpenRegister\Event\ConfigurationCreatedEvent;
+use OCA\OpenRegister\Event\ConfigurationDeletedEvent;
+use OCA\OpenRegister\Event\ConfigurationUpdatedEvent;
+use OCA\OpenRegister\Event\ConversationCreatedEvent;
+use OCA\OpenRegister\Event\ConversationDeletedEvent;
+use OCA\OpenRegister\Event\ConversationUpdatedEvent;
+use OCA\OpenRegister\Event\ObjectCreatedEvent;
+use OCA\OpenRegister\Event\ObjectDeletedEvent;
+use OCA\OpenRegister\Event\ObjectLockedEvent;
+use OCA\OpenRegister\Event\ObjectRevertedEvent;
+use OCA\OpenRegister\Event\ObjectUnlockedEvent;
+use OCA\OpenRegister\Event\ObjectUpdatedEvent;
+use OCA\OpenRegister\Event\OrganisationCreatedEvent;
+use OCA\OpenRegister\Event\OrganisationDeletedEvent;
+use OCA\OpenRegister\Event\OrganisationUpdatedEvent;
+use OCA\OpenRegister\Event\RegisterCreatedEvent;
+use OCA\OpenRegister\Event\RegisterDeletedEvent;
+use OCA\OpenRegister\Event\RegisterUpdatedEvent;
+use OCA\OpenRegister\Event\SchemaCreatedEvent;
+use OCA\OpenRegister\Event\SchemaDeletedEvent;
+use OCA\OpenRegister\Event\SchemaUpdatedEvent;
+use OCA\OpenRegister\Event\SourceCreatedEvent;
+use OCA\OpenRegister\Event\SourceDeletedEvent;
+use OCA\OpenRegister\Event\SourceUpdatedEvent;
+use OCA\OpenRegister\Event\ViewCreatedEvent;
+use OCA\OpenRegister\Event\ViewDeletedEvent;
+use OCA\OpenRegister\Event\ViewUpdatedEvent;
+use OCA\OpenRegister\Service\WebhookService;
+use OCP\EventDispatcher\Event;
+use OCP\EventDispatcher\IEventListener;
+use Psr\Log\LoggerInterface;
+
+/**
+ * WebhookEventListener dispatches webhooks for all OpenRegister events
+ *
+ * @template-implements IEventListener<Event>
+ */
+class WebhookEventListener implements IEventListener
+{
+
+    /**
+     * Webhook service
+     *
+     * @var WebhookService
+     */
+    private WebhookService $webhookService;
+
+    /**
+     * Logger
+     *
+     * @var LoggerInterface
+     */
+    private LoggerInterface $logger;
+
+
+    /**
+     * Constructor
+     *
+     * @param WebhookService    $webhookService Webhook service
+     * @param LoggerInterface   $logger         Logger
+     */
+    public function __construct(
+        WebhookService $webhookService,
+        LoggerInterface $logger
+    ) {
+        $this->webhookService = $webhookService;
+        $this->logger         = $logger;
+
+    }//end __construct()
+
+
+    /**
+     * Handle event
+     *
+     * @param Event $event The event to handle
+     *
+     * @return void
+     */
+    public function handle(Event $event): void
+    {
+        $eventClass = get_class($event);
+        $payload    = $this->extractPayload($event);
+
+        if ($payload === null) {
+            $this->logger->debug('Could not extract payload from event', [
+                'event' => $eventClass,
+            ]);
+            return;
+        }
+
+        $this->logger->debug('Processing event for webhooks', [
+            'event' => $eventClass,
+        ]);
+
+        // Dispatch to webhook service.
+        $this->webhookService->dispatchEvent($event, $eventClass, $payload);
+
+    }//end handle()
+
+
+    /**
+     * Extract payload from event
+     *
+     * @param Event $event The event
+     *
+     * @return array|null Payload data or null if not supported
+     */
+    private function extractPayload(Event $event): ?array
+    {
+        // Object events.
+        if ($event instanceof ObjectCreatedEvent || $event instanceof ObjectUpdatedEvent) {
+            if ($event instanceof ObjectCreatedEvent) {
+                $object = $event->getObject();
+            } else {
+                $object = $event->getNewObject();
+            }
+            return [
+                'objectType' => 'object',
+                'action'     => $event instanceof ObjectCreatedEvent ? 'created' : 'updated',
+                'object'     => $object->jsonSerialize(),
+                'register'   => $object->getRegister(),
+                'schema'     => $object->getSchema(),
+            ];
+        }
+
+        if ($event instanceof ObjectDeletedEvent) {
+            $object = $event->getObject();
+            return [
+                'objectType' => 'object',
+                'action'     => 'deleted',
+                'object'     => $object->jsonSerialize(),
+            ];
+        }
+
+        if ($event instanceof ObjectLockedEvent || $event instanceof ObjectUnlockedEvent) {
+            $object = $event->getObject();
+            return [
+                'objectType' => 'object',
+                'action'     => $event instanceof ObjectLockedEvent ? 'locked' : 'unlocked',
+                'object'     => $object->jsonSerialize(),
+            ];
+        }
+
+        if ($event instanceof ObjectRevertedEvent) {
+            return [
+                'objectType'  => 'object',
+                'action'      => 'reverted',
+                'object'      => $event->getObject()->jsonSerialize(),
+                'revertPoint' => $event->getRevertPoint(),
+            ];
+        }
+
+        // Register events.
+        if ($event instanceof RegisterCreatedEvent || $event instanceof RegisterUpdatedEvent || $event instanceof RegisterDeletedEvent) {
+            $register = $event->getRegister();
+            $action   = match (true) {
+                $event instanceof RegisterCreatedEvent => 'created',
+                $event instanceof RegisterUpdatedEvent => 'updated',
+                $event instanceof RegisterDeletedEvent => 'deleted',
+            };
+
+            return [
+                'objectType' => 'register',
+                'action'     => $action,
+                'register'   => $register->jsonSerialize(),
+            ];
+        }
+
+        // Schema events.
+        if ($event instanceof SchemaCreatedEvent || $event instanceof SchemaUpdatedEvent || $event instanceof SchemaDeletedEvent) {
+            $schema = $event->getSchema();
+            $action = match (true) {
+                $event instanceof SchemaCreatedEvent => 'created',
+                $event instanceof SchemaUpdatedEvent => 'updated',
+                $event instanceof SchemaDeletedEvent => 'deleted',
+            };
+
+            return [
+                'objectType' => 'schema',
+                'action'     => $action,
+                'schema'     => $schema->jsonSerialize(),
+            ];
+        }
+
+        // Application events.
+        if ($event instanceof ApplicationCreatedEvent || $event instanceof ApplicationUpdatedEvent || $event instanceof ApplicationDeletedEvent) {
+            $application = $event->getApplication();
+            $action      = match (true) {
+                $event instanceof ApplicationCreatedEvent => 'created',
+                $event instanceof ApplicationUpdatedEvent => 'updated',
+                $event instanceof ApplicationDeletedEvent => 'deleted',
+            };
+
+            return [
+                'objectType'  => 'application',
+                'action'      => $action,
+                'application' => $application->jsonSerialize(),
+            ];
+        }
+
+        // Agent events.
+        if ($event instanceof AgentCreatedEvent || $event instanceof AgentUpdatedEvent || $event instanceof AgentDeletedEvent) {
+            $agent  = $event->getAgent();
+            $action = match (true) {
+                $event instanceof AgentCreatedEvent => 'created',
+                $event instanceof AgentUpdatedEvent => 'updated',
+                $event instanceof AgentDeletedEvent => 'deleted',
+            };
+
+            return [
+                'objectType' => 'agent',
+                'action'     => $action,
+                'agent'      => $agent->jsonSerialize(),
+            ];
+        }
+
+        // Source events.
+        if ($event instanceof SourceCreatedEvent || $event instanceof SourceUpdatedEvent || $event instanceof SourceDeletedEvent) {
+            $source = $event->getSource();
+            $action = match (true) {
+                $event instanceof SourceCreatedEvent => 'created',
+                $event instanceof SourceUpdatedEvent => 'updated',
+                $event instanceof SourceDeletedEvent => 'deleted',
+            };
+
+            return [
+                'objectType' => 'source',
+                'action'     => $action,
+                'source'     => $source->jsonSerialize(),
+            ];
+        }
+
+        // Configuration events.
+        if ($event instanceof ConfigurationCreatedEvent || $event instanceof ConfigurationUpdatedEvent || $event instanceof ConfigurationDeletedEvent) {
+            $configuration = $event->getConfiguration();
+            $action        = match (true) {
+                $event instanceof ConfigurationCreatedEvent => 'created',
+                $event instanceof ConfigurationUpdatedEvent => 'updated',
+                $event instanceof ConfigurationDeletedEvent => 'deleted',
+            };
+
+            return [
+                'objectType'    => 'configuration',
+                'action'        => $action,
+                'configuration' => $configuration->jsonSerialize(),
+            ];
+        }
+
+        // View events.
+        if ($event instanceof ViewCreatedEvent || $event instanceof ViewUpdatedEvent || $event instanceof ViewDeletedEvent) {
+            $view   = $event->getView();
+            $action = match (true) {
+                $event instanceof ViewCreatedEvent => 'created',
+                $event instanceof ViewUpdatedEvent => 'updated',
+                $event instanceof ViewDeletedEvent => 'deleted',
+            };
+
+            return [
+                'objectType' => 'view',
+                'action'     => $action,
+                'view'       => $view->jsonSerialize(),
+            ];
+        }
+
+        // Conversation events.
+        if ($event instanceof ConversationCreatedEvent || $event instanceof ConversationUpdatedEvent || $event instanceof ConversationDeletedEvent) {
+            $conversation = $event->getConversation();
+            $action       = match (true) {
+                $event instanceof ConversationCreatedEvent => 'created',
+                $event instanceof ConversationUpdatedEvent => 'updated',
+                $event instanceof ConversationDeletedEvent => 'deleted',
+            };
+
+            return [
+                'objectType'   => 'conversation',
+                'action'       => $action,
+                'conversation' => $conversation->jsonSerialize(),
+            ];
+        }
+
+        // Organisation events.
+        if ($event instanceof OrganisationCreatedEvent || $event instanceof OrganisationUpdatedEvent || $event instanceof OrganisationDeletedEvent) {
+            $organisation = $event->getOrganisation();
+            $action       = match (true) {
+                $event instanceof OrganisationCreatedEvent => 'created',
+                $event instanceof OrganisationUpdatedEvent => 'updated',
+                $event instanceof OrganisationDeletedEvent => 'deleted',
+            };
+
+            return [
+                'objectType'   => 'organisation',
+                'action'       => $action,
+                'organisation' => $organisation->jsonSerialize(),
+            ];
+        }//end if
+
+        return null;
+
+    }//end extractPayload()
+
+
+}//end class
+

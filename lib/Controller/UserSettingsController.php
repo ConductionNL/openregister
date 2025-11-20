@@ -93,7 +93,16 @@ class UserSettingsController extends Controller
      *
      * @return JSONResponse Token status
      *
-     * @psalm-return JSONResponse<200|401|500, array{error?: 'Failed to get token status'|'User not authenticated', hasToken?: bool, isValid?: false|mixed, message?: string}, array<never, never>>
+     * @psalm-return JSONResponse<
+     *     200|401|500,
+     *     array{
+     *         error?: 'Failed to get token status'|'User not authenticated',
+     *         hasToken?: bool,
+     *         isValid?: false|mixed,
+     *         message?: string
+     *     },
+     *     array<never, never>
+     * >
      */
     public function getGitHubTokenStatus(): JSONResponse
     {
@@ -152,7 +161,15 @@ class UserSettingsController extends Controller
      *
      * @return JSONResponse Success or error message
      *
-     * @psalm-return JSONResponse<200|400|401|500, array{error?: string, success?: true, message?: 'GitHub token saved successfully'}, array<never, never>>
+     * @psalm-return JSONResponse<
+     *     200|400|401|500,
+     *     array{
+     *         error?: string,
+     *         success?: true,
+     *         message?: 'GitHub token saved successfully'
+     *     },
+     *     array<never, never>
+     * >
      */
     public function setGitHubToken(): JSONResponse
     {
@@ -215,7 +232,15 @@ class UserSettingsController extends Controller
      *
      * @return JSONResponse Success or error message
      *
-     * @psalm-return JSONResponse<200|401|500, array{error?: 'Failed to remove token'|'User not authenticated', success?: true, message?: 'GitHub token removed successfully'}, array<never, never>>
+     * @psalm-return JSONResponse<
+     *     200|401|500,
+     *     array{
+     *         error?: 'Failed to remove token'|'User not authenticated',
+     *         success?: true,
+     *         message?: 'GitHub token removed successfully'
+     *     },
+     *     array<never, never>
+     * >
      */
     public function removeGitHubToken(): JSONResponse
     {

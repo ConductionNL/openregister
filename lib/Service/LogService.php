@@ -327,7 +327,23 @@ class LogService
      *
      * @return (mixed|string)[][] Prepared data for export
      *
-     * @psalm-return list<array{action: ''|mixed, changes?: string, created: ''|mixed, id: ''|mixed, ipAddress?: ''|mixed, object: ''|mixed, register: ''|mixed, request?: ''|mixed, schema: ''|mixed, session?: ''|mixed, size: ''|mixed, user: ''|mixed, userName: ''|mixed, uuid: ''|mixed, version?: ''|mixed}>
+     * @psalm-return list<array{
+     *     action: ''|mixed,
+     *     changes?: string,
+     *     created: ''|mixed,
+     *     id: ''|mixed,
+     *     ipAddress?: ''|mixed,
+     *     object: ''|mixed,
+     *     register: ''|mixed,
+     *     request?: ''|mixed,
+     *     schema: ''|mixed,
+     *     session?: ''|mixed,
+     *     size: ''|mixed,
+     *     user: ''|mixed,
+     *     userName: ''|mixed,
+     *     uuid: ''|mixed,
+     *     version?: ''|mixed
+     * }>
      */
     private function prepareLogsForExport(array $logs, array $config): array
     {

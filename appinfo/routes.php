@@ -388,5 +388,14 @@ return [
 		['name' => 'ui#auditTrail', 'url' => '/audit-trails', 'verb' => 'GET'],
 		['name' => 'ui#searchTrail', 'url' => '/search-trails', 'verb' => 'GET'],
 	['name' => 'files#page', 'url' => '/files', 'verb' => 'GET'],
+
+		// Webhooks.
+		['name' => 'webhooks#index', 'url' => '/api/webhooks', 'verb' => 'GET'],
+		['name' => 'webhooks#show', 'url' => '/api/webhooks/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
+		['name' => 'webhooks#create', 'url' => '/api/webhooks', 'verb' => 'POST'],
+		['name' => 'webhooks#update', 'url' => '/api/webhooks/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '\d+']],
+		['name' => 'webhooks#destroy', 'url' => '/api/webhooks/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\d+']],
+		['name' => 'webhooks#test', 'url' => '/api/webhooks/{id}/test', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
+		['name' => 'webhooks#events', 'url' => '/api/webhooks/events', 'verb' => 'GET'],
     ],
 ];

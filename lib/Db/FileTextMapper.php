@@ -2,9 +2,21 @@
 
 declare(strict_types=1);
 
-/*
- * SPDX-FileCopyrightText: 2024 Nextcloud GmbH and Nextcloud contributors
- * SPDX-License-Identifier: AGPL-3.0-or-later
+/**
+ * OpenRegister FileText Mapper
+ *
+ * Mapper for FileText entities to handle database operations.
+ *
+ * @category Database
+ * @package  OCA\OpenRegister\Db
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://www.OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Db;
@@ -105,7 +117,7 @@ class FileTextMapper extends QBMapper
     {
         if ($entity instanceof FileText) {
             // Generate UUID if not set.
-            if (empty($entity->getUuid())) {
+            if (empty($entity->getUuid()) === true) {
                 $entity->setUuid(
                         \OC::$server->get(\OCP\Security\ISecureRandom::class)->generate(
                     36,
@@ -389,7 +401,7 @@ class FileTextMapper extends QBMapper
         $result = $qb->executeQuery();
         $types  = [];
 
-        while ($row = $result->fetch()) {
+        while (($row = $result->fetch()) !== false) {
             $types[] = [
                 'mime'       => $row['mime_type'],
                 'name'       => $this->formatMimeType($row['mime_type']),
@@ -547,7 +559,7 @@ class FileTextMapper extends QBMapper
 
         $result      = $qb->executeQuery();
         $idsToDelete = [];
-        while ($row = $result->fetch()) {
+        while (($row = $result->fetch()) !== false) {
             $idsToDelete[] = $row['id'];
             $reasons['file_not_found']++;
         }

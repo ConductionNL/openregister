@@ -360,7 +360,34 @@ class AuditTrail extends Entity implements JsonSerializable
      *
      * @return (array|int|null|string)[] Array of serializable entity data
      *
-     * @psalm-return array{id: int, uuid: null|string, schema: int|null, register: int|null, object: int|null, objectUuid: null|string, registerUuid: null|string, schemaUuid: null|string, action: null|string, changed: array|null, user: null|string, userName: null|string, session: null|string, request: null|string, ipAddress: null|string, version: null|string, created: null|string, organisationId: null|string, organisationIdType: null|string, processingActivityId: null|string, processingActivityUrl: null|string, processingId: null|string, confidentiality: null|string, retentionPeriod: null|string, size: int|null, expires: null|string}
+     * @psalm-return array{
+     *     id: int,
+     *     uuid: null|string,
+     *     schema: int|null,
+     *     register: int|null,
+     *     object: int|null,
+     *     objectUuid: null|string,
+     *     registerUuid: null|string,
+     *     schemaUuid: null|string,
+     *     action: null|string,
+     *     changed: array|null,
+     *     user: null|string,
+     *     userName: null|string,
+     *     session: null|string,
+     *     request: null|string,
+     *     ipAddress: null|string,
+     *     version: null|string,
+     *     created: null|string,
+     *     organisationId: null|string,
+     *     organisationIdType: null|string,
+     *     processingActivityId: null|string,
+     *     processingActivityUrl: null|string,
+     *     processingId: null|string,
+     *     confidentiality: null|string,
+     *     retentionPeriod: null|string,
+     *     size: int|null,
+     *     expires: null|string
+     * }
      */
     public function jsonSerialize(): array
     {

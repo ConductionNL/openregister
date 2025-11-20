@@ -175,7 +175,7 @@ class UploadService
      *
      * @throws Exception If the file cannot be read or its content cannot be parsed as JSON.
      */
-    private function getJSONfromFile() | JSONResponse
+    private function getJSONfromFile(): never
     {
         // @todo: Implement file reading logic here.
         // For now, return a simple array to ensure code consistency.
@@ -200,7 +200,7 @@ class UploadService
         foreach ($phpArray['components']['schemas'] as $schemaName => $schemaData) {
             // Check if a schema with this title already exists.
             $schema = $this->registerMapper->hasSchemaWithTitle(registerId: $register->getId(), schemaTitle: $schemaName);
-            if ($schema === false) {
+            if ($schema === null) {
                 // Check if a schema with this title already exists for this register.
                 try {
                     $schemas = $this->schemaMapper->findAll(filters: ['title' => $schemaName]);

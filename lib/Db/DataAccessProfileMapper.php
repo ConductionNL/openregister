@@ -18,6 +18,7 @@
 
 namespace OCA\OpenRegister\Db;
 
+use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\IDBConnection;
 
@@ -33,9 +34,11 @@ use OCP\IDBConnection;
  * @method DataAccessProfile insertOrUpdate(Entity $entity)
  * @method DataAccessProfile delete(Entity $entity)
  * @method DataAccessProfile find(int|string $id)
- * @method DataAccessProfile findEntity(IQueryBuilder $query)
+ * @method DataAccessProfile findEntity(\OCP\DB\QueryBuilder\IQueryBuilder $query)
  * @method DataAccessProfile[] findAll(int|null $limit = null, int|null $offset = null)
- * @method DataAccessProfile[] findEntities(IQueryBuilder $query)
+ * @method list<DataAccessProfile> findEntities(\OCP\DB\QueryBuilder\IQueryBuilder $query)
+ *
+ * @template-extends QBMapper<DataAccessProfile>
  */
 class DataAccessProfileMapper extends QBMapper
 {

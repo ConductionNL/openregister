@@ -46,7 +46,9 @@ use Symfony\Component\Uid\Uuid;
  * @method Source find(int|string $id)
  * @method Source findEntity(IQueryBuilder $query)
  * @method Source[] findAll(int|null $limit = null, int|null $offset = null)
- * @method Source[] findEntities(IQueryBuilder $query)
+ * @method list<Source> findEntities(IQueryBuilder $query)
+ *
+ * @template-extends QBMapper<Source>
  */
 class SourceMapper extends QBMapper
 {

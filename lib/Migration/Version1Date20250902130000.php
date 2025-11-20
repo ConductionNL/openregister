@@ -42,9 +42,9 @@ class Version1Date20250902130000 extends SimpleMigrationStep
     /**
      * Apply database schema changes for search performance
      *
-     * @param IOutput       $output        Migration output interface
-     * @param Closure       $schemaClosure Schema closure that returns ISchemaWrapper
-     * @param array<string> $options       Migration options
+     * @param IOutput                 $output        Migration output interface
+     * @param Closure                 $schemaClosure Schema closure that returns ISchemaWrapper
+     * @param array<array-key, mixed> $options       Migration options
      *
      * @return null|ISchemaWrapper Updated schema or null
      */
@@ -74,9 +74,9 @@ class Version1Date20250902130000 extends SimpleMigrationStep
     /**
      * Execute raw SQL for TEXT column prefix indexes
      *
-     * @param IOutput       $output        Migration output interface
-     * @param Closure       $schemaClosure Schema closure that returns ISchemaWrapper
-     * @param array<string> $options       Migration options
+     * @param IOutput                 $output        Migration output interface
+     * @param Closure                 $schemaClosure Schema closure that returns ISchemaWrapper
+     * @param array<array-key, mixed> $options       Migration options
      *
      * @return void
      */

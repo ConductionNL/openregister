@@ -228,12 +228,12 @@ class ApplicationsController extends Controller
     /**
      * Update an existing application
      *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
      * @param int $id Application ID
      *
      * @return JSONResponse Updated application
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
      */
     public function update(int $id): JSONResponse
     {

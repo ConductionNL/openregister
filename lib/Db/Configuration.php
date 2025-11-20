@@ -468,7 +468,43 @@ class Configuration extends Entity implements JsonSerializable
      *
      * @return (array|bool|int|null|string)[] The serialized entity
      *
-     * @psalm-return array{id: int, uuid: null|string, title: string, description: null|string, type: string, app: string, application: string, version: string, sourceType: null|string, sourceUrl: null|string, localVersion: null|string, remoteVersion: null|string, lastChecked: null|string, autoUpdate: bool, notificationGroups: array|null, githubRepo: null|string, githubBranch: null|string, githubPath: null|string, isLocal: bool, syncEnabled: bool, syncInterval: int, lastSyncDate: null|string, syncStatus: string, openregister: null|string, organisation: null|string, owner: null|string, registers: array|null, schemas: array|null, objects: array|null, views: array|null, agents: array|null, sources: array|null, applications: array|null, created: null|string, updated: null|string}
+     * @psalm-return array{
+     *     id: int,
+     *     uuid: null|string,
+     *     title: string,
+     *     description: null|string,
+     *     type: string,
+     *     app: string,
+     *     application: string,
+     *     version: string,
+     *     sourceType: null|string,
+     *     sourceUrl: null|string,
+     *     localVersion: null|string,
+     *     remoteVersion: null|string,
+     *     lastChecked: null|string,
+     *     autoUpdate: bool,
+     *     notificationGroups: array|null,
+     *     githubRepo: null|string,
+     *     githubBranch: null|string,
+     *     githubPath: null|string,
+     *     isLocal: bool,
+     *     syncEnabled: bool,
+     *     syncInterval: int,
+     *     lastSyncDate: null|string,
+     *     syncStatus: string,
+     *     openregister: null|string,
+     *     organisation: null|string,
+     *     owner: null|string,
+     *     registers: array|null,
+     *     schemas: array|null,
+     *     objects: array|null,
+     *     views: array|null,
+     *     agents: array|null,
+     *     sources: array|null,
+     *     applications: array|null,
+     *     created: null|string,
+     *     updated: null|string
+     * }
      */
     public function jsonSerialize(): array
     {

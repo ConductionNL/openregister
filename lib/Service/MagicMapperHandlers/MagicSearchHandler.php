@@ -454,6 +454,7 @@ class MagicSearchHandler
             }
 
             if (isset($metadataData['deleted']) === true) {
+                // @psalm-suppress InvalidArgument
                 $objectEntity->setDeleted(new \DateTime($metadataData['deleted']));
             }
 
@@ -462,8 +463,8 @@ class MagicSearchHandler
             }
 
             // Set register and schema.
-            $objectEntity->setRegister($register->getId());
-            $objectEntity->setSchema($schema->getId());
+            $objectEntity->setRegister((string) $register->getId());
+            $objectEntity->setSchema((string) $schema->getId());
 
             // Set the object data.
             $objectEntity->setObject($objectData);

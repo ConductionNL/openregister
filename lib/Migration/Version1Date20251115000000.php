@@ -1,8 +1,5 @@
 <?php
-
-declare(strict_types=1);
-
-/*
+/**
  * OpenRegister Configuration Management Migration
  *
  * This migration adds columns to the configurations table to support:
@@ -21,6 +18,8 @@ declare(strict_types=1);
  *
  * @link https://www.OpenRegister.nl
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Migration;
 
@@ -56,11 +55,12 @@ class Version1Date20251115000000 extends SimpleMigrationStep
         /*
          * @var ISchemaWrapper $schema
          */
+
         $schema = $schemaClosure();
 
         $output->info('🔧 Adding configuration management columns...');
 
-        if ($schema->hasTable('openregister_configurations')) {
+        if ($schema->hasTable('openregister_configurations') === true) {
             $table = $schema->getTable('openregister_configurations');
 
             // Add isLocal field (boolean) - true = maintained locally, false = imported externally.
