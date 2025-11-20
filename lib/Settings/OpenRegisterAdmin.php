@@ -64,6 +64,8 @@ class OpenRegisterAdmin implements ISettings
      * Get the admin settings form
      *
      * @return TemplateResponse Template response
+     *
+     * @psalm-return TemplateResponse<200, array<never, never>>
      */
     public function getForm()
     {
@@ -80,6 +82,8 @@ class OpenRegisterAdmin implements ISettings
      * Get the section identifier
      *
      * @return string Section identifier
+     *
+     * @psalm-return 'openregister'
      */
     public function getSection()
     {
@@ -97,6 +101,8 @@ class OpenRegisterAdmin implements ISettings
      * of priority values. Must return a value between 0 and 100.
      *
      * @return int Priority value between 0 and 100
+     *
+     * @psalm-return 11
      */
     public function getPriority()
     {

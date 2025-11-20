@@ -258,9 +258,9 @@ class Organisation extends Entity implements JsonSerializable
      *
      * @param string $userId The Nextcloud user ID to add
      *
-     * @return self Returns this organisation for method chaining
+     * @return static Returns this organisation for method chaining
      */
-    public function addUser(string $userId): self
+    public function addUser(string $userId): static
     {
         if ($this->users === null) {
             $this->users = [];
@@ -281,9 +281,9 @@ class Organisation extends Entity implements JsonSerializable
      *
      * @param string $userId The Nextcloud user ID to remove
      *
-     * @return self Returns this organisation for method chaining
+     * @return static Returns this organisation for method chaining
      */
-    public function removeUser(string $userId): self
+    public function removeUser(string $userId): static
     {
         if ($this->users === null) {
             return $this;
@@ -340,9 +340,9 @@ class Organisation extends Entity implements JsonSerializable
      *
      * @param array $role The role definition to add (e.g., ['id' => 'admin', 'name' => 'Administrator', 'permissions' => [...]])
      *
-     * @return self Returns this organisation for method chaining
+     * @return static Returns this organisation for method chaining
      */
-    public function addRole(array $role): self
+    public function addRole(array $role): static
     {
         if ($this->roles === null) {
             $this->roles = [];
@@ -375,9 +375,9 @@ class Organisation extends Entity implements JsonSerializable
      *
      * @param string $roleId The role ID or name to remove
      *
-     * @return self Returns this organisation for method chaining
+     * @return static Returns this organisation for method chaining
      */
-    public function removeRole(string $roleId): self
+    public function removeRole(string $roleId): static
     {
         if ($this->roles === null) {
             return $this;
@@ -465,9 +465,9 @@ class Organisation extends Entity implements JsonSerializable
      *
      * @param array|null $groups Array of Nextcloud group IDs
      *
-     * @return self Returns this organisation for method chaining
+     * @return static Returns this organisation for method chaining
      */
-    public function setGroups(?array $groups): self
+    public function setGroups(?array $groups): static
     {
         $this->groups = $groups ?? [];
         $this->markFieldUpdated('groups');
@@ -493,9 +493,9 @@ class Organisation extends Entity implements JsonSerializable
      *
      * @param bool|null|string $active Whether this should be the active organisation
      *
-     * @return self Returns this organisation for method chaining
+     * @return static Returns this organisation for method chaining
      */
-    public function setActive(mixed $active): self
+    public function setActive(mixed $active): static
     {
         // Handle various input types defensively (including empty strings from API).
         if ($active === '' || $active === null) {
@@ -517,7 +517,9 @@ class Organisation extends Entity implements JsonSerializable
      * Provides sensible defaults with empty arrays for all permissions
      * Uses singular entity names for easier authorization checks based on entity type
      *
-     * @return array Default authorization structure
+     * @return array[][] Default authorization structure
+     *
+     * @psalm-return array{register: array{create: array<never, never>, read: array<never, never>, update: array<never, never>, delete: array<never, never>}, schema: array{create: array<never, never>, read: array<never, never>, update: array<never, never>, delete: array<never, never>}, object: array{create: array<never, never>, read: array<never, never>, update: array<never, never>, delete: array<never, never>}, view: array{create: array<never, never>, read: array<never, never>, update: array<never, never>, delete: array<never, never>}, agent: array{create: array<never, never>, read: array<never, never>, update: array<never, never>, delete: array<never, never>}, configuration: array{create: array<never, never>, read: array<never, never>, update: array<never, never>, delete: array<never, never>}, application: array{create: array<never, never>, read: array<never, never>, update: array<never, never>, delete: array<never, never>}, object_publish: array<never, never>, agent_use: array<never, never>, dashboard_view: array<never, never>, llm_use: array<never, never>}
      */
     private function getDefaultAuthorization(): array
     {
@@ -590,9 +592,9 @@ class Organisation extends Entity implements JsonSerializable
      *
      * @param array|null $authorization Authorization rules structure
      *
-     * @return self Returns this organisation for method chaining
+     * @return static Returns this organisation for method chaining
      */
-    public function setAuthorization(?array $authorization): self
+    public function setAuthorization(?array $authorization): static
     {
         $this->authorization = $authorization ?? $this->getDefaultAuthorization();
         $this->markFieldUpdated('authorization');
@@ -618,9 +620,9 @@ class Organisation extends Entity implements JsonSerializable
      *
      * @param string|null $parent The parent organisation UUID
      *
-     * @return self Returns this organisation for method chaining
+     * @return static Returns this organisation for method chaining
      */
-    public function setParent(?string $parent): self
+    public function setParent(?string $parent): static
     {
         $this->parent = $parent;
         $this->markFieldUpdated('parent');
@@ -664,9 +666,9 @@ class Organisation extends Entity implements JsonSerializable
      *
      * @param array|null $children Array of child organisation UUIDs
      *
-     * @return self Returns this organisation for method chaining
+     * @return static Returns this organisation for method chaining
      */
-    public function setChildren(?array $children): self
+    public function setChildren(?array $children): static
     {
         $this->children = $children;
         return $this;
@@ -689,7 +691,9 @@ class Organisation extends Entity implements JsonSerializable
     /**
      * JSON serialization for API responses
      *
-     * @return array Serialized organisation data
+     * @return (array|bool|int|null|string)[] Serialized organisation data
+     *
+     * @psalm-return array{id: int, uuid: null|string, slug: null|string, name: null|string, description: null|string, users: array, groups: array|null, owner: null|string, active: bool|null, parent: null|string, children: array, quota: array{storage: int|null, bandwidth: int|null, requests: int|null, users: null, groups: null}, usage: array{storage: 0, bandwidth: 0, requests: 0, users: int<0, max>, groups: int<0, max>}, authorization: array, created: null|string, updated: null|string}
      */
     public function jsonSerialize(): array
     {

@@ -84,10 +84,11 @@ class ViewHandler
      * @param array       $data  The view data
      * @param string|null $owner The owner of the view
      *
-     * @return View|null The imported view or null if skipped
+     * @return View The imported view or null if skipped
+     *
      * @throws Exception If import fails
      */
-    public function import(array $data, ?string $owner=null): ?View
+    public function import(array $data, ?string $owner=null): View
     {
         try {
             unset($data['id'], $data['uuid']);

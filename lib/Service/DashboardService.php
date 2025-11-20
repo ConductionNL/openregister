@@ -144,7 +144,9 @@ class DashboardService
     /**
      * Get statistics for orphaned items
      *
-     * @return array The statistics for orphaned items
+     * @return (int|mixed)[][] The statistics for orphaned items
+     *
+     * @psalm-return array{objects: array{total: int, size: int, invalid: int, deleted: int, locked: int, published: int}, logs: array{total: 0|mixed, size: 0|mixed}, files: array{total: 0, size: 0}}
      */
     private function getOrphanedStats(): array
     {
@@ -219,8 +221,11 @@ class DashboardService
      * @param int|null $registerId The register ID to filter by
      * @param int|null $schemaId   The schema ID to filter by
      *
-     * @return array Array of registers with their schemas and statistics
+     * @return (array|mixed|string)[][] Array of registers with their schemas and statistics
+     *
      * @throws \Exception If there is an error getting the registers with schemas
+     *
+     * @psalm-return list{0: array{id: 'orphaned'|'totals'|mixed, title: 'Orphaned Items'|'System Totals'|mixed, description: 'Items that reference non-existent registers, schemas, or invalid register-schema combinations'|'Total statistics across all registers and schemas'|mixed, stats: array, schemas: list<mixed>,...}, 1?: array{stats: array, schemas: list<mixed>, id: 'orphaned'|'totals'|mixed, title: 'Orphaned Items'|'System Totals'|mixed, description: 'Items that reference non-existent registers, schemas, or invalid register-schema combinations'|'Total statistics across all registers and schemas'|mixed,...},...}
      */
     public function getRegistersWithSchemas(
         ?int $registerId=null,
@@ -305,7 +310,9 @@ class DashboardService
      * @param int|null $registerId The register ID to filter by (optional)
      * @param int|null $schemaId   The schema ID to filter by (optional)
      *
-     * @return array Array containing counts of processed and failed objects
+     * @return int[] Array containing counts of processed and failed objects
+     *
+     * @psalm-return array{processed: 0|1|2, failed: 0|1|2}
      */
     public function recalculateSizes(?int $registerId=null, ?int $schemaId=null): array
     {
@@ -354,7 +361,9 @@ class DashboardService
      * @param int|null $registerId The register ID to filter by (optional)
      * @param int|null $schemaId   The schema ID to filter by (optional)
      *
-     * @return array Array containing counts of processed and failed logs
+     * @return int[] Array containing counts of processed and failed logs
+     *
+     * @psalm-return array{processed: 0|1|2, failed: 0|1|2}
      */
     public function recalculateLogSizes(?int $registerId=null, ?int $schemaId=null): array
     {
@@ -403,7 +412,9 @@ class DashboardService
      * @param int|null $registerId The register ID to filter by (optional)
      * @param int|null $schemaId   The schema ID to filter by (optional)
      *
-     * @return array Array containing counts of processed and failed items for both objects and logs
+     * @return array[] Array containing counts of processed and failed items for both objects and logs
+     *
+     * @psalm-return array{objects: array, logs: array, total: array{processed: mixed, failed: mixed}}
      */
     public function recalculateAllSizes(?int $registerId=null, ?int $schemaId=null): array
     {
@@ -434,7 +445,9 @@ class DashboardService
      * @param int|null $registerId The register ID to filter by (optional)
      * @param int|null $schemaId   The schema ID to filter by (optional)
      *
-     * @return array Array containing detailed statistics about the calculation process
+     * @return (array|string)[] Array containing detailed statistics about the calculation process
+     *
+     * @psalm-return array{status: 'success', timestamp: string, scope: array{register: mixed, schema: mixed}, results: array, summary: array{total_processed: mixed, total_failed: mixed, success_rate: mixed}}
      */
     public function calculate(?int $registerId=null, ?int $schemaId=null): array
     {

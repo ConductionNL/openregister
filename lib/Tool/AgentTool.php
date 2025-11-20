@@ -69,6 +69,8 @@ class AgentTool extends AbstractTool implements ToolInterface
      * Get the tool name
      *
      * @return string Tool name
+     *
+     * @psalm-return 'Agent Management'
      */
     public function getName(): string
     {
@@ -81,6 +83,8 @@ class AgentTool extends AbstractTool implements ToolInterface
      * Get the tool description
      *
      * @return string Tool description for LLM
+     *
+     * @psalm-return 'Manage AI agents: list, view, create, update, or delete agents with RBAC permissions and organisation boundaries.'
      */
     public function getDescription(): string
     {
@@ -95,7 +99,9 @@ class AgentTool extends AbstractTool implements ToolInterface
      * Returns function definitions in OpenAI function calling format.
      * These are used by LLMs to understand what capabilities this tool provides.
      *
-     * @return array[] Array of function definitions
+     * @return (((string|string[])[]|string)[]|string)[][] Array of function definitions
+     *
+     * @psalm-return list<array<string, mixed>>
      */
     public function getFunctions(): array
     {

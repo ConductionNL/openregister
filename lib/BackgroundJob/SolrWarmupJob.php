@@ -77,10 +77,7 @@ class SolrWarmupJob extends QueuedJob
         $collectErrors = $arguments['collectErrors'] ?? false;
         $triggeredBy   = $arguments['triggeredBy'] ?? 'unknown';
 
-        /*
-         * @var LoggerInterface $logger
-         */
-
+        /* @var LoggerInterface $logger */
         $logger = \OC::$server->get(LoggerInterface::class);
 
         $logger->info(
@@ -139,7 +136,7 @@ class SolrWarmupJob extends QueuedJob
 
             $executionTime = microtime(true) - $startTime;
 
-            if ($result['success'] ?? false) {
+            if (($result['success'] ?? false) === true) {
                 $logger->info(
                         '✅ SOLR Warmup Job Completed Successfully',
                         [
@@ -202,7 +199,7 @@ class SolrWarmupJob extends QueuedJob
         try {
             $connectionTest = $solrService->testConnection();
 
-            if ($connectionTest['success'] ?? false) {
+            if (($connectionTest['success'] ?? false) === true) {
                 return true;
             }
 

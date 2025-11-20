@@ -61,10 +61,14 @@ class OasController extends Controller
      * Generate OAS for all registers
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
      * @PublicPage
      *
      * @return JSONResponse
+     *
+     * @psalm-return JSONResponse<200|500, array, array<never, never>>
      */
     public function generateAll(): JSONResponse
     {
@@ -87,8 +91,12 @@ class OasController extends Controller
      * @return JSONResponse OAS data for the register
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
      * @PublicPage
+     *
+     * @psalm-return JSONResponse<200|500, array, array<never, never>>
      */
     public function generate(string $id): JSONResponse
     {

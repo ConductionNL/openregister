@@ -39,8 +39,9 @@ class Version1Date20250607093617 extends SimpleMigrationStep
      * @param array<string> $options Migration options
      *
      * @phpstan-return ISchemaWrapper|null
+     *
      * @psalm-return ISchemaWrapper|null
-     * @return ISchemaWrapper|null The modified schema
+     * @return ISchemaWrapper
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
         /** @var ISchemaWrapper $schema */

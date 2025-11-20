@@ -38,8 +38,7 @@ use Psr\Log\LoggerInterface;
  * lifecycle events (create, update, delete) and triggering appropriate
  * Solr operations.
  *
- * @template T of Event
- * @implements IEventListener<T>
+ * @implements IEventListener<Event>
  */
 class SolrEventListener implements IEventListener
 {

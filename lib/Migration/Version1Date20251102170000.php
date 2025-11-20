@@ -45,7 +45,7 @@ class Version1Date20251102170000 extends SimpleMigrationStep
      * @param Closure $schemaClosure Schema closure
      * @param array   $options       Migration options
      *
-     * @return ISchemaWrapper|null Updated schema
+     * @return null Updated schema
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {

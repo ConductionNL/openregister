@@ -171,7 +171,9 @@ class GetObject
      * @param bool          $rbac      Whether to apply RBAC checks (default: true).
      * @param bool          $multi     Whether to apply multitenancy filtering (default: true).
      *
-     * @return array The found objects.
+     * @return ObjectEntity[] The found objects.
+     *
+     * @psalm-return array<ObjectEntity>
      */
     public function findAll(
         ?int $limit=null,
@@ -377,7 +379,9 @@ class GetObject
      * @param bool         $rbac    Whether to apply RBAC checks (default: true).
      * @param bool         $multi   Whether to apply multitenancy filtering (default: true).
      *
-     * @return array Array of log entries
+     * @return \OCA\OpenRegister\Db\AuditTrail[] Array of log entries
+     *
+     * @psalm-return array<\OCA\OpenRegister\Db\AuditTrail>
      */
     public function findLogs(
         ObjectEntity $object,

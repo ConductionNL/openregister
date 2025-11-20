@@ -140,9 +140,11 @@ class ExportService
      * @param Schema|null   $schema   Optional schema to filter by
      * @param array         $filters  Additional filters to apply
      *
-     * @return PromiseInterface<Spreadsheet> Promise that resolves with the generated spreadsheet
+     * @return Promise Promise that resolves with the generated spreadsheet
+     *
+     * @psalm-return Promise<mixed>
      */
-    public function exportToExcelAsync(?Register $register=null, ?Schema $schema=null, array $filters=[]): PromiseInterface
+    public function exportToExcelAsync(?Register $register=null, ?Schema $schema=null, array $filters=[]): Promise
     {
         return new Promise(
                 function (callable $resolve, callable $reject) use ($register, $schema, $filters) {
@@ -199,9 +201,11 @@ class ExportService
      * @param Schema|null   $schema   Optional schema to filter by
      * @param array         $filters  Additional filters to apply
      *
-     * @return PromiseInterface<string> Promise that resolves with the CSV content
+     * @return Promise Promise that resolves with the CSV content
+     *
+     * @psalm-return Promise<mixed>
      */
-    public function exportToCsvAsync(?Register $register=null, ?Schema $schema=null, array $filters=[]): PromiseInterface
+    public function exportToCsvAsync(?Register $register=null, ?Schema $schema=null, array $filters=[]): Promise
     {
         return new Promise(
                 function (callable $resolve, callable $reject) use ($register, $schema, $filters) {
@@ -227,7 +231,7 @@ class ExportService
      *
      * @return string CSV content
      *
-     * @throws InvalidArgumentException If trying to export multiple schemas to CSV
+     * @throws \InvalidArgumentException If trying to export multiple schemas to CSV
      */
     public function exportToCsv(?Register $register=null, ?Schema $schema=null, array $filters=[], ?IUser $currentUser=null): string
     {
@@ -347,7 +351,9 @@ class ExportService
      * @param Schema|null   $schema      Optional schema to export
      * @param IUser|null    $currentUser Current user for permission checks
      *
-     * @return array Headers indexed by column letter with property key as value
+     * @return (mixed|string)[] Headers indexed by column letter with property key as value
+     *
+     * @psalm-return array<mixed|string>
      */
     private function getHeaders(?Register $register=null, ?Schema $schema=null, ?IUser $currentUser=null): array
     {

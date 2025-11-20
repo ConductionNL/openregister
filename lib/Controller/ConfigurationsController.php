@@ -44,9 +44,9 @@ class ConfigurationsController extends Controller
      *
      * @param string               $appName              The name of the app
      * @param IRequest             $request              The request object
-     * @param ConfigurationMapper  $configurationMapper  The configuration mapper
-     * @param ConfigurationService $configurationService The configuration service
-     * @param UploadService        $uploadService        The upload service
+     * @param ConfigurationMapper  $configurationMapper  The configuration mapper instance
+     * @param ConfigurationService $configurationService The configuration service instance
+     * @param UploadService        $uploadService        The upload service instance
      */
     public function __construct(
         string $appName,

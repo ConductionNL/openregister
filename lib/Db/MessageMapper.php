@@ -112,7 +112,9 @@ class MessageMapper extends QBMapper
      * @param int $limit          Maximum number of results
      * @param int $offset         Offset for pagination
      *
-     * @return array Array of Message entities
+     * @return Message[] Array of Message entities
+     *
+     * @psalm-return array<Message>
      */
     public function findByConversation(
         int $conversationId,
@@ -141,7 +143,9 @@ class MessageMapper extends QBMapper
      * @param int $conversationId Conversation ID
      * @param int $limit          Number of recent messages to get
      *
-     * @return array Array of Message entities (oldest first)
+     * @return Message[] Array of Message entities (oldest first)
+     *
+     * @psalm-return array<Message>
      */
     public function findRecentByConversation(int $conversationId, int $limit=10): array
     {
@@ -246,9 +250,9 @@ class MessageMapper extends QBMapper
      *
      * @param int $conversationId Conversation ID
      *
-     * @return int Number of messages deleted
+     * @return \OCP\DB\IResult|int Number of messages deleted
      */
-    public function deleteByConversation(int $conversationId): int
+    public function deleteByConversation(int $conversationId): int|\OCP\DB\IResult
     {
         $qb = $this->db->getQueryBuilder();
 

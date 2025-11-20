@@ -81,7 +81,9 @@ class ViewService
      *
      * @param string $owner The owner user ID
      *
-     * @return array Array of found views
+     * @return View[] Array of found views
+     *
+     * @psalm-return array<View>
      */
     public function findAll(string $owner): array
     {

@@ -1041,4 +1041,82 @@ class GitHubService
     }//end getFileSha()
 
 
+    /**
+     * Get user-specific GitHub token
+     *
+     * @param string $userId The user ID
+     *
+     * @return string|null The token or null if not set
+     */
+    public function getUserToken(string $userId): ?string
+    {
+        $token = $this->config->getUserValue($userId, 'openregister', 'github_token', '');
+        return $token !== '' ? $token : null;
+
+    }//end getUserToken()
+
+
+    /**
+     * Set user-specific GitHub token
+     *
+     * @param string|null $token  The token to set, or null to clear
+     * @param string      $userId The user ID
+     *
+     * @return void
+     */
+    public function setUserToken(?string $token, string $userId): void
+    {
+        if ($token === null) {
+            $this->config->deleteUserValue($userId, 'openregister', 'github_token');
+        } else {
+            $this->config->setUserValue($userId, 'openregister', 'github_token', $token);
+        }
+
+    }//end setUserToken()
+
+
+    /**
+     * Validate GitHub token by making a test API request
+     *
+     * @param string|null $userId The user ID (optional, uses current user if not provided)
+     *
+     * @return bool True if token is valid, false otherwise
+     */
+    public function validateToken(?string $userId=null): bool
+    {
+        try {
+            // Get user token if userId provided, otherwise use app-level token.
+            $token = null;
+            if ($userId !== null) {
+                $token = $this->getUserToken($userId);
+            } else {
+                $token = $this->config->getAppValue('openregister', 'github_api_token', '');
+            }
+
+            if ($token === null || $token === '') {
+                return false;
+            }
+
+            // Make a simple API request to validate the token.
+            $headers = [
+                'Accept'               => 'application/vnd.github+json',
+                'X-GitHub-Api-Version' => '2022-11-28',
+                'Authorization'        => 'Bearer '.$token,
+            ];
+
+            $response = $this->client->request(
+                'GET',
+                self::API_BASE.'/user',
+                ['headers' => $headers]
+            );
+
+            return $response->getStatusCode() === 200;
+        } catch (\Exception $e) {
+            $this->logger->error('GitHub token validation failed', ['error' => $e->getMessage()]);
+            return false;
+        }//end try
+
+    }//end validateToken()
+
+
 }//end class

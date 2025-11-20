@@ -60,6 +60,8 @@ class Notifier implements INotifier
      * Only use [a-z0-9_].
      *
      * @return string The notifier ID
+     *
+     * @psalm-return 'openregister'
      */
     public function getID(): string
     {

@@ -21,7 +21,7 @@ namespace OCA\OpenRegister\Controller;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
-use OCP\ISearch;
+use OCP\Search\ISearch;
 use OCP\Search\Result;
 use OCA\OpenRegister\Service\SolrService;
 
@@ -38,6 +38,7 @@ class SearchController extends Controller
      * The Nextcloud search service
      *
      * @var ISearch
+     * @psalm-suppress UndefinedClass
      */
     private readonly ISearch $searchService;
 
@@ -80,6 +81,8 @@ class SearchController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse A JSON response containing the search results
+     *
+     * @psalm-return JSONResponse<200, array<array{id: mixed, name: mixed, type: mixed, url: mixed, source: mixed}>, array<never, never>>
      */
     public function search(): JSONResponse
     {
@@ -95,6 +98,7 @@ class SearchController extends Controller
         // Format the search results for the JSON response.
         $formattedResults = array_map(
             function (Result $result) {
+                /** @psalm-suppress UndefinedMethod */
                 return [
                     'id'     => $result->getId(),
                     'name'   => $result->getName(),

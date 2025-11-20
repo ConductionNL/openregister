@@ -55,9 +55,12 @@ class TagsController extends Controller
      * Get all tags available in the system (visible and assignable by users)
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse
+     *
+     * @psalm-return JSONResponse<200, array<int, string>, array<never, never>>
      */
     public function getAllTags(): JSONResponse
     {

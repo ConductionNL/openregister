@@ -372,7 +372,9 @@ class TextExtractionService
      * @param array<string, mixed> $payload Sanitized payload coming from extractSourceText().
      * @param array<string, mixed> $options Chunking options.
      *
-     * @return array<int, array<string, mixed>>
+     * @return (array|int|mixed|null)[][]
+     *
+     * @psalm-return list<array{chunk_index: int<0, max>, detection_method: mixed|null, end_offset: int<0, max>|mixed, language: mixed|null, language_confidence: mixed|null, language_level: mixed|null, overlap_size: int, position_reference: array<string, mixed>, start_offset: 0|mixed, text_content: mixed}>
      */
     private function textToChunks(array $payload, array $options=[]): array
     {
@@ -420,9 +422,12 @@ class TextExtractionService
      * @param array<string,mixed> $chunk      Chunk metadata from chunkDocument.
      *
      * @phpstan-param non-empty-string $sourceType
-     * @psalm-param   non-empty-string $sourceType
      *
-     * @return array<string, mixed>
+     * @psalm-param non-empty-string $sourceType
+     *
+     * @return (int|mixed|null|string)[]
+     *
+     * @psalm-return array{type: 'property-path'|'text-range', start?: 0|mixed, end?: 0|mixed, path?: mixed|null}
      */
     private function buildPositionReference(string $sourceType, array $chunk): array
     {
@@ -615,7 +620,9 @@ class TextExtractionService
      *
      * @param array<string,mixed> $payload Extraction payload.
      *
-     * @return array<string,mixed>
+     * @return (array|mixed|null)[]
+     *
+     * @psalm-return array{source_type: mixed|null, source_id: mixed|null, chunk_checksum: mixed|null, text_length: mixed|null, language: mixed|null, language_level: mixed|null, organisation: mixed|null, owner: mixed|null, file_metadata: array<never, never>|mixed}
      */
     private function summarizeMetadataPayload(array $payload): array
     {
@@ -894,7 +901,9 @@ class TextExtractionService
      *
      * @param int $limit Maximum number of files to discover
      *
-     * @return array Statistics about discovery: {discovered, failed, total}
+     * @return (int|string)[] Statistics about discovery: {discovered, failed, total}
+     *
+     * @psalm-return array{discovered: int<0, max>, failed: int<0, max>, total: int<0, max>, error?: string}
      */
     public function discoverUntrackedFiles(int $limit=100): array
     {
@@ -976,7 +985,9 @@ class TextExtractionService
      *
      * @param int $limit Maximum number of files to process
      *
-     * @return array Statistics about the extraction process: {processed, failed, total}
+     * @return int[] Statistics about the extraction process: {processed, failed, total}
+     *
+     * @psalm-return array{processed: int<0, max>, failed: int<0, max>, total: int<0, max>}
      */
     public function extractPendingFiles(int $limit=100): array
     {
@@ -1050,7 +1061,9 @@ class TextExtractionService
      *
      * @param int $limit Maximum number of files to retry
      *
-     * @return array Statistics about the retry process
+     * @return int[] Statistics about the retry process
+     *
+     * @psalm-return array{retried: int<0, max>, failed: int<0, max>, total: int<0, max>}
      */
     public function retryFailedExtractions(int $limit=50): array
     {
@@ -1088,7 +1101,9 @@ class TextExtractionService
     /**
      * Get extraction statistics
      *
-     * @return array Statistics about file extraction
+     * @return (int|mixed)[] Statistics about file extraction
+     *
+     * @psalm-return array{totalFiles: int, untrackedFiles: int, pendingFiles: int, processedFiles: int, failedFiles: int, totalChunks: mixed, totalObjects: int, totalEntities: int, total: int, pending: int, processing: int, completed: int, failed: int, indexed: int, vectorized: int, total_text_size: int}
      */
     public function getStats(): array
     {
@@ -1205,11 +1220,11 @@ class TextExtractionService
      *
      * @param \OCP\Files\File $file Nextcloud file object
      *
-     * @return string|null Extracted text content
+     * @return null|string Extracted text content
      *
      * @throws Exception If PDF parsing fails
      */
-    private function extractPdf(\OCP\Files\File $file): ?string
+    private function extractPdf(\OCP\Files\File $file): string|null
     {
         // Check if PdfParser library is available.
         if (class_exists('Smalot\PdfParser\Parser') === false) {
@@ -1587,7 +1602,9 @@ class TextExtractionService
      * @param int    $chunkSize    Target chunk size
      * @param int    $chunkOverlap Overlap size
      *
-     * @return array Array of chunk objects with text, start_offset, end_offset
+     * @return (int|string)[][] Array of chunk objects with text, start_offset, end_offset
+     *
+     * @psalm-return array<int<0, max>, array{text: string, start_offset: int<0, max>, end_offset: int<0, max>}>
      */
     private function chunkFixedSize(string $text, int $chunkSize, int $chunkOverlap): array
     {

@@ -77,9 +77,11 @@ class MagicFacetHandler
      * @param Schema   $schema      Schema context
      * @param string   $tableName   Target dynamic table name
      *
-     * @return array Facet results organized by field
+     * @return (array|mixed)[][] Facet results organized by field
      *
      * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @psalm-return array<array<array|mixed>>
      */
     public function getFacets(array $facetConfig, array $baseQuery, Register $register, Schema $schema, string $tableName): array
     {
@@ -198,7 +200,9 @@ class MagicFacetHandler
      * @param string $tableName  Target table name
      * @param int    $limit      Maximum number of terms to return
      *
-     * @return array Terms facet data
+     * @return ((int|mixed)[][]|int|string)[] Terms facet data
+     *
+     * @psalm-return array{type: 'terms', field: string, buckets: list<array{count: int, value: mixed}>, total_buckets: int<0, max>, error?: string}
      */
     private function getTermsFacet(string $columnName, array $baseQuery, string $tableName, int $limit=100): array
     {
@@ -262,7 +266,9 @@ class MagicFacetHandler
      * @param array  $baseQuery  Base query filters
      * @param string $tableName  Target table name
      *
-     * @return array Date histogram facet data
+     * @return ((int|mixed)[][]|int|string)[] Date histogram facet data
+     *
+     * @psalm-return array{type: 'date_histogram', field: string, interval: string, buckets: list<array{count: int, key: mixed}>, total_buckets: int<0, max>, error?: string}
      */
     private function getDateHistogramFacet(string $columnName, string $interval, array $baseQuery, string $tableName): array
     {
@@ -333,7 +339,9 @@ class MagicFacetHandler
      * @param array  $baseQuery  Base query filters
      * @param string $tableName  Target table name
      *
-     * @return array Range facet data
+     * @return ((int|mixed|null|string)[][]|int|string)[] Range facet data
+     *
+     * @psalm-return array{type: 'range', field: string, buckets: list<array{count: int, from: mixed|null, key: mixed|string, to: mixed|null}>, total_buckets: int<0, max>}
      */
     private function getRangeFacet(string $columnName, array $ranges, array $baseQuery, string $tableName): array
     {
@@ -479,7 +487,9 @@ class MagicFacetHandler
      * @param Register $register Register context
      * @param Schema   $schema   Schema context
      *
-     * @return array Array of facetable fields with their configurations
+     * @return array[] Array of facetable fields with their configurations
+     *
+     * @psalm-return array{'@self': array, schema_properties: array}
      */
     public function getFacetableFields(Register $register, Schema $schema): array
     {
@@ -496,7 +506,9 @@ class MagicFacetHandler
     /**
      * Get facetable metadata fields
      *
-     * @return array Array of metadata fields that can be faceted
+     * @return (string|string[])[][] Array of metadata fields that can be faceted
+     *
+     * @psalm-return array{register: array{type: 'integer', title: 'Register', description: 'Register ID', facet_types: list{'terms'}}, schema: array{type: 'integer', title: 'Schema', description: 'Schema ID', facet_types: list{'terms'}}, owner: array{type: 'string', title: 'Owner', description: 'Object owner', facet_types: list{'terms'}}, organisation: array{type: 'string', title: 'Organisation', description: 'Organisation UUID', facet_types: list{'terms'}}, created: array{type: 'string', format: 'date-time', title: 'Created', description: 'Creation timestamp', facet_types: list{'date_histogram', 'range'}}, updated: array{type: 'string', format: 'date-time', title: 'Updated', description: 'Last update timestamp', facet_types: list{'date_histogram', 'range'}}}
      */
     private function getMetadataFacetableFields(): array
     {
@@ -549,7 +561,9 @@ class MagicFacetHandler
      *
      * @param Schema $schema Schema to analyze
      *
-     * @return array Array of schema properties that can be faceted
+     * @return (array|mixed|string)[][] Array of schema properties that can be faceted
+     *
+     * @psalm-return array<array{type: 'string'|mixed, format: ''|mixed, title: mixed, description: mixed|string, facet_types: array}>
      */
     private function getSchemaFacetableFields(Schema $schema): array
     {
@@ -578,7 +592,9 @@ class MagicFacetHandler
      *
      * @param array $propertyConfig Property configuration
      *
-     * @return array Array of suitable facet types
+     * @return string[] Array of suitable facet types
+     *
+     * @psalm-return list{0: 'date_histogram'|'range'|'terms', 1?: 'range'|'terms'}
      */
     private function determineFacetTypes(array $propertyConfig): array
     {
@@ -643,7 +659,9 @@ class MagicFacetHandler
      * @param string $columnName Column to analyze
      * @param string $tableName  Target table name
      *
-     * @return array Array of auto-generated ranges
+     * @return (float|null|string)[][] Array of auto-generated ranges
+     *
+     * @psalm-return list<array{from: float, key: non-empty-string, to: float|null}>
      */
     private function generateAutoRanges(string $columnName, string $tableName): array
     {

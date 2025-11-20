@@ -68,6 +68,8 @@ class SourceHandler
      * @param Source $source The source to export
      *
      * @return array The exported source data
+     *
+     * @psalm-return array<string, mixed>
      */
     public function export(Source $source): array
     {
@@ -84,10 +86,11 @@ class SourceHandler
      * @param array       $data  The source data
      * @param string|null $owner The owner of the source
      *
-     * @return Source|null The imported source or null if skipped
+     * @return Source The imported source or null if skipped
+     *
      * @throws Exception If import fails
      */
-    public function import(array $data, ?string $owner=null): ?Source
+    public function import(array $data, ?string $owner=null): Source
     {
         try {
             unset($data['id'], $data['uuid']);

@@ -16,6 +16,21 @@
     <stubs>
         <file name="vendor/nextcloud/ocp/OCP/Capabilities/ICapability.php" preloadClasses="true" />
     </stubs>
+    <issueHandlers>
+        <UndefinedDocblockClass>
+            <errorLevel type="suppress">
+                <referencedClass name="Doctrine\DBAL\Schema\Table"/>
+                <referencedClass name="Doctrine\DBAL\Schema\Schema"/>
+                <referencedClass name="Doctrine\DBAL\Types\Types"/>
+                <referencedClass name="Doctrine\DBAL\Connection"/>
+            </errorLevel>
+        </UndefinedDocblockClass>
+        <UndefinedClass>
+            <errorLevel type="suppress">
+                <referencedClass name="OC"/>
+            </errorLevel>
+        </UndefinedClass>
+    </issueHandlers>
     <extraFiles>
         <directory name="vendor/nextcloud/ocp" />
     </extraFiles>

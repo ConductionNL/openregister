@@ -54,15 +54,9 @@ class SearchTrailController extends Controller
     /**
      * Extract pagination, filter, and search parameters from request
      *
-     * @return array Array containing processed parameters:
-     *               - limit: (int) Maximum number of items per page
-     *               - offset: (int|null) Number of items to skip
-     *               - page: (int|null) Current page number
-     *               - filters: (array) Filter parameters
-     *               - sort: (array) Sort parameters ['field' => 'ASC|DESC']
-     *               - search: (string|null) Search term
-     *               - from: (DateTime|null) Start date filter
-     *               - to: (DateTime|null) End date filter
+     * @return ((mixed|string)[]|DateTime|int|mixed|null)[] Array containing processed parameters: - limit: (int) Maximum number of items per page - offset: (int|null) Number of items to skip - page: (int|null) Current page number - filters: (array) Filter parameters - sort: (array) Sort parameters ['field' => 'ASC|DESC'] - search: (string|null) Search term - from: (DateTime|null) Start date filter - to: (DateTime|null) End date filter
+     *
+     * @psalm-return array{limit: int, offset: int|null, page: int|null, filters: array, sort: array<array-key|mixed, 'DESC'|mixed>, search: mixed|null, from: DateTime|null, to: DateTime|null}
      */
     private function extractRequestParameters(): array
     {
@@ -187,12 +181,15 @@ class SearchTrailController extends Controller
      * @param int|null $offset  The offset of items. Defaults to 0.
      * @param int|null $page    The current page number. Defaults to 1.
      *
-     * @return array The paginated results with metadata.
+     * @return (array|float|int|null|string)[]
      *
-     * @phpstan-param  array<int, mixed> $results
+     * @phpstan-param array<int, mixed> $results
+     *
      * @phpstan-return array<string, mixed>
-     * @psalm-param    array<int, mixed> $results
-     * @psalm-return   array<string, mixed>
+     *
+     * @psalm-param array<int, mixed> $results
+     *
+     * @psalm-return array{results: array<int, mixed>, total: int<0, max>, page: float|int<1, max>, pages: 1|float, limit: int<1, max>, offset: int<0, max>, next?: null|string, prev?: null|string}
      */
     private function paginate(array $results, ?int $total=0, ?int $limit=20, ?int $offset=0, ?int $page=1): array
     {
@@ -286,7 +283,10 @@ class SearchTrailController extends Controller
      * @return JSONResponse A JSON response containing the search logs
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|500, array<string, mixed>, array<never, never>>
      */
     public function index(): JSONResponse
     {
@@ -329,7 +329,10 @@ class SearchTrailController extends Controller
      * @return JSONResponse A JSON response containing the search log
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\SearchTrail, array<never, never>>|JSONResponse<404|500, array{error: string}, array<never, never>>
      */
     public function show(int $id): JSONResponse
     {
@@ -357,7 +360,10 @@ class SearchTrailController extends Controller
      * @return JSONResponse A JSON response containing search statistics
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|500, array, array<never, never>>
      */
     public function statistics(): JSONResponse
     {
@@ -387,7 +393,10 @@ class SearchTrailController extends Controller
      * @return JSONResponse A JSON response containing popular search terms
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|500, array{error?: mixed|string, total_searches?: 0|mixed, period?: mixed|null,...}, array<never, never>>
      */
     public function popularTerms(): JSONResponse
     {
@@ -435,7 +444,10 @@ class SearchTrailController extends Controller
      * @return JSONResponse A JSON response containing search activity data
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|500, array, array<never, never>>
      */
     public function activity(): JSONResponse
     {
@@ -467,7 +479,10 @@ class SearchTrailController extends Controller
      * @return JSONResponse A JSON response containing search statistics by register/schema
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|500, array{error?: mixed|string, total_searches?: 0|mixed, period?: mixed|null,...}, array<never, never>>
      */
     public function registerSchemaStats(): JSONResponse
     {
@@ -515,7 +530,10 @@ class SearchTrailController extends Controller
      * @return JSONResponse A JSON response containing user agent statistics
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|500, array<string, mixed>, array<never, never>>
      */
     public function userAgentStats(): JSONResponse
     {
@@ -581,7 +599,10 @@ class SearchTrailController extends Controller
      * @return JSONResponse A JSON response indicating cleanup results
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|400|500, array, array<never, never>>
      */
     public function cleanup(): JSONResponse
     {
@@ -620,7 +641,10 @@ class SearchTrailController extends Controller
      * @return JSONResponse A JSON response containing the export data
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|500, array{error?: string, success?: true, data?: array{content: false|string, filename: string, contentType: 'application/json'|'text/csv', size: int<0, max>}}, array<never, never>>
      */
     public function export(): JSONResponse
     {
@@ -724,7 +748,10 @@ class SearchTrailController extends Controller
      * @return JSONResponse A JSON response indicating success or failure
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|404|500, array{error?: string, success?: true, message?: 'Search trail deletion not implemented yet'}, array<never, never>>
      */
     public function destroy(int $id): JSONResponse
     {
@@ -764,7 +791,10 @@ class SearchTrailController extends Controller
      * @return JSONResponse A JSON response with deletion results
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|500, array{error?: string, success?: true, results?: array{deleted: 0, failed: 0, message: 'Multiple search trail deletion not implemented yet'}, message?: 'Multiple search trail deletion not implemented yet'}, array<never, never>>
      */
     public function destroyMultiple(): JSONResponse
     {
@@ -846,6 +876,8 @@ class SearchTrailController extends Controller
     {
         try {
             // Get the search trail mapper from the container.
+            /** @psalm-suppress UndefinedClass */
+            /** @var \OCA\OpenRegister\Db\SearchTrailMapper $searchTrailMapper */
             $searchTrailMapper = \OC::$server->get('OCA\OpenRegister\Db\SearchTrailMapper');
 
                     // Use the clearAllLogs method from the mapper.

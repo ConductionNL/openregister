@@ -430,7 +430,7 @@ class OrganisationService
      *
      * @param string $organisationUuid The organisation UUID to set as active
      *
-     * @return bool True if successfully set, false otherwise
+     * @return true True if successfully set, false otherwise
      *
      * @throws Exception If user doesn't belong to the organisation
      */
@@ -490,7 +490,7 @@ class OrganisationService
      * @param string      $organisationUuid The organisation UUID
      * @param string|null $targetUserId     Optional user ID to add. If null, current user is added.
      *
-     * @return bool True if successfully added
+     * @return true True if successfully added
      *
      * @throws Exception If organisation not found, user not logged in, or target user does not exist
      */
@@ -537,7 +537,7 @@ class OrganisationService
      * @param string      $organisationUuid The organisation UUID
      * @param string|null $targetUserId     Optional user ID to remove. If null, current user is removed.
      *
-     * @return bool True if successfully removed
+     * @return true True if successfully removed
      *
      * @throws Exception If organisation not found, user not logged in, or trying to leave last organisation
      */
@@ -742,7 +742,9 @@ class OrganisationService
     /**
      * Get user organisation statistics
      *
-     * @return array Statistics about user's organisations
+     * @return (array|int|null)[] Statistics about user's organisations
+     *
+     * @psalm-return array{total: int<0, max>, active: array|null, results: array}
      */
     public function getUserOrganisationStats(): array
     {
@@ -825,7 +827,9 @@ class OrganisationService
     /**
      * Get all users in the admin group
      *
-     * @return array Array of user IDs in the admin group
+     * @return string[] Array of user IDs in the admin group
+     *
+     * @psalm-return array<string>
      */
     private function getAdminGroupUsers(): array
     {
@@ -1103,9 +1107,9 @@ class OrganisationService
      * Get the organisation UUID to use for creating new entities
      * Uses the active organisation or falls back to default
      *
-     * @return string The organisation UUID to use
+     * @return null|string The organisation UUID to use
      */
-    public function getOrganisationForNewEntity(): string
+    public function getOrganisationForNewEntity(): string|null
     {
         $activeOrg = $this->getActiveOrganisation();
 
@@ -1123,9 +1127,9 @@ class OrganisationService
     /**
      * Get the default organisation UUID from config
      *
-     * @return string|null The UUID of the default organisation, or null if not set
+     * @return null|string The UUID of the default organisation, or null if not set
      */
-    public function getDefaultOrganisationId(): ?string
+    public function getDefaultOrganisationId(): string|null
     {
         $defaultOrgId = $this->config->getAppValue('openregister', 'defaultOrganisation', '');
         if ($defaultOrgId !== '') {
@@ -1234,7 +1238,9 @@ class OrganisationService
      *
      * This is used by MultiTenancyTrait for filtering queries to include parent resources.
      *
-     * @return array Array of organisation UUIDs (active org + all parents)
+     * @return (mixed|null|string)[] Array of organisation UUIDs (active org + all parents)
+     *
+     * @psalm-return array{0?: mixed|null|string,...}
      */
     public function getUserActiveOrganisations(): array
     {

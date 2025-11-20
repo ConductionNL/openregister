@@ -117,9 +117,9 @@ class ApplicationsController extends Controller
             $params = $this->request->getParams();
 
             // Extract pagination and search parameters.
-            $limit  = isset($params['_limit']) ? (int) $params['_limit'] : null;
-            $offset = isset($params['_offset']) ? (int) $params['_offset'] : null;
-            $page   = isset($params['_page']) ? (int) $params['_page'] : null;
+            $limit  = $this->extractLimit($params);
+            $offset = $this->extractOffset($params);
+            $page   = $this->extractPage($params);
             $search = $params['_search'] ?? '';
 
             // Convert page to offset if provided.
@@ -159,12 +159,12 @@ class ApplicationsController extends Controller
     /**
      * Get a single application
      *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
      * @param int $id Application ID
      *
      * @return JSONResponse Application details
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
      */
     public function show(int $id): JSONResponse
     {
@@ -271,12 +271,12 @@ class ApplicationsController extends Controller
     /**
      * Patch (partially update) an application
      *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
      * @param int $id The ID of the application to patch
      *
      * @return JSONResponse The updated application data
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
      */
     public function patch(int $id): JSONResponse
     {
@@ -288,12 +288,12 @@ class ApplicationsController extends Controller
     /**
      * Delete an application
      *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
      * @param int $id Application ID
      *
      * @return JSONResponse Success message
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
      */
     public function destroy(int $id): JSONResponse
     {
@@ -317,6 +317,60 @@ class ApplicationsController extends Controller
         }
 
     }//end destroy()
+
+
+    /**
+     * Extract limit parameter from request params.
+     *
+     * @param array<string, mixed> $params Request parameters
+     *
+     * @return int|null Limit value or null
+     */
+    private function extractLimit(array $params): ?int
+    {
+        if (isset($params['_limit']) === true) {
+            return (int) $params['_limit'];
+        }
+
+        return null;
+
+    }//end extractLimit()
+
+
+    /**
+     * Extract offset parameter from request params.
+     *
+     * @param array<string, mixed> $params Request parameters
+     *
+     * @return int|null Offset value or null
+     */
+    private function extractOffset(array $params): ?int
+    {
+        if (isset($params['_offset']) === true) {
+            return (int) $params['_offset'];
+        }
+
+        return null;
+
+    }//end extractOffset()
+
+
+    /**
+     * Extract page parameter from request params.
+     *
+     * @param array<string, mixed> $params Request parameters
+     *
+     * @return int|null Page value or null
+     */
+    private function extractPage(array $params): ?int
+    {
+        if (isset($params['_page']) === true) {
+            return (int) $params['_page'];
+        }
+
+        return null;
+
+    }//end extractPage()
 
 
 }//end class

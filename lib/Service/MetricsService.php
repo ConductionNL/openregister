@@ -1,5 +1,24 @@
 <?php
 
+/**
+ * OpenRegister Metrics Service
+ *
+ * Service for tracking and retrieving operational metrics.
+ *
+ * @category Service
+ * @package  OCA\OpenRegister\Service
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://opensource.org/licenses/EUPL-1.2
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.conduction.nl
+ */
+
+declare(strict_types=1);
+
 namespace OCA\OpenRegister\Service;
 
 use OCP\IDBConnection;
@@ -8,7 +27,7 @@ use Psr\Log\LoggerInterface;
 /**
  * MetricsService
  *
- * Service for tracking and retrieving operational metrics
+ * Service for tracking and retrieving operational metrics.
  *
  * @category Service
  * @package  OCA\OpenRegister\Service
@@ -20,11 +39,15 @@ class MetricsService
 {
 
     /**
+     * Database connection instance.
+     *
      * @var IDBConnection Database connection
      */
     private IDBConnection $db;
 
     /**
+     * Logger instance.
+     *
      * @var LoggerInterface Logger
      */
     private LoggerInterface $logger;
@@ -91,7 +114,7 @@ class MetricsService
                     'user_id'       => $qb->createNamedParameter($userId),
                     'status'        => $qb->createNamedParameter($status),
                     'duration_ms'   => $qb->createNamedParameter($durationMs),
-                    'metadata'      => $qb->createNamedParameter($metadata ? json_encode($metadata) : null),
+                    'metadata'      => $qb->createNamedParameter($this->encodeMetadata($metadata)),
                     'error_message' => $qb->createNamedParameter($errorMessage),
                     'created_at'    => $qb->createNamedParameter(time()),
                 ]
@@ -173,7 +196,7 @@ class MetricsService
         $total       = (int) ($row['total'] ?? 0);
         $successful  = (int) ($row['successful'] ?? 0);
         $failed      = $total - $successful;
-        $successRate = $total > 0 ? ($successful / $total) * 100 : 0;
+        $successRate = $this->calculateSuccessRate($total, $successful);
 
         // Calculate estimated costs (based on OpenAI pricing).
         // text-embedding-3-large: $0.00013 per 1K tokens, avg 500 tokens per embedding.
@@ -229,7 +252,7 @@ class MetricsService
             $type         = str_replace('search_', '', $searchType);
             $stats[$type] = [
                 'count'  => (int) ($row['count'] ?? 0),
-                'avg_ms' => $row['avg_ms'] ? round((float) $row['avg_ms'], 2) : 0,
+                'avg_ms' => $this->roundAverageMs($row['avg_ms']),
                 'min_ms' => (int) ($row['min_ms'] ?? 0),
                 'max_ms' => (int) ($row['max_ms'] ?? 0),
             ];
@@ -286,7 +309,7 @@ class MetricsService
             'daily_vectors_added'   => $growthData,
             'current_storage_bytes' => $totalBytes,
             'current_storage_mb'    => round($totalMB, 2),
-            'avg_vectors_per_day'   => count($growthData) > 0 ? round(array_sum($growthData) / count($growthData), 2) : 0,
+            'avg_vectors_per_day'   => $this->calculateAverageVectorsPerDay($growthData),
             'period_days'           => $days,
         ];
 

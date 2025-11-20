@@ -35,7 +35,7 @@ class Version1Date20251116000000 extends SimpleMigrationStep
      * @param Closure $schemaClosure Schema factory.
      * @param array   $options       Migration options.
      *
-     * @return ISchemaWrapper|null Updated schema.
+     * @return ISchemaWrapper Updated schema.
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {

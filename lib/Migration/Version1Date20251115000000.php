@@ -64,7 +64,7 @@ class Version1Date20251115000000 extends SimpleMigrationStep
             $table = $schema->getTable('openregister_configurations');
 
             // Add isLocal field (boolean) - true = maintained locally, false = imported externally.
-            if (!$table->hasColumn('is_local')) {
+            if ($table->hasColumn('is_local') === false) {
                 $table->addColumn(
                         'is_local',
                         Types::BOOLEAN,
@@ -81,7 +81,7 @@ class Version1Date20251115000000 extends SimpleMigrationStep
             }
 
             // Add syncEnabled field (boolean) - whether auto-sync is enabled.
-            if (!$table->hasColumn('sync_enabled')) {
+            if ($table->hasColumn('sync_enabled') === false) {
                 $table->addColumn(
                         'sync_enabled',
                         Types::BOOLEAN,
@@ -98,7 +98,7 @@ class Version1Date20251115000000 extends SimpleMigrationStep
             }
 
             // Add syncInterval field (integer) - sync interval in hours.
-            if (!$table->hasColumn('sync_interval')) {
+            if ($table->hasColumn('sync_interval') === false) {
                 $table->addColumn(
                         'sync_interval',
                         Types::INTEGER,
@@ -115,7 +115,7 @@ class Version1Date20251115000000 extends SimpleMigrationStep
             }
 
             // Add lastSyncDate field (datetime) - last synchronization timestamp.
-            if (!$table->hasColumn('last_sync_date')) {
+            if ($table->hasColumn('last_sync_date') === false) {
                 $table->addColumn(
                         'last_sync_date',
                         Types::DATETIME,
@@ -132,7 +132,7 @@ class Version1Date20251115000000 extends SimpleMigrationStep
             }
 
             // Add syncStatus field (string) - status of last sync.
-            if (!$table->hasColumn('sync_status')) {
+            if ($table->hasColumn('sync_status') === false) {
                 $table->addColumn(
                         'sync_status',
                         Types::STRING,
@@ -150,7 +150,7 @@ class Version1Date20251115000000 extends SimpleMigrationStep
             }
 
             // Add openregister field (string) - required OpenRegister version.
-            if (!$table->hasColumn('openregister')) {
+            if ($table->hasColumn('openregister') === false) {
                 $table->addColumn(
                         'openregister',
                         Types::STRING,

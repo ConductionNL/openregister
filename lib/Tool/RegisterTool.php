@@ -72,6 +72,8 @@ class RegisterTool extends AbstractTool
      * Get tool name
      *
      * @return string Tool name
+     *
+     * @psalm-return 'register'
      */
     public function getName(): string
     {
@@ -84,6 +86,8 @@ class RegisterTool extends AbstractTool
      * Get tool description
      *
      * @return string Tool description
+     *
+     * @psalm-return 'Manage registers: list, view, create, update, or delete registers. Registers organize schemas and objects.'
      */
     public function getDescription(): string
     {
@@ -95,7 +99,9 @@ class RegisterTool extends AbstractTool
     /**
      * Get function definitions for LLphant
      *
-     * @return array Array of function definitions
+     * @return (((string|string[])[]|string)[]|string)[][] Array of function definitions
+     *
+     * @psalm-return list<array<string, mixed>>
      */
     public function getFunctions(): array
     {

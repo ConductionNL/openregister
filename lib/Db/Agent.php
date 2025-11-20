@@ -456,9 +456,9 @@ class Agent extends Entity implements JsonSerializable
      *
      * @param array<string, mixed> $object The data to hydrate from
      *
-     * @return self The hydrated entity
+     * @return static The hydrated entity
      */
-    public function hydrate(array $object): self
+    public function hydrate(array $object): static
     {
         // Set UUID - generate if not provided.
         if (isset($object['uuid']) === true && empty($object['uuid']) === false) {
@@ -504,7 +504,9 @@ class Agent extends Entity implements JsonSerializable
     /**
      * Serialize the entity to JSON
      *
-     * @return array<string, mixed> The serialized data
+     * @return (array|null|scalar)[] The serialized data
+     *
+     * @psalm-return array{id: int, uuid: null|string, name: null|string, description: null|string, type: null|string, provider: null|string, model: null|string, prompt: null|string, temperature: float|null, maxTokens: int|null, configuration: array|null, organisation: null|string, owner: null|string, active: bool, enableRag: bool, ragSearchMode: null|string, ragNumSources: int|null, ragIncludeFiles: bool, ragIncludeObjects: bool, requestQuota: int|null, tokenQuota: int|null, views: array|null, searchFiles: bool|null, searchObjects: bool|null, isPrivate: bool|null, invitedUsers: array|null, groups: array|null, tools: array|null, user: null|string, created: null|string, updated: null|string, managedByConfiguration: array|null}
      */
     public function jsonSerialize(): array
     {
@@ -636,9 +638,11 @@ class Agent extends Entity implements JsonSerializable
     /**
      * Get managed by configuration data for JSON serialization
      *
-     * @return array|null Configuration data or null
+     * @return (int|null|string)[]|null Configuration data or null
+     *
+     * @psalm-return array{id: int, uuid: null|string, title: null|string}|null
      */
-    private function getManagedByConfigurationData(): ?array
+    private function getManagedByConfigurationData(): array|null
     {
         if ($this->managedByConfiguration !== null) {
             return [

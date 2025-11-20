@@ -189,7 +189,7 @@ class Version002005000Date20251013000000 extends SimpleMigrationStep
      * @param Closure $schemaClosure Schema retrieval closure
      * @param array   $options       Migration options
      *
-     * @return null|ISchemaWrapper Modified schema or null
+     * @return null Modified schema or null
      */
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {

@@ -85,4 +85,3 @@ class ConfigurationUpdatedEvent extends Event
 
 
 }//end class
-

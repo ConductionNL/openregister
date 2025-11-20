@@ -64,6 +64,14 @@ use InvalidArgumentException;
  * @method void setCreated(?DateTime $created)
  * @method DateTime|null getUpdated()
  * @method void setUpdated(?DateTime $updated)
+ * @method string|null getCreatedBy()
+ * @method void setCreatedBy(?string $createdBy)
+ * @method DateTime|null getCreatedAt()
+ * @method void setCreatedAt(?DateTime $createdAt)
+ * @method DateTime|null getUpdatedAt()
+ * @method void setUpdatedAt(?DateTime $updatedAt)
+ * @method bool|null getActive()
+ * @method void setActive(?bool $active)
  */
 class AuthorizationException extends Entity implements JsonSerializable
 {
@@ -213,7 +221,9 @@ class AuthorizationException extends Entity implements JsonSerializable
     /**
      * Get valid exception types
      *
-     * @return array<string> List of valid exception types
+     * @return string[] List of valid exception types
+     *
+     * @psalm-return list{'inclusion', 'exclusion'}
      */
     public static function getValidTypes(): array
     {
@@ -228,7 +238,9 @@ class AuthorizationException extends Entity implements JsonSerializable
     /**
      * Get valid subject types
      *
-     * @return array<string> List of valid subject types
+     * @return string[] List of valid subject types
+     *
+     * @psalm-return list{'user', 'group'}
      */
     public static function getValidSubjectTypes(): array
     {
@@ -243,7 +255,9 @@ class AuthorizationException extends Entity implements JsonSerializable
     /**
      * Get valid actions
      *
-     * @return array<string> List of valid actions
+     * @return string[] List of valid actions
+     *
+     * @psalm-return list{'create', 'read', 'update', 'delete'}
      */
     public static function getValidActions(): array
     {
@@ -469,7 +483,9 @@ class AuthorizationException extends Entity implements JsonSerializable
     /**
      * Serialize the entity to JSON format
      *
-     * @return array<string, mixed> Serialized authorization exception data
+     * @return (bool|int|null|string)[] Serialized authorization exception data
+     *
+     * @psalm-return array{id: int, uuid: null|string, type: null|string, subjectType: null|string, subjectId: null|string, schemaUuid: null|string, registerUuid: null|string, organizationUuid: null|string, action: null|string, priority: int|null, active: bool|null, description: null|string, createdBy: null|string, createdAt: null|string, updatedAt: null|string}
      */
     public function jsonSerialize(): array
     {

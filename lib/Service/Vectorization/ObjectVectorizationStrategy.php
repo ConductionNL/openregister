@@ -83,9 +83,9 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
      *
      * @param array $options Options: views, batch_size
      *
-     * @return array Array of ObjectEntity objects
+     * @return array|int Array of ObjectEntity objects
      */
-    public function fetchEntities(array $options): array
+    public function fetchEntities(array $options): array|int
     {
         $views = $options['views'] ?? null;
         $limit = $options['batch_size'] ?? 25;
@@ -135,7 +135,9 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
      *
      * @param mixed $entity ObjectEntity
      *
-     * @return array Array with single item containing serialized object
+     * @return (int|string)[][] Array with single item containing serialized object
+     *
+     * @psalm-return list{array{text: string, index: 0}}
      */
     public function extractVectorizationItems($entity): array
     {
@@ -169,7 +171,9 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
      * @param mixed $entity ObjectEntity
      * @param array $item   Vectorization item
      *
-     * @return array Metadata for storage
+     * @return ((mixed|null|string)[]|int|string)[] Metadata for storage
+     *
+     * @psalm-return array{entity_type: 'object', entity_id: string, chunk_index: 0, total_chunks: 1, chunk_text: string, additional_metadata: array{object_id: 'unknown'|mixed, object_title: mixed|string, title: mixed|string, name: mixed|string, description: ''|mixed, register: mixed|null, register_id: mixed|null, schema: mixed|null, schema_id: mixed|null, uuid: mixed|null, uri: mixed|null}}
      */
     public function prepareVectorMetadata($entity, array $item): array
     {
@@ -310,9 +314,9 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
      * @param array $object Object data
      * @param array $config Vectorization configuration
      *
-     * @return string Serialized text
+     * @return false|string Serialized text
      */
-    private function serializeObject(array $object, array $config): string
+    private function serializeObject(array $object, array $config): string|false
     {
         // TODO: Implement configurable serialization.
         // For now, just JSON encode with pretty print for readability.

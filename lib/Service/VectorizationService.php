@@ -114,9 +114,11 @@ class VectorizationService
      * @param string $entityType Entity type ('object', 'file', etc)
      * @param array  $options    Strategy-specific options
      *
-     * @return array Vectorization results
+     * @return (array|int|mixed|string|true)[] Vectorization results
      *
      * @throws \Exception If strategy not found or vectorization fails
+     *
+     * @psalm-return array{success: true, message: string, entity_type: string, total_entities: int<0, max>, total_items: 0|mixed, vectorized: 0|mixed, failed: 0|mixed, errors?: array}
      */
     public function vectorizeBatch(string $entityType, array $options=[]): array
     {
@@ -233,7 +235,9 @@ class VectorizationService
      * @param VectorizationStrategyInterface $strategy Strategy to use
      * @param array                          $options  Processing options
      *
-     * @return array Processing results
+     * @return ((int|string)[][]|int)[] Processing results
+     *
+     * @psalm-return array{total_items: int<0, max>, vectorized: int<0, max>, failed: int<0, max>, errors: list<array{entity_id: int|string, error: string, item_index: array-key}>}
      */
     private function vectorizeEntity($entity, VectorizationStrategyInterface $strategy, array $options): array
     {

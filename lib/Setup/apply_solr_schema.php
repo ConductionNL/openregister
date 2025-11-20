@@ -320,9 +320,11 @@ function applySchemaField($collectionName, $solrBaseUrl, $fieldName, $fieldConfi
  * @param string $url     Request URL
  * @param array  $payload Request payload
  *
- * @return array Response data
+ * @return (bool|mixed|null|string)[] Response data
+ *
+ * @psalm-return array{success: bool, error: 'HTTP request failed'|'Invalid JSON response'|'Unknown error'|mixed|null, data?: mixed}
  */
-function makeHttpRequest($url, $payload)
+function makeHttpRequest($url, $payload): array
 {
     $context = stream_context_create(
             [

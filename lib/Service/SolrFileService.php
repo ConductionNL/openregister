@@ -146,9 +146,11 @@ class SolrFileService
      * @param string $filePath Path to the file
      * @param array  $metadata File metadata (id, name, type, etc.)
      *
-     * @return array Processing result with statistics
+     * @return (array|mixed|scalar)[] Processing result with statistics
      *
      * @throws \Exception If fileCollection is not configured
+     *
+     * @psalm-return array{success: bool, file_id: mixed|string, error?: string, processing_time_ms: float, collection: string, file_name?: mixed|string, text_length?: int<0, max>, chunks_created?: int<1, max>, chunks_indexed?: 0|mixed, index_result?: array}
      */
     public function processAndIndexFile(string $filePath, array $metadata): array
     {
@@ -702,7 +704,9 @@ class SolrFileService
      * @param string $text    The full text to chunk
      * @param array  $options Chunking options (chunk_size, chunk_overlap, strategy, file_type)
      *
-     * @return array Array of text chunks
+     * @return string[] Array of text chunks
+     *
+     * @psalm-return array<int, string>
      */
     public function chunkDocument(string $text, array $options=[]): array
     {
@@ -793,7 +797,9 @@ class SolrFileService
      * @param int    $chunkSize    Target chunk size
      * @param int    $chunkOverlap Overlap size
      *
-     * @return array<int, string> Chunks
+     * @return string[] Chunks
+     *
+     * @psalm-return array<int<0, max>, string>
      */
     private function chunkFixedSize(string $text, int $chunkSize, int $chunkOverlap): array
     {
@@ -962,9 +968,11 @@ class SolrFileService
      * @param array  $chunks   Array of text chunks
      * @param array  $metadata File metadata
      *
-     * @return array Indexing result
+     * @return (bool|int|string)[] Indexing result
      *
      * @throws \Exception If fileCollection is not configured
+     *
+     * @psalm-return array{success: bool, indexed: int<0, max>, collection: string}
      */
     public function indexFileChunks(string $fileId, array $chunks, array $metadata): array
     {
@@ -1022,9 +1030,11 @@ class SolrFileService
      *
      * @param array $query Search query parameters
      *
-     * @return array Search results
+     * @return (array|int|string)[] Search results
      *
      * @throws \Exception If fileCollection is not configured
+     *
+     * @psalm-return array{results: array<never, never>, total: 0, collection: string}
      */
     public function searchFiles(array $query=[]): array
     {
@@ -1058,11 +1068,11 @@ class SolrFileService
      *
      * @param string $fileId File identifier
      *
-     * @return bool True if deletion succeeded
+     * @return array|bool True if deletion succeeded
      *
      * @throws \Exception If fileCollection is not configured
      */
-    public function deleteFile(string $fileId): bool
+    public function deleteFile(string $fileId): array|bool
     {
         $collection = $this->getFileCollection();
 
@@ -1090,9 +1100,11 @@ class SolrFileService
     /**
      * Get statistics for files in SOLR
      *
-     * @return array Statistics including document count, collection info
+     * @return (false|int|mixed|null|string)[] Statistics including document count, collection info
      *
      * @throws \Exception If fileCollection is not configured
+     *
+     * @psalm-return array{available: false|mixed, collection?: string, document_count?: 0|mixed, total_files?: 0|mixed, indexed_files?: 0|mixed, collection_info?: mixed|null, error?: 'fileCollection not configured'}
      */
     public function getFileStats(): array
     {
@@ -1129,9 +1141,11 @@ class SolrFileService
      * @param int|null $limit   Maximum number of files to process (null = no limit)
      * @param array    $options Chunking options (chunk_size, chunk_overlap, strategy)
      *
-     * @return array Processing result with statistics
+     * @return (((mixed|string)[]|float|int|mixed)[]|true)[] Processing result with statistics
      *
      * @throws \Exception If fileCollection is not configured
+     *
+     * @psalm-return array{success: true, stats: array{processed: 0|1|2, indexed: 0|1|2, failed: int, total_chunks: 0|mixed, errors: array<int, mixed|string>, execution_time_ms: float}}
      */
     public function processExtractedFiles(?int $limit=null, array $options=[]): array
     {
@@ -1345,7 +1359,9 @@ class SolrFileService
      *
      * Returns statistics about how many files have been chunked and indexed
      *
-     * @return array Statistics
+     * @return (bool|int|mixed|string)[] Statistics
+     *
+     * @psalm-return array{available: bool, collection?: string, total_extracted?: 0|mixed, total_chunks_indexed?: 0|mixed, unique_files_indexed?: 0|mixed, pending_indexing?: 0|mixed, error?: 'fileCollection not configured'}
      */
     public function getChunkingStats(): array
     {

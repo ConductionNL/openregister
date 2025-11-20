@@ -1,5 +1,22 @@
 <?php
 
+/**
+ * OpenRegister Migration - Performance Indexes
+ *
+ * Migration to add performance-critical indexes for OpenRegister object searches.
+ *
+ * @category Migration
+ * @package  OCA\OpenRegister\Migration
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenRegister.app
+ */
+
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Migration;
@@ -41,17 +58,15 @@ class Version1Date20250902140000 extends SimpleMigrationStep
     /**
      * Apply performance-critical database indexes
      *
-     * @param IOutput $output
+     * @param IOutput $output        Migration output interface
      * @param Closure $schemaClosure The `\Closure` returns a `ISchemaWrapper`
-     * @param array   $options
+     * @param array   $options       Migration options
      *
-     * @return null|ISchemaWrapper
+     * @return null|ISchemaWrapper Updated schema or null
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+        // @var ISchemaWrapper $schema
         $schema = $schemaClosure();
 
         if ($schema->hasTable('openregister_objects') === false) {

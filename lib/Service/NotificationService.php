@@ -84,6 +84,8 @@ class NotificationService
      * @param Configuration $configuration The configuration with available update
      *
      * @return int Number of notifications sent
+     *
+     * @psalm-return int<0, max>
      */
     public function notifyConfigurationUpdate(Configuration $configuration): int
     {

@@ -1,4 +1,3 @@
-version: "3.5"
 volumes:
   nextcloud:
   apps:
@@ -164,10 +163,6 @@ services:
       - EXECUTIONS_DATA_SAVE_ON_ERROR=all
       - EXECUTIONS_DATA_SAVE_ON_SUCCESS=all
       - EXECUTIONS_DATA_SAVE_MANUAL_EXECUTIONS=true
-    links:
-      - nextcloud
-    depends_on:
-      - nextcloud
     healthcheck:
       test: ["CMD-SHELL", "wget --spider -q http://localhost:5678/healthz || exit 1"]
       interval: 30s
@@ -195,7 +190,6 @@ services:
       - solr
       - ollama
       - presidio-analyzer
-      - n8n
     volumes:
       - nextcloud:/var/www/html:rw
       - ./custom_apps:/var/www/html/custom_apps

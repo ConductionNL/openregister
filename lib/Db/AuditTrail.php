@@ -303,7 +303,9 @@ class AuditTrail extends Entity implements JsonSerializable
      *
      * Returns all fields that are of type 'json'
      *
-     * @return array<string> List of JSON field names
+     * @return string[] List of JSON field names
+     *
+     * @psalm-return list<string>
      */
     public function getJsonFields(): array
     {
@@ -326,9 +328,9 @@ class AuditTrail extends Entity implements JsonSerializable
      *
      * @param array $object The data array to hydrate from
      *
-     * @return self Returns $this for method chaining
+     * @return static Returns $this for method chaining
      */
-    public function hydrate(array $object): self
+    public function hydrate(array $object): static
     {
         $jsonFields = $this->getJsonFields();
 
@@ -356,7 +358,9 @@ class AuditTrail extends Entity implements JsonSerializable
      *
      * Prepares the entity data for JSON serialization
      *
-     * @return array<string, mixed> Array of serializable entity data
+     * @return (array|int|null|string)[] Array of serializable entity data
+     *
+     * @psalm-return array{id: int, uuid: null|string, schema: int|null, register: int|null, object: int|null, objectUuid: null|string, registerUuid: null|string, schemaUuid: null|string, action: null|string, changed: array|null, user: null|string, userName: null|string, session: null|string, request: null|string, ipAddress: null|string, version: null|string, created: null|string, organisationId: null|string, organisationIdType: null|string, processingActivityId: null|string, processingActivityUrl: null|string, processingId: null|string, confidentiality: null|string, retentionPeriod: null|string, size: int|null, expires: null|string}
      */
     public function jsonSerialize(): array
     {

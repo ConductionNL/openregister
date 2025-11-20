@@ -1,5 +1,22 @@
 <?php
 
+/**
+ * OpenRegister Migration - Facets Column
+ *
+ * Migration to add facets column to openregister_schemas table.
+ *
+ * @category Migration
+ * @package  OCA\OpenRegister\Migration
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenRegister.app
+ */
+
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Migration;
@@ -41,17 +58,15 @@ class Version1Date20250902150000 extends SimpleMigrationStep
     /**
      * Add facets column to schemas table for performance optimization
      *
-     * @param IOutput $output
+     * @param IOutput $output        Migration output interface
      * @param Closure $schemaClosure The `\Closure` returns a `ISchemaWrapper`
-     * @param array   $options
+     * @param array   $options       Migration options
      *
-     * @return null|ISchemaWrapper
+     * @return null|ISchemaWrapper Updated schema or null
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+        // @var ISchemaWrapper $schema
         $schema = $schemaClosure();
 
         if ($schema->hasTable('openregister_schemas') === false) {
@@ -82,9 +97,9 @@ class Version1Date20250902150000 extends SimpleMigrationStep
     /**
      * Post-schema changes to regenerate facets for existing schemas
      *
-     * @param IOutput $output
-     * @param Closure $schemaClosure
-     * @param array   $options
+     * @param IOutput $output        Migration output interface
+     * @param Closure $schemaClosure Schema closure
+     * @param array   $options       Migration options
      *
      * @return void
      */

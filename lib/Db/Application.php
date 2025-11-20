@@ -302,9 +302,9 @@ class Application extends Entity implements JsonSerializable
      *
      * @param array|null $configurations Array of configuration IDs
      *
-     * @return self Returns this application for method chaining
+     * @return static Returns this application for method chaining
      */
-    public function setConfigurations(?array $configurations): self
+    public function setConfigurations(?array $configurations): static
     {
         $this->configurations = $configurations ?? [];
         $this->markFieldUpdated('configurations');
@@ -330,9 +330,9 @@ class Application extends Entity implements JsonSerializable
      *
      * @param array|null $registers Array of register IDs
      *
-     * @return self Returns this application for method chaining
+     * @return static Returns this application for method chaining
      */
-    public function setRegisters(?array $registers): self
+    public function setRegisters(?array $registers): static
     {
         $this->registers = $registers ?? [];
         $this->markFieldUpdated('registers');
@@ -358,9 +358,9 @@ class Application extends Entity implements JsonSerializable
      *
      * @param array|null $schemas Array of schema IDs
      *
-     * @return self Returns this application for method chaining
+     * @return static Returns this application for method chaining
      */
-    public function setSchemas(?array $schemas): self
+    public function setSchemas(?array $schemas): static
     {
         $this->schemas = $schemas ?? [];
         $this->markFieldUpdated('schemas');
@@ -386,9 +386,9 @@ class Application extends Entity implements JsonSerializable
      *
      * @param bool|null|string $active Whether this should be active
      *
-     * @return self Returns this application for method chaining
+     * @return static Returns this application for method chaining
      */
-    public function setActive(mixed $active): self
+    public function setActive(mixed $active): static
     {
         // Handle various input types defensively (including empty strings from API).
         if ($active === '' || $active === null) {
@@ -421,9 +421,9 @@ class Application extends Entity implements JsonSerializable
      *
      * @param array|null $groups Array of group definitions
      *
-     * @return self Returns this application for method chaining
+     * @return static Returns this application for method chaining
      */
-    public function setGroups(?array $groups): self
+    public function setGroups(?array $groups): static
     {
         $this->groups = $groups ?? [];
         $this->markFieldUpdated('groups');
@@ -437,7 +437,9 @@ class Application extends Entity implements JsonSerializable
      *
      * Returns all fields that are of type 'json'
      *
-     * @return array<string> List of JSON field names
+     * @return string[] List of JSON field names
+     *
+     * @psalm-return list<string>
      */
     public function getJsonFields(): array
     {
@@ -460,9 +462,9 @@ class Application extends Entity implements JsonSerializable
      *
      * @param array $object The data array to hydrate from
      *
-     * @return self Returns $this for method chaining
+     * @return static Returns $this for method chaining
      */
-    public function hydrate(array $object): self
+    public function hydrate(array $object): static
     {
         $jsonFields = $this->getJsonFields();
 
@@ -490,7 +492,9 @@ class Application extends Entity implements JsonSerializable
      *
      * Provides sensible defaults with empty arrays for all CRUD permissions
      *
-     * @return array Default authorization structure
+     * @return array[] Default authorization structure
+     *
+     * @psalm-return array{create: array<never, never>, read: array<never, never>, update: array<never, never>, delete: array<never, never>}
      */
     private function getDefaultAuthorization(): array
     {
@@ -521,9 +525,9 @@ class Application extends Entity implements JsonSerializable
      *
      * @param array|null $authorization Authorization rules structure
      *
-     * @return self Returns this application for method chaining
+     * @return static Returns this application for method chaining
      */
-    public function setAuthorization(?array $authorization): self
+    public function setAuthorization(?array $authorization): static
     {
         $this->authorization = $authorization ?? $this->getDefaultAuthorization();
         $this->markFieldUpdated('authorization');
@@ -535,7 +539,28 @@ class Application extends Entity implements JsonSerializable
     /**
      * JSON serialization for API responses
      *
-     * @return array Serialized application data
+     * @return (array|bool|int|null|string)[] Serialized application data
+     *
+     * @psalm-return array{
+     *     id: int,
+     *     uuid: null|string,
+     *     name: null|string,
+     *     description: null|string,
+     *     version: null|string,
+     *     organisation: null|string,
+     *     configurations: array|null,
+     *     registers: array|null,
+     *     schemas: array|null,
+     *     owner: null|string,
+     *     active: bool|null,
+     *     groups: array|null,
+     *     quota: array{storage: int|null, bandwidth: int|null, requests: int|null, users: null, groups: null},
+     *     usage: array{storage: 0, bandwidth: 0, requests: 0, users: 0, groups: int<0, max>},
+     *     authorization: array,
+     *     created: null|string,
+     *     updated: null|string,
+     *     managedByConfiguration: array|null
+     * }
      */
     public function jsonSerialize(): array
     {
@@ -725,9 +750,11 @@ class Application extends Entity implements JsonSerializable
     /**
      * Get managed by configuration data for JSON serialization
      *
-     * @return array|null Configuration data or null
+     * @return (int|null|string)[]|null Configuration data or null
+     *
+     * @psalm-return array{id: int, uuid: null|string, title: null|string}|null
      */
-    private function getManagedByConfigurationData(): ?array
+    private function getManagedByConfigurationData(): array|null
     {
         if ($this->managedByConfiguration !== null) {
             return [

@@ -88,9 +88,12 @@ class UserSettingsController extends Controller
      * Get current GitHub token status (without exposing the token).
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Token status
+     *
+     * @psalm-return JSONResponse<200|401|500, array{error?: 'Failed to get token status'|'User not authenticated', hasToken?: bool, isValid?: false|mixed, message?: string}, array<never, never>>
      */
     public function getGitHubTokenStatus(): JSONResponse
     {
@@ -117,8 +120,8 @@ class UserSettingsController extends Controller
             }
 
             // Validate the token.
-            $this->gitHubService->setUserToken($token);
-            $isValid = $this->gitHubService->validateToken();
+            $this->gitHubService->setUserToken($token, $user->getUID());
+            $isValid = $this->gitHubService->validateToken($user->getUID());
 
             return new JSONResponse(
                     [
@@ -144,9 +147,12 @@ class UserSettingsController extends Controller
      * Set GitHub personal access token for the current user.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Success or error message
+     *
+     * @psalm-return JSONResponse<200|400|401|500, array{error?: string, success?: true, message?: 'GitHub token saved successfully'}, array<never, never>>
      */
     public function setGitHubToken(): JSONResponse
     {
@@ -170,8 +176,8 @@ class UserSettingsController extends Controller
             }
 
             // Validate the token before saving.
-            $this->gitHubService->setUserToken($token);
-            if ($this->gitHubService->validateToken() === false) {
+            $this->gitHubService->setUserToken($token, $user->getUID());
+            if ($this->gitHubService->validateToken($user->getUID()) === false) {
                 return new JSONResponse(
                     ['error' => 'Invalid GitHub token'],
                     400
@@ -204,9 +210,12 @@ class UserSettingsController extends Controller
      * Remove GitHub personal access token for the current user.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Success or error message
+     *
+     * @psalm-return JSONResponse<200|401|500, array{error?: 'Failed to remove token'|'User not authenticated', success?: true, message?: 'GitHub token removed successfully'}, array<never, never>>
      */
     public function removeGitHubToken(): JSONResponse
     {
@@ -220,7 +229,7 @@ class UserSettingsController extends Controller
             }
 
             // Clear the token.
-            $this->gitHubService->setUserToken(null);
+            $this->gitHubService->setUserToken(null, $user->getUID());
 
             $this->logger->info("GitHub token removed for user: {$user->getUID()}");
 
@@ -249,6 +258,8 @@ class UserSettingsController extends Controller
      * @param bool $isValid Whether token is valid
      *
      * @return string Validation message
+     *
+     * @psalm-return 'Token is invalid or expired'|'Token is valid'
      */
     private function getTokenValidationMessage(bool $isValid): string
     {

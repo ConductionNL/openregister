@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Audit Trail Mapper
  *
@@ -8,11 +9,11 @@
  * @category Database
  * @package  OCA\OpenRegister\Db
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version GIT: <git-id>
+ * @version GIT: <git_id>
  *
  * @link https://OpenRegister.app
  */
@@ -162,7 +163,7 @@ class AuditTrailMapper extends QBMapper
         }//end foreach
 
         // Add search on changed field if search term provided.
-        if ($search !== null) {
+        if ($search !== null && $search !== '') {
             $qb->andWhere(
                 $qb->expr()->like('changed', $qb->createNamedParameter('%'.$search.'%'))
             );
@@ -402,7 +403,7 @@ class AuditTrailMapper extends QBMapper
             ->orderBy('created', 'DESC');
 
         // Add condition based on until parameter.
-        if ($until instanceof \DateTime) {
+        if ($until instanceof \DateTime === true) {
             $qb->andWhere(
                 $qb->expr()->gte(
                     'created',
@@ -563,18 +564,18 @@ class AuditTrailMapper extends QBMapper
             }
 
             // Add exclusions if provided.
-            if (!empty($exclude)) {
+            if (empty($exclude) === false) {
                 foreach ($exclude as $combination) {
                     $orConditions = $qb->expr()->orX();
 
                     // Handle register exclusion.
-                    if (isset($combination['register'])) {
+                    if (isset($combination['register']) === true) {
                         $orConditions->add($qb->expr()->isNull('register'));
                         $orConditions->add($qb->expr()->neq('register', $qb->createNamedParameter($combination['register'], IQueryBuilder::PARAM_INT)));
                     }
 
                     // Handle schema exclusion.
-                    if (isset($combination['schema'])) {
+                    if (isset($combination['schema']) === true) {
                         $orConditions->add($qb->expr()->isNull('schema'));
                         $orConditions->add($qb->expr()->neq('schema', $qb->createNamedParameter($combination['schema'], IQueryBuilder::PARAM_INT)));
                     }
