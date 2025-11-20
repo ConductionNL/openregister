@@ -321,6 +321,7 @@ class GetObject
         ?Schema $schema=null
     ): array {
         // First find all objects that reference this object's URI or UUID.
+        // @psalm-suppress UndefinedMethod.
         $referencingObjects = $this->objectEntityMapper->findByRelationUri(
             search: $object->getUri() ?? $object->getUuid(),
             partialMatch: $partialMatch

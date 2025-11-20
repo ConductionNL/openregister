@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/*
+/**
  * OpenRegister GitLab Service
  *
  * This file contains the GitLabService class for interacting with the GitLab API
@@ -43,6 +43,8 @@ class GitLabService
 
     /**
      * GitLab API base URL (can be configured for self-hosted instances)
+     *
+     * @var string
      */
     private string $apiBase;
 
@@ -86,7 +88,7 @@ class GitLabService
 
         // Allow configuration of GitLab URL (app-level setting takes precedence over system setting).
         $this->apiBase = $this->config->getAppValue('openregister', 'gitlab_api_url', '');
-        if (empty($this->apiBase)) {
+        if (empty($this->apiBase) === true) {
             $this->apiBase = $this->config->getSystemValue('gitlab_api_url', 'https://gitlab.com/api/v4');
         }
 
@@ -104,7 +106,7 @@ class GitLabService
 
         // Add authentication token if configured.
         $token = $this->config->getAppValue('openregister', 'gitlab_api_token', '');
-        if (!empty($token)) {
+        if (empty($token) === false) {
             $headers['PRIVATE-TOKEN'] = $token;
         }
 
@@ -132,7 +134,7 @@ class GitLabService
         try {
             // Build search query.
             // Always search for x-openregister, optionally filter by additional terms.
-            if (!empty($search)) {
+            if (empty($search) === false) {
                 $searchQuery = 'x-openregister '.$search;
             } else {
                 $searchQuery = 'x-openregister';
@@ -168,7 +170,7 @@ class GitLabService
             $results = [];
             foreach ($items as $item) {
                 // Extract project ID and file path.
-                if (isset($item['project_id']) && isset($item['path'])) {
+                if (isset($item['project_id']) === true && isset($item['path']) === true) {
                     $results[] = [
                         'project_id' => $item['project_id'],
                         'path'       => $item['path'],
@@ -369,8 +371,8 @@ class GitLabService
             foreach ($tree as $item) {
                 // Check if file matches naming convention.
                 if ($item['type'] === 'blob'
-                    && (str_ends_with($item['path'], 'openregister.json')
-                    || str_contains($item['path'], '.openregister.json'))
+                    && (str_ends_with($item['path'], 'openregister.json') === true
+                    || str_contains($item['path'], '.openregister.json') === true)
                 ) {
                     $configData = $this->parseConfigurationFile($projectId, $item['path'], $ref);
 
@@ -473,7 +475,9 @@ class GitLabService
             $content = $this->getFileContent($projectId, $path, $ref);
 
             // Validate that it's a valid OpenRegister configuration.
-            if (!isset($content['openapi']) || !isset($content['x-openregister'])) {
+            if (isset($content['openapi']) === false
+                || isset($content['x-openregister']) === false
+            ) {
                 $this->logger->debug(
                         'File does not contain required OpenRegister structure',
                         [

@@ -552,10 +552,16 @@ class SearchTrailController extends Controller
             // Check if service result is a structured array with nested data.
             if (isset($serviceResult['user_agents']) === true) {
                 // Extract the user agents array and metadata from structured response.
-                $userAgents        = $serviceResult['user_agents'] ?? [];
+                /** @psalm-suppress RedundantCondition */
+                $userAgentsArray = $serviceResult['user_agents'] ?? [];
+                // Ensure we have a proper indexed array for pagination.
+                $userAgents = is_array($userAgentsArray) ? array_values($userAgentsArray) : [];
+                /** @psalm-suppress InvalidArrayOffset */
                 $totalUniqueAgents = $serviceResult['total_unique_agents'] ?? 0;
+                /** @psalm-suppress InvalidArrayOffset */
                 $totalSearches     = $serviceResult['total_searches'] ?? 0;
                 $period            = $serviceResult['period'] ?? null;
+                /** @psalm-suppress InvalidArrayOffset */
                 $browserStats      = $serviceResult['browser_breakdown'] ?? null;
 
                 // Use pagination format for the user agents array.
@@ -573,7 +579,11 @@ class SearchTrailController extends Controller
                 return new JSONResponse($paginatedUserAgents);
             } else {
                 // If service returns a simple array, treat it as the user agents list.
-                $userAgents        = $serviceResult ?? [];
+                /** @psalm-suppress RedundantCondition */
+                $userAgentsArray = $serviceResult ?? [];
+                // Ensure we have a proper indexed array for pagination.
+                // $userAgentsArray is always an array at this point, but may be associative.
+                $userAgents = array_values($userAgentsArray);
                 $totalUniqueAgents = count($userAgents);
 
                 // Use pagination format for the user agents array.

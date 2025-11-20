@@ -33,6 +33,8 @@ use OCP\Files\FileInfo;
 
 /**
  * Event listener for node folder events.
+ *
+ * @template-implements IEventListener<Event>
  */
 class AbstractNodesFolderEventListener implements IEventListener
 {

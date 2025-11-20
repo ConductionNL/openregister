@@ -57,12 +57,14 @@ class MagicRbacHandler
     /**
      * Constructor for MagicRbacHandler
      *
-     * @param IUserSession  $userSession  User session for current user context
-     * @param IGroupManager $groupManager Group manager for user group operations
-     * @param IUserManager  $userManager User manager for user operations
-     * @param IAppConfig    $appConfig    App configuration for RBAC settings
-     * @param LoggerInterface $logger    Logger for debugging and error reporting
+     * @param IUserSession    $userSession  User session for current user context
+     * @param IGroupManager   $groupManager Group manager for user group operations
+     * @param IUserManager    $userManager  User manager for user operations
+     * @param IAppConfig      $appConfig    App configuration for RBAC settings
+     * @param LoggerInterface $logger       Logger for debugging and error reporting
      */
+
+
     public function __construct(
         private readonly IUserSession $userSession,
         private readonly IGroupManager $groupManager,
@@ -72,6 +74,7 @@ class MagicRbacHandler
     ) {
 
     }//end __construct()
+
 
     /**
      * Apply RBAC permission filters to a dynamic table query
@@ -109,6 +112,7 @@ class MagicRbacHandler
                 $this->applyUnauthenticatedAccess($qb, $schema, $tableAlias);
                 return;
             }
+
             $userId = $user->getUID();
         }
 
@@ -160,22 +164,25 @@ class MagicRbacHandler
         if (is_array($readPerms) === true) {
             // Check if user's groups are in the authorized groups for read action.
             foreach ($userGroups as $groupId) {
-                if (in_array($groupId, $readPerms)) {
+                if (in_array($groupId, $readPerms) === true) {
                     // User has read permission through group membership.
-                    return; // No filtering needed
+                    return;
+                    // No filtering needed.
                 }
             }
-            
+
             // Check for public read access.
-            if (in_array('public', $readPerms)) {
-                return; // No filtering needed for public access
+            if (in_array('public', $readPerms) === true) {
+                return;
+                // No filtering needed for public access.
             }
         }
 
         // Removed automatic published object access - this should be handled via explicit published filter.
-
         $qb->andWhere($readConditions);
-    }
+
+    }//end applyRbacFilters()
+
 
     /**
      * Apply access rules for unauthenticated users
@@ -189,27 +196,35 @@ class MagicRbacHandler
     private function applyUnauthenticatedAccess(IQueryBuilder $qb, Schema $schema, string $tableAlias): void
     {
         $authorization = $schema->getAuthorization();
-        
-        if (empty($authorization) || $authorization === '{}') {
+
+        if (empty($authorization) === true || $authorization === '{}') {
             // No authorization - public access allowed.
             return;
         }
 
-        $authConfig = is_string($authorization) ? json_decode($authorization, true) : $authorization;
-        if (!is_array($authConfig)) {
+        if (is_string($authorization) === true) {
+            $authConfig = json_decode($authorization, true);
+        } else {
+            $authConfig = $authorization;
+        }
+
+        if (is_array($authConfig) === false) {
             // Invalid config - no automatic access, use explicit published filter.
             return;
         }
 
         $readPerms = $authConfig['read'] ?? [];
-        
+
         // Check for explicit public read access.
-        if (is_array($readPerms) && in_array('public', $readPerms)) {
-            return; // Full public access - no filtering needed
+        if (is_array($readPerms) === true && in_array('public', $readPerms) === true) {
+            return;
+            // Full public access - no filtering needed.
         }
-        
+
         // No automatic published object access - use explicit published filter.
-    }
+
+    }//end applyUnauthenticatedAccess()
+
 
     /**
      * Create condition for published objects only
@@ -222,7 +237,7 @@ class MagicRbacHandler
     private function createPublishedCondition(IQueryBuilder $qb, string $tableAlias): mixed
     {
         $now = (new \DateTime())->format('Y-m-d H:i:s');
-        
+
         return $qb->expr()->andX(
             $qb->expr()->isNotNull("{$tableAlias}._published"),
             $qb->expr()->lte("{$tableAlias}._published", $qb->createNamedParameter($now)),
@@ -231,7 +246,9 @@ class MagicRbacHandler
                 $qb->expr()->gt("{$tableAlias}._depublished", $qb->createNamedParameter($now))
             )
         );
-    }
+
+    }//end createPublishedCondition()
+
 
     /**
      * Check if RBAC is enabled in app configuration
@@ -241,13 +258,17 @@ class MagicRbacHandler
     private function isRbacEnabled(): bool
     {
         $rbacConfig = $this->appConfig->getValueString('openregister', 'rbac', '');
-        if (empty($rbacConfig)) {
+        if (empty($rbacConfig) === true) {
             return false;
         }
 
-        $rbacData = json_decode($rbacConfig, true);
-        return $rbacData['enabled'] ?? false;
-    }
+        $rbacData   = json_decode($rbacConfig, true);
+        $enabled    = $rbacData['enabled'] ?? false;
+        return $enabled === true;
+
+    }//end isRbacEnabled()
+
+
 
     /**
      * Check if RBAC admin override is enabled in app configuration
@@ -257,13 +278,18 @@ class MagicRbacHandler
     private function isAdminOverrideEnabled(): bool
     {
         $rbacConfig = $this->appConfig->getValueString('openregister', 'rbac', '');
-        if (empty($rbacConfig)) {
-            return true; // Default to true if no RBAC config exists
+        if (empty($rbacConfig) === true) {
+            return true;
+            // Default to true if no RBAC config exists.
         }
 
-        $rbacData = json_decode($rbacConfig, true);
-        return $rbacData['adminOverride'] ?? true;
-    }
+        $rbacData      = json_decode($rbacConfig, true);
+        $adminOverride = $rbacData['adminOverride'] ?? true;
+        return $adminOverride === true;
+
+    }//end isAdminOverrideEnabled()
+
+
 
     /**
      * Check if current user has admin privileges
@@ -272,7 +298,7 @@ class MagicRbacHandler
      *
      * @return bool True if user is admin, false otherwise
      */
-    public function isCurrentUserAdmin(?string $userId = null): bool
+    public function isCurrentUserAdmin(?string $userId=null): bool
     {
         if ($userId === null) {
             $user = $this->userSession->getUser();
@@ -288,7 +314,7 @@ class MagicRbacHandler
         }
 
         $userGroups = $this->groupManager->getUserGroupIds($userObj);
-        return in_array('admin', $userGroups);
+        return in_array('admin', $userGroups) === true;
     }
 
     /**
@@ -299,7 +325,11 @@ class MagicRbacHandler
     public function getCurrentUserId(): ?string
     {
         $user = $this->userSession->getUser();
-        return $user ? $user->getUID() : null;
+        if ($user !== null) {
+            return $user->getUID();
+        }
+
+        return null;
     }
 
     /**

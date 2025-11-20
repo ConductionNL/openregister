@@ -268,7 +268,14 @@ class MagicFacetHandler
      *
      * @return ((int|mixed)[][]|int|string)[] Date histogram facet data
      *
-     * @psalm-return array{type: 'date_histogram', field: string, interval: string, buckets: list<array{count: int, key: mixed}>, total_buckets: int<0, max>, error?: string}
+     * @psalm-return array{
+     *     type: 'date_histogram',
+     *     field: string,
+     *     interval: string,
+     *     buckets: list<array{count: int, key: mixed}>,
+     *     total_buckets: int<0, max>,
+     *     error?: string
+     * }
      */
     private function getDateHistogramFacet(string $columnName, string $interval, array $baseQuery, string $tableName): array
     {
@@ -341,7 +348,17 @@ class MagicFacetHandler
      *
      * @return ((int|mixed|null|string)[][]|int|string)[] Range facet data
      *
-     * @psalm-return array{type: 'range', field: string, buckets: list<array{count: int, from: mixed|null, key: mixed|string, to: mixed|null}>, total_buckets: int<0, max>}
+     * @psalm-return array{
+     *     type: 'range',
+     *     field: string,
+     *     buckets: list<array{
+     *         count: int,
+     *         from: mixed|null,
+     *         key: mixed|string,
+     *         to: mixed|null
+     *     }>,
+     *     total_buckets: int<0, max>
+     * }
      */
     private function getRangeFacet(string $columnName, array $ranges, array $baseQuery, string $tableName): array
     {
@@ -508,7 +525,46 @@ class MagicFacetHandler
      *
      * @return (string|string[])[][] Array of metadata fields that can be faceted
      *
-     * @psalm-return array{register: array{type: 'integer', title: 'Register', description: 'Register ID', facet_types: list{'terms'}}, schema: array{type: 'integer', title: 'Schema', description: 'Schema ID', facet_types: list{'terms'}}, owner: array{type: 'string', title: 'Owner', description: 'Object owner', facet_types: list{'terms'}}, organisation: array{type: 'string', title: 'Organisation', description: 'Organisation UUID', facet_types: list{'terms'}}, created: array{type: 'string', format: 'date-time', title: 'Created', description: 'Creation timestamp', facet_types: list{'date_histogram', 'range'}}, updated: array{type: 'string', format: 'date-time', title: 'Updated', description: 'Last update timestamp', facet_types: list{'date_histogram', 'range'}}}
+     * @psalm-return array{
+     *     register: array{
+     *         type: 'integer',
+     *         title: 'Register',
+     *         description: 'Register ID',
+     *         facet_types: list{'terms'}
+     *     },
+     *     schema: array{
+     *         type: 'integer',
+     *         title: 'Schema',
+     *         description: 'Schema ID',
+     *         facet_types: list{'terms'}
+     *     },
+     *     owner: array{
+     *         type: 'string',
+     *         title: 'Owner',
+     *         description: 'Object owner',
+     *         facet_types: list{'terms'}
+     *     },
+     *     organisation: array{
+     *         type: 'string',
+     *         title: 'Organisation',
+     *         description: 'Organisation UUID',
+     *         facet_types: list{'terms'}
+     *     },
+     *     created: array{
+     *         type: 'string',
+     *         format: 'date-time',
+     *         title: 'Created',
+     *         description: 'Creation timestamp',
+     *         facet_types: list{'date_histogram', 'range'}
+     *     },
+     *     updated: array{
+     *         type: 'string',
+     *         format: 'date-time',
+     *         title: 'Updated',
+     *         description: 'Last update timestamp',
+     *         facet_types: list{'date_histogram', 'range'}
+     *     }
+     * }
      */
     private function getMetadataFacetableFields(): array
     {

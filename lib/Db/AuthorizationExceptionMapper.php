@@ -20,6 +20,7 @@
 
 namespace OCA\OpenRegister\Db;
 
+use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -49,7 +50,9 @@ use Symfony\Component\Uid\Uuid;
  * @method AuthorizationException find(int|string $id)
  * @method AuthorizationException findEntity(IQueryBuilder $query)
  * @method AuthorizationException[] findAll(int|null $limit = null, int|null $offset = null)
- * @method AuthorizationException[] findEntities(IQueryBuilder $query)
+ * @method list<AuthorizationException> findEntities(IQueryBuilder $query)
+ *
+ * @template-extends QBMapper<AuthorizationException>
  */
 class AuthorizationExceptionMapper extends QBMapper
 {

@@ -80,6 +80,7 @@ use OCP\EventDispatcher\IEventDispatcher;
 use OCA\OpenRegister\EventListener\SolrEventListener;
 use OCA\OpenRegister\Listener\FileChangeListener;
 use OCA\OpenRegister\Listener\ToolRegistrationListener;
+use OCA\OpenRegister\Listener\WebhookEventListener;
 use OCP\Files\Events\Node\NodeCreatedEvent;
 use OCP\Files\Events\Node\NodeWrittenEvent;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
@@ -96,6 +97,26 @@ use OCA\OpenRegister\Event\SchemaCreatedEvent;
 use OCA\OpenRegister\Event\SchemaDeletedEvent;
 use OCA\OpenRegister\Event\SchemaUpdatedEvent;
 use OCA\OpenRegister\Event\ToolRegistrationEvent;
+use OCA\OpenRegister\Event\ApplicationCreatedEvent;
+use OCA\OpenRegister\Event\ApplicationUpdatedEvent;
+use OCA\OpenRegister\Event\ApplicationDeletedEvent;
+use OCA\OpenRegister\Event\AgentCreatedEvent;
+use OCA\OpenRegister\Event\AgentUpdatedEvent;
+use OCA\OpenRegister\Event\AgentDeletedEvent;
+use OCA\OpenRegister\Event\SourceCreatedEvent;
+use OCA\OpenRegister\Event\SourceUpdatedEvent;
+use OCA\OpenRegister\Event\SourceDeletedEvent;
+use OCA\OpenRegister\Event\ConfigurationCreatedEvent;
+use OCA\OpenRegister\Event\ConfigurationUpdatedEvent;
+use OCA\OpenRegister\Event\ConfigurationDeletedEvent;
+use OCA\OpenRegister\Event\ViewCreatedEvent;
+use OCA\OpenRegister\Event\ViewUpdatedEvent;
+use OCA\OpenRegister\Event\ViewDeletedEvent;
+use OCA\OpenRegister\Event\ConversationCreatedEvent;
+use OCA\OpenRegister\Event\ConversationUpdatedEvent;
+use OCA\OpenRegister\Event\ConversationDeletedEvent;
+use OCA\OpenRegister\Event\OrganisationUpdatedEvent;
+use OCA\OpenRegister\Event\OrganisationDeletedEvent;
 
 /**
  * Class Application
@@ -751,6 +772,41 @@ class Application extends App implements IBootstrap
 
         // Register ToolRegistrationListener for agent function tools.
         $context->registerEventListener(ToolRegistrationEvent::class, ToolRegistrationListener::class);
+
+        // Register WebhookEventListener for webhook delivery on all OpenRegister events.
+        $context->registerEventListener(ObjectCreatedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(ObjectUpdatedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(ObjectDeletedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(ObjectLockedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(ObjectUnlockedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(ObjectRevertedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(RegisterCreatedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(RegisterUpdatedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(RegisterDeletedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(SchemaCreatedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(SchemaUpdatedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(SchemaDeletedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(ApplicationCreatedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(ApplicationUpdatedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(ApplicationDeletedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(AgentCreatedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(AgentUpdatedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(AgentDeletedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(SourceCreatedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(SourceUpdatedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(SourceDeletedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(ConfigurationCreatedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(ConfigurationUpdatedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(ConfigurationDeletedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(ViewCreatedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(ViewUpdatedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(ViewDeletedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(ConversationCreatedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(ConversationUpdatedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(ConversationDeletedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(OrganisationCreatedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(OrganisationUpdatedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(OrganisationDeletedEvent::class, WebhookEventListener::class);
 
     }//end register()
 

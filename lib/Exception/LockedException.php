@@ -30,19 +30,20 @@ use Throwable;
 class LockedException extends Exception
 {
 
+
     /**
      * Constructor for LockedException.
      *
-     * @param string         $message  The error message.
-     * @param int            $code     The error code.
-     * @param Throwable|null $previous The previous exception.
+     * @param string         $message  The error message
+     * @param int            $code     The error code
+     * @param Throwable|null $previous The previous exception
      *
      * @return void
      */
     public function __construct(
-        string $message = 'Object is locked and cannot be modified',
-        int $code = 423,
-        ?Throwable $previous = null
+        string $message='Object is locked and cannot be modified',
+        int $code=423,
+        ?Throwable $previous=null
     ) {
         parent::__construct($message, $code, $previous);
 
@@ -50,4 +51,3 @@ class LockedException extends Exception
 
 
 }//end class
-

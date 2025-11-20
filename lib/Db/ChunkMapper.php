@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -31,7 +32,9 @@ use OCP\IDBConnection;
  * @method Chunk find(int|string $id)
  * @method Chunk findEntity(IQueryBuilder $query)
  * @method Chunk[] findAll(int|null $limit = null, int|null $offset = null)
- * @method Chunk[] findEntities(IQueryBuilder $query)
+ * @method list<Chunk> findEntities(IQueryBuilder $query)
+ *
+ * @template-extends QBMapper<Chunk>
  */
 class ChunkMapper extends QBMapper
 {

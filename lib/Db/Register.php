@@ -246,6 +246,8 @@ class Register extends Entity implements JsonSerializable
      * Set the schemas data
      *
      * @param array|string $schemas Array of schema IDs or JSON string
+     *
+     * @return static Returns self for method chaining
      */
     public function setSchemas($schemas): static
     {
@@ -343,7 +345,40 @@ class Register extends Entity implements JsonSerializable
      *
      * @return ((int|mixed|null|string|string[])[]|int|null|string)[] Array of serializable entity data
      *
-     * @psalm-return array{id: int, uuid: null|string, slug: null|string, title: null|string, version: null|string, description: null|string, schemas: array<int|string>, source: null|string, tablePrefix: null|string, folder: null|string, updated: null|string, created: null|string, owner: null|string, application: null|string, organisation: null|string, authorization: array|null, groups: array<string, list<string>>, quota: array{storage: null, bandwidth: null, requests: null, users: null, groups: null}, usage: array{storage: 0, bandwidth: 0, requests: 0, users: 0, groups: int<0, max>}, deleted: null|string}
+     * @psalm-return array{
+     *     id: int,
+     *     uuid: null|string,
+     *     slug: null|string,
+     *     title: null|string,
+     *     version: null|string,
+     *     description: null|string,
+     *     schemas: array<int|string>,
+     *     source: null|string,
+     *     tablePrefix: null|string,
+     *     folder: null|string,
+     *     updated: null|string,
+     *     created: null|string,
+     *     owner: null|string,
+     *     application: null|string,
+     *     organisation: null|string,
+     *     authorization: array|null,
+     *     groups: array<string, list<string>>,
+     *     quota: array{
+     *         storage: null,
+     *         bandwidth: null,
+     *         requests: null,
+     *         users: null,
+     *         groups: null
+     *     },
+     *     usage: array{
+     *         storage: 0,
+     *         bandwidth: 0,
+     *         requests: 0,
+     *         users: 0,
+     *         groups: int<0, max>
+     *     },
+     *     deleted: null|string
+     * }
      */
     public function jsonSerialize(): array
     {
@@ -440,6 +475,7 @@ class Register extends Entity implements JsonSerializable
         }
 
         // Final fallback with ID.
+        // @psalm-suppress RedundantPropertyInitializationCheck.
         return 'Register #'.($this->id ?? 'unknown');
 
     }//end __toString()

@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -31,7 +32,9 @@ use OCP\IDBConnection;
  * @method GdprEntity find(int|string $id)
  * @method GdprEntity findEntity(IQueryBuilder $query)
  * @method GdprEntity[] findAll(int|null $limit = null, int|null $offset = null)
- * @method GdprEntity[] findEntities(IQueryBuilder $query)
+ * @method list<GdprEntity> findEntities(IQueryBuilder $query)
+ *
+ * @template-extends QBMapper<GdprEntity>
  */
 class GdprEntityMapper extends QBMapper
 {

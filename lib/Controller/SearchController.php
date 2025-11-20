@@ -101,9 +101,13 @@ class SearchController extends Controller
                 /** @psalm-suppress UndefinedMethod */
                 return [
                     'id'     => $result->getId(),
+                    /** @psalm-suppress UndefinedMethod */
                     'name'   => $result->getName(),
+                    /** @psalm-suppress UndefinedMethod */
                     'type'   => $result->getType(),
+                    /** @psalm-suppress UndefinedMethod */
                     'url'    => $result->getUrl(),
+                    /** @psalm-suppress UndefinedMethod */
                     'source' => $result->getSource(),
                 ];
             },

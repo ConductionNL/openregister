@@ -150,7 +150,18 @@ class SolrFileService
      *
      * @throws \Exception If fileCollection is not configured
      *
-     * @psalm-return array{success: bool, file_id: mixed|string, error?: string, processing_time_ms: float, collection: string, file_name?: mixed|string, text_length?: int<0, max>, chunks_created?: int<1, max>, chunks_indexed?: 0|mixed, index_result?: array}
+     * @psalm-return array{
+     *     success: bool,
+     *     file_id: mixed|string,
+     *     error?: string,
+     *     processing_time_ms: float,
+     *     collection: string,
+     *     file_name?: mixed|string,
+     *     text_length?: int<0, max>,
+     *     chunks_created?: int<1, max>,
+     *     chunks_indexed?: 0|mixed,
+     *     index_result?: array
+     * }
      */
     public function processAndIndexFile(string $filePath, array $metadata): array
     {
@@ -757,6 +768,7 @@ class SolrFileService
                 [
                     'chunk_count'      => count($chunks),
                     'chunking_time_ms' => $chunkingTime,
+                    // @psalm-suppress UndefinedMethod.
                     'avg_chunk_size'   => $this->calculateAvgChunkSize($chunks),
                 ]
                 );
@@ -1104,7 +1116,15 @@ class SolrFileService
      *
      * @throws \Exception If fileCollection is not configured
      *
-     * @psalm-return array{available: false|mixed, collection?: string, document_count?: 0|mixed, total_files?: 0|mixed, indexed_files?: 0|mixed, collection_info?: mixed|null, error?: 'fileCollection not configured'}
+     * @psalm-return array{
+     *     available: false|mixed,
+     *     collection?: string,
+     *     document_count?: 0|mixed,
+     *     total_files?: 0|mixed,
+     *     indexed_files?: 0|mixed,
+     *     collection_info?: mixed|null,
+     *     error?: 'fileCollection not configured'
+     * }
      */
     public function getFileStats(): array
     {
@@ -1145,7 +1165,17 @@ class SolrFileService
      *
      * @throws \Exception If fileCollection is not configured
      *
-     * @psalm-return array{success: true, stats: array{processed: 0|1|2, indexed: 0|1|2, failed: int, total_chunks: 0|mixed, errors: array<int, mixed|string>, execution_time_ms: float}}
+     * @psalm-return array{
+     *     success: true,
+     *     stats: array{
+     *         processed: 0|1|2,
+     *         indexed: 0|1|2,
+     *         failed: int,
+     *         total_chunks: 0|mixed,
+     *         errors: array<int, mixed|string>,
+     *         execution_time_ms: float
+     *     }
+     * }
      */
     public function processExtractedFiles(?int $limit=null, array $options=[]): array
     {
@@ -1231,6 +1261,7 @@ class SolrFileService
 
                 if ($result['success'] === true) {
                     $stats['indexed']++;
+                    /** @psalm-suppress InvalidArrayOffset */
                     $stats['total_chunks'] += $result['chunks_indexed'];
 
                     $this->logger->info(
@@ -1242,6 +1273,7 @@ class SolrFileService
                             );
                 } else {
                     $stats['failed']++;
+                    /** @psalm-suppress InvalidArrayOffset */
                     $stats['errors'][$fileText->getFileId()] = $result['message'] ?? 'Unknown error';
                 }
             } catch (\Exception $e) {
@@ -1361,7 +1393,15 @@ class SolrFileService
      *
      * @return (bool|int|mixed|string)[] Statistics
      *
-     * @psalm-return array{available: bool, collection?: string, total_extracted?: 0|mixed, total_chunks_indexed?: 0|mixed, unique_files_indexed?: 0|mixed, pending_indexing?: 0|mixed, error?: 'fileCollection not configured'}
+     * @psalm-return array{
+     *     available: bool,
+     *     collection?: string,
+     *     total_extracted?: 0|mixed,
+     *     total_chunks_indexed?: 0|mixed,
+     *     unique_files_indexed?: 0|mixed,
+     *     pending_indexing?: 0|mixed,
+     *     error?: 'fileCollection not configured'
+     * }
      */
     public function getChunkingStats(): array
     {
@@ -1375,6 +1415,7 @@ class SolrFileService
         }
 
         // Get total extracted files.
+        // @psalm-suppress UndefinedMethod.
         $extractionStats = $this->getFileTextService()->getExtractionStats();
 
         // Get total chunks in SOLR.

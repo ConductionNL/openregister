@@ -118,7 +118,16 @@ class VectorizationService
      *
      * @throws \Exception If strategy not found or vectorization fails
      *
-     * @psalm-return array{success: true, message: string, entity_type: string, total_entities: int<0, max>, total_items: 0|mixed, vectorized: 0|mixed, failed: 0|mixed, errors?: array}
+     * @psalm-return array{
+     *     success: true,
+     *     message: string,
+     *     entity_type: string,
+     *     total_entities: int<0, max>,
+     *     total_items: 0|mixed,
+     *     vectorized: 0|mixed,
+     *     failed: 0|mixed,
+     *     errors?: array
+     * }
      */
     public function vectorizeBatch(string $entityType, array $options=[]): array
     {
@@ -237,7 +246,16 @@ class VectorizationService
      *
      * @return ((int|string)[][]|int)[] Processing results
      *
-     * @psalm-return array{total_items: int<0, max>, vectorized: int<0, max>, failed: int<0, max>, errors: list<array{entity_id: int|string, error: string, item_index: array-key}>}
+     * @psalm-return array{
+     *     total_items: int<0, max>,
+     *     vectorized: int<0, max>,
+     *     failed: int<0, max>,
+     *     errors: list<array{
+     *         entity_id: int|string,
+     *         error: string,
+     *         item_index: array-key
+     *     }>
+     * }
      */
     private function vectorizeEntity($entity, VectorizationStrategyInterface $strategy, array $options): array
     {
@@ -281,6 +299,7 @@ class VectorizationService
                             $vectorized++;
                         } else {
                             $failed++;
+                            // @psalm-suppress-next-line InvalidArrayOffset
                             $errors[] = [
                                 'entity_id'  => $entityId,
                                 'item_index' => $index,

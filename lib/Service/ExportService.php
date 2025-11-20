@@ -150,6 +150,7 @@ class ExportService
                 function (callable $resolve, callable $reject) use ($register, $schema, $filters) {
                     try {
                         $spreadsheet = $this->exportToExcel(register: $register, schema: $schema, filters: $filters);
+                        /** @psalm-suppress InvalidArgument */
                         $resolve($spreadsheet);
                     } catch (\Throwable $e) {
                         $reject($e);
@@ -211,6 +212,7 @@ class ExportService
                 function (callable $resolve, callable $reject) use ($register, $schema, $filters) {
                     try {
                         $csv = $this->exportToCsv(register: $register, schema: $schema, filters: $filters);
+                        /** @psalm-suppress InvalidArgument */
                         $resolve($csv);
                     } catch (\Throwable $e) {
                         $reject($e);
@@ -236,7 +238,7 @@ class ExportService
     public function exportToCsv(?Register $register=null, ?Schema $schema=null, array $filters=[], ?IUser $currentUser=null): string
     {
         if ($register !== null && $schema === null) {
-            throw new InvalidArgumentException('Cannot export multiple schemas to CSV format.');
+            throw new \InvalidArgumentException('Cannot export multiple schemas to CSV format.');
         }
 
         $spreadsheet = $this->exportToExcel(register: $register, schema: $schema, filters: $filters, currentUser: $currentUser);

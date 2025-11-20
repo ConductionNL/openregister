@@ -1,9 +1,6 @@
 <?php
-
-declare(strict_types=1);
-
-/*
-    OpenRegister SOLR Nightly Warmup Background Job
+/**
+ * OpenRegister SOLR Nightly Warmup Background Job
  *
  * Recurring background job that runs every night at 00:00 to warm up the SOLR index.
  * This ensures optimal search performance by keeping the index warm and ready for queries.
@@ -11,14 +8,16 @@ declare(strict_types=1);
  * @category BackgroundJob
  * @package  OCA\OpenRegister\BackgroundJob
  *
- * @author    Conduction Development Team <info@conduction.nl>
+ * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
- * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.nl
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 

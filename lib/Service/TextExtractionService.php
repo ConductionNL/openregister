@@ -1,5 +1,4 @@
 <?php
-
 /**
  * TextExtractionService
  *
@@ -360,6 +359,7 @@ class TextExtractionService
             'language'            => $language,
             'language_level'      => null,
             'language_confidence' => $confidence,
+            // @psalm-suppress UndefinedMethod.
             'detection_method'    => $this->getDetectionMethod($language),
         ];
 
@@ -374,7 +374,18 @@ class TextExtractionService
      *
      * @return (array|int|mixed|null)[][]
      *
-     * @psalm-return list<array{chunk_index: int<0, max>, detection_method: mixed|null, end_offset: int<0, max>|mixed, language: mixed|null, language_confidence: mixed|null, language_level: mixed|null, overlap_size: int, position_reference: array<string, mixed>, start_offset: 0|mixed, text_content: mixed}>
+     * @psalm-return list<array{
+     *     chunk_index: int<0, max>,
+     *     detection_method: mixed|null,
+     *     end_offset: int<0, max>|mixed,
+     *     language: mixed|null,
+     *     language_confidence: mixed|null,
+     *     language_level: mixed|null,
+     *     overlap_size: int,
+     *     position_reference: array<string, mixed>,
+     *     start_offset: 0|mixed,
+     *     text_content: mixed
+     * }>
      */
     private function textToChunks(array $payload, array $options=[]): array
     {
@@ -622,7 +633,17 @@ class TextExtractionService
      *
      * @return (array|mixed|null)[]
      *
-     * @psalm-return array{source_type: mixed|null, source_id: mixed|null, chunk_checksum: mixed|null, text_length: mixed|null, language: mixed|null, language_level: mixed|null, organisation: mixed|null, owner: mixed|null, file_metadata: array<never, never>|mixed}
+     * @psalm-return array{
+     *     source_type: mixed|null,
+     *     source_id: mixed|null,
+     *     chunk_checksum: mixed|null,
+     *     text_length: mixed|null,
+     *     language: mixed|null,
+     *     language_level: mixed|null,
+     organisation: mixed|null,
+     *     owner: mixed|null,
+     *     file_metadata: array<never, never>|mixed
+     * }
      */
     private function summarizeMetadataPayload(array $payload): array
     {
@@ -1103,7 +1124,24 @@ class TextExtractionService
      *
      * @return (int|mixed)[] Statistics about file extraction
      *
-     * @psalm-return array{totalFiles: int, untrackedFiles: int, pendingFiles: int, processedFiles: int, failedFiles: int, totalChunks: mixed, totalObjects: int, totalEntities: int, total: int, pending: int, processing: int, completed: int, failed: int, indexed: int, vectorized: int, total_text_size: int}
+     * @psalm-return array{
+     *     totalFiles: int,
+     *     untrackedFiles: int,
+     *     pendingFiles: int,
+     *     processedFiles: int,
+     *     failedFiles: int,
+     *     totalChunks: mixed,
+     *     totalObjects: int,
+     *     totalEntities: int,
+     *     total: int,
+     *     pending: int,
+     *     processing: int,
+     *     completed: int,
+     *     failed: int,
+     *     indexed: int,
+     *     vectorized: int,
+     *     total_text_size: int
+     * }
      */
     public function getStats(): array
     {
@@ -1121,7 +1159,8 @@ class TextExtractionService
             'pendingFiles'    => $stats['pending'],
             'processedFiles'  => $stats['completed'],
             'failedFiles'     => $stats['failed'],
-            'totalChunks'     => $stats['totalChunks'],
+            // @psalm-suppress-next-line InvalidArrayOffset
+            'totalChunks'     => $stats['totalChunks'] ?? 0,
             'totalObjects'    => $objectCount,
             'totalEntities'   => $entityCount,
             // Keep original field names for backward compatibility.
@@ -1562,6 +1601,7 @@ class TextExtractionService
                 [
                     'chunk_count'      => count($chunks),
                     'chunking_time_ms' => $chunkingTime,
+                    // @psalm-suppress UndefinedMethod.
                     'avg_chunk_size'   => $this->calculateAvgChunkSize($chunks),
                 ]
                 );

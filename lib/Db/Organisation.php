@@ -519,7 +519,54 @@ class Organisation extends Entity implements JsonSerializable
      *
      * @return array[][] Default authorization structure
      *
-     * @psalm-return array{register: array{create: array<never, never>, read: array<never, never>, update: array<never, never>, delete: array<never, never>}, schema: array{create: array<never, never>, read: array<never, never>, update: array<never, never>, delete: array<never, never>}, object: array{create: array<never, never>, read: array<never, never>, update: array<never, never>, delete: array<never, never>}, view: array{create: array<never, never>, read: array<never, never>, update: array<never, never>, delete: array<never, never>}, agent: array{create: array<never, never>, read: array<never, never>, update: array<never, never>, delete: array<never, never>}, configuration: array{create: array<never, never>, read: array<never, never>, update: array<never, never>, delete: array<never, never>}, application: array{create: array<never, never>, read: array<never, never>, update: array<never, never>, delete: array<never, never>}, object_publish: array<never, never>, agent_use: array<never, never>, dashboard_view: array<never, never>, llm_use: array<never, never>}
+     * @psalm-return array{
+     *     register: array{
+     *         create: array<never, never>,
+     *         read: array<never, never>,
+     *         update: array<never, never>,
+     *         delete: array<never, never>
+     *     },
+     *     schema: array{
+     *         create: array<never, never>,
+     *         read: array<never, never>,
+     *         update: array<never, never>,
+     *         delete: array<never, never>
+     *     },
+     *     object: array{
+     *         create: array<never, never>,
+     *         read: array<never, never>,
+     *         update: array<never, never>,
+     *         delete: array<never, never>
+     *     },
+     *     view: array{
+     *         create: array<never, never>,
+     *         read: array<never, never>,
+     *         update: array<never, never>,
+     *         delete: array<never, never>
+     *     },
+     *     agent: array{
+     *         create: array<never, never>,
+     *         read: array<never, never>,
+     *         update: array<never, never>,
+     *         delete: array<never, never>
+     *     },
+     *     configuration: array{
+     *         create: array<never, never>,
+     *         read: array<never, never>,
+     *         update: array<never, never>,
+     *         delete: array<never, never>
+     *     },
+     *     application: array{
+     *         create: array<never, never>,
+     *         read: array<never, never>,
+     *         update: array<never, never>,
+     *         delete: array<never, never>
+     *     },
+     *     object_publish: array<never, never>,
+     *     agent_use: array<never, never>,
+     *     dashboard_view: array<never, never>,
+     *     llm_use: array<never, never>
+     * }
      */
     private function getDefaultAuthorization(): array
     {
@@ -693,7 +740,36 @@ class Organisation extends Entity implements JsonSerializable
      *
      * @return (array|bool|int|null|string)[] Serialized organisation data
      *
-     * @psalm-return array{id: int, uuid: null|string, slug: null|string, name: null|string, description: null|string, users: array, groups: array|null, owner: null|string, active: bool|null, parent: null|string, children: array, quota: array{storage: int|null, bandwidth: int|null, requests: int|null, users: null, groups: null}, usage: array{storage: 0, bandwidth: 0, requests: 0, users: int<0, max>, groups: int<0, max>}, authorization: array, created: null|string, updated: null|string}
+     * @psalm-return array{
+     *     id: int,
+     *     uuid: null|string,
+     *     slug: null|string,
+     *     name: null|string,
+     *     description: null|string,
+     *     users: array,
+     *     groups: array|null,
+     *     owner: null|string,
+     *     active: bool|null,
+     *     parent: null|string,
+     *     children: array,
+     *     quota: array{
+     *         storage: int|null,
+     *         bandwidth: int|null,
+     *         requests: int|null,
+     *         users: null,
+     *         groups: null
+     *     },
+     *     usage: array{
+     *         storage: 0,
+     *         bandwidth: 0,
+     *         requests: 0,
+     *         users: int<0, max>,
+     *         groups: int<0, max>
+     *     },
+     *     authorization: array,
+     *     created: null|string,
+     *     updated: null|string
+     * }
      */
     public function jsonSerialize(): array
     {

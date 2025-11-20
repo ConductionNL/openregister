@@ -47,7 +47,9 @@ use OCP\IUserSession;
  * @method Application find(int|string $id)
  * @method Application findEntity(IQueryBuilder $query)
  * @method Application[] findAll(int|null $limit = null, int|null $offset = null)
- * @method Application[] findEntities(IQueryBuilder $query)
+ * @method list<Application> findEntities(IQueryBuilder $query)
+ *
+ * @template-extends QBMapper<Application>
  */
 class ApplicationMapper extends QBMapper
 {
@@ -249,6 +251,8 @@ class ApplicationMapper extends QBMapper
      *
      * @return Application The inserted application with updated ID
      * @throws \Exception If user doesn't have create permission
+     *
+     * @psalm-suppress MoreSpecificImplementedParamType
      */
     public function insert(Entity $entity): Entity
     {
@@ -281,10 +285,12 @@ class ApplicationMapper extends QBMapper
     /**
      * Update an existing application
      *
-     * @param Application $entity Application entity to update
+     * @param Entity $entity Application entity to update
      *
      * @return Application The updated application
      * @throws \Exception If user doesn't have update permission or access to this organisation
+     *
+     * @psalm-suppress MoreSpecificImplementedParamType
      */
     public function update(Entity $entity): Entity
     {
@@ -314,10 +320,12 @@ class ApplicationMapper extends QBMapper
     /**
      * Delete an application
      *
-     * @param Application $entity Application entity to delete
+     * @param Entity $entity Application entity to delete
      *
      * @return Application The deleted application
      * @throws \Exception If user doesn't have delete permission or access to this organisation
+     *
+     * @psalm-suppress MoreSpecificImplementedParamType
      */
     public function delete(Entity $entity): Entity
     {

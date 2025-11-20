@@ -54,10 +54,10 @@ use OCP\AppFramework\Db\Entity;
  * @method void setSuccessfulDeliveries(int $successfulDeliveries)
  * @method int getFailedDeliveries()
  * @method void setFailedDeliveries(int $failedDeliveries)
- * @method DateTime getCreated()
- * @method void setCreated(DateTime $created)
- * @method DateTime getUpdated()
- * @method void setUpdated(DateTime $updated)
+ * @method DateTime|null getCreated()
+ * @method void setCreated(?DateTime $created)
+ * @method DateTime|null getUpdated()
+ * @method void setUpdated(?DateTime $updated)
  */
 class Webhook extends Entity implements JsonSerializable
 {
@@ -81,8 +81,8 @@ class Webhook extends Entity implements JsonSerializable
     protected int $totalDeliveries = 0;
     protected int $successfulDeliveries = 0;
     protected int $failedDeliveries = 0;
-    protected DateTime $created;
-    protected DateTime $updated;
+    protected ?DateTime $created = null;
+    protected ?DateTime $updated = null;
 
 
     /**
@@ -272,8 +272,8 @@ class Webhook extends Entity implements JsonSerializable
             'totalDeliveries'       => $this->totalDeliveries,
             'successfulDeliveries'  => $this->successfulDeliveries,
             'failedDeliveries'      => $this->failedDeliveries,
-            'created'               => $this->created->format('c'),
-            'updated'               => $this->updated->format('c'),
+            'created'               => $this->created?->format('c'),
+            'updated'               => $this->updated?->format('c'),
         ];
 
     }//end jsonSerialize()

@@ -208,7 +208,7 @@ class SchemaCacheService
         // Clear from database cache.
         $sql = 'DELETE FROM '.self::CACHE_TABLE.' WHERE schema_id = ?';
         try {
-            $this->db->executeQuery($sql, [$schemaId]);
+            $this->db->executeQuery($sql, [(string) $schemaId]);
             $this->logger->debug('Cleared schema cache', ['schemaId' => $schemaId]);
         } catch (\Exception $e) {
             $this->logger->error(
@@ -578,7 +578,14 @@ class SchemaCacheService
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @psalm-return array{total_entries: int, entries_with_ttl: int, memory_cache_size: int<0, max>, cache_table: 'openregister_schema_cache', query_time: string, timestamp: int<1, max>}
+     * @psalm-return array{
+     *     total_entries: int,
+     *     entries_with_ttl: int,
+     *     memory_cache_size: int<0, max>,
+     *     cache_table: 'openregister_schema_cache',
+     *     query_time: string,
+     *     timestamp: int<1, max>
+     * }
      */
     public function getCacheStatistics(): array
     {
@@ -757,7 +764,25 @@ class SchemaCacheService
      *
      * @return (array|int|mixed|null|string)[] Serialized schema data
      *
-     * @psalm-return array{id: int, uuid: null|string, title: null|string, version: null|string, description: null|string, summary: null|string, tags: mixed, required: array|null, properties: array|null, archive: array|null, configuration: array|null, source: null|string, register: mixed, organisation: null|string, owner: null|string, created: null|string, updated: null|string}
+     * @psalm-return array{
+     *     id: int,
+     *     uuid: null|string,
+     *     title: null|string,
+     *     version: null|string,
+     *     description: null|string,
+     *     summary: null|string,
+     *     tags: mixed,
+     *     required: array|null,
+     *     properties: array|null,
+     *     archive: array|null,
+     *     configuration: array|null,
+     *     source: null|string,
+     *     register: mixed,
+     *     organisation: null|string,
+     *     owner: null|string,
+     *     created: null|string,
+     *     updated: null|string
+     * }
      */
     private function serializeSchemaForCache(Schema $schema): array
     {

@@ -1,69 +1,113 @@
 # Webhooks
 
-OpenRegister integrates seamlessly with Nextcloud's built-in webhook system, allowing you to trigger external workflows and integrations whenever events occur within OpenRegister.
+OpenRegister includes a built-in webhook system that allows you to trigger external workflows and integrations whenever events occur within OpenRegister.
 
 ## Overview
 
-Webhooks enable real-time integration with external systems by dispatching HTTP requests when specific events occur. OpenRegister leverages Nextcloud's `webhook_listeners` app to provide a robust, production-ready webhook system without requiring custom implementation.
+Webhooks enable real-time integration with external systems by dispatching HTTP requests when specific events occur. OpenRegister's webhook system provides a robust, production-ready solution with automatic retries, event filtering, and comprehensive monitoring.
 
 ### Key Features
 
 - **Event-Driven Architecture**: Subscribe to specific OpenRegister events
-- **Automatic Retries**: Built-in retry mechanism for failed deliveries
-- **Event Filtering**: Filter events by user, group, or custom criteria
-- **Secure**: HTTPS support and authentication options
-- **No Custom Code**: Uses Nextcloud's native webhook system
+- **Automatic Retries**: Configurable retry policies (exponential, linear, fixed)
+- **Event Filtering**: Filter events based on payload data
+- **Secure**: HMAC-SHA256 signature verification
+- **Statistics**: Track delivery success rates and last execution times
+- **Custom Headers**: Add authentication headers or custom metadata
+- **Wildcard Support**: Use wildcards to match multiple events
 
 ## Requirements
 
 - Nextcloud 28 or higher
-- Nextcloud `webhook_listeners` app (bundled with Nextcloud)
 - OpenRegister app installed and enabled
 - External system to receive webhooks (n8n, Windmill, custom endpoint)
 
-## Enabling Webhooks
+## Managing Webhooks
 
-### Step 1: Enable webhook_listeners App
+OpenRegister provides a RESTful API for managing webhooks.
 
-The `webhook_listeners` app is bundled with Nextcloud but may need to be enabled:
-
-```bash
-docker exec -u 33 <nextcloud-container> php occ app:enable webhook_listeners
-```
-
-Verify it is enabled:
+### Creating a Webhook
 
 ```bash
-docker exec -u 33 <nextcloud-container> php occ app:list | grep webhook
-```
-
-### Step 2: Register Webhook Listeners
-
-Register webhooks using Nextcloud's OCS API:
-
-```bash
-curl -X POST http://<nextcloud-host>/ocs/v2.php/apps/webhook_listeners/api/v1/webhooks \
-  -H "OCS-APIRequest: true" \
-  -u "<admin>:<password>" \
-  -H "Content-Type: application/json" \
+curl -X POST http://localhost:8080/index.php/apps/openregister/api/webhooks \
+  -u 'admin:admin' \
+  -H 'Content-Type: application/json' \
   -d '{
-    "httpMethod": "POST",
-    "uri": "https://<your-endpoint>/webhook",
-    "event": "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
-    "eventFilter": []
+    "name": "My Webhook",
+    "url": "https://my-server.com/webhook",
+    "method": "POST",
+    "events": [
+      "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
+      "OCA\\OpenRegister\\Event\\ObjectUpdatedEvent"
+    ],
+    "enabled": true,
+    "timeout": 30,
+    "maxRetries": 3,
+    "retryPolicy": "exponential"
   }'
 ```
 
 #### Parameters
 
-- **httpMethod**: HTTP method (POST, PUT, GET)
-- **uri**: External endpoint URL
-- **event**: Fully qualified event class name
-- **eventFilter**: Optional filters (user.uid, group, etc.)
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `name` | string | Yes | Webhook display name |
+| `url` | string | Yes | Target URL to call |
+| `method` | string | No | HTTP method (default: POST) |
+| `events` | array | No | Event class names (empty = all events) |
+| `enabled` | boolean | No | Enable/disable webhook (default: true) |
+| `headers` | object | No | Custom HTTP headers |
+| `secret` | string | No | Secret for HMAC signature |
+| `filters` | object | No | Event payload filters |
+| `timeout` | integer | No | Request timeout in seconds (default: 30) |
+| `maxRetries` | integer | No | Maximum retry attempts (default: 3) |
+| `retryPolicy` | string | No | Retry policy: exponential, linear, fixed (default: exponential) |
 
-### Step 3: Configure External System
+### Listing Webhooks
 
-Configure your external system (n8n, Windmill, etc.) to receive webhook requests. See the [Integrations](#integrations) section for platform-specific guides.
+```bash
+curl -X GET http://localhost:8080/index.php/apps/openregister/api/webhooks \
+  -u 'admin:admin'
+```
+
+### Getting a Webhook
+
+```bash
+curl -X GET http://localhost:8080/index.php/apps/openregister/api/webhooks/{id} \
+  -u 'admin:admin'
+```
+
+### Updating a Webhook
+
+```bash
+curl -X PUT http://localhost:8080/index.php/apps/openregister/api/webhooks/{id} \
+  -u 'admin:admin' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "enabled": false
+  }'
+```
+
+### Deleting a Webhook
+
+```bash
+curl -X DELETE http://localhost:8080/index.php/apps/openregister/api/webhooks/{id} \
+  -u 'admin:admin'
+```
+
+### Testing a Webhook
+
+```bash
+curl -X POST http://localhost:8080/index.php/apps/openregister/api/webhooks/{id}/test \
+  -u 'admin:admin'
+```
+
+### Listing Available Events
+
+```bash
+curl -X GET http://localhost:8080/index.php/apps/openregister/api/webhooks/events \
+  -u 'admin:admin'
+```
 
 ## Available Events
 
@@ -152,161 +196,268 @@ OpenRegister dispatches events for all entity lifecycle operations. Below is a c
 | `OCA\OpenRegister\Event\OrganisationUpdatedEvent` | Organisation updated | After organisation is modified |
 | `OCA\OpenRegister\Event\OrganisationDeletedEvent` | Organisation deleted | After organisation is removed |
 
-## Event Payload Structure
+## Webhook Payload
 
-Each webhook request contains a JSON payload with the event data:
+All webhooks receive a standardized payload:
 
 ```json
 {
   "event": "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
+  "webhook": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "name": "My Webhook"
+  },
   "data": {
+    "objectType": "object",
+    "action": "created",
     "object": {
       "id": 123,
-      "uuid": "550e8400-e29b-41d4-a716-446655440000",
-      "register": "my-register",
-      "schema": "my-schema",
-      "data": {
-        "title": "Example Object",
-        "description": "Object description"
-      },
-      "organisation": "org-uuid",
-      "created": "2024-01-15T10:30:00+00:00",
-      "updated": "2024-01-15T10:30:00+00:00"
-    }
-  }
+      "uuid": "abc-123",
+      "...": "..."
+    },
+    "register": "my-register-uuid",
+    "schema": "my-schema-uuid"
+  },
+  "timestamp": "2025-11-20T20:00:00+00:00",
+  "attempt": 1
 }
 ```
 
-For update events, both old and new states are included:
+### Payload Structure
 
-```json
-{
-  "event": "OCA\\OpenRegister\\Event\\ObjectUpdatedEvent",
-  "data": {
-    "newObject": { /* updated object */ },
-    "oldObject": { /* previous state */ }
-  }
-}
-```
+| Field | Type | Description |
+|-------|------|-------------|
+| `event` | string | Full event class name |
+| `webhook.id` | string | Webhook UUID |
+| `webhook.name` | string | Webhook name |
+| `data` | object | Event-specific data |
+| `timestamp` | string | ISO 8601 timestamp |
+| `attempt` | integer | Delivery attempt number (1 for first attempt) |
 
 ## Event Filtering
 
-You can filter events to reduce noise and only receive webhooks for specific conditions:
-
-### Filter by User
-
-Only trigger for events by a specific user:
+You can filter which events trigger webhooks using the `filters` parameter:
 
 ```json
 {
-  "httpMethod": "POST",
-  "uri": "https://your-endpoint/webhook",
-  "event": "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
-  "eventFilter": {
-    "user.uid": "specific_user"
+  "filters": {
+    "objectType": "object",
+    "action": "created",
+    "register": "my-specific-register"
   }
 }
 ```
 
-### Filter by Group
+Filters support:
+- **Exact matching**: Filter value must match payload value exactly
+- **Array matching**: Payload value must be in the filter array
+- **Dot notation**: Access nested payload values (e.g., `'object.uuid'`)
 
-Only trigger for events by users in a specific group:
+Example with array filter:
 
 ```json
 {
-  "httpMethod": "POST",
-  "uri": "https://your-endpoint/webhook",
-  "event": "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
-  "eventFilter": {
-    "group": "editors"
+  "filters": {
+    "action": ["created", "updated"]
   }
 }
 ```
 
-## Managing Webhooks
+## Security
 
-### List All Webhooks
+### HMAC Signature Verification
 
-```bash
-curl -X GET http://<nextcloud-host>/ocs/v2.php/apps/webhook_listeners/api/v1/webhooks \
-  -H "OCS-APIRequest: true" \
-  -u "<admin>:<password>"
+When you provide a `secret` during webhook creation, OpenRegister signs each payload with HMAC-SHA256 and includes the signature in the `X-Webhook-Signature` header.
+
+To verify signatures:
+
+```python
+import hmac
+import hashlib
+import json
+
+def verify_webhook(payload_body, signature, secret):
+    expected = hmac.new(
+        secret.encode('utf-8'),
+        payload_body,
+        hashlib.sha256
+    ).hexdigest()
+    
+    return hmac.compare_digest(expected, signature)
+
+# In your webhook endpoint
+signature = request.headers.get('X-Webhook-Signature')
+is_valid = verify_webhook(request.body, signature, 'your-secret')
 ```
 
-### Delete a Webhook
+### Custom Headers
 
-```bash
-curl -X DELETE http://<nextcloud-host>/ocs/v2.php/apps/webhook_listeners/api/v1/webhooks/<webhook-id> \
-  -H "OCS-APIRequest: true" \
-  -u "<admin>:<password>"
+Add authentication headers or custom metadata:
+
+```json
+{
+  "headers": {
+    "Authorization": "Bearer your-token",
+    "X-Custom-Header": "value"
+  }
+}
 ```
 
-## Security Considerations
+## Retry Policies
 
-1. **Use HTTPS**: Always use HTTPS endpoints for webhook URLs
-2. **Authentication**: Configure authentication on your webhook endpoint
-3. **IP Whitelisting**: Restrict webhook endpoint access to your Nextcloud server IP
-4. **Validate Payloads**: Verify incoming webhook requests
-5. **Rate Limiting**: Implement rate limiting on your webhook endpoint
+OpenRegister supports three retry policies:
 
-## Troubleshooting
+### Exponential Backoff (default)
 
-### Webhook Not Triggering
+Doubles the delay after each failure:
+- Attempt 1: Immediate
+- Attempt 2: 2 minutes
+- Attempt 3: 4 minutes
+- Attempt 4: 8 minutes
 
-1. **Verify app is enabled**:
+### Linear Backoff
 
-```bash
-docker exec -u 33 <nextcloud-container> php occ app:list | grep webhook
+Increases delay linearly:
+- Attempt 1: Immediate
+- Attempt 2: 5 minutes
+- Attempt 3: 10 minutes
+- Attempt 4: 15 minutes
+
+### Fixed Delay
+
+Constant delay between retries:
+- All retries: 5 minutes
+
+## Wildcard Events
+
+Subscribe to multiple events using wildcards:
+
+```json
+{
+  "events": [
+    "OCA\\OpenRegister\\Event\\Object*",
+    "OCA\\OpenRegister\\Event\\*CreatedEvent"
+  ]
+}
 ```
 
-2. **Check webhook registration**:
+Or leave `events` empty to receive **all events**:
 
-```bash
-curl -X GET http://<nextcloud-host>/ocs/v2.php/apps/webhook_listeners/api/v1/webhooks \
-  -H "OCS-APIRequest: true" \
-  -u "<admin>:<password>"
+```json
+{
+  "events": []
+}
 ```
 
-3. **Review Nextcloud logs**:
+## Monitoring
 
-```bash
-docker logs -f <nextcloud-container>
-```
+Each webhook tracks delivery statistics:
 
-### Webhook Endpoint Unreachable
-
-1. Verify endpoint URL is accessible from Nextcloud container
-2. Check firewall rules
-3. Test endpoint manually with curl
-4. Ensure HTTPS certificates are valid
-
-### Events Not Being Dispatched
-
-1. Verify the entity operation actually triggers an event
-2. Check that the event class name is correct
-3. Ensure the operation completes successfully
-4. Review OpenRegister logs for errors
-
-## Common Use Cases
-
-- **Data Synchronization**: Sync OpenRegister data to external databases
-- **Workflow Automation**: Trigger workflows in n8n or Windmill
-- **Notifications**: Send alerts to Slack, Teams, or email
-- **Analytics**: Stream events to analytics platforms
-- **Audit Logging**: Record all changes to external audit systems
-- **Integration**: Connect to CRM, ERP, or other business systems
+| Metric | Description |
+|--------|-------------|
+| `totalDeliveries` | Total delivery attempts |
+| `successfulDeliveries` | Successful deliveries |
+| `failedDeliveries` | Failed deliveries |
+| `lastTriggeredAt` | Last delivery attempt timestamp |
+| `lastSuccessAt` | Last successful delivery timestamp |
+| `lastFailureAt` | Last failed delivery timestamp |
 
 ## Integrations
 
-OpenRegister provides ready-to-use integrations with popular automation platforms:
+See platform-specific integration guides:
 
-- **[n8n Integration Guide](../Integrations/n8n.md)**: Complete guide with workflow templates
-- **[Windmill Integration Guide](../Integrations/windmill.md)**: Windmill workflow examples
-- **[Custom Webhooks Guide](../Integrations/custom-webhooks.md)**: Build your own webhook consumers
+- [n8n Integration](../Integrations/n8n.md)
+- [Windmill Integration](../Integrations/windmill.md)
+- [Custom Webhooks](../Integrations/custom-webhooks.md)
 
-## Further Reading
+## Examples
 
-- [Events API Reference](../api/events-reference.md): Detailed event payload schemas
-- [Nextcloud Webhook Listeners Documentation](https://docs.nextcloud.com/server/latest/admin_manual/webhook_listeners/)
-- [OpenRegister API Documentation](../api/)
+### Subscribe to All Object Events
 
+```json
+{
+  "name": "Object Monitor",
+  "url": "https://my-server.com/webhooks/objects",
+  "events": ["OCA\\OpenRegister\\Event\\Object*"],
+  "enabled": true
+}
+```
+
+### Subscribe to Specific Register Changes
+
+```json
+{
+  "name": "Register Monitor",
+  "url": "https://my-server.com/webhooks/register",
+  "events": [
+    "OCA\\OpenRegister\\Event\\RegisterCreatedEvent",
+    "OCA\\OpenRegister\\Event\\RegisterUpdatedEvent"
+  ],
+  "filters": {
+    "register": "my-register-uuid"
+  },
+  "enabled": true
+}
+```
+
+### High Security Webhook with Custom Headers
+
+```json
+{
+  "name": "Secure Webhook",
+  "url": "https://my-server.com/secure-webhook",
+  "secret": "my-super-secret-key",
+  "headers": {
+    "Authorization": "Bearer my-api-token",
+    "X-Source": "OpenRegister"
+  },
+  "events": [],
+  "enabled": true
+}
+```
+
+## Troubleshooting
+
+### Webhook Not Firing
+
+1. Check if webhook is enabled: `GET /api/webhooks/{id}`
+2. Verify events are being triggered (check logs)
+3. Ensure URL is accessible from Nextcloud container
+4. Check network connectivity and firewall rules
+
+### Delivery Failures
+
+1. Check webhook statistics for error patterns
+2. Review Nextcloud logs: `docker logs nextcloud | grep 'Webhook'`
+3. Test webhook manually: `POST /api/webhooks/{id}/test`
+4. Verify target endpoint is responding correctly
+
+### Debug Mode
+
+Enable debug logging in Nextcloud:
+
+```php
+// config/config.php
+'loglevel' => 0,  // 0 = debug, 4 = error
+```
+
+Then monitor logs:
+
+```bash
+docker logs -f nextcloud | grep -E 'Webhook|OpenRegister'
+```
+
+## Best Practices
+
+1. **Use Secrets**: Always configure HMAC secrets for production webhooks
+2. **Set Appropriate Timeouts**: Balance between reliability and resource usage
+3. **Filter Events**: Only subscribe to events you need
+4. **Monitor Statistics**: Regularly check delivery success rates
+5. **Handle Retries**: Design endpoints to be idempotent
+6. **Validate Signatures**: Always verify HMAC signatures in production
+7. **Use HTTPS**: Secure webhook URLs with TLS encryption
+8. **Test First**: Use the test endpoint before going live
+
+## API Reference
+
+For complete API documentation, see the [Webhooks API Reference](../api/webhooks-api.md).

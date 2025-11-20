@@ -173,7 +173,26 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
      *
      * @return ((mixed|null|string)[]|int|string)[] Metadata for storage
      *
-     * @psalm-return array{entity_type: 'object', entity_id: string, chunk_index: 0, total_chunks: 1, chunk_text: string, additional_metadata: array{object_id: 'unknown'|mixed, object_title: mixed|string, title: mixed|string, name: mixed|string, description: ''|mixed, register: mixed|null, register_id: mixed|null, schema: mixed|null, schema_id: mixed|null, uuid: mixed|null, uri: mixed|null}}
+     * @psalm-return array{
+     *     entity_type: 'object',
+     *     entity_id: string,
+     *     chunk_index: 0,
+     *     total_chunks: 1,
+     *     chunk_text: string,
+     *     additional_metadata: array{
+     *         object_id: 'unknown'|mixed,
+     *         object_title: mixed|string,
+     *         title: mixed|string,
+     *         name: mixed|string,
+     *         description: ''|mixed,
+     *         register: mixed|null,
+     *         register_id: mixed|null,
+     *         schema: mixed|null,
+     *         schema_id: mixed|null,
+     *         uuid: mixed|null,
+     *         uri: mixed|null
+     *     }
+     * }
      */
     public function prepareVectorMetadata($entity, array $item): array
     {
@@ -195,6 +214,7 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
                 [
                     'object_id'       => $objectId,
                     'has_@self'       => isset($objectData['@self']),
+                    // @psalm-suppress UndefinedMethod.
                     '@self_keys'      => $this->getSelfKeys($objectData),
                     'register_direct' => $objectData['_register'] ?? $objectData['register'] ?? 'none',
                     'register_@self'  => $objectData['@self']['register'] ?? 'none',

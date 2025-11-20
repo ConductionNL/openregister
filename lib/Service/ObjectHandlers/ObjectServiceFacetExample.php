@@ -1,5 +1,4 @@
 <?php
-
 /**
  * OpenRegister ObjectService Facet Examples
  *
@@ -62,6 +61,7 @@ class ObjectServiceFacetExample
                     'register' => ['type' => 'terms'],
                     'schema'   => ['type' => 'terms'],
                 ],
+
                 'status'   => ['type' => 'terms'],
                 'priority' => ['type' => 'terms'],
             ],
@@ -148,6 +148,7 @@ class ObjectServiceFacetExample
      */
     public function ecommerceFacetedSearch(): array
     {
+        // @psalm-suppress UndefinedMethod.
         if ($this->isAuditTrailsEnabled() === true) {
             // Audit trails enabled.
         }
@@ -345,7 +346,19 @@ class ObjectServiceFacetExample
      *
      * @return ((array|float|int)[]|mixed)[] Performance comparison results
      *
-     * @psalm-return array{new_approach: array{execution_time: float, facet_count: int<0, max>, results: array}, legacy_approach: array{execution_time: float, facet_count: int<0, max>, results: array}, performance_improvement: mixed}
+     * @psalm-return array{
+     *     new_approach: array{
+     *         execution_time: float,
+     *         facet_count: int<0, max>,
+     *         results: array
+     *     },
+     *     legacy_approach: array{
+     *         execution_time: float,
+     *         facet_count: int<0, max>,
+     *         results: array
+     *     },
+     *     performance_improvement: mixed
+     * }
      */
     public function performanceComparison(): array
     {
@@ -396,6 +409,7 @@ class ObjectServiceFacetExample
                 'facet_count'    => count($legacyResults),
                 'results'        => $legacyResults,
             ],
+            // @psalm-suppress UndefinedMethod.
             'performance_improvement' => $this->calculatePerformanceImprovement($legacyTime, $newTime),
         ];
 
@@ -409,7 +423,23 @@ class ObjectServiceFacetExample
      *
      * @return array[] Frontend-ready search results with facets
      *
-     * @psalm-return array{search: array{results: mixed, pagination: array{current_page: mixed, total_pages: mixed, total_items: mixed, items_per_page: mixed, has_next: bool, has_prev: bool, next_url: mixed|null, prev_url: mixed|null}}, facets: array, applied_filters: array}
+     * @psalm-return array{
+     *     search: array{
+     *         results: mixed,
+     *         pagination: array{
+     *             current_page: mixed,
+     *             total_pages: mixed,
+     *             total_items: mixed,
+     *             items_per_page: mixed,
+     *             has_next: bool,
+     *             has_prev: bool,
+     *             next_url: mixed|null,
+     *             prev_url: mixed|null
+     *         }
+     *     },
+     *     facets: array,
+     *     applied_filters: array
+     * }
      */
     public function frontendIntegrationExample(): array
     {

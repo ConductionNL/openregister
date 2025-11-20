@@ -52,7 +52,7 @@ use OCP\IUserSession;
  * @method Configuration find(int|string $id)
  * @method Configuration findEntity(IQueryBuilder $query)
  * @method Configuration[] findAll(int|null $limit = null, int|null $offset = null)
- * @method Configuration[] findEntities(IQueryBuilder $query)
+ * @method list<Configuration> findEntities(IQueryBuilder $query)
  */
 class ConfigurationMapper extends QBMapper
 {
@@ -431,6 +431,7 @@ class ConfigurationMapper extends QBMapper
         // Get old state before update.
         $oldEntity = $this->find($entity->getId());
 
+        // @psalm-suppress RedundantCondition.
         if ($entity instanceof Configuration) {
             $entity->setUpdated(new DateTime());
         }

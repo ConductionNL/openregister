@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -31,7 +32,9 @@ use OCP\IDBConnection;
  * @method EntityRelation find(int|string $id)
  * @method EntityRelation findEntity(IQueryBuilder $query)
  * @method EntityRelation[] findAll(int|null $limit = null, int|null $offset = null)
- * @method EntityRelation[] findEntities(IQueryBuilder $query)
+ * @method list<EntityRelation> findEntities(IQueryBuilder $query)
+ *
+ * @template-extends QBMapper<EntityRelation>
  */
 class EntityRelationMapper extends QBMapper
 {

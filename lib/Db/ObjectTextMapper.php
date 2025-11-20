@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -31,7 +32,9 @@ use OCP\IDBConnection;
  * @method ObjectText find(int|string $id)
  * @method ObjectText findEntity(IQueryBuilder $query)
  * @method ObjectText[] findAll(int|null $limit = null, int|null $offset = null)
- * @method ObjectText[] findEntities(IQueryBuilder $query)
+ * @method list<ObjectText> findEntities(IQueryBuilder $query)
+ *
+ * @template-extends QBMapper<ObjectText>
  */
 class ObjectTextMapper extends QBMapper
 {

@@ -43,9 +43,9 @@ class Version1Date20250622212509 extends SimpleMigrationStep
     /**
      * Change schema for migration
      *
-     * @param IOutput       $output        Output interface
-     * @param Closure       $schemaClosure Schema closure
-     * @param array<string> $options       Migration options
+     * @param IOutput                 $output        Output interface
+     * @param Closure                 $schemaClosure Schema closure
+     * @param array<array-key, mixed> $options       Migration options
      *
      * @return ISchemaWrapper|null Modified schema
      */
@@ -262,9 +262,9 @@ class Version1Date20250622212509 extends SimpleMigrationStep
     /**
      * Post schema change hook
      *
-     * @param IOutput       $output        Output interface
-     * @param Closure       $schemaClosure Schema closure
-     * @param array<string> $options       Migration options
+     * @param IOutput                 $output        Output interface
+     * @param Closure                 $schemaClosure Schema closure
+     * @param array<array-key, mixed> $options       Migration options
      *
      * @return void
      */

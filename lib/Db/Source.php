@@ -340,8 +340,7 @@ class Source extends Entity implements JsonSerializable
      * Returns true if this source's ID appears in any of the provided
      * configurations' sources arrays.
      *
-     * @param array<Configuration> $configurations Array of Configuration
-     *                                               entities to check against
+     * @param array<Configuration> $configurations Array of Configuration entities to check against
      *
      * @return bool True if managed by a configuration, false otherwise
      *

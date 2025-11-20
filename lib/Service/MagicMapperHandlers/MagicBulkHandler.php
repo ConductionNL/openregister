@@ -95,7 +95,16 @@ class MagicBulkHandler
      *
      * @psalm-param array<int, array<string, mixed>> $objects
      *
-     * @psalm-return array{saved: array, updated: array, statistics: array{saved: int<0, max>, updated: int<0, max>, total: int<0, max>, processingTimeMs?: float}}
+     * @psalm-return array{
+     *     saved: array,
+     *     updated: array,
+     *     statistics: array{
+     *         saved: int<0, max>,
+     *         updated: int<0, max>,
+     *         total: int<0, max>,
+     *         processingTimeMs?: float
+     *     }
+     * }
      */
     public function saveObjects(array $objects, Register $register, Schema $schema, string $tableName): array
     {

@@ -77,7 +77,7 @@ class SolrWarmupJob extends QueuedJob
         $collectErrors = $arguments['collectErrors'] ?? false;
         $triggeredBy   = $arguments['triggeredBy'] ?? 'unknown';
 
-        /* @var LoggerInterface $logger */
+        // @var LoggerInterface $logger
         $logger = \OC::$server->get(LoggerInterface::class);
 
         $logger->info(

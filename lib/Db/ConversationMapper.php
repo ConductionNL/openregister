@@ -46,7 +46,7 @@ use OCP\IDBConnection;
  * @method Conversation find(int|string $id)
  * @method Conversation findEntity(IQueryBuilder $query)
  * @method Conversation[] findAll(int|null $limit = null, int|null $offset = null)
- * @method Conversation[] findEntities(IQueryBuilder $query)
+ * @method list<Conversation> findEntities(IQueryBuilder $query)
  */
 class ConversationMapper extends QBMapper
 {
@@ -80,9 +80,9 @@ class ConversationMapper extends QBMapper
      *
      * @param Entity $entity The conversation entity to insert
      *
-     * @return Entity The inserted conversation entity
+     * @return Conversation The inserted conversation entity
      */
-    public function insert(Entity $entity): Entity
+    public function insert(Entity $entity): Conversation
     {
         if ($entity instanceof Conversation) {
             // Ensure UUID is set.
@@ -119,9 +119,9 @@ class ConversationMapper extends QBMapper
      *
      * @param Entity $entity The conversation entity to update
      *
-     * @return Entity The updated conversation entity
+     * @return Conversation The updated conversation entity
      */
-    public function update(Entity $entity): Entity
+    public function update(Entity $entity): Conversation
     {
         // Get old state before update.
         $oldEntity = $this->find($entity->getId());
@@ -146,9 +146,9 @@ class ConversationMapper extends QBMapper
      *
      * @param Entity $entity The conversation entity to delete
      *
-     * @return Entity The deleted conversation entity
+     * @return Conversation The deleted conversation entity
      */
-    public function delete(Entity $entity): Entity
+    public function delete(Entity $entity): Conversation
     {
         $entity = parent::delete($entity);
 
@@ -254,10 +254,10 @@ class ConversationMapper extends QBMapper
     /**
      * Find all soft-deleted conversations for a user (archive)
      *
-     * @param string   $userId       User ID
+     * @param string      $userId       User ID
      * @param null|string $organisation Optional organisation filter
-     * @param int      $limit        Maximum number of results
-     * @param int      $offset       Offset for pagination
+     * @param int         $limit        Maximum number of results
+     * @param int         $offset       Offset for pagination
      *
      * @return Conversation[] Array of Conversation entities
      *

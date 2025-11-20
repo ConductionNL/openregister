@@ -33,9 +33,9 @@ class Version1Date20251107150000 extends SimpleMigrationStep
     /**
      * Create feedback table for storing user feedback on AI messages
      *
-     * @param IOutput       $output        Migration output interface
-     * @param Closure       $schemaClosure Schema closure that returns ISchemaWrapper
-     * @param array<string> $options       Migration options
+     * @param IOutput                 $output        Migration output interface
+     * @param Closure                 $schemaClosure Schema closure that returns ISchemaWrapper
+     * @param array<array-key, mixed> $options       Migration options
      *
      * @return null|ISchemaWrapper Updated schema or null
      */

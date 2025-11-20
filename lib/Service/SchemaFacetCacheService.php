@@ -455,7 +455,14 @@ class SchemaFacetCacheService
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @psalm-return array{total_entries: int, by_type: array<int>, memory_cache_size: int<0, max>, cache_table: 'openregister_schema_facet_cache', query_time: string, timestamp: int<1, max>}
+     * @psalm-return array{
+     *     total_entries: int,
+     *     by_type: array<int>,
+     *     memory_cache_size: int<0, max>,
+     *     cache_table: 'openregister_schema_facet_cache',
+     *     query_time: string,
+     *     timestamp: int<1, max>
+     * }
      */
     public function getCacheStatistics(): array
     {
@@ -542,6 +549,7 @@ class SchemaFacetCacheService
             foreach ($properties as $propertyName => $property) {
                 if ($this->isPropertyFacetable($property) === true) {
                     $fieldConfig = $this->generateFieldConfigFromProperty($propertyName, $property);
+                    // @psalm-suppress RedundantCondition.
                     if ($fieldConfig !== null) {
                         $facetableFields['object_fields'][$propertyName] = $fieldConfig;
                     }
@@ -568,7 +576,48 @@ class SchemaFacetCacheService
      *
      * @return (string|string[])[][] Metadata facetable fields
      *
-     * @psalm-return array{register: array{type: 'integer', facet_types: list{'terms'}, description: 'Register ID'}, schema: array{type: 'integer', facet_types: list{'terms'}, description: 'Schema ID'}, organisation: array{type: 'string', facet_types: list{'terms'}, description: 'Organisation UUID'}, owner: array{type: 'string', facet_types: list{'terms'}, description: 'Owner user ID'}, created: array{type: 'datetime', facet_types: list{'date_histogram', 'range'}, description: 'Creation date'}, updated: array{type: 'datetime', facet_types: list{'date_histogram', 'range'}, description: 'Last update date'}, published: array{type: 'datetime', facet_types: list{'date_histogram', 'range'}, description: 'Publication date'}, depublished: array{type: 'datetime', facet_types: list{'date_histogram', 'range'}, description: 'Depublication date'}}
+     * @psalm-return array{
+     *     register: array{
+     *         type: 'integer',
+     *         facet_types: list{'terms'},
+     *         description: 'Register ID'
+     *     },
+     *     schema: array{
+     *         type: 'integer',
+     *         facet_types: list{'terms'},
+     *         description: 'Schema ID'
+     *     },
+     *     organisation: array{
+     *         type: 'string',
+     *         facet_types: list{'terms'},
+     *         description: 'Organisation UUID'
+     *     },
+     *     owner: array{
+     *         type: 'string',
+     *         facet_types: list{'terms'},
+     *         description: 'Owner user ID'
+     *     },
+     *     created: array{
+     *         type: 'datetime',
+     *         facet_types: list{'date_histogram', 'range'},
+     *         description: 'Creation date'
+     *     },
+     *     updated: array{
+     *         type: 'datetime',
+     *         facet_types: list{'date_histogram', 'range'},
+     *         description: 'Last update date'
+     *     },
+     *     published: array{
+     *         type: 'datetime',
+     *         facet_types: list{'date_histogram', 'range'},
+     *         description: 'Publication date'
+     *     },
+     *     depublished: array{
+     *         type: 'datetime',
+     *         facet_types: list{'date_histogram', 'range'},
+     *         description: 'Depublication date'
+     *     }
+     * }
      */
     private function getMetadataFacetableFields(): array
     {
@@ -661,7 +710,14 @@ class SchemaFacetCacheService
      *
      * @return ((mixed|string)[]|mixed|string)[] Field configuration or null if not facetable
      *
-     * @psalm-return array{type: 'string'|mixed, facet_types: array<string>, description: mixed|string, enum_values?: array, minimum?: mixed, maximum?: mixed}
+     * @psalm-return array{
+     *     type: 'string'|mixed,
+     *     facet_types: array<string>,
+     *     description: mixed|string,
+     *     enum_values?: array,
+     *     minimum?: mixed,
+     *     maximum?: mixed
+     * }
      */
     private function generateFieldConfigFromProperty(string $propertyKey, array $property): array
     {

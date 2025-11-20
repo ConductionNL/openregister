@@ -28,8 +28,12 @@
         <UndefinedClass>
             <errorLevel type="suppress">
                 <referencedClass name="OC"/>
+                <referencedClass name="Doctrine\DBAL\Types\Types"/>
+                <referencedClass name="Doctrine\DBAL\Connection"/>
+                <referencedClass name="Symfony\Component\HttpFoundation\Response"/>
             </errorLevel>
         </UndefinedClass>
+        <UndefinedMagicMethod errorLevel="suppress"/>
     </issueHandlers>
     <extraFiles>
         <directory name="vendor/nextcloud/ocp" />

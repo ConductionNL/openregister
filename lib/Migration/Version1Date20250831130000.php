@@ -42,9 +42,9 @@ class Version1Date20250831130000 extends SimpleMigrationStep
     /**
      * Add tags column to objects table
      *
-     * @param IOutput       $output        Migration output interface
-     * @param Closure       $schemaClosure Schema closure that returns ISchemaWrapper
-     * @param array<string> $options       Migration options
+     * @param IOutput                 $output        Migration output interface
+     * @param Closure                 $schemaClosure Schema closure that returns ISchemaWrapper
+     * @param array<array-key, mixed> $options       Migration options
      *
      * @return null|ISchemaWrapper Updated schema or null
      */
