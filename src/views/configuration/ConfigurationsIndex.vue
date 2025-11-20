@@ -60,14 +60,14 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 							</template>
 							Create Configuration
 						</NcActionButton>
-					<NcActionButton
-						close-after-click
-						@click="navigationStore.setModal('importConfiguration')">
-						<template #icon>
-							<CloudUpload :size="20" />
-						</template>
-						Import Configuration
-					</NcActionButton>
+						<NcActionButton
+							close-after-click
+							@click="navigationStore.setModal('importConfiguration')">
+							<template #icon>
+								<CloudUpload :size="20" />
+							</template>
+							Import Configuration
+						</NcActionButton>
 						<NcActionButton
 							close-after-click
 							@click="configurationStore.refreshConfigurationList()">
@@ -94,16 +94,16 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 			<div v-else>
 				<template v-if="viewMode === 'cards'">
 					<div class="cardGrid">
-				<ConfigurationCard
-					v-for="configuration in paginatedConfigurations"
-					:key="configuration.id"
-					:configuration="configuration"
-					@view="handleView(configuration)"
-					@edit="handleEdit(configuration)"
-					@export="handleExport(configuration)"
-					@delete="handleDelete(configuration)"
-					@check-version="checkVersion(configuration)"
-					@preview-update="previewUpdate(configuration)" />
+						<ConfigurationCard
+							v-for="configuration in paginatedConfigurations"
+							:key="configuration.id"
+							:configuration="configuration"
+							@view="handleView(configuration)"
+							@edit="handleEdit(configuration)"
+							@export="handleExport(configuration)"
+							@delete="handleDelete(configuration)"
+							@check-version="checkVersion(configuration)"
+							@preview-update="previewUpdate(configuration)" />
 					</div>
 				</template>
 				<template v-else>
@@ -433,7 +433,7 @@ export default {
 				const now = new Date()
 				const lastSync = new Date(configuration.lastSyncDate)
 				const diffInHours = Math.floor((now - lastSync) / (1000 * 60 * 60))
-				
+
 				if (diffInHours < 1) {
 					return 'Synced just now'
 				} else if (diffInHours < 24) {

@@ -857,19 +857,19 @@ export default {
 			try {
 				const response = await axios.get(generateUrl('/apps/openregister/api/llm/ollama-models'))
 
-			if (response.data.success && response.data.models && response.data.models.length > 0) {
+				if (response.data.success && response.data.models && response.data.models.length > 0) {
 				// Replace the hardcoded list with fetched models
-				this.ollamaModelOptions = response.data.models
+					this.ollamaModelOptions = response.data.models
 
 				// Loaded models from Ollama API successfully
-			} else {
+				} else {
 				// Keep fallback list if API returns empty or fails
 				// Using fallback model list
-			}
-		} catch (error) {
+				}
+			} catch (error) {
 			// Silently fail and keep using the hardcoded fallback list
 			// Error fetching Ollama models, using fallback
-		} finally {
+			} finally {
 				this.loadingOllamaModels = false
 			}
 		},

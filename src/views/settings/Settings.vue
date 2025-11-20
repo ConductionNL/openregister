@@ -40,15 +40,15 @@
 		<!-- LLM Configuration Section -->
 		<LlmConfiguration />
 
-	<!-- File Configuration Section -->
-	<FileConfiguration />
+		<!-- File Configuration Section -->
+		<FileConfiguration />
 
-	<!-- API Token Configuration Section -->
-	<ApiTokenConfiguration />
+		<!-- API Token Configuration Section -->
+		<ApiTokenConfiguration />
 
-	<!-- Dialogs -->
-	<Dialogs />
-</div>
+		<!-- Dialogs -->
+		<Dialogs />
+	</div>
 </template>
 
 <script>
@@ -86,12 +86,12 @@ export default {
 		RbacConfiguration,
 		OrganisationConfiguration,
 		MultitenancyConfiguration,
-	RetentionConfiguration,
-	LlmConfiguration,
-	FileConfiguration,
-	ApiTokenConfiguration,
-	Dialogs,
-},
+		RetentionConfiguration,
+		LlmConfiguration,
+		FileConfiguration,
+		ApiTokenConfiguration,
+		Dialogs,
+	},
 
 	computed: {
 		...mapStores(useSettingsStore),

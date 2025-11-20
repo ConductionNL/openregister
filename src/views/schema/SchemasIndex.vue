@@ -112,75 +112,75 @@ import { schemaStore, navigationStore, configurationStore } from '../../store/st
 										{{ t('openregister', 'Local') }}
 									</span>
 								</h2>
-							<NcActions :primary="true" menu-name="Actions">
-								<template #icon>
-									<DotsHorizontal :size="20" />
-								</template>
-								<NcActionButton 
-									v-tooltip="isManagedByExternalConfig(schema) ? 'Cannot edit: This schema is managed by external configuration ' + getManagingConfiguration(schema).title : ''"
-									close-after-click
-									:disabled="isManagedByExternalConfig(schema)"
-									@click="schemaStore.setSchemaItem(schema); navigationStore.setModal('editSchema')">
+								<NcActions :primary="true" menu-name="Actions">
 									<template #icon>
-										<Pencil :size="20" />
+										<DotsHorizontal :size="20" />
 									</template>
-									Edit
-								</NcActionButton>
-								<NcActionButton v-tooltip="schema.stats?.objects?.total > 0 ? 'Cannot delete: objects are still attached' : ''"
-									close-after-click
-									:disabled="schema.stats?.objects?.total > 0"
-									@click="schemaStore.setSchemaItem(schema); navigationStore.setDialog('deleteSchema')">
+									<NcActionButton
+										v-tooltip="isManagedByExternalConfig(schema) ? 'Cannot edit: This schema is managed by external configuration ' + getManagingConfiguration(schema).title : ''"
+										close-after-click
+										:disabled="isManagedByExternalConfig(schema)"
+										@click="schemaStore.setSchemaItem(schema); navigationStore.setModal('editSchema')">
+										<template #icon>
+											<Pencil :size="20" />
+										</template>
+										Edit
+									</NcActionButton>
+									<NcActionButton v-tooltip="schema.stats?.objects?.total > 0 ? 'Cannot delete: objects are still attached' : ''"
+										close-after-click
+										:disabled="schema.stats?.objects?.total > 0"
+										@click="schemaStore.setSchemaItem(schema); navigationStore.setDialog('deleteSchema')">
+										<template #icon>
+											<TrashCanOutline :size="20" />
+										</template>
+										Delete
+									</NcActionButton>
+								</NcActions>
+							</div>
+
+							<!-- Schema Description -->
+							<div class="schemaDescription"
+								:class="{ 'schemaDescription--expanded': isDescriptionExpanded(schema.id), 'schemaDescription--empty': !schema.description }"
+								@click="schema.description ? toggleDescriptionExpanded(schema.id) : null">
+								{{ schema.description || t('openregister', 'No description found') }}
+							</div>
+
+							<!-- Show properties table -->
+							<table class="statisticsTable schemaStats">
+								<thead>
+									<tr>
+										<th>{{ t('openregister', 'Name') }}</th>
+										<th>{{ t('openregister', 'Type') }}</th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr v-for="(property, key, index) in getDisplayedProperties(schema)" :key="key">
+										<td>{{ key }} <span v-if="isPropertyRequired(schema, key)" class="required-indicator">({{ t('openregister', 'required') }})</span></td>
+										<td>{{ property.type }}</td>
+									</tr>
+									<tr v-if="!Object.keys(schema.properties || {}).length">
+										<td colspan="2" class="emptyText">
+											{{ t('openregister', 'No properties found') }}
+										</td>
+									</tr>
+								</tbody>
+							</table>
+
+							<!-- View More Button -->
+							<div v-if="getRemainingPropertiesCount(schema) > 0" class="viewMoreContainer">
+								<NcButton
+									type="secondary"
+									@click="toggleSchemaExpanded(schema.id)">
 									<template #icon>
-										<TrashCanOutline :size="20" />
+										<ChevronDown v-if="!isSchemaExpanded(schema.id)" :size="20" />
+										<ChevronUp v-else :size="20" />
 									</template>
-									Delete
-								</NcActionButton>
-						</NcActions>
-						</div>
-						
-						<!-- Schema Description -->
-						<div class="schemaDescription"
-							:class="{ 'schemaDescription--expanded': isDescriptionExpanded(schema.id), 'schemaDescription--empty': !schema.description }"
-							@click="schema.description ? toggleDescriptionExpanded(schema.id) : null">
-							{{ schema.description || t('openregister', 'No description found') }}
-						</div>
-						
-						<!-- Show properties table -->
-						<table class="statisticsTable schemaStats">
-							<thead>
-								<tr>
-									<th>{{ t('openregister', 'Name') }}</th>
-									<th>{{ t('openregister', 'Type') }}</th>
-								</tr>
-							</thead>
-							<tbody>
-								<tr v-for="(property, key, index) in getDisplayedProperties(schema)" :key="key">
-									<td>{{ key }} <span v-if="isPropertyRequired(schema, key)" class="required-indicator">({{ t('openregister', 'required') }})</span></td>
-									<td>{{ property.type }}</td>
-								</tr>
-								<tr v-if="!Object.keys(schema.properties || {}).length">
-									<td colspan="2" class="emptyText">
-										{{ t('openregister', 'No properties found') }}
-									</td>
-								</tr>
-							</tbody>
-						</table>
-						
-						<!-- View More Button -->
-						<div v-if="getRemainingPropertiesCount(schema) > 0" class="viewMoreContainer">
-							<NcButton
-								type="secondary"
-								@click="toggleSchemaExpanded(schema.id)">
-								<template #icon>
-									<ChevronDown v-if="!isSchemaExpanded(schema.id)" :size="20" />
-									<ChevronUp v-else :size="20" />
-								</template>
-								{{ isSchemaExpanded(schema.id) 
-									? t('openregister', 'Show less') 
-									: t('openregister', 'View {count} more', { count: getRemainingPropertiesCount(schema) }) 
-								}}
-							</NcButton>
-						</div>
+									{{ isSchemaExpanded(schema.id)
+										? t('openregister', 'Show less')
+										: t('openregister', 'View {count} more', { count: getRemainingPropertiesCount(schema) })
+									}}
+								</NcButton>
+							</div>
 						</div>
 					</div>
 				</template>
@@ -245,30 +245,30 @@ import { schemaStore, navigationStore, configurationStore } from '../../store/st
 									<td>{{ schema.created ? new Date(schema.created).toLocaleDateString({day: '2-digit', month: '2-digit', year: 'numeric'}) + ', ' + new Date(schema.created).toLocaleTimeString({hour: '2-digit', minute: '2-digit', second: '2-digit'}) : '-' }}</td>
 									<td>{{ schema.updated ? new Date(schema.updated).toLocaleDateString({day: '2-digit', month: '2-digit', year: 'numeric'}) + ', ' + new Date(schema.updated).toLocaleTimeString({hour: '2-digit', minute: '2-digit', second: '2-digit'}) : '-' }}</td>
 									<td class="tableColumnActions">
-									<NcActions :primary="false">
-										<template #icon>
-											<DotsHorizontal :size="20" />
-										</template>
-										<NcActionButton 
-											v-tooltip="isManagedByExternalConfig(schema) ? 'Cannot edit: This schema is managed by external configuration ' + getManagingConfiguration(schema).title : ''"
-											close-after-click
-											:disabled="isManagedByExternalConfig(schema)"
-											@click="schemaStore.setSchemaItem(schema); navigationStore.setModal('editSchema')">
+										<NcActions :primary="false">
 											<template #icon>
-												<Pencil :size="20" />
+												<DotsHorizontal :size="20" />
 											</template>
-											Edit
-										</NcActionButton>
-										<NcActionButton v-tooltip="schema.stats?.objects?.total > 0 ? 'Cannot delete: objects are still attached' : ''"
-											close-after-click
-											:disabled="schema.stats?.objects?.total > 0"
-											@click="schemaStore.setSchemaItem(schema); navigationStore.setDialog('deleteSchema')">
-											<template #icon>
-												<TrashCanOutline :size="20" />
-											</template>
-											Delete
-										</NcActionButton>
-									</NcActions>
+											<NcActionButton
+												v-tooltip="isManagedByExternalConfig(schema) ? 'Cannot edit: This schema is managed by external configuration ' + getManagingConfiguration(schema).title : ''"
+												close-after-click
+												:disabled="isManagedByExternalConfig(schema)"
+												@click="schemaStore.setSchemaItem(schema); navigationStore.setModal('editSchema')">
+												<template #icon>
+													<Pencil :size="20" />
+												</template>
+												Edit
+											</NcActionButton>
+											<NcActionButton v-tooltip="schema.stats?.objects?.total > 0 ? 'Cannot delete: objects are still attached' : ''"
+												close-after-click
+												:disabled="schema.stats?.objects?.total > 0"
+												@click="schemaStore.setSchemaItem(schema); navigationStore.setDialog('deleteSchema')">
+												<template #icon>
+													<TrashCanOutline :size="20" />
+												</template>
+												Delete
+											</NcActionButton>
+										</NcActions>
 									</td>
 								</tr>
 							</tbody>
@@ -367,6 +367,17 @@ export default {
 			}
 		},
 	},
+	async mounted() {
+		try {
+			// Load schemas and configurations in parallel
+			await Promise.all([
+				schemaStore.refreshSchemaList(),
+				configurationStore.refreshConfigurationList(),
+			])
+		} catch (error) {
+			console.error('Failed to load data:', error)
+		}
+	},
 	methods: {
 		/**
 		 * Check if a property is required
@@ -438,11 +449,11 @@ export default {
 		getDisplayedProperties(schema) {
 			const sorted = this.sortedProperties(schema)
 			const entries = Object.entries(sorted)
-			
+
 			if (this.isSchemaExpanded(schema.id)) {
 				return sorted
 			}
-			
+
 			// Show only first 5 properties
 			return Object.fromEntries(entries.slice(0, 5))
 		},
@@ -474,9 +485,9 @@ export default {
 		 */
 		isInConfiguration(schema) {
 			if (!schema || !schema.id) return false
-			
+
 			return configurationStore.configurationList.some(
-				config => config.schemas && config.schemas.includes(schema.id)
+				config => config.schemas && config.schemas.includes(schema.id),
 			)
 		},
 		/**
@@ -487,9 +498,9 @@ export default {
 		 */
 		getManagingConfiguration(schema) {
 			if (!schema || !schema.id) return null
-			
+
 			return configurationStore.configurationList.find(
-				config => config.schemas && config.schemas.includes(schema.id)
+				config => config.schemas && config.schemas.includes(schema.id),
 			) || null
 		},
 		/**
@@ -502,7 +513,7 @@ export default {
 		isManagedByExternalConfig(schema) {
 			const config = this.getManagingConfiguration(schema)
 			if (!config) return false
-			
+
 			// External configurations: github, gitlab, url sources, or isLocal === false
 			return (config.sourceType && ['github', 'gitlab', 'url'].includes(config.sourceType)) || config.isLocal === false
 		},
@@ -516,7 +527,7 @@ export default {
 		isManagedByLocalConfig(schema) {
 			const config = this.getManagingConfiguration(schema)
 			if (!config) return false
-			
+
 			// Local configurations: sourceType === 'local' or 'manual', or isLocal === true
 			return config.sourceType === 'local' || config.sourceType === 'manual' || config.isLocal === true
 		},
@@ -541,17 +552,6 @@ export default {
 		onPageSizeChanged(pageSize) {
 			schemaStore.setPagination(1, pageSize)
 		},
-	},
-	async mounted() {
-		try {
-			// Load schemas and configurations in parallel
-			await Promise.all([
-				schemaStore.refreshSchemaList(),
-				configurationStore.refreshConfigurationList(),
-			])
-		} catch (error) {
-			console.error('Failed to load data:', error)
-		}
 	},
 }
 </script>

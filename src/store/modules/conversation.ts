@@ -74,46 +74,46 @@ export const useConversationStore = defineStore('conversation', {
 			}
 		},
 
-	/**
-	 * Set active conversation
-	 *
-	 * @param {object | null} conversation - The conversation to set as active
-	 */
-	setActiveConversation(conversation: TConversation | null) {
-		this.activeConversation = conversation ? new Conversation(conversation) : null
-		console.log('Active conversation set:', conversation?.uuid || 'null')
-	},
+		/**
+		 * Set active conversation
+		 *
+		 * @param {object | null} conversation - The conversation to set as active
+		 */
+		setActiveConversation(conversation: TConversation | null) {
+			this.activeConversation = conversation ? new Conversation(conversation) : null
+			console.log('Active conversation set:', conversation?.uuid || 'null')
+		},
 
-	/**
-	 * Set messages for active conversation
-	 *
-	 * @param {Array} messages - Array of messages
-	 */
-	setActiveMessages(messages: TMessage[]) {
-		this.activeConversationMessages = messages.map((msg) => new Message(msg))
-		console.log('Active conversation messages set:', messages.length, 'messages')
-	},
+		/**
+		 * Set messages for active conversation
+		 *
+		 * @param {Array} messages - Array of messages
+		 */
+		setActiveMessages(messages: TMessage[]) {
+			this.activeConversationMessages = messages.map((msg) => new Message(msg))
+			console.log('Active conversation messages set:', messages.length, 'messages')
+		},
 
-	/**
-	 * Add a message to the active conversation
-	 *
-	 * @param {object} message - Message to add
-	 */
-	addMessage(message: TMessage) {
-		const newMessage = new Message(message)
-		this.activeConversationMessages.push(newMessage)
-		console.log('Message added to active conversation')
-	},
+		/**
+		 * Add a message to the active conversation
+		 *
+		 * @param {object} message - Message to add
+		 */
+		addMessage(message: TMessage) {
+			const newMessage = new Message(message)
+			this.activeConversationMessages.push(newMessage)
+			console.log('Message added to active conversation')
+		},
 
-	/**
-	 * Set conversation list
-	 *
-	 * @param {Array} conversations - Array of conversations
-	 */
-	setConversationList(conversations: TConversation[]) {
-		this.conversationList = conversations.map((conv) => new Conversation(conv))
-		console.log('Conversation list set:', conversations.length, 'conversations')
-	},
+		/**
+		 * Set conversation list
+		 *
+		 * @param {Array} conversations - Array of conversations
+		 */
+		setConversationList(conversations: TConversation[]) {
+			this.conversationList = conversations.map((conv) => new Conversation(conv))
+			console.log('Conversation list set:', conversations.length, 'conversations')
+		},
 
 		/**
 		 * Refresh the conversation list from API
@@ -349,14 +349,14 @@ export const useConversationStore = defineStore('conversation', {
 			}
 		},
 
-	/**
-	 * Update a conversation
-	 *
-	 * @param {string} uuid - Conversation UUID
-	 * @param {object} updates - Fields to update
-	 * @return {Promise} Promise with updated conversation data
-	 */
-	async updateConversation(uuid: string, updates: Partial<TConversation>) {
+		/**
+		 * Update a conversation
+		 *
+		 * @param {string} uuid - Conversation UUID
+		 * @param {object} updates - Fields to update
+		 * @return {Promise} Promise with updated conversation data
+		 */
+		async updateConversation(uuid: string, updates: Partial<TConversation>) {
 			console.log('ConversationStore: Updating conversation', uuid)
 
 			this.loading = true
@@ -532,19 +532,19 @@ export const useConversationStore = defineStore('conversation', {
 
 		/**
 		 * Send a message in the active conversation
-	 *
-	 * @param {string} content - Message content
-	 * @param {string} conversationUuid - Optional conversation UUID (creates new if not provided)
-	 * @param {string} agentUuid - Optional agent UUID (required if creating new conversation)
-	 * @param {Array<string>} selectedViews - Array of selected view UUIDs for RAG context
-	 * @param {Array<string>} selectedTools - Array of selected tool UUIDs for agent capabilities
-	 * @param {object} ragSettings - RAG (Retrieval Augmented Generation) configuration settings
-	 * @param {boolean} ragSettings.includeObjects - Whether to include objects in RAG context
-	 * @param {boolean} ragSettings.includeFiles - Whether to include files in RAG context
-	 * @param {number} ragSettings.numSourcesFiles - Number of file sources to retrieve
-	 * @param {number} ragSettings.numSourcesObjects - Number of object sources to retrieve
-	 * @return {Promise} Promise with response data
-	 */
+		 *
+		 * @param {string} content - Message content
+		 * @param {string} conversationUuid - Optional conversation UUID (creates new if not provided)
+		 * @param {string} agentUuid - Optional agent UUID (required if creating new conversation)
+		 * @param {Array<string>} selectedViews - Array of selected view UUIDs for RAG context
+		 * @param {Array<string>} selectedTools - Array of selected tool UUIDs for agent capabilities
+		 * @param {object} ragSettings - RAG (Retrieval Augmented Generation) configuration settings
+		 * @param {boolean} ragSettings.includeObjects - Whether to include objects in RAG context
+		 * @param {boolean} ragSettings.includeFiles - Whether to include files in RAG context
+		 * @param {number} ragSettings.numSourcesFiles - Number of file sources to retrieve
+		 * @param {number} ragSettings.numSourcesObjects - Number of object sources to retrieve
+		 * @return {Promise} Promise with response data
+		 */
 		async sendMessage(
 			content: string,
 			conversationUuid?: string,
