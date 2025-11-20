@@ -276,7 +276,7 @@ class SolrEventListener implements IEventListener
     private function triggerSchemaReindex(int $schemaId): void
     {
         // This could be implemented to trigger a background job.
-        // for reindexing all objects with the updated schema
+        // for reindexing all objects with the updated schema.
         $this->logger->info('SolrEventListener: Schema reindex requested', [
             'schemaId' => $schemaId,
             'app' => 'openregister',

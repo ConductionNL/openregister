@@ -242,7 +242,7 @@ class DeletedController extends Controller
 
             // Calculate oldest deletion (placeholder for now).
             $oldestDays = 0;
-            // TODO: Calculate actual oldest deletion
+            // TODO: Calculate actual oldest deletion.
             return new JSONResponse(
                     [
                         'totalDeleted'    => $totalDeleted,
@@ -274,7 +274,7 @@ class DeletedController extends Controller
     public function topDeleters(): JSONResponse
     {
         try {
-            // TODO: Implement aggregation query to get top deleters from deleted objects
+            // TODO: Implement aggregation query to get top deleters from deleted objects.
             // For now, return mock data structure.
             $topDeleters = [
                 ['user' => 'admin', 'count' => 0],

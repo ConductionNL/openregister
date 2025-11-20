@@ -2403,7 +2403,7 @@ class SolrService
             $fields[$propertyName . '_ref'] = $value['value'];
         } else {
             // Complex object - store as JSON for now.
-            // TODO: Could be enhanced to map nested properties based on schema
+            // TODO: Could be enhanced to map nested properties based on schema.
             $fields[$propertyName . '_json'] = json_encode($value);
         }
 

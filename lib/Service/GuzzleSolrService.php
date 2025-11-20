@@ -9769,7 +9769,7 @@ class GuzzleSolrService
             if ($copyData && $sourceInfo['documentCount'] > 0) {
                 $this->logger->info('📋 Copying data from source to target collection');
                 
-                // Note: This is a placeholder for data copying
+                // Note: This is a placeholder for data copying.
                 // In production, you might want to use SOLR's backup/restore feature.
                 // or implement a more sophisticated data migration strategy.
                 

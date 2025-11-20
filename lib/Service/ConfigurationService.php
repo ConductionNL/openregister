@@ -322,9 +322,9 @@ class ConfigurationService
             ];
 
             // Add OpenRegister-specific metadata as an extension following OpenAPI spec.
-            // https://swagger.io/docs/specification/v3_0/openapi-extensions/
+            // https://swagger.io/docs/specification/v3_0/openapi-extensions/.
             // Standard OAS properties (title, description, version) are in the info section above.
-            // Note: Internal properties (autoUpdate, notificationGroups, owner, organisation, registers,
+            // Note: Internal properties (autoUpdate, notificationGroups, owner, organisation, registers,.
             // schemas, objects, views, agents, sources, applications) are excluded as they are.
             // instance-specific or automatically managed during import.
             $openApiSpec['x-openregister'] = [
@@ -1072,7 +1072,7 @@ class ConfigurationService
             }//end foreach
         }//end if
 
-        // NOTE: We do NOT build ID maps - we'll pass the actual objects to avoid organisation filter issues
+        // NOTE: We do NOT build ID maps - we'll pass the actual objects to avoid organisation filter issues.
         // When saveObject() receives Register/Schema objects, it skips the find() lookup entirely.
         // Process and import objects.
         if (isset($data['components']['objects']) === true && is_array($data['components']['objects']) === true) {
@@ -1318,7 +1318,7 @@ class ConfigurationService
                 }
 
                 // Set additional metadata from x-openregister if available.
-                // Note: Internal properties (autoUpdate, notificationGroups, owner, organisation)
+                // Note: Internal properties (autoUpdate, notificationGroups, owner, organisation).
                 // are not imported as they are instance-specific settings.
                 if (isset($xOpenregister['sourceType']) === true) {
                     $configuration->setSourceType($xOpenregister['sourceType']);
@@ -1394,7 +1394,7 @@ class ConfigurationService
             unset($data['id'], $data['uuid'], $data['organisation']);
 
             // Check if register already exists by slug.
-            // Note: The find method applies organisation filtering which may prevent finding
+            // Note: The find method applies organisation filtering which may prevent finding.
             // registers from imported configurations. We treat DoesNotExistException as.
             // "needs to be created" rather than an error.
             $existingRegister = null;
@@ -1684,7 +1684,7 @@ class ConfigurationService
             }//end if
 
             // Check if schema already exists by slug.
-            // Note: The find method applies organisation filtering which may prevent finding
+            // Note: The find method applies organisation filtering which may prevent finding.
             // schemas from imported configurations. We treat DoesNotExistException as.
             // "needs to be created" rather than an error.
             $existingSchema = null;
@@ -2080,7 +2080,7 @@ class ConfigurationService
                 }
 
                 // Set additional metadata from x-openregister if available.
-                // Note: Internal properties (autoUpdate, notificationGroups, owner, organisation)
+                // Note: Internal properties (autoUpdate, notificationGroups, owner, organisation).
                 // are not imported as they are instance-specific settings.
                 if (isset($xOpenregister['sourceType']) === true) {
                     $configuration->setSourceType($xOpenregister['sourceType']);

@@ -530,7 +530,7 @@ class SolrSetup
                         ]
                         );
 
-                    // Note: Propagation failure is not critical, so we continue but log the issue
+                        // Note: Propagation failure is not critical, so we continue but log the issue.
                     $this->logger->warning(
                         'ConfigSet propagation failed but continuing with setup',
                         [
@@ -552,7 +552,7 @@ class SolrSetup
                     ]
                     );
 
-                // Note: Propagation exception is not critical, so we continue but log the issue
+                    // Note: Propagation exception is not critical, so we continue but log the issue.
                 $this->logger->warning(
                     'Exception during configSet propagation but continuing with setup',
                     [

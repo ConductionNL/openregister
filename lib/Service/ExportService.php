@@ -290,7 +290,7 @@ class ExportService
             if (!str_starts_with($key, '@self.')) {
                 // These are JSON object property filters - not supported by findAll.
                 // For now, we'll skip them to get basic functionality working.
-                // TODO: Add support for JSON property filtering in ObjectEntityMapper
+                // TODO: Add support for JSON property filtering in ObjectEntityMapper.
                 continue;
             } else {
                 // Metadata filter - remove @self. prefix.

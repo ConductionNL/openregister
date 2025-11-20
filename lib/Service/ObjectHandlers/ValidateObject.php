@@ -273,7 +273,7 @@ class ValidateObject
     private function transformPropertyForOpenRegister(object $propertySchema): void
     {
         // Handle inversedBy relationships for validation.
-        // TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property
+                        // TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property.
         if (isset($propertySchema->inversedBy)) {
             // Check if this is an array property.
             if (isset($propertySchema->type) && $propertySchema->type === 'array') {
@@ -347,7 +347,7 @@ class ValidateObject
         }
 
         // Handle inversedBy relationships for array items.
-        // TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property
+                        // TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property.
         if (isset($itemsSchema->inversedBy)) {
             // For inversedBy array items, transform to UUID string validation.
             // But since this is an inversedBy relationship, the parent array should be empty.

@@ -350,7 +350,7 @@ class FileMapper extends QBMapper
             return $this->getFiles($nodeId);
         } else if ($count > 1) {
             // Multiple folders found with same UUID - pick the oldest one (lowest fileid).
-            // TODO: Add nightly cron job to cleanup orphaned folders and logs
+            // TODO: Add nightly cron job to cleanup orphaned folders and logs.
             usort(
                     $rows,
                     function ($a, $b) {

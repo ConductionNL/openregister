@@ -81,7 +81,7 @@ class Version1Date20250828120000 extends SimpleMigrationStep
         }
 
         // 2. Critical composite indexes for common filter combinations.
-        // Note: Using raw SQL for composite indexes to handle MySQL key length limits
+        // Note: Using raw SQL for composite indexes to handle MySQL key length limits.
         $connection  = \OC::$server->getDatabaseConnection();
         $tablePrefix = \OC::$server->getConfig()->getSystemValue('dbtableprefix', 'oc_');
         $tableName   = $tablePrefix.'openregister_objects';

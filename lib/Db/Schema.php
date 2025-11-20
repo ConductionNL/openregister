@@ -436,7 +436,7 @@ class Schema extends Entity implements JsonSerializable
         }
 
         // Validate and normalize inversedBy properties to ensure they are strings.
-        // TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property
+                        // TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property.
         $this->normalizeInversedByProperties();
 
         return $validator->validateProperties($this->properties);
@@ -582,7 +582,7 @@ class Schema extends Entity implements JsonSerializable
 
         foreach ($this->properties as $propertyName => $property) {
             // Handle regular object properties.
-            // TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property
+                        // TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property.
             if (isset($property['inversedBy']) === true) {
                 if (is_array($property['inversedBy']) === true && isset($property['inversedBy']['id']) === true) {
                     $this->properties[$propertyName]['inversedBy'] = $property['inversedBy']['id'];
@@ -593,7 +593,7 @@ class Schema extends Entity implements JsonSerializable
             }
 
             // Handle array items with inversedBy.
-            // TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property
+                        // TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property.
             if (isset($property['items']['inversedBy']) === true) {
                 if (is_array($property['items']['inversedBy']) === true && isset($property['items']['inversedBy']['id']) === true) {
                     $this->properties[$propertyName]['items']['inversedBy'] = $property['items']['inversedBy']['id'];

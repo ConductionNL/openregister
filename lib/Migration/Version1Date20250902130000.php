@@ -43,7 +43,7 @@ class Version1Date20250902130000 extends SimpleMigrationStep
         $table = $schema->getTable('openregister_objects');
 
         // Skip name index creation for now to avoid MySQL key length issues.
-        // TODO: Add name index after app is enabled with proper length prefix
+        // TODO: Add name index after app is enabled with proper length prefix.
         $output->info('Skipping name index creation to avoid MySQL key length issues');
 
         return $schema;
@@ -75,7 +75,7 @@ class Version1Date20250902130000 extends SimpleMigrationStep
         $connection = \OC::$server->getDatabaseConnection();
 
         // Skip complex index creation for now to avoid MySQL key length issues.
-        // TODO: Add indexes after app is enabled
+        // TODO: Add indexes after app is enabled.
         $output->info('Skipping complex index creation to avoid MySQL key length issues');
 
     }//end postSchemaChange()

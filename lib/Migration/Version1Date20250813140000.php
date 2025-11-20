@@ -76,7 +76,7 @@ class Version1Date20250813140000 extends SimpleMigrationStep
         }
 
         // Skip complex index creation for now to avoid MySQL key length issues.
-        // TODO: Add indexes after app is enabled
+        // TODO: Add indexes after app is enabled.
         $output->info('Skipping complex index creation to avoid MySQL key length issues');
 
         return $schema;

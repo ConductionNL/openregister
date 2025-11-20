@@ -853,7 +853,7 @@ class SolrController extends Controller
             }
 
             // Fetch objects with conditions.
-            // Note: This is a simplified example - adjust based on actual ObjectEntityMapper methods
+            // Note: This is a simplified example - adjust based on actual ObjectEntityMapper methods.
             $objects = $objectMapper->findAll($limit, $offset);
 
             if (empty($objects)) {

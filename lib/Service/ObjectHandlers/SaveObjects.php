@@ -265,7 +265,7 @@ class SaveObjects
         // Bulk save operation starting.
 
         // Initialize result arrays for different outcomes.
-        // TODO: Replace 'skipped' with 'unchanged' throughout codebase - "unchanged" is more descriptive
+                // TODO: Replace 'skipped' with 'unchanged' throughout codebase - "unchanged" is more descriptive.
         // and tells WHY an object was skipped (because content was unchanged).
         $result = [
             'saved'      => [],
@@ -1018,7 +1018,7 @@ class SaveObjects
                 $this->saveHandler->hydrateObjectMetadata($tempEntity, $schemaObj);
                 
                 // AUTO-PUBLISH LOGIC: Only set published for NEW objects if not already set from CSV.
-                // Note: For updates to existing objects, published status should be preserved unless explicitly changed
+                // Note: For updates to existing objects, published status should be preserved unless explicitly changed.
                 $config = $schemaObj->getConfiguration();
                 $isNewObject = empty($selfData['uuid']) || !isset($selfData['uuid']);
                 if (isset($config['autoPublish']) && $config['autoPublish'] === true && $isNewObject) {
@@ -2004,13 +2004,13 @@ class SaveObjects
                     throw new \InvalidArgumentException('No object data found for validation');
                 }
                 
-                // TODO: Fix validation integration - temporarily skip validation to test other functionality
+                // TODO: Fix validation integration - temporarily skip validation to test other functionality.
                 // The validateObject method returns a ValidationResult object, not an array.
                 // For now, assume all objects are valid to test the bulk processing improvements.
                 $validObjects[] = $objectData;
                 
                 /*
-                // FIXME: Implement proper validation result handling
+                // FIXME: Implement proper validation result handling.
                 $validation = $this->validateHandler->validateObject($data, $schema);
                 
                 // ValidationResult object has methods like isValid() and getErrors().

@@ -971,7 +971,7 @@ class ObjectCacheService
             try {
                 // Since we can't easily pattern-match keys in distributed cache,.
                 // we clear all search cache entries for now (nuclear approach).
-                // TODO: Implement more targeted cache clearing with schema-specific prefixes
+                // TODO: Implement more targeted cache clearing with schema-specific prefixes.
                 $this->queryCache->clear();
 
                 $this->logger->debug(
@@ -1609,7 +1609,7 @@ class ObjectCacheService
                 $name = $object->getName() ?? $object->getUuid();
 
                 // Cache by UUID only (not by database ID).
-                // Note: If an organisation has the same UUID, it will remain (organisations loaded first)
+                // Note: If an organisation has the same UUID, it will remain (organisations loaded first).
                 if ($object->getUuid() && !isset($this->nameCache[$object->getUuid()])) {
                     $this->nameCache[$object->getUuid()] = $name;
                     $loadedCount++;

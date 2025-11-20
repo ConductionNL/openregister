@@ -396,7 +396,7 @@ class ChatService
 
             return [
                 'message' => $aiMsgEntity->jsonSerialize(),
-                // Note: sources are already included in message->sources
+                // Note: sources are already included in message->sources.
                 'title'   => $conversation->getTitle(),
             ];
         } catch (\Exception $e) {
@@ -576,7 +576,7 @@ class ChatService
                     continue;
                 }
 
-                // TODO: Apply view filters here when view filtering is implemented
+                // TODO: Apply view filters here when view filtering is implemented.
                 // For now, we'll skip view filtering and implement it later.
                 // Extract source information.
                 $source = [
@@ -1590,7 +1590,7 @@ class ChatService
     {
         $url = rtrim($baseUrl, '/').'/chat/completions';
 
-        // Note: Function calling with Fireworks AI is not yet implemented
+            // Note: Function calling with Fireworks AI is not yet implemented.
         // Functions will be ignored for Fireworks provider.
         if (!empty($functions)) {
             $this->logger->warning(
