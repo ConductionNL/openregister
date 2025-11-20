@@ -39,6 +39,16 @@ use Symfony\Component\Uid\Uuid;
  *
  * @package OCA\OpenRegister\Db
  */
+ *
+ * @method Organisation insert(Entity $entity)
+ * @method Organisation update(Entity $entity)
+ * @method Organisation insertOrUpdate(Entity $entity)
+ * @method Organisation delete(Entity $entity)
+ * @method Organisation find(int|string $id)
+ * @method Organisation findEntity(IQueryBuilder $query)
+ * @method Organisation[] findAll(int|null $limit = null, int|null $offset = null)
+ * @method Organisation[] findEntities(IQueryBuilder $query)
+ */
 class OrganisationMapper extends QBMapper
 {
 

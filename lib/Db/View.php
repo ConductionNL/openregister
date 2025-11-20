@@ -29,6 +29,29 @@ use OCP\AppFramework\Db\Entity;
  * Manages view-related data and operations for saved search configurations
  *
  * @package OCA\OpenRegister\Db
+ *
+ * @method string|null getUuid()
+ * @method void setUuid(?string $uuid)
+ * @method string|null getName()
+ * @method void setName(?string $name)
+ * @method string|null getDescription()
+ * @method void setDescription(?string $description)
+ * @method string|null getOwner()
+ * @method void setOwner(?string $owner)
+ * @method string|null getOrganisation()
+ * @method void setOrganisation(?string $organisation)
+ * @method bool getIsPublic()
+ * @method void setIsPublic(bool $isPublic)
+ * @method bool getIsDefault()
+ * @method void setIsDefault(bool $isDefault)
+ * @method array|null getQuery()
+ * @method void setQuery(?array $query)
+ * @method array|null getFavoritedBy()
+ * @method void setFavoritedBy(?array $favoritedBy)
+ * @method DateTime|null getCreated()
+ * @method void setCreated(?DateTime $created)
+ * @method DateTime|null getUpdated()
+ * @method void setUpdated(?DateTime $updated)
  */
 class View extends Entity implements JsonSerializable
 {

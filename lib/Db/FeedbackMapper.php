@@ -14,6 +14,16 @@ use OCP\IDBConnection;
 /**
  * @template-extends QBMapper<Feedback>
  */
+ *
+ * @method Feedback insert(Entity $entity)
+ * @method Feedback update(Entity $entity)
+ * @method Feedback insertOrUpdate(Entity $entity)
+ * @method Feedback delete(Entity $entity)
+ * @method Feedback find(int|string $id)
+ * @method Feedback findEntity(IQueryBuilder $query)
+ * @method Feedback[] findAll(int|null $limit = null, int|null $offset = null)
+ * @method Feedback[] findEntities(IQueryBuilder $query)
+ */
 class FeedbackMapper extends QBMapper
 {
 

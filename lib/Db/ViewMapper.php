@@ -36,6 +36,16 @@ use Symfony\Component\Uid\Uuid;
  *
  * @package OCA\OpenRegister\Db
  */
+ *
+ * @method View insert(Entity $entity)
+ * @method View update(Entity $entity)
+ * @method View insertOrUpdate(Entity $entity)
+ * @method View delete(Entity $entity)
+ * @method View find(int|string $id)
+ * @method View findEntity(IQueryBuilder $query)
+ * @method View[] findAll(int|null $limit = null, int|null $offset = null)
+ * @method View[] findEntities(IQueryBuilder $query)
+ */
 class ViewMapper extends QBMapper
 {
     use MultiTenancyTrait;

@@ -18,6 +18,16 @@ use OCP\IDBConnection;
 /**
  * Class ObjectTextMapper
  */
+ *
+ * @method ObjectText insert(Entity $entity)
+ * @method ObjectText update(Entity $entity)
+ * @method ObjectText insertOrUpdate(Entity $entity)
+ * @method ObjectText delete(Entity $entity)
+ * @method ObjectText find(int|string $id)
+ * @method ObjectText findEntity(IQueryBuilder $query)
+ * @method ObjectText[] findAll(int|null $limit = null, int|null $offset = null)
+ * @method ObjectText[] findEntities(IQueryBuilder $query)
+ */
 class ObjectTextMapper extends QBMapper
 {
 

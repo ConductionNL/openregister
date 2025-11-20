@@ -40,6 +40,15 @@ use OCA\OpenRegister\Db\ObjectEntityMapper;
  * Mapper for Schema entities with multi-tenancy and RBAC support.
  *
  * @package OCA\OpenRegister\Db
+ *
+ * @method Schema insert(Entity $entity)
+ * @method Schema update(Entity $entity)
+ * @method Schema insertOrUpdate(Entity $entity)
+ * @method Schema delete(Entity $entity)
+ * @method Schema find(int|string $id)
+ * @method Schema findEntity(IQueryBuilder $query)
+ * @method Schema[] findAll(int|null $limit = null, int|null $offset = null)
+ * @method Schema[] findEntities(IQueryBuilder $query)
  */
 class SchemaMapper extends QBMapper
 {

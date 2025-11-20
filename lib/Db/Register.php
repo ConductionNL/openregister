@@ -29,6 +29,41 @@ use OCP\AppFramework\Db\Entity;
  * Manages register-related data and operations
  *
  * @package OCA\OpenRegister\Db
+ *
+ * @method string|null getUuid()
+ * @method void setUuid(?string $uuid)
+ * @method string|null getSlug()
+ * @method void setSlug(?string $slug)
+ * @method string|null getTitle()
+ * @method void setTitle(?string $title)
+ * @method string|null getVersion()
+ * @method void setVersion(?string $version)
+ * @method string|null getDescription()
+ * @method void setDescription(?string $description)
+ * @method array|null getSchemas()
+ * @method void setSchemas(?array $schemas)
+ * @method string|null getSource()
+ * @method void setSource(?string $source)
+ * @method string|null getTablePrefix()
+ * @method void setTablePrefix(?string $tablePrefix)
+ * @method string|null getFolder()
+ * @method void setFolder(?string $folder)
+ * @method DateTime|null getUpdated()
+ * @method void setUpdated(?DateTime $updated)
+ * @method DateTime|null getCreated()
+ * @method void setCreated(?DateTime $created)
+ * @method string|null getOwner()
+ * @method void setOwner(?string $owner)
+ * @method string|null getApplication()
+ * @method void setApplication(?string $application)
+ * @method string|null getOrganisation()
+ * @method void setOrganisation(?string $organisation)
+ * @method array|null getAuthorization()
+ * @method void setAuthorization(?array $authorization)
+ * @method array|null getGroups()
+ * @method void setGroups(?array $groups)
+ * @method DateTime|null getDeleted()
+ * @method void setDeleted(?DateTime $deleted)
  */
 class Register extends Entity implements JsonSerializable
 {

@@ -41,6 +41,16 @@ use OCP\IUserSession;
  *
  * @psalm-suppress MissingTemplateParam
  */
+ *
+ * @method Configuration insert(Entity $entity)
+ * @method Configuration update(Entity $entity)
+ * @method Configuration insertOrUpdate(Entity $entity)
+ * @method Configuration delete(Entity $entity)
+ * @method Configuration find(int|string $id)
+ * @method Configuration findEntity(IQueryBuilder $query)
+ * @method Configuration[] findAll(int|null $limit = null, int|null $offset = null)
+ * @method Configuration[] findEntities(IQueryBuilder $query)
+ */
 class ConfigurationMapper extends QBMapper
 {
     use MultiTenancyTrait;
