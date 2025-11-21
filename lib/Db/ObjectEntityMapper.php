@@ -460,7 +460,7 @@ class ObjectEntityMapper extends QBMapper
                     'action'      => $action,
                     'object_uuid' => $object->getUuid(),
                     'schema_uuid' => $schemaUuid,
-                    'result'      => $exceptionResult ? 'allowed' : 'denied',
+                    'result'      => $exceptionResult === true ? 'allowed' : 'denied',
                 ]);
                 return $exceptionResult;
             }
@@ -746,7 +746,10 @@ class ObjectEntityMapper extends QBMapper
         }
         // Get current user to check if they're admin.
         $user = $this->userSession->getUser();
-        $userId = $user ? $user->getUID() : null;
+        $userId = null;
+        if ($user !== null) {
+            $userId = $user->getUID();
+        }
 
         if ($userId === null) {
             // For unauthenticated requests, no automatic published object access - use explicit published filter.
@@ -831,7 +834,10 @@ class ObjectEntityMapper extends QBMapper
             }
         }
 
-        $organizationColumn = $objectTableAlias ? $objectTableAlias . '.organisation' : 'organisation';
+        $organizationColumn = 'organisation';
+        if ($objectTableAlias !== null && $objectTableAlias !== '') {
+            $organizationColumn = $objectTableAlias . '.organisation';
+        }
 
         // Build organization filter conditions.
         $orgConditions = $qb->expr()->orX();
@@ -1500,7 +1506,7 @@ class ObjectEntityMapper extends QBMapper
             'queryKeys' => array_keys($query),
             'rbac' => $rbac,
             'multi' => $multi,
-            'activeOrg' => $activeOrganisationUuid ? 'set' : 'null'
+            'activeOrg' => $activeOrganisationUuid !== null ? 'set' : 'null'
         ]);
 
         // Extract options from query (prefixed with _).
@@ -1675,13 +1681,19 @@ class ObjectEntityMapper extends QBMapper
             $this->logger->info('🏢 ORG FILTERING COMPLETED', [
                 'orgTime' => $perfTimings['org_filtering'] . 'ms',
                 'multiEnabled' => $multi,
-                'hasActiveOrg' => $activeOrganisationUuid ? 'yes' : 'no'
+                'hasActiveOrg' => $activeOrganisationUuid !== null ? 'yes' : 'no'
             ]);
         }
 
         // Handle basic filters - skip register/schema if they're in metadata filters (to avoid double filtering).
-        $basicRegister = isset($metadataFilters['register']) ? null : $register;
-        $basicSchema = isset($metadataFilters['schema']) ? null : $schema;
+        $basicRegister = $register;
+        if (isset($metadataFilters['register']) === true) {
+            $basicRegister = null;
+        }
+        $basicSchema = $schema;
+        if (isset($metadataFilters['schema']) === true) {
+            $basicSchema = null;
+        }
         $bypassPublishedFilter = $this->shouldPublishedObjectsBypassMultiTenancy();
         $this->applyBasicFilters($queryBuilder, $includeDeleted, $published, $basicRegister, $basicSchema, 'o', $bypassPublishedFilter);
 
@@ -1880,8 +1892,14 @@ class ObjectEntityMapper extends QBMapper
             ->from('openregister_objects', 'o');
 
         // Handle basic filters - skip register/schema if they're in metadata filters (to avoid double filtering).
-        $basicRegister = isset($metadataFilters['register']) ? null : $register;
-        $basicSchema = isset($metadataFilters['schema']) ? null : $schema;
+        $basicRegister = $register;
+        if (isset($metadataFilters['register']) === true) {
+            $basicRegister = null;
+        }
+        $basicSchema = $schema;
+        if (isset($metadataFilters['schema']) === true) {
+            $basicSchema = null;
+        }
         $bypassPublishedFilter = $this->shouldPublishedObjectsBypassMultiTenancy();
         $this->applyBasicFilters($queryBuilder, $includeDeleted, $published, $basicRegister, $basicSchema, 'o', $bypassPublishedFilter);
 
@@ -2013,8 +2031,14 @@ class ObjectEntityMapper extends QBMapper
             ->from('openregister_objects', 'o');
 
         // Handle basic filters - skip register/schema if they're in metadata filters.
-        $basicRegister = isset($metadataFilters['register']) ? null : $register;
-        $basicSchema = isset($metadataFilters['schema']) ? null : $schema;
+        $basicRegister = $register;
+        if (isset($metadataFilters['register']) === true) {
+            $basicRegister = null;
+        }
+        $basicSchema = $schema;
+        if (isset($metadataFilters['schema']) === true) {
+            $basicSchema = null;
+        }
         $bypassPublishedFilter = $this->shouldPublishedObjectsBypassMultiTenancy();
         $this->applyBasicFilters($queryBuilder, $includeDeleted, $published, $basicRegister, $basicSchema, 'o', $bypassPublishedFilter);
 
@@ -2100,7 +2124,10 @@ class ObjectEntityMapper extends QBMapper
         bool $bypassPublishedFilter = false
     ): void {
         // By default, only include objects where 'deleted' is NULL unless $includeDeleted is true.
-        $deletedColumn = $tableAlias ? $tableAlias . '.deleted' : 'deleted';
+        $deletedColumn = 'deleted';
+        if ($tableAlias !== null && $tableAlias !== '') {
+            $deletedColumn = $tableAlias . '.deleted';
+        }
         if ($includeDeleted === false) {
             $queryBuilder->andWhere($queryBuilder->expr()->isNull($deletedColumn));
         }
@@ -2110,8 +2137,12 @@ class ObjectEntityMapper extends QBMapper
         // will be included via the organization filter bypass logic.
         if ($published === true && !$bypassPublishedFilter) {
             $now = (new \DateTime())->format('Y-m-d H:i:s');
-            $publishedColumn = $tableAlias ? $tableAlias . '.published' : 'published';
-            $depublishedColumn = $tableAlias ? $tableAlias . '.depublished' : 'depublished';
+            $publishedColumn = 'published';
+            $depublishedColumn = 'depublished';
+            if ($tableAlias !== null && $tableAlias !== '') {
+                $publishedColumn = $tableAlias . '.published';
+                $depublishedColumn = $tableAlias . '.depublished';
+            }
             $queryBuilder->andWhere(
                 $queryBuilder->expr()->andX(
                     $queryBuilder->expr()->isNotNull($publishedColumn),
@@ -2126,7 +2157,10 @@ class ObjectEntityMapper extends QBMapper
 
         // Add register filter if provided.
         if ($register !== null) {
-            $registerColumn = $tableAlias ? $tableAlias . '.register' : 'register';
+            $registerColumn = 'register';
+            if ($tableAlias !== null && $tableAlias !== '') {
+                $registerColumn = $tableAlias . '.register';
+            }
             if (is_array($register) === true) {
                 // Handle array of register IDs.
                 $queryBuilder->andWhere(
@@ -2147,7 +2181,10 @@ class ObjectEntityMapper extends QBMapper
 
         // Add schema filter if provided.
         if ($schema !== null) {
-            $schemaColumn = $tableAlias ? $tableAlias . '.schema' : 'schema';
+            $schemaColumn = 'schema';
+            if ($tableAlias !== null && $tableAlias !== '') {
+                $schemaColumn = $tableAlias . '.schema';
+            }
             if (is_array($schema) === true) {
                 // Handle array of schema IDs.
                 $queryBuilder->andWhere(
@@ -2219,7 +2256,10 @@ class ObjectEntityMapper extends QBMapper
                     continue;
                 }
             }
-            return empty($processedValues) === false ? $processedValues : null;
+            if (empty($processedValues) === false) {
+                return $processedValues;
+            }
+            return null;
         }
 
         // Handle single values.
