@@ -201,7 +201,7 @@ class SourcesController extends Controller
         unset($data['created']);
 
         // Update the source with the provided data.
-        return new JSONResponse($this->sourceMapper->updateFromArray(id: (int) $id, object: $data));
+        return new JSONResponse($this->sourceMapper->updateFromArray(id: $id, object: $data));
 
     }//end update()
 
@@ -243,7 +243,7 @@ class SourcesController extends Controller
     public function destroy(int $id): JSONResponse
     {
         // Find the source by ID and delete it.
-        $this->sourceMapper->delete($this->sourceMapper->find((int) $id));
+        $this->sourceMapper->delete($this->sourceMapper->find($id));
 
         // Return an empty response.
         return new JSONResponse([]);

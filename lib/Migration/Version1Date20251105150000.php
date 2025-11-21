@@ -1,9 +1,8 @@
 <?php
-
-declare(strict_types=1);
-
-/*
- * Create Conversations and Messages Tables
+/**
+ * OpenRegister Migration Version1Date20251105150000
+ *
+ * Create Conversations and Messages Tables.
  *
  * This migration creates the conversations and messages tables for AI chat functionality,
  * and adds new columns to the agents table for view-based filtering and access control.
@@ -19,6 +18,8 @@ declare(strict_types=1);
  *
  * @link https://www.OpenRegister.nl
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Migration;
 
@@ -54,14 +55,12 @@ class Version1Date20251105150000 extends SimpleMigrationStep
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+        // @var ISchemaWrapper $schema
         $schema  = $schemaClosure();
         $updated = false;
 
         // Create conversations table.
-        if (!$schema->hasTable('openregister_conversations')) {
+        if ($schema->hasTable('openregister_conversations') === false) {
             $output->info('💬 Creating conversations table...');
 
             $table = $schema->createTable('openregister_conversations');
@@ -190,7 +189,7 @@ class Version1Date20251105150000 extends SimpleMigrationStep
         }//end if
 
         // Create messages table.
-        if (!$schema->hasTable('openregister_messages')) {
+        if ($schema->hasTable('openregister_messages') === false) {
             $output->info('💬 Creating messages table...');
 
             $table = $schema->createTable('openregister_messages');
@@ -291,13 +290,13 @@ class Version1Date20251105150000 extends SimpleMigrationStep
         }//end if
 
         // Update agents table with new columns.
-        if ($schema->hasTable('openregister_agents')) {
+        if ($schema->hasTable('openregister_agents') === true) {
             $output->info('🤖 Updating agents table with new columns...');
 
             $table = $schema->getTable('openregister_agents');
 
             // Add views column (JSON array of view UUIDs).
-            if (!$table->hasColumn('views')) {
+            if ($table->hasColumn('views') === false) {
                 $table->addColumn(
                         'views',
                         Types::TEXT,
@@ -312,7 +311,7 @@ class Version1Date20251105150000 extends SimpleMigrationStep
             }
 
             // Add search_files column.
-            if (!$table->hasColumn('search_files')) {
+            if ($table->hasColumn('search_files') === false) {
                 $table->addColumn(
                         'search_files',
                         Types::BOOLEAN,
@@ -327,7 +326,7 @@ class Version1Date20251105150000 extends SimpleMigrationStep
             }
 
             // Add search_objects column.
-            if (!$table->hasColumn('search_objects')) {
+            if ($table->hasColumn('search_objects') === false) {
                 $table->addColumn(
                         'search_objects',
                         Types::BOOLEAN,
@@ -342,7 +341,7 @@ class Version1Date20251105150000 extends SimpleMigrationStep
             }
 
             // Add is_private column.
-            if (!$table->hasColumn('is_private')) {
+            if ($table->hasColumn('is_private') === false) {
                 $table->addColumn(
                         'is_private',
                         Types::BOOLEAN,
@@ -357,7 +356,7 @@ class Version1Date20251105150000 extends SimpleMigrationStep
             }
 
             // Add invited_users column (JSON array of user IDs).
-            if (!$table->hasColumn('invited_users')) {
+            if ($table->hasColumn('invited_users') === false) {
                 $table->addColumn(
                         'invited_users',
                         Types::TEXT,
@@ -374,7 +373,11 @@ class Version1Date20251105150000 extends SimpleMigrationStep
             $output->info('✅ Agents table updated');
         }//end if
 
-        return $updated === true ? $schema : null;
+        if ($updated === true) {
+            return $schema;
+        }
+
+        return null;
 
     }//end changeSchema()
 

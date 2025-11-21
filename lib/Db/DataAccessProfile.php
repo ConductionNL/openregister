@@ -23,6 +23,8 @@ use JsonSerializable;
 use OCP\AppFramework\Db\Entity;
 
 /**
+ * DataAccessProfile entity class.
+ *
  * @method string|null getUuid()
  * @method void setUuid(?string $uuid)
  * @method string|null getName()
@@ -40,36 +42,51 @@ class DataAccessProfile extends Entity implements JsonSerializable
 {
 
     /**
+     * UUID.
+     *
      * @var string|null
      */
     protected ?string $uuid = null;
 
     /**
+     * Name.
+     *
      * @var string|null
      */
     protected ?string $name = null;
 
     /**
+     * Description.
+     *
      * @var string|null
      */
     protected ?string $description = null;
 
     /**
+     * Permissions.
+     *
      * @var array|null
      */
     protected ?array $permissions = [];
 
     /**
+     * Created timestamp.
+     *
      * @var DateTime|null
      */
     protected ?DateTime $created = null;
 
     /**
+     * Updated timestamp.
+     *
      * @var DateTime|null
      */
     protected ?DateTime $updated = null;
 
 
+    /**
+     * Constructor.
+     */
     public function __construct()
     {
         $this->addType('uuid', 'string');
@@ -82,16 +99,31 @@ class DataAccessProfile extends Entity implements JsonSerializable
     }//end __construct()
 
 
+    /**
+     * JSON serialization.
+     *
+     * @return array<string,mixed>
+     */
     public function jsonSerialize(): array
     {
+        $created = null;
+        if ($this->created !== null) {
+            $created = $this->created->format('c');
+        }
+
+        $updated = null;
+        if ($this->updated !== null) {
+            $updated = $this->updated->format('c');
+        }
+
         return [
             'id'          => $this->id,
             'uuid'        => $this->uuid,
             'name'        => $this->name,
             'description' => $this->description,
             'permissions' => $this->permissions,
-            'created'     => $this->created ? $this->created->format('c') : null,
-            'updated'     => $this->updated ? $this->updated->format('c') : null,
+            'created'     => $created,
+            'updated'     => $updated,
         ];
 
     }//end jsonSerialize()

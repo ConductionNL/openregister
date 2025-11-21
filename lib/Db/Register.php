@@ -41,7 +41,7 @@ use OCP\AppFramework\Db\Entity;
  * @method string|null getDescription()
  * @method void setDescription(?string $description)
  * @method array|null getSchemas()
- * @method void setSchemas(?array $schemas)
+ * @method static setSchemas(array|string $schemas)
  * @method string|null getSource()
  * @method void setSource(?string $source)
  * @method string|null getTablePrefix()
@@ -475,6 +475,7 @@ class Register extends Entity implements JsonSerializable
         }
 
         // Final fallback with ID.
+        // Suppress redundant property initialization check.
         // @psalm-suppress RedundantPropertyInitializationCheck.
         return 'Register #'.($this->id ?? 'unknown');
 

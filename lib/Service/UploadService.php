@@ -75,8 +75,8 @@ class UploadService
      * @param array $data All request params.
      *
      * @return array|JSONResponse A PHP array with the uploaded json data or a JSONResponse in case of an error.
-     * @throws Exception
-     * @throws GuzzleException
+     * @throws \Exception
+     * @throws \GuzzleHttp\Exception\GuzzleException
      */
     public function getUploadedJson(array $data): array | JSONResponse
     {
@@ -99,6 +99,7 @@ class UploadService
 
         if (empty($data['file']) === false) {
             // @todo use .json file content from POST as $json.
+            // @psalm-suppress NoValue - getJSONfromFile() always throws, but this is intentional for now.
             return $this->getJSONfromFile();
         }
 
@@ -173,7 +174,7 @@ class UploadService
      *
      * @return never The parsed JSON content from the file or an error response.
      *
-     * @throws Exception If the file cannot be read or its content cannot be parsed as JSON.
+     * @throws \Exception If the file cannot be read or its content cannot be parsed as JSON.
      */
     private function getJSONfromFile(): never
     {
@@ -210,14 +211,14 @@ class UploadService
                         // None found so, Create a new schema.
                         $schema = new Schema();
                         $schema->setTitle($schemaName);
-                        $schema->setUuid(Uuid::v4());
+                        $schema->setUuid((string) Uuid::v4());
                         $this->schemaMapper->insert($schema);
                     }
                 } catch (DoesNotExistException $e) {
                     // None found so, Create a new schema.
                     $schema = new Schema();
                     $schema->setTitle($schemaName);
-                    $schema->setUuid(Uuid::v4());
+                    $schema->setUuid((string) Uuid::v4());
                     $this->schemaMapper->insert($schema);
                 }
             }//end if

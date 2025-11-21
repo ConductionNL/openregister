@@ -60,9 +60,9 @@ class OrganisationMapper extends QBMapper
     /**
      * OrganisationMapper constructor
      *
-     * @param IDBConnection      $db              Database connection
-     * @param LoggerInterface    $logger          Logger interface
-     * @param IEventDispatcher   $eventDispatcher Event dispatcher
+     * @param IDBConnection    $db              Database connection
+     * @param LoggerInterface  $logger          Logger interface
+     * @param IEventDispatcher $eventDispatcher Event dispatcher
      */
     public function __construct(
         IDBConnection $db,
@@ -178,12 +178,13 @@ class OrganisationMapper extends QBMapper
      * This method performs a single database query to fetch multiple organisations,
      * significantly improving performance compared to individual queries.
      *
-     * @param  array $uuids Array of organisation UUIDs to find
+     * @param array $uuids Array of organisation UUIDs to find
+     *
      * @return array Associative array of UUID => Organisation entity
      */
     public function findMultipleByUuid(array $uuids): array
     {
-        if (empty($uuids)) {
+        if (empty($uuids) === true) {
             return [];
         }
 
@@ -197,7 +198,8 @@ class OrganisationMapper extends QBMapper
         $result        = $qb->execute();
         $organisations = [];
 
-        while ($row = $result->fetch()) {
+        $row = $result->fetch();
+        while ($row !== false) {
             $organisation = new Organisation();
             $organisation = $organisation->fromRow($row);
             $organisations[$row['uuid']] = $organisation;
@@ -404,7 +406,7 @@ class OrganisationMapper extends QBMapper
         }
 
         // Check for uniqueness.
-        if ($this->uuidExists($uuid, $organisation->getId())) {
+        if ($this->uuidExists($uuid, $organisation->getId()) === true) {
             throw new \Exception('UUID already exists. Please use a different UUID.');
         }
 
@@ -572,13 +574,13 @@ class OrganisationMapper extends QBMapper
     /**
      * Find the default organisation for a specific user
      *
-     * @deprecated Use OrganisationService::getDefaultOrganisation() instead
-     *
      * @param string $userId The user ID
      *
      * @return Organisation The default organisation for the user
      *
      * @throws DoesNotExistException If no default organisation found for user
+     *
+     * @deprecated Use OrganisationService::getDefaultOrganisation() instead
      */
     public function findDefaultForUser(string $userId): Organisation
     {
@@ -611,7 +613,7 @@ class OrganisationMapper extends QBMapper
      * @param string $uuid        Specific UUID to use
      * @param string $owner       Owner user ID
      * @param array  $users       Array of user IDs
-     * @param bool   $isDefault   Whether this is the default organisation
+     * @param bool   $isDefault
      *
      * @return Organisation The created organisation
      *
@@ -742,8 +744,11 @@ class OrganisationMapper extends QBMapper
             $result = $stmt->execute();
 
             $parents = [];
-            while ($row = $result->fetch()) {
+            $row = $result->fetch();
+            while ($row !== false) {
                 $parents[] = $row['uuid'];
+
+                $row = $result->fetch();
             }
 
             $this->logger->debug(
@@ -820,8 +825,11 @@ class OrganisationMapper extends QBMapper
             $result = $stmt->execute();
 
             $children = [];
-            while ($row = $result->fetch()) {
+            $row = $result->fetch();
+            while ($row !== false) {
                 $children[] = $row['uuid'];
+
+                $row = $result->fetch();
             }
 
             $this->logger->debug(
@@ -886,7 +894,7 @@ class OrganisationMapper extends QBMapper
 
         // Check for circular reference: if the new parent has this org in its parent chain.
         $parentChain = $this->findParentChain($newParentUuid);
-        if (in_array($organisationUuid, $parentChain)) {
+        if (in_array($organisationUuid, $parentChain) === true) {
             throw new \Exception(
                 'Circular reference detected: The new parent organisation is already a descendant of this organisation.'
             );
@@ -933,7 +941,7 @@ class OrganisationMapper extends QBMapper
      */
     private function getMaxDepthInChain(array $childrenUuids, string $rootUuid): int
     {
-        if (empty($childrenUuids)) {
+        if (empty($childrenUuids) === true) {
             return 0;
         }
 
@@ -977,7 +985,7 @@ class OrganisationMapper extends QBMapper
         $depth   = 0;
         $current = $nodeUuid;
 
-        while (isset($parentMap[$current]) && $current !== $rootUuid && $depth < 20) {
+        while (isset($parentMap[$current]) === true && $current !== $rootUuid && $depth < 20) {
             $depth++;
             $current = $parentMap[$current];
         }

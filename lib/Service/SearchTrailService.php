@@ -138,7 +138,15 @@ class SearchTrailService
      *
      * @return (bool|int|string)[] Cleanup results
      *
-     * @psalm-return array{success: bool, deleted: 0|1, error?: string, message: 'Self-clearing operation failed'|'Self-clearing: deleted expired search trail entries'|'Self-clearing: no expired entries to delete', cleanup_date?: string}
+     * @psalm-return array{
+     *     success: bool,
+     *     deleted: 0|1,
+     *     error?: string,
+     *     message: 'Self-clearing operation failed'|
+     *              'Self-clearing: deleted expired search trail entries'|
+     *              'Self-clearing: no expired entries to delete',
+     *     cleanup_date?: string
+     * }
      */
     public function clearExpiredSearchTrails(): array
     {
@@ -217,7 +225,7 @@ class SearchTrailService
             'results' => $enrichedTrails,
             'total'   => $total,
             'page'    => $processedConfig['page'],
-            /** @psalm-suppress UndefinedMethod */
+            // @psalm-suppress UndefinedMethod
             'pages'   => $this->calculatePages($total, $processedConfig['limit']),
             'limit'   => $processedConfig['limit'],
             'offset'  => $processedConfig['offset'],
@@ -255,7 +263,20 @@ class SearchTrailService
      *
      * @return ((float|int|null|string)[]|float|int|mixed)[] Comprehensive search statistics including trends and insights
      *
-     * @psalm-return array{searches_with_results: mixed, searches_without_results: mixed, success_rate: 0|float, unique_search_terms: int, unique_users: int, avg_searches_per_session: float, avg_object_views_per_session: float, unique_organizations: 0, query_complexity: array{simple: 0|float, medium: 0|float, complex: 0|float}, period: array{from: null|string, to: null|string, days: int<min, max>|null}, daily_averages?: array{searches_per_day: float, results_per_day: float}|mixed,...}
+     * @psalm-return array{
+     *     searches_with_results: mixed,
+     *     searches_without_results: mixed,
+     *     success_rate: 0|float,
+     *     unique_search_terms: int,
+     *     unique_users: int,
+     *     avg_searches_per_session: float,
+     *     avg_object_views_per_session: float,
+     *     unique_organizations: 0,
+     *     query_complexity: array{simple: 0|float, medium: 0|float, complex: 0|float},
+     *     period: array{from: null|string, to: null|string, days: int<min, max>|null},
+     *     daily_averages?: array{searches_per_day: float, results_per_day: float}|mixed,
+     *     ...
+     * }
      */
     public function getSearchStatistics(?DateTime $from=null, ?DateTime $to=null): array
     {
@@ -335,7 +356,12 @@ class SearchTrailService
      *
      * @return (array|float|int)[] Enhanced popular search terms data
      *
-     * @psalm-return array{terms: array, total_unique_terms: int<0, max>, total_searches: float|int, period: array{from: null|string, to: null|string}}
+     * @psalm-return array{
+     *     terms: array,
+     *     total_unique_terms: int<0, max>,
+     *     total_searches: float|int,
+     *     period: array{from: null|string, to: null|string}
+     * }
      */
     public function getPopularSearchTerms(int $limit=10, ?DateTime $from=null, ?DateTime $to=null): array
     {
@@ -414,7 +440,12 @@ class SearchTrailService
      *
      * @return (((mixed|string)[]|null|string)[]|float|int)[] Enhanced register/schema statistics
      *
-     * @psalm-return array{statistics: list<array{performance_rating: string, ...}>, total_combinations: int<0, max>, total_searches: float|int, period: array{from: null|string, to: null|string}}
+     * @psalm-return array{
+     *     statistics: list<array{performance_rating: string, ...}>,
+     *     total_combinations: int<0, max>,
+     *     total_searches: float|int,
+     *     period: array{from: null|string, to: null|string}
+     * }
      */
     public function getRegisterSchemaStatistics(?DateTime $from=null, ?DateTime $to=null): array
     {
@@ -466,7 +497,12 @@ class SearchTrailService
      *
      * @return (array|int)[] Enhanced user agent statistics
      *
-     * @psalm-return array{user_agents: array, browser_distribution: array, total_user_agents: int<0, max>, period: array{from: null|string, to: null|string}}
+     * @psalm-return array{
+     *     user_agents: array,
+     *     browser_distribution: array,
+     *     total_user_agents: int<0, max>,
+     *     period: array{from: null|string, to: null|string}
+     * }
      */
     public function getUserAgentStatistics(int $limit=10, ?DateTime $from=null, ?DateTime $to=null): array
     {
@@ -503,7 +539,13 @@ class SearchTrailService
      *
      * @return (bool|int|string)[] Cleanup results
      *
-     * @psalm-return array{success: bool, deleted: 0|1, error?: string, message: 'Cleanup operation failed'|'No expired entries to delete'|'Successfully deleted expired search trail entries', cleanup_date?: string}
+     * @psalm-return array{
+     *     success: bool,
+     *     deleted: 0|1,
+     *     error?: string,
+     *     message: 'Cleanup operation failed'|'No expired entries to delete'|'Successfully deleted expired search trail entries',
+     *     cleanup_date?: string
+     * }
      */
     public function cleanupSearchTrails(?DateTime $before=null): array
     {
@@ -546,7 +588,16 @@ class SearchTrailService
      *
      * @return ((mixed|string)[]|DateTime|float|int|mixed|null)[] Processed configuration parameters
      *
-     * @psalm-return array{limit: int<1, max>, offset: int, page: float|int<1, max>, filters: array<int|string, mixed>, sort: array<'DESC'|mixed>, search: mixed|null, from: DateTime|null, to: DateTime|null}
+     * @psalm-return array{
+     *     limit: int<1, max>,
+     *     offset: int,
+     *     page: float|int<1, max>,
+     *     filters: array<int|string, mixed>,
+     *     sort: array<'DESC'|mixed>,
+     *     search: mixed|null,
+     *     from: DateTime|null,
+     *     to: DateTime|null
+     * }
      */
     private function processConfig(array $config): array
     {
@@ -645,7 +696,7 @@ class SearchTrailService
         foreach ($config as $key => $value) {
             // Ensure key is a string or integer to avoid "Illegal offset type" error.
             if (is_string($key) === true || is_int($key) === true) {
-                if (in_array($key, $excludeKeys, true) === false && str_starts_with($key, '_') === false) {
+                if (in_array($key, $excludeKeys, true) === false && str_starts_with((string) $key, '_') === false) {
                     $processed['filters'][$key] = $value;
                 }
             }
@@ -664,7 +715,15 @@ class SearchTrailService
      *
      * @return (float|int|mixed|null|string)[] Activity insights and trends
      *
-     * @psalm-return array{peak_period: mixed|null, peak_count?: mixed, low_period: mixed|null, low_count?: mixed, trend: string, average_searches_per_period: 0|float, total_periods?: int<1, max>}
+     * @psalm-return array{
+     *     peak_period: mixed|null,
+     *     peak_count?: mixed,
+     *     low_period: mixed|null,
+     *     low_count?: mixed,
+     *     trend: string,
+     *     average_searches_per_period: 0|float,
+     *     total_periods?: int<1, max>
+     * }
      */
     private function calculateActivityInsights(array $activity, string $interval): array
     {

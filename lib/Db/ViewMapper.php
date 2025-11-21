@@ -276,10 +276,10 @@ class ViewMapper extends QBMapper
      *
      * @param Entity $entity The view entity to delete
      *
-     * @return Entity The deleted view
+     * @return View The deleted view
      * @throws \Exception If user doesn't have delete permission or access to this organisation
      */
-    public function delete(Entity $entity): Entity
+    public function delete(Entity $entity): View
     {
         // Verify RBAC permission to delete.
         $this->verifyRbacPermission('delete', 'view');

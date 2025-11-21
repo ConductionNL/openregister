@@ -37,7 +37,7 @@ class SearchController extends Controller
     /**
      * The Nextcloud search service
      *
-     * @var ISearch
+     * @var            ISearch
      * @psalm-suppress UndefinedClass
      */
     private readonly ISearch $searchService;
@@ -99,16 +99,21 @@ class SearchController extends Controller
         $formattedResults = array_map(
             function (Result $result) {
                 /** @psalm-suppress UndefinedMethod */
+                $id = $result->getId();
+                /** @psalm-suppress UndefinedMethod */
+                $name = $result->getName();
+                /** @psalm-suppress UndefinedMethod */
+                $type = $result->getType();
+                /** @psalm-suppress UndefinedMethod */
+                $url = $result->getUrl();
+                /** @psalm-suppress UndefinedMethod */
+                $source = $result->getSource();
                 return [
-                    'id'     => $result->getId(),
-                    /** @psalm-suppress UndefinedMethod */
-                    'name'   => $result->getName(),
-                    /** @psalm-suppress UndefinedMethod */
-                    'type'   => $result->getType(),
-                    /** @psalm-suppress UndefinedMethod */
-                    'url'    => $result->getUrl(),
-                    /** @psalm-suppress UndefinedMethod */
-                    'source' => $result->getSource(),
+                    'id'     => $id,
+                    'name'   => $name,
+                    'type'   => $type,
+                    'url'    => $url,
+                    'source' => $source,
                 ];
             },
             $results

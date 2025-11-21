@@ -260,16 +260,64 @@ class View extends Entity implements JsonSerializable
                 'groups'    => 0,
             // Views don't have groups.
             ],
-            'created'                => isset($this->created) === true ? $this->created->format('c') : null,
-            'updated'                => isset($this->updated) === true ? $this->updated->format('c') : null,
-            'managedByConfiguration' => $this->managedByConfiguration !== null ? [
-                'id'    => $this->managedByConfiguration->getId(),
-                'uuid'  => $this->managedByConfiguration->getUuid(),
-                'title' => $this->managedByConfiguration->getTitle(),
-            ] : null,
+            'created'                => $this->getCreatedFormatted(),
+            'updated'                => $this->getUpdatedFormatted(),
+            'managedByConfiguration' => $this->getManagedByConfigurationFormatted(),
         ];
 
     }//end jsonSerialize()
+
+
+    /**
+     * Get created timestamp formatted.
+     *
+     * @return string|null
+     */
+    private function getCreatedFormatted(): ?string
+    {
+        if (isset($this->created) === true) {
+            return $this->created->format('c');
+        }
+
+        return null;
+
+    }//end getCreatedFormatted()
+
+
+    /**
+     * Get updated timestamp formatted.
+     *
+     * @return string|null
+     */
+    private function getUpdatedFormatted(): ?string
+    {
+        if (isset($this->updated) === true) {
+            return $this->updated->format('c');
+        }
+
+        return null;
+
+    }//end getUpdatedFormatted()
+
+
+    /**
+     * Get managed by configuration formatted.
+     *
+     * @return array<string,mixed>|null
+     */
+    private function getManagedByConfigurationFormatted(): ?array
+    {
+        if ($this->managedByConfiguration !== null) {
+            return [
+                'id'    => $this->managedByConfiguration->getId(),
+                'uuid'  => $this->managedByConfiguration->getUuid(),
+                'title' => $this->managedByConfiguration->getTitle(),
+            ];
+        }
+
+        return null;
+
+    }//end getManagedByConfigurationFormatted()
 
 
     /**
@@ -283,14 +331,53 @@ class View extends Entity implements JsonSerializable
      */
     public function hydrate(array $object): self
     {
-        $this->setUuid(isset($object['uuid']) === true ? $object['uuid'] : null);
-        $this->setName(isset($object['name']) === true ? $object['name'] : null);
-        $this->setDescription(isset($object['description']) === true ? $object['description'] : null);
-        $this->setOwner(isset($object['owner']) === true ? $object['owner'] : null);
-        $this->setIsPublic(isset($object['isPublic']) === true ? $object['isPublic'] : false);
-        $this->setIsDefault(isset($object['isDefault']) === true ? $object['isDefault'] : false);
-        $this->setQuery(isset($object['query']) === true ? $object['query'] : []);
-        $this->setFavoredBy(isset($object['favoredBy']) === true ? $object['favoredBy'] : []);
+        if (isset($object['uuid']) === true) {
+            $this->setUuid($object['uuid']);
+        } else {
+            $this->setUuid(null);
+        }
+
+        if (isset($object['name']) === true) {
+            $this->setName($object['name']);
+        } else {
+            $this->setName(null);
+        }
+
+        if (isset($object['description']) === true) {
+            $this->setDescription($object['description']);
+        } else {
+            $this->setDescription(null);
+        }
+
+        if (isset($object['owner']) === true) {
+            $this->setOwner($object['owner']);
+        } else {
+            $this->setOwner(null);
+        }
+
+        if (isset($object['isPublic']) === true) {
+            $this->setIsPublic($object['isPublic']);
+        } else {
+            $this->setIsPublic(false);
+        }
+
+        if (isset($object['isDefault']) === true) {
+            $this->setIsDefault($object['isDefault']);
+        } else {
+            $this->setIsDefault(false);
+        }
+
+        if (isset($object['query']) === true) {
+            $this->setQuery($object['query']);
+        } else {
+            $this->setQuery([]);
+        }
+
+        if (isset($object['favoredBy']) === true) {
+            $this->setFavoredBy($object['favoredBy']);
+        } else {
+            $this->setFavoredBy([]);
+        }
 
         return $this;
 

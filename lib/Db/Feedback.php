@@ -1,4 +1,20 @@
 <?php
+/**
+ * OpenRegister Feedback Entity
+ *
+ * Feedback entity for storing user feedback on AI messages.
+ *
+ * @category Database
+ * @package  OCA\OpenRegister\Db
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://www.OpenRegister.app
+ */
 
 declare(strict_types=1);
 
@@ -34,28 +50,80 @@ use OCP\AppFramework\Db\Entity;
 class Feedback extends Entity implements JsonSerializable
 {
 
+    /**
+     * UUID.
+     *
+     * @var string
+     */
     protected string $uuid = '';
 
+    /**
+     * Message ID.
+     *
+     * @var integer
+     */
     protected int $messageId = 0;
 
+    /**
+     * Conversation ID.
+     *
+     * @var integer
+     */
     protected int $conversationId = 0;
 
+    /**
+     * Agent ID.
+     *
+     * @var integer
+     */
     protected int $agentId = 0;
 
+    /**
+     * User ID.
+     *
+     * @var string
+     */
     protected string $userId = '';
 
+    /**
+     * Organisation.
+     *
+     * @var string|null
+     */
     protected ?string $organisation = null;
 
+    /**
+     * Type ('positive' or 'negative').
+     *
+     * @var string
+     */
     protected string $type = '';
 
-    // 'positive' or 'negative'.
+    /**
+     * Comment.
+     *
+     * @var string|null
+     */
     protected ?string $comment = null;
 
+    /**
+     * Created timestamp.
+     *
+     * @var \DateTime|null
+     */
     protected ?\DateTime $created = null;
 
+    /**
+     * Updated timestamp.
+     *
+     * @var \DateTime|null
+     */
     protected ?\DateTime $updated = null;
 
 
+    /**
+     * Constructor.
+     */
     public function __construct()
     {
         $this->addType('uuid', 'string');
@@ -72,6 +140,11 @@ class Feedback extends Entity implements JsonSerializable
     }//end __construct()
 
 
+    /**
+     * JSON serialization.
+     *
+     * @return array<string,mixed>
+     */
     public function jsonSerialize(): array
     {
         return [

@@ -165,9 +165,10 @@ class FileMapper extends QBMapper
         $files  = [];
 
         // Fetch all rows manually and process share information and owner data.
-        while ($row = $result->fetch()) {
+        $row = $result->fetch();
+        while ($row !== false) {
             // Add share-related fields (public URLs if shared).
-            if ($row['share_token']) {
+            if (empty($row['share_token']) === false) {
                 $row['accessUrl']   = $this->generateShareUrl($row['share_token']);
                 $row['downloadUrl'] = $this->generateShareUrl($row['share_token']).'/download';
             } else {
@@ -176,12 +177,16 @@ class FileMapper extends QBMapper
                 $row['downloadUrl'] = $this->generateAuthenticatedDownloadUrl($row['fileid']);
             }
 
-            $row['published'] = $row['share_stime'] ? (new DateTime())->setTimestamp($row['share_stime'])->format('c') : null;
+            if (empty($row['share_stime']) === false) {
+                $row['published'] = (new DateTime())->setTimestamp($row['share_stime'])->format('c');
+            } else {
+                $row['published'] = null;
+            }
 
             // Extract owner from storage ID (format is usually "home::username").
             $row['owner'] = null;
-            if ($row['storage_id']) {
-                if (str_starts_with($row['storage_id'], 'home::')) {
+            if (empty($row['storage_id']) === false) {
+                if (str_starts_with($row['storage_id'], 'home::') === true) {
                     $row['owner'] = substr($row['storage_id'], 6);
                     // Remove "home::" prefix.
                 } else {
@@ -191,6 +196,7 @@ class FileMapper extends QBMapper
             }
 
             $files[] = $row;
+            $row     = $result->fetch();
         }//end while
 
         $result->closeCursor();
@@ -265,7 +271,7 @@ class FileMapper extends QBMapper
         }
 
         // Add share-related fields (public URLs if shared).
-        if ($file['share_token']) {
+        if (empty($file['share_token']) === false) {
             $file['accessUrl']   = $this->generateShareUrl($file['share_token']);
             $file['downloadUrl'] = $this->generateShareUrl($file['share_token']).'/download';
         } else {
@@ -274,12 +280,16 @@ class FileMapper extends QBMapper
             $file['downloadUrl'] = $this->generateAuthenticatedDownloadUrl($file['fileid']);
         }
 
-        $file['published'] = $file['share_stime'] ? (new DateTime())->setTimestamp($file['share_stime'])->format('c') : null;
+        if (empty($file['share_stime']) === false) {
+            $file['published'] = (new DateTime())->setTimestamp($file['share_stime'])->format('c');
+        } else {
+            $file['published'] = null;
+        }
 
         // Extract owner from storage ID (format is usually "home::username").
         $file['owner'] = null;
-        if ($file['storage_id']) {
-            if (str_starts_with($file['storage_id'], 'home::')) {
+        if (empty($file['storage_id']) === false) {
+            if (str_starts_with($file['storage_id'], 'home::') === true) {
                 $file['owner'] = substr($file['storage_id'], 6);
                 // Remove "home::" prefix.
             } else {
@@ -336,8 +346,10 @@ class FileMapper extends QBMapper
         $rows   = [];
 
         // Fetch all rows manually.
-        while ($row = $result->fetch()) {
+        $row = $result->fetch();
+        while ($row !== false) {
             $rows[] = $row;
+            $row    = $result->fetch();
         }
 
         $result->closeCursor();
@@ -564,7 +576,11 @@ class FileMapper extends QBMapper
         $share  = $result->fetch();
         $result->closeCursor();
 
-        return $share ?: null;
+        if ($share === false) {
+            return null;
+        }
+
+        return $share;
 
     }//end getPublicShare()
 
@@ -599,7 +615,7 @@ class FileMapper extends QBMapper
         $result->closeCursor();
 
         // If token exists, generate a new one recursively.
-        if ($exists === true) {
+        if ($exists !== false) {
             return $this->generateShareToken();
         }
 
@@ -720,8 +736,10 @@ class FileMapper extends QBMapper
         $result = $qb->executeQuery();
         $files  = [];
 
-        while ($row = $result->fetch()) {
+        $row = $result->fetch();
+        while ($row !== false) {
             $files[] = $row;
+            $row     = $result->fetch();
         }
 
         $result->closeCursor();
@@ -771,10 +789,6 @@ class FileMapper extends QBMapper
     /**
      * Set file ownership at database level.
      *
-     * @TODO: This is a hack to fix NextCloud file ownership issues on production
-     * @TODO: where files exist but can't be accessed due to permission problems.
-     * @TODO: This should be removed once the underlying NextCloud rights issue is resolved.
-     *
      * @param int    $fileId The file ID to change ownership for
      * @param string $userId The user ID to set as owner
      *
@@ -782,9 +796,9 @@ class FileMapper extends QBMapper
      *
      * @throws \Exception If the ownership update fails
      *
-     * @phpstan-param  int $fileId
-     * @phpstan-param  string $userId
-     * @phpstan-return bool
+     * @TODO: This is a hack to fix NextCloud file ownership issues on production
+     * @TODO: where files exist but can't be accessed due to permission problems.
+     * @TODO: This should be removed once the underlying NextCloud rights issue is resolved.
      */
     public function setFileOwnership(int $fileId, string $userId): bool
     {

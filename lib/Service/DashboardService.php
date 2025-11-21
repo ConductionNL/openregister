@@ -246,10 +246,10 @@ class DashboardService
      *     0: array{
      *         id: 'orphaned'|'totals'|mixed,
      *         title: 'Orphaned Items'|'System Totals'|mixed,
-     *         description:
+     *         description: (
      *             'Items that reference non-existent registers, schemas, '
      *             .'or invalid register-schema combinations'
-     *             |'Total statistics across all registers and schemas'|mixed,
+     *             )|('Total statistics across all registers and schemas')|mixed,
      *         stats: array,
      *         schemas: list<mixed>,
      *         ...
@@ -259,10 +259,10 @@ class DashboardService
      *         schemas: list<mixed>,
      *         id: 'orphaned'|'totals'|mixed,
      *         title: 'Orphaned Items'|'System Totals'|mixed,
-     *         description:
+     *         description: (
      *             'Items that reference non-existent registers, schemas, '
      *             .'or invalid register-schema combinations'
-     *             |'Total statistics across all registers and schemas'|mixed,
+     *             )|('Total statistics across all registers and schemas')|mixed,
      *         ...
      *     },
      *     ...
@@ -534,13 +534,13 @@ class DashboardService
             $results = $this->recalculateAllSizes($registerId, $schemaId);
 
             // Build the response.
-            /** @psalm-suppress UndefinedMethod */
+            // @psalm-suppress UndefinedMethod.
             $registerScope = $this->buildRegisterScope($register);
-            /** @psalm-suppress UndefinedMethod */
+            // @psalm-suppress UndefinedMethod.
             $schemaScope = $this->buildSchemaScope($schema);
-            /** @psalm-suppress UndefinedMethod */
+            // @psalm-suppress UndefinedMethod.
             $successRate = $this->calculateSuccessRate($results);
-            
+
             $response = [
                 'status'    => 'success',
                 'timestamp' => (new \DateTime())->format('c'),

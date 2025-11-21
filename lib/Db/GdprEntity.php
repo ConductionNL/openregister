@@ -1,13 +1,22 @@
 <?php
-
-declare(strict_types=1);
-
-/*
+/**
+ * OpenRegister GDPR Entity
+ *
  * GDPR entity representing detected PII/contact information.
  *
- * @category Db
+ * @category Database
  * @package  OCA\OpenRegister\Db
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://www.OpenRegister.app
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
@@ -42,24 +51,74 @@ use OCP\AppFramework\Db\Entity;
 class GdprEntity extends Entity implements JsonSerializable
 {
 
+    /**
+     * UUID.
+     *
+     * @var string|null
+     */
     protected ?string $uuid = null;
 
+    /**
+     * Type.
+     *
+     * @var string|null
+     */
     protected ?string $type = null;
 
+    /**
+     * Value.
+     *
+     * @var string|null
+     */
     protected ?string $value = null;
 
+    /**
+     * Category.
+     *
+     * @var string|null
+     */
     protected ?string $category = null;
 
+    /**
+     * Belongs to entity ID.
+     *
+     * @var integer|null
+     */
     protected ?int $belongsToEntityId = null;
 
+    /**
+     * Metadata.
+     *
+     * @var array|null
+     */
     protected ?array $metadata = null;
 
+    /**
+     * Owner.
+     *
+     * @var string|null
+     */
     protected ?string $owner = null;
 
+    /**
+     * Organisation.
+     *
+     * @var string|null
+     */
     protected ?string $organisation = null;
 
+    /**
+     * Detected at timestamp.
+     *
+     * @var DateTime|null
+     */
     protected ?DateTime $detectedAt = null;
 
+    /**
+     * Updated at timestamp.
+     *
+     * @var DateTime|null
+     */
     protected ?DateTime $updatedAt = null;
 
     public const TYPE_PERSON       = 'person';

@@ -380,6 +380,7 @@ class ExportService
 
                 // Always use the property key as the header to ensure consistent data access.
                 $headers[$col] = $fieldName;
+                /** @psalm-suppress StringIncrement - Intentional Excel column increment (B->C->D...). */
                 $col++;
             }
         }

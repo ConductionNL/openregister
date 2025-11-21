@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * SPDX-FileCopyrightText: 2024 Nextcloud GmbH and Nextcloud contributors
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
@@ -63,25 +63,45 @@ class Webhook extends Entity implements JsonSerializable
 {
 
     protected string $uuid = '';
+
     protected string $name = '';
+
     protected string $url = '';
+
     protected string $method = 'POST';
+
     protected string $events = '[]';
+
     protected ?string $headers = null;
+
     protected ?string $secret = null;
+
     protected bool $enabled = true;
+
     protected ?string $organisation = null;
+
     protected ?string $filters = null;
+
     protected string $retryPolicy = 'exponential';
+
     protected int $maxRetries = 3;
+
     protected int $timeout = 30;
+
     protected ?DateTime $lastTriggeredAt = null;
+
     protected ?DateTime $lastSuccessAt = null;
+
     protected ?DateTime $lastFailureAt = null;
+
     protected int $totalDeliveries = 0;
+
     protected int $successfulDeliveries = 0;
+
     protected int $failedDeliveries = 0;
+
     protected ?DateTime $created = null;
+
     protected ?DateTime $updated = null;
 
 
@@ -221,7 +241,7 @@ class Webhook extends Entity implements JsonSerializable
     public function matchesEvent(string $eventClass): bool
     {
         $events = $this->getEventsArray();
-        
+
         // Empty events means listen to all.
         if (empty($events) === true) {
             return true;
@@ -252,28 +272,28 @@ class Webhook extends Entity implements JsonSerializable
     public function jsonSerialize(): array
     {
         return [
-            'id'                    => $this->id,
-            'uuid'                  => $this->uuid,
-            'name'                  => $this->name,
-            'url'                   => $this->url,
-            'method'                => $this->method,
-            'events'                => $this->getEventsArray(),
-            'headers'               => $this->getHeadersArray(),
-            'secret'                => $this->secret !== null ? '***' : null,
-            'enabled'               => $this->enabled,
-            'organisation'          => $this->organisation,
-            'filters'               => $this->getFiltersArray(),
-            'retryPolicy'           => $this->retryPolicy,
-            'maxRetries'            => $this->maxRetries,
-            'timeout'               => $this->timeout,
-            'lastTriggeredAt'       => $this->lastTriggeredAt?->format('c'),
-            'lastSuccessAt'         => $this->lastSuccessAt?->format('c'),
-            'lastFailureAt'         => $this->lastFailureAt?->format('c'),
-            'totalDeliveries'       => $this->totalDeliveries,
-            'successfulDeliveries'  => $this->successfulDeliveries,
-            'failedDeliveries'      => $this->failedDeliveries,
-            'created'               => $this->created?->format('c'),
-            'updated'               => $this->updated?->format('c'),
+            'id'                   => $this->id,
+            'uuid'                 => $this->uuid,
+            'name'                 => $this->name,
+            'url'                  => $this->url,
+            'method'               => $this->method,
+            'events'               => $this->getEventsArray(),
+            'headers'              => $this->getHeadersArray(),
+            'secret'               => $this->secret !== null ? '***' : null,
+            'enabled'              => $this->enabled,
+            'organisation'         => $this->organisation,
+            'filters'              => $this->getFiltersArray(),
+            'retryPolicy'          => $this->retryPolicy,
+            'maxRetries'           => $this->maxRetries,
+            'timeout'              => $this->timeout,
+            'lastTriggeredAt'      => $this->lastTriggeredAt?->format('c'),
+            'lastSuccessAt'        => $this->lastSuccessAt?->format('c'),
+            'lastFailureAt'        => $this->lastFailureAt?->format('c'),
+            'totalDeliveries'      => $this->totalDeliveries,
+            'successfulDeliveries' => $this->successfulDeliveries,
+            'failedDeliveries'     => $this->failedDeliveries,
+            'created'              => $this->created?->format('c'),
+            'updated'              => $this->updated?->format('c'),
         ];
 
     }//end jsonSerialize()
@@ -362,4 +382,3 @@ class Webhook extends Entity implements JsonSerializable
 
 
 }//end class
-

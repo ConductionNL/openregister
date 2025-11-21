@@ -1,7 +1,12 @@
 ---
-sidebar_position: 11
 title: Applications
+sidebar_position: 11
 description: Application Management and Access Control
+keywords:
+  - Open Register
+  - Applications
+  - Access Control
+  - Multi-Tenancy
 ---
 
 # Applications

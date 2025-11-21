@@ -293,7 +293,7 @@ class MySQLJsonService implements IDatabaseJsonService
                 continue;
             }
 
-            // @psalm-suppress RedundantCondition.
+            // @psalm-suppress RedundantCondition
             if (is_array($value) === true) {
                 // Handle array of values with IN clause and contains check.
                 $builder->createNamedParameter(
@@ -310,7 +310,7 @@ class MySQLJsonService implements IDatabaseJsonService
             // Handle simple equality filter.
             // After handling arrays and special string values, $value can still be bool, string, int, float, etc.
             // @psalm-suppress TypeDoesNotContainType - $value can be bool, string, int, float, null, etc. at this point.
-            if (is_bool($value)) {
+            if (is_bool($value) === true) {
                 $builder->createNamedParameter(
                     value: $value,
                     type: IQueryBuilder::PARAM_BOOL,

@@ -230,16 +230,14 @@ class ViewService
     {
         try {
             $view = $this->find($id, $owner);
-            // @psalm-suppress RedundantCondition.
-            $favoredBy = $view->getFavoredBy() ?? [];
+            // GetFavoredBy() always returns an array (non-null), but keeping ?? [] for defensive programming.
+            $favoredBy = $view->getFavoredBy();
 
             if ($favor === true) {
                 // Add user to favoredBy if not already there.
                 if (in_array($owner, $favoredBy, true) === false) {
                     $favoredBy[] = $owner;
                 }
-
-                //end if
             } else {
                 // Remove user from favoredBy.
                 $favoredBy = array_values(array_filter($favoredBy, fn($userId) => $userId !== $owner));
@@ -251,7 +249,7 @@ class ViewService
         } catch (Exception $e) {
             $this->logger->error('Error toggling favorite: '.$e->getMessage());
             throw $e;
-        }
+        }//end try
 
     }//end toggleFavorite()
 

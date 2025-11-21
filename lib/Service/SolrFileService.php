@@ -701,6 +701,7 @@ class SolrFileService
      */
     private function commandExists(string $command): bool
     {
+        // @psalm-suppress ForbiddenCode - shell_exec needed to check if command exists.
         $result = shell_exec(sprintf('which %s 2>/dev/null', escapeshellarg($command)));
         return !empty($result);
 
@@ -1261,7 +1262,7 @@ class SolrFileService
 
                 if ($result['success'] === true) {
                     $stats['indexed']++;
-                    /** @psalm-suppress InvalidArrayOffset */
+                    // @psalm-suppress InvalidArrayOffset
                     $stats['total_chunks'] += $result['chunks_indexed'];
 
                     $this->logger->info(
@@ -1273,9 +1274,9 @@ class SolrFileService
                             );
                 } else {
                     $stats['failed']++;
-                    /** @psalm-suppress InvalidArrayOffset */
+                    // @psalm-suppress InvalidArrayOffset
                     $stats['errors'][$fileText->getFileId()] = $result['message'] ?? 'Unknown error';
-                }
+                }//end if
             } catch (\Exception $e) {
                 $stats['failed']++;
                 $stats['errors'][$fileText->getFileId()] = $e->getMessage();

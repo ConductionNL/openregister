@@ -1,13 +1,20 @@
 <?php
-
-declare(strict_types=1);
-
-/*
+/**
  * EntityRelation links detected entities to specific chunks with context.
  *
  * @category Db
  * @package  OCA\OpenRegister\Db
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://www.OpenRegister.app
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
@@ -50,32 +57,102 @@ use OCP\AppFramework\Db\Entity;
 class EntityRelation extends Entity implements JsonSerializable
 {
 
+    /**
+     * Entity ID.
+     *
+     * @var integer|null
+     */
     protected ?int $entityId = null;
 
+    /**
+     * Chunk ID.
+     *
+     * @var integer|null
+     */
     protected ?int $chunkId = null;
 
+    /**
+     * Role.
+     *
+     * @var string|null
+     */
     protected ?string $role = null;
 
+    /**
+     * File ID.
+     *
+     * @var integer|null
+     */
     protected ?int $fileId = null;
 
+    /**
+     * Object ID.
+     *
+     * @var integer|null
+     */
     protected ?int $objectId = null;
 
+    /**
+     * Email ID.
+     *
+     * @var integer|null
+     */
     protected ?int $emailId = null;
 
+    /**
+     * Position start.
+     *
+     * @var integer
+     */
     protected int $positionStart = 0;
 
+    /**
+     * Position end.
+     *
+     * @var integer
+     */
     protected int $positionEnd = 0;
 
+    /**
+     * Confidence.
+     *
+     * @var float
+     */
     protected float $confidence = 0.0;
 
+    /**
+     * Detection method.
+     *
+     * @var string|null
+     */
     protected ?string $detectionMethod = null;
 
+    /**
+     * Context.
+     *
+     * @var string|null
+     */
     protected ?string $context = null;
 
+    /**
+     * Anonymized flag.
+     *
+     * @var boolean
+     */
     protected bool $anonymized = false;
 
+    /**
+     * Anonymized value.
+     *
+     * @var string|null
+     */
     protected ?string $anonymizedValue = null;
 
+    /**
+     * Created at timestamp.
+     *
+     * @var DateTime|null
+     */
     protected ?DateTime $createdAt = null;
 
 

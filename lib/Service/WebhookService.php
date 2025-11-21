@@ -1,11 +1,22 @@
 <?php
+/**
+ * OpenRegister Webhook Service
+ *
+ * Service for handling webhook delivery.
+ *
+ * @category Service
+ * @package  OCA\OpenRegister\Service
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://www.OpenRegister.app
+ */
 
 declare(strict_types=1);
-
-/**
- * SPDX-FileCopyrightText: 2024 Nextcloud GmbH and Nextcloud contributors
- * SPDX-License-Identifier: AGPL-3.0-or-later
- */
 
 namespace OCA\OpenRegister\Service;
 
@@ -89,16 +100,22 @@ class WebhookService
         $webhooks = $this->webhookMapper->findForEvent($eventName);
 
         if (empty($webhooks) === true) {
-            $this->logger->debug('No webhooks configured for event', [
-                'event' => $eventName,
-            ]);
+            $this->logger->debug(
+                    'No webhooks configured for event',
+                    [
+                        'event' => $eventName,
+                    ]
+                    );
             return;
         }
 
-        $this->logger->info('Dispatching event to webhooks', [
-            'event'         => $eventName,
-            'webhook_count' => count($webhooks),
-        ]);
+        $this->logger->info(
+                'Dispatching event to webhooks',
+                [
+                    'event'         => $eventName,
+                    'webhook_count' => count($webhooks),
+                ]
+                );
 
         foreach ($webhooks as $webhook) {
             $this->deliverWebhook($webhook, $eventName, $payload);
@@ -117,22 +134,28 @@ class WebhookService
      *
      * @return bool Success status
      */
-    public function deliverWebhook(Webhook $webhook, string $eventName, array $payload, int $attempt = 1): bool
+    public function deliverWebhook(Webhook $webhook, string $eventName, array $payload, int $attempt=1): bool
     {
         if ($webhook->getEnabled() === false) {
-            $this->logger->debug('Webhook is disabled, skipping delivery', [
-                'webhook_id' => $webhook->getId(),
-                'event'      => $eventName,
-            ]);
+            $this->logger->debug(
+                    'Webhook is disabled, skipping delivery',
+                    [
+                        'webhook_id' => $webhook->getId(),
+                        'event'      => $eventName,
+                    ]
+                    );
             return false;
         }
 
         // Apply filters if configured.
         if ($this->passesFilters($webhook, $payload) === false) {
-            $this->logger->debug('Webhook filters did not match, skipping delivery', [
-                'webhook_id' => $webhook->getId(),
-                'event'      => $eventName,
-            ]);
+            $this->logger->debug(
+                    'Webhook filters did not match, skipping delivery',
+                    [
+                        'webhook_id' => $webhook->getId(),
+                        'event'      => $eventName,
+                    ]
+                    );
             return false;
         }
 
@@ -141,26 +164,32 @@ class WebhookService
         try {
             $response = $this->sendRequest($webhook, $webhookPayload);
 
-            $this->logger->info('Webhook delivered successfully', [
-                'webhook_id'   => $webhook->getId(),
-                'webhook_name' => $webhook->getName(),
-                'event'        => $eventName,
-                'status_code'  => $response['status_code'],
-                'attempt'      => $attempt,
-            ]);
+            $this->logger->info(
+                    'Webhook delivered successfully',
+                    [
+                        'webhook_id'   => $webhook->getId(),
+                        'webhook_name' => $webhook->getName(),
+                        'event'        => $eventName,
+                        'status_code'  => $response['status_code'],
+                        'attempt'      => $attempt,
+                    ]
+                    );
 
             $this->webhookMapper->updateStatistics($webhook, true);
 
             return true;
         } catch (RequestException $e) {
-            $this->logger->error('Webhook delivery failed', [
-                'webhook_id'   => $webhook->getId(),
-                'webhook_name' => $webhook->getName(),
-                'event'        => $eventName,
-                'error'        => $e->getMessage(),
-                'attempt'      => $attempt,
-                'max_retries'  => $webhook->getMaxRetries(),
-            ]);
+            $this->logger->error(
+                    'Webhook delivery failed',
+                    [
+                        'webhook_id'   => $webhook->getId(),
+                        'webhook_name' => $webhook->getName(),
+                        'event'        => $eventName,
+                        'error'        => $e->getMessage(),
+                        'attempt'      => $attempt,
+                        'max_retries'  => $webhook->getMaxRetries(),
+                    ]
+                    );
 
             $this->webhookMapper->updateStatistics($webhook, false);
 
@@ -221,7 +250,7 @@ class WebhookService
     private function getNestedValue(array $array, string $key)
     {
         $keys = explode('.', $key);
-        
+
         foreach ($keys as $k) {
             if (isset($array[$k]) === false) {
                 return null;
@@ -282,7 +311,7 @@ class WebhookService
 
         // Add signature if secret is configured.
         if ($webhook->getSecret() !== null) {
-            $signature            = $this->generateSignature($payload, $webhook->getSecret());
+            $signature = $this->generateSignature($payload, $webhook->getSecret());
             $headers['X-Webhook-Signature'] = $signature;
         }
 
@@ -335,21 +364,27 @@ class WebhookService
     {
         $delay = $this->calculateRetryDelay($webhook, $attempt);
 
-        $this->logger->info('Scheduling webhook retry', [
-            'webhook_id'   => $webhook->getId(),
-            'webhook_name' => $webhook->getName(),
-            'event'        => $eventName,
-            'attempt'      => $attempt,
-            'delay'        => $delay,
-        ]);
+        $this->logger->info(
+                'Scheduling webhook retry',
+                [
+                    'webhook_id'   => $webhook->getId(),
+                    'webhook_name' => $webhook->getName(),
+                    'event'        => $eventName,
+                    'attempt'      => $attempt,
+                    'delay'        => $delay,
+                ]
+                );
 
         // Use background job for retry.
-        $this->jobList->add('OCA\OpenRegister\BackgroundJob\WebhookDeliveryJob', [
-            'webhook_id' => $webhook->getId(),
-            'event_name' => $eventName,
-            'payload'    => $payload,
-            'attempt'    => $attempt,
-        ]);
+        $this->jobList->add(
+                'OCA\OpenRegister\BackgroundJob\WebhookDeliveryJob',
+                [
+                    'webhook_id' => $webhook->getId(),
+                    'event_name' => $eventName,
+                    'payload'    => $payload,
+                    'attempt'    => $attempt,
+                ]
+                );
 
     }//end scheduleRetry()
 
@@ -385,4 +420,3 @@ class WebhookService
 
 
 }//end class
-

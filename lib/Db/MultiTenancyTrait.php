@@ -354,8 +354,8 @@ trait MultiTenancyTrait
         // because we return early at line 303-309. However, keeping this for clarity
         // and potential future logic changes where $allowNullOrg might be checked differently.
         // At this point in execution, we know that either !$isAdmin or !$isSystemDefaultOrg.
-        // @psalm-suppress TypeDoesNotContainType - This condition is unreachable due to early return above,
-        // but kept for documentation and potential future logic changes.
+        /** @psalm-suppress TypeDoesNotContainType,ParadoxicalCondition - This condition is unreachable due to early return above,
+         * but kept for documentation and potential future logic changes. */
         if ($allowNullOrg && $isSystemDefaultOrg && $isAdmin) {
             $orgConditions->add($qb->expr()->isNull($organisationColumn));
 

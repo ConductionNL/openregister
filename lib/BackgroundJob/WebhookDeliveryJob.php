@@ -1,11 +1,22 @@
 <?php
+/**
+ * OpenRegister Webhook Delivery Job
+ *
+ * Background job for webhook delivery with retries.
+ *
+ * @category BackgroundJob
+ * @package  OCA\OpenRegister\BackgroundJob
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://www.OpenRegister.app
+ */
 
 declare(strict_types=1);
-
-/**
- * SPDX-FileCopyrightText: 2024 Nextcloud GmbH and Nextcloud contributors
- * SPDX-License-Identifier: AGPL-3.0-or-later
- */
 
 namespace OCA\OpenRegister\BackgroundJob;
 
@@ -49,10 +60,10 @@ class WebhookDeliveryJob extends QueuedJob
     /**
      * Constructor
      *
-     * @param ITimeFactory      $time           Time factory
-     * @param WebhookMapper     $webhookMapper  Webhook mapper
-     * @param WebhookService    $webhookService Webhook service
-     * @param LoggerInterface   $logger         Logger
+     * @param ITimeFactory    $time           Time factory
+     * @param WebhookMapper   $webhookMapper  Webhook mapper
+     * @param WebhookService  $webhookService Webhook service
+     * @param LoggerInterface $logger         Logger
      */
     public function __construct(
         ITimeFactory $time,
@@ -87,21 +98,27 @@ class WebhookDeliveryJob extends QueuedJob
         $attempt   = $argument['attempt'] ?? 1;
 
         if ($webhookId === null || $eventName === null) {
-            $this->logger->error('WebhookDeliveryJob called with invalid arguments', [
-                'argument' => $argument,
-            ]);
+            $this->logger->error(
+                    'WebhookDeliveryJob called with invalid arguments',
+                    [
+                        'argument' => $argument,
+                    ]
+                    );
             return;
         }
 
         try {
             $webhook = $this->webhookMapper->find($webhookId);
 
-            $this->logger->info('Executing webhook delivery job', [
-                'webhook_id'   => $webhookId,
-                'webhook_name' => $webhook->getName(),
-                'event'        => $eventName,
-                'attempt'      => $attempt,
-            ]);
+            $this->logger->info(
+                'Executing webhook delivery job',
+                [
+                    'webhook_id'   => $webhookId,
+                    'webhook_name' => $webhook->getName(),
+                    'event'        => $eventName,
+                    'attempt'      => $attempt,
+                ]
+            );
 
             // Deliver webhook.
             $success = $this->webhookService->deliverWebhook(
@@ -112,32 +129,40 @@ class WebhookDeliveryJob extends QueuedJob
             );
 
             if ($success === true) {
-                $this->logger->info('Webhook delivery job completed successfully', [
-                    'webhook_id'   => $webhookId,
-                    'webhook_name' => $webhook->getName(),
-                    'event'        => $eventName,
-                    'attempt'      => $attempt,
-                ]);
+                $this->logger->info(
+                    'Webhook delivery job completed successfully',
+                    [
+                        'webhook_id'   => $webhookId,
+                        'webhook_name' => $webhook->getName(),
+                        'event'        => $eventName,
+                        'attempt'      => $attempt,
+                    ]
+                );
             } else {
-                $this->logger->warning('Webhook delivery job failed', [
-                    'webhook_id'   => $webhookId,
-                    'webhook_name' => $webhook->getName(),
-                    'event'        => $eventName,
-                    'attempt'      => $attempt,
-                ]);
+                $this->logger->warning(
+                    'Webhook delivery job failed',
+                    [
+                        'webhook_id'   => $webhookId,
+                        'webhook_name' => $webhook->getName(),
+                        'event'        => $eventName,
+                        'attempt'      => $attempt,
+                    ]
+                );
             }//end if
         } catch (\Exception $e) {
-            $this->logger->error('Webhook delivery job encountered an exception', [
-                'webhook_id' => $webhookId,
-                'event'      => $eventName,
-                'attempt'    => $attempt,
-                'error'      => $e->getMessage(),
-                'trace'      => $e->getTraceAsString(),
-            ]);
+            $this->logger->error(
+                'Webhook delivery job encountered an exception',
+                [
+                    'webhook_id' => $webhookId,
+                    'event'      => $eventName,
+                    'attempt'    => $attempt,
+                    'error'      => $e->getMessage(),
+                    'trace'      => $e->getTraceAsString(),
+                ]
+            );
         }//end try
 
     }//end run()
 
 
 }//end class
-

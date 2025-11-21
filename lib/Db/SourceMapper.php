@@ -196,10 +196,10 @@ class SourceMapper extends QBMapper
      *
      * @param Entity $entity Source entity to insert
      *
-     * @return Entity The inserted source
+     * @return Source The inserted source
      * @throws \Exception If user doesn't have create permission
      */
-    public function insert(Entity $entity): Entity
+    public function insert(Entity $entity): Source
     {
         // Verify RBAC permission to create.
         $this->verifyRbacPermission('create', 'source');
@@ -207,7 +207,7 @@ class SourceMapper extends QBMapper
         if ($entity instanceof Source) {
             // Generate UUID if not set.
             if (empty($entity->getUuid()) === true) {
-                $entity->setUuid(Uuid::v4());
+                $entity->setUuid((string) Uuid::v4());
             }
 
             $entity->setCreated(new \DateTime());
@@ -232,10 +232,10 @@ class SourceMapper extends QBMapper
      *
      * @param Entity $entity Source entity to update
      *
-     * @return Entity The updated source
+     * @return Source The updated source
      * @throws \Exception If user doesn't have update permission or access to this organisation
      */
-    public function update(Entity $entity): Entity
+    public function update(Entity $entity): Source
     {
         // Verify RBAC permission to update.
         $this->verifyRbacPermission('update', 'source');
@@ -265,10 +265,10 @@ class SourceMapper extends QBMapper
      *
      * @param Entity $entity Source entity to delete
      *
-     * @return Entity The deleted source
+     * @return Source The deleted source
      * @throws \Exception If user doesn't have delete permission or access to this organisation
      */
-    public function delete(Entity $entity): Entity
+    public function delete(Entity $entity): Source
     {
         // Verify RBAC permission to delete.
         $this->verifyRbacPermission('delete', 'source');
@@ -300,7 +300,7 @@ class SourceMapper extends QBMapper
 
         // Set uuid if not provided.
         if ($source->getUuid() === null) {
-            $source->setUuid(Uuid::v4());
+                $source->setUuid((string) Uuid::v4());
         }
 
         return $this->insert(entity: $source);
