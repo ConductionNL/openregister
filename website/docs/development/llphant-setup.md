@@ -134,5 +134,5 @@ Expected output should show version and path.
 ## Related Documentation
 
 - [Text Extraction Implementation](../technical/text-extraction-implementation.md) - Text extraction and chunking
-- [Vectorization Architecture](../technical/vectorization-architecture.md) - Vector embedding architecture
+- [Vectorization Architecture](../Technical/vectorization-architecture.md) - Vector embedding architecture
 

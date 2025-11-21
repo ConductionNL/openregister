@@ -143,7 +143,7 @@ File configured as objectImageField is not published. Auto-publishing file.
 |-----------------|---------------|------------------|---------|
 | Property definition | 'autoPublish' | Whether files in THIS property get published | 'logo: \{type: "file", autoPublish: true\}' |
 | Schema configuration | 'autoPublish' | Whether the OBJECT gets published | 'configuration: \{autoPublish: true\}' |
-| Schema configuration | 'objectImageField' | Forces file publication for metadata | 'configuration: {objectImageField: "logo"}' |
+| Schema configuration | 'objectImageField' | Forces file publication for metadata | 'configuration: \{objectImageField: "logo"\}' |
 
 **Key Takeaways:**
 - ✅ Property 'autoPublish' = controls file sharing per property

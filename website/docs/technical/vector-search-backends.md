@@ -429,7 +429,7 @@ Returns Solr availability, version, and collections.
 
 ## Related Documentation
 
-- [Vectorization Architecture](./vectorization-architecture.md) - How vectors are generated and stored
+- [Vectorization Architecture](../Technical/vectorization-architecture.md) - How vectors are generated and stored
 - [Performance Optimization](../development/performance-optimization.md) - General performance tuning
 - [Solr Setup Configuration](./solr-setup-configuration.md) - Solr configuration details
 
