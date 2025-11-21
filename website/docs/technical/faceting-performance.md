@@ -24,7 +24,7 @@ The **Hyper-Performant Faceting System** provides **10-50x performance improveme
 graph TD
     A["User Request:<br/>_facets + _facetable"] --> B{Intelligent<br/>Cache Check}
     
-    B -->|Cache Hit| C["🚀 Instant Response<br/><10ms"]
+    B -->|Cache Hit| C["🚀 Instant Response<br/>&lt;10ms"]
     B -->|Cache Miss| D{Dataset Size<br/>Analysis}
     
     D -->|Small < 1000| E["🎯 Exact Calculation<br/>Multi-Query Batch"]
@@ -77,7 +77,7 @@ The system automatically selects the optimal calculation strategy based on datas
 // Complete facet responses cached for identical requests
 $cacheKey = 'hyper_facets_' . md5(json_encode($requestData));
 ```
-**Benefits**: Instant responses (<10ms) for repeated requests
+**Benefits**: Instant responses (&lt;10ms) for repeated requests
 
 ### Cache Layer 2: **Query Fragment Cache** (15 min TTL)
 ```php
@@ -145,19 +145,19 @@ ALTER TABLE oc_openregister_schemas ADD COLUMN facets LONGTEXT;
 ```bash
 GET /api/objects/19/116?_facets[@self][register][type]=terms&_facets[@self][schema][type]=terms
 ```
-**Expected Response Time**: <100ms (exact calculation)
+**Expected Response Time**: &lt;100ms (exact calculation)
 
 ### Complex Multi-Facet Request  
 ```bash
 GET /api/objects/19/116?_facets[@self][register][type]=terms&_facets[@self][created][type]=date_histogram&_facets[status][type]=terms&_facets[priority][type]=terms
 ```
-**Expected Response Time**: <75ms (smart sampling)
+**Expected Response Time**: &lt;75ms (smart sampling)
 
 ### Large Dataset Request
 ```bash
 GET /api/objects/19/116?_limit=1000&_facets[@self][register][type]=terms&_facets[category][type]=terms
 ```  
-**Expected Response Time**: <50ms (HyperLogLog estimation)
+**Expected Response Time**: &lt;50ms (HyperLogLog estimation)
 
 ## Enhanced Response Format
 
@@ -181,7 +181,7 @@ The new system provides enhanced responses with performance metadata:
     "dataset_size": 5420,
     "cache_status": "miss_cached_for_next_request", 
     "accuracy": "high (~95%)",
-    "response_target": "<75ms"
+    "response_target": "&lt;75ms"
   }
 }
 ```
@@ -272,7 +272,7 @@ $this->logger->debug('Hyper-optimized facets completed', [
 ```
 
 ### Key Metrics to Monitor
-- **Response Time**: Target <100ms for all requests
+- **Response Time**: Target &lt;100ms for all requests
 - **Cache Hit Rate**: Should be >60% for production workloads
 - **Strategy Distribution**: Monitor which strategies are used most
 - **Accuracy Confidence**: Track statistical accuracy for sampling/estimation
@@ -297,15 +297,15 @@ $hyperFacetHandler->warmupPopularFacets($popularQueries);
 
 ### Performance Testing Commands
 ```bash
-# Test simple facets (should be <100ms)
+# Test simple facets (should be &lt;100ms)
 time curl -u 'admin:admin' \
   'http://localhost/api/objects/19/116?_facets[@self][register][type]=terms'
 
-# Test complex facets (should be <200ms) 
+# Test complex facets (should be &lt;200ms) 
 time curl -u 'admin:admin' \
   'http://localhost/api/objects/19/116?_facets[@self][register][type]=terms&_facets[@self][created][type]=date_histogram&_facets[status][type]=terms'
 
-# Test cached response (should be <10ms)
+# Test cached response (should be &lt;10ms)
 time curl -u 'admin:admin' \
   'http://localhost/api/objects/19/116?_facets[@self][register][type]=terms'
 ```
@@ -314,7 +314,7 @@ time curl -u 'admin:admin' \
 ```
 [DEBUG] Dataset analysis completed: estimatedSize=5420, strategy=smart_sampling, analysisTime=2.1ms
 [DEBUG] Hyper-optimized facets completed: strategy=smart_sampling, executionTime=45.2ms, accuracy=high (~95%)
-[DEBUG] Cache hit - instant facet response: responseTime=<10ms, source=cache_layer_1
+[DEBUG] Cache hit - instant facet response: responseTime=&lt;10ms, source=cache_layer_1
 ```
 
 ## Advanced Features
