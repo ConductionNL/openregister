@@ -107,6 +107,122 @@ Objects can be locked to prevent concurrent modifications. This is useful when:
 - Multiple users/systems are working on the same object
 - Ensuring data consistency during complex updates
 
+#### Object Locking Sequence
+
+The following diagram illustrates the object locking process:
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant API
+    participant Service as ObjectService
+    participant Entity as ObjectEntity
+    participant DB as Database
+
+    Note over User,DB: Lock Object
+    User->>API: Request lock object
+    activate API
+    API->>Service: lockObject(id, process?, duration?)
+    activate Service
+    Service->>DB: find object
+    activate DB
+    DB-->>Service: return object
+    deactivate DB
+    Service->>Entity: lock(user, process?, duration?)
+    activate Entity
+    Entity->>Entity: check if already locked
+    Entity->>Entity: validate user permissions
+    Entity->>Entity: create/update lock metadata
+    Entity-->>Service: return success
+    deactivate Entity
+    Service->>DB: update object
+    activate DB
+    DB-->>Service: confirm update
+    deactivate DB
+    Service-->>API: return locked object
+    deactivate Service
+    API-->>User: return success
+    deactivate API
+
+    Note over Entity: Lock automatically expires<br/>after duration passes
+
+    Note over User,DB: Update Locked Object
+    User->>API: Update object
+    activate API
+    API->>Service: updateObject(id, data)
+    activate Service
+    Service->>DB: find object
+    activate DB
+    DB-->>Service: return object
+    deactivate DB
+    Service->>Entity: validate lock
+    activate Entity
+    Entity->>Entity: check lock ownership
+    Entity->>Entity: extend lock duration
+    Entity-->>Service: validation ok
+    deactivate Entity
+    Service->>DB: update object
+    activate DB
+    DB-->>Service: confirm update
+    deactivate DB
+    Service-->>API: return updated object
+    deactivate Service
+    API-->>User: return success
+    deactivate API
+
+    Note over User,DB: Unlock Object
+    User->>API: Request unlock object
+    activate API
+    API->>Service: unlockObject(id)
+    activate Service
+    Service->>DB: find object
+    activate DB
+    DB-->>Service: return object
+    deactivate DB
+    Service->>Entity: unlock(user)
+    activate Entity
+    Entity->>Entity: validate lock ownership
+    Entity->>Entity: remove lock metadata
+    Entity-->>Service: return success
+    deactivate Entity
+    Service->>DB: update object
+    activate DB
+    DB-->>Service: confirm update
+    deactivate DB
+    Service-->>API: return unlocked object
+    deactivate Service
+    API-->>User: return success
+    deactivate API
+```
+
+### Object Deletion States
+
+Objects in OpenRegister follow a lifecycle with soft deletion and purging capabilities:
+
+```mermaid
+stateDiagram-v2
+    [*] --> Active
+    Active --> SoftDeleted: delete()
+    SoftDeleted --> Active: restore()
+    SoftDeleted --> PendingPurge: retention period expired
+    PendingPurge --> [*]: purge()
+    
+    note right of Active
+        Object is fully accessible
+        deleted = null
+    end note
+    
+    note right of SoftDeleted
+        Object hidden from queries
+        deleted = timestamp
+    end note
+    
+    note right of PendingPurge
+        Object ready for removal
+        current date > purgeDate
+    end note
+```
+
 ## Object Relations
 
 Objects in OpenRegister support sophisticated relationships through schema definitions. The way objects relate to each other depends on how you configure properties in your schema.

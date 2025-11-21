@@ -158,10 +158,10 @@ class ConfigurationController extends Controller
     /**
      * Get a single configuration by ID.
      *
+     * @param int $id The configuration ID
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
-     *
-     * @param int $id The configuration ID
      *
      * @return JSONResponse The configuration details
      */
@@ -207,7 +207,7 @@ class ConfigurationController extends Controller
             $branch = $data['branch'] ?? 'main';
 
             // Validate required parameters.
-            if (empty($owner) || empty($repo) || empty($path)) {
+            if (empty($owner) === true || empty($repo) === true || empty($path) === true) {
                 return new JSONResponse(
                     ['error' => 'Missing required parameters: owner, repo, path'],
                     400
@@ -317,10 +317,10 @@ class ConfigurationController extends Controller
     /**
      * Update an existing configuration.
      *
+     * @param int $id The configuration ID
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
-     *
-     * @param int $id The configuration ID
      *
      * @return JSONResponse The updated configuration
      */
@@ -424,10 +424,10 @@ class ConfigurationController extends Controller
     /**
      * Delete a configuration.
      *
+     * @param int $id The configuration ID
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
-     *
-     * @param int $id The configuration ID
      *
      * @return JSONResponse Success response
      */
@@ -460,10 +460,10 @@ class ConfigurationController extends Controller
     /**
      * Check remote version of a configuration.
      *
+     * @param int $id The configuration ID
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
-     *
-     * @param int $id The configuration ID
      *
      * @return JSONResponse Version information
      */
@@ -513,10 +513,10 @@ class ConfigurationController extends Controller
     /**
      * Preview configuration changes.
      *
+     * @param int $id The configuration ID
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
-     *
-     * @param int $id The configuration ID
      *
      * @return JSONResponse Preview of changes
      */
@@ -552,10 +552,10 @@ class ConfigurationController extends Controller
     /**
      * Import configuration with user selection.
      *
+     * @param int $id The configuration ID
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
-     *
-     * @param int $id The configuration ID
      *
      * @return JSONResponse Import results
      */
@@ -613,10 +613,10 @@ class ConfigurationController extends Controller
     /**
      * Export configuration to download or GitHub.
      *
+     * @param int $id The configuration ID
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
-     *
-     * @param int $id The configuration ID
      *
      * @return JSONResponse Export result with download URL or success message
      */
@@ -681,7 +681,7 @@ class ConfigurationController extends Controller
                     );
 
             // Validate source.
-            if (!in_array($source, ['github', 'gitlab'])) {
+            if (in_array($source, ['github', 'gitlab']) === false) {
                 return new JSONResponse(
                     ['error' => 'Invalid source. Must be "github" or "gitlab"'],
                     400
@@ -736,7 +736,7 @@ class ConfigurationController extends Controller
             $owner = $data['owner'] ?? '';
             $repo  = $data['repo'] ?? '';
 
-            if (empty($owner) || empty($repo)) {
+            if (empty($owner) === true || empty($repo) === true) {
                 return new JSONResponse(
                     ['error' => 'Owner and repo parameters are required'],
                     400
@@ -777,9 +777,18 @@ class ConfigurationController extends Controller
     public function getGitHubRepositories(): JSONResponse
     {
         try {
-            $data    = $this->request->getParams();
-            $page    = isset($data['page']) ? (int) $data['page'] : 1;
-            $perPage = isset($data['per_page']) ? (int) $data['per_page'] : 100;
+            $data = $this->request->getParams();
+            if (isset($data['page']) === true) {
+                $page = (int) $data['page'];
+            } else {
+                $page = 1;
+            }
+
+            if (isset($data['per_page']) === true) {
+                $perPage = (int) $data['per_page'];
+            } else {
+                $perPage = 100;
+            }
 
             $this->logger->info(
                     'Fetching GitHub repositories',
@@ -822,7 +831,7 @@ class ConfigurationController extends Controller
             $repo   = $data['repo'] ?? '';
             $branch = $data['branch'] ?? 'main';
 
-            if (empty($owner) || empty($repo)) {
+            if (empty($owner) === true || empty($repo) === true) {
                 return new JSONResponse(
                     ['error' => 'Owner and repo parameters are required'],
                     400
@@ -870,7 +879,7 @@ class ConfigurationController extends Controller
             $namespace = $data['namespace'] ?? '';
             $project   = $data['project'] ?? '';
 
-            if (empty($namespace) || empty($project)) {
+            if (empty($namespace) === true || empty($project) === true) {
                 return new JSONResponse(
                     ['error' => 'Namespace and project parameters are required'],
                     400
@@ -923,7 +932,7 @@ class ConfigurationController extends Controller
             $project   = $data['project'] ?? '';
             $ref       = $data['ref'] ?? 'main';
 
-            if (empty($namespace) || empty($project)) {
+            if (empty($namespace) === true || empty($project) === true) {
                 return new JSONResponse(
                     ['error' => 'Namespace and project parameters are required'],
                     400
@@ -982,7 +991,7 @@ class ConfigurationController extends Controller
             $syncEnabled  = ($data['syncEnabled'] ?? true) === true;
             $syncInterval = (int) ($data['syncInterval'] ?? 24);
 
-            if (empty($owner) || empty($repo) || empty($path)) {
+            if (empty($owner) === true || empty($repo) === true || empty($path) === true) {
                 return new JSONResponse(
                     ['error' => 'Owner, repo, and path parameters are required'],
                     400
@@ -1015,7 +1024,7 @@ class ConfigurationController extends Controller
             if (count($existingConfigurations) > 0) {
                 return new JSONResponse(
                     [
-                        'error'                   => "Configuration for app '{$appId}' already exists. Please update the existing configuration instead.",
+                        'error'                   => $this->getExistingConfigErrorMessage($appId),
                         'existingConfigurationId' => $existingConfigurations[0]->getId(),
                     ],
                     409
@@ -1117,7 +1126,7 @@ class ConfigurationController extends Controller
             $syncEnabled  = ($data['syncEnabled'] ?? true) === true;
             $syncInterval = (int) ($data['syncInterval'] ?? 24);
 
-            if (empty($namespace) || empty($project) || empty($path)) {
+            if (empty($namespace) === true || empty($project) === true || empty($path) === true) {
                 return new JSONResponse(
                     ['error' => 'Namespace, project, and path parameters are required'],
                     400
@@ -1160,7 +1169,7 @@ class ConfigurationController extends Controller
             if (count($existingConfigurations) > 0) {
                 return new JSONResponse(
                     [
-                        'error'                   => "Configuration for app '{$appId}' already exists. Please update the existing configuration instead.",
+                        'error'                   => $this->getExistingConfigErrorMessage($appId),
                         'existingConfigurationId' => $existingConfigurations[0]->getId(),
                     ],
                     409
@@ -1256,7 +1265,7 @@ class ConfigurationController extends Controller
             $syncEnabled  = ($data['syncEnabled'] ?? true) === true;
             $syncInterval = (int) ($data['syncInterval'] ?? 24);
 
-            if (empty($url)) {
+            if (empty($url) === true) {
                 return new JSONResponse(
                     ['error' => 'URL parameter is required'],
                     400
@@ -1264,7 +1273,7 @@ class ConfigurationController extends Controller
             }
 
             // Validate URL.
-            if (!filter_var($url, FILTER_VALIDATE_URL)) {
+            if (filter_var($url, FILTER_VALIDATE_URL) === false) {
                 return new JSONResponse(
                     ['error' => 'Invalid URL provided'],
                     400
@@ -1301,7 +1310,7 @@ class ConfigurationController extends Controller
             if (count($existingConfigurations) > 0) {
                 return new JSONResponse(
                     [
-                        'error'                   => "Configuration for app '{$appId}' already exists. Please update the existing configuration instead.",
+                        'error'                   => $this->getExistingConfigErrorMessage($appId),
                         'existingConfigurationId' => $existingConfigurations[0]->getId(),
                     ],
                     409
@@ -1383,10 +1392,10 @@ class ConfigurationController extends Controller
      * Exports the configuration and publishes it to the specified GitHub repository.
      * Updates the configuration with GitHub source information.
      *
+     * @param int $id Configuration ID
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
-     *
-     * @param int $id Configuration ID
      *
      * @return JSONResponse Publish result
      */
@@ -1410,7 +1419,7 @@ class ConfigurationController extends Controller
             $branch        = $data['branch'] ?? 'main';
             $commitMessage = $data['commitMessage'] ?? "Update configuration: {$configuration->getTitle()}";
 
-            if (empty($owner) || empty($repo)) {
+            if (empty($owner) === true || empty($repo) === true) {
                 return new JSONResponse(
                     ['error' => 'Owner and repo parameters are required'],
                     400
@@ -1423,7 +1432,7 @@ class ConfigurationController extends Controller
 
             // If path is empty after stripping (user entered just "/"), use a default filename.
             // Generate filename from configuration title in snake_case format.
-            if (empty($path)) {
+            if (empty($path) === true) {
                 $title          = $configuration->getTitle();
                 $snakeCaseTitle = $this->toSnakeCase($title);
                 $path           = $snakeCaseTitle.'_openregister.json';
@@ -1448,7 +1457,7 @@ class ConfigurationController extends Controller
             // Instead, we set the openregister version and GitHub info.
             $githubRepo = "{$owner}/{$repo}";
 
-            if (!isset($configData['x-openregister'])) {
+            if (isset($configData['x-openregister']) === false) {
                 $configData['x-openregister'] = [];
             }
 
@@ -1526,8 +1535,10 @@ class ConfigurationController extends Controller
             }
 
             $message = 'Configuration published successfully to GitHub';
-            if ($defaultBranch && $branch !== $defaultBranch) {
-                $message .= ". Note: Published to branch '{$branch}' (default is '{$defaultBranch}'). "."GitHub Code Search primarily indexes the default branch, so this configuration may not appear in search results immediately.";
+            if ($defaultBranch !== null && $branch !== $defaultBranch) {
+                $message .= ". Note: Published to branch '{$branch}' (default is '{$defaultBranch}'). ";
+                $message .= 'GitHub Code Search primarily indexes the default branch, ';
+                $message .= 'so this configuration may not appear in search results immediately.';
             } else {
                 $message .= ". Note: GitHub Code Search may take a few minutes to index new files.";
             }
@@ -1542,7 +1553,7 @@ class ConfigurationController extends Controller
                         'file_url'        => $result['file_url'],
                         'branch'          => $branch,
                         'default_branch'  => $defaultBranch,
-                        'indexing_note'   => $defaultBranch && $branch !== $defaultBranch ? "Published to non-default branch. For discovery, publish to '{$defaultBranch}' branch." : "File published successfully. GitHub Code Search indexing may take a few minutes.",
+                        'indexing_note'   => $this->getIndexingNote($defaultBranch, $branch),
                     ],
                     200
                     );
@@ -1559,9 +1570,46 @@ class ConfigurationController extends Controller
 
 
     /**
+     * Get error message for existing configuration.
+     *
+     * @param string $appId Application ID
+     *
+     * @return string Error message
+     */
+    private function getExistingConfigErrorMessage(string $appId): string
+    {
+        $message  = "Configuration for app '{$appId}' already exists. ";
+        $message .= 'Please update the existing configuration instead.';
+
+        return $message;
+
+    }//end getExistingConfigErrorMessage()
+
+
+    /**
+     * Get indexing note based on branch information.
+     *
+     * @param string|null $defaultBranch Default branch name
+     * @param string      $branch        Current branch name
+     *
+     * @return string Indexing note message
+     */
+    private function getIndexingNote(?string $defaultBranch, string $branch): string
+    {
+        if ($defaultBranch !== null && $branch !== $defaultBranch) {
+            return "Published to non-default branch. For discovery, publish to '{$defaultBranch}' branch.";
+        }
+
+        return 'File published successfully. GitHub Code Search indexing may take a few minutes.';
+
+    }//end getIndexingNote()
+
+
+    /**
      * Convert a string to snake_case
      *
-     * @param  string $string The string to convert
+     * @param string $string The string to convert
+     *
      * @return string The snake_case version
      */
     private function toSnakeCase(string $string): string

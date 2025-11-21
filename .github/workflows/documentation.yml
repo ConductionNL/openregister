@@ -24,15 +24,6 @@ jobs:
           ls -la
           ls -la website/
 
-      # Generate SVG files using PlantUML
-      - name: plantuml
-        id: plantuml
-        uses: grassedge/generate-plantuml-action@v1.5
-        with:
-          message: "Render PlantUML files"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          
       - name: Setup Node.js 18
         uses: actions/setup-node@v3
         with:
