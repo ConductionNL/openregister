@@ -1,11 +1,22 @@
 <?php
+/**
+ * OpenRegister Webhook Event Listener
+ *
+ * Listener for webhook events.
+ *
+ * @category Listener
+ * @package  OCA\OpenRegister\Listener
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://www.OpenRegister.app
+ */
 
 declare(strict_types=1);
-
-/**
- * SPDX-FileCopyrightText: 2024 Nextcloud GmbH and Nextcloud contributors
- * SPDX-License-Identifier: AGPL-3.0-or-later
- */
 
 namespace OCA\OpenRegister\Listener;
 
@@ -73,8 +84,8 @@ class WebhookEventListener implements IEventListener
     /**
      * Constructor
      *
-     * @param WebhookService    $webhookService Webhook service
-     * @param LoggerInterface   $logger         Logger
+     * @param WebhookService  $webhookService Webhook service
+     * @param LoggerInterface $logger         Logger
      */
     public function __construct(
         WebhookService $webhookService,
@@ -99,15 +110,21 @@ class WebhookEventListener implements IEventListener
         $payload    = $this->extractPayload($event);
 
         if ($payload === null) {
-            $this->logger->debug('Could not extract payload from event', [
-                'event' => $eventClass,
-            ]);
+            $this->logger->debug(
+                    'Could not extract payload from event',
+                    [
+                        'event' => $eventClass,
+                    ]
+                    );
             return;
         }
 
-        $this->logger->debug('Processing event for webhooks', [
-            'event' => $eventClass,
-        ]);
+        $this->logger->debug(
+                'Processing event for webhooks',
+                [
+                    'event' => $eventClass,
+                ]
+                );
 
         // Dispatch to webhook service.
         $this->webhookService->dispatchEvent($event, $eventClass, $payload);
@@ -131,9 +148,15 @@ class WebhookEventListener implements IEventListener
             } else {
                 $object = $event->getNewObject();
             }
+
+            $action = 'updated';
+            if ($event instanceof ObjectCreatedEvent) {
+                $action = 'created';
+            }
+
             return [
                 'objectType' => 'object',
-                'action'     => $event instanceof ObjectCreatedEvent ? 'created' : 'updated',
+                'action'     => $action,
                 'object'     => $object->jsonSerialize(),
                 'register'   => $object->getRegister(),
                 'schema'     => $object->getSchema(),
@@ -151,9 +174,14 @@ class WebhookEventListener implements IEventListener
 
         if ($event instanceof ObjectLockedEvent || $event instanceof ObjectUnlockedEvent) {
             $object = $event->getObject();
+            $action = 'unlocked';
+            if ($event instanceof ObjectLockedEvent) {
+                $action = 'locked';
+            }
+
             return [
                 'objectType' => 'object',
-                'action'     => $event instanceof ObjectLockedEvent ? 'locked' : 'unlocked',
+                'action'     => $action,
                 'object'     => $object->jsonSerialize(),
             ];
         }
@@ -248,7 +276,10 @@ class WebhookEventListener implements IEventListener
         }
 
         // Configuration events.
-        if ($event instanceof ConfigurationCreatedEvent || $event instanceof ConfigurationUpdatedEvent || $event instanceof ConfigurationDeletedEvent) {
+        if ($event instanceof ConfigurationCreatedEvent
+            || $event instanceof ConfigurationUpdatedEvent
+            || $event instanceof ConfigurationDeletedEvent
+        ) {
             $configuration = $event->getConfiguration();
             $action        = match (true) {
                 $event instanceof ConfigurationCreatedEvent => 'created',
@@ -317,4 +348,3 @@ class WebhookEventListener implements IEventListener
 
 
 }//end class
-

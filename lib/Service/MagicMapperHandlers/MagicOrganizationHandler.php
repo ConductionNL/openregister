@@ -141,6 +141,9 @@ class MagicOrganizationHandler
                 }
 
                 // If admin override is disabled, apply organization filtering for admin users.
+                // Note: $activeOrganisationUuid cannot be null here because we checked and returned early at line 125.
+                // This check is redundant but kept for defensive programming.
+                // @psalm-suppress TypeDoesNotContainNull.
                 if ($activeOrganisationUuid === null) {
                     return;
                     // No filtering if no active organization.
@@ -152,7 +155,7 @@ class MagicOrganizationHandler
                 }
 
                 // Continue with organization filtering for non-default org.
-            }
+            }//end if
         }//end if
 
         $organizationColumn = $tableAlias.'._organisation';

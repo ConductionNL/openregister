@@ -1,20 +1,22 @@
 <?php
-
-declare(strict_types=1);
-
-/*
+/**
  * Class Chunk
  *
  * Represents a single chunk of text produced from any source.
  *
- * @category  Db
- * @package   OCA\OpenRegister\Db
+ * @category Db
+ * @package  OCA\OpenRegister\Db
+ *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @version   GIT: <git-id>
- * @link      https://www.openregister.nl
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://www.openregister.nl
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
@@ -69,44 +71,144 @@ use OCP\AppFramework\Db\Entity;
 class Chunk extends Entity implements JsonSerializable
 {
 
+    /**
+     * UUID.
+     *
+     * @var string|null
+     */
     protected ?string $uuid = null;
 
+    /**
+     * Source type.
+     *
+     * @var string|null
+     */
     protected ?string $sourceType = null;
 
+    /**
+     * Source ID.
+     *
+     * @var integer|null
+     */
     protected ?int $sourceId = null;
 
+    /**
+     * Text content.
+     *
+     * @var string|null
+     */
     protected ?string $textContent = null;
 
+    /**
+     * Start offset.
+     *
+     * @var integer
+     */
     protected int $startOffset = 0;
 
+    /**
+     * End offset.
+     *
+     * @var integer
+     */
     protected int $endOffset = 0;
 
+    /**
+     * Chunk index.
+     *
+     * @var integer
+     */
     protected int $chunkIndex = 0;
 
+    /**
+     * Position reference.
+     *
+     * @var array|null
+     */
     protected ?array $positionReference = null;
 
+    /**
+     * Language.
+     *
+     * @var string|null
+     */
     protected ?string $language = null;
 
+    /**
+     * Language level.
+     *
+     * @var string|null
+     */
     protected ?string $languageLevel = null;
 
+    /**
+     * Language confidence.
+     *
+     * @var float|null
+     */
     protected ?float $languageConfidence = null;
 
+    /**
+     * Detection method.
+     *
+     * @var string|null
+     */
     protected ?string $detectionMethod = null;
 
+    /**
+     * Indexed flag.
+     *
+     * @var boolean
+     */
     protected bool $indexed = false;
 
+    /**
+     * Vectorized flag.
+     *
+     * @var boolean
+     */
     protected bool $vectorized = false;
 
+    /**
+     * Embedding provider.
+     *
+     * @var string|null
+     */
     protected ?string $embeddingProvider = null;
 
+    /**
+     * Overlap size.
+     *
+     * @var integer
+     */
     protected int $overlapSize = 0;
 
+    /**
+     * Owner.
+     *
+     * @var string|null
+     */
     protected ?string $owner = null;
 
+    /**
+     * Organisation.
+     *
+     * @var string|null
+     */
     protected ?string $organisation = null;
 
+    /**
+     * Created at timestamp.
+     *
+     * @var DateTime|null
+     */
     protected ?DateTime $createdAt = null;
 
+    /**
+     * Updated at timestamp.
+     *
+     * @var DateTime|null
+     */
     protected ?DateTime $updatedAt = null;
 
 

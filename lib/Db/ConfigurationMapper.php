@@ -431,7 +431,7 @@ class ConfigurationMapper extends QBMapper
         // Get old state before update.
         $oldEntity = $this->find($entity->getId());
 
-        // @psalm-suppress RedundantCondition.
+        // @psalm-suppress RedundantCondition
         if ($entity instanceof Configuration) {
             $entity->setUpdated(new DateTime());
         }

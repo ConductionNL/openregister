@@ -1,7 +1,4 @@
 <?php
-
-declare(strict_types=1);
-
 /**
  * OpenRegister FileText Mapper
  *
@@ -18,6 +15,8 @@ declare(strict_types=1);
  *
  * @link https://www.OpenRegister.app
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
@@ -420,7 +419,8 @@ class FileTextMapper extends QBMapper
     /**
      * Format MIME type for display
      *
-     * @param  string $mimeType MIME type
+     * @param string $mimeType MIME type
+     *
      * @return string Formatted name
      */
     private function formatMimeType(string $mimeType): string
@@ -575,11 +575,14 @@ class FileTextMapper extends QBMapper
             ->where($qb->expr()->eq('mt.mimetype', $qb->createNamedParameter('httpd/unix-directory', IQueryBuilder::PARAM_STR)));
 
         $result = $qb->executeQuery();
-        while ($row = $result->fetch()) {
+        $row    = $result->fetch();
+        while ($row !== false) {
             if (in_array($row['id'], $idsToDelete) === false) {
                 $idsToDelete[] = $row['id'];
                 $reasons['is_directory']++;
             }
+
+            $row = $result->fetch();
         }
 
         $result->closeCursor();
@@ -605,11 +608,14 @@ class FileTextMapper extends QBMapper
             );
 
         $result = $qb->executeQuery();
-        while ($row = $result->fetch()) {
+        $row    = $result->fetch();
+        while ($row !== false) {
             if (in_array($row['id'], $idsToDelete) === false) {
                 $idsToDelete[] = $row['id'];
                 $reasons['system_file']++;
             }
+
+            $row = $result->fetch();
         }
 
         $result->closeCursor();

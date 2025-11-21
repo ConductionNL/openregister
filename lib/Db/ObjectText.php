@@ -1,16 +1,22 @@
 <?php
-
-declare(strict_types=1);
-
-/*
+/**
+ * OpenRegister ObjectText Entity
+ *
  * ObjectText entity stores flattened text extracted from OpenRegister objects.
  *
- * @category Db
+ * @category Database
  * @package  OCA\OpenRegister\Db
  *
- * @author  Conduction Development Team
- * @license AGPL-3.0-or-later
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://www.OpenRegister.app
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
@@ -55,32 +61,102 @@ use OCP\AppFramework\Db\Entity;
 class ObjectText extends Entity implements JsonSerializable
 {
 
+    /**
+     * UUID.
+     *
+     * @var string|null
+     */
     protected ?string $uuid = null;
 
+    /**
+     * Object ID.
+     *
+     * @var integer|null
+     */
     protected ?int $objectId = null;
 
+    /**
+     * Register.
+     *
+     * @var string|null
+     */
     protected ?string $register = null;
 
+    /**
+     * Schema.
+     *
+     * @var string|null
+     */
     protected ?string $schema = null;
 
+    /**
+     * Text blob.
+     *
+     * @var string|null
+     */
     protected ?string $textBlob = null;
 
+    /**
+     * Text length.
+     *
+     * @var integer
+     */
     protected int $textLength = 0;
 
+    /**
+     * Property map.
+     *
+     * @var array|null
+     */
     protected ?array $propertyMap = null;
 
+    /**
+     * Extraction status.
+     *
+     * @var string
+     */
     protected string $extractionStatus = 'completed';
 
+    /**
+     * Chunked flag.
+     *
+     * @var boolean
+     */
     protected bool $chunked = false;
 
+    /**
+     * Chunk count.
+     *
+     * @var integer
+     */
     protected int $chunkCount = 0;
 
+    /**
+     * Owner.
+     *
+     * @var string|null
+     */
     protected ?string $owner = null;
 
+    /**
+     * Organisation.
+     *
+     * @var string|null
+     */
     protected ?string $organisation = null;
 
+    /**
+     * Created at timestamp.
+     *
+     * @var DateTime|null
+     */
     protected ?DateTime $createdAt = null;
 
+    /**
+     * Updated at timestamp.
+     *
+     * @var DateTime|null
+     */
     protected ?DateTime $updatedAt = null;
 
 

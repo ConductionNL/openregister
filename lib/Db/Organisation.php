@@ -45,7 +45,7 @@ use Symfony\Component\Uid\Uuid;
  * @method array|null getUsers()
  * @method void setUsers(?array $users)
  * @method array|null getGroups()
- * @method void setGroups(?array $groups)
+ * @method static setGroups(?array $groups)
  * @method string|null getOwner()
  * @method void setOwner(?string $owner)
  * @method DateTime|null getCreated()
@@ -53,7 +53,7 @@ use Symfony\Component\Uid\Uuid;
  * @method DateTime|null getUpdated()
  * @method void setUpdated(?DateTime $updated)
  * @method bool|null getActive()
- * @method void setActive(?bool $active)
+ * @method static setActive(mixed $active)
  * @method int|null getStorageQuota()
  * @method void setStorageQuota(?int $storageQuota)
  * @method int|null getBandwidthQuota()
@@ -61,9 +61,9 @@ use Symfony\Component\Uid\Uuid;
  * @method int|null getRequestQuota()
  * @method void setRequestQuota(?int $requestQuota)
  * @method array|null getAuthorization()
- * @method void setAuthorization(?array $authorization)
+ * @method static setAuthorization(?array $authorization)
  * @method string|null getParent()
- * @method void setParent(?string $parent)
+ * @method static setParent(?string $parent)
  */
 class Organisation extends Entity implements JsonSerializable
 {
@@ -344,7 +344,9 @@ class Organisation extends Entity implements JsonSerializable
      */
     public function addRole(array $role): static
     {
+        // @psalm-suppress UndefinedThisPropertyFetch, UndefinedThisPropertyAssignment
         if ($this->roles === null) {
+            // @psalm-suppress UndefinedThisPropertyAssignment
             $this->roles = [];
         }
 
@@ -352,6 +354,7 @@ class Organisation extends Entity implements JsonSerializable
         $roleId = $role['id'] ?? $role['name'] ?? null;
         if ($roleId !== null) {
             $exists = false;
+            // @psalm-suppress UndefinedThisPropertyFetch
             foreach ($this->roles as $existingRole) {
                 $existingId = $existingRole['id'] ?? $existingRole['name'] ?? null;
                 if ($existingId === $roleId) {
@@ -361,6 +364,7 @@ class Organisation extends Entity implements JsonSerializable
             }
 
             if ($exists === false) {
+                // @psalm-suppress UndefinedThisPropertyAssignment
                 $this->roles[] = $role;
             }
         }
@@ -379,10 +383,12 @@ class Organisation extends Entity implements JsonSerializable
      */
     public function removeRole(string $roleId): static
     {
+        // @psalm-suppress UndefinedThisPropertyFetch
         if ($this->roles === null) {
             return $this;
         }
 
+        // @psalm-suppress UndefinedThisPropertyAssignment
         $this->roles = array_values(
                 array_filter(
                 $this->roles,
@@ -407,6 +413,7 @@ class Organisation extends Entity implements JsonSerializable
      */
     public function hasRole(string $roleId): bool
     {
+        // @psalm-suppress UndefinedThisPropertyFetch
         if ($this->roles === null) {
             return false;
         }
@@ -432,10 +439,12 @@ class Organisation extends Entity implements JsonSerializable
      */
     public function getRole(string $roleId): ?array
     {
+        // @psalm-suppress UndefinedThisPropertyFetch
         if ($this->roles === null) {
             return null;
         }
 
+        // @psalm-suppress UndefinedThisPropertyFetch
         foreach ($this->roles as $role) {
             $currentId = $role['id'] ?? $role['name'] ?? null;
             if ($currentId === $roleId) {

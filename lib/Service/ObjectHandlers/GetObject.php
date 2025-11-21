@@ -261,7 +261,7 @@ class GetObject
     public function findRelated(ObjectEntity $object): array
     {
         // Get the relations of the object.
-        $relatedObjects = $object->getObject()->getRelations();
+        $relatedObjects = $object->getRelations() ?? [];
 
         // Iterate over each related object.
         foreach ($relatedObjects as $propertyName => $id) {

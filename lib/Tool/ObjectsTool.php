@@ -271,13 +271,11 @@ class ObjectsTool extends AbstractTool
         $filters = $this->applyViewFilters($filters);
 
         $result = $this->objectService->findAll(
-            null,
-            // Register ID.
-            null,
-            // Schema ID.
-            $limit,
-            $offset,
-            $filters
+            [
+                'limit'   => $limit,
+                'offset'  => $offset,
+                'filters' => $filters,
+            ]
         );
 
         $objectList = array_map(
@@ -435,7 +433,8 @@ class ObjectsTool extends AbstractTool
     public function deleteObject(string $id): array
     {
         $object = $this->objectService->find($id);
-        $this->objectService->deleteObject($object->getUuid() ?? $object->getId());
+        $uuid   = $object->getUuid() ?? (string) $object->getId();
+        $this->objectService->deleteObject($uuid);
 
         return $this->formatSuccess(
             ['id' => $id],

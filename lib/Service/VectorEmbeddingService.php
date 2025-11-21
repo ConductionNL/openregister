@@ -649,7 +649,7 @@ class VectorEmbeddingService
      * @param int   $limit          Maximum number of results
      * @param array $filters        Additional filters (entity_type, etc.)
      *
-     * @return (array|float|int|mixed|null|string)[][] Search results
+     * @return array<int, array<int|float|string|array|null>> Search results
      *
      * @throws \Exception If search fails or Solr is not configured
      *
@@ -1003,7 +1003,7 @@ class VectorEmbeddingService
                         )
                 ->executeStatement();
 
-            $vectorId = (int) $qb->getLastInsertId();
+            $vectorId = $qb->getLastInsertId();
 
             $this->logger->info(
                     'Vector stored successfully',
@@ -1456,10 +1456,10 @@ class VectorEmbeddingService
                 ];
             }
 
-            $rrfScore = $vectorWeight / ($k + $rank + 1);
+            $rrfScore = $vectorWeight / ($k + (int) $rank + 1);
             $combinedScores[$key]['combined_score'] += $rrfScore;
             $combinedScores[$key]['in_vector']       = true;
-            $combinedScores[$key]['vector_rank']     = $rank + 1;
+            $combinedScores[$key]['vector_rank']     = (int) $rank + 1;
         }//end foreach
 
         // Process SOLR results.
@@ -1483,10 +1483,10 @@ class VectorEmbeddingService
                 ];
             }
 
-            $rrfScore = $solrWeight / ($k + $rank + 1);
+            $rrfScore = $solrWeight / ($k + (int) $rank + 1);
             $combinedScores[$key]['combined_score'] += $rrfScore;
             $combinedScores[$key]['in_solr']         = true;
-            $combinedScores[$key]['solr_rank']       = $rank + 1;
+            $combinedScores[$key]['solr_rank']       = (int) $rank + 1;
             $combinedScores[$key]['solr_score']      = $result['score'];
         }//end foreach
 
@@ -2066,13 +2066,20 @@ class VectorEmbeddingService
                 $error    = curl_error($ch);
                 curl_close($ch);
 
-                /** @psalm-suppress RedundantCondition */
+                /*
+                 * @psalm-suppress RedundantCondition
+                 */
                 if ($error !== null && $error !== '') {
                     throw new \Exception("Fireworks API request failed: {$error}");
                 }
 
                 if ($httpCode !== 200) {
                     throw new \Exception("Fireworks API returned HTTP {$httpCode}: {$response}");
+                }
+
+                // Ensure $response is a string (curl_exec can return bool on failure).
+                if (!is_string($response)) {
+                    throw new \Exception("Fireworks API request failed: Invalid response type");
                 }
 
                 $data = json_decode($response, true);
@@ -2239,6 +2246,8 @@ class VectorEmbeddingService
                     entityType: 'file_chunk',
                     entityId: "{$fileId}_chunk_{$index}",
                     embedding: $embeddingData['embedding'],
+                    model: $embeddingData['model'],
+                    dimensions: $embeddingData['dimensions'],
                     metadata: array_merge(
                             $metadata,
                             [
@@ -2322,7 +2331,9 @@ class VectorEmbeddingService
         }
 
         // Search similar vectors.
-        /** @psalm-suppress UndefinedMethod */
+        /*
+         * @psalm-suppress UndefinedMethod
+         */
         $results = $this->searchSimilarVectors(
             $queryEmbedding['embedding'],
             $limit,
@@ -2507,7 +2518,9 @@ class VectorEmbeddingService
                 'total_vectors'     => $totalVectors,
                 'null_model_count'  => $nullModelCount,
                 'mismatched_models' => $mismatchDetails,
-                /** @psalm-suppress UndefinedMethod */
+                /*
+                 * @psalm-suppress UndefinedMethod
+                 */
                 'message'           => $this->getModelMismatchMessage($hasMismatch, $nullModelCount),
             ];
         } catch (\Exception $e) {

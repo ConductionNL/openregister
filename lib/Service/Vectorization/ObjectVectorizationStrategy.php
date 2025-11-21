@@ -83,9 +83,9 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
      *
      * @param array $options Options: views, batch_size
      *
-     * @return array|int Array of ObjectEntity objects
+     * @return array Array of ObjectEntity objects
      */
-    public function fetchEntities(array $options): array|int
+    public function fetchEntities(array $options): array
     {
         $views = $options['views'] ?? null;
         $limit = $options['batch_size'] ?? 25;
@@ -99,7 +99,7 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
                 );
 
         // Get objects using ObjectService with view support.
-        $objects = $this->objectService->searchObjects(
+        $result = $this->objectService->searchObjects(
             query: [
                 '_limit'  => $limit,
                 '_source' => 'database',
@@ -111,12 +111,13 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
             views: $views
         );
 
-        // SearchObjects returns array of ObjectEntity objects directly.
-        if (is_array($objects) === true) {
-            $count = count($objects);
-        } else {
-            $count = 0;
+        // SearchObjects can return array|int, but we need array for vectorization.
+        $objects = [];
+        if (is_array($result) === true) {
+            $objects = $result;
         }
+
+        $count = count($objects);
 
         $this->logger->debug(
                 '[ObjectVectorizationStrategy] Fetched objects',

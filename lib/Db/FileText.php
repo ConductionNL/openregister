@@ -1,11 +1,22 @@
 <?php
+/**
+ * OpenRegister FileText Entity
+ *
+ * Represents extracted text content from a file for SOLR indexing and AI processing.
+ *
+ * @category Database
+ * @package  OCA\OpenRegister\Db
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://www.OpenRegister.app
+ */
 
 declare(strict_types=1);
-
-/*
- * SPDX-FileCopyrightText: 2024 Nextcloud GmbH and Nextcloud contributors
- * SPDX-License-Identifier: AGPL-3.0-or-later
- */
 
 namespace OCA\OpenRegister\Db;
 
@@ -68,47 +79,150 @@ use Symfony\Component\Uid\Uuid;
 class FileText extends Entity implements JsonSerializable
 {
 
+    /**
+     * UUID.
+     *
+     * @var string|null
+     */
     protected ?string $uuid = null;
 
+    /**
+     * File ID.
+     *
+     * @var integer|null
+     */
     protected ?int $fileId = null;
 
+    /**
+     * File path.
+     *
+     * @var string|null
+     */
     protected ?string $filePath = null;
 
+    /**
+     * File name.
+     *
+     * @var string|null
+     */
     protected ?string $fileName = null;
 
+    /**
+     * MIME type.
+     *
+     * @var string|null
+     */
     protected ?string $mimeType = null;
 
+    /**
+     * File size.
+     *
+     * @var integer|null
+     */
     protected ?int $fileSize = null;
 
+    /**
+     * File checksum.
+     *
+     * @var string|null
+     */
     protected ?string $fileChecksum = null;
 
+    /**
+     * Text content.
+     *
+     * @var string|null
+     */
     protected ?string $textContent = null;
 
+    /**
+     * Text length.
+     *
+     * @var integer
+     */
     protected int $textLength = 0;
 
+    /**
+     * Extraction method.
+     *
+     * @var string
+     */
     protected string $extractionMethod = 'text_extract';
 
+    /**
+     * Extraction status.
+     *
+     * @var string
+     */
     protected string $extractionStatus = 'pending';
 
+    /**
+     * Extraction error.
+     *
+     * @var string|null
+     */
     protected ?string $extractionError = null;
 
+    /**
+     * Chunked flag.
+     *
+     * @var boolean
+     */
     protected bool $chunked = false;
 
+    /**
+     * Chunk count.
+     *
+     * @var integer
+     */
     protected int $chunkCount = 0;
 
+    /**
+     * Chunks JSON.
+     *
+     * @var string|null
+     */
     protected ?string $chunksJson = null;
 
+    /**
+     * Indexed in Solr flag.
+     *
+     * @var boolean
+     */
     protected bool $indexedInSolr = false;
 
+    /**
+     * Vectorized flag.
+     *
+     * @var boolean
+     */
     protected bool $vectorized = false;
 
+    /**
+     * Created at timestamp.
+     *
+     * @var DateTime|null
+     */
     protected ?DateTime $createdAt = null;
 
+    /**
+     * Updated at timestamp.
+     *
+     * @var DateTime|null
+     */
     protected ?DateTime $updatedAt = null;
 
+    /**
+     * Extracted at timestamp.
+     *
+     * @var DateTime|null
+     */
     protected ?DateTime $extractedAt = null;
 
 
+    /**
+     * Constructor.
+     */
     public function __construct()
     {
         $this->addType('uuid', 'string');
@@ -154,6 +268,11 @@ class FileText extends Entity implements JsonSerializable
     }//end isValidUuid()
 
 
+    /**
+     * JSON serialization.
+     *
+     * @return array<string,mixed>
+     */
     public function jsonSerialize(): array
     {
         return [

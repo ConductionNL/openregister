@@ -1,11 +1,22 @@
 <?php
+/**
+ * OpenRegister Webhook Mapper
+ *
+ * Mapper for Webhook entities to handle database operations.
+ *
+ * @category Database
+ * @package  OCA\OpenRegister\Db
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://www.OpenRegister.app
+ */
 
 declare(strict_types=1);
-
-/**
- * SPDX-FileCopyrightText: 2024 Nextcloud GmbH and Nextcloud contributors
- * SPDX-License-Identifier: AGPL-3.0-or-later
- */
 
 namespace OCA\OpenRegister\Db;
 
@@ -187,9 +198,12 @@ class WebhookMapper extends QBMapper
         $webhooks = $this->findEnabled();
 
         // Filter webhooks that match the event.
-        return array_filter($webhooks, function ($webhook) use ($eventClass) {
-            return $webhook->matchesEvent($eventClass);
-        });
+        return array_filter(
+                $webhooks,
+                function ($webhook) use ($eventClass) {
+                    return $webhook->matchesEvent($eventClass);
+                }
+                );
 
     }//end findForEvent()
 
@@ -280,7 +294,7 @@ class WebhookMapper extends QBMapper
      *
      * @return Webhook
      */
-    public function updateStatistics(Webhook $webhook, bool $success, bool $incrementOnly = false): Webhook
+    public function updateStatistics(Webhook $webhook, bool $success, bool $incrementOnly=false): Webhook
     {
         $webhook->setTotalDeliveries($webhook->getTotalDeliveries() + 1);
 
@@ -343,4 +357,3 @@ class WebhookMapper extends QBMapper
 
 
 }//end class
-

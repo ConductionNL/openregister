@@ -1303,6 +1303,7 @@ class TextExtractionService
             // Clean up.
             fclose($tempFile);
 
+            // @psalm-suppress TypeDoesNotContainNull
             if ($text === '' || $text === null) {
                 $this->logger->warning(
                         '[TextExtractionService] PDF extraction returned empty text',
@@ -1486,6 +1487,7 @@ class TextExtractionService
                 // Iterate through rows and columns.
                 for ($row = 1; $row <= $highestRow; $row++) {
                     $rowData = [];
+                    // @psalm-suppress StringIncrement - Intentional Excel column increment (A->B->C...).
                     for ($col = 'A'; $col !== $highestColumn; $col++) {
                         $value = $sheet->getCell($col.$row)->getValue();
                         if ($value !== null && $value !== '') {

@@ -1,11 +1,22 @@
 <?php
+/**
+ * OpenRegister Migration Version1Date20251120210000
+ *
+ * Migration to create webhooks table for webhook integration.
+ *
+ * @category Migration
+ * @package  OCA\OpenRegister\Migration
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://www.OpenRegister.app
+ */
 
 declare(strict_types=1);
-
-/**
- * SPDX-FileCopyrightText: 2024 Nextcloud GmbH and Nextcloud contributors
- * SPDX-License-Identifier: AGPL-3.0-or-later
- */
 
 namespace OCA\OpenRegister\Migration;
 
@@ -22,15 +33,17 @@ class Version1Date20251120210000 extends SimpleMigrationStep
 {
 
     /**
-     * @param IOutput $output
+     * Change schema for webhooks table creation
+     *
+     * @param IOutput $output        Migration output
      * @param Closure $schemaClosure The `\Closure` returns a `ISchemaWrapper`
-     * @param array   $options
+     * @param array   $options       Migration options
      *
      * @return null|ISchemaWrapper
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /** @var ISchemaWrapper $schema */
+        /* @var ISchemaWrapper $schema */
         $schema = $schemaClosure();
 
         if ($schema->hasTable('openregister_webhooks') === false) {

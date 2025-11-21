@@ -54,6 +54,8 @@ use Psr\Log\LoggerInterface;
  */
 class MagicRbacHandler
 {
+
+
     /**
      * Constructor for MagicRbacHandler
      *
@@ -63,8 +65,6 @@ class MagicRbacHandler
      * @param IAppConfig      $appConfig    App configuration for RBAC settings
      * @param LoggerInterface $logger       Logger for debugging and error reporting
      */
-
-
     public function __construct(
         private readonly IUserSession $userSession,
         private readonly IGroupManager $groupManager,
@@ -221,8 +221,6 @@ class MagicRbacHandler
             // Full public access - no filtering needed.
         }
 
-        // No automatic published object access - use explicit published filter.
-
     }//end applyUnauthenticatedAccess()
 
 
@@ -262,12 +260,11 @@ class MagicRbacHandler
             return false;
         }
 
-        $rbacData   = json_decode($rbacConfig, true);
-        $enabled    = $rbacData['enabled'] ?? false;
+        $rbacData = json_decode($rbacConfig, true);
+        $enabled  = $rbacData['enabled'] ?? false;
         return $enabled === true;
 
     }//end isRbacEnabled()
-
 
 
     /**
@@ -290,7 +287,6 @@ class MagicRbacHandler
     }//end isAdminOverrideEnabled()
 
 
-
     /**
      * Check if current user has admin privileges
      *
@@ -305,6 +301,7 @@ class MagicRbacHandler
             if ($user === null) {
                 return false;
             }
+
             $userId = $user->getUID();
         }
 
@@ -315,7 +312,9 @@ class MagicRbacHandler
 
         $userGroups = $this->groupManager->getUserGroupIds($userObj);
         return in_array('admin', $userGroups) === true;
-    }
+
+    }//end isCurrentUserAdmin()
+
 
     /**
      * Get current user ID
@@ -330,7 +329,9 @@ class MagicRbacHandler
         }
 
         return null;
-    }
+
+    }//end getCurrentUserId()
+
 
     /**
      * Get current user groups
@@ -339,13 +340,14 @@ class MagicRbacHandler
      *
      * @return array Array of group IDs the user belongs to
      */
-    public function getCurrentUserGroups(?string $userId = null): array
+    public function getCurrentUserGroups(?string $userId=null): array
     {
         if ($userId === null) {
             $user = $this->userSession->getUser();
             if ($user === null) {
                 return [];
             }
+
             $userId = $user->getUID();
         }
 
@@ -355,5 +357,8 @@ class MagicRbacHandler
         }
 
         return $this->groupManager->getUserGroupIds($userObj);
-    }
-}
+
+    }//end getCurrentUserGroups()
+
+
+}//end class

@@ -635,7 +635,7 @@ class Schema extends Entity implements JsonSerializable
             if ($key === 'configuration') {
                 try {
                     // If it's a JSON string, decode it first.
-                    if (is_string($value)) {
+                    if (is_string($value) === true) {
                         $decoded = json_decode($value, true);
                         // Only use decoded value if JSON was valid.
                         if (json_last_error() === JSON_ERROR_NONE) {
@@ -885,12 +885,12 @@ class Schema extends Entity implements JsonSerializable
         }
 
         // If it's already an array, return it.
-        if (is_array($this->configuration)) {
+        if (is_array($this->configuration) === true) {
             return $this->configuration;
         }
 
         // If it's a JSON string, decode it.
-        if (is_string($this->configuration)) {
+        if (is_string($this->configuration) === true) {
             $decoded = json_decode($this->configuration, true);
             if (json_last_error() === JSON_ERROR_NONE) {
                 return $decoded;
@@ -935,7 +935,7 @@ class Schema extends Entity implements JsonSerializable
         }
 
         // Handle JSON strings from database.
-        if (is_string($configuration)) {
+        if (is_string($configuration) === true) {
             $decoded = json_decode($configuration, true);
             if (json_last_error() === JSON_ERROR_NONE) {
                 $configuration = $decoded;
@@ -948,7 +948,7 @@ class Schema extends Entity implements JsonSerializable
         }
 
         // If it's still not an array at this point, set to null.
-        if (!is_array($configuration)) {
+        if (is_array($configuration) === false) {
             $this->configuration = null;
             $this->markFieldUpdated('configuration');
             return;
@@ -969,7 +969,7 @@ class Schema extends Entity implements JsonSerializable
 
         foreach ($configuration as $key => $value) {
             // Skip unknown configuration keys.
-            if (!in_array($key, $allowedKeys)) {
+            if (in_array($key, $allowedKeys) === false) {
                 continue;
             }
 
@@ -979,16 +979,20 @@ class Schema extends Entity implements JsonSerializable
                 case 'objectSummaryField':
                 case 'objectImageField':
                     // These should be strings (dot-notation paths) or empty.
-                    if ($value !== null && $value !== '' && !is_string($value)) {
+                    if ($value !== null && $value !== '' && is_string($value) === false) {
                         throw new \InvalidArgumentException("Configuration '{$key}' must be a string or null");
                     }
 
-                    $validatedConfig[$key] = $value === '' ? null : $value;
+                    if ($value === '') {
+                        $validatedConfig[$key] = null;
+                    } else {
+                        $validatedConfig[$key] = $value;
+                    }
                     break;
 
                 case 'allowFiles':
                     // This should be a boolean.
-                    if ($value !== null && !is_bool($value)) {
+                    if ($value !== null && is_bool($value) === false) {
                         throw new \InvalidArgumentException("Configuration 'allowFiles' must be a boolean or null");
                     }
 
@@ -997,7 +1001,7 @@ class Schema extends Entity implements JsonSerializable
 
                 case 'autoPublish':
                     // This should be a boolean.
-                    if ($value !== null && !is_bool($value)) {
+                    if ($value !== null && is_bool($value) === false) {
                         throw new \InvalidArgumentException("Configuration 'autoPublish' must be a boolean or null");
                     }
 
@@ -1007,13 +1011,13 @@ class Schema extends Entity implements JsonSerializable
                 case 'allowedTags':
                     // This should be an array of strings.
                     if ($value !== null) {
-                        if (!is_array($value)) {
+                        if (is_array($value) === false) {
                             throw new \InvalidArgumentException("Configuration 'allowedTags' must be an array or null");
                         }
 
                         // Validate that all tags are strings.
                         foreach ($value as $tag) {
-                            if (!is_string($tag)) {
+                            if (is_string($tag) === false) {
                                 throw new \InvalidArgumentException("All values in 'allowedTags' must be strings");
                             }
                         }
@@ -1026,7 +1030,12 @@ class Schema extends Entity implements JsonSerializable
             }//end switch
         }//end foreach
 
-        $this->configuration = empty($validatedConfig) ? null : $validatedConfig;
+        if (empty($validatedConfig) === true) {
+            $this->configuration = null;
+        } else {
+            $this->configuration = $validatedConfig;
+        }
+
         $this->markFieldUpdated('configuration');
 
     }//end setConfiguration()
@@ -1103,12 +1112,12 @@ class Schema extends Entity implements JsonSerializable
         }
 
         // If it's already an array, return it.
-        if (is_array($this->facets)) {
+        if (is_array($this->facets) === true) {
             return $this->facets;
         }
 
         // If it's a JSON string, decode it.
-        if (is_string($this->facets)) {
+        if (is_string($this->facets) === true) {
             $decoded = json_decode($this->facets, true);
             if (json_last_error() === JSON_ERROR_NONE) {
                 return $decoded;
@@ -1133,7 +1142,7 @@ class Schema extends Entity implements JsonSerializable
     public function setFacets(array|string|null $facets): void
     {
         // **DATABASE COMPATIBILITY**: Handle JSON string from database.
-        if (is_string($facets)) {
+        if (is_string($facets) === true) {
             try {
                 $this->facets = json_decode($facets, true);
                 if (json_last_error() !== JSON_ERROR_NONE) {
@@ -1165,7 +1174,7 @@ class Schema extends Entity implements JsonSerializable
     {
         $properties = $this->getProperties();
 
-        if (empty($properties)) {
+        if (empty($properties) === true) {
             $this->setFacets(null);
             return;
         }
@@ -1179,7 +1188,7 @@ class Schema extends Entity implements JsonSerializable
         // Analyze each property for facetable configuration.
         foreach ($properties as $propertyKey => $property) {
             // Skip properties that are not marked as facetable.
-            if (!isset($property['facetable']) || $property['facetable'] !== true) {
+            if (isset($property['facetable']) === false || $property['facetable'] !== true) {
                 continue;
             }
 
@@ -1201,7 +1210,7 @@ class Schema extends Entity implements JsonSerializable
                     $facetConfig['object_fields'][$propertyKey]['supported_intervals'] = ['day', 'week', 'month', 'year'];
                 } else if ($facetType === 'range') {
                     $facetConfig['object_fields'][$propertyKey]['supports_custom_ranges'] = true;
-                } else if ($facetType === 'terms' && isset($property['enum'])) {
+                } else if ($facetType === 'terms' && isset($property['enum']) === true) {
                     $facetConfig['object_fields'][$propertyKey]['predefined_values'] = $property['enum'];
                 }
             }
@@ -1267,9 +1276,9 @@ class Schema extends Entity implements JsonSerializable
     private function determineFacetTypeForProperty(array $property, string $fieldName): ?string
     {
         // Check if explicitly marked as facetable.
-        if (isset($property['facetable'])
+        if (isset($property['facetable']) === true
             && ($property['facetable'] === true || $property['facetable'] === 'true'
-            || (is_string($property['facetable']) && strtolower(trim($property['facetable'])) === 'true'))
+            || (is_string($property['facetable']) === true && strtolower(trim($property['facetable'])) === 'true'))
         ) {
             return $this->determineFacetTypeFromPropertyType($property);
         }
@@ -1296,25 +1305,25 @@ class Schema extends Entity implements JsonSerializable
         ];
 
         $lowerFieldName = strtolower($fieldName);
-        if (in_array($lowerFieldName, $commonFacetableFields)) {
+        if (in_array($lowerFieldName, $commonFacetableFields) === true) {
             return $this->determineFacetTypeFromPropertyType($property);
         }
 
         // Auto-detect enum properties (good for faceting).
-        if (isset($property['enum']) && is_array($property['enum']) && count($property['enum']) > 0) {
+        if (isset($property['enum']) === true && is_array($property['enum']) === true && count($property['enum']) > 0) {
             return 'terms';
         }
 
         // Auto-detect date/datetime fields.
         $propertyType = $property['type'] ?? '';
-        if (in_array($propertyType, ['date', 'datetime', 'date-time'])) {
+        if (in_array($propertyType, ['date', 'datetime', 'date-time']) === true) {
             return 'date_histogram';
         }
 
         // Check for date-like field names.
         $dateFields = ['created', 'updated', 'modified', 'date', 'time', 'timestamp'];
         foreach ($dateFields as $dateField) {
-            if (str_contains($lowerFieldName, $dateField)) {
+            if (str_contains($lowerFieldName, $dateField) === true) {
                 return 'date_histogram';
             }
         }
@@ -1336,17 +1345,17 @@ class Schema extends Entity implements JsonSerializable
         $propertyType = $property['type'] ?? 'string';
 
         // Date/datetime properties use date_histogram.
-        if (in_array($propertyType, ['date', 'datetime', 'date-time'])) {
+        if (in_array($propertyType, ['date', 'datetime', 'date-time']) === true) {
             return 'date_histogram';
         }
 
         // Enum properties use terms.
-        if (isset($property['enum']) && is_array($property['enum'])) {
+        if (isset($property['enum']) === true && is_array($property['enum']) === true) {
             return 'terms';
         }
 
         // Boolean, integer, number with small ranges use terms.
-        if (in_array($propertyType, ['boolean', 'integer', 'number'])) {
+        if (in_array($propertyType, ['boolean', 'integer', 'number']) === true) {
             return 'terms';
         }
 

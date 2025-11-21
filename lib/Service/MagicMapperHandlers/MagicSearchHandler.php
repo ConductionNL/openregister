@@ -87,7 +87,7 @@ class MagicSearchHandler
      *
      * @psalm-param array<string, mixed> $query
      *
-     * @psalm-return int|list<OCA\OpenRegister\Db\ObjectEntity>
+     * @psalm-return int|list<ObjectEntity>
      */
     public function searchObjects(array $query, Register $register, Schema $schema, string $tableName): array|int|int
     {
@@ -355,7 +355,7 @@ class MagicSearchHandler
      *
      * @throws \OCP\DB\Exception If query execution fails
      *
-     * @psalm-return list<OCA\OpenRegister\Db\ObjectEntity>
+     * @psalm-return list<ObjectEntity>
      */
     private function executeSearchQuery(IQueryBuilder $qb, Register $register, Schema $schema): array
     {
@@ -364,7 +364,7 @@ class MagicSearchHandler
         $objects = [];
 
         foreach ($rows as $row) {
-            $objectEntity = $this->convertRowToObjectEntity($row, $register, $schema);
+            $objectEntity = $this->convertRowToObjectEntity($row, $register, $schema, $tableName);
             if ($objectEntity !== null) {
                 $objects[] = $objectEntity;
             }
@@ -378,13 +378,14 @@ class MagicSearchHandler
     /**
      * Convert database row from dynamic table to ObjectEntity
      *
-     * @param array    $row      Database row data
-     * @param Register $register Register context
-     * @param Schema   $schema   Schema context
+     * @param array    $row       Database row data
+     * @param Register $register  Register context
+     * @param Schema   $schema    Schema context
+     * @param string   $tableName Target dynamic table name
      *
      * @return ObjectEntity|null ObjectEntity object or null if conversion fails
      */
-    private function convertRowToObjectEntity(array $row, Register $register, Schema $schema): ?ObjectEntity
+    private function convertRowToObjectEntity(array $row, Register $register, Schema $schema, string $tableName=''): ?ObjectEntity
     {
         try {
             $objectEntity = new ObjectEntity();
@@ -454,8 +455,14 @@ class MagicSearchHandler
             }
 
             if (isset($metadataData['deleted']) === true) {
-                // @psalm-suppress InvalidArgument
-                $objectEntity->setDeleted(new \DateTime($metadataData['deleted']));
+                // Convert deleted timestamp to array format expected by setDeleted.
+                $deletedDateTime = new \DateTime($metadataData['deleted']);
+                $objectEntity->setDeleted(
+                        [
+                            'deleted'   => $deletedDateTime->format('c'),
+                            'deletedBy' => $metadataData['deletedBy'] ?? null,
+                        ]
+                        );
             }
 
             if (isset($metadataData['depublished']) === true) {
@@ -498,7 +505,7 @@ class MagicSearchHandler
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @psalm-return array<int, ObjectEntity>|int
+     * @psalm-return int|list<ObjectEntity>
      */
     public function countObjects(array $query, Register $register, Schema $schema, string $tableName): array|int
     {

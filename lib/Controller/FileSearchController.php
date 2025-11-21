@@ -130,12 +130,12 @@ class FileSearchController extends Controller
                 $requestOptions['auth'] = [$solrConfig['username'], $solrConfig['password']];
             }
 
-            /** @psalm-suppress UndefinedClass */
-            /** @var \OCP\Http\Client\IClientService $clientService */
+            // @psalm-suppress UndefinedClass
+            // @var \OCP\Http\Client\IClientService $clientService
             $clientService = \OC::$server->get(\OCP\Http\Client\IClientService::class);
-            $httpClient = $clientService->newClient();
-            $response   = $httpClient->get($queryUrl, $requestOptions);
-            $result     = json_decode($response->getBody()->getContents(), true);
+            $httpClient    = $clientService->newClient();
+            $response      = $httpClient->get($queryUrl, $requestOptions);
+            $result        = json_decode($response->getBody()->getContents(), true);
 
             $results  = $result['response']['docs'] ?? [];
             $numFound = $result['response']['numFound'] ?? 0;
@@ -200,7 +200,18 @@ class FileSearchController extends Controller
      *
      * @return JSONResponse Search results
      *
-     * @psalm-return JSONResponse<200|400|500, array{success: bool, message?: string, query?: string, total?: int<0, max>, results?: array<int, array<string, mixed>>, search_type?: 'semantic'}, array<never, never>>
+     * @psalm-return JSONResponse<
+     *     200|400|500,
+     *     array{
+     *         success: bool,
+     *         message?: string,
+     *         query?: string,
+     *         total?: int<0, max>,
+     *         results?: array<int, array<string, mixed>>,
+     *         search_type?: 'semantic'
+     *     },
+     *     array<never, never>
+     * >
      */
     public function semanticSearch(): JSONResponse
     {
@@ -263,7 +274,19 @@ class FileSearchController extends Controller
      *
      * @return JSONResponse Search results
      *
-     * @psalm-return JSONResponse<200|400|500, array{success: bool, message?: string, query?: string, total?: int<0, max>, results?: array, search_type?: 'hybrid', weights?: array{keyword: float, semantic: float}}, array<never, never>>
+     * @psalm-return JSONResponse<
+     *     200|400|500,
+     *     array{
+     *         success: bool,
+     *         message?: string,
+     *         query?: string,
+     *         total?: int<0, max>,
+     *         results?: array,
+     *         search_type?: 'hybrid',
+     *         weights?: array{keyword: float, semantic: float}
+     *     },
+     *     array<never, never>
+     * >
      */
     public function hybridSearch(): JSONResponse
     {
