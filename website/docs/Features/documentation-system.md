@@ -82,7 +82,6 @@ graph TB
 **Features that improve user experience:**
 
 - **[Enhanced Validation Errors](../Features/enhanced-validation-errors.md)** - Clear validation messages
-- **[Search Trails](../Features/search-trails.md)** - Search history tracking
 
 ## Technical Documentation
 
