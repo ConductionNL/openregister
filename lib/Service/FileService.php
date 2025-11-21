@@ -180,7 +180,7 @@ class FileService
 
         // Extract just the filename if the path contains a folder ID prefix (like "8010/filename.ext").
         $fileName = $cleanPath;
-        if (str_contains($cleanPath, '/')) {
+        if (str_contains($cleanPath, '/') === true) {
             $pathParts = explode('/', $cleanPath);
             $fileName = end($pathParts);
         }
@@ -423,7 +423,7 @@ class FileService
         $folderProperty = $register->getFolder();
 
         // Check if folder ID is already set and valid (not legacy string).
-        if ($folderProperty !== null && $folderProperty !== '' && !is_string($folderProperty)) {
+        if ($folderProperty !== null && $folderProperty !== '' && is_string($folderProperty) === false) {
             try {
                 $existingFolder = $this->getNodeById((int) $folderProperty);
                 if ($existingFolder !== null && $existingFolder instanceof Folder) {
@@ -483,7 +483,7 @@ class FileService
         }
 
         // Check if folder ID is already set and valid (not legacy string).
-        if ($folderProperty !== null && $folderProperty !== '' && !is_string($folderProperty)) {
+        if ($folderProperty !== null && $folderProperty !== '' && is_string($folderProperty) === false) {
             try {
                 $existingFolder = $this->getNodeById((int) $folderProperty);
                 if ($existingFolder !== null && $existingFolder instanceof Folder) {
@@ -658,7 +658,7 @@ class FileService
         $folderProperty = $register->getFolder();
 
         // Handle legacy cases where folder might be null, empty string, or a string path.
-        if ($folderProperty === null || $folderProperty === '' || is_string($folderProperty)) {
+        if ($folderProperty === null || $folderProperty === '' || is_string($folderProperty) === true) {
             $this->logger->info("Register {$register->getId()} has legacy folder property, creating new folder");
             return $this->createRegisterFolderById($register);
         }
@@ -694,7 +694,7 @@ class FileService
         }
 
         // Handle legacy cases where folder might be null, empty string, or a non-numeric string path.
-        if ($folderProperty === null || $folderProperty === '' || (is_string($folderProperty) && !is_numeric($folderProperty))) {
+        if ($folderProperty === null || $folderProperty === '' || (is_string($folderProperty) === true && is_numeric($folderProperty) === false)) {
             $objectEntityId = $objectEntity;
             if ($objectEntity instanceof ObjectEntity) {
                 $objectEntityId = $objectEntity->getId();
@@ -751,7 +751,7 @@ class FileService
                 $this->createShare([
                     'path'        => self::ROOT_FOLDER,
                     'nodeId'      => $rootFolder->getId(),
-                    'nodeType'    => $rootFolder->getType() === 'file' ? $rootFolder->getType() : 'folder',
+                    'nodeType'    => $this->getNodeTypeFromFolder($rootFolder),
                     'shareType'   => 1,
                     'permissions' => 31,
                     'sharedWith'  => self::APP_GROUP,
@@ -1044,7 +1044,7 @@ class FileService
         $remainingLabels = [];
         foreach ($metadata['labels'] as $label) {
             // Skip internal object labels - these should not be exposed in the API.
-            if (str_starts_with($label, 'object:')) {
+            if (str_starts_with($label, 'object:') === true) {
                 continue;
             }
 
@@ -1857,7 +1857,7 @@ class FileService
                 $this->createShare([
                     'path'        => self::ROOT_FOLDER,
                     'nodeId'      => $rootFolder->getId(),
-                    'nodeType'    => $rootFolder->getType() === 'file' ? $rootFolder->getType() : 'folder',
+                    'nodeType'    => $this->getNodeTypeFromFolder($rootFolder),
                     'shareType'   => 1,
                     'permissions' => 31,
                     'sharedWith'  => self::APP_GROUP,

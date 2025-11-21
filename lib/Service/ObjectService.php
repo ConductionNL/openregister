@@ -2831,7 +2831,7 @@ class ObjectService
             $this->logger->debug('Complex request detected, using async processing', [
                 'hasFacets' => $hasFacets,
                 'hasFacetable' => $hasFacetable,
-                'facetCount' => $hasFacets ? count($query['_facets']) : 0
+                'facetCount' => $this->getFacetCount($hasFacets, $query)
             ]);
 
             // Use async version and return synchronous result.
@@ -2962,7 +2962,7 @@ class ObjectService
                 ],
                 'queryInfo' => [
                     'totalObjects' => count($results),
-                    'totalPages' => $total > 0 ? intval(ceil($total / $limit)) : 1,
+                    'totalPages' => $this->calculateTotalPages($total, $limit),
                     'currentPage' => $page,
                     'limit' => $limit,
                     'hasExtend' => !empty($extend),
@@ -3056,7 +3056,7 @@ class ObjectService
         // Extend usage recommendations.
         $extendCount = 0;
         if (!empty($query['_extend'])) {
-            $extendCount = is_array($query['_extend']) ? count($query['_extend']) : count(array_filter(array_map('trim', explode(',', $query['_extend']))));
+            $extendCount = $this->calculateExtendCount($query['_extend']);
         }
         if ($extendCount > 3) {
             $recommendations[] = [
@@ -3258,7 +3258,7 @@ class ObjectService
             if (isset($query['@self']['register'])) {
                 $registerValue = $query['@self']['register'];
                 // Handle both single values and arrays.
-                $registerIds = is_array($registerValue) ? $registerValue : [$registerValue];
+                $registerIds = $this->normalizeToArray($registerValue);
                 $this->getCachedEntities('register', $registerIds, function($ids) {
                     $results = [];
                     foreach ($ids as $id) {
@@ -3278,7 +3278,7 @@ class ObjectService
             if (isset($query['@self']['schema'])) {
                 $schemaValue = $query['@self']['schema'];
                 // Handle both single values and arrays.
-                $schemaIds = is_array($schemaValue) ? $schemaValue : [$schemaValue];
+                $schemaIds = $this->normalizeToArray($schemaValue);
                 $this->getCachedEntities('schema', $schemaIds, function($ids) {
                     $results = [];
                     foreach ($ids as $id) {
@@ -3338,7 +3338,7 @@ class ObjectService
             $nextPage = ($page + 1);
             $nextUrl  = preg_replace('/([?&])page=\d+/', '$1page='.$nextPage, $currentUrl);
             if (strpos($nextUrl, 'page=') === false) {
-                $nextUrl .= (strpos($nextUrl, '?') === false ? '?' : '&').'page='.$nextPage;
+                $nextUrl .= $this->getUrlSeparator($nextUrl).'page='.$nextPage;
             }
 
             $paginatedResults['next'] = $nextUrl;
@@ -3349,7 +3349,7 @@ class ObjectService
             $prevPage = ($page - 1);
             $prevUrl  = preg_replace('/([?&])page=\d+/', '$1page='.$prevPage, $currentUrl);
             if (strpos($prevUrl, 'page=') === false) {
-                $prevUrl .= (strpos($prevUrl, '?') === false ? '?' : '&').'page='.$prevPage;
+                $prevUrl .= $this->getUrlSeparator($prevUrl).'page='.$prevPage;
             }
 
             $paginatedResults['prev'] = $prevUrl;
@@ -3539,7 +3539,7 @@ class ObjectService
                         $nextPage = ($page + 1);
                         $nextUrl  = preg_replace('/([?&])page=\d+/', '$1page='.$nextPage, $currentUrl);
                         if (strpos($nextUrl, 'page=') === false) {
-                            $nextUrl .= (strpos($nextUrl, '?') === false ? '?' : '&').'page='.$nextPage;
+                            $nextUrl .= $this->getUrlSeparator($nextUrl).'page='.$nextPage;
                         }
 
                         $paginatedResults['next'] = $nextUrl;
@@ -3550,7 +3550,7 @@ class ObjectService
                         $prevPage = ($page - 1);
                         $prevUrl  = preg_replace('/([?&])page=\d+/', '$1page='.$prevPage, $currentUrl);
                         if (strpos($prevUrl, 'page=') === false) {
-                            $prevUrl .= (strpos($prevUrl, '?') === false ? '?' : '&').'page='.$prevPage;
+                            $prevUrl .= $this->getUrlSeparator($prevUrl).'page='.$prevPage;
                         }
 
                         $paginatedResults['prev'] = $prevUrl;
@@ -4258,7 +4258,10 @@ class ObjectService
     {
         $filteredObjects = [];
         $currentUser     = $this->userSession->getUser();
-        $userId          = $currentUser ? $currentUser->getUID() : null;
+        $userId = null;
+        if ($currentUser !== null) {
+            $userId = $currentUser->getUID();
+        }
         $activeOrganisation = $this->getActiveOrganisationForContext();
 
         foreach ($objects as $object) {
@@ -5086,10 +5089,10 @@ class ObjectService
 
         try {
             // Load source and target registers/schemas.
-            $sourceRegisterEntity = is_string($sourceRegister) || is_int($sourceRegister) ? $this->registerMapper->find($sourceRegister) : $sourceRegister;
-            $sourceSchemaEntity   = is_string($sourceSchema) || is_int($sourceSchema) ? $this->schemaMapper->find($sourceSchema) : $sourceSchema;
-            $targetRegisterEntity = is_string($targetRegister) || is_int($targetRegister) ? $this->registerMapper->find($targetRegister) : $targetRegister;
-            $targetSchemaEntity   = is_string($targetSchema) || is_int($targetSchema) ? $this->schemaMapper->find($targetSchema) : $targetSchema;
+            $sourceRegisterEntity = $this->normalizeEntity($sourceRegister, 'register');
+            $sourceSchemaEntity   = $this->normalizeEntity($sourceSchema, 'schema');
+            $targetRegisterEntity = $this->normalizeEntity($targetRegister, 'register');
+            $targetSchemaEntity   = $this->normalizeEntity($targetSchema, 'schema');
 
             // Validate entities exist.
             if ($sourceRegisterEntity === null || $sourceSchemaEntity === null || $targetRegisterEntity === null || $targetSchemaEntity === null) {
@@ -5398,7 +5401,10 @@ class ObjectService
         // 1. Handle ordering.
         if (isset($parameters['ordering'])) {
             $ordering  = $parameters['ordering'];
-            $direction = str_starts_with($ordering, '-') ? 'DESC' : 'ASC';
+            $direction = 'ASC';
+            if (str_starts_with($ordering, '-') === true) {
+                $direction = 'DESC';
+            }
             $field     = ltrim($ordering, '-');
             $newParameters['_order'] = [$field => $direction];
             unset($parameters['ordering']);
@@ -5425,7 +5431,10 @@ class ObjectService
                         break;
 
                     case 'isnull':
-                        $newParameters[$base] = $value === true ? 'IS NULL' : 'IS NOT NULL';
+                        $newParameters[$base] = 'IS NOT NULL';
+                        if ($value === true) {
+                            $newParameters[$base] = 'IS NULL';
+                        }
                         break;
                 }
             } else {
@@ -5919,7 +5928,10 @@ class ObjectService
     {
         $filteredUuids = [];
         $currentUser   = $this->userSession->getUser();
-        $userId        = $currentUser ? $currentUser->getUID() : null;
+        $userId = null;
+        if ($currentUser !== null) {
+            $userId = $currentUser->getUID();
+        }
         $activeOrganisation = $this->getActiveOrganisationForContext();
 
         // Get objects for permission checking.
@@ -6491,7 +6503,7 @@ class ObjectService
         $this->logger->info('✅ BATCHED LOADING: Completed', [
             'totalTime' => $totalTime . 'ms',
             'loadedObjects' => count($lookupMap),
-            'efficiency' => count($lookupMap) > 0 ? round($totalTime / count($lookupMap), 2) . 'ms/object' : 'no_objects'
+            'efficiency' => $this->calculateEfficiency($lookupMap, $totalTime)
         ]);
 
         return $lookupMap;
@@ -6608,7 +6620,7 @@ class ObjectService
         $this->logger->info('🎯 PARALLEL LOADING: Completed', [
             'totalTime' => $totalTime . 'ms',
             'loadedObjects' => count($lookupMap),
-            'efficiency' => count($lookupMap) > 0 ? round($totalTime / count($lookupMap), 2) . 'ms/object' : 'no_objects',
+            'efficiency' => $this->calculateEfficiency($lookupMap, $totalTime),
             'improvementVsSequential' => '~60-70%'
         ]);
 
@@ -6871,10 +6883,14 @@ class ObjectService
                 );
             } else {
                 // **FALLBACK**: If schema doesn't have pre-computed facets or missing queryParameter, generate them.
+                $reason = 'missing_queryParameter';
+                if ($schemaFacets === null) {
+                    $reason = 'no_facets';
+                }
                 $this->logger->debug('Regenerating facets for schema (missing facets or queryParameter)', [
                     'schemaId' => $schema->getId(),
                     'schemaSlug' => $schema->getSlug(),
-                    'reason' => $schemaFacets === null ? 'no_facets' : 'missing_queryParameter'
+                    'reason' => $reason
                 ]);
 
                 $schema->regenerateFacetsFromProperties();
@@ -7096,6 +7112,134 @@ class ObjectService
             return round($totalTime / $objectCount, 2) . 'ms';
         }
         return '0ms';
+    }
+
+    /**
+     * Get facet count from query.
+     *
+     * @param bool  $hasFacets Whether facets are present.
+     * @param array $query     Query array.
+     *
+     * @return int Facet count.
+     */
+    private function getFacetCount(bool $hasFacets, array $query): int
+    {
+        if ($hasFacets === true) {
+            return count($query['_facets']);
+        }
+        return 0;
+    }
+
+    /**
+     * Calculate total pages.
+     *
+     * @param int $total Total items.
+     * @param int $limit Items per page.
+     *
+     * @return int Total pages.
+     */
+    private function calculateTotalPages(int $total, int $limit): int
+    {
+        if ($total > 0) {
+            return intval(ceil($total / $limit));
+        }
+        return 1;
+    }
+
+    /**
+     * Calculate extend count.
+     *
+     * @param mixed $extend Extend parameter.
+     *
+     * @return int Extend count.
+     */
+    private function calculateExtendCount($extend): int
+    {
+        if (is_array($extend) === true) {
+            return count($extend);
+        }
+        return count(array_filter(array_map('trim', explode(',', $extend))));
+    }
+
+    /**
+     * Normalize value to array.
+     *
+     * @param mixed $value Value to normalize.
+     *
+     * @return array Normalized array.
+     */
+    private function normalizeToArray($value): array
+    {
+        if (is_array($value) === true) {
+            return $value;
+        }
+        return [$value];
+    }
+
+    /**
+     * Get URL separator for pagination.
+     *
+     * @param string $url URL to check.
+     *
+     * @return string Separator ('?' or '&').
+     */
+    private function getUrlSeparator(string $url): string
+    {
+        if (strpos($url, '?') === false) {
+            return '?';
+        }
+        return '&';
+    }
+
+    /**
+     * Normalize entity (string/int to entity object).
+     *
+     * @param mixed  $entity Entity identifier or object.
+     * @param string $type   Entity type ('register' or 'schema').
+     *
+     * @return mixed Entity object.
+     */
+    private function normalizeEntity($entity, string $type)
+    {
+        if (is_string($entity) === true || is_int($entity) === true) {
+            if ($type === 'register') {
+                return $this->registerMapper->find($entity);
+            }
+            return $this->schemaMapper->find($entity);
+        }
+        return $entity;
+    }
+
+    /**
+     * Calculate efficiency metric.
+     *
+     * @param array $lookupMap Lookup map.
+     * @param float $totalTime Total time in milliseconds.
+     *
+     * @return string Efficiency string.
+     */
+    private function calculateEfficiency(array $lookupMap, float $totalTime): string
+    {
+        $count = count($lookupMap);
+        if ($count > 0) {
+            return round($totalTime / $count, 2) . 'ms/object';
+        }
+        return 'no_objects';
+    }
+
+    /**
+     * Get facet reason.
+     *
+     * @param mixed $schemaFacets Schema facets.
+     *
+     * @return string Reason string.
+     */
+    private function getFacetReason($schemaFacets): string
+    {
+        if ($schemaFacets === null) {
+            return 'no_facets';
+        }
+        return 'missing_queryParameter';
     }
 
 
