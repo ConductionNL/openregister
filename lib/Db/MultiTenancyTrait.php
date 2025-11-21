@@ -54,7 +54,9 @@ trait MultiTenancyTrait
      */
     protected function getActiveOrganisationUuid(): ?string
     {
-        /** @psalm-suppress RedundantPropertyInitializationCheck */
+        /*
+         * @psalm-suppress RedundantPropertyInitializationCheck
+         */
         if (!isset($this->organisationService)) {
             return null;
         }
@@ -76,7 +78,9 @@ trait MultiTenancyTrait
      */
     protected function getActiveOrganisationUuids(): array
     {
-        /** @psalm-suppress RedundantPropertyInitializationCheck */
+        /*
+         * @psalm-suppress RedundantPropertyInitializationCheck
+         */
         if (!isset($this->organisationService)) {
             return [];
         }
@@ -93,7 +97,9 @@ trait MultiTenancyTrait
      */
     protected function getCurrentUserId(): ?string
     {
-        /** @psalm-suppress RedundantPropertyInitializationCheck */
+        /*
+         * @psalm-suppress RedundantPropertyInitializationCheck
+         */
         if (!isset($this->userSession)) {
             return null;
         }
@@ -116,7 +122,9 @@ trait MultiTenancyTrait
             return false;
         }
 
-        /** @psalm-suppress RedundantPropertyInitializationCheck */
+        /*
+         * @psalm-suppress RedundantPropertyInitializationCheck
+         */
         if (!isset($this->groupManager)) {
             return false;
         }
@@ -267,7 +275,9 @@ trait MultiTenancyTrait
         // CASE 2: Active organisation(s) set - check for system default organisation.
         // Get default organisation UUID from configuration (not deprecated is_default column).
         $systemDefaultOrgUuid = null;
-        /** @psalm-suppress RedundantPropertyInitializationCheck */
+        /*
+         * @psalm-suppress RedundantPropertyInitializationCheck
+         */
         if (isset($this->organisationService)) {
             $systemDefaultOrgUuid = $this->organisationService->getDefaultOrganisationId();
         }
@@ -354,8 +364,10 @@ trait MultiTenancyTrait
         // because we return early at line 303-309. However, keeping this for clarity
         // and potential future logic changes where $allowNullOrg might be checked differently.
         // At this point in execution, we know that either !$isAdmin or !$isSystemDefaultOrg.
-        /** @psalm-suppress TypeDoesNotContainType,ParadoxicalCondition - This condition is unreachable due to early return above,
-         * but kept for documentation and potential future logic changes. */
+        /*
+         * @psalm-suppress TypeDoesNotContainType,ParadoxicalCondition - This condition is unreachable due to early return above,
+         * but kept for documentation and potential future logic changes.
+         */
         if ($allowNullOrg && $isSystemDefaultOrg && $isAdmin) {
             $orgConditions->add($qb->expr()->isNull($organisationColumn));
 
@@ -472,7 +484,9 @@ trait MultiTenancyTrait
         }
 
         // Get active organisation.
-        /** @psalm-suppress RedundantPropertyInitializationCheck */
+        /*
+         * @psalm-suppress RedundantPropertyInitializationCheck
+         */
         if (!isset($this->organisationService)) {
             // No organisation service, allow access (backward compatibility).
             return true;
@@ -486,7 +500,9 @@ trait MultiTenancyTrait
 
         // Check if user is in the organisation's users list.
         $orgUsers = $activeOrg->getUserIds();
-        /** @psalm-suppress RedundantCondition */
+        /*
+         * @psalm-suppress RedundantCondition
+         */
         if (is_array($orgUsers) && in_array($userId, $orgUsers)) {
             // User is explicitly listed in the organisation - check authorization.
         } else {
@@ -495,7 +511,9 @@ trait MultiTenancyTrait
         }
 
         // Get user's groups.
-        /** @psalm-suppress RedundantPropertyInitializationCheck */
+        /*
+         * @psalm-suppress RedundantPropertyInitializationCheck
+         */
         if (!isset($this->groupManager)) {
             // No group manager, allow access (backward compatibility).
             return true;

@@ -447,12 +447,12 @@ GdprService (new)
 
 ## Performance Targets
 
-- **Object text extraction**: <100ms per object
-- **Chunk creation**: <50ms per 100KB text
-- **Language detection (local)**: <10ms per chunk
-- **Language level (formula)**: <20ms per chunk
-- **Entity extraction (local)**: <100ms per chunk
-- **GDPR report generation**: <5s for 10,000 entities
+- **Object text extraction**: &lt;100ms per object
+- **Chunk creation**: &lt;50ms per 100KB text
+- **Language detection (local)**: &lt;10ms per chunk
+- **Language level (formula)**: &lt;20ms per chunk
+- **Entity extraction (local)**: &lt;100ms per chunk
+- **GDPR report generation**: &lt;5s for 10,000 entities
 
 ## Testing Strategy
 

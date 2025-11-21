@@ -169,7 +169,7 @@ Key principles:
 - URL query is authoritative. Component/store state is derived from it.
 - Changes to filters update the URL via a debounced writer.
 - On route changes, components parse the query and update stores/state.
-- Use shallow-equality to avoid infinite loops when syncing state <-> URL.
+- Use shallow-equality to avoid infinite loops when syncing state &lt;-&gt; URL.
 - Use `router.replace` to avoid flooding history on every small change.
 
 ### Building Query from State

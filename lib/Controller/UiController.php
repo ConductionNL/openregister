@@ -1,5 +1,17 @@
 <?php
 
+/**
+ * UiController
+ *
+ * @category  OpenRegister
+ * @package   OCA\OpenRegister\Controller
+ * @author    Conduction b.v. <info@conduction.nl>
+ * @copyright 2024 Conduction b.v.
+ * @license   https://www.gnu.org/licenses/agpl-3.0.html AGPL-3.0-or-later
+ * @version   1.0.0
+ * @link      https://github.com/conductionnl/openregister
+ */
+
 namespace OCA\OpenRegister\Controller;
 
 use OCP\AppFramework\Controller;
@@ -17,8 +29,12 @@ class UiController extends Controller
 
 
     /**
-     * @param string   $appName
-     * @param IRequest $request
+     * Constructor for UiController.
+     *
+     * @param string   $appName The application name.
+     * @param IRequest $request The request object.
+     *
+     * @return void
      */
     public function __construct(string $appName, IRequest $request)
     {
@@ -29,6 +45,8 @@ class UiController extends Controller
 
     /**
      * Returns the base SPA template response with permissive connect-src for API calls.
+     *
+     * @return TemplateResponse The template response.
      *
      * @phpstan-return TemplateResponse
      * @psalm-return   TemplateResponse
@@ -60,8 +78,12 @@ class UiController extends Controller
 
 
     /**
+     * Returns the registers page template.
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @return TemplateResponse The template response.
      *
      * @phpstan-return TemplateResponse
      * @psalm-return   TemplateResponse
@@ -74,8 +96,12 @@ class UiController extends Controller
 
 
     /**
+     * Returns the register details page template.
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @return TemplateResponse The template response.
      *
      * @phpstan-return TemplateResponse
      * @psalm-return   TemplateResponse
@@ -88,8 +114,12 @@ class UiController extends Controller
 
 
     /**
+     * Returns the schemas page template.
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @return TemplateResponse The template response.
      *
      * @phpstan-return TemplateResponse
      * @psalm-return   TemplateResponse
@@ -102,8 +132,12 @@ class UiController extends Controller
 
 
     /**
+     * Returns the schema details page template.
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @return TemplateResponse The template response.
      *
      * @phpstan-return TemplateResponse
      * @psalm-return   TemplateResponse
@@ -116,8 +150,12 @@ class UiController extends Controller
 
 
     /**
+     * Returns the sources page template.
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @return TemplateResponse The template response.
      *
      * @phpstan-return TemplateResponse
      * @psalm-return   TemplateResponse
@@ -130,8 +168,12 @@ class UiController extends Controller
 
 
     /**
+     * Returns the organisation page template.
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @return TemplateResponse The template response.
      *
      * @phpstan-return TemplateResponse
      * @psalm-return   TemplateResponse
@@ -144,8 +186,12 @@ class UiController extends Controller
 
 
     /**
+     * Returns the objects page template.
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @return TemplateResponse The template response.
      *
      * @phpstan-return TemplateResponse
      * @psalm-return   TemplateResponse
@@ -158,8 +204,12 @@ class UiController extends Controller
 
 
     /**
+     * Returns the tables page template.
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @return TemplateResponse The template response.
      *
      * @phpstan-return TemplateResponse
      * @psalm-return   TemplateResponse
@@ -172,8 +222,12 @@ class UiController extends Controller
 
 
     /**
+     * Returns the chat page template.
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @return TemplateResponse The template response.
      *
      * @phpstan-return TemplateResponse
      * @psalm-return   TemplateResponse
@@ -186,8 +240,12 @@ class UiController extends Controller
 
 
     /**
+     * Returns the configurations page template.
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @return TemplateResponse The template response.
      *
      * @phpstan-return TemplateResponse
      * @psalm-return   TemplateResponse
@@ -200,8 +258,12 @@ class UiController extends Controller
 
 
     /**
+     * Returns the deleted objects page template.
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @return TemplateResponse The template response.
      *
      * @phpstan-return TemplateResponse
      * @psalm-return   TemplateResponse
@@ -214,8 +276,12 @@ class UiController extends Controller
 
 
     /**
+     * Returns the audit trail page template.
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @return TemplateResponse The template response.
      *
      * @phpstan-return TemplateResponse
      * @psalm-return   TemplateResponse
@@ -228,8 +294,12 @@ class UiController extends Controller
 
 
     /**
+     * Returns the search trail page template.
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @return TemplateResponse The template response.
      *
      * @phpstan-return TemplateResponse
      * @psalm-return   TemplateResponse

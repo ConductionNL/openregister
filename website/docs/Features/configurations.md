@@ -781,7 +781,7 @@ Following Composer notation:
 - **Tilde (~)**: '~1.2.3' - Allow version 1.2.3 to 1.3.0 (excluding)
 - **Exact**: 'v1.2.3' - Only version 1.2.3
 - **Greater/Less**: '>=1.2.0' - Version 1.2.0 or higher
-- **Range**: '>=1.0.0 <2.0.0' - Between 1.0.0 and 2.0.0
+- **Range**: '>=1.0.0 &lt;2.0.0' - Between 1.0.0 and 2.0.0
 
 ### Examples
 
