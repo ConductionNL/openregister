@@ -73,6 +73,12 @@ class Version1Date20251114130000 extends SimpleMigrationStep
      */
     public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
+        $schema = $schemaClosure();
+
+        if($schema->hasTable('openregister_schemas') === false || $schema->getTable('openregister_schemas')->hasColumn('extend') === false) {
+            return;
+        }
+
         $output->info('🔄 Migrating extend values to allOf...');
 
         // Find all schemas with extend field set.
@@ -136,8 +142,8 @@ class Version1Date20251114130000 extends SimpleMigrationStep
         if ($schema->hasTable('openregister_schemas') === true) {
             $table = $schema->getTable('openregister_schemas');
 
-            // Remove extend column if it exists.
-            if ($table->hasColumn('extend') === true) {
+            // Remove extend column if it exists
+            if ($table->hasColumn('extend')) {
                 $table->dropColumn('extend');
 
                 $output->info('   ✓ Removed extend column from schemas table');
