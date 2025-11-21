@@ -46,9 +46,10 @@ class Version1Date20250903160000 extends SimpleMigrationStep
     /**
      * Perform the migration
      *
-     * @param         IOutput $output        The output interface for logging
-     * @param         Closure $schemaClosure Closure that returns the current schema
-     * @param         array   $options       Migration options
+     * @param IOutput $output        The output interface for logging
+     * @param Closure $schemaClosure Closure that returns the current schema
+     * @param array   $options       Migration options
+     *
      * @phpstan-param array<string, mixed> $options
      * @psalm-param   array<string, mixed> $options
      *
@@ -56,9 +57,7 @@ class Version1Date20250903160000 extends SimpleMigrationStep
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+        // @var ISchemaWrapper $schema
         $schema = $schemaClosure();
 
         // Skip if table doesn't exist yet.
@@ -71,7 +70,7 @@ class Version1Date20250903160000 extends SimpleMigrationStep
 
         // Add performance optimization indexes if they don't exist.
         // 1. Composite index for most common lookup pattern (user/group + action + active + priority).
-        if (!$table->hasIndex('openregister_auth_exc_perf_lookup')) {
+        if ($table->hasIndex('openregister_auth_exc_perf_lookup') === false) {
             $table->addIndex(
                 ['subject_type', 'subject_id', 'action', 'active', 'priority'],
                 'openregister_auth_exc_perf_lookup'
@@ -81,7 +80,7 @@ class Version1Date20250903160000 extends SimpleMigrationStep
         }
 
         // 2. Index for schema-specific lookups with action filtering.
-        if (!$table->hasIndex('openregister_auth_exc_schema_perf')) {
+        if ($table->hasIndex('openregister_auth_exc_schema_perf') === false) {
             $table->addIndex(
                 ['schema_uuid', 'action', 'active', 'subject_type', 'priority'],
                 'openregister_auth_exc_schema_perf'
@@ -91,7 +90,7 @@ class Version1Date20250903160000 extends SimpleMigrationStep
         }
 
         // 3. Index for organization-specific lookups.
-        if (!$table->hasIndex('openregister_auth_exc_org_perf')) {
+        if ($table->hasIndex('openregister_auth_exc_org_perf') === false) {
             $table->addIndex(
                 ['organization_uuid', 'action', 'active', 'priority'],
                 'openregister_auth_exc_org_perf'
@@ -101,7 +100,7 @@ class Version1Date20250903160000 extends SimpleMigrationStep
         }
 
         // 4. Index for bulk user lookups (covering index).
-        if (!$table->hasIndex('openregister_auth_exc_bulk_users')) {
+        if ($table->hasIndex('openregister_auth_exc_bulk_users') === false) {
             $table->addIndex(
                 ['subject_id', 'subject_type', 'action', 'active', 'priority', 'type'],
                 'openregister_auth_exc_bulk_users'
@@ -111,7 +110,7 @@ class Version1Date20250903160000 extends SimpleMigrationStep
         }
 
         // 5. Index for exception type and priority sorting.
-        if (!$table->hasIndex('openregister_auth_exc_type_priority')) {
+        if ($table->hasIndex('openregister_auth_exc_type_priority') === false) {
             $table->addIndex(
                 ['type', 'priority', 'active'],
                 'openregister_auth_exc_type_priority'
@@ -121,7 +120,7 @@ class Version1Date20250903160000 extends SimpleMigrationStep
         }
 
         // 6. Index for register-specific lookups.
-        if (!$table->hasIndex('openregister_auth_exc_register_perf')) {
+        if ($table->hasIndex('openregister_auth_exc_register_perf') === false) {
             $table->addIndex(
                 ['register_uuid', 'action', 'active', 'priority'],
                 'openregister_auth_exc_register_perf'
@@ -131,7 +130,7 @@ class Version1Date20250903160000 extends SimpleMigrationStep
         }
 
         // 7. Index for created_by and created_at (for auditing and cleanup).
-        if (!$table->hasIndex('openregister_auth_exc_audit')) {
+        if ($table->hasIndex('openregister_auth_exc_audit') === false) {
             $table->addIndex(
                 ['created_by', 'created_at', 'active'],
                 'openregister_auth_exc_audit'
@@ -140,7 +139,11 @@ class Version1Date20250903160000 extends SimpleMigrationStep
             $changed = true;
         }
 
-        return $changed ? $schema : null;
+        if ($changed === true) {
+            return $schema;
+        }
+
+        return null;
 
     }//end changeSchema()
 
