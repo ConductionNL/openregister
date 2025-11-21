@@ -13,10 +13,10 @@ The **Hyper-Performant Faceting System** provides **10-50x performance improveme
 
 | Request Type | Original Time | New Time | Improvement |
 |--------------|---------------|----------|-------------|
-| Simple Facets | ~2-3 seconds | **<100ms** | **20-30x faster** |
-| Complex Facets | ~5+ seconds | **<200ms** | **25-50x faster** |
-| Cached Facets | ~2-3 seconds | **<10ms** | **200-300x faster** |
-| Large Datasets | ~10+ seconds | **<50ms** | **200x+ faster** |
+| Simple Facets | ~2-3 seconds | **&lt;100ms** | **20-30x faster** |
+| Complex Facets | ~5+ seconds | **&lt;200ms** | **25-50x faster** |
+| Cached Facets | ~2-3 seconds | **&lt;10ms** | **200-300x faster** |
+| Large Datasets | ~10+ seconds | **&lt;50ms** | **200x+ faster** |
 
 ## System Architecture
 

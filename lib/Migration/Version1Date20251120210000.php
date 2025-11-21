@@ -32,6 +32,7 @@ use OCP\Migration\SimpleMigrationStep;
 class Version1Date20251120210000 extends SimpleMigrationStep
 {
 
+
     /**
      * Change schema for webhooks table creation
      *
@@ -43,130 +44,218 @@ class Version1Date20251120210000 extends SimpleMigrationStep
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /* @var ISchemaWrapper $schema */
+        // @var ISchemaWrapper $schema
         $schema = $schemaClosure();
 
         if ($schema->hasTable('openregister_webhooks') === false) {
             $table = $schema->createTable('openregister_webhooks');
 
             // Primary key.
-            $table->addColumn('id', Types::BIGINT, [
-                'autoincrement' => true,
-                'notnull'       => true,
-                'unsigned'      => true,
-            ]);
+            $table->addColumn(
+                    'id',
+                    Types::BIGINT,
+                    [
+                        'autoincrement' => true,
+                        'notnull'       => true,
+                        'unsigned'      => true,
+                    ]
+                    );
 
             // UUID for external reference.
-            $table->addColumn('uuid', Types::STRING, [
-                'notnull' => true,
-                'length'  => 255,
-            ]);
+            $table->addColumn(
+                    'uuid',
+                    Types::STRING,
+                    [
+                        'notnull' => true,
+                        'length'  => 255,
+                    ]
+                    );
 
             // Webhook name/description.
-            $table->addColumn('name', Types::STRING, [
-                'notnull' => true,
-                'length'  => 255,
-            ]);
+            $table->addColumn(
+                    'name',
+                    Types::STRING,
+                    [
+                        'notnull' => true,
+                        'length'  => 255,
+                    ]
+                    );
 
             // Target URL.
-            $table->addColumn('url', Types::STRING, [
-                'notnull' => true,
-                'length'  => 1024,
-            ]);
+            $table->addColumn(
+                    'url',
+                    Types::STRING,
+                    [
+                        'notnull' => true,
+                        'length'  => 1024,
+                    ]
+                    );
 
             // HTTP method (POST, PUT, GET, etc.).
-            $table->addColumn('method', Types::STRING, [
-                'notnull' => true,
-                'length'  => 10,
-                'default' => 'POST',
-            ]);
+            $table->addColumn(
+                    'method',
+                    Types::STRING,
+                    [
+                        'notnull' => true,
+                        'length'  => 10,
+                        'default' => 'POST',
+                    ]
+                    );
 
             // Events to listen to (JSON array).
-            $table->addColumn('events', Types::TEXT, [
-                'notnull' => true,
-            ]);
+            $table->addColumn(
+                    'events',
+                    Types::TEXT,
+                    [
+                        'notnull' => true,
+                    ]
+                    );
 
             // Custom headers (JSON object).
-            $table->addColumn('headers', Types::TEXT, [
-                'notnull' => false,
-            ]);
+            $table->addColumn(
+                    'headers',
+                    Types::TEXT,
+                    [
+                        'notnull' => false,
+                    ]
+                    );
 
             // Secret for signing payloads.
-            $table->addColumn('secret', Types::STRING, [
-                'notnull' => false,
-                'length'  => 255,
-            ]);
+            $table->addColumn(
+                    'secret',
+                    Types::STRING,
+                    [
+                        'notnull' => false,
+                        'length'  => 255,
+                    ]
+                    );
 
             // Is webhook enabled.
-            $table->addColumn('enabled', Types::BOOLEAN, [
-                'notnull' => true,
-                'default' => true,
-            ]);
+            $table->addColumn(
+                    'enabled',
+                    Types::BOOLEAN,
+                    [
+                        'notnull' => true,
+                        'default' => true,
+                    ]
+                    );
 
             // Organisation (multi-tenancy).
-            $table->addColumn('organisation', Types::STRING, [
-                'notnull' => false,
-                'length'  => 255,
-            ]);
+            $table->addColumn(
+                    'organisation',
+                    Types::STRING,
+                    [
+                        'notnull' => false,
+                        'length'  => 255,
+                    ]
+                    );
 
             // Event filters (JSON object).
-            $table->addColumn('filters', Types::TEXT, [
-                'notnull' => false,
-            ]);
+            $table->addColumn(
+                    'filters',
+                    Types::TEXT,
+                    [
+                        'notnull' => false,
+                    ]
+                    );
 
             // Delivery configuration.
-            $table->addColumn('retry_policy', Types::STRING, [
-                'notnull' => true,
-                'length'  => 50,
-                'default' => 'exponential',
-            ]);
+            $table->addColumn(
+                    'retry_policy',
+                    Types::STRING,
+                    [
+                        'notnull' => true,
+                        'length'  => 50,
+                        'default' => 'exponential',
+                    ]
+                    );
 
-            $table->addColumn('max_retries', Types::INTEGER, [
-                'notnull' => true,
-                'default' => 3,
-            ]);
+            $table->addColumn(
+                    'max_retries',
+                    Types::INTEGER,
+                    [
+                        'notnull' => true,
+                        'default' => 3,
+                    ]
+                    );
 
-            $table->addColumn('timeout', Types::INTEGER, [
-                'notnull' => true,
-                'default' => 30,
-            ]);
+            $table->addColumn(
+                    'timeout',
+                    Types::INTEGER,
+                    [
+                        'notnull' => true,
+                        'default' => 30,
+                    ]
+                    );
 
             // Statistics.
-            $table->addColumn('last_triggered_at', Types::DATETIME, [
-                'notnull' => false,
-            ]);
+            $table->addColumn(
+                    'last_triggered_at',
+                    Types::DATETIME,
+                    [
+                        'notnull' => false,
+                    ]
+                    );
 
-            $table->addColumn('last_success_at', Types::DATETIME, [
-                'notnull' => false,
-            ]);
+            $table->addColumn(
+                    'last_success_at',
+                    Types::DATETIME,
+                    [
+                        'notnull' => false,
+                    ]
+                    );
 
-            $table->addColumn('last_failure_at', Types::DATETIME, [
-                'notnull' => false,
-            ]);
+            $table->addColumn(
+                    'last_failure_at',
+                    Types::DATETIME,
+                    [
+                        'notnull' => false,
+                    ]
+                    );
 
-            $table->addColumn('total_deliveries', Types::INTEGER, [
-                'notnull' => true,
-                'default' => 0,
-            ]);
+            $table->addColumn(
+                    'total_deliveries',
+                    Types::INTEGER,
+                    [
+                        'notnull' => true,
+                        'default' => 0,
+                    ]
+                    );
 
-            $table->addColumn('successful_deliveries', Types::INTEGER, [
-                'notnull' => true,
-                'default' => 0,
-            ]);
+            $table->addColumn(
+                    'successful_deliveries',
+                    Types::INTEGER,
+                    [
+                        'notnull' => true,
+                        'default' => 0,
+                    ]
+                    );
 
-            $table->addColumn('failed_deliveries', Types::INTEGER, [
-                'notnull' => true,
-                'default' => 0,
-            ]);
+            $table->addColumn(
+                    'failed_deliveries',
+                    Types::INTEGER,
+                    [
+                        'notnull' => true,
+                        'default' => 0,
+                    ]
+                    );
 
             // Timestamps.
-            $table->addColumn('created', Types::DATETIME, [
-                'notnull' => true,
-            ]);
+            $table->addColumn(
+                    'created',
+                    Types::DATETIME,
+                    [
+                        'notnull' => true,
+                    ]
+                    );
 
-            $table->addColumn('updated', Types::DATETIME, [
-                'notnull' => true,
-            ]);
+            $table->addColumn(
+                    'updated',
+                    Types::DATETIME,
+                    [
+                        'notnull' => true,
+                    ]
+                    );
 
             // Indexes.
             $table->setPrimaryKey(['id']);
@@ -183,4 +272,3 @@ class Version1Date20251120210000 extends SimpleMigrationStep
 
 
 }//end class
-

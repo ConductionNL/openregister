@@ -135,10 +135,10 @@ class SolrDebugCommand extends Command
             $this->checkCores($output);
         }
 
-        $hasSetup = $input->getOption('setup') === true;
+        $hasSetup          = $input->getOption('setup') === true;
         $hasTestConnection = $input->getOption('test-connection') === true;
-        $hasCheckCores = $input->getOption('check-cores') === true;
-        $hasTenantInfo = $input->getOption('tenant-info') === true;
+        $hasCheckCores     = $input->getOption('check-cores') === true;
+        $hasTenantInfo     = $input->getOption('tenant-info') === true;
 
         if ($runAll === false && $hasSetup === false && $hasTestConnection === false && $hasCheckCores === false && $hasTenantInfo === false) {
             $output->writeln('<comment>No options specified. Use --all or specific options like --setup, --test-connection, --check-cores</comment>');
