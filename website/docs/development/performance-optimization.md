@@ -275,7 +275,7 @@ For vector search operations, database choice significantly impacts performance:
 - **MariaDB/MySQL**: Vector similarity calculated in PHP (slower)
 - **PostgreSQL + pgvector**: Database-level vector operations (10-100x faster)
 
-See [Database Status Tile](../features/configurations.md#database-status-tile) in LLM Configuration settings for current database status and recommendations.
+See [Database Status Tile](../Features/configurations.md#database-status-tile) in LLM Configuration settings for current database status and recommendations.
 
 ## Database Index Optimization
 
