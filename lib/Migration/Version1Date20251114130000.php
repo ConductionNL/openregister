@@ -34,7 +34,7 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * Removes the legacy 'extend' column which has been replaced with the
  * standards-compliant JSON Schema composition patterns (allOf, oneOf, anyOf).
- * 
+ *
  * This migration should run after Version1Date20251114120000 which adds the
  * new composition columns. It will migrate any existing 'extend' values to 'allOf'
  * before removing the column.
@@ -73,6 +73,12 @@ class Version1Date20251114130000 extends SimpleMigrationStep
      */
     public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
+        $schema = $schemaClosure();
+
+        if($schema->hasColumn('extend') === false) {
+            return;
+        }
+
         $output->info('🔄 Migrating extend values to allOf...');
 
         // Find all schemas with extend field set
@@ -132,11 +138,11 @@ class Version1Date20251114130000 extends SimpleMigrationStep
         // Remove extend field from schemas table
         if ($schema->hasTable('openregister_schemas')) {
             $table = $schema->getTable('openregister_schemas');
-            
+
             // Remove extend column if it exists
             if ($table->hasColumn('extend')) {
                 $table->dropColumn('extend');
-                
+
                 $output->info('   ✓ Removed extend column from schemas table');
                 $output->info('✅ Migration completed successfully');
                 $output->info('📚 Use allOf, oneOf, or anyOf for schema composition');
