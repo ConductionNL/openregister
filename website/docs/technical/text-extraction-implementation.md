@@ -369,5 +369,5 @@ Chunking options can be configured per extraction via API or service calls.
 - [Text Extraction Quick Start](./text-extraction-readme.md) - Quick reference guide
 - [Text Extraction Entities](./text-extraction-entities.md) - Database schema details
 - [Enhanced Text Extraction Plan](./enhanced-text-extraction-implementation-plan.md) - Future enhancements
-- [Vectorization Architecture](./vectorization-architecture.md) - Vector embedding details
+- [Vectorization Architecture](../Technical/vectorization-architecture.md) - Vector embedding details
 

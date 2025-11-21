@@ -452,7 +452,7 @@ services:
 
 ## Related Documentation
 
-- [Docker Setup Guide](./docker-setup.md) - Complete setup instructions
+- [Docker Setup Guide](../Development/docker-setup.md) - Complete setup instructions
 - [NER & NLP Concepts](../features/ner-nlp-concepts.md) - Understanding entity recognition
 - [Text Extraction Enhanced](../features/text-extraction-enhanced.md) - File processing pipeline
 - [Settings Configuration](../user/settings-configuration.md) - Configure services in Nextcloud

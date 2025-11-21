@@ -460,4 +460,4 @@ docker logs -f nextcloud | grep -E 'Webhook|OpenRegister'
 
 ## API Reference
 
-For complete API documentation, see the [Webhooks API Reference](../api/webhooks-api.md).
+For complete API documentation, see the [Events API Reference](../api/events-reference.md).

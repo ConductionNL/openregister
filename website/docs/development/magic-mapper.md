@@ -320,5 +320,4 @@ php examples/magic_mapper_demo.php
 
 - [Schemas](../Features/schemas.md) - Schema documentation
 - [Schema Technical Documentation](../technical/schemas.md) - Technical schema details
-- [Database Setup](../technical/database-setup.md) - Database configuration
 

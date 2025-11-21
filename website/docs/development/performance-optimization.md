@@ -326,8 +326,8 @@ docker exec -u 33 master-nextcloud-1 mysql -u nextcloud -p nextcloud \
 
 | Endpoint | Before | After | Improvement |
 |----------|---------|--------|-------------|
-| `/api/objects/voorzieningen/product` | 30s | <1s | **97% faster** |
-| `/api/objects/voorzieningen/organisatie` | 30s | <1s | **97% faster** |
+| `/api/objects/voorzieningen/product` | 30s | &lt;1s | **97% faster** |
+| `/api/objects/voorzieningen/organisatie` | 30s | &lt;1s | **97% faster** |
 | General object searches | 5-15s | 0.1-0.5s | **95% faster** |
 
 **After Cache Fix:**
