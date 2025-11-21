@@ -213,9 +213,9 @@ Dynamically discovered from JSON object data:
 The discovery system automatically filters out:
 - System fields (starting with @ or _)
 - Nested objects and arrays of objects
-- High cardinality string fields (>50 unique values)
-- Fields appearing in &lt;10% of objects
-- Fields with inconsistent types (&lt;70% type consistency)
+- High cardinality string fields (more than 50 unique values)
+- Fields appearing in less than 10% of objects
+- Fields with inconsistent types (less than 70% type consistency)
 
 ### API Integration
 
@@ -247,7 +247,7 @@ Use discovery results to build facet configurations:
 ```javascript
 // Frontend example: Build facet config from discovery
 const buildFacetConfig = (facetableFields) => {
-    const config = { _facets: { '@self': {}, ...{} } };
+    const config = { _facets: { '@self': {} } };
     
     // Add metadata facets
     Object.entries(facetableFields['@self']).forEach(([field, info]) => {
@@ -852,7 +852,7 @@ const DynamicFacetInterface = ({ baseQuery }) => {
       // Get actual facet data
       const facetResponse = await fetch('/api/objects', {
         method: 'POST',
-        body: JSON.stringify({ ...baseQuery, ...facetConfig })
+        body: JSON.stringify(Object.assign({}, baseQuery, facetConfig))
       });
       const facetData = await facetResponse.json();
       setFacetData(facetData.facets);
@@ -897,8 +897,8 @@ const DynamicFacetInterface = ({ baseQuery }) => {
       {/* Metadata facets */}
       {Object.entries(facetData['@self'] || {}).map(([field, facet]) => (
         <FacetFilter 
-          key={`@self.${field}`}
-          field={`@self.${field}`}
+          key={'@self.' + field}
+          field={'@self.' + field}
           facet={facet}
           fieldInfo={facetableFields['@self'][field]}
           onFilterChange={handleFilterChange}
@@ -1175,7 +1175,7 @@ class FacetingTest extends TestCase
 
     public function testFacetableFieldAppearanceThreshold(): void
     {
-        // Create objects where some fields appear in <10% of objects
+        // Create objects where some fields appear in less than 10% of objects
         $this->createTestObjects(['common_field' => 'value1'], 50);  // 100% appearance
         $this->createTestObjects(['rare_field' => 'value2'], 2);     // 4% appearance
         
