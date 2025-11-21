@@ -167,7 +167,7 @@ See **[Implementation Plan - Questions for Stakeholders](./enhanced-text-extract
 
 - ✅ 100% of files and objects chunked
 - ✅ >90% entity detection accuracy
-- ✅ <5min to process 1000 files
+- ✅ &lt;5min to process 1000 files
 - ✅ GDPR register used for data subject requests
 - ✅ Pass GDPR compliance audit
 
