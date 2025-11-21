@@ -150,7 +150,9 @@ class ExportService
                 function (callable $resolve, callable $reject) use ($register, $schema, $filters) {
                     try {
                         $spreadsheet = $this->exportToExcel(register: $register, schema: $schema, filters: $filters);
-                        /** @psalm-suppress InvalidArgument */
+                        /*
+                         * @psalm-suppress InvalidArgument
+                         */
                         $resolve($spreadsheet);
                     } catch (\Throwable $e) {
                         $reject($e);
@@ -212,7 +214,9 @@ class ExportService
                 function (callable $resolve, callable $reject) use ($register, $schema, $filters) {
                     try {
                         $csv = $this->exportToCsv(register: $register, schema: $schema, filters: $filters);
-                        /** @psalm-suppress InvalidArgument */
+                        /*
+                         * @psalm-suppress InvalidArgument
+                         */
                         $resolve($csv);
                     } catch (\Throwable $e) {
                         $reject($e);
@@ -380,7 +384,9 @@ class ExportService
 
                 // Always use the property key as the header to ensure consistent data access.
                 $headers[$col] = $fieldName;
-                /** @psalm-suppress StringIncrement - Intentional Excel column increment (B->C->D...). */
+                /*
+                 * @psalm-suppress StringIncrement - Intentional Excel column increment (B->C->D...).
+                 */
                 $col++;
             }
         }

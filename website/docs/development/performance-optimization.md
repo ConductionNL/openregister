@@ -45,7 +45,7 @@ docker logs -f master-nextcloud-1 | grep "PERFORMANCE"
 **Benefits:**
 - Frontend shows response as it's generated
 - Perceived performance improvement of 10x+
-- User sees first tokens in <1s instead of waiting for complete response
+- User sees first tokens in &lt;1s instead of waiting for complete response
 
 **Implementation:**
 - `ChatController::sendMessage()` can return SSE stream

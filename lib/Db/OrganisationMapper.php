@@ -744,7 +744,7 @@ class OrganisationMapper extends QBMapper
             $result = $stmt->execute();
 
             $parents = [];
-            $row = $result->fetch();
+            $row     = $result->fetch();
             while ($row !== false) {
                 $parents[] = $row['uuid'];
 
@@ -825,7 +825,7 @@ class OrganisationMapper extends QBMapper
             $result = $stmt->execute();
 
             $children = [];
-            $row = $result->fetch();
+            $row      = $result->fetch();
             while ($row !== false) {
                 $children[] = $row['uuid'];
 
