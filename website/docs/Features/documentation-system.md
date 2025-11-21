@@ -159,7 +159,7 @@ See the **[Integrations Overview](../Integrations/index.md)** for a complete ove
 **Start Here:**
 1. [Text Extraction README](../technical/text-extraction-readme.md) - Quick start
 2. [Database Entities](../technical/text-extraction-entities.md) - Schema reference
-3. [API Documentation](../api/) - API endpoints
+3. [API Documentation](../api/objects.md) - API endpoints
 
 **Key Topics:**
 - Database schema
@@ -283,10 +283,10 @@ Follow these guidelines:
 
 ## Related Documentation
 
-- [Features Index](../Features/) - Browse all features
-- [Technical Documentation](../technical/) - Implementation details
-- [Integrations](../Integrations/) - Integration guides
-- [API Reference](../api/) - API documentation
+- [Features Index](../Features/index.md) - Browse all features
+- [Technical Documentation](../technical/schemas.md) - Implementation details
+- [Integrations](../Integrations/index.md) - Integration guides
+- [API Reference](../api/objects.md) - API documentation
 
 
 

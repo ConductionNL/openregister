@@ -372,7 +372,7 @@ class DeletedController extends Controller
     {
         $ids = $this->request->getParam('ids', []);
 
-        if (empty($ids)) {
+        if (empty($ids) === true) {
             return new JSONResponse(
                     [
                         'error' => 'No object IDs provided',
@@ -505,7 +505,7 @@ class DeletedController extends Controller
     {
         $ids = $this->request->getParam('ids', []);
 
-        if (empty($ids)) {
+        if (empty($ids) === true) {
             return new JSONResponse(
                     [
                         'error' => 'No object IDs provided',

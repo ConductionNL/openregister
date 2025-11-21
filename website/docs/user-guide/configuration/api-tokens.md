@@ -231,7 +231,6 @@ Rate limit headers are returned with each API response. OpenRegister respects th
 
 - [GitHub Personal Access Tokens Documentation](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token)
 - [GitLab Personal Access Tokens Documentation](https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html)
-- [OpenRegister Configuration Guide](../configuration/)
 - [GitHub Code Search API](https://docs.github.com/en/rest/search#search-code)
 - [GitLab Search API](https://docs.gitlab.com/ee/api/search.html)
 
@@ -240,7 +239,7 @@ Rate limit headers are returned with each API response. OpenRegister respects th
 If you encounter issues:
 
 1. Check this documentation for troubleshooting steps
-2. Review the [OpenRegister FAQ](../../faq)
+2. Contact your system administrator for support
 3. Contact your system administrator
 4. Report bugs on [GitHub Issues](https://github.com/ConductionNL/openregister/issues)
 

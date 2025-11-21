@@ -432,7 +432,6 @@ The hyper-faceting system fully respects existing security mechanisms:
 ## Related Documentation
 
 - [Faceting System](../Features/faceting.md) - User-facing faceting documentation
-- [Database Setup](./database-setup.md) - Database configuration and indexes
 
 ---
 

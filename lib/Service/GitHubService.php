@@ -8,16 +8,13 @@ declare(strict_types=1);
  * This file contains the GitHubService class for interacting with the GitHub API
  * to discover, fetch, and manage OpenRegister configurations stored in GitHub repositories.
  *
- * @category Service
- * @package  OCA\OpenRegister\Service
- *
+ * @category  Service
+ * @package   OCA\OpenRegister\Service
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2025 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * @version GIT: <git_id>
- *
- * @link https://www.OpenRegister.nl
+ * @version   GIT: <git_id>
+ * @link      https://www.OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Service;
