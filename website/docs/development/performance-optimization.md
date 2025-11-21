@@ -256,7 +256,7 @@ time curl -X POST /api/chat/send -d '{"message": "Hello"}'
 With optimizations applied:
 - **Simple query:** 2-5s (down from 15-20s)
 - **Tool query:** 8-15s (down from 50s+)
-- **With streaming:** Perceived as <1s (first tokens immediate)
+- **With streaming:** Perceived as &lt;1s (first tokens immediate)
 - **With GPU:** 0.5-2s (down from 15-20s)
 
 ## Priority Order

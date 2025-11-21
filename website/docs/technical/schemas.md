@@ -141,8 +141,8 @@ File configured as objectImageField is not published. Auto-publishing file.
 
 | Setting Location | Property Name | What It Controls | Example |
 |-----------------|---------------|------------------|---------|
-| Property definition | 'autoPublish' | Whether files in THIS property get published | 'logo: {type: "file", autoPublish: true}' |
-| Schema configuration | 'autoPublish' | Whether the OBJECT gets published | 'configuration: {autoPublish: true}' |
+| Property definition | 'autoPublish' | Whether files in THIS property get published | 'logo: \{type: "file", autoPublish: true\}' |
+| Schema configuration | 'autoPublish' | Whether the OBJECT gets published | 'configuration: \{autoPublish: true\}' |
 | Schema configuration | 'objectImageField' | Forces file publication for metadata | 'configuration: {objectImageField: "logo"}' |
 
 **Key Takeaways:**
