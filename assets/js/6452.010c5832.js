@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkopen_catalogi_docs=self.webpackChunkopen_catalogi_docs||[]).push([[6452],{6452:(e,c,a)=>{a.d(c,{createPacketServices:()=>s.$});var s=a(71609);a(19369)}}]);
