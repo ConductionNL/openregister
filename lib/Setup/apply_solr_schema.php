@@ -12,11 +12,11 @@
  *
  * @category   Setup
  * @package    OCA\OpenRegister\Setup
- * @author     OpenRegister Team <info@conduction.nl>
- * @copyright  2024 OpenRegister
- * @license    AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
- * @version    1.0.0
- * @link       https://github.com/OpenRegister/OpenRegister
+ * @author     Conduction Development Team <dev@conduction.nl>
+ * @copyright  2024 Conduction B.V.
+ * @license    EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version    GIT: <git-id>
+ * @link       https://OpenRegister.app
  * @deprecated Use the field management UI/API instead
  */
 

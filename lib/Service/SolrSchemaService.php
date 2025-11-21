@@ -17,14 +17,15 @@ declare(strict_types=1);
  *
  * @category  Service
  * @package   OCA\OpenRegister\Service
- * @author    OpenRegister Team
- * @copyright 2024 OpenRegister
- * @license   AGPL-3.0-or-later
- * @version   1.0.0
- * @link      https://github.com/OpenRegister/OpenRegister
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version   GIT: <git-id>
+ * @link      https://OpenRegister.app
  */
-
-namespace OCA\OpenRegister\Service;
+ * @copyright 2024 OpenRegister * @license   AGPL - 3.0 - or-later * @version   1.0.0 * @link      https:
+// github.com/OpenRegister/OpenRegister
+ * / namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\GuzzleSolrService;
