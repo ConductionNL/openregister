@@ -412,7 +412,7 @@ DELETE http://master-nextcloud-1/apps/openregister/api/objects/{uuid}
 - [Webhooks Feature Documentation](../Features/webhooks.md)
 - [Events API Reference](../api/events-reference.md)
 - [n8n Official Documentation](https://docs.n8n.io)
-- [OpenRegister API Documentation](../api/)
+- [OpenRegister API Documentation](../api/objects.md)
 
 ## Support
 

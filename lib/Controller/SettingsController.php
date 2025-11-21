@@ -1,19 +1,16 @@
 <?php
 /**
- *  OpenRegister Settings Controller
+ * OpenRegister Settings Controller
  *
  * This file contains the controller class for handling settings in the OpenRegister application.
  *
- * @category Controller
- * @package  OCA\OpenRegister\Service
- *
+ * @category  Controller
+ * @package   OCA\OpenRegister\Controller
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * @version GIT: <git_id>
- *
- * @link https://www.OpenRegister.nl
+ * @version   GIT: <git_id>
+ * @link      https://www.OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Controller;

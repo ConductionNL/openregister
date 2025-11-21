@@ -591,7 +591,10 @@ class FileService
         try {
             $userFolder = $this->getOpenRegisterUserFolder();
             $nodes = $userFolder->getById($nodeId);
-            return !empty($nodes) ? $nodes[0] : null;
+            if (empty($nodes) === false) {
+                return $nodes[0];
+            }
+            return null;
         } catch (Exception $e) {
             $this->logger->error("Failed to get node by ID $nodeId: " . $e->getMessage());
             return null;
@@ -692,13 +695,16 @@ class FileService
 
         // Handle legacy cases where folder might be null, empty string, or a non-numeric string path.
         if ($folderProperty === null || $folderProperty === '' || (is_string($folderProperty) && !is_numeric($folderProperty))) {
-            $objectEntityId = ($objectEntity instanceof ObjectEntity ? $objectEntity->getId() : $objectEntity);
+            $objectEntityId = $objectEntity;
+            if ($objectEntity instanceof ObjectEntity) {
+                $objectEntityId = $objectEntity->getId();
+            }
             $this->logger->info("Object $objectEntityId has legacy folder property, creating new folder");
             return $this->createObjectFolderById(objectEntity: $objectEntity, registerId: $registerId);
         }
 
         // Convert string numeric ID to integer.
-        $folderId = is_string($folderProperty) ? (int) $folderProperty : (int) $folderProperty;
+        $folderId = (int) $folderProperty;
 
         // Try to get folder by ID.
         $folder = $this->getNodeById($folderId);
@@ -1021,13 +1027,13 @@ class FileService
             'id'          => $file->getId(),
             'path'        => $file->getPath(),
             'title'       => $file->getName(),
-            'accessUrl'   => count($shares) > 0 ? $this->getShareLink($shares[0]) : null,
-            'downloadUrl' => count($shares) > 0 ? $this->getShareLink($shares[0]).'/download' : null,
+            'accessUrl'   => $this->getAccessUrlFromShares($shares),
+            'downloadUrl' => $this->getDownloadUrlFromShares($shares),
             'type'        => $file->getMimetype(),
             'extension'   => $file->getExtension(),
             'size'        => $file->getSize(),
             'hash'        => $file->getEtag(),
-            'published'   => count($shares) > 0 ? $shares[0]->getShareTime()->format('c') : null,
+            'published'   => $this->getPublishedTimeFromShares($shares),
             'modified'    => (new DateTime())->setTimestamp($file->getUploadTime())->format('c'),
             'labels'      => $this->getFileTags(fileId: $file->getId()),
             'owner'       => $file->getOwner()?->getUID(),
@@ -1151,7 +1157,10 @@ class FileService
         $paginatedFiles = array_slice($filteredFiles, $offset, $limit);
 
         // Calculate pages based on filtered total.
-        $pages = $limit !== null ? ceil($totalFiltered / $limit) : 1;
+        $pages = 1;
+        if ($limit !== null) {
+            $pages = ceil($totalFiltered / $limit);
+        }
 
         return [
             'results' => $paginatedFiles,
@@ -1522,7 +1531,7 @@ class FileService
     {
         try {
             // Check if user exists.
-            if (!$this->userManager->userExists($userId)) {
+            if ($this->userManager->userExists($userId) === false) {
                 $this->logger->warning("Cannot share folder with user '$userId' - user does not exist");
                 return null;
             }
@@ -2648,22 +2657,22 @@ class FileService
         try {
             // Use root folder to search for file by ID.
             $nodes = $this->rootFolder->getById($fileId);
-            
+
             if (empty($nodes)) {
                 return null;
             }
-            
+
             // Get the first node (file IDs are unique).
             $node = $nodes[0];
-            
+
             // Ensure it's a file, not a folder.
             if (!($node instanceof File)) {
                 return null;
             }
-            
+
             // Check ownership for NextCloud rights issues.
             $this->checkOwnership($node);
-            
+
             return $node;
         } catch (\Exception $e) {
             $this->logger->error('getFileById: Error finding file by ID ' . $fileId . ': ' . $e->getMessage());
@@ -2690,12 +2699,12 @@ class FileService
     {
         // Create a stream response with the file content.
         $response = new \OCP\AppFramework\Http\StreamResponse($file->fopen('r'));
-        
+
         // Set appropriate headers.
         $response->addHeader('Content-Type', $file->getMimeType());
         $response->addHeader('Content-Disposition', 'attachment; filename="' . $file->getName() . '"');
         $response->addHeader('Content-Length', (string) $file->getSize());
-        
+
         return $response;
 
     }//end streamFile()

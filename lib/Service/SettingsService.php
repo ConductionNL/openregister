@@ -790,7 +790,7 @@ class SettingsService
             // **OPTIMIZED QUERIES**: Use direct SQL COUNT queries for maximum performance.
             // 1. Objects table - comprehensive stats with single query.
             $objectsQuery = "
-                SELECT 
+                SELECT
                     COUNT(*) as total_objects,
                     COALESCE(SUM(CAST(size AS UNSIGNED)), 0) as total_size,
                     SUM(CASE WHEN owner IS NULL OR owner = '' THEN 1 ELSE 0 END) as without_owner,
@@ -817,7 +817,7 @@ class SettingsService
 
             // 2. Audit trails table - comprehensive stats.
             $auditQuery = "
-                SELECT 
+                SELECT
                     COUNT(*) as total_count,
                     COALESCE(SUM(size), 0) as total_size,
                     SUM(CASE WHEN expires IS NULL OR expires = '' THEN 1 ELSE 0 END) as without_expiry,
@@ -838,7 +838,7 @@ class SettingsService
 
             // 3. Search trails table - comprehensive stats.
             $searchQuery = "
-                SELECT 
+                SELECT
                     COUNT(*) as total_count,
                     COALESCE(SUM(size), 0) as total_size,
                     SUM(CASE WHEN expires IS NULL OR expires = '' THEN 1 ELSE 0 END) as without_expiry,

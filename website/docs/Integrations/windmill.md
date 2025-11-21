@@ -540,7 +540,7 @@ def process_object(obj: Dict[str, Any]) -> Dict[str, Any]:
 - [Events API Reference](../api/events-reference.md)
 - [Nextcloud Windmill Documentation](https://docs.nextcloud.com/server/latest/admin_manual/windmill_workflows/)
 - [Windmill Documentation](https://docs.windmill.dev)
-- [OpenRegister API Documentation](../api/)
+- [OpenRegister API Documentation](../api/objects.md)
 
 ## Support
 

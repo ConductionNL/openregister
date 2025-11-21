@@ -5,16 +5,13 @@
  * This file contains the background job for cleaning up expired audit trail logs
  * in the OpenRegister application.
  *
- * @category Background_Jobs
- * @package  OCA\OpenRegister\Cron
- *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @category  Cron
+ * @package   OCA\OpenRegister\Cron
+ * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * @version GIT: <git-id>
- *
- * @link https://OpenRegister.app
+ * @version   GIT: <git-id>
+ * @link      https://OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Cron;

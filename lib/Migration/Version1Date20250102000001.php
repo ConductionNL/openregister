@@ -85,7 +85,7 @@ class Version1Date20250102000001 extends SimpleMigrationStep
         // Add active field to organisations table.
         if ($schema->hasTable('openregister_organisations')) {
             $table = $schema->getTable('openregister_organisations');
-            
+
             // Add active field (boolean).
             if (!$table->hasColumn('active')) {
                 $table->addColumn('active', Types::BOOLEAN, [

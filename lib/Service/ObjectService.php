@@ -951,14 +951,14 @@ class ObjectService
         // Set the current register context if a register is provided, it's not an array, and it's not empty.
         if (isset($config['filters']['register']) === true
             && is_array($config['filters']['register']) === false
-            && !empty($config['filters']['register'])) {
+            && empty($config['filters']['register']) === false) {
             $this->setRegister($config['filters']['register']);
         }
 
         // Set the current schema context if a schema is provided, it's not an array, and it's not empty.
         if (isset($config['filters']['schema']) === true
             && is_array($config['filters']['schema']) === false
-            && !empty($config['filters']['schema'])) {
+            && empty($config['filters']['schema']) === false) {
             $this->setSchema($config['filters']['schema']);
         }
 
@@ -1633,7 +1633,7 @@ class ObjectService
         // Add object field filters to facet query.
         $objectFilters = array_diff_key($filters, array_flip(['register', 'schema', 'extend', 'limit', 'offset', 'order', 'page']));
         foreach ($objectFilters as $key => $value) {
-            if (!str_starts_with($key, '_')) {
+            if (str_starts_with($key, '_') === false) {
                 $facetQuery[$key]            = $value;
                 $facetQuery['_facets'][$key] = ['type' => 'terms'];
             }
@@ -1820,7 +1820,7 @@ class ObjectService
             }
 
             // Check if key contains underscores (indicating PHP mangled dots).
-            if (str_contains($key, '_')) {
+            if (str_contains($key, '_') === true) {
                 // Split by underscore to reconstruct nested structure.
                 $parts = explode('_', $key);
 
@@ -1834,7 +1834,7 @@ class ObjectService
                         $current[$part] = $value;
                     } else {
                         // Intermediate part: create nested array if needed.
-                        if (!isset($current[$part]) || !is_array($current[$part])) {
+                        if (isset($current[$part]) === false || is_array($current[$part]) === false) {
                             $current[$part] = [];
                         }
                         $current = &$current[$part];
@@ -1888,7 +1888,7 @@ class ObjectService
                 $specialParams[$key] = $value;
             } else if (in_array($key, $metadataFields)) {
                 // Only add to @self if not already set from function parameters.
-                if (!isset($query['@self'][$key])) {
+                if (isset($query['@self'][$key]) === false) {
                     $query['@self'][$key] = $value;
                 }
             } else {
@@ -1947,12 +1947,19 @@ class ObjectService
                 $viewQuery = $view->getQuery();
 
                 // Apply registers filter using @self metadata (format ObjectEntityMapper understands).
-                if (!empty($viewQuery['registers'])) {
-                    if (!isset($query['@self'])) {
+                if (empty($viewQuery['registers']) === false) {
+                    if (isset($query['@self']) === false) {
                         $query['@self'] = [];
                     }
+                    $registerValue = $query['@self']['register'] ?? null;
+                    $registerArray = [];
+                    if (is_array($registerValue) === true) {
+                        $registerArray = $registerValue;
+                    } elseif ($registerValue !== null && $registerValue !== false) {
+                        $registerArray = [$registerValue];
+                    }
                     $query['@self']['register'] = array_unique(array_merge(
-                        is_array($query['@self']['register'] ?? null) ? $query['@self']['register'] : ($query['@self']['register'] ?? false ? [$query['@self']['register']] : []),
+                        $registerArray,
                         $viewQuery['registers']
                     ));
                 }
@@ -1962,39 +1969,58 @@ class ObjectService
                     if (!isset($query['@self'])) {
                         $query['@self'] = [];
                     }
+                    $schemaValue = $query['@self']['schema'] ?? null;
+                    $schemaArray = [];
+                    if (is_array($schemaValue) === true) {
+                        $schemaArray = $schemaValue;
+                    } elseif ($schemaValue !== null && $schemaValue !== false) {
+                        $schemaArray = [$schemaValue];
+                    }
                     $query['@self']['schema'] = array_unique(array_merge(
-                        is_array($query['@self']['schema'] ?? null) ? $query['@self']['schema'] : ($query['@self']['schema'] ?? false ? [$query['@self']['schema']] : []),
+                        $schemaArray,
                         $viewQuery['schemas']
                     ));
                 }
 
                 // Apply search terms.
-                if (!empty($viewQuery['searchTerms'])) {
-                    $searchTerms = is_array($viewQuery['searchTerms']) 
-                        ? implode(' ', $viewQuery['searchTerms']) 
-                        : $viewQuery['searchTerms'];
-                    
+                if (empty($viewQuery['searchTerms']) === false) {
+                    $searchTerms = '';
+                    if (is_array($viewQuery['searchTerms']) === true) {
+                        $searchTerms = implode(' ', $viewQuery['searchTerms']);
+                    } else {
+                        $searchTerms = $viewQuery['searchTerms'];
+                    }
+
                     $existingSearch = $query['_search'] ?? '';
                     $query['_search'] = trim($existingSearch . ' ' . $searchTerms);
                 }
 
                 // Apply facet filters (merge with existing filters).
-                if (!empty($viewQuery['facetFilters'])) {
+                if (empty($viewQuery['facetFilters']) === false) {
                     foreach ($viewQuery['facetFilters'] as $facet => $values) {
-                        if (!isset($query[$facet])) {
+                        if (isset($query[$facet]) === false) {
                             $query[$facet] = $values;
                         } else {
                             // Merge values for the same facet (OR logic).
-                            $query[$facet] = array_unique(array_merge(
-                                is_array($query[$facet]) ? $query[$facet] : [$query[$facet]],
-                                is_array($values) ? $values : [$values]
-                            ));
+                            $facetArray = [];
+                            if (is_array($query[$facet]) === true) {
+                                $facetArray = $query[$facet];
+                            } else {
+                                $facetArray = [$query[$facet]];
+                            }
+                            $valuesArray = [];
+                            if (is_array($values) === true) {
+                                $valuesArray = $values;
+                            } else {
+                                $valuesArray = [$values];
+                            }
+                            $query[$facet] = array_unique(array_merge($facetArray, $valuesArray));
                         }
                     }
                 }
 
                 // Preserve source preference from view.
-                if (!empty($viewQuery['source']) && !isset($query['_source'])) {
+                if (empty($viewQuery['source']) === false && isset($query['_source']) === false) {
                     $query['_source'] = $viewQuery['source'];
                 }
 
@@ -2046,7 +2072,10 @@ class ObjectService
         $hasComplexRendering = $hasExtend || $hasFields || $hasFilter || $hasUnset;
 
         // Get active organization context for multi-tenancy (only if multi is enabled).
-        $activeOrganisationUuid = $multi ? $this->getActiveOrganisationForContext() : null;
+        $activeOrganisationUuid = null;
+        if ($multi === true) {
+            $activeOrganisationUuid = $this->getActiveOrganisationForContext();
+        }
 
         // **MAPPER CALL**: Execute database search.
         $dbStart = microtime(true);
@@ -2064,16 +2093,24 @@ class ObjectService
         $mapperStart = microtime(true);
         $result = $this->objectEntityMapper->searchObjects($query, $activeOrganisationUuid, $rbac, $multi, $ids, $uses);
 
+        $resultCount = 'non-array';
+        if (is_array($result) === true) {
+            $resultCount = count($result);
+        }
         $this->logger->info('✅ MAPPER CALL - Database search completed', [
-            'resultCount' => is_array($result) ? count($result) : 'non-array',
+            'resultCount' => $resultCount,
             'mapperTime' => round((microtime(true) - $mapperStart) * 1000, 2) . 'ms',
             'requestUri' => $_SERVER['REQUEST_URI'] ?? 'unknown'
         ]);
 
         $dbTime = round((microtime(true) - $dbStart) * 1000, 2);
+        $resultCount = 0;
+        if (is_array($result) === true) {
+            $resultCount = count($result);
+        }
         $this->logger->debug('Database query completed', [
             'dbTime' => $dbTime . 'ms',
-            'resultCount' => is_array($result) ? count($result) : 0,
+            'resultCount' => $resultCount,
             'limit' => $limit,
             'hasComplexRendering' => $hasComplexRendering
         ]);
@@ -2111,17 +2148,21 @@ class ObjectService
                 ];
 
                 // Add optional metadata if available (no database lookups).
-                if ($object->getOwner()) {
-                    $objectData['@self']['owner'] = $object->getOwner();
+                $owner = $object->getOwner();
+                if ($owner !== null && $owner !== '') {
+                    $objectData['@self']['owner'] = $owner;
                 }
-                if ($object->getOrganisation()) {
-                    $objectData['@self']['organisation'] = $object->getOrganisation();
+                $organisation = $object->getOrganisation();
+                if ($organisation !== null && $organisation !== '') {
+                    $objectData['@self']['organisation'] = $organisation;
                 }
-                if ($object->getPublished()) {
-                    $objectData['@self']['published'] = $object->getPublished()->format('Y-m-d\TH:i:s\Z');
+                $published = $object->getPublished();
+                if ($published !== null) {
+                    $objectData['@self']['published'] = $published->format('Y-m-d\TH:i:s\Z');
                 }
-                if ($object->getDepublished()) {
-                    $objectData['@self']['depublished'] = $object->getDepublished()->format('Y-m-d\TH:i:s\Z');
+                $depublished = $object->getDepublished();
+                if ($depublished !== null) {
+                    $objectData['@self']['depublished'] = $depublished->format('Y-m-d\TH:i:s\Z');
                 }
 
                 $object->setObject($objectData);
@@ -2132,7 +2173,7 @@ class ObjectService
             $this->logger->debug('Ultra-fast rendering completed', [
                 'renderTime' => $simpleRenderTime . 'ms',
                 'objectCount' => count($objects),
-                'avgPerObject' => count($objects) > 0 ? round($simpleRenderTime / count($objects), 2) . 'ms' : '0ms',
+                'avgPerObject' => $this->calculateAvgPerObject(count($objects), $simpleRenderTime),
                 'pathType' => 'ultra-fast-minimal'
             ]);
 
@@ -2156,13 +2197,13 @@ class ObjectService
         $registers = null;
         $schemas   = null;
 
-        if (!empty($registerIds)) {
+        if (empty($registerIds) === false) {
             $registerEntities = $this->getCachedEntities('register', $registerIds, [$this->registerMapper, 'findMultiple']);
 
             // **TYPE SAFETY**: Ensure we have Register objects, not arrays.
             $validRegisters = [];
             foreach ($registerEntities as $register) {
-                if (is_array($register)) {
+                if (is_array($register) === true) {
                     // Hydrate array back to Register object.
                     try {
                         $registerObj = new \OCA\OpenRegister\Db\Register();
@@ -2341,7 +2382,7 @@ class ObjectService
         $this->logger->debug('Ultra-fast rendering completed', [
             'renderTime' => $renderTime . 'ms',
             'objectCount' => $objectCount,
-            'avgPerObject' => $objectCount > 0 ? round($renderTime / $objectCount, 2) . 'ms' : '0ms',
+            'avgPerObject' => $this->calculateAvgPerObject($objectCount, $renderTime),
             'ultraCacheEnabled' => !empty($this->renderHandler->getUltraCacheSize())
         ]);
 
@@ -2375,7 +2416,10 @@ class ObjectService
     public function countSearchObjects(array $query=[], bool $rbac=true, bool $multi=true, ?array $ids=null, ?string $uses=null): int
     {
         // Get active organization context for multi-tenancy (only if multi is enabled).
-        $activeOrganisationUuid = $multi ? $this->getActiveOrganisationForContext() : null;
+        $activeOrganisationUuid = null;
+        if ($multi === true) {
+            $activeOrganisationUuid = $this->getActiveOrganisationForContext();
+        }
 
         // Use the new optimized countSearchObjects method from ObjectEntityMapper with organization context.
         return $this->objectEntityMapper->countSearchObjects($query, $activeOrganisationUuid, $rbac, $multi, $ids, $uses);
@@ -4230,7 +4274,7 @@ class ObjectService
                         $schema = $this->schemaMapper->find($objectSchema);
                         // TODO: Add property-level RBAC check for 'create' action here
                         // Check individual property permissions before allowing property values to be set.
-                        if (!$this->hasPermission($schema, 'create', $userId, $objectOwner, $rbac)) {
+                        if ($this->hasPermission($schema, 'create', $userId, $objectOwner, $rbac) === false) {
                             continue;
                             // Skip this object if user doesn't have permission.
                         }
@@ -4930,7 +4974,7 @@ class ObjectService
 
         // Extract all related IDs from result objects.
         foreach ($results as $result) {
-            if (!$result instanceof ObjectEntity) {
+            if (($result instanceof ObjectEntity) === false) {
                 continue;
             }
 
@@ -5048,7 +5092,7 @@ class ObjectService
             $targetSchemaEntity   = is_string($targetSchema) || is_int($targetSchema) ? $this->schemaMapper->find($targetSchema) : $targetSchema;
 
             // Validate entities exist.
-            if (!$sourceRegisterEntity || !$sourceSchemaEntity || !$targetRegisterEntity || !$targetSchemaEntity) {
+            if ($sourceRegisterEntity === null || $sourceSchemaEntity === null || $targetRegisterEntity === null || $targetSchemaEntity === null) {
                 throw new \OCP\AppFramework\Db\DoesNotExistException('One or more registers/schemas not found');
             }
 
@@ -5895,7 +5939,7 @@ class ObjectService
 
                         // TODO: Add property-level RBAC check for 'delete' action here
                         // Check if user has permission to delete objects with specific property values.
-                        if (!$this->hasPermission($schema, 'delete', $userId, $objectOwner, $rbac)) {
+                        if ($this->hasPermission($schema, 'delete', $userId, $objectOwner, $rbac) === false) {
                             continue;
                             // Skip this object - no permission.
                         }
@@ -6819,7 +6863,7 @@ class ObjectService
                 }
             }
 
-            if (!$needsRegeneration && isset($schemaFacets['object_fields'])) {
+            if ($needsRegeneration === false && isset($schemaFacets['object_fields']) === true) {
                 // Use existing facets with queryParameter.
                 $facetableFields['object_fields'] = array_merge(
                     $facetableFields['object_fields'],
@@ -7037,6 +7081,22 @@ class ObjectService
             return true;
         }
     }//end isSearchTrailsEnabled()
+
+    /**
+     * Calculate average time per object.
+     *
+     * @param int   $objectCount Number of objects.
+     * @param float $totalTime   Total time in milliseconds.
+     *
+     * @return string Average time per object formatted as string.
+     */
+    private function calculateAvgPerObject(int $objectCount, float $totalTime): string
+    {
+        if ($objectCount > 0) {
+            return round($totalTime / $objectCount, 2) . 'ms';
+        }
+        return '0ms';
+    }
 
 
 }//end class

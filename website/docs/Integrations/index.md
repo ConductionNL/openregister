@@ -352,7 +352,7 @@ Always have fallback options:
 ### Getting Help
 
 - Check individual integration documentation
-- Review [Development Guides](../development/)
+- Review [Development Guides](../development/api-validation.md)
 - Open GitHub issues for bugs
 - Check Docker logs for errors
 
