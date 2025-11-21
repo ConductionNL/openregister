@@ -1,9 +1,8 @@
 <?php
-
-declare(strict_types=1);
-
-/*
- * OpenRegister Organisation Groups Migration
+/**
+ * OpenRegister Migration Version1Date20251102180000
+ *
+ * OpenRegister Organisation Groups Migration.
  *
  * This migration renames the 'roles' column to 'groups' in the organisations table
  * to maintain naming consistency with applications.
@@ -19,6 +18,8 @@ declare(strict_types=1);
  *
  * @link https://www.OpenRegister.nl
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Migration;
 
@@ -49,18 +50,16 @@ class Version1Date20251102180000 extends SimpleMigrationStep
      */
     public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+        // @var ISchemaWrapper $schema
         $schema = $schemaClosure();
 
         $output->info('🔧 Preparing to rename roles to groups in organisations table...');
 
-        if ($schema->hasTable('openregister_organisations')) {
+        if ($schema->hasTable('openregister_organisations') === true) {
             $table = $schema->getTable('openregister_organisations');
 
             // Only proceed if we have roles column and don't have groups column yet.
-            if ($table->hasColumn('roles') && !$table->hasColumn('groups')) {
+            if ($table->hasColumn('roles') === true && $table->hasColumn('groups') === false) {
                 $output->info('   ✓ Ready to migrate roles column to groups');
             }
         }
@@ -79,16 +78,14 @@ class Version1Date20251102180000 extends SimpleMigrationStep
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+        // @var ISchemaWrapper $schema
         $schema = $schemaClosure();
 
-        if ($schema->hasTable('openregister_organisations')) {
+        if ($schema->hasTable('openregister_organisations') === true) {
             $table = $schema->getTable('openregister_organisations');
 
             // Check if we need to do the migration.
-            if ($table->hasColumn('roles') && !$table->hasColumn('groups')) {
+            if ($table->hasColumn('roles') === true && $table->hasColumn('groups') === false) {
                 // Add new groups column.
                 $table->addColumn(
                         'groups',
@@ -103,7 +100,7 @@ class Version1Date20251102180000 extends SimpleMigrationStep
                 $output->info('   ✓ Added groups column');
 
                 return $schema;
-            } else if ($table->hasColumn('groups')) {
+            } else if ($table->hasColumn('groups') === true) {
                 $output->info('   ⚠️  Groups column already exists');
             }
         }//end if
@@ -124,12 +121,10 @@ class Version1Date20251102180000 extends SimpleMigrationStep
      */
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+        // @var ISchemaWrapper $schema
         $schema = $schemaClosure();
 
-        if (!$schema->hasTable('openregister_organisations')) {
+        if ($schema->hasTable('openregister_organisations') === false) {
             return;
         }
 
@@ -143,7 +138,7 @@ class Version1Date20251102180000 extends SimpleMigrationStep
             // Use try-catch in case roles column doesn't exist.
             try {
                 $result = $connection->executeUpdate(
-                    'UPDATE `*PREFIX*openregister_organisations` SET `groups` = `roles` WHERE (`groups` = \'[]\' OR `groups` IS NULL) AND `roles` IS NOT NULL'
+                    'UPDATE `*PREFIX*openregister_organisations` '.'SET `groups` = `roles` '.'WHERE (`groups` = \'[]\' OR `groups` IS NULL) AND `roles` IS NOT NULL'
                 );
 
                 if ($result > 0) {
@@ -152,7 +147,7 @@ class Version1Date20251102180000 extends SimpleMigrationStep
                     $output->info('   ℹ️  No data to migrate (already migrated or roles column empty)');
                 }
             } catch (\Exception $copyError) {
-                // roles column might not exist if migration already ran.
+                // Roles column might not exist if migration already ran.
                 $output->info('   ℹ️  Data migration skipped (roles column may not exist)');
             }
 
