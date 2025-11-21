@@ -53,8 +53,8 @@ graph TD
 The system automatically selects the optimal calculation strategy based on dataset characteristics:
 
 ### Strategy 1: **Exact Parallel Calculation** 
-- **When**: Small datasets (<1,000 objects)
-- **Performance**: <100ms response time
+- **When**: Small datasets (&lt;1,000 objects)
+- **Performance**: &lt;100ms response time
 - **Accuracy**: 100% exact counts
 - **Method**: Parallel processing with optimized index queries
 
