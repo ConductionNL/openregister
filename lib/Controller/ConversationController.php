@@ -110,6 +110,7 @@ class ConversationController extends Controller
      * @param IRequest            $request             Request object
      * @param ConversationMapper  $conversationMapper  Conversation mapper
      * @param MessageMapper       $messageMapper       Message mapper
+     * @param FeedbackMapper      $feedbackMapper      Feedback mapper
      * @param AgentMapper         $agentMapper         Agent mapper
      * @param OrganisationService $organisationService Organisation service
      * @param ChatService         $chatService         Chat service
@@ -188,7 +189,7 @@ class ConversationController extends Controller
                     $this->userId,
                     $organisationUuid,
                     false,
-                // includeDeleted = false.
+                // IncludeDeleted = false.
                     $limit,
                     $offset
                 );
@@ -198,7 +199,7 @@ class ConversationController extends Controller
                     $this->userId,
                     $organisationUuid,
                     false
-                // includeDeleted = false.
+                // IncludeDeleted = false.
                 );
             }//end if
 
@@ -237,10 +238,10 @@ class ConversationController extends Controller
      *
      * RBAC check is handled in the mapper layer.
      *
+     * @param string $uuid Conversation UUID
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
-     *
-     * @param string $uuid Conversation UUID
      *
      * @return JSONResponse Conversation data
      */
@@ -254,8 +255,8 @@ class ConversationController extends Controller
             $organisation     = $this->organisationService->getActiveOrganisation();
             $organisationUuid = $organisation?->getUuid();
 
-            // Check access rights using mapper method.
-            if (!$this->conversationMapper->canUserAccessConversation($conversation, $this->userId, $organisationUuid)) {
+            // Validate Check access rights using method.
+            if ($this->conversationMapper->canUserAccessConversation($conversation, $this->userId, $organisationUuid) === false) {
                 return new JSONResponse(
                         [
                             'error'   => 'Access denied',
@@ -306,10 +307,10 @@ class ConversationController extends Controller
      *
      * RBAC check is handled in the mapper layer.
      *
+     * @param string $uuid Conversation UUID
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
-     *
-     * @param string $uuid Conversation UUID
      *
      * @return JSONResponse Messages list
      */
@@ -323,8 +324,8 @@ class ConversationController extends Controller
             $organisation     = $this->organisationService->getActiveOrganisation();
             $organisationUuid = $organisation?->getUuid();
 
-            // Check access rights using mapper method.
-            if (!$this->conversationMapper->canUserAccessConversation($conversation, $this->userId, $organisationUuid)) {
+            // Validate Check access rights using method.
+            if ($this->conversationMapper->canUserAccessConversation($conversation, $this->userId, $organisationUuid) === false) {
                 return new JSONResponse(
                         [
                             'error'   => 'Access denied',
@@ -407,9 +408,9 @@ class ConversationController extends Controller
 
             // Get agent ID (handle both agentId and agentUuid).
             $agentId = null;
-            if (isset($data['agentId'])) {
+            if (isset($data['agentId']) === true) {
                 $agentId = $data['agentId'];
-            } else if (isset($data['agentUuid'])) {
+            } else if (isset($data['agentUuid']) === true) {
                 // Look up agent by UUID to get ID.
                 try {
                     $agent   = $this->agentMapper->findByUuid($data['agentUuid']);
@@ -485,10 +486,10 @@ class ConversationController extends Controller
      *
      * RBAC check is handled in the mapper layer.
      *
+     * @param string $uuid Conversation UUID
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
-     *
-     * @param string $uuid Conversation UUID
      *
      * @return JSONResponse Updated conversation
      */
@@ -499,7 +500,7 @@ class ConversationController extends Controller
             $conversation = $this->conversationMapper->findByUuid($uuid);
 
             // Check modify rights using mapper method.
-            if (!$this->conversationMapper->canUserModifyConversation($conversation, $this->userId)) {
+            if ($this->conversationMapper->canUserModifyConversation($conversation, $this->userId) === false) {
                 return new JSONResponse(
                         [
                             'error'   => 'Access denied',
@@ -514,11 +515,11 @@ class ConversationController extends Controller
 
             // SECURITY: Only update allowed fields to prevent tampering with immutable fields.
             // Immutable fields (organisation, owner, userId, agentId, created) are NOT updated.
-            if (isset($data['title'])) {
+            if (isset($data['title']) === true) {
                 $conversation->setTitle($data['title']);
             }
 
-            if (isset($data['metadata'])) {
+            if (isset($data['metadata']) === true) {
                 $conversation->setMetadata($data['metadata']);
             }
 
@@ -570,10 +571,10 @@ class ConversationController extends Controller
      *
      * RBAC check is handled in the mapper layer.
      *
+     * @param string $uuid Conversation UUID
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
-     *
-     * @param string $uuid Conversation UUID
      *
      * @return JSONResponse Success message
      */
@@ -584,7 +585,7 @@ class ConversationController extends Controller
             $conversation = $this->conversationMapper->findByUuid($uuid);
 
             // Check modify rights using mapper method.
-            if (!$this->conversationMapper->canUserModifyConversation($conversation, $this->userId)) {
+            if ($this->conversationMapper->canUserModifyConversation($conversation, $this->userId) === false) {
                 return new JSONResponse(
                         [
                             'error'   => 'Access denied',
@@ -682,10 +683,10 @@ class ConversationController extends Controller
      *
      * RBAC check is handled in the mapper layer.
      *
+     * @param string $uuid Conversation UUID
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
-     *
-     * @param string $uuid Conversation UUID
      *
      * @return JSONResponse Restored conversation
      */
@@ -696,7 +697,7 @@ class ConversationController extends Controller
             $conversation = $this->conversationMapper->findByUuid($uuid);
 
             // Check modify rights using mapper method.
-            if (!$this->conversationMapper->canUserModifyConversation($conversation, $this->userId)) {
+            if ($this->conversationMapper->canUserModifyConversation($conversation, $this->userId) === false) {
                 return new JSONResponse(
                         [
                             'error'   => 'Access denied',
@@ -752,10 +753,10 @@ class ConversationController extends Controller
      *
      * RBAC check is handled in the mapper layer.
      *
+     * @param string $uuid Conversation UUID
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
-     *
-     * @param string $uuid Conversation UUID
      *
      * @return JSONResponse Success message
      */
@@ -766,7 +767,7 @@ class ConversationController extends Controller
             $conversation = $this->conversationMapper->findByUuid($uuid);
 
             // Check modify rights using mapper method.
-            if (!$this->conversationMapper->canUserModifyConversation($conversation, $this->userId)) {
+            if ($this->conversationMapper->canUserModifyConversation($conversation, $this->userId) === false) {
                 return new JSONResponse(
                         [
                             'error'   => 'Access denied',

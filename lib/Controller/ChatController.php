@@ -117,8 +117,10 @@ class ChatController extends Controller
      * @param ChatService         $chatService         Chat service
      * @param ConversationMapper  $conversationMapper  Conversation mapper
      * @param MessageMapper       $messageMapper       Message mapper
+     * @param FeedbackMapper      $feedbackMapper      Feedback mapper
      * @param AgentMapper         $agentMapper         Agent mapper
      * @param OrganisationService $organisationService Organisation service
+     * @param IDBConnection       $db                  Database connection
      * @param LoggerInterface     $logger              Logger
      * @param string              $userId              User ID
      */
@@ -183,9 +185,21 @@ class ChatController extends Controller
             $conversationUuid = (string) $this->request->getParam('conversation');
             $agentUuid        = (string) $this->request->getParam('agentUuid');
             $message          = (string) $this->request->getParam('message');
-            $selectedViews    = $this->request->getParam('views') ?: [];
+            $viewsParam       = $this->request->getParam('views');
+            if ($viewsParam !== null && is_array($viewsParam) === true) {
+                $selectedViews = $viewsParam;
+            } else {
+                $selectedViews = [];
+            }
+
             // Array of view UUIDs.
-            $selectedTools = $this->request->getParam('tools') ?: [];
+            $toolsParam = $this->request->getParam('tools');
+            if ($toolsParam !== null && is_array($toolsParam) === true) {
+                $selectedTools = $toolsParam;
+            } else {
+                $selectedTools = [];
+            }
+
             // Array of tool UUIDs.
             // Get RAG configuration settings.
             $ragSettings = [
@@ -195,7 +209,7 @@ class ChatController extends Controller
                 'numSourcesObjects' => $this->request->getParam('numSourcesObjects') ?? 5,
             ];
 
-            if (empty($message)) {
+            if (empty($message) === true) {
                 return new JSONResponse(
                         [
                             'error'   => 'Missing message',
@@ -217,7 +231,7 @@ class ChatController extends Controller
             // Load or create conversation.
             $conversation = null;
 
-            if (!empty($conversationUuid)) {
+            if (empty($conversationUuid) === false) {
                 // Load existing conversation by UUID.
                 try {
                     $conversation = $this->conversationMapper->findByUuid($conversationUuid);
@@ -230,7 +244,7 @@ class ChatController extends Controller
                             404
                             );
                 }
-            } else if (!empty($agentUuid)) {
+            } else if (empty($agentUuid) === false) {
                 // Create new conversation with specified agent.
                 $organisation = $this->organisationService->getActiveOrganisation();
 
@@ -340,7 +354,7 @@ class ChatController extends Controller
             // Get conversation ID from request.
             $conversationId = (int) $this->request->getParam('conversationId');
 
-            if (empty($conversationId)) {
+            if (empty($conversationId) === true) {
                 return new JSONResponse(
                         [
                             'error'   => 'Missing conversationId',
@@ -417,7 +431,7 @@ class ChatController extends Controller
             // Get conversation ID from request.
             $conversationId = (int) $this->request->getParam('conversationId');
 
-            if (empty($conversationId)) {
+            if (empty($conversationId) === true) {
                 return new JSONResponse(
                         [
                             'error'   => 'Missing conversationId',
@@ -485,11 +499,11 @@ class ChatController extends Controller
      *
      * Endpoint: POST /api/conversations/{conversationUuid}/messages/{messageId}/feedback
      *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
      * @param string $conversationUuid Conversation UUID
      * @param int    $messageId        Message ID
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
      *
      * @return JSONResponse Feedback data
      */
@@ -501,7 +515,7 @@ class ChatController extends Controller
             $comment = (string) $this->request->getParam('comment', '');
 
             // Validate feedback type.
-            if (!in_array($type, ['positive', 'negative'], true)) {
+            if (in_array($type, ['positive', 'negative'], true) === false) {
                 return new JSONResponse(
                         [
                             'error'   => 'Invalid feedback type',

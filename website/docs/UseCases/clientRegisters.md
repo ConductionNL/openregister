@@ -178,7 +178,133 @@ This specification includes detailed definitions for:
 
 All these entities are interconnected in our client management system:
 
-![Entity Relationships](clientRegisters_2.svg)
+```mermaid
+erDiagram
+    Client ||--o{ Task : "has tasks"
+    Client ||--o{ Message : "has messages"
+    Client ||--o{ Note : "has notes"
+    Client ||--o{ Order : "places orders"
+    Task }o--o{ Task : "related to"
+    Product ||--o{ OrderItem : "ordered in"
+    Service ||--o{ OrderItem : "ordered in"
+    Order ||--o{ OrderItem : "contains"
+    Note }o--|| Client : "about"
+    Note }o--|| Task : "about"
+    Note }o--|| Message : "about"
+    Note }o--|| Product : "about"
+    Note }o--|| Service : "about"
+    Note }o--|| Order : "about"
+    
+    Client {
+        UUID id PK
+        string type
+        Identifier identifier
+        MultilingualText name
+        string givenName
+        string familyName
+        Address address
+        ContactPoint contactPoint
+        LegalEntity legalEntity
+        DateTime dateCreated
+        DateTime dateModified
+    }
+    
+    Task {
+        UUID id PK
+        string type
+        string name
+        string description
+        DateTime startTime
+        DateTime endTime
+        string actionStatus
+        UUID clientId FK
+        Reference relatedTo
+        Task subtasks
+        DateTime dateCreated
+        DateTime dateModified
+    }
+    
+    Message {
+        UUID id PK
+        string subject
+        string body
+        Person from
+        Person to
+        DateTime sentAt
+        DateTime receivedAt
+        string channel
+        string direction
+        UUID clientId FK
+        DateTime createdAt
+        DateTime updatedAt
+    }
+    
+    Note {
+        UUID id PK
+        string title
+        string content
+        UUID about FK
+        Person createdBy
+        DateTime createdAt
+        DateTime updatedAt
+        string visibility
+        boolean pinned
+    }
+    
+    Product {
+        UUID id PK
+        string name
+        string description
+        string type
+        string category
+        Decimal price
+        string currency
+        string availability
+        Date validFrom
+        Date validThrough
+        DateTime createdAt
+        DateTime updatedAt
+    }
+    
+    Service {
+        UUID id PK
+        string name
+        string description
+        string serviceType
+        string category
+        Organization provider
+        string availability
+        string status
+        Date validFrom
+        Date validThrough
+        DateTime createdAt
+        DateTime updatedAt
+    }
+    
+    Order {
+        UUID id PK
+        string orderNumber
+        DateTime orderDate
+        string orderStatus
+        UUID customer FK
+        Organization seller
+        string paymentMethod
+        Decimal totalAmount
+        string currency
+        DateTime createdAt
+        DateTime updatedAt
+    }
+    
+    OrderItem {
+        UUID id PK
+        UUID orderId FK
+        UUID productId FK
+        Decimal quantity
+        Decimal unitPrice
+        string description
+        Decimal lineAmount
+    }
+```
 
 The diagram above shows how:
 

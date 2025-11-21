@@ -1,21 +1,25 @@
 <?php
-
-declare(strict_types=1);
-
-/*
- * SolrManagementCommand - Production SOLR Management CLI
+/**
+ * OpenRegister SOLR Management Command
+ *
+ * SolrManagementCommand - Production SOLR Management CLI.
  *
  * This command provides comprehensive SOLR management operations including
  * setup, schema validation, optimization, warming, and maintenance tasks.
  *
- * @category  Command
- * @package   OCA\OpenRegister\Command
- * @author    OpenRegister Team
- * @copyright 2024 OpenRegister
- * @license   AGPL-3.0-or-later
- * @version   1.0.0
- * @link      https://github.com/OpenRegister/OpenRegister
+ * @category Command
+ * @package  OCA\OpenRegister\Command
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://www.OpenRegister.app
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Command;
 
@@ -166,7 +170,7 @@ class SolrManagementCommand extends Command
         $output->writeln('================================================');
 
         // Check if SOLR is available.
-        if (!$this->solrService->isAvailable()) {
+        if ($this->solrService->isAvailable() === false) {
             $output->writeln('<error>❌ SOLR is not available or not configured</error>');
             $output->writeln('<comment>   Configure SOLR in admin settings first</comment>');
             return self::FAILURE;
@@ -189,7 +193,8 @@ class SolrManagementCommand extends Command
     /**
      * Handle SOLR setup
      *
-     * @param  OutputInterface $output Output interface
+     * @param OutputInterface $output Output interface
+     *
      * @return int Exit code
      */
     private function handleSetup(OutputInterface $output): int
@@ -200,7 +205,7 @@ class SolrManagementCommand extends Command
         try {
             // Test connection first.
             $connectionResult = $this->solrService->testConnection();
-            if (!$connectionResult['success']) {
+            if ($connectionResult['success'] === false) {
                 $output->writeln('<error>❌ SOLR connection failed: '.$connectionResult['message'].'</error>');
                 return self::FAILURE;
             }
@@ -224,7 +229,7 @@ class SolrManagementCommand extends Command
             $solrSetup = new SolrSetup($solrConfig, $this->logger);
 
             // Run complete setup including schema field configuration.
-            if ($solrSetup->setupSolr()) {
+            if ($solrSetup->setupSolr() === true) {
                 $output->writeln('✅ Base SOLR infrastructure and schema configured');
                 $output->writeln('   • ConfigSet: <comment>openregister</comment>');
                 $output->writeln('   • Base collection: <comment>openregister</comment>');
@@ -233,7 +238,7 @@ class SolrManagementCommand extends Command
 
                 // Ensure tenant collection.
                 $output->writeln('🏠 Verifying tenant-specific collection...');
-                if ($this->solrService->ensureTenantCollection()) {
+                if ($this->solrService->ensureTenantCollection() === true) {
                     $output->writeln('✅ Tenant collection ready with proper schema');
 
                     $docCount = $this->solrService->getDocumentCount();
@@ -264,8 +269,9 @@ class SolrManagementCommand extends Command
     /**
      * Handle index optimization
      *
-     * @param  OutputInterface $output Output interface
-     * @param  bool            $commit Whether to commit
+     * @param OutputInterface $output Output interface
+     * @param bool            $commit Whether to commit
+     *
      * @return int Exit code
      */
     private function handleOptimize(OutputInterface $output, bool $commit): int
@@ -277,7 +283,7 @@ class SolrManagementCommand extends Command
         try {
             $startTime = microtime(true);
 
-            if ($this->solrService->optimize()) {
+            if ($this->solrService->optimize() === true) {
                 $executionTime = round((microtime(true) - $startTime) * 1000, 2);
                 $output->writeln('✅ Index optimization completed');
                 $output->writeln('   Execution time: <comment>'.$executionTime.'ms</comment>');
@@ -307,7 +313,8 @@ class SolrManagementCommand extends Command
     /**
      * Handle cache warming
      *
-     * @param  OutputInterface $output Output interface
+     * @param OutputInterface $output Output interface
+     *
      * @return int Exit code
      */
     private function handleWarm(OutputInterface $output): int
@@ -328,7 +335,7 @@ class SolrManagementCommand extends Command
                 $output->write('   🔥 '.$query['description'].'... ');
 
                 $result = $this->solrService->searchObjects($query);
-                if ($result['success']) {
+                if ($result['success'] === true) {
                     $output->writeln('<info>✅</info>');
                     $successCount++;
                 } else {
@@ -356,7 +363,8 @@ class SolrManagementCommand extends Command
     /**
      * Handle health check
      *
-     * @param  OutputInterface $output Output interface
+     * @param OutputInterface $output Output interface
+     *
      * @return int Exit code
      */
     private function handleHealth(OutputInterface $output): int
@@ -370,7 +378,7 @@ class SolrManagementCommand extends Command
             // Connection test.
             $output->writeln('🔗 <info>Testing connection...</info>');
             $connectionResult = $this->solrService->testConnection();
-            if ($connectionResult['success']) {
+            if ($connectionResult['success'] === true) {
                 $output->writeln('   ✅ Connection successful ('.$connectionResult['details']['response_time_ms'].'ms)');
                 $output->writeln('   📊 SOLR version: <comment>'.$connectionResult['details']['solr_version'].'</comment>');
                 $output->writeln('   🏗️  Mode: <comment>'.$connectionResult['details']['mode'].'</comment>');
@@ -382,7 +390,7 @@ class SolrManagementCommand extends Command
             // Collection test.
             $output->writeln('');
             $output->writeln('🏠 <info>Testing tenant collection...</info>');
-            if ($this->solrService->ensureTenantCollection()) {
+            if ($this->solrService->ensureTenantCollection() === true) {
                 $output->writeln('   ✅ Tenant collection accessible');
 
                 $docCount = $this->solrService->getDocumentCount();
@@ -396,7 +404,7 @@ class SolrManagementCommand extends Command
             $output->writeln('');
             $output->writeln('🔍 <info>Testing search functionality...</info>');
             $searchResult = $this->solrService->searchObjects(['q' => '*:*', 'rows' => 1]);
-            if ($searchResult['success']) {
+            if ($searchResult['success'] === true) {
                 $output->writeln('   ✅ Search working ('.$searchResult['execution_time_ms'].'ms)');
                 $output->writeln('   📊 Total documents: <comment>'.$searchResult['total'].'</comment>');
             } else {
@@ -432,7 +440,8 @@ class SolrManagementCommand extends Command
     /**
      * Handle schema validation
      *
-     * @param  OutputInterface $output Output interface
+     * @param OutputInterface $output Output interface
+     *
      * @return int Exit code
      */
     private function handleSchemaCheck(OutputInterface $output): int
@@ -469,7 +478,7 @@ class SolrManagementCommand extends Command
 
             // Test a document structure.
             $testResult = $this->solrService->searchObjects(['q' => '*:*', 'rows' => 1]);
-            if ($testResult['success'] && !empty($testResult['data'])) {
+            if ($testResult['success'] === true && empty($testResult['data']) === false) {
                 $sampleDoc       = $testResult['data'][0];
                 $availableFields = array_keys($sampleDoc);
 
@@ -479,13 +488,13 @@ class SolrManagementCommand extends Command
                 $missingFields = array_diff($expectedFields, $availableFields);
                 $extraFields   = array_diff($availableFields, $expectedFields);
 
-                if (empty($missingFields)) {
+                if (empty($missingFields) === true) {
                     $output->writeln('✅ All expected fields are available');
                 } else {
                     $output->writeln('<error>⚠️  Missing fields: '.implode(', ', $missingFields).'</error>');
                 }
 
-                if (!empty($extraFields)) {
+                if (empty($extraFields) === false) {
                     $output->writeln('ℹ️  Additional fields: <comment>'.implode(', ', array_slice($extraFields, 0, 10)).'</comment>');
                 }
             } else {
@@ -507,8 +516,9 @@ class SolrManagementCommand extends Command
     /**
      * Handle index clearing
      *
-     * @param  OutputInterface $output Output interface
-     * @param  bool            $force  Force operation
+     * @param OutputInterface $output Output interface
+     * @param bool            $force  Force operation
+     *
      * @return int Exit code
      */
     private function handleClear(OutputInterface $output, bool $force): int
@@ -525,7 +535,7 @@ class SolrManagementCommand extends Command
         $output->writeln('');
 
         try {
-            if ($this->solrService->clearIndex()) {
+            if ($this->solrService->clearIndex() === true) {
                 $output->writeln('✅ Index cleared successfully');
                 $output->writeln('<comment>   All documents have been removed from the index</comment>');
                 return self::SUCCESS;
@@ -544,7 +554,8 @@ class SolrManagementCommand extends Command
     /**
      * Handle statistics display
      *
-     * @param  OutputInterface $output Output interface
+     * @param OutputInterface $output Output interface
+     *
      * @return int Exit code
      */
     private function handleStats(OutputInterface $output): int
@@ -555,7 +566,7 @@ class SolrManagementCommand extends Command
         try {
             $dashboardStats = $this->solrService->getDashboardStats();
 
-            if ($dashboardStats['available']) {
+            if ($dashboardStats['available'] === true) {
                 $output->writeln('🏠 <info>Collection Information</info>');
                 $output->writeln('   Collection: <comment>'.$dashboardStats['collection'].'</comment>');
                 $output->writeln('   Tenant ID: <comment>'.$dashboardStats['tenant_id'].'</comment>');
@@ -589,8 +600,9 @@ class SolrManagementCommand extends Command
     /**
      * Handle invalid action
      *
-     * @param  OutputInterface $output Output interface
-     * @param  string          $action Invalid action
+     * @param OutputInterface $output Output interface
+     * @param string          $action Invalid action
+     *
      * @return int Exit code
      */
     private function handleInvalidAction(OutputInterface $output, string $action): int

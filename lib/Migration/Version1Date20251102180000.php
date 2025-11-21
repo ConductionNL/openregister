@@ -137,9 +137,10 @@ class Version1Date20251102180000 extends SimpleMigrationStep
             // Copy data from roles to groups (only where groups is empty or null).
             // Use try-catch in case roles column doesn't exist.
             try {
-                $result = $connection->executeUpdate(
-                    'UPDATE `*PREFIX*openregister_organisations` '.'SET `groups` = `roles` '.'WHERE (`groups` = \'[]\' OR `groups` IS NULL) AND `roles` IS NOT NULL'
-                );
+                // Update groups column from roles column where groups is empty or null.
+                // phpcs:ignore Generic.Files.LineLength.MaxExceeded -- SQL query must be on single line.
+                $sql    = 'UPDATE `*PREFIX*openregister_organisations` SET `groups` = `roles` WHERE (`groups` = \'[]\' OR `groups` IS NULL) AND `roles` IS NOT NULL';
+                $result = $connection->executeUpdate($sql);
 
                 if ($result > 0) {
                     $output->info("   ✓ Copied data from roles to groups for {$result} organisations");

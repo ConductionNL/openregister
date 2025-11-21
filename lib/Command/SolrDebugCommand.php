@@ -1,18 +1,22 @@
 <?php
+/**
+ * OpenRegister SOLR Debug Command
+ *
+ * SOLR Debug Command for testing SOLR functionality step by step.
+ *
+ * @category Command
+ * @package  OCA\OpenRegister\Command
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://www.OpenRegister.app
+ */
 
 declare(strict_types=1);
-
-/*
- * SOLR Debug Command
- *
- * @category  Command
- * @package   OCA\OpenRegister\Command
- * @author    OpenRegister Team
- * @copyright 2024 OpenRegister
- * @license   AGPL-3.0-or-later
- * @version   1.0.0
- * @link      https://github.com/OpenRegister/OpenRegister
- */
 
 namespace OCA\OpenRegister\Command;
 
@@ -115,23 +119,28 @@ class SolrDebugCommand extends Command
 
         $runAll = $input->getOption('all');
 
-        if ($runAll || $input->getOption('tenant-info')) {
+        if ($runAll === true || $input->getOption('tenant-info') === true) {
             $this->showTenantInfo($output);
         }
 
-        if ($runAll || $input->getOption('setup')) {
+        if ($runAll === true || $input->getOption('setup') === true) {
             $this->testSetup($output);
         }
 
-        if ($runAll || $input->getOption('test-connection')) {
+        if ($runAll === true || $input->getOption('test-connection') === true) {
             $this->testConnection($output);
         }
 
-        if ($runAll || $input->getOption('check-cores')) {
+        if ($runAll === true || $input->getOption('check-cores') === true) {
             $this->checkCores($output);
         }
 
-        if (!$runAll && !$input->getOption('setup') && !$input->getOption('test-connection') && !$input->getOption('check-cores') && !$input->getOption('tenant-info')) {
+        $hasSetup = $input->getOption('setup') === true;
+        $hasTestConnection = $input->getOption('test-connection') === true;
+        $hasCheckCores = $input->getOption('check-cores') === true;
+        $hasTenantInfo = $input->getOption('tenant-info') === true;
+
+        if ($runAll === false && $hasSetup === false && $hasTestConnection === false && $hasCheckCores === false && $hasTenantInfo === false) {
             $output->writeln('<comment>No options specified. Use --all or specific options like --setup, --test-connection, --check-cores</comment>');
             return Command::SUCCESS;
         }
@@ -156,14 +165,19 @@ class SolrDebugCommand extends Command
         $instanceId    = $this->config->getSystemValue('instanceid', 'default');
         $overwriteHost = $this->config->getSystemValue('overwrite.cli.url', '');
 
-        if (!empty($overwriteHost)) {
+        if (empty($overwriteHost) === false) {
             $tenantId = 'nc_'.hash('crc32', $overwriteHost);
         } else {
             $tenantId = 'nc_'.substr($instanceId, 0, 8);
         }
 
+        $overwriteHostDisplay = 'not set';
+        if ($overwriteHost !== '' && $overwriteHost !== null) {
+            $overwriteHostDisplay = $overwriteHost;
+        }
+
         $output->writeln("  Instance ID: <comment>$instanceId</comment>");
-        $output->writeln("  Overwrite Host: <comment>".($overwriteHost ?: 'not set')."</comment>");
+        $output->writeln("  Overwrite Host: <comment>$overwriteHostDisplay</comment>");
         $output->writeln("  Generated Tenant ID: <comment>$tenantId</comment>");
 
         // Get SOLR settings.
@@ -192,7 +206,7 @@ class SolrDebugCommand extends Command
         try {
             $solrSettings = $this->settingsService->getSolrSettings();
 
-            if (!$solrSettings['enabled']) {
+            if ($solrSettings['enabled'] === false) {
                 $output->writeln('<error>❌ SOLR is disabled in settings</error>');
                 return;
             }
@@ -243,14 +257,14 @@ class SolrDebugCommand extends Command
                 return;
             }
 
-            if (!$solrService->isAvailable()) {
+            if ($solrService->isAvailable() === false) {
                 $output->writeln('<error>❌ SOLR service is not available</error>');
                 return;
             }
 
             $connectionResult = $solrService->testConnection();
 
-            if ($connectionResult['success']) {
+            if ($connectionResult['success'] === true) {
                 $output->writeln('<info>✅ SOLR connection successful (Guzzle HTTP)</info>');
                 $output->writeln("  Response time: <comment>{$connectionResult['details']['response_time_ms']}ms</comment>");
                 $output->writeln("  SOLR version: <comment>{$connectionResult['details']['solr_version']}</comment>");
@@ -260,7 +274,7 @@ class SolrDebugCommand extends Command
                 // Test tenant collection creation.
                 $output->writeln('');
                 $output->writeln('<info>🏗️ Testing tenant collection creation...</info>');
-                if ($solrService->ensureTenantCollection()) {
+                if ($solrService->ensureTenantCollection() === true) {
                     $output->writeln('<info>✅ Tenant collection ready</info>');
                     $docCount = $solrService->getDocumentCount();
                     $output->writeln("  Document count: <comment>$docCount</comment>");
@@ -293,7 +307,7 @@ class SolrDebugCommand extends Command
         try {
             $solrSettings = $this->settingsService->getSolrSettings();
 
-            if (!$solrSettings['enabled']) {
+            if ($solrSettings['enabled'] === false) {
                 $output->writeln('<error>❌ SOLR is disabled</error>');
                 return;
             }
@@ -333,7 +347,7 @@ class SolrDebugCommand extends Command
         $coresResponse = @file_get_contents($coresUrl);
         if ($coresResponse !== false && $coresResponse !== '') {
             $coresData = json_decode($coresResponse, true);
-            if (isset($coresData['status'])) {
+            if (isset($coresData['status']) === true) {
                 $coreCount = count($coresData['status']);
                 $output->writeln("  <info>✅ Found $coreCount cores (standalone mode)</info>");
                 foreach ($coresData['status'] as $coreName => $coreInfo) {
@@ -359,7 +373,7 @@ class SolrDebugCommand extends Command
         $collectionsResponse = @file_get_contents($collectionsUrl);
         if ($collectionsResponse !== false && $collectionsResponse !== '') {
             $collectionsData = json_decode($collectionsResponse, true);
-            if (isset($collectionsData['cluster']['collections'])) {
+            if (isset($collectionsData['cluster']['collections']) === true) {
                 $collectionCount = count($collectionsData['cluster']['collections']);
                 $output->writeln("  <info>✅ Found $collectionCount collections (SolrCloud mode)</info>");
                 foreach ($collectionsData['cluster']['collections'] as $collectionName => $collectionInfo) {
@@ -384,7 +398,7 @@ class SolrDebugCommand extends Command
         $configSetsResponse = @file_get_contents($configSetsUrl);
         if ($configSetsResponse !== false && $configSetsResponse !== '') {
             $configSetsData = json_decode($configSetsResponse, true);
-            if (isset($configSetsData['configSets'])) {
+            if (isset($configSetsData['configSets']) === true) {
                 $configSetCount = count($configSetsData['configSets']);
                 $output->writeln("  <info>✅ Found $configSetCount configSets</info>");
                 foreach ($configSetsData['configSets'] as $configSetName) {
