@@ -33,30 +33,35 @@ use OCP\IDBConnection;
  */
 class Version1Date20250723110323 extends SimpleMigrationStep
 {
+
     /**
-     * Database connection
+     * Database connection.
      *
      * @var IDBConnection
      */
     private IDBConnection $connection;
 
+
     /**
-     * Constructor
+     * Constructor.
      *
-     * @param IDBConnection $connection Database connection
+     * @param IDBConnection $connection Database connection.
+     *
+     * @return void
      */
     public function __construct(IDBConnection $connection)
     {
         $this->connection = $connection;
-    }
+
+    }//end __construct()
 
 
     /**
-     * Pre-schema change operations
+     * Pre-schema change operations.
      *
-     * @param IOutput                   $output
-     * @param Closure(): ISchemaWrapper $schemaClosure
-     * @param array                     $options
+     * @param IOutput                   $output        Output interface.
+     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure.
+     * @param array                     $options       Migration options.
      *
      * @return void
      */
@@ -66,14 +71,15 @@ class Version1Date20250723110323 extends SimpleMigrationStep
 
     }//end preSchemaChange()
 
+
     /**
-     * Apply schema changes for is_default column
+     * Apply schema changes for is_default column.
      *
-     * @param IOutput                   $output
-     * @param Closure(): ISchemaWrapper $schemaClosure
-     * @param array                     $options
+     * @param IOutput                   $output        Output interface.
+     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure.
+     * @param array                     $options       Migration options.
      *
-     * @return null|ISchemaWrapper
+     * @return null|ISchemaWrapper The modified schema.
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
@@ -81,29 +87,34 @@ class Version1Date20250723110323 extends SimpleMigrationStep
         $schema = $schemaClosure();
 
         // Add is_default field to organisations table.
-        if ($schema->hasTable('openregister_organisations')) {
+        if ($schema->hasTable('openregister_organisations') === true) {
             $table = $schema->getTable('openregister_organisations');
-            
+
             // Add is_default field (boolean flag for default organisation).
-            if (!$table->hasColumn('is_default')) {
-                $table->addColumn('is_default', Types::BOOLEAN, [
-                    'notnull' => false,
-                    'default' => false
-                ]);
+            if ($table->hasColumn('is_default') === false) {
+                $table->addColumn(
+                    'is_default',
+                    Types::BOOLEAN,
+                    [
+                        'notnull' => false,
+                        'default' => false,
+                    ]
+                );
                 $output->info('Added is_default column to organisations table');
             }
         }
 
         return $schema;
-    }
+
+    }//end changeSchema()
 
 
     /**
-     * Post-schema change operations
+     * Post-schema change operations.
      *
-     * @param IOutput                   $output
-     * @param Closure(): ISchemaWrapper $schemaClosure
-     * @param array                     $options
+     * @param IOutput                   $output        Output interface.
+     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure.
+     * @param array                     $options       Migration options.
      *
      * @return void
      */
@@ -112,4 +123,6 @@ class Version1Date20250723110323 extends SimpleMigrationStep
         // No post-schema changes required.
 
     }//end postSchemaChange()
-} 
+
+
+}//end class

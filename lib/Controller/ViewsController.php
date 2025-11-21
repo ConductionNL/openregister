@@ -100,9 +100,12 @@ class ViewsController extends Controller
     {
         try {
             $user   = $this->userSession->getUser();
-            $userId = $user ? $user->getUID() : '';
+            $userId = '';
+            if ($user !== null) {
+                $userId = $user->getUID();
+            }
 
-            if (empty($userId)) {
+            if (empty($userId) === true) {
                 return new JSONResponse(
                         [
                             'error' => 'User not authenticated',
@@ -114,9 +117,21 @@ class ViewsController extends Controller
             $params = $this->request->getParams();
 
             // Extract pagination and search parameters (for future use).
-            $limit  = isset($params['_limit']) ? (int) $params['_limit'] : null;
-            $offset = isset($params['_offset']) ? (int) $params['_offset'] : null;
-            $page   = isset($params['_page']) ? (int) $params['_page'] : null;
+            $limit = null;
+            if (isset($params['_limit']) === true) {
+                $limit = (int) $params['_limit'];
+            }
+
+            $offset = null;
+            if (isset($params['_offset']) === true) {
+                $offset = (int) $params['_offset'];
+            }
+
+            $page = null;
+            if (isset($params['_page']) === true) {
+                $page = (int) $params['_page'];
+            }
+
             $search = $params['_search'] ?? '';
 
             $views = $this->viewService->findAll($userId);
@@ -174,9 +189,12 @@ class ViewsController extends Controller
     {
         try {
             $user   = $this->userSession->getUser();
-            $userId = $user ? $user->getUID() : '';
+            $userId = '';
+            if ($user !== null) {
+                $userId = $user->getUID();
+            }
 
-            if (empty($userId)) {
+            if (empty($userId) === true) {
                 return new JSONResponse(
                         [
                             'error' => 'User not authenticated',
@@ -231,9 +249,12 @@ class ViewsController extends Controller
     {
         try {
             $user   = $this->userSession->getUser();
-            $userId = $user ? $user->getUID() : '';
+            $userId = '';
+            if ($user !== null) {
+                $userId = $user->getUID();
+            }
 
-            if (empty($userId)) {
+            if (empty($userId) === true) {
                 return new JSONResponse(
                         [
                             'error' => 'User not authenticated',
@@ -245,7 +266,7 @@ class ViewsController extends Controller
             $data = $this->request->getParams();
 
             // Validate required fields.
-            if (!isset($data['name']) || empty($data['name'])) {
+            if (isset($data['name']) === false || empty($data['name']) === true) {
                 return new JSONResponse(
                         [
                             'error' => 'View name is required',
@@ -256,7 +277,7 @@ class ViewsController extends Controller
 
             // Extract query parameters from configuration or query.
             $query = [];
-            if (isset($data['configuration']) && is_array($data['configuration'])) {
+            if (isset($data['configuration']) === true && is_array($data['configuration']) === true) {
                 // Frontend still sends 'configuration', extract only query params.
                 $config = $data['configuration'];
                 $query  = [
@@ -267,7 +288,7 @@ class ViewsController extends Controller
                     'facetFilters'  => $config['facetFilters'] ?? [],
                     'enabledFacets' => $config['enabledFacets'] ?? [],
                 ];
-            } else if (isset($data['query']) && is_array($data['query'])) {
+            } else if (isset($data['query']) === true && is_array($data['query']) === true) {
                 // Direct query parameter.
                 $query = $data['query'];
             } else {
@@ -327,9 +348,12 @@ class ViewsController extends Controller
     {
         try {
             $user   = $this->userSession->getUser();
-            $userId = $user ? $user->getUID() : '';
+            $userId = '';
+            if ($user !== null) {
+                $userId = $user->getUID();
+            }
 
-            if (empty($userId)) {
+            if (empty($userId) === true) {
                 return new JSONResponse(
                         [
                             'error' => 'User not authenticated',
@@ -341,7 +365,7 @@ class ViewsController extends Controller
             $data = $this->request->getParams();
 
             // Validate required fields.
-            if (!isset($data['name']) || empty($data['name'])) {
+            if (isset($data['name']) === false || empty($data['name']) === true) {
                 return new JSONResponse(
                         [
                             'error' => 'View name is required',
@@ -352,7 +376,7 @@ class ViewsController extends Controller
 
             // Extract query parameters from configuration or query.
             $query = [];
-            if (isset($data['configuration']) && is_array($data['configuration'])) {
+            if (isset($data['configuration']) === true && is_array($data['configuration']) === true) {
                 // Frontend still sends 'configuration', extract only query params.
                 $config = $data['configuration'];
                 $query  = [
@@ -363,7 +387,7 @@ class ViewsController extends Controller
                     'facetFilters'  => $config['facetFilters'] ?? [],
                     'enabledFacets' => $config['enabledFacets'] ?? [],
                 ];
-            } else if (isset($data['query']) && is_array($data['query'])) {
+            } else if (isset($data['query']) === true && is_array($data['query']) === true) {
                 // Direct query parameter.
                 $query = $data['query'];
             } else {
@@ -426,17 +450,20 @@ class ViewsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @param string $id View ID
+     * @param string $id View ID.
      *
-     * @return JSONResponse Updated view data
+     * @return JSONResponse Updated view data.
      */
     public function patch(string $id): JSONResponse
     {
         try {
             $user   = $this->userSession->getUser();
-            $userId = $user ? $user->getUID() : '';
+            $userId = '';
+            if ($user !== null) {
+                $userId = $user->getUID();
+            }
 
-            if (empty($userId)) {
+            if (empty($userId) === true) {
                 return new JSONResponse(
                         [
                             'error' => 'User not authenticated',
@@ -453,13 +480,21 @@ class ViewsController extends Controller
             // Use existing values for fields not provided.
             $name        = $data['name'] ?? $view->getName();
             $description = $data['description'] ?? $view->getDescription();
-            $isPublic    = isset($data['isPublic']) ? $data['isPublic'] : $view->getIsPublic();
-            $isDefault   = isset($data['isDefault']) ? $data['isDefault'] : $view->getIsDefault();
-            $favoredBy   = $data['favoredBy'] ?? $view->getFavoredBy();
+            $isPublic    = $view->getIsPublic();
+            if (isset($data['isPublic']) === true) {
+                $isPublic = $data['isPublic'];
+            }
+
+            $isDefault = $view->getIsDefault();
+            if (isset($data['isDefault']) === true) {
+                $isDefault = $data['isDefault'];
+            }
+
+            $favoredBy = $data['favoredBy'] ?? $view->getFavoredBy();
 
             // Handle query parameter.
             $query = $view->getQuery() ?? [];
-            if (isset($data['configuration']) && is_array($data['configuration'])) {
+            if (isset($data['configuration']) === true && is_array($data['configuration']) === true) {
                 $config = $data['configuration'];
                 $query  = [
                     'registers'     => $config['registers'] ?? [],
@@ -469,7 +504,7 @@ class ViewsController extends Controller
                     'facetFilters'  => $config['facetFilters'] ?? [],
                     'enabledFacets' => $config['enabledFacets'] ?? [],
                 ];
-            } else if (isset($data['query']) && is_array($data['query'])) {
+            } else if (isset($data['query']) === true && is_array($data['query']) === true) {
                 $query = $data['query'];
             }
 
@@ -531,9 +566,12 @@ class ViewsController extends Controller
     {
         try {
             $user   = $this->userSession->getUser();
-            $userId = $user ? $user->getUID() : '';
+            $userId = '';
+            if ($user !== null) {
+                $userId = $user->getUID();
+            }
 
-            if (empty($userId)) {
+            if (empty($userId) === true) {
                 return new JSONResponse(
                         [
                             'error' => 'User not authenticated',

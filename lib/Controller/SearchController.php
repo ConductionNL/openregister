@@ -98,26 +98,37 @@ class SearchController extends Controller
         // Format the search results for the JSON response.
         $formattedResults = array_map(
             function (Result $result) {
+
                 /*
                  * @psalm-suppress UndefinedMethod
                  */
+
                 $id = $result->getId();
+
                 /*
                  * @psalm-suppress UndefinedMethod
                  */
+
                 $name = $result->getName();
+
                 /*
                  * @psalm-suppress UndefinedMethod
                  */
+
                 $type = $result->getType();
+
                 /*
                  * @psalm-suppress UndefinedMethod
                  */
+
                 $url = $result->getUrl();
+
                 /*
                  * @psalm-suppress UndefinedMethod
                  */
+
                 $source = $result->getSource();
+
                 return [
                     'id'     => $id,
                     'name'   => $name,
