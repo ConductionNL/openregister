@@ -447,7 +447,7 @@ graph LR
 |--------|-------|---------|
 | **Input Format** | Binary (PDF, DOCX, images) | Structured JSON data |
 | **Extraction** | Text extraction engines required | Property value concatenation |
-| **Processing Time** | Slow (2-60 seconds) | Fast (<1 second) |
+| **Processing Time** | Slow (2-60 seconds) | Fast (&lt;1 second) |
 | **Complexity** | High (OCR, parsing) | Low (string operations) |
 | **Chunk Count** | Many (10-1000+) | Few (1-10) |
 | **Update Frequency** | Rare (files are static) | Common (objects change often) |

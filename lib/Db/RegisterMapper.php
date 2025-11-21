@@ -148,7 +148,7 @@ class RegisterMapper extends QBMapper
         // Apply organisation filter (all users including admins must have active org).
         $this->applyOrganisationFilter($qb);
 
-        // Just return the entity; do not attach stats here
+        // Just return the entity; do not attach stats here.
         return $this->findEntity(query: $qb);
 
     }//end find()
@@ -189,12 +189,13 @@ class RegisterMapper extends QBMapper
      * This method performs a single database query to fetch multiple registers,
      * significantly improving performance compared to individual queries.
      *
-     * @param  array $ids Array of register IDs to find
-     * @return array Associative array of ID => Register entity
+     * @param array $ids Array of register IDs to find.
+     *
+     * @return array Associative array of ID => Register entity.
      */
     public function findMultipleOptimized(array $ids): array
     {
-        if (empty($ids)) {
+        if ($ids === []) {
             return [];
         }
 
@@ -208,7 +209,7 @@ class RegisterMapper extends QBMapper
         $result    = $qb->executeQuery();
         $registers = [];
 
-        while ($row = $result->fetch()) {
+        while (($row = $result->fetch()) !== false) {
             $register = new Register();
             $register = $register->fromRow($row);
             $registers[$row['id']] = $register;
@@ -268,7 +269,7 @@ class RegisterMapper extends QBMapper
             }
         }
 
-        // Just return the entities; do not attach stats here
+        // Just return the entities; do not attach stats here.
         return $this->findEntities(query: $qb);
 
     }//end findAll()
@@ -451,8 +452,13 @@ class RegisterMapper extends QBMapper
         $this->verifyOrganisationAccess($entity);
 
         // Check for attached objects before deleting.
-        $registerId = method_exists($entity, 'getId') ? $entity->getId() : $entity->id;
-        $stats      = $this->objectEntityMapper->getStatistics($registerId, null);
+        if (method_exists($entity, 'getId') === true) {
+            $registerId = $entity->getId();
+        } else {
+            $registerId = $entity->id;
+        }
+
+        $stats = $this->objectEntityMapper->getStatistics($registerId, null);
         if (($stats['total'] ?? 0) > 0) {
             throw new \OCA\OpenRegister\Exception\ValidationException('Cannot delete register: objects are still attached.');
         }
@@ -502,7 +508,8 @@ class RegisterMapper extends QBMapper
      * a regular expression for exact word matching. If a match is found, the ID
      * of the first such register is returned. Otherwise, it returns null.
      *
-     * @param  int $schemaId The ID of the schema to search for.
+     * @param int $schemaId The ID of the schema to search for.
+     *
      * @return int|null The ID of the first matching register, or null if none found.
      */
     public function getFirstRegisterWithSchema(int $schemaId): ?int
@@ -520,7 +527,11 @@ class RegisterMapper extends QBMapper
 
         $result = $qb->executeQuery()->fetchOne();
 
-        return $result !== false ? (int) $result : null;
+        if ($result !== false) {
+            return (int) $result;
+        }
+
+        return null;
 
     }//end getFirstRegisterWithSchema()
 
@@ -562,7 +573,7 @@ class RegisterMapper extends QBMapper
 
         $result   = $qb->executeQuery();
         $mappings = [];
-        while ($row = $result->fetch()) {
+        while (($row = $result->fetch()) !== false) {
             $mappings[$row['id']] = $row['slug'];
         }
 
@@ -584,7 +595,7 @@ class RegisterMapper extends QBMapper
 
         $result   = $qb->executeQuery();
         $mappings = [];
-        while ($row = $result->fetch()) {
+        while (($row = $result->fetch()) !== false) {
             $mappings[$row['slug']] = $row['id'];
         }
 

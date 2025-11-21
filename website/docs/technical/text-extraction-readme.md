@@ -127,11 +127,11 @@ GET  /api/gdpr/report
 
 ## 📈 Performance Targets
 
-- Object text extraction: <100ms
-- Chunk creation: <50ms per 100KB
-- Language detection: <10ms per chunk (local)
-- Entity extraction: <100ms per chunk (local)
-- GDPR report: <5s for 10,000 entities
+- Object text extraction: &lt;100ms
+- Chunk creation: &lt;50ms per 100KB
+- Language detection: &lt;10ms per chunk (local)
+- Entity extraction: &lt;100ms per chunk (local)
+- GDPR report: &lt;5s for 10,000 entities
 
 ## 🧪 Testing
 
