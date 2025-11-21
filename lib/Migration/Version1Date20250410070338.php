@@ -74,7 +74,7 @@ class Version1Date20250410070338 extends SimpleMigrationStep
                 'notnull' => false,
                 'length' => 255,
                 'default' => '0.0.1',
-            ]);           
+            ]);
             $table->addColumn('owner', 'string', [
                 'notnull' => false,
                 'length' => 64,
@@ -92,7 +92,7 @@ class Version1Date20250410070338 extends SimpleMigrationStep
             $table->addIndex(['created'], 'openregister_config_created_idx');
             $table->addIndex(['updated'], 'openregister_config_updated_idx');
         }
-        
+
         // Update the openregister_configurations table.
         $table = $schema->getTable('openregister_schemas');
 
@@ -119,4 +119,4 @@ class Version1Date20250410070338 extends SimpleMigrationStep
 
         return $schema;
     }
-} 
+}

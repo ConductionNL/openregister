@@ -59,7 +59,7 @@ class Version1Date20250321061615 extends SimpleMigrationStep
 
         // Update the openregister_objects table.
         $table = $schema->getTable('openregister_objects');
-        
+
         // Add organisation column to store organisation name.
         if ($table->hasColumn('organisation') === false) {
             $table->addColumn('organisation', Types::STRING, [
@@ -106,7 +106,7 @@ class Version1Date20250321061615 extends SimpleMigrationStep
 
         // Update the openregister_schemas table.
         $table = $schema->getTable('openregister_schemas');
-        
+
         // Add slug column to store unique identifier for objects.
         if ($table->hasColumn('slug') === false) {
             $table->addColumn('slug', Types::STRING, [

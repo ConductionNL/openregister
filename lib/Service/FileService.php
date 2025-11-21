@@ -2648,22 +2648,22 @@ class FileService
         try {
             // Use root folder to search for file by ID.
             $nodes = $this->rootFolder->getById($fileId);
-            
+
             if (empty($nodes)) {
                 return null;
             }
-            
+
             // Get the first node (file IDs are unique).
             $node = $nodes[0];
-            
+
             // Ensure it's a file, not a folder.
             if (!($node instanceof File)) {
                 return null;
             }
-            
+
             // Check ownership for NextCloud rights issues.
             $this->checkOwnership($node);
-            
+
             return $node;
         } catch (\Exception $e) {
             $this->logger->error('getFileById: Error finding file by ID ' . $fileId . ': ' . $e->getMessage());
@@ -2690,12 +2690,12 @@ class FileService
     {
         // Create a stream response with the file content.
         $response = new \OCP\AppFramework\Http\StreamResponse($file->fopen('r'));
-        
+
         // Set appropriate headers.
         $response->addHeader('Content-Type', $file->getMimeType());
         $response->addHeader('Content-Disposition', 'attachment; filename="' . $file->getName() . '"');
         $response->addHeader('Content-Length', (string) $file->getSize());
-        
+
         return $response;
 
     }//end streamFile()

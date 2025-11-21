@@ -5,16 +5,13 @@
  * This file contains the background job class for checking remote configurations
  * for updates in the OpenRegister application.
  *
- * @category Cron
- * @package  OCA\OpenRegister\Cron
- *
+ * @category  Cron
+ * @package   OCA\OpenRegister\Cron
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * @version GIT: <git_id>
- *
- * @link https://www.OpenRegister.app
+ * @version   GIT: <git_id>
+ * @link      https://www.OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Cron;
