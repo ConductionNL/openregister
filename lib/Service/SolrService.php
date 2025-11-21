@@ -2140,7 +2140,10 @@ class SolrService
         }
 
         // Index object data with schema-aware mapping if schema is provided.
-        $objectData = $object->getObject() ?: [];
+        $objectData = $object->getObject();
+        if ($objectData === null || $objectData === false) {
+            $objectData = [];
+        }
         if ($schema !== null) {
             // Schema-aware mapping: only properties defined in schema.
             $mappedProperties = $this->mapPropertiesUsingSchema($objectData, $schema->getProperties());
@@ -2180,26 +2183,26 @@ class SolrService
 
             $fieldName = $prefix . $key;
 
-            if (is_array($value)) {
+            if (is_array($value) === true) {
                 // Handle arrays and nested objects.
-                if ($this->isAssociativeArray($value)) {
+                if ($this->isAssociativeArray($value) === true) {
                     // Nested object - recurse with prefix.
                     $this->addObjectDataToDocument($doc, $value, $fieldName . '_');
                 } else {
                     // Simple array - add as multi-valued field.
                     foreach ($value as $item) {
-                        if (is_scalar($item)) {
+                        if (is_scalar($item) === true) {
                             $doc->addField($fieldName . '_ss', (string)$item);
                         }
                     }
                 }
-            } elseif (is_bool($value)) {
+            } elseif (is_bool($value) === true) {
                 $doc->setField($fieldName . '_b', $value);
-            } elseif (is_int($value)) {
+            } elseif (is_int($value) === true) {
                 $doc->setField($fieldName . '_i', $value);
-            } elseif (is_float($value)) {
+            } elseif (is_float($value) === true) {
                 $doc->setField($fieldName . '_f', $value);
-            } elseif ($this->isDateString($value)) {
+            } elseif ($this->isDateString($value) === true) {
                 $doc->setField($fieldName . '_dt', $this->formatDateForSolr($value));
             } else {
                 // String value.
@@ -2226,13 +2229,15 @@ class SolrService
         $textParts = [];
 
         // Add name.
-        if ($object->getName()) {
-            $textParts[] = $object->getName();
+        $name = $object->getName();
+        if ($name !== null && $name !== '') {
+            $textParts[] = $name;
         }
 
         // Add UUID.
-        if ($object->getUuid()) {
-            $textParts[] = $object->getUuid();
+        $uuid = $object->getUuid();
+        if ($uuid !== null && $uuid !== '') {
+            $textParts[] = $uuid;
         }
 
         // Extract text from object data.
@@ -2252,9 +2257,9 @@ class SolrService
     private function extractTextFromData(array $data, array &$textParts): void
     {
         foreach ($data as $value) {
-            if (is_string($value) && strlen($value) > 2) {
+            if (is_string($value) === true && strlen($value) > 2) {
                 $textParts[] = $value;
-            } elseif (is_array($value)) {
+            } elseif (is_array($value) === true) {
                 $this->extractTextFromData($value, $textParts);
             }
         }
@@ -2281,7 +2286,7 @@ class SolrService
         // Process each property defined in the schema.
         foreach ($schemaProperties as $propertyName => $propertyDefinition) {
             // Skip if property not present in object data.
-            if (!array_key_exists($propertyName, $objectData)) {
+            if (array_key_exists($propertyName, $objectData) === false) {
                 continue;
             }
 
@@ -2366,7 +2371,7 @@ class SolrService
      */
     private function mapStringProperty(string $propertyName, $value, ?string $format): array
     {
-        if (!is_string($value) && $value !== null) {
+        if (is_string($value) === false && $value !== null) {
             $value = (string) $value;
         }
 
@@ -2399,7 +2404,7 @@ class SolrService
     {
         $fields = [];
 
-        if ($value !== null && is_numeric($value)) {
+        if ($value !== null && is_numeric($value) === true) {
             if ($type === 'integer') {
                 $fields[$propertyName . '_i'] = (int) $value;
             } else {
@@ -2516,17 +2521,17 @@ class SolrService
     {
         $fields = [];
 
-        if (!is_array($value) && !is_object($value)) {
+        if (is_array($value) === false && is_object($value) === false) {
             return $fields;
         }
 
         // Convert object to array if needed.
-        if (is_object($value)) {
+        if (is_object($value) === true) {
             $value = (array) $value;
         }
 
         // Handle special case: object with UUID reference.
-        if (isset($value['value']) && is_string($value['value'])) {
+        if (isset($value['value']) === true && is_string($value['value']) === true) {
             // This is a reference object - store the UUID.
             $fields[$propertyName . '_ref'] = $value['value'];
         } else {
@@ -2550,15 +2555,15 @@ class SolrService
     {
         $fields = [];
 
-        if (is_array($value)) {
+        if (is_array($value) === true) {
             // Store file metadata as JSON.
             $fields[$propertyName . '_file'] = json_encode($value);
 
             // Extract searchable text if available.
-            if (isset($value['name'])) {
+            if (isset($value['name']) === true) {
                 $fields[$propertyName . '_filename_s'] = $value['name'];
             }
-            if (isset($value['mimeType'])) {
+            if (isset($value['mimeType']) === true) {
                 $fields[$propertyName . '_mimetype_s'] = $value['mimeType'];
             }
         }
@@ -2681,7 +2686,7 @@ class SolrService
      */
     private function addFaceting(SelectQuery $query, array $searchParams): void
     {
-        if (empty($searchParams['facet'])) {
+        if (empty($searchParams['facet']) === true) {
             return;
         }
 
@@ -2712,7 +2717,7 @@ class SolrService
             }
         }
 
-        if (empty($objectIds)) {
+        if (empty($objectIds) === true) {
             return [];
         }
 
@@ -2806,7 +2811,7 @@ class SolrService
      */
     private function isDateString(mixed $value): bool
     {
-        if (!is_string($value)) {
+        if (is_string($value) === false) {
             return false;
         }
 
@@ -2845,7 +2850,7 @@ class SolrService
      */
     public function searchObjectsPaginated(array $query = [], bool $rbac = false, bool $multi = false): array
     {
-        if (!$this->isAvailable()) {
+        if ($this->isAvailable() === false) {
             throw new \Exception('Solr service is not available');
         }
 
@@ -2897,12 +2902,15 @@ class SolrService
         }
 
         // Handle pagination.
-        if (isset($query['_page'])) {
+        if (isset($query['_page']) === true) {
             $page = max(1, (int)$query['_page']);
-            $limit = isset($query['_limit']) ? max(1, (int)$query['_limit']) : 20;
+            $limit = 20;
+            if (isset($query['_limit']) === true) {
+                $limit = max(1, (int)$query['_limit']);
+            }
             $solrQuery['start'] = ($page - 1) * $limit;
             $solrQuery['rows'] = $limit;
-        } elseif (isset($query['_limit'])) {
+        } elseif (isset($query['_limit']) === true) {
             $solrQuery['rows'] = max(1, (int)$query['_limit']);
         }
 
@@ -2915,13 +2923,13 @@ class SolrService
         $filterQueries = [];
 
         foreach ($query as $key => $value) {
-            if (str_starts_with($key, '_')) {
+            if (str_starts_with($key, '_') === true) {
                 continue; // Skip internal parameters
             }
 
             $solrField = $this->translateFilterField($key);
 
-            if (is_array($value)) {
+            if (is_array($value) === true) {
                 // Handle array values (OR condition).
                 $conditions = array_map(fn($v) => $solrField . ':"' . $this->escapeSolrValue($v) . '"', $value);
                 $filterQueries[] = '(' . implode(' OR ', $conditions) . ')';
@@ -2957,7 +2965,7 @@ class SolrService
     private function translateFilterField(string $field): string
     {
         // Handle @self.* fields (metadata).
-        if (str_starts_with($field, '@self.')) {
+        if (str_starts_with($field, '@self.') === true) {
             $metadataField = substr($field, 6); // Remove '@self.'
             return 'self_' . $metadataField;
         }
@@ -2973,7 +2981,7 @@ class SolrService
             'published' => 'self_published'
         ];
 
-        if (isset($fieldMappings[$field])) {
+        if (isset($fieldMappings[$field]) === true) {
             return $fieldMappings[$field];
         }
 
@@ -2989,16 +2997,19 @@ class SolrService
      */
     private function translateSortField(array|string $order): string
     {
-        if (is_string($order)) {
+        if (is_string($order) === true) {
             $field = $this->translateFilterField($order);
             return $field . ' asc';
         }
 
-        if (is_array($order)) {
+        if (is_array($order) === true) {
             $sortParts = [];
             foreach ($order as $field => $direction) {
                 $solrField = $this->translateFilterField($field);
-                $solrDirection = strtolower($direction) === 'desc' ? 'desc' : 'asc';
+                $solrDirection = 'asc';
+                if (strtolower($direction) === 'desc') {
+                    $solrDirection = 'desc';
+                }
                 $sortParts[] = $solrField . ' ' . $solrDirection;
             }
             return implode(', ', $sortParts);
@@ -3029,9 +3040,18 @@ class SolrService
 
         // Build pagination info.
         $total = $solrResults['numFound'] ?? count($results);
-        $page = isset($originalQuery['_page']) ? (int)$originalQuery['_page'] : 1;
-        $limit = isset($originalQuery['_limit']) ? (int)$originalQuery['_limit'] : 20;
-        $pages = $limit > 0 ? ceil($total / $limit) : 1;
+        $page = 1;
+        if (isset($originalQuery['_page']) === true) {
+            $page = (int)$originalQuery['_page'];
+        }
+        $limit = 20;
+        if (isset($originalQuery['_limit']) === true) {
+            $limit = (int)$originalQuery['_limit'];
+        }
+        $pages = 1;
+        if ($limit > 0) {
+            $pages = ceil($total / $limit);
+        }
 
         return [
             'results' => $results,
@@ -3057,7 +3077,7 @@ class SolrService
      */
     public function bulkIndexFromDatabase(int $batchSize = 1000, int $maxObjects = 0): array
     {
-        if (!$this->isAvailable()) {
+        if ($this->isAvailable() === false) {
             throw new \Exception('Solr service is not available');
         }
 
@@ -3094,7 +3114,7 @@ class SolrService
                 // Get batch of objects.
                 $objects = $this->objectMapper->findAllInRange($offset, $currentBatchSize);
 
-                if (empty($objects)) {
+                if (empty($objects) === true) {
                     break;
                 }
 
@@ -3131,7 +3151,7 @@ class SolrService
 
                 // Memory cleanup.
                 unset($objects, $batchResult);
-                if (function_exists('gc_collect_cycles')) {
+                if (function_exists('gc_collect_cycles') === true) {
                     gc_collect_cycles();
                 }
             }
@@ -3183,7 +3203,10 @@ class SolrService
     private function extractSolrFieldValue(array $doc, string $fieldName)
     {
         $value = $doc[$fieldName] ?? null;
-        return is_array($value) ? ($value[0] ?? null) : $value;
+        if (is_array($value) === true) {
+            return $value[0] ?? null;
+        }
+        return $value;
     }
 
     /**
@@ -3196,12 +3219,40 @@ class SolrService
     {
         try {
             // Extract metadata from self_ fields.
-            $object = is_array($doc['self_object'] ?? null) ? ($doc['self_object'][0] ?? null) : ($doc['self_object'] ?? null);
-            $uuid = is_array($doc['self_uuid'] ?? null) ? ($doc['self_uuid'][0] ?? null) : ($doc['self_uuid'] ?? null);
-            $register = is_array($doc['self_register'] ?? null) ? ($doc['self_register'][0] ?? null) : ($doc['self_register'] ?? null);
-            $schema = is_array($doc['self_schema'] ?? null) ? ($doc['self_schema'][0] ?? null) : ($doc['self_schema'] ?? null);
+            $selfObject = $doc['self_object'] ?? null;
+            $object = null;
+            if (is_array($selfObject) === true) {
+                $object = $selfObject[0] ?? null;
+            } else {
+                $object = $selfObject;
+            }
 
-            if (!$objectId || !$register || !$schema) {
+            $selfUuid = $doc['self_uuid'] ?? null;
+            $uuid = null;
+            if (is_array($selfUuid) === true) {
+                $uuid = $selfUuid[0] ?? null;
+            } else {
+                $uuid = $selfUuid;
+            }
+
+            $selfRegister = $doc['self_register'] ?? null;
+            $register = null;
+            if (is_array($selfRegister) === true) {
+                $register = $selfRegister[0] ?? null;
+            } else {
+                $register = $selfRegister;
+            }
+
+            $selfSchema = $doc['self_schema'] ?? null;
+            $schema = null;
+            if (is_array($selfSchema) === true) {
+                $schema = $selfSchema[0] ?? null;
+            } else {
+                $schema = $selfSchema;
+            }
+
+            $objectId = $uuid;
+            if ($objectId === null || $objectId === '' || $register === null || $register === '' || $schema === null || $schema === '') {
                 $this->logger->warning('[SolrService] Invalid document missing required fields', [
                     'doc_id' => $doc['id'] ?? 'unknown',
                     'object' => $uuid,
