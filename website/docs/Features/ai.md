@@ -266,8 +266,8 @@ Function calling is integrated into the chat service:
 
 ## Related Documentation
 
-- [Agents](./agents.md) - Agent management and configuration
-- [RAG Implementation](./rag-implementation.md) - Detailed RAG documentation
-- [Function Calling](./function-calling.md) - Function calling guide
+- [Agents](../features/agents.md) - Agent management and configuration
+- [RAG Implementation](../features/rag-implementation.md) - Detailed RAG documentation
+- [Function Calling](../features/function-calling.md) - Function calling guide
 - [Performance Optimization](../development/performance-optimization.md) - Performance tuning
 

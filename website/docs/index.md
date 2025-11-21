@@ -122,7 +122,6 @@ For developers working with OpenRegister, see our comprehensive developer guides
 
 ## Troubleshooting & Fixes
 
-For information about recent fixes and solutions to common issues, see the [Fixes section](./fixes/index.md).
 
 ## Contributing
 

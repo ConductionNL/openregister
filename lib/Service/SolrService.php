@@ -187,7 +187,7 @@ class SolrService
         
         try {
             // Check if collection already exists using Collections API (SolrCloud).
-            if ($this->collectionExists($collectionName)) {
+            if ($this->collectionExists($collectionName) === true) {
                 $this->logger->info("Solr collection '{$collectionName}' already exists", [
                     'tenant_id' => $this->tenantId
                 ]);
@@ -664,7 +664,7 @@ class SolrService
             
             $update->addDeleteQuery($deleteQuery);
             
-            if ($commit || $this->solrConfig['autoCommit']) {
+            if ($commit === true || $this->solrConfig['autoCommit'] === true) {
                 $update->addCommit();
             }
             
@@ -672,7 +672,7 @@ class SolrService
             
             $this->stats['deletes']++;
             
-            if ($this->solrConfig['enableLogging']) {
+            if ($this->solrConfig['enableLogging'] === true) {
                 $this->logger->debug('Object deleted from SOLR', [
                     'object_id' => $objectId,
                     'tenant_id' => $this->tenantId,
@@ -759,7 +759,7 @@ class SolrService
             $this->stats['searches']++;
             $this->stats['search_time'] += ($executionTime / 1000);
             
-            if ($this->solrConfig['enableLogging']) {
+            if ($this->solrConfig['enableLogging'] === true) {
                 $this->logger->debug('SOLR search executed', [
                     'query' => $queryString,
                     'total_found' => $resultSet->getNumFound(),
@@ -1126,7 +1126,7 @@ class SolrService
     {
         $warnings = [];
         
-        if (!$this->isAvailable()) {
+        if ($this->isAvailable() === false) {
             $warnings[] = 'SOLR service is not available';
         }
         
@@ -1134,7 +1134,7 @@ class SolrService
             $warnings[] = 'High error rate detected';
         }
         
-        if ($this->isOptimizationNeeded()) {
+        if ($this->isOptimizationNeeded() === true) {
             $warnings[] = 'Index optimization recommended';
         }
         
@@ -1250,7 +1250,7 @@ class SolrService
     public function warmupIndex(array $schemas = [], int $maxObjects = 0, string $mode = 'serial', bool $collectErrors = false): array
     {
         $this->ensureClientInitialized();
-        if (!$this->isAvailable()) {
+        if ($this->isAvailable() === false) {
             return [
                 'success' => false,
                 'operations' => [],
@@ -1290,7 +1290,7 @@ class SolrService
                 $operations['schemas_processed'] = $mirrorResult['schemas_processed'];
                 $operations['fields_created'] = $mirrorResult['fields_created'];
                 
-                if (!$mirrorResult['success']) {
+                if (($mirrorResult['success'] ?? false) === false) {
                     $operations['mirror_errors'] = $mirrorResult['errors'];
                 }
                 
@@ -1342,7 +1342,7 @@ class SolrService
                     
                     // **ERROR COLLECTION MODE**: Collect errors instead of re-throwing.
                     if ($collectErrors === true) {
-                        if (!isset($operations['collected_errors'])) {
+                        if (isset($operations['collected_errors']) === false) {
                             $operations['collected_errors'] = [];
                         }
                         $operations['collected_errors'][] = [
@@ -1495,7 +1495,7 @@ class SolrService
                 $results['fields_created'] += $schemaResult['fields_created'];
                 $results['fields_updated'] += $schemaResult['fields_updated'];
                 
-                if (!$schemaResult['success']) {
+                if (($schemaResult['success'] ?? false) === false) {
                     $results['errors'] = array_merge($results['errors'], $schemaResult['errors']);
                 }
                 
@@ -1541,7 +1541,7 @@ class SolrService
 
         $properties = $schema->getProperties();
         
-        if (empty($properties)) {
+        if (empty($properties) === true) {
             $this->logger->debug('Schema has no properties to mirror', [
                 'schema_id' => $schema->getId(),
                 'schema_title' => $schema->getTitle()
@@ -1670,7 +1670,7 @@ class SolrService
 
             case 'object':
                 // Check if it's a reference object (has UUID).
-                if (isset($propertyDefinition['properties']['value'])) {
+                if (isset($propertyDefinition['properties']['value']) === true) {
                     $fieldDefinitions[] = [
                         'name' => $propertyName . '_ref',
                         'type' => 'string',
@@ -1736,7 +1736,7 @@ class SolrService
     public function fastBulkIndex(array $objects, int $chunkSize = 1000, int $commitEvery = 5, bool $optimize = false): array
     {
         $this->ensureClientInitialized();
-        if (!$this->isAvailable() || empty($objects)) {
+        if ($this->isAvailable() === false || empty($objects) === true) {
             return ['total' => 0, 'indexed' => 0, 'errors' => 0, 'batches' => 0, 'execution_time_ms' => 0.0, 'throughput_per_sec' => 0.0];
         }
 
@@ -1824,7 +1824,7 @@ class SolrService
     public function fastSearchIds(array $searchParams, array $fields = ['id', 'object_id', 'uuid'], int $maxResults = 10000): array
     {
         $this->ensureClientInitialized();
-        if (!$this->isAvailable()) {
+        if ($this->isAvailable() === false) {
             return ['ids' => [], 'total' => 0, 'execution_time_ms' => 0.0];
         }
 
@@ -1864,7 +1864,7 @@ class SolrService
             $this->stats['searches']++;
             $this->stats['search_time'] += ($executionTime / 1000);
             
-            if ($this->solrConfig['enableLogging']) {
+            if ($this->solrConfig['enableLogging'] === true) {
                 $this->logger->debug('Fast SOLR ID search completed', [
                     'query' => $queryString,
                     'total_found' => $resultSet->getNumFound(),
@@ -1907,7 +1907,7 @@ class SolrService
     public function streamSearch(array $searchParams, callable $processor, int $batchSize = 1000): array
     {
         $this->ensureClientInitialized();
-        if (!$this->isAvailable()) {
+        if ($this->isAvailable() === false) {
             return ['processed' => 0, 'batches' => 0, 'execution_time_ms' => 0.0];
         }
 
@@ -1934,7 +1934,7 @@ class SolrService
 
                 $batchResult = $this->fastSearchIds($batchSearchParams, ['object_id', 'uuid'], $batchSize);
                 
-                if (!empty($batchResult['ids'])) {
+                if (empty($batchResult['ids']) === false) {
                     // Process this batch.
                     call_user_func($processor, $batchResult['ids']);
                     
@@ -2052,7 +2052,10 @@ class SolrService
     {
         $doc = $update->createDocument();
         
-        $uuid = $object->getUuid() ?: $object->getId();
+        $uuid = $object->getUuid();
+        if ($uuid === null || $uuid === '') {
+            $uuid = $object->getId();
+        }
         
         // Set core identification fields.
         $doc->setField('id', $uuid);

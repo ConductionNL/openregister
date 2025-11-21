@@ -60,7 +60,7 @@ The system automatically selects the optimal calculation strategy based on datas
 
 ### Strategy 2: **Smart Sampling**
 - **When**: Medium datasets (1K-10K objects)  
-- **Performance**: <75ms response time
+- **Performance**: &lt;75ms response time
 - **Accuracy**: ~95% statistical accuracy
 - **Method**: Random sampling (10%) + statistical extrapolation
 
