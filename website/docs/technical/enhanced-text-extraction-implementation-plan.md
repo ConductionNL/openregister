@@ -503,7 +503,7 @@ GdprService (new)
 
 - **Coverage**: 100% of files and objects chunked
 - **Accuracy**: >90% entity detection accuracy
-- **Performance**: <5min to process 1000 files
+- **Performance**: &lt;5min to process 1000 files
 - **Adoption**: GDPR register used for data subject requests
 - **Compliance**: Pass GDPR audit
 - **User Satisfaction**: Positive feedback on search quality
