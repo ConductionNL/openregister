@@ -58,13 +58,13 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 							<template #icon>
 								<Plus :size="20" />
 							</template>
-							Add Configuration
+							Create Configuration
 						</NcActionButton>
 						<NcActionButton
 							close-after-click
 							@click="navigationStore.setModal('importConfiguration')">
 							<template #icon>
-								<Upload :size="20" />
+								<CloudUpload :size="20" />
 							</template>
 							Import Configuration
 						</NcActionButton>
@@ -94,63 +94,16 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 			<div v-else>
 				<template v-if="viewMode === 'cards'">
 					<div class="cardGrid">
-						<div v-for="configuration in paginatedConfigurations" :key="configuration.id" class="card">
-							<div class="cardHeader">
-								<h2 v-tooltip.bottom="configuration.description">
-									<CogOutline :size="20" />
-									{{ configuration.title }}
-								</h2>
-								<NcActions :primary="true" menu-name="Actions">
-									<template #icon>
-										<DotsHorizontal :size="20" />
-									</template>
-									<NcActionButton close-after-click @click="configurationStore.setConfigurationItem(configuration); navigationStore.setModal('viewConfiguration')">
-										<template #icon>
-											<Eye :size="20" />
-										</template>
-										View
-									</NcActionButton>
-									<NcActionButton close-after-click @click="configurationStore.setConfigurationItem(configuration); navigationStore.setModal('editConfiguration')">
-										<template #icon>
-											<Pencil :size="20" />
-										</template>
-										Edit
-									</NcActionButton>
-									<NcActionButton close-after-click @click="configurationStore.setConfigurationItem(configuration); navigationStore.setModal('exportConfiguration')">
-										<template #icon>
-											<Download :size="20" />
-										</template>
-										Export
-									</NcActionButton>
-									<NcActionButton close-after-click @click="configurationStore.setConfigurationItem(configuration); navigationStore.setDialog('deleteConfiguration')">
-										<template #icon>
-											<TrashCanOutline :size="20" />
-										</template>
-										Delete
-									</NcActionButton>
-								</NcActions>
-							</div>
-							<!-- Configuration Details -->
-							<div class="configurationDetails">
-								<p v-if="configuration.description" class="configurationDescription">
-									{{ configuration.description }}
-								</p>
-								<div class="configurationInfo">
-									<div class="configurationInfoItem">
-										<strong>{{ t('openregister', 'Type') }}:</strong>
-										<span>{{ configuration.type || 'Unknown' }}</span>
-									</div>
-									<div v-if="configuration.owner" class="configurationInfoItem">
-										<strong>{{ t('openregister', 'Owner') }}:</strong>
-										<span>{{ configuration.owner }}</span>
-									</div>
-									<div v-if="configuration.configuration" class="configurationInfoItem">
-										<strong>{{ t('openregister', 'Configuration Keys') }}:</strong>
-										<span>{{ Object.keys(configuration.configuration || {}).length }} keys</span>
-									</div>
-								</div>
-							</div>
-						</div>
+						<ConfigurationCard
+							v-for="configuration in paginatedConfigurations"
+							:key="configuration.id"
+							:configuration="configuration"
+							@view="handleView(configuration)"
+							@edit="handleEdit(configuration)"
+							@export="handleExport(configuration)"
+							@delete="handleDelete(configuration)"
+							@check-version="checkVersion(configuration)"
+							@preview-update="previewUpdate(configuration)" />
 					</div>
 				</template>
 				<template v-else>
@@ -165,10 +118,10 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 											@update:checked="toggleSelectAll" />
 									</th>
 									<th>{{ t('openregister', 'Title') }}</th>
-									<th>{{ t('openregister', 'Type') }}</th>
-									<th>{{ t('openregister', 'Owner') }}</th>
-									<th>{{ t('openregister', 'Config Keys') }}</th>
-									<th>{{ t('openregister', 'Created') }}</th>
+									<th>{{ t('openregister', 'Source') }}</th>
+									<th>{{ t('openregister', 'Local Version') }}</th>
+									<th>{{ t('openregister', 'Remote Version') }}</th>
+									<th>{{ t('openregister', 'Status') }}</th>
 									<th>{{ t('openregister', 'Updated') }}</th>
 									<th class="tableColumnActions">
 										{{ t('openregister', 'Actions') }}
@@ -191,10 +144,37 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 											<span v-if="configuration.description" class="textDescription textEllipsis">{{ configuration.description }}</span>
 										</div>
 									</td>
-									<td>{{ configuration.type || 'Unknown' }}</td>
-									<td>{{ configuration.owner || '-' }}</td>
-									<td>{{ Object.keys(configuration.configuration || {}).length }}</td>
-									<td>{{ configuration.created ? new Date(configuration.created).toLocaleDateString({day: '2-digit', month: '2-digit', year: 'numeric'}) + ', ' + new Date(configuration.created).toLocaleTimeString({hour: '2-digit', minute: '2-digit', second: '2-digit'}) : '-' }}</td>
+									<td>{{ getSourceTypeLabel(configuration.sourceType) }}</td>
+									<td>{{ configuration.localVersion || '-' }}</td>
+									<td>{{ configuration.remoteVersion || '-' }}</td>
+									<td>
+										<div class="statusPillsContainer">
+											<template v-if="configuration.isLocal">
+												<span class="configBadge configBadge--local">
+													<CheckCircle :size="16" />
+													Local
+												</span>
+												<span v-if="configuration.app" class="configBadge configBadge--app">
+													<ApplicationCog :size="16" />
+													{{ configuration.app }}
+												</span>
+											</template>
+											<span v-else class="configBadge configBadge--external">
+												<Cloud :size="16" />
+												External
+											</span>
+											<span v-if="!configuration.isLocal && configuration.syncEnabled" class="configBadge" :class="'configBadge--sync-' + configuration.syncStatus">
+												<Sync v-if="configuration.syncStatus === 'success'" :size="16" />
+												<AlertCircle v-else-if="configuration.syncStatus === 'failed'" :size="16" />
+												<ClockOutline v-else :size="16" />
+												{{ getSyncStatusText(configuration) }}
+											</span>
+											<span v-if="hasUpdateAvailable(configuration)" class="configBadge configBadge--update">
+												<Update :size="16" />
+												Update Available
+											</span>
+										</div>
+									</td>
 									<td>{{ configuration.updated ? new Date(configuration.updated).toLocaleDateString({day: '2-digit', month: '2-digit', year: 'numeric'}) + ', ' + new Date(configuration.updated).toLocaleTimeString({hour: '2-digit', minute: '2-digit', second: '2-digit'}) : '-' }}</td>
 									<td class="tableColumnActions">
 										<NcActions :primary="false">
@@ -212,6 +192,18 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 													<Pencil :size="20" />
 												</template>
 												Edit
+											</NcActionButton>
+											<NcActionButton v-if="isRemoteConfiguration(configuration)" close-after-click @click="checkVersion(configuration)">
+												<template #icon>
+													<Sync :size="20" />
+												</template>
+												Check Version
+											</NcActionButton>
+											<NcActionButton v-if="hasUpdateAvailable(configuration)" close-after-click @click="previewUpdate(configuration)">
+												<template #icon>
+													<EyeOutline :size="20" />
+												</template>
+												Preview Update
 											</NcActionButton>
 											<NcActionButton close-after-click @click="configurationStore.setConfigurationItem(configuration); navigationStore.setModal('exportConfiguration')">
 												<template #icon>
@@ -250,17 +242,29 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 
 <script>
 import { NcAppContent, NcEmptyContent, NcLoadingIcon, NcActions, NcActionButton, NcCheckboxRadioSwitch } from '@nextcloud/vue'
+import { showError, showSuccess } from '@nextcloud/dialogs'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import Download from 'vue-material-design-icons/Download.vue'
-import Upload from 'vue-material-design-icons/Upload.vue'
+import CloudUpload from 'vue-material-design-icons/CloudUpload.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
+import EyeOutline from 'vue-material-design-icons/EyeOutline.vue'
+import Update from 'vue-material-design-icons/Update.vue'
+import Sync from 'vue-material-design-icons/Sync.vue'
+import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
+import Cloud from 'vue-material-design-icons/Cloud.vue'
+import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
+import ClockOutline from 'vue-material-design-icons/ClockOutline.vue'
+import ApplicationCog from 'vue-material-design-icons/ApplicationCog.vue'
 
+import ConfigurationCard from '../../components/cards/ConfigurationCard.vue'
 import PaginationComponent from '../../components/PaginationComponent.vue'
+import axios from '@nextcloud/axios'
+import { generateUrl } from '@nextcloud/router'
 
 export default {
 	name: 'ConfigurationsIndex',
@@ -271,15 +275,24 @@ export default {
 		NcActions,
 		NcActionButton,
 		NcCheckboxRadioSwitch,
+		ConfigurationCard,
 		CogOutline,
 		DotsHorizontal,
 		Pencil,
 		TrashCanOutline,
 		Download,
-		Upload,
+		CloudUpload,
 		Refresh,
 		Plus,
 		Eye,
+		EyeOutline,
+		Update,
+		Sync,
+		CheckCircle,
+		Cloud,
+		AlertCircle,
+		ClockOutline,
+		ApplicationCog,
 		PaginationComponent,
 	},
 	data() {
@@ -326,7 +339,8 @@ export default {
 		},
 	},
 	mounted() {
-		configurationStore.refreshConfigurationList()
+		// Use soft reload (no loading spinner) since data is hot-loaded at app startup
+		configurationStore.refreshConfigurationList(null, true)
 	},
 	methods: {
 		toggleSelectAll(checked) {
@@ -350,32 +364,155 @@ export default {
 			this.pagination.page = 1
 			this.pagination.limit = pageSize
 		},
+		hasUpdateAvailable(configuration) {
+			if (!configuration.localVersion || !configuration.remoteVersion) {
+				return false
+			}
+			// Simple version comparison - remote version different from local
+			return configuration.remoteVersion !== configuration.localVersion
+		},
+		isRemoteConfiguration(configuration) {
+			return configuration.sourceType && configuration.sourceType !== 'local'
+		},
+		isManualConfiguration(configuration) {
+			return !configuration.sourceType || configuration.sourceType === 'local'
+		},
+		getSourceTypeLabel(sourceType) {
+			const labels = {
+				local: 'Local',
+				github: 'GitHub',
+				gitlab: 'GitLab',
+				url: 'URL',
+			}
+			return labels[sourceType] || 'Unknown'
+		},
+		async checkVersion(configuration) {
+			try {
+				const response = await axios.post(
+					generateUrl(`/apps/openregister/api/configurations/${configuration.id}/check-version`),
+				)
+
+				if (response.data.hasUpdate) {
+					showSuccess(
+						`Update available: ${response.data.localVersion} → ${response.data.remoteVersion}`,
+					)
+				} else {
+					showSuccess('Configuration is up to date')
+				}
+
+				// Refresh the list to show updated version info
+				await configurationStore.refreshConfigurationList()
+			} catch (error) {
+				console.error('Failed to check version:', error)
+				showError('Failed to check version: ' + (error.response?.data?.error || error.message))
+			}
+		},
+		handleView(configuration) {
+			configurationStore.setConfigurationItem(configuration)
+			navigationStore.setModal('viewConfiguration')
+		},
+		handleEdit(configuration) {
+			configurationStore.setConfigurationItem(configuration)
+			navigationStore.setModal('editConfiguration')
+		},
+		handleExport(configuration) {
+			configurationStore.setConfigurationItem(configuration)
+			navigationStore.setModal('exportConfiguration')
+		},
+		handleDelete(configuration) {
+			configurationStore.setConfigurationItem(configuration)
+			navigationStore.setDialog('deleteConfiguration')
+		},
+		previewUpdate(configuration) {
+			// Set the configuration and open preview modal
+			configurationStore.setConfigurationItem(configuration)
+			navigationStore.setModal('previewConfiguration')
+		},
+		getSyncStatusText(configuration) {
+			if (configuration.syncStatus === 'success' && configuration.lastSyncDate) {
+				const now = new Date()
+				const lastSync = new Date(configuration.lastSyncDate)
+				const diffInHours = Math.floor((now - lastSync) / (1000 * 60 * 60))
+
+				if (diffInHours < 1) {
+					return 'Synced just now'
+				} else if (diffInHours < 24) {
+					return `Synced ${diffInHours}h ago`
+				} else {
+					const diffInDays = Math.floor(diffInHours / 24)
+					return `Synced ${diffInDays}d ago`
+				}
+			} else if (configuration.syncStatus === 'failed') {
+				return 'Sync failed'
+			} else if (configuration.syncStatus === 'pending') {
+				return 'Sync pending'
+			} else {
+				return 'Never synced'
+			}
+		},
 	},
 }
 </script>
 
 <style scoped>
-.configurationDetails {
-	margin-top: 1rem;
+/* Badge styles for table view only (card view uses ConfigurationCard styles) */
+.configBadge {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 2px 8px;
+	border-radius: 12px;
+	font-size: 0.85em;
+	font-weight: 600;
+	vertical-align: middle;
 }
 
-.configurationDescription {
+/* Local configuration badge (green/success) */
+.configBadge--local {
+	background-color: var(--color-success-light);
+	color: var(--color-success-dark);
+}
+
+/* External configuration badge (blue/primary) */
+.configBadge--external {
+	background-color: var(--color-primary-element-light);
+	color: var(--color-primary-element-text);
+}
+
+/* App source badge (gray/secondary) */
+.configBadge--app {
+	background-color: var(--color-background-dark);
 	color: var(--color-text-lighter);
-	margin-bottom: 1rem;
 }
 
-.configurationInfo {
+/* Sync status badges */
+.configBadge--sync-success {
+	background-color: var(--color-success-light);
+	color: var(--color-success-dark);
+}
+
+.configBadge--sync-failed {
+	background-color: var(--color-error-light);
+	color: var(--color-error-dark);
+}
+
+.configBadge--sync-pending,
+.configBadge--sync-never {
+	background-color: var(--color-background-dark);
+	color: var(--color-text-lighter);
+}
+
+/* Update available badge */
+.configBadge--update {
+	background-color: var(--color-warning);
+	color: var(--color-main-text);
+}
+
+/* Badge container for table view */
+.statusPillsContainer {
 	display: flex;
-	flex-direction: column;
-	gap: 0.5rem;
-}
-
-.configurationInfoItem {
-	display: flex;
-	gap: 0.5rem;
-}
-
-.configurationInfoItem strong {
-	min-width: 120px;
+	gap: 6px;
+	flex-wrap: wrap;
+	align-items: center;
 }
 </style>

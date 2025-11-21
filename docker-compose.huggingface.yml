@@ -1,0 +1,139 @@
+# Hugging Face Text Generation Inference (TGI) with OpenAI-compatible API
+# This provides local Mistral and other models via OpenAI-compatible endpoints
+# Can be used by LLPhant and other OpenAI clients
+
+version: "3.5"
+
+volumes:
+  tgi-models:
+  vllm-models:
+
+services:
+  # Option 1: Text Generation Inference (TGI) - Official Hugging Face solution
+  # Recommended for production, optimized inference
+  tgi-mistral:
+    image: ghcr.io/huggingface/text-generation-inference:latest
+    container_name: openregister-tgi-mistral
+    restart: always
+    ports:
+      - "8081:80"  # Map to 8081 to avoid conflicts
+    volumes:
+      - tgi-models:/data
+    environment:
+      # Mistral 7B model (or use mistralai/Mistral-7B-Instruct-v0.2)
+      - MODEL_ID=mistralai/Mistral-7B-Instruct-v0.1
+      # Maximum input length
+      - MAX_INPUT_LENGTH=4096
+      # Maximum total tokens (input + output)
+      - MAX_TOTAL_TOKENS=8192
+      # Number of concurrent requests
+      - MAX_CONCURRENT_REQUESTS=128
+      # Hugging Face token (optional, for gated models)
+      # - HUGGING_FACE_HUB_TOKEN=your_token_here
+    deploy:
+      resources:
+        limits:
+          memory: 16G
+        reservations:
+          memory: 8G
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    shm_size: '2gb'
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:80/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s  # Model download takes time
+
+  # Option 2: vLLM - Alternative with OpenAI-compatible API
+  # Faster inference, better throughput
+  vllm-mistral:
+    image: vllm/vllm-openai:latest
+    container_name: openregister-vllm-mistral
+    restart: always
+    ports:
+      - "8082:8000"
+    volumes:
+      - vllm-models:/root/.cache/huggingface
+    environment:
+      # Model to serve
+      - MODEL_NAME=mistralai/Mistral-7B-Instruct-v0.1
+      # Tensor parallelism (for multi-GPU)
+      - TENSOR_PARALLEL_SIZE=1
+      # GPU memory utilization
+      - GPU_MEMORY_UTILIZATION=0.9
+      # OpenAI API compatibility
+      - SERVED_MODEL_NAME=mistral-7b-instruct
+    command:
+      - --model
+      - mistralai/Mistral-7B-Instruct-v0.1
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8000"
+      - --served-model-name
+      - mistral-7b-instruct
+    deploy:
+      resources:
+        limits:
+          memory: 16G
+        reservations:
+          memory: 8G
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    shm_size: '4gb'
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+
+  # Hugging Face model for Dolphin document parsing
+  # This requires custom setup since Dolphin is a VLM (not pure text)
+  dolphin-vlm:
+    build:
+      context: ./docker/dolphin
+      dockerfile: Dockerfile
+    container_name: openregister-dolphin-vlm
+    restart: always
+    ports:
+      - "8083:5000"
+    volumes:
+      - ./docker/dolphin/models:/app/models
+    environment:
+      - MODEL_PATH=/app/models
+      - LOG_LEVEL=INFO
+    deploy:
+      resources:
+        limits:
+          memory: 8G
+        reservations:
+          memory: 4G
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+
+# Notes:
+# - TGI (port 8081): Official Hugging Face solution, optimized for inference
+# - vLLM (port 8082): Alternative with better throughput, OpenAI-compatible
+# - Dolphin (port 8083): Custom VLM container for document parsing
+#
+# OpenAI-compatible API endpoints:
+# - TGI: http://localhost:8081/v1/chat/completions (Messages API)
+# - vLLM: http://localhost:8082/v1/chat/completions (Full OpenAI compatibility)
+#
+# Choose ONE of TGI or vLLM (both serve the same purpose)
+

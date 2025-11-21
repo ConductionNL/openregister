@@ -20,9 +20,8 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Db\Source;
 use OCA\OpenRegister\Db\SourceMapper;
-use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\SearchService;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\DB\Exception;
@@ -58,66 +57,45 @@ class SourcesController extends Controller
 
 
     /**
-     * Returns the template of the main app's page
-     *
-     * This method renders the main page of the application, adding any necessary data to the template.
-     *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
-     * @return TemplateResponse The rendered template response
-     */
-    public function page(): TemplateResponse
-    {
-        return new TemplateResponse(
-            'openconnector',
-            'index',
-            []
-        );
-
-    }//end page()
-
-
-    /**
      * Retrieves a list of all sources
      *
      * This method returns a JSON response containing an array of all sources in the system.
-     *
-     * @param ObjectService $objectService The object service
-     * @param SearchService $searchService The search service
      *
      * @return JSONResponse A JSON response containing the list of sources
      *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200, array{results: array<Source>}, array<never, never>>
      */
-    public function index(
-        ObjectService $objectService,
-        SearchService $searchService
-    ): JSONResponse {
+    public function index(): JSONResponse
+    {
         // Get request parameters for filtering and searching.
-        $filters        = $this->request->getParams();
-        $fieldsToSearch = ['title', 'description'];
+        $params = $this->request->getParams();
 
-        // Create search parameters and conditions for filtering.
-        $searchParams     = $searchService->createMySQLSearchParams(filters: $filters);
-        $searchConditions = $searchService->createMySQLSearchConditions(
-            filters: $filters,
-            fieldsToSearch: $fieldsToSearch
-        );
-        $filters          = $searchService->unsetSpecialQueryParams(filters: $filters);
+        // Extract pagination and search parameters.
+        $limit  = $this->getIntParam($params, '_limit');
+        $offset = $this->getIntParam($params, '_offset');
+        $page   = $this->getIntParam($params, '_page');
+        $search = $params['_search'] ?? '';
 
-        // Return all sources that match the search conditions.
+        // Convert page to offset if provided.
+        if ($page !== null && $limit !== null) {
+            $offset = ($page - 1) * $limit;
+        }
+
+        // Remove special query params from filters.
+        $filters = $params;
+        unset($filters['_limit'], $filters['_offset'], $filters['_page'], $filters['_search'], $filters['_route']);
+
+        // Return all sources that match the filters.
         return new JSONResponse(
             [
                 'results' => $this->sourceMapper->findAll(
-                    limit: null,
-                    offset: null,
-                    filters: $filters,
-                    searchConditions: $searchConditions,
-                    searchParams: $searchParams
+                    limit: $limit,
+                    offset: $offset,
+                    filters: $filters
                 ),
             ]
         );
@@ -137,6 +115,8 @@ class SourcesController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200, Source, array<never, never>>|JSONResponse<404, array{error: 'Not Found'}, array<never, never>>
      */
     public function show(string $id): JSONResponse
     {
@@ -161,6 +141,8 @@ class SourcesController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200, Source, array<never, never>>
      */
     public function create(): JSONResponse
     {
@@ -197,6 +179,8 @@ class SourcesController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200, Source, array<never, never>>
      */
     public function update(int $id): JSONResponse
     {
@@ -210,15 +194,33 @@ class SourcesController extends Controller
             }
         }
 
-        // Remove ID if present to prevent conflicts.
-        if (isset($data['id']) === true) {
-            unset($data['id']);
-        }
+        // Remove immutable fields to prevent tampering.
+        unset($data['id']);
+        unset($data['organisation']);
+        unset($data['owner']);
+        unset($data['created']);
 
         // Update the source with the provided data.
-        return new JSONResponse($this->sourceMapper->updateFromArray(id: (int) $id, object: $data));
+        return new JSONResponse($this->sourceMapper->updateFromArray(id: $id, object: $data));
 
     }//end update()
+
+
+    /**
+     * Patch (partially update) a source
+     *
+     * @param int $id The ID of the source to patch
+     *
+     * @return JSONResponse The updated source data
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function patch(int $id): JSONResponse
+    {
+        return $this->update($id);
+
+    }//end patch()
 
 
     /**
@@ -235,16 +237,37 @@ class SourcesController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200, array<never, never>, array<never, never>>
      */
     public function destroy(int $id): JSONResponse
     {
         // Find the source by ID and delete it.
-        $this->sourceMapper->delete($this->sourceMapper->find((int) $id));
+        $this->sourceMapper->delete($this->sourceMapper->find($id));
 
         // Return an empty response.
         return new JSONResponse([]);
 
     }//end destroy()
+
+
+    /**
+     * Get integer parameter from params array or return null
+     *
+     * @param array<string, mixed> $params Parameters array
+     * @param string               $key    Parameter key
+     *
+     * @return int|null Integer value or null
+     */
+    private function getIntParam(array $params, string $key): ?int
+    {
+        if (isset($params[$key]) === true) {
+            return (int) $params[$key];
+        }
+
+        return null;
+
+    }//end getIntParam()
 
 
 }//end class

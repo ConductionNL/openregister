@@ -141,7 +141,7 @@ export default {
 			// Close the dialog first
 			this.closeDialog()
 			// Navigate to the deleted objects section
-			navigationStore.setSelected('deleted')
+			this.$router.push('/deleted')
 		},
 		async deleteObject() {
 			this.loading = true

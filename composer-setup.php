@@ -23,7 +23,7 @@ function setupEnvironment()
     ini_set('display_errors', 1);
 
     if (extension_loaded('uopz') && !(ini_get('uopz.disable') || ini_get('uopz.exit'))) {
-        // uopz works at opcode level and disables exit calls
+        // uopz works at opcode level and disables exit calls.
         if (function_exists('uopz_allow_exit')) {
             @uopz_allow_exit(true);
         } else {
@@ -47,7 +47,7 @@ function setupEnvironment()
  */
 function process($argv)
 {
-    // Determine ANSI output from --ansi and --no-ansi flags
+    // Determine ANSI output from --ansi and --no-ansi flags.
     setUseAnsi($argv);
 
     $help = in_array('--help', $argv) || in_array('-h', $argv);
@@ -84,7 +84,7 @@ function process($argv)
     $ok = checkPlatform($warnings, $quiet, $disableTls, true);
 
     if ($check) {
-        // Only show warnings if we haven't output any errors
+        // Only show warnings if we haven't output any errors.
         if ($ok) {
             showWarnings($warnings);
             showSecurityWarning($disableTls);
@@ -144,7 +144,7 @@ EOF;
  */
 function setUseAnsi($argv)
 {
-    // --no-ansi wins over --ansi
+    // --no-ansi wins over --ansi.
     if (in_array('--no-ansi', $argv)) {
         define('USE_ANSI', false);
     } elseif (in_array('--ansi', $argv)) {
@@ -186,7 +186,7 @@ function outputSupportsColor()
     }
 
     $stat = fstat(STDOUT);
-    // Check if formatted mode is S_IFCHR
+    // Check if formatted mode is S_IFCHR.
     return $stat ? 0020000 === ($stat['mode'] & 0170000) : false;
 }
 
@@ -263,14 +263,14 @@ function checkPlatform(&$warnings, $quiet, $disableTls, $install)
 {
     getPlatformIssues($errors, $warnings, $install);
 
-    // Make openssl warning an error if tls has not been specifically disabled
+    // Make openssl warning an error if tls has not been specifically disabled.
     if (isset($warnings['openssl']) && !$disableTls) {
         $errors['openssl'] = $warnings['openssl'];
         unset($warnings['openssl']);
     }
 
     if (!empty($errors)) {
-        // Composer-Setup.exe uses "Some settings" to flag platform errors
+        // Composer-Setup.exe uses "Some settings" to flag platform errors.
         out('Some settings on your machine make Composer unable to work properly.', 'error');
         out('Make sure that you fix the issues listed below and run this script again:', 'error');
         outputIssues($errors);
@@ -484,7 +484,7 @@ function getPlatformIssues(&$errors, &$warnings, $install)
         }
     }
 
-    // Stringify the message arrays
+    // Stringify the message arrays.
     foreach ($errors as $key => $value) {
         $errors[$key] = PHP_EOL.implode(PHP_EOL, $value);
     }
@@ -581,7 +581,7 @@ function getHomeDir()
     $dirs = [];
 
     if (useXdg()) {
-        // XDG Base Directory Specifications
+        // XDG Base Directory Specifications.
         $xdgConfig = getenv('XDG_CONFIG_HOME');
         if (!$xdgConfig) {
             $xdgConfig = $userDir.'/.config';
@@ -592,7 +592,7 @@ function getHomeDir()
 
     $dirs[] = $userDir.'/.composer';
 
-    // select first dir which exists of: $XDG_CONFIG_HOME/composer or ~/.composer
+    // select first dir which exists of: $XDG_CONFIG_HOME/composer or ~/.composer.
     foreach ($dirs as $dir) {
         if (is_dir($dir)) {
             return $dir;
@@ -642,7 +642,7 @@ function useXdg()
 
 function validateCaFile($contents)
 {
-    // assume the CA is valid if php is vulnerable to
+    // assume the CA is valid if php is vulnerable to.
     // https://www.sektioneins.de/advisories/advisory-012013-php-openssl_x509_parse-memory-corruption-vulnerability.html
     if (
         PHP_VERSION_ID <= 50327
@@ -720,7 +720,7 @@ class Installer
             $this->httpClient = new HttpClient($this->disableTls, $this->cafile);
             $result = $this->install($version, $channel);
 
-            // in case --1 or --2 is passed, we leave the default channel for next self-update to stable
+            // in case --1 or --2 is passed, we leave the default channel for next self-update to stable.
             if (1 === preg_match('{^\d+$}D', $channel)) {
                 $channel = 'stable';
             }
@@ -733,11 +733,11 @@ class Installer
             $result = false;
         }
 
-        // Always clean up
+        // Always clean up.
         $this->cleanUp($result);
 
         if (isset($e)) {
-            // Rethrow anything that is not a RuntimeException
+            // Rethrow anything that is not a RuntimeException.
             if (!$e instanceof RuntimeException) {
                 throw $e;
             }
@@ -1107,7 +1107,7 @@ class Installer
                 $this->algo
             );
 
-            // PHP 8 automatically frees the key instance and deprecates the function
+            // PHP 8 automatically frees the key instance and deprecates the function.
             if (PHP_VERSION_ID < 80000) {
                 openssl_free_key($pubkeyid);
             }
@@ -1131,9 +1131,9 @@ class Installer
         }
 
         try {
-            // Test the phar validity
+            // Test the phar validity.
             $phar = new Phar($pharFile);
-            // Free the variable to unlock the file
+            // Free the variable to unlock the file.
             unset($phar);
             $result = true;
 
@@ -1169,11 +1169,11 @@ class Installer
     protected function cleanUp($result)
     {
         if (!$result) {
-            // Output buffered errors
+            // Output buffered errors.
             if ($this->quiet) {
                 $this->outputErrors();
             }
-            // Clean up stuff we created
+            // Clean up stuff we created.
             $this->uninstall();
         } elseif ($this->tmpCafile) {
             @unlink($this->tmpCafile);
@@ -1397,7 +1397,7 @@ class HttpClient
                 if (version_compare(PHP_VERSION, '5.4.0', '>=')) {
                     $result = zlib_decode($result);
                 } else {
-                    // work around issue with gzuncompress & co that do not work with all gzip checksums
+                    // work around issue with gzuncompress & co that do not work with all gzip checksums.
                     $result = file_get_contents('compress.zlib://data:application/octet-stream;base64,'.base64_encode($result));
                 }
 
@@ -1522,22 +1522,22 @@ class HttpClient
     {
         $options = $this->options;
 
-        // Handle HTTP_PROXY/http_proxy on CLI only for security reasons
+        // Handle HTTP_PROXY/http_proxy on CLI only for security reasons.
         if ((PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg') && (!empty($_SERVER['HTTP_PROXY']) || !empty($_SERVER['http_proxy']))) {
             $proxy = parse_url(!empty($_SERVER['http_proxy']) ? $_SERVER['http_proxy'] : $_SERVER['HTTP_PROXY']);
         }
 
-        // Prefer CGI_HTTP_PROXY if available
+        // Prefer CGI_HTTP_PROXY if available.
         if (!empty($_SERVER['CGI_HTTP_PROXY'])) {
             $proxy = parse_url($_SERVER['CGI_HTTP_PROXY']);
         }
 
-        // Override with HTTPS proxy if present and URL is https
+        // Override with HTTPS proxy if present and URL is https.
         if (preg_match('{^https://}i', $url) && (!empty($_SERVER['HTTPS_PROXY']) || !empty($_SERVER['https_proxy']))) {
             $proxy = parse_url(!empty($_SERVER['https_proxy']) ? $_SERVER['https_proxy'] : $_SERVER['HTTPS_PROXY']);
         }
 
-        // Remove proxy if URL matches no_proxy directive
+        // Remove proxy if URL matches no_proxy directive.
         if (!empty($_SERVER['NO_PROXY']) || !empty($_SERVER['no_proxy']) && parse_url($url, PHP_URL_HOST)) {
             $pattern = new NoProxyPattern(!empty($_SERVER['no_proxy']) ? $_SERVER['no_proxy'] : $_SERVER['NO_PROXY']);
             if ($pattern->test($url)) {
@@ -1557,7 +1557,7 @@ class HttpClient
                 $proxyURL .= ":443";
             }
 
-            // check for a secure proxy
+            // check for a secure proxy.
             if (strpos($proxyURL, 'https://') === 0) {
                 if (!extension_loaded('openssl')) {
                     throw new RuntimeException('You must enable the openssl extension to use a secure proxy.');
@@ -1567,19 +1567,19 @@ class HttpClient
                 }
             }
 
-            // http(s):// is not supported in proxy
+            // http(s):// is not supported in proxy.
             $proxyURL = str_replace(['http://', 'https://'], ['tcp://', 'ssl://'], $proxyURL);
 
             $options['http'] = [
                 'proxy' => $proxyURL,
             ];
 
-            // add request_fulluri for http requests
+            // add request_fulluri for http requests.
             if ('http' === parse_url($url, PHP_URL_SCHEME)) {
                 $options['http']['request_fulluri'] = true;
             }
 
-            // handle proxy auth if present
+            // handle proxy auth if present.
             if (isset($proxy['user'])) {
                 $auth = rawurldecode($proxy['user']);
                 if (isset($proxy['pass'])) {

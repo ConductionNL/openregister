@@ -1,5 +1,6 @@
 <script setup>
-import { dashboardStore, registerStore, navigationStore } from '../../store/store.js'
+import { dashboardStore, registerStore, navigationStore, configurationStore } from '../../store/store.js'
+import formatBytes from '../../services/formatBytes.js'
 </script>
 
 <template>
@@ -15,7 +16,7 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 					:title="dashboardStore.error"
 					icon="icon-error">
 					<template #action>
-						<NcButton @click="navigationStore.setSelected('registers')">
+						<NcButton @click="$router.push('/registers')">
 							{{ t('openregister', 'Back to Registers') }}
 						</NcButton>
 					</template>
@@ -26,7 +27,7 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 					:title="t('openregister', 'Register not found')"
 					icon="icon-error">
 					<template #action>
-						<NcButton @click="navigationStore.setSelected('registers')">
+						<NcButton @click="$router.push('/registers')">
 							{{ t('openregister', 'Back to Registers') }}
 						</NcButton>
 					</template>
@@ -34,60 +35,127 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 			</div>
 
 			<!-- Stats Tab Content -->
-			<div v-else-if="registerStore.getActiveTab === 'stats-tab'" class="chartGrid">
-				<!-- Audit Trail Actions Chart -->
-				<div class="chartCard">
-					<h3>Audit Trail Actions</h3>
-					<apexchart
-						type="line"
-						height="350"
-						:options="auditTrailChartOptions"
-						:series="dashboardStore.chartData.auditTrailActions?.series || []" />
+			<div v-else-if="registerStore.getActiveTab === 'stats-tab'">
+				<!-- Register Statistics -->
+				<div v-if="registerStats" class="statsContainer">
+					<h3>{{ t('openregister', 'Register Statistics') }}</h3>
+					<table class="statisticsTable registerStats">
+						<thead>
+							<tr>
+								<th>{{ t('openregister', 'Type') }}</th>
+								<th>{{ t('openregister', 'Total') }}</th>
+								<th>{{ t('openregister', 'Size') }}</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr>
+								<td>{{ t('openregister', 'Objects') }}</td>
+								<td>{{ registerStats.objects?.total || 0 }}</td>
+								<td>{{ formatBytes(registerStats.objects?.size || 0) }}</td>
+							</tr>
+							<tr class="subRow">
+								<td class="indented">
+									{{ t('openregister', 'Invalid') }}
+								</td>
+								<td>{{ registerStats.objects?.invalid || 0 }}</td>
+								<td>-</td>
+							</tr>
+							<tr class="subRow">
+								<td class="indented">
+									{{ t('openregister', 'Deleted') }}
+								</td>
+								<td>{{ registerStats.objects?.deleted || 0 }}</td>
+								<td>-</td>
+							</tr>
+							<tr class="subRow">
+								<td class="indented">
+									{{ t('openregister', 'Published') }}
+								</td>
+								<td>{{ registerStats.objects?.published || 0 }}</td>
+								<td>-</td>
+							</tr>
+							<tr>
+								<td>{{ t('openregister', 'Files') }}</td>
+								<td>{{ registerStats.files?.total || 0 }}</td>
+								<td>{{ formatBytes(registerStats.files?.size || 0) }}</td>
+							</tr>
+							<tr>
+								<td>{{ t('openregister', 'Logs') }}</td>
+								<td>{{ registerStats.logs?.total || 0 }}</td>
+								<td>{{ formatBytes(registerStats.logs?.size || 0) }}</td>
+							</tr>
+							<tr>
+								<td>{{ t('openregister', 'Schemas') }}</td>
+								<td>{{ registerStats.schemas || 0 }}</td>
+								<td>-</td>
+							</tr>
+						</tbody>
+					</table>
 				</div>
 
-				<!-- Objects by Schema Chart -->
-				<div class="chartCard">
-					<h3>Objects by Schema</h3>
-					<apexchart
-						type="pie"
-						height="350"
-						:options="schemaChartOptions"
-						:series="dashboardStore.chartData.objectsBySchema?.series || []"
-						:labels="dashboardStore.chartData.objectsBySchema?.labels || []" />
-				</div>
+				<div class="chartGrid">
+					<!-- Audit Trail Actions Chart -->
+					<div class="chartCard">
+						<h3>Audit Trail Actions</h3>
+						<apexchart
+							type="line"
+							height="350"
+							:options="auditTrailChartOptions"
+							:series="dashboardStore.chartData.auditTrailActions?.series || []" />
+					</div>
 
-				<!-- Objects by Size Chart -->
-				<div class="chartCard">
-					<h3>Objects by Size Distribution</h3>
-					<apexchart
-						type="bar"
-						height="350"
-						:options="sizeChartOptions"
-						:series="[{ name: 'Objects', data: dashboardStore.chartData.objectsBySize?.series || [] }]" />
+					<!-- Objects by Schema Chart -->
+					<div class="chartCard">
+						<h3>Objects by Schema</h3>
+						<apexchart
+							type="pie"
+							height="350"
+							:options="schemaChartOptions"
+							:series="dashboardStore.chartData.objectsBySchema?.series || []"
+							:labels="dashboardStore.chartData.objectsBySchema?.labels || []" />
+					</div>
+
+					<!-- Objects by Size Chart -->
+					<div class="chartCard">
+						<h3>Objects by Size Distribution</h3>
+						<apexchart
+							type="bar"
+							height="350"
+							:options="sizeChartOptions"
+							:series="[{ name: 'Objects', data: dashboardStore.chartData.objectsBySize?.series || [] }]" />
+					</div>
 				</div>
 			</div>
 
 			<!-- Schemas Tab Content -->
-			<div v-else-if="registerStore.getActiveTab === 'schemas-tab'" class="cardGrid">
-				<div v-if="!register.schemas?.length" class="emptyContainer">
+			<div v-else class="cardGrid">
+				<div v-if="loadingSchemas" class="loadingContainer">
+					<NcLoadingIcon :size="32" />
+					<span>Loading schemas...</span>
+				</div>
+				<div v-else-if="!loadedSchemas?.length" class="emptyContainer">
 					<NcEmptyContent
 						:title="t('openregister', 'No schemas found')"
 						icon="icon-folder">
 						<template #action>
-							<NcButton @click="navigationStore.setModal('editRegister')">
+							<NcButton v-if="!managingConfiguration" @click="navigationStore.setModal('editRegister')">
 								{{ t('openregister', 'Add Schema') }}
 							</NcButton>
 						</template>
 					</NcEmptyContent>
 				</div>
 				<div v-else class="cardGrid">
-					<div v-for="schema in register.schemas" :key="schema.id" class="card">
+					<div v-for="schema in loadedSchemas" :key="schema.id" class="card">
 						<div class="cardHeader">
 							<h3>
 								<FileCodeOutline :size="20" />
 								{{ schema.title }}
+								<span v-if="managingConfiguration" v-tooltip.bottom="'Managed by configuration: ' + managingConfiguration.title" class="managedBadge">
+									<Database :size="16" />
+									Managed
+								</span>
 							</h3>
-							<NcActions :primary="true" menu-name="Schema Actions">
+							<NcActions v-if="!managingConfiguration" :primary="true" menu-name="Schema Actions">
 								<template #icon>
 									<DotsHorizontal :size="20" />
 								</template>
@@ -135,7 +203,7 @@ import VueApexCharts from 'vue-apexcharts'
 import FileCodeOutline from 'vue-material-design-icons/FileCodeOutline.vue'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
-import formatBytes from '../../services/formatBytes.js'
+import Database from 'vue-material-design-icons/Database.vue'
 
 export default {
 	name: 'RegisterDetail',
@@ -150,6 +218,17 @@ export default {
 		FileCodeOutline,
 		DotsHorizontal,
 		Pencil,
+		Database,
+	},
+	data() {
+		return {
+			registerStats: null,
+			statsLoading: false,
+			statsError: null,
+			loadedSchemas: [],
+			loadingSchemas: false,
+			managingConfiguration: null,
+		}
 	},
 	computed: {
 		register() {
@@ -243,6 +322,16 @@ export default {
 			}
 		},
 	},
+	watch: {
+		register: {
+			handler() {
+				// Reload schemas and check configuration when register changes
+				this.loadSchemas()
+				this.checkManagingConfiguration()
+			},
+			deep: true,
+		},
+	},
 	async mounted() {
 		// If we have a register ID but no data, fetch dashboard data
 		if (registerStore.getRegisterItem?.id && !this.register) {
@@ -251,14 +340,44 @@ export default {
 				await dashboardStore.fetchAllChartData()
 			} catch (error) {
 				console.error('Failed to fetch register details:', error)
-				navigationStore.setSelected('registers')
+				this.$router.push('/registers')
 			}
 		} else if (!registerStore.getRegisterItem?.id) {
 			// If no register ID at all, go back to list
-			navigationStore.setSelected('registers')
+			this.$router.push('/registers')
 		}
+
+		// Load register stats if register is available
+		if (registerStore.getRegisterItem?.id) {
+			await this.loadRegisterStats()
+		}
+
+		// Load schemas and check for managing configuration
+		await this.loadSchemas()
+		await this.checkManagingConfiguration()
 	},
 	methods: {
+		/**
+		 * Load register statistics from the dedicated stats endpoint
+		 * @return {Promise<void>}
+		 */
+		async loadRegisterStats() {
+			if (!registerStore.getRegisterItem?.id) {
+				return
+			}
+
+			this.statsLoading = true
+			this.statsError = null
+
+			try {
+				this.registerStats = await registerStore.getRegisterStats(registerStore.getRegisterItem.id)
+			} catch (error) {
+				console.error('Error loading register stats:', error)
+				this.statsError = error.message
+			} finally {
+				this.statsLoading = false
+			}
+		},
 		getSchemaChartOptions() {
 			return {
 				chart: {
@@ -283,6 +402,66 @@ export default {
 		editSchema(schema) {
 			registerStore.setSchemaItem(schema)
 			navigationStore.setModal('editSchema')
+		},
+		/**
+		 * Load full schema details from schema IDs
+		 * @return {Promise<void>}
+		 */
+		async loadSchemas() {
+			if (!this.register?.schemas || !Array.isArray(this.register.schemas) || this.register.schemas.length === 0) {
+				this.loadedSchemas = []
+				return
+			}
+
+			this.loadingSchemas = true
+			try {
+				// Fetch all schemas in parallel
+				const promises = this.register.schemas.map(async schemaId => {
+					try {
+						const response = await fetch(`/index.php/apps/openregister/api/schemas/${schemaId}`)
+						if (response.ok) {
+							return await response.json()
+						}
+						return null
+					} catch (error) {
+						console.error(`Failed to load schema ${schemaId}:`, error)
+						return null
+					}
+				})
+
+				const schemas = await Promise.all(promises)
+				this.loadedSchemas = schemas.filter(Boolean) // Remove null entries
+			} catch (error) {
+				console.error('Error loading schemas:', error)
+				this.loadedSchemas = []
+			} finally {
+				this.loadingSchemas = false
+			}
+		},
+		/**
+		 * Check if this register is managed by a configuration
+		 * @return {Promise<void>}
+		 */
+		async checkManagingConfiguration() {
+			if (!this.register?.id) {
+				this.managingConfiguration = null
+				return
+			}
+
+			try {
+				// Check all configurations to see if any manages this register
+				const configurations = configurationStore.configurationList || []
+				for (const config of configurations) {
+					if (config.registers && Array.isArray(config.registers) && config.registers.includes(this.register.id)) {
+						this.managingConfiguration = config
+						return
+					}
+				}
+				this.managingConfiguration = null
+			} catch (error) {
+				console.error('Error checking managing configuration:', error)
+				this.managingConfiguration = null
+			}
 		},
 	},
 }
@@ -339,6 +518,20 @@ export default {
 	border: 1px solid var(--color-border);
 }
 
+.managedBadge {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 4px 8px;
+	background: var(--color-primary-element-light);
+	color: var(--color-primary-element-text);
+	border-radius: 12px;
+	font-size: 0.75rem;
+	font-weight: 600;
+	margin-left: 8px;
+	vertical-align: middle;
+}
+
 .cardHeader {
 	display: flex;
 	align-items: center;
@@ -385,5 +578,14 @@ export default {
 
 .schemaChart {
 	margin-top: 16px;
+}
+
+.statsContainer {
+	margin-bottom: 30px;
+
+	h3 {
+		margin-bottom: 15px;
+		color: var(--color-main-text);
+	}
 }
 </style>

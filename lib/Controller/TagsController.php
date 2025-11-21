@@ -35,10 +35,10 @@ class TagsController extends Controller
     /**
      * TagsController constructor.
      *
-     * @param string        $appName
-     * @param IRequest      $request
-     * @param ObjectService $objectService
-     * @param FileService   $fileService
+     * @param string        $appName       Application name
+     * @param IRequest      $request       Request object
+     * @param ObjectService $objectService Object service instance
+     * @param FileService   $fileService   File service instance
      */
     public function __construct(
         $appName,
@@ -55,13 +55,16 @@ class TagsController extends Controller
      * Get all tags available in the system (visible and assignable by users)
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse
+     *
+     * @psalm-return JSONResponse<200, array<int, string>, array<never, never>>
      */
     public function getAllTags(): JSONResponse
     {
-        // Use the FileService to fetch all tags
+        // Use the FileService to fetch all tags.
         return new JSONResponse($this->fileService->getAllTags());
 
     }//end getAllTags()

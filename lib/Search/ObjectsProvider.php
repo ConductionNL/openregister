@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Search;
 
+use OCA\OpenRegister\Service\ObjectService;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\IUser;
@@ -28,14 +29,14 @@ use OCP\Search\IFilteringProvider;
 use OCP\Search\ISearchQuery;
 use OCP\Search\SearchResult;
 use OCP\Search\SearchResultEntry;
+use Psr\Log\LoggerInterface;
 
 /**
  * ObjectsProvider class for the objects search.
  *
  * This class implements the IFilteringProvider interface to provide
- * search functionality for objects in the OpenRegister app.
- *
- * @psalm-suppress MissingConstructor
+ * search functionality for objects in the OpenRegister app using the
+ * advanced searchObjectsPaginated method for optimal performance.
  */
 class ObjectsProvider implements IFilteringProvider
 {
@@ -45,30 +46,93 @@ class ObjectsProvider implements IFilteringProvider
      *
      * @var IL10N
      */
-    private IL10N $l10n;
+    private readonly IL10N $l10n;
 
     /**
      * The URL generator service
      *
      * @var IURLGenerator
      */
-    private IURLGenerator $urlGenerator;
+    private readonly IURLGenerator $urlGenerator;
+
+    /**
+     * The object service for advanced search operations
+     *
+     * @var ObjectService
+     */
+    private readonly ObjectService $objectService;
+
+    /**
+     * Logger for debugging search operations
+     *
+     * @var LoggerInterface
+     */
+    private readonly LoggerInterface $logger;
 
 
     /**
      * Constructor for the ObjectsProvider class
      *
-     * @param IL10N         $l10n         The localization service
-     * @param IURLGenerator $urlGenerator The URL generator service
+     * @param IL10N           $l10n          The localization service
+     * @param IURLGenerator   $urlGenerator  The URL generator service
+     * @param ObjectService   $objectService The object service for search operations
+     * @param LoggerInterface $logger        Logger for debugging search operations
      *
      * @return void
      */
-    public function __construct(IL10N $l10n, IURLGenerator $urlGenerator)
-    {
-        $this->l10n         = $l10n;
-        $this->urlGenerator = $urlGenerator;
+    public function __construct(
+        IL10N $l10n,
+        IURLGenerator $urlGenerator,
+        ObjectService $objectService,
+        LoggerInterface $logger
+    ) {
+        $this->l10n          = $l10n;
+        $this->urlGenerator  = $urlGenerator;
+        $this->objectService = $objectService;
+        $this->logger        = $logger;
 
     }//end __construct()
+
+
+    /**
+     * Returns the unique identifier for this search provider
+     *
+     * @return string Unique identifier for the search provider
+     */
+    public function getId(): string
+    {
+        return 'openregister_objects';
+
+    }//end getId()
+
+
+    /**
+     * Returns the human-readable name for this search provider
+     *
+     * @return string Display name for the search provider
+     */
+    public function getName(): string
+    {
+        return $this->l10n->t('Open Register Objects');
+
+    }//end getName()
+
+
+    /**
+     * Returns the order/priority of this search provider
+     *
+     * Lower values appear first in search results
+     *
+     * @param string $route           The route/context for which to get the order
+     * @param array  $routeParameters Parameters for the route
+     *
+     * @return int|null Order priority (0-100, lower = higher priority) or null for default
+     */
+    public function getOrder(string $route, array $routeParameters): ?int
+    {
+        return 10;
+
+    }//end getOrder()
 
 
     /**
@@ -117,9 +181,9 @@ class ObjectsProvider implements IFilteringProvider
      *
      * @return FilterDefinition[] List of custom filter definitions
      *
-     * @psalm-return array<FilterDefinition>
+     * @psalm-return list<\OCP\Search\FilterDefinition>
      *
-     * @phpstan-return array<FilterDefinition>
+     * @phpstan-return list<\OCP\Search\FilterDefinition>
      */
     public function getCustomFilters(): array
     {
@@ -132,16 +196,18 @@ class ObjectsProvider implements IFilteringProvider
 
 
     /**
-     * Performs a search based on the provided query
+     * Performs a search based on the provided query using searchObjectsPaginated
+     *
+     * This method integrates with Nextcloud's search interface by converting
+     * search query filters to OpenRegister's advanced search parameters and
+     * using the optimized searchObjectsPaginated method for best performance.
      *
      * @param IUser        $user  The user performing the search
-     * @param ISearchQuery $query The search query
+     * @param ISearchQuery $query The search query from Nextcloud
      *
-     * @return SearchResult The search results
+     * @return SearchResult The search results formatted for Nextcloud's search interface
      *
-     * @psalm-suppress PropertyNotSetInConstructor
-     *
-     * @phpstan-ignore-next-line
+     * @throws \Exception If search operation fails
      */
     public function search(IUser $user, ISearchQuery $query): SearchResult
     {
@@ -189,39 +255,133 @@ class ObjectsProvider implements IFilteringProvider
         $offset = null;
         $order  = null;
 
-        // Get the objects.
-        $results = $this->objectEntityMapper->findAll(
-            limit: $limit,
-            offset: $offset,
-            filters: $filters,
-            sort: $order,
-            search: $search
-        );
+        // Build search query for searchObjectsPaginated.
+        $searchQuery = [];
 
-        // Convert results to SearchResult.
-        $searchResultEntries = [];
-        foreach ($results as $result) {
-            $searchResultEntries[] = new SearchResultEntry(
-                $this->urlGenerator->linkToRoute(
-                    'openregister.objects.show',
-                    ['id' => $result->getUuid()]
-                ),
-                $result->getUuid(),
-                'An Open Register Object',
-                // @todo: add register and schema to the description
-                $this->urlGenerator->linkToRoute(
-                    'openregister.objects.show',
-                    ['id' => $result->getUuid()]
-                )
-            );
+        // Add search term if provided.
+        if (!empty($search)) {
+            $searchQuery['_search'] = $search;
         }
 
+        // Add filters to @self metadata section.
+        if (!empty($register)) {
+            $searchQuery['@self']['register'] = (int) $register;
+        }
+
+        if (!empty($schema)) {
+            $searchQuery['@self']['schema'] = (int) $schema;
+        }
+
+        // Add date filters if provided.
+        if ($since !== null) {
+            $searchQuery['@self']['created'] = ['$gte' => $since];
+        }
+
+        if ($until !== null) {
+            if (isset($searchQuery['@self']['created'])) {
+                $searchQuery['@self']['created']['$lte'] = $until;
+            } else {
+                $searchQuery['@self']['created'] = ['$lte' => $until];
+            }
+        }
+
+        // Set pagination limits for Nextcloud search.
+        /*
+         * @psalm-suppress TypeDoesNotContainType We intend null-coalescing for future when pagination is implemented
+         */
+        $searchQuery['_limit'] = $limit ?? 25;
+        // Default limit for search interface.
+        /*
+         * @psalm-suppress TypeDoesNotContainType We intend null-coalescing for future when pagination is implemented
+         */
+        $searchQuery['_offset'] = $offset ?? 0;
+
+        $this->logger->debug(
+                'OpenRegister search requested',
+                [
+                    'search_query' => $searchQuery,
+                    'has_search'   => !empty($search),
+                ]
+                );
+
+        // Use searchObjectsPaginated for optimal performance.
+        $searchResults = $this->objectService->searchObjectsPaginated($searchQuery, rbac: true, multi: true);
+
+        // Convert results to SearchResultEntry format.
+        $searchResultEntries = [];
+        if (!empty($searchResults['results'])) {
+            foreach ($searchResults['results'] as $result) {
+                // Generate URLs for the object.
+                $objectUrl = $this->urlGenerator->linkToRoute(
+                    'openregister.objects.show',
+                    ['id' => $result['uuid']]
+                );
+
+                // Create descriptive title and description.
+                $title       = $result['title'] ?? $result['name'] ?? $result['uuid'] ?? 'Unknown Object';
+                $description = $this->buildDescription($result);
+
+                $searchResultEntries[] = new SearchResultEntry(
+                    $objectUrl,
+                    $title,
+                    $description,
+                    $objectUrl,
+                    'icon-openregister'
+                );
+            }
+        }//end if
+
+        $this->logger->debug(
+                'OpenRegister search completed',
+                [
+                    'results_count' => count($searchResultEntries),
+                    'total_results' => $searchResults['total'] ?? 0,
+                ]
+                );
+
         return SearchResult::complete(
-            $this->l10n->t('Open Register'),
+            $this->l10n->t('Open Register Objects'),
             $searchResultEntries
         );
 
     }//end search()
+
+
+    /**
+     * Build a descriptive text for search results
+     *
+     * @param array $object Object data from searchObjectsPaginated
+     *
+     * @return string Formatted description for search result
+     */
+    private function buildDescription(array $object): string
+    {
+        $parts = [];
+
+        // Add schema/register information if available.
+        if (!empty($object['schema'])) {
+            $parts[] = $this->l10n->t('Schema: %s', [$object['schema']]);
+        }
+
+        if (!empty($object['register'])) {
+            $parts[] = $this->l10n->t('Register: %s', [$object['register']]);
+        }
+
+        // Add summary/description if available.
+        if (!empty($object['summary'])) {
+            $parts[] = $object['summary'];
+        } else if (!empty($object['description'])) {
+            $parts[] = substr($object['description'], 0, 100).(strlen($object['description']) > 100 ? '...' : '');
+        }
+
+        // Add last updated info if available.
+        if (!empty($object['updated'])) {
+            $parts[] = $this->l10n->t('Updated: %s', [date('Y-m-d H:i', strtotime($object['updated']))]);
+        }
+
+        return implode(' • ', $parts) ?: $this->l10n->t('Open Register Object');
+
+    }//end buildDescription()
 
 
 }//end class

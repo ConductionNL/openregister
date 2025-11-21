@@ -28,7 +28,6 @@ use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\SearchService;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -39,6 +38,7 @@ use OCP\DB\Exception;
 use OCP\IAppConfig;
 use OCP\IRequest;
 use OCP\IUserSession;
+use OCP\IGroupManager;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Container\NotFoundExceptionInterface;
@@ -66,6 +66,7 @@ class ObjectsController extends Controller
      * @var ImportService
      */
     private readonly ImportService $importService;
+
 
     /**
      * Constructor for the ObjectsController
@@ -98,35 +99,39 @@ class ObjectsController extends Controller
         private readonly AuditTrailMapper $auditTrailMapper,
         private readonly ObjectService $objectService,
         private readonly IUserSession $userSession,
+        private readonly IGroupManager $groupManager,
         ExportService $exportService,
         ImportService $importService
     ) {
         parent::__construct($appName, $request);
         $this->exportService = $exportService;
         $this->importService = $importService;
-    }
+
+    }//end __construct()
 
 
     /**
-     * Returns the template of the main app's page
+     * Check if the current user is in the admin group.
      *
-     * This method renders the main page of the application, adding any necessary data to the template.
+     * This helper method determines if the current logged-in user belongs to the 'admin' group,
+     * which allows bypassing RBAC and multitenancy restrictions.
      *
-     * @NoAdminRequired
+     * @return bool True if user is admin, false otherwise
      *
-     * @NoCSRFRequired
-     *
-     * @return TemplateResponse The rendered template response
+     * @psalm-return   bool
+     * @phpstan-return bool
      */
-    public function page(): TemplateResponse
+    private function isCurrentUserAdmin(): bool
     {
-        return new TemplateResponse(
-            'openconnector',
-            'index',
-            []
-        );
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return false;
+        }
 
-    }//end page()
+        $userGroups = $this->groupManager->getUserGroupIds($user);
+        return in_array('admin', $userGroups);
+
+    }//end isCurrentUserAdmin()
 
 
     /**
@@ -171,7 +176,7 @@ class ObjectsController extends Controller
         }
 
         // If total is smaller than the number of results, set total to the number of results.
-        // @todo: this is a hack to ensure the pagination is correct when the total is not known. That sugjest that the underlaying count service has a problem that needs to be fixed instead
+        // @todo: this is a hack to ensure the pagination is correct when the total is not known. That sugjest that the underlaying count service has a problem that needs to be fixed instead.
         if ($total < count($results)) {
             $total = count($results);
             $pages = max(1, ceil($total / $limit));
@@ -215,87 +220,6 @@ class ObjectsController extends Controller
         return $paginatedResults;
 
     }//end paginate()
-
-
-    /**
-     * Helper method to get query array from the current request for faceting-enabled methods
-     *
-     * This method builds a query structure compatible with the searchObjectsPaginated method
-     * which supports faceting, facetable field discovery, and all other search features.
-     *
-     * @param int|string|null $register Optional register identifier (should be resolved numeric ID)
-     * @param int|string|null $schema   Optional schema identifier (should be resolved numeric ID)
-     * @param array|null      $ids      Optional array of specific IDs to filter
-     *
-     * @return array Query array containing:
-     *               - @self: Metadata filters (register, schema, etc.)
-     *               - Direct keys: Object field filters
-     *               - _limit: Maximum number of items per page
-     *               - _offset: Number of items to skip
-     *               - _page: Current page number
-     *               - _order: Sort parameters
-     *               - _search: Search term
-     *               - _extend: Properties to extend
-     *               - _fields: Fields to include
-     *               - _filter/_unset: Fields to exclude
-     *               - _facets: Facet configuration
-     *               - _facetable: Include facetable field discovery
-     *               - _ids: Specific IDs to filter
-     */
-    private function buildSearchQuery(int | string | null $register=null, int | string | null $schema=null, ?array $ids=null): array
-    {
-        $params = $this->request->getParams();
-
-        // Remove system parameters that shouldn't be used as filters
-        unset($params['id'], $params['_route']);
-
-        // Build the query structure for searchObjectsPaginated
-        $query = [];
-
-        // Extract metadata filters into @self
-        $metadataFields = ['register', 'schema', 'uuid', 'created', 'updated', 'published', 'depublished', 'deleted'];
-        $query['@self'] = [];
-        
-        // Add register and schema to @self if provided (ensure they are integers)
-        if ($register !== null) {
-            $query['@self']['register'] = (int) $register;
-        }
-        if ($schema !== null) {
-            $query['@self']['schema'] = (int) $schema;
-        }
-
-        // Extract special underscore parameters
-        $specialParams = [];
-        $objectFilters = [];
-
-        foreach ($params as $key => $value) {
-            if (str_starts_with($key, '_')) {
-                $specialParams[$key] = $value;
-            } elseif (in_array($key, $metadataFields)) {
-                // Only add to @self if not already set from function parameters
-                if (!isset($query['@self'][$key])) {
-                    $query['@self'][$key] = $value;
-                }
-            } else {
-                // This is an object field filter
-                $objectFilters[$key] = $value;
-            }
-        }
-
-        // Add object field filters directly to query
-        $query = array_merge($query, $objectFilters);
-
-        // Add IDs if provided
-        if ($ids !== null) {
-            $query['_ids'] = $ids;
-        }
-
-        // Add all special parameters (they'll be handled by searchObjectsPaginated)
-        $query = array_merge($query, $specialParams);
-
-        return $query;
-
-    }//end buildSearchQuery()
 
 
     /**
@@ -355,6 +279,54 @@ class ObjectsController extends Controller
 
 
     /**
+     * Helper method to resolve register and schema slugs to numeric IDs
+     *
+     * This ensures consistent slug-to-ID conversion across all controller methods
+     * and prevents the discrepancy between slug-based and ID-based API calls.
+     *
+     * @param  string        $register      Register slug or ID
+     * @param  string        $schema        Schema slug or ID
+     * @param  ObjectService $objectService Object service instance
+     * @return array Array with resolved register and schema IDs: ['register' => int, 'schema' => int]
+     *
+     * @throws \OCA\OpenRegister\Exception\RegisterNotFoundException
+     * @throws \OCA\OpenRegister\Exception\SchemaNotFoundException
+     *
+     * @psalm-return   array{register: int, schema: int}
+     * @phpstan-return array{register: int, schema: int}
+     */
+    private function resolveRegisterSchemaIds(string $register, string $schema, ObjectService $objectService): array
+    {
+        try {
+            // STEP 1: Initial resolution - convert slugs/IDs to numeric IDs.
+            $objectService->setRegister($register);
+        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+            // If register not found, throw custom exception.
+            throw new \OCA\OpenRegister\Exception\RegisterNotFoundException($register, 404, $e);
+        }
+
+        try {
+            $objectService->setSchema($schema);
+        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+            // If schema not found, throw custom exception.
+            throw new \OCA\OpenRegister\Exception\SchemaNotFoundException($schema, 404, $e);
+        }
+
+        // STEP 2: Get resolved numeric IDs.
+        $resolvedRegisterId = $objectService->getRegister();
+        $resolvedSchemaId   = $objectService->getSchema();
+        // STEP 3: Reset ObjectService with resolved numeric IDs.
+        // This ensures the entire pipeline works with IDs consistently.
+        $objectService->setRegister((string) $resolvedRegisterId)->setSchema((string) $resolvedSchemaId);
+        return [
+            'register' => $resolvedRegisterId,
+            'schema'   => $resolvedSchemaId,
+        ];
+
+    }//end resolveRegisterSchemaIds()
+
+
+    /**
      * Retrieves a list of all objects for a specific register and schema
      *
      * This method returns a paginated list of objects that match the specified register and schema.
@@ -367,6 +339,9 @@ class ObjectsController extends Controller
      * - Search: _search
      * - Rendering: _extend, _fields, _filter/_unset
      * - Faceting: _facets (facet configuration), _facetable (facetable field discovery)
+     * - Aggregations: _aggregations (enable aggregations in response - SOLR only)
+     * - Debug: _debug (enable debug information in response - SOLR only)
+     * - Source: _source (force search source: 'database' or 'index'/'solr')
      * - Sorting: _order
      *
      * @param string        $register      The register slug or identifier
@@ -381,33 +356,83 @@ class ObjectsController extends Controller
      */
     public function index(string $register, string $schema, ObjectService $objectService): JSONResponse
     {
-        // IMPORTANT: Set register and schema context first to resolve IDs, slugs, or UUIDs to numeric IDs
-        // This is crucial for supporting both Nextcloud UI calls (/api/objects/4/666) and 
-        // external frontend calls (/api/objects/petstore/dogs)
-        $objectService->setRegister($register)->setSchema($schema);
-
-        // Get resolved numeric IDs for the search query
-        $resolvedRegisterId = $objectService->getRegister();
-        $resolvedSchemaId = $objectService->getSchema();
-
-        // Build search query with resolved numeric IDs
-        $query = $this->buildSearchQuery($resolvedRegisterId, $resolvedSchemaId);
-
         try {
-            // Use searchObjectsPaginated which handles facets, facetable fields, and all other features
-            $result = $objectService->searchObjectsPaginated($query);
-            
-            return new JSONResponse($result);
-        } catch (\Exception $e) {
-            // Fallback to legacy method if something goes wrong
-            // Use findAllPaginated which now supports _facetable parameter
-            $requestParams = $this->request->getParams();
-            $result = $objectService->findAllPaginated($requestParams);
-            
-            return new JSONResponse($result);
+            // Resolve slugs to numeric IDs consistently.
+            $resolved = $this->resolveRegisterSchemaIds($register, $schema, $objectService);
+        } catch (\OCA\OpenRegister\Exception\RegisterNotFoundException | \OCA\OpenRegister\Exception\SchemaNotFoundException $e) {
+            // Return 404 with clear error message if register or schema not found.
+            return new JSONResponse(['message' => $e->getMessage()], 404);
         }
 
+        // Build search query with resolved numeric IDs.
+        $query = $objectService->buildSearchQuery($this->request->getParams(), $resolved['register'], $resolved['schema']);
+
+        // Extract filtering parameters from request.
+        $params    = $this->request->getParams();
+        $rbac      = filter_var($params['rbac'] ?? true, FILTER_VALIDATE_BOOLEAN);
+        $multi     = filter_var($params['multi'] ?? true, FILTER_VALIDATE_BOOLEAN);
+        $published = filter_var($params['_published'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $deleted   = filter_var($params['deleted'] ?? false, FILTER_VALIDATE_BOOLEAN);
+
+        // **INTELLIGENT SOURCE SELECTION**: ObjectService automatically chooses optimal source.
+        $result = $objectService->searchObjectsPaginated($query, $rbac, $multi, $published, $deleted);
+
+        // **SUB-SECOND OPTIMIZATION**: Enable response compression for large payloads.
+        $response = new JSONResponse($result);
+
+        // Enable gzip compression for responses > 1KB.
+        if (isset($result['results']) && count($result['results']) > 10) {
+            $response->addHeader('Content-Encoding', 'gzip');
+            $response->addHeader('Vary', 'Accept-Encoding');
+        }
+
+        return $response;
+
     }//end index()
+
+
+    /**
+     * Retrieves a list of all objects across all registers and schemas
+     *
+     * This method returns a paginated list of objects that the current user has access to,
+     * regardless of register or schema boundaries. It supports filtering, sorting, pagination,
+     * faceting, and facetable field discovery through query parameters.
+     *
+     * This endpoint respects both RBAC (Role-Based Access Control) and multitenancy settings:
+     * - Regular users see only objects they have read permission for in their organization
+     * - Admin users can see all objects system-wide (overrides RBAC and multitenancy)
+     *
+     * Supported parameters:
+     * - Standard filters: Any object field (e.g., name, status, etc.)
+     * - Metadata filters: register, schema, uuid, created, updated, published, etc.
+     * - Pagination: _limit, _offset, _page
+     * - Search: _search
+     * - Rendering: _extend, _fields, _filter/_unset
+     * - Faceting: _facets (facet configuration), _facetable (facetable field discovery)
+     * - Aggregations: _aggregations (enable aggregations in response - SOLR only)
+     * - Debug: _debug (enable debug information in response - SOLR only)
+     * - Source: _source (force search source: 'database' or 'index'/'solr')
+     * - Sorting: _order
+     *
+     * @param ObjectService $objectService The object service
+     *
+     * @return JSONResponse A JSON response containing the list of objects with optional facets and facetable fields
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
+     */
+    public function objects(ObjectService $objectService): JSONResponse
+    {
+        // Build search query without register/schema constraints.
+        $query = $objectService->buildSearchQuery($this->request->getParams());
+
+        // **INTELLIGENT SOURCE SELECTION**: ObjectService automatically chooses optimal source.
+        $result = $objectService->searchObjectsPaginated($query);
+
+        return new JSONResponse($result);
+
+    }//end objects()
 
 
     /**
@@ -433,9 +458,13 @@ class ObjectsController extends Controller
         string $schema,
         ObjectService $objectService
     ): JSONResponse {
-        // Set the schema and register to the object service.
-        $objectService->setSchema($schema);
-        $objectService->setRegister($register);
+        try {
+            // Resolve slugs to numeric IDs consistently.
+            $resolved = $this->resolveRegisterSchemaIds($register, $schema, $objectService);
+        } catch (\OCA\OpenRegister\Exception\RegisterNotFoundException | \OCA\OpenRegister\Exception\SchemaNotFoundException $e) {
+            // Return 404 with clear error message if register or schema not found.
+            return new JSONResponse(['message' => $e->getMessage()], 404);
+        }
 
         // Get request parameters for filtering and searching.
         $requestParams = $this->request->getParams();
@@ -444,15 +473,53 @@ class ObjectsController extends Controller
         $extend = ($requestParams['extend'] ?? $requestParams['_extend'] ?? null);
         $filter = ($requestParams['filter'] ?? $requestParams['_filter'] ?? null);
         $fields = ($requestParams['fields'] ?? $requestParams['_fields'] ?? null);
+        $unset  = ($requestParams['unset'] ?? $requestParams['_unset'] ?? null);
 
+        // Convert extend to array if it's a string.
+        if (is_string($extend)) {
+            $extend = explode(',', $extend);
+        }
+
+        // Convert fields to array if it's a string.
+        if (is_string($fields)) {
+            $fields = explode(',', $fields);
+        }
+
+        // Convert filter to array if it's a string.
+        if (is_string($filter)) {
+            $filter = explode(',', $filter);
+        }
+
+        // Convert unset to array if it's a string.
+        if (is_string($unset)) {
+            $unset = explode(',', $unset);
+        }
+
+        // Determine RBAC and multitenancy settings based on admin status.
+        $isAdmin = $this->isCurrentUserAdmin();
+        $rbac    = !$isAdmin;
+        // If admin, disable RBAC.
+        $multi = !$isAdmin;
+        // If admin, disable multitenancy.
         // Find and validate the object.
         try {
-            $object = $this->objectService->find($id, $extend);
+            $objectEntity = $this->objectService->find($id, $extend, false, null, null, $rbac, $multi);
 
-            // Render the object with requested extensions and filters.
-            return new JSONResponse($object);
+            // Render the object with requested extensions, filters, fields, and unset parameters.
+            $renderedObject = $this->objectService->renderEntity(
+                entity: $objectEntity,
+                extend: $extend,
+                depth: 0,
+                filter: $filter,
+                fields: $fields,
+                unset: $unset,
+                rbac: $rbac,
+                multi: $multi
+            );
+
+            return new JSONResponse($renderedObject);
         } catch (DoesNotExistException $exception) {
-            return new JSONResponse(['error' => 'Not Found'], 404);
+            return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
         }//end try
 
     }//end show()
@@ -479,28 +546,70 @@ class ObjectsController extends Controller
         string $schema,
         ObjectService $objectService
     ): JSONResponse {
-        // Set the schema and register to the object service.
-        $objectService->setSchema($schema);
-        $objectService->setRegister($register);
+        try {
+            // Resolve slugs to numeric IDs consistently.
+            $resolved = $this->resolveRegisterSchemaIds($register, $schema, $objectService);
+        } catch (\OCA\OpenRegister\Exception\RegisterNotFoundException | \OCA\OpenRegister\Exception\SchemaNotFoundException $e) {
+            // Return 404 with clear error message if register or schema not found.
+            return new JSONResponse(['message' => $e->getMessage()], 404);
+        }
 
         // Get object data from request parameters.
         $object = $this->request->getParams();
 
         // Filter out special parameters and reserved fields.
         // @todo shouldn't this be part of the object service?
+        // Allow @self metadata to pass through for organization activation.
         $object = array_filter(
             $object,
             fn ($key) => !str_starts_with($key, '_')
-                && !str_starts_with($key, '@')
-                && !in_array($key, ['id', 'uuid', 'register', 'schema']),
+                && !($key !== '@self' && str_starts_with($key, '@'))
+                && !in_array($key, ['uuid', 'register', 'schema']),
             ARRAY_FILTER_USE_KEY
         );
 
+        // Extract uploaded files from multipart/form-data.
+        $uploadedFiles = [];
+        foreach ($_FILES ?? [] as $fieldName => $fileData) {
+            // Check if this is an array upload (multiple files with same field name).
+            // PHP converts field names like "images[]" to "images" and structures data as arrays.
+            if (is_array($fileData['name'] ?? null)) {
+                // Handle array uploads: images[] becomes images with array values.
+                // We need to preserve all files, so use indexed keys: images[0], images[1], etc.
+                $fileCount = count($fileData['name']);
+                for ($i = 0; $i < $fileCount; $i++) {
+                    // Use indexed key to preserve all files: images[0], images[1], images[2].
+                    $uploadedFiles[$fieldName.'['.$i.']'] = [
+                        'name'     => $fileData['name'][$i],
+                        'type'     => $fileData['type'][$i],
+                        'tmp_name' => $fileData['tmp_name'][$i],
+                        'error'    => $fileData['error'][$i],
+                        'size'     => $fileData['size'][$i],
+                    ];
+                }
+            } else {
+                // Handle single file upload.
+                $uploadedFile = $this->request->getUploadedFile($fieldName);
+                if ($uploadedFile !== null) {
+                    $uploadedFiles[$fieldName] = $uploadedFile;
+                }
+            }//end if
+        }//end foreach
+
+        // Determine RBAC and multitenancy settings based on admin status.
+        $isAdmin = $this->isCurrentUserAdmin();
+        $rbac    = !$isAdmin;
+        // If admin, disable RBAC.
+        $multi = !$isAdmin;
+        // If admin, disable multitenancy.
         // Save the object.
         try {
             // Use the object service to validate and save the object.
             $objectEntity = $objectService->saveObject(
-                object: $object
+                object: $object,
+                rbac: $rbac,
+                multi: $multi,
+                uploadedFiles: !empty($uploadedFiles) ? $uploadedFiles : null
             );
 
             // Unlock the object after saving.
@@ -511,11 +620,14 @@ class ObjectsController extends Controller
             }
         } catch (ValidationException | CustomValidationException $exception) {
             // Handle validation errors.
-           return new JSONResponse($exception->getMessage(), 400);
-        }
+                       return new JSONResponse(data: $exception->getMessage(), statusCode: 400);
+        } catch (\Exception $exception) {
+            // Handle all other exceptions (including RBAC permission errors).
+            return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 403);
+        }//end try
 
         // Return the created object.
-        return new JSONResponse($objectEntity->jsonSerialize());
+        return new JSONResponse($objectEntity->jsonSerialize(), 201);
 
     }//end create()
 
@@ -543,33 +655,73 @@ class ObjectsController extends Controller
         string $id,
         ObjectService $objectService
     ): JSONResponse {
-        // Set the schema and register to the object service.
-        $objectService->setSchema($schema);
-        $objectService->setRegister($register);
+        try {
+            // Resolve slugs to numeric IDs consistently.
+            $resolved = $this->resolveRegisterSchemaIds($register, $schema, $objectService);
+        } catch (\OCA\OpenRegister\Exception\RegisterNotFoundException | \OCA\OpenRegister\Exception\SchemaNotFoundException $e) {
+            // Return 404 with clear error message if register or schema not found.
+            return new JSONResponse(['message' => $e->getMessage()], 404);
+        }
 
         // Get object data from request parameters.
         $object = $this->request->getParams();
 
         // Filter out special parameters and reserved fields.
         // @todo shouldn't this be part of the object service?
+        // Allow @self metadata to pass through for organization activation.
         $object = array_filter(
             $object,
             fn ($key) => !str_starts_with($key, '_')
-                && !str_starts_with($key, '@')
-                && !in_array($key, ['id', 'uuid', 'register', 'schema']),
+                && !($key !== '@self' && str_starts_with($key, '@'))
+                && !in_array($key, ['uuid', 'register', 'schema']),
             ARRAY_FILTER_USE_KEY
         );
 
-        // Check if the object exists and can be updated.
+        // Extract uploaded files from multipart/form-data.
+        $uploadedFiles = [];
+        foreach ($_FILES ?? [] as $fieldName => $fileData) {
+            // Check if this is an array upload (multiple files with same field name).
+            // PHP converts field names like "images[]" to "images" and structures data as arrays.
+            if (is_array($fileData['name'] ?? null)) {
+                // Handle array uploads: images[] becomes images with array values.
+                // We need to preserve all files, so use indexed keys: images[0], images[1], etc.
+                $fileCount = count($fileData['name']);
+                for ($i = 0; $i < $fileCount; $i++) {
+                    // Use indexed key to preserve all files: images[0], images[1], images[2].
+                    $uploadedFiles[$fieldName.'['.$i.']'] = [
+                        'name'     => $fileData['name'][$i],
+                        'type'     => $fileData['type'][$i],
+                        'tmp_name' => $fileData['tmp_name'][$i],
+                        'error'    => $fileData['error'][$i],
+                        'size'     => $fileData['size'][$i],
+                    ];
+                }
+            } else {
+                // Handle single file upload.
+                $uploadedFile = $this->request->getUploadedFile($fieldName);
+                if ($uploadedFile !== null) {
+                    $uploadedFiles[$fieldName] = $uploadedFile;
+                }
+            }//end if
+        }//end foreach
+
+        // Determine RBAC and multitenancy settings based on admin status.
+        $isAdmin = $this->isCurrentUserAdmin();
+        $rbac    = !$isAdmin;
+        // If admin, disable RBAC.
+        $multi = !$isAdmin;
+        // If admin, disable multitenancy.
+        // Check if the object exists and can be updated (silent read - no audit trail).
         // @todo shouldn't this be part of the object service?
         try {
-            $existingObject = $this->objectService->find($id);
+            $existingObject = $this->objectService->findSilent($id, [], false, null, null, $rbac, $multi);
 
-            // Get the resolved register and schema IDs from the ObjectService
-            // This ensures proper handling of both numeric IDs and slug identifiers
-            $resolvedRegisterId = $objectService->getRegister(); // Returns the current register ID
-            $resolvedSchemaId = $objectService->getSchema();     // Returns the current schema ID
-
+            // Get the resolved register and schema IDs from the ObjectService.
+            // This ensures proper handling of both numeric IDs and slug identifiers.
+            $resolvedRegisterId = $objectService->getRegister();
+            // Returns the current register ID.
+            $resolvedSchemaId = $objectService->getSchema();
+            // Returns the current schema ID.
             // Verify that the object belongs to the specified register and schema.
             if ((int) $existingObject->getRegister() !== (int) $resolvedRegisterId
                 || (int) $existingObject->getSchema() !== (int) $resolvedSchemaId
@@ -595,6 +747,9 @@ class ObjectsController extends Controller
             }
         } catch (DoesNotExistException $exception) {
             return new JSONResponse(['error' => 'Not Found'], 404);
+        } catch (\Exception $exception) {
+            // Handle RBAC permission errors and other exceptions.
+            return new JSONResponse(['error' => $exception->getMessage()], 403);
         } catch (NotFoundExceptionInterface | ContainerExceptionInterface $e) {
             // If there's an issue getting the user ID, continue without the lock check.
         }//end try
@@ -604,7 +759,10 @@ class ObjectsController extends Controller
             // Use the object service to validate and update the object.
             $objectEntity = $objectService->saveObject(
                 object: $object,
-                uuid: $id
+                uuid: $id,
+                rbac: $rbac,
+                multi: $multi,
+                uploadedFiles: !empty($uploadedFiles) ? $uploadedFiles : null
             );
 
             // Unlock the object after saving.
@@ -619,7 +777,10 @@ class ObjectsController extends Controller
         } catch (ValidationException | CustomValidationException $exception) {
             // Handle validation errors.
             return $objectService->handleValidationException(exception: $exception);
-        }
+        } catch (\Exception $exception) {
+            // Handle all other exceptions (including RBAC permission errors).
+            return new JSONResponse(['error' => $exception->getMessage()], 403);
+        }//end try
 
     }//end update()
 
@@ -627,7 +788,7 @@ class ObjectsController extends Controller
     /**
      * Patches (partially updates) an existing object
      *
-     * Takes the request data, merges it with the existing object data, validates it against 
+     * Takes the request data, merges it with the existing object data, validates it against
      * the schema, and updates the object in the database. Only the provided fields are updated,
      * while other fields remain unchanged. Handles validation errors appropriately.
      *
@@ -657,11 +818,12 @@ class ObjectsController extends Controller
 
         // Filter out special parameters and reserved fields.
         // @todo shouldn't this be part of the object service?
+        // Allow @self metadata to pass through for organization activation.
         $patchData = array_filter(
             $patchData,
             fn ($key) => !str_starts_with($key, '_')
-                && !str_starts_with($key, '@')
-                && !in_array($key, ['id', 'uuid', 'register', 'schema']),
+                && !($key !== '@self' && str_starts_with($key, '@'))
+                && !in_array($key, ['uuid', 'register', 'schema']),
             ARRAY_FILTER_USE_KEY
         );
 
@@ -670,11 +832,12 @@ class ObjectsController extends Controller
         try {
             $existingObject = $this->objectService->find($id);
 
-            // Get the resolved register and schema IDs from the ObjectService
-            // This ensures proper handling of both numeric IDs and slug identifiers
-            $resolvedRegisterId = $objectService->getRegister(); // Returns the current register ID
-            $resolvedSchemaId = $objectService->getSchema();     // Returns the current schema ID
-
+            // Get the resolved register and schema IDs from the ObjectService.
+            // This ensures proper handling of both numeric IDs and slug identifiers.
+            $resolvedRegisterId = $objectService->getRegister();
+            // Returns the current register ID.
+            $resolvedSchemaId = $objectService->getSchema();
+            // Returns the current schema ID.
             // Verify that the object belongs to the specified register and schema.
             if ((int) $existingObject->getRegister() !== (int) $resolvedRegisterId
                 || (int) $existingObject->getSchema() !== (int) $resolvedSchemaId
@@ -699,11 +862,10 @@ class ObjectsController extends Controller
                 );
             }
 
-            // Get the existing object data and merge with patch data
+            // Get the existing object data and merge with patch data.
             $existingData = $existingObject->getObject();
-            $mergedData = array_merge($existingData, $patchData);
+            $mergedData   = array_merge($existingData, $patchData);
             $existingObject->setObject($mergedData);
-
         } catch (DoesNotExistException $exception) {
             return new JSONResponse(['error' => 'Not Found'], 404);
         } catch (NotFoundExceptionInterface | ContainerExceptionInterface $e) {
@@ -727,6 +889,9 @@ class ObjectsController extends Controller
         } catch (ValidationException | CustomValidationException $exception) {
             // Handle validation errors.
             return $objectService->handleValidationException(exception: $exception);
+        } catch (\Exception $exception) {
+            // Handle all other exceptions (including RBAC permission errors).
+            return new JSONResponse(['error' => $exception->getMessage()], 403);
         }
 
     }//end patch()
@@ -747,23 +912,33 @@ class ObjectsController extends Controller
      *
      * @NoCSRFRequired
      */
-    public function destroy(string $id, ObjectService $objectService): JSONResponse
+    public function destroy(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
-        // Create a log entry.
-        $oldObject = $this->objectEntityMapper->find($id);
+        try {
+            // Set the register and schema context for ObjectService.
+            $objectService->setRegister($register);
+            $objectService->setSchema($schema);
 
-        // Clone the object to pass as the new state.
-        $newObject = clone $oldObject;
-        $newObject->delete($this->userSession, $this->request->getParam('deletedReason'), $this->request->getParam('retentionPeriod'));
+            // Determine RBAC and multitenancy settings based on admin status.
+            $isAdmin = $this->isCurrentUserAdmin();
+            $rbac    = !$isAdmin;
+            // If admin, disable RBAC.
+            $multi = !$isAdmin;
+            // If admin, disable multitenancy.
+            // Use ObjectService to delete the object (includes RBAC permission checks, audit trail, and soft delete).
+            $deleteResult = $objectService->deleteObject($id, $rbac, $multi);
 
-        // Update the object in the mapper instead of deleting.
-        $this->objectEntityMapper->update($newObject);
+            if ($deleteResult === false) {
+                // If delete operation failed, return error.
+                return new JSONResponse(['error' => 'Failed to delete object'], 500);
+            }
 
-        // Create an audit trail with both old and new states.
-        $this->auditTrailMapper->createAuditTrail(old: $oldObject, new: $newObject);
-
-        // Return the deleted object.
-        return new JSONResponse($newObject->jsonSerialize());
+            // Return 204 No Content for successful delete (REST convention).
+            return new JSONResponse(null, 204);
+        } catch (\Exception $exception) {
+            // Handle all exceptions (including RBAC permission errors and object not found).
+            return new JSONResponse(['error' => $exception->getMessage()], 403);
+        }//end try
 
     }//end destroy()
 
@@ -800,7 +975,7 @@ class ObjectsController extends Controller
         $offset = isset($requestParams['offset']) ? (int) $requestParams['offset'] : (isset($requestParams['_offset']) ? (int) $requestParams['_offset'] : null);
         $page   = isset($requestParams['page']) ? (int) $requestParams['page'] : (isset($requestParams['_page']) ? (int) $requestParams['_page'] : null);
 
-        // Return empty paginated response
+        // Return empty paginated response.
         return new JSONResponse(
             $this->paginate(
                 results: [],
@@ -840,38 +1015,28 @@ class ObjectsController extends Controller
         $relationsArray = $objectService->find($id)->getRelations();
         $relations      = array_values($relationsArray);
 
-        // Check if relations array is empty
-        if (empty($relations)) {
-            // If relations is empty, set objects to an empty array.
-            $objects = [];
-            $total   = 0;
-            $config = [
-                'limit' => 1,
-                'offset' => 0,
-                'page' => 1,
-            ];
-        } else {
-            // Get config and fetch objects
-            $config = $this->getConfig($register, $schema, ids: $relations);
+        // Build search query using ObjectService searchObjectsPaginated directly.
+        $queryParams = $this->request->getParams();
+        $searchQuery = $queryParams;
 
-            // We specifacllly want to look outside our current definitions.
-            unset($config['filters']['register'], $config['filters']['schema'], $config['limit']);
+        // Clean up unwanted parameters.
+        unset($searchQuery['id'], $searchQuery['_route']);
 
-            $objects = $objectService->findAll($config);
-            // Get total count for pagination.
-            $total = $objectService->count($config);
-        }
-
-        // Return paginated results.
-        return new JSONResponse(
-            $this->paginate(
-                results: $objects,
-                total: $total,
-                limit: $config['limit'],
-                offset: $config['offset'],
-                page: $config['page']
-            )
+        // Use ObjectService searchObjectsPaginated directly - pass ids as named parameter.
+        $result = $objectService->searchObjectsPaginated(
+            query: $searchQuery,
+            rbac: true,
+            multi: true,
+            published: true,
+            deleted: false,
+            ids: $relations
         );
+
+        // Add relations being searched for debugging.
+        $result['relations'] = $relations;
+
+        // Return the result directly from ObjectService.
+        return new JSONResponse($result);
 
     }//end uses()
 
@@ -898,42 +1063,28 @@ class ObjectsController extends Controller
         $objectService->setSchema($schema);
         $objectService->setRegister($register);
 
-        // Get the relations for the object.
-        $relationsArray = $objectService->findByRelations($id);
-        $relations      = array_map(static fn($relation) => $relation->getUuid(), $relationsArray);
+        // Build search query using ObjectService searchObjectsPaginated directly.
+        $queryParams = $this->request->getParams();
+        $searchQuery = $queryParams;
 
-        // Check if relations array is empty.
-        if (empty($relations)) {
-            // If relations is empty, set objects to an empty array
-            $objects = [];
-            $total   = 0;
-            $config = [
-                'limit' => 1,
-                'offset' => 0,
-                'page' => 1,
-            ];
-        } else {
-            // Get config and fetch objects
-            $config = $this->getConfig($register, $schema, $relations);
+        // Clean up unwanted parameters.
+        unset($searchQuery['id'], $searchQuery['_route']);
 
-            // We specifacllly want to look outside our current definitions.
-            unset($config['filters']['register'], $config['filters']['schema']);
-
-            $objects = $objectService->findAll($config);
-            // Get total count for pagination.
-            $total = $objectService->count($config);
-        }
-
-        // Return paginated results.
-        return new JSONResponse(
-            $this->paginate(
-                results: $objects,
-                total: $total,
-                limit: $config['limit'],
-                offset: $config['offset'],
-                page: $config['page']
-            )
+        // Use ObjectService searchObjectsPaginated directly - pass uses as named parameter.
+        $result = $objectService->searchObjectsPaginated(
+            query: $searchQuery,
+            rbac: true,
+            multi: true,
+            published: true,
+            deleted: false,
+            uses: $id
         );
+
+        // Add what we're searching for in debugging.
+        $result['uses'] = $id;
+
+        // Return the result directly from ObjectService.
+        return new JSONResponse($result);
 
     }//end used()
 
@@ -960,6 +1111,55 @@ class ObjectsController extends Controller
         $objectService->setRegister($register);
         $objectService->setSchema($schema);
 
+        // Try to fetch the object by ID/UUID only (no register/schema filter yet).
+        try {
+            $object = $objectService->find($id);
+        } catch (\Exception $e) {
+            return new JSONResponse(['message' => 'Object not found'], 404);
+        }
+
+        // Normalize and compare register.
+        $objectRegister = $object->getRegister();
+        // could be ID or slug.
+        $objectSchema = $object->getSchema();
+        // could be ID, slug, or array/object.
+        // Normalize requested register.
+        $requestedRegister = $register;
+        $requestedSchema   = $schema;
+
+        // If objectSchema is an array/object, get slug and id.
+        $objectSchemaId   = null;
+        $objectSchemaSlug = null;
+        if (is_array($objectSchema) && isset($objectSchema['id'])) {
+            $objectSchemaId   = (string) $objectSchema['id'];
+            $objectSchemaSlug = isset($objectSchema['slug']) ? strtolower($objectSchema['slug']) : null;
+        } else if (is_object($objectSchema) && isset($objectSchema->id)) {
+            $objectSchemaId   = (string) $objectSchema->id;
+            $objectSchemaSlug = isset($objectSchema->slug) ? strtolower($objectSchema->slug) : null;
+        } else {
+            $objectSchemaId = (string) $objectSchema;
+        }
+
+        // Normalize requested schema.
+        $requestedSchemaNorm  = strtolower((string) $requestedSchema);
+        $objectSchemaIdNorm   = strtolower((string) $objectSchemaId);
+        $objectSchemaSlugNorm = $objectSchemaSlug ? strtolower($objectSchemaSlug) : null;
+
+        // Check schema match (by id or slug).
+        $schemaMatch = (
+            $requestedSchemaNorm === $objectSchemaIdNorm ||
+            ($objectSchemaSlugNorm && $requestedSchemaNorm === $objectSchemaSlugNorm)
+        );
+
+        // Register normalization (string compare).
+        $objectRegisterNorm    = strtolower((string) $objectRegister);
+        $requestedRegisterNorm = strtolower((string) $requestedRegister);
+        $registerMatch         = ($objectRegisterNorm === $requestedRegisterNorm);
+
+        if (!$schemaMatch || !$registerMatch) {
+            return new JSONResponse(['message' => 'Object does not belong to specified register/schema'], 404);
+        }
+
         // Get config and fetch logs.
         $config = $this->getConfig($register, $schema);
         $logs   = $objectService->getLogs($id, $config['filters']);
@@ -967,7 +1167,7 @@ class ObjectsController extends Controller
         // Get total count of logs.
         $total = count($logs);
 
-        // Return paginated results
+        // Return paginated results.
         return new JSONResponse($this->paginate($logs, $total, $config['limit'], $config['offset'], $config['page']));
 
     }//end logs()
@@ -1046,107 +1246,175 @@ class ObjectsController extends Controller
      */
     public function export(string $register, string $schema, ObjectService $objectService): DataDownloadResponse
     {
-        // Set the register and schema context
+        // Set the register and schema context.
         $objectService->setRegister($register);
         $objectService->setSchema($schema);
 
-        // Get filters and type from request
+        // Get filters and type from request.
         $filters = $this->request->getParams();
         unset($filters['_route']);
-        $type = $this->request->getParam('type', 'excel');
+        $type = $this->request->getParam(key: 'type', default: 'excel');
 
-        // Get register and schema entities
+        // Get register and schema entities.
         $registerEntity = $this->registerMapper->find($register);
-        $schemaEntity = $this->schemaMapper->find($schema);
+        $schemaEntity   = $this->schemaMapper->find($schema);
 
-        // Handle different export types
+        // Handle different export types.
         switch ($type) {
             case 'csv':
-                $csv = $this->exportService->exportToCsv($registerEntity, $schemaEntity, $filters);
-                
-                // Generate filename
+                $csv = $this->exportService->exportToCsv($registerEntity, $schemaEntity, $filters, $this->userSession->getUser());
+
+                // Generate filename.
                 $filename = sprintf(
                     '%s_%s_%s.csv',
                     $registerEntity->getSlug(),
                     $schemaEntity->getSlug(),
                     (new \DateTime())->format('Y-m-d_His')
                 );
-                
+
                 return new DataDownloadResponse(
                     $csv,
                     $filename,
                     'text/csv'
                 );
-                
+
             case 'excel':
             default:
-                $spreadsheet = $this->exportService->exportToExcel($registerEntity, $schemaEntity, $filters);
-                
-                // Create Excel writer
+                $spreadsheet = $this->exportService->exportToExcel($registerEntity, $schemaEntity, $filters, $this->userSession->getUser());
+
+                // Create Excel writer.
                 $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
-                
-                // Generate filename
+
+                // Generate filename.
                 $filename = sprintf(
                     '%s_%s_%s.xlsx',
                     $registerEntity->getSlug(),
                     $schemaEntity->getSlug(),
                     (new \DateTime())->format('Y-m-d_His')
                 );
-                
-                // Get Excel content
+
+                // Get Excel content.
                 ob_start();
                 $writer->save('php://output');
                 $content = ob_get_clean();
-                
+
                 return new DataDownloadResponse(
                     $content,
                     $filename,
                     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
                 );
-        }
-    }
+        }//end switch
+
+    }//end export()
+
 
     /**
      * Import objects into a register
      *
-     * @param int $registerId The ID of the register to import into
+     * @param int $register The ID of the register to import into
      *
      * @return JSONResponse The result of the import operation
      *
      * @NoAdminRequired
      * @NoCSRFRequired
      */
-    public function import(int $registerId): JSONResponse
+    public function import(int $register): JSONResponse
     {
         try {
-            // Get the uploaded file
+            // Get the uploaded file.
             $uploadedFile = $this->request->getUploadedFile('file');
             if ($uploadedFile === null) {
                 return new JSONResponse(['error' => 'No file uploaded'], 400);
             }
 
-            // Get include objects parameter
-            $includeObjects = $this->request->getParam('includeObjects', false);
+            // Find the register.
+            $registerEntity = $this->registerMapper->find($register);
 
-            // Find the register
-            $register = $this->registerMapper->find($registerId);
+            // Determine file type from extension.
+            $filename  = $uploadedFile['name'];
+            $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
 
-            // Import the data
-            $result = $this->importService->importFromJson(
-                $uploadedFile->getTempName(),
-                $register,
-                $includeObjects
-            );
+            // Handle different file types.
+            switch ($extension) {
+                case 'xlsx':
+                case 'xls':
 
-            return new JSONResponse([
-                'message' => 'Import successful',
-                'imported' => $result
-            ]);
+                    // Get optional validation and events parameters.
+                    $validation = filter_var($this->request->getParam('validation', false), FILTER_VALIDATE_BOOLEAN);
+                    $events     = filter_var($this->request->getParam('events', false), FILTER_VALIDATE_BOOLEAN);
 
+                    $summary = $this->importService->importFromExcel(
+                        $uploadedFile['tmp_name'],
+                        $registerEntity,
+                        null,
+                    // Schema will be determined from sheet names.
+                        5,
+                    // Use default chunk size.
+                        $validation,
+                        $events,
+                        true,
+                    // rbac.
+                        true,
+                    // multi.
+                        false,
+                    // publish.
+                        $this->userSession->getUser()
+                    );
+                    break;
+
+                case 'csv':
+
+                    // For CSV, schema can be specified in the request.
+                    $schemaId = $this->request->getParam(key: 'schema');
+
+                    if ($schemaId === null || $schemaId === '') {
+                        // If no schema specified, get the first available schema from the register.
+                        $schemas = $registerEntity->getSchemas();
+                        if (empty($schemas)) {
+                            return new JSONResponse(['error' => 'No schema found for register'], 400);
+                        }
+
+                        $schemaId = is_array($schemas) ? reset($schemas) : $schemas;
+                    }
+
+                    $schema = $this->schemaMapper->find($schemaId);
+
+                    // Get optional parameters with sensible defaults.
+                    $validation = filter_var($this->request->getParam('validation', false), FILTER_VALIDATE_BOOLEAN);
+                    $events     = filter_var($this->request->getParam('events', false), FILTER_VALIDATE_BOOLEAN);
+                    $rbac       = filter_var($this->request->getParam('rbac', true), FILTER_VALIDATE_BOOLEAN);
+                    $multi      = filter_var($this->request->getParam('multi', true), FILTER_VALIDATE_BOOLEAN);
+                    $chunkSize  = (int) $this->request->getParam('chunkSize', 5);
+
+                    $summary = $this->importService->importFromCsv(
+                        $uploadedFile['tmp_name'],
+                        $registerEntity,
+                        $schema,
+                        $chunkSize,
+                        $validation,
+                        $events,
+                        $rbac,
+                        $multi
+                    );
+                    break;
+
+                default:
+
+                    return new JSONResponse(['error' => "Unsupported file type: $extension"], 400);
+            }//end switch
+
+            return new JSONResponse(
+                    [
+                        'message' => 'Import successful',
+                        'summary' => $summary,
+                    ]
+                    );
         } catch (\Exception $e) {
-            return new JSONResponse(['error' => $e->getMessage()], 400);
-        }
-    }
+            return new JSONResponse(['error' => $e->getMessage()], 500);
+        }//end try
+
+    }//end import()
+
 
     /**
      * Publish an object
@@ -1169,25 +1437,33 @@ class ObjectsController extends Controller
         string $schema,
         ObjectService $objectService
     ): JSONResponse {
-        // Set the schema and register to the object service
+        // Set the schema and register to the object service.
         $objectService->setSchema($schema);
         $objectService->setRegister($register);
 
+        // Determine RBAC and multitenancy settings based on admin status.
+        $isAdmin = $this->isCurrentUserAdmin();
+        $rbac    = !$isAdmin;
+        // If admin, disable RBAC.
+        $multi = !$isAdmin;
+        // If admin, disable multitenancy.
         try {
-            // Get the publication date from request if provided
+            // Get the publication date from request if provided.
             $date = null;
-            if ($this->request->getParam('date') !== null) {
-                $date = new \DateTime($this->request->getParam('date'));
+            if ($this->request->getParam(key: 'date') !== null) {
+                $date = new \DateTime($this->request->getParam(key: 'date'));
             }
 
-            // Publish the object
-            $object = $objectService->publish($id, $date);
+            // Publish the object.
+            $object = $objectService->publish($id, $date, $rbac, $multi);
 
             return new JSONResponse($object->jsonSerialize());
         } catch (\Exception $e) {
             return new JSONResponse(['error' => $e->getMessage()], 400);
         }
-    }
+
+    }//end publish()
+
 
     /**
      * Depublish an object
@@ -1210,25 +1486,33 @@ class ObjectsController extends Controller
         string $schema,
         ObjectService $objectService
     ): JSONResponse {
-        // Set the schema and register to the object service
+        // Set the schema and register to the object service.
         $objectService->setSchema($schema);
         $objectService->setRegister($register);
 
+        // Determine RBAC and multitenancy settings based on admin status.
+        $isAdmin = $this->isCurrentUserAdmin();
+        $rbac    = !$isAdmin;
+        // If admin, disable RBAC.
+        $multi = !$isAdmin;
+        // If admin, disable multitenancy.
         try {
-            // Get the depublication date from request if provided
+            // Get the depublication date from request if provided.
             $date = null;
-            if ($this->request->getParam('date') !== null) {
-                $date = new \DateTime($this->request->getParam('date'));
+            if ($this->request->getParam(key: 'date') !== null) {
+                $date = new \DateTime($this->request->getParam(key: 'date'));
             }
 
-            // Depublish the object
-            $object = $objectService->depublish($id, $date);
+            // Depublish the object.
+            $object = $objectService->depublish($id, $date, $rbac, $multi);
 
             return new JSONResponse($object->jsonSerialize());
         } catch (\Exception $e) {
             return new JSONResponse(['error' => $e->getMessage()], 400);
         }
-    }
+
+    }//end depublish()
+
 
     /**
      * Merge two objects
@@ -1252,15 +1536,15 @@ class ObjectsController extends Controller
         string $schema,
         ObjectService $objectService
     ): JSONResponse {
-        // Set the schema and register to the object service
+        // Set the schema and register to the object service.
         $objectService->setRegister($register);
         $objectService->setSchema($schema);
 
         try {
-            // Get merge data from request body
+            // Get merge data from request body.
             $requestParams = $this->request->getParams();
-            
-            // Validate required parameters
+
+            // Validate required parameters.
             if (!isset($requestParams['target'])) {
                 return new JSONResponse(['error' => 'Target object ID is required'], 400);
             }
@@ -1269,19 +1553,21 @@ class ObjectsController extends Controller
                 return new JSONResponse(['error' => 'Object data is required'], 400);
             }
 
-            // Perform the merge operation with the new payload structure
+            // Perform the merge operation with the new payload structure.
             $mergeResult = $objectService->mergeObjects($id, $requestParams);
             return new JSONResponse($mergeResult);
-
         } catch (DoesNotExistException $exception) {
             return new JSONResponse(['error' => 'Object not found'], 404);
         } catch (\InvalidArgumentException $exception) {
             return new JSONResponse(['error' => $exception->getMessage()], 400);
         } catch (\Exception $exception) {
-            return new JSONResponse([
-                'error' => 'Failed to merge objects: ' . $exception->getMessage()
-            ], 500);
-        }
+            return new JSONResponse(
+                    [
+                        'error' => 'Failed to merge objects: '.$exception->getMessage(),
+                    ],
+                    500
+                    );
+        }//end try
 
     }//end merge()
 
@@ -1302,16 +1588,16 @@ class ObjectsController extends Controller
     public function migrate(ObjectService $objectService): JSONResponse
     {
         try {
-            // Get migration parameters from request
-            $requestParams = $this->request->getParams();
+            // Get migration parameters from request.
+            $requestParams  = $this->request->getParams();
             $sourceRegister = $requestParams['sourceRegister'] ?? null;
-            $sourceSchema = $requestParams['sourceSchema'] ?? null;
+            $sourceSchema   = $requestParams['sourceSchema'] ?? null;
             $targetRegister = $requestParams['targetRegister'] ?? null;
-            $targetSchema = $requestParams['targetSchema'] ?? null;
-            $objectIds = $requestParams['objects'] ?? [];
-            $mapping = $requestParams['mapping'] ?? [];
+            $targetSchema   = $requestParams['targetSchema'] ?? null;
+            $objectIds      = $requestParams['objects'] ?? [];
+            $mapping        = $requestParams['mapping'] ?? [];
 
-            // Validate required parameters
+            // Validate required parameters.
             if ($sourceRegister === null || $sourceSchema === null) {
                 return new JSONResponse(['error' => 'Source register and schema are required'], 400);
             }
@@ -1328,7 +1614,7 @@ class ObjectsController extends Controller
                 return new JSONResponse(['error' => 'Property mapping is required'], 400);
             }
 
-            // Perform the migration operation
+            // Perform the migration operation.
             $migrationResult = $objectService->migrateObjects(
                 sourceRegister: $sourceRegister,
                 sourceSchema: $sourceSchema,
@@ -1339,16 +1625,18 @@ class ObjectsController extends Controller
             );
 
             return new JSONResponse($migrationResult);
-
         } catch (DoesNotExistException $exception) {
             return new JSONResponse(['error' => 'Register or schema not found'], 404);
         } catch (\InvalidArgumentException $exception) {
             return new JSONResponse(['error' => $exception->getMessage()], 400);
         } catch (\Exception $exception) {
-            return new JSONResponse([
-                'error' => 'Failed to migrate objects: ' . $exception->getMessage()
-            ], 500);
-        }
+            return new JSONResponse(
+                    [
+                        'error' => 'Failed to migrate objects: '.$exception->getMessage(),
+                    ],
+                    500
+                    );
+        }//end try
 
     }//end migrate()
 
@@ -1380,53 +1668,199 @@ class ObjectsController extends Controller
         ObjectService $objectService
     ): DataDownloadResponse | JSONResponse {
         try {
-            // Set the context for the object service
+            // Set the context for the object service.
             $objectService->setRegister($register);
             $objectService->setSchema($schema);
 
-            // Get the object to ensure it exists and we have access
+            // Get the object to ensure it exists and we have access.
             $object = $objectService->find($id);
 
-            // Get the FileService from the container
-            /** @var FileService $fileService */
+            // Get the FileService from the container.
+            /*
+             * @var FileService $fileService
+             */
             $fileService = $this->container->get(FileService::class);
 
-            // Optional: get custom filename from query parameters
-            $customFilename = $this->request->getParam('filename');
+            // Optional: get custom filename from query parameters.
+            $customFilename = $this->request->getParam(key: 'filename');
 
-            // Create the ZIP archive
+            // Create the ZIP archive.
             $zipInfo = $fileService->createObjectFilesZip($object, $customFilename);
 
-            // Read the ZIP file content
+            // Read the ZIP file content.
             $zipContent = file_get_contents($zipInfo['path']);
             if ($zipContent === false) {
-                // Clean up temporary file
+                // Clean up temporary file.
                 if (file_exists($zipInfo['path'])) {
                     unlink($zipInfo['path']);
                 }
+
                 throw new \Exception('Failed to read ZIP file content');
             }
 
-            // Clean up temporary file after reading
+            // Clean up temporary file after reading.
             if (file_exists($zipInfo['path'])) {
                 unlink($zipInfo['path']);
             }
 
-            // Return the ZIP file as a download response
+            // Return the ZIP file as a download response.
             return new DataDownloadResponse(
                 $zipContent,
                 $zipInfo['filename'],
                 $zipInfo['mimeType']
             );
-
         } catch (DoesNotExistException $exception) {
             return new JSONResponse(['error' => 'Object not found'], 404);
         } catch (\Exception $exception) {
-            return new JSONResponse([
-                'error' => 'Failed to create ZIP file: ' . $exception->getMessage()
-            ], 500);
-        }
+            return new JSONResponse(
+                    [
+                        'error' => 'Failed to create ZIP file: '.$exception->getMessage(),
+                    ],
+                    500
+                    );
+        }//end try
 
     }//end downloadFiles()
+
+
+    /**
+     * Start batch vectorization of objects
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Batch vectorization status
+     */
+    public function vectorizeBatch(): JSONResponse
+    {
+        try {
+            $data      = $this->request->getParams();
+            $views     = $data['views'] ?? null;
+            $batchSize = (int) ($data['batchSize'] ?? 25);
+
+            // Get unified VectorizationService from container.
+            $vectorizationService = $this->container->get(\OCA\OpenRegister\Service\VectorizationService::class);
+
+            // Use unified vectorization service with 'object' entity type.
+            $result = $vectorizationService->vectorizeBatch(
+                    'object',
+                    [
+                        'views'      => $views,
+                        'batch_size' => $batchSize,
+                        'mode'       => 'serial',
+            // Objects use serial mode by default.
+                    ]
+                    );
+
+            return new JSONResponse(
+                    [
+                        'success' => true,
+                        'data'    => $result,
+                    ]
+                    );
+        } catch (\Exception $e) {
+            return new JSONResponse(
+                    [
+                        'success' => false,
+                        'error'   => $e->getMessage(),
+                    ],
+                    500
+                    );
+        }//end try
+
+    }//end vectorizeBatch()
+
+
+    /**
+     * Get object vectorization statistics
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Vectorization statistics
+     */
+    public function getObjectVectorizationStats(): JSONResponse
+    {
+        try {
+            // Get views parameter if provided.
+            $views = $this->request->getParam('views');
+            if (is_string($views)) {
+                $views = json_decode($views, true);
+            }
+
+            // Get ObjectService from container for view-aware counting.
+            $objectService = $this->container->get(\OCA\OpenRegister\Service\ObjectService::class);
+
+            // Count objects with view filter support.
+            $totalObjects = $objectService->searchObjects(
+                query: [
+                    '_count'  => true,
+                    '_source' => 'database',
+                ],
+                rbac: false,
+                multi: false,
+                ids: null,
+                uses: null,
+                views: $views
+            );
+
+            return new JSONResponse(
+                    [
+                        'success'       => true,
+                        'total_objects' => $totalObjects,
+                        'views'         => $views,
+                    ]
+                    );
+        } catch (\Exception $e) {
+            return new JSONResponse(
+                    [
+                        'success' => false,
+                        'error'   => $e->getMessage(),
+                    ],
+                    500
+                    );
+        }//end try
+
+    }//end getObjectVectorizationStats()
+
+
+    /**
+     * Get count of objects for vectorization
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Object count
+     */
+    public function getObjectVectorizationCount(): JSONResponse
+    {
+        try {
+            $schemas = $this->request->getParam('schemas');
+            if (is_string($schemas)) {
+                $schemas = explode(',', $schemas);
+            }
+
+                // TODO: Implement proper counting logic.
+            // For now, return a placeholder.
+            $count = 0;
+
+            return new JSONResponse(
+                    [
+                        'success' => true,
+                        'count'   => $count,
+                    ]
+                    );
+        } catch (\Exception $e) {
+            return new JSONResponse(
+                    [
+                        'success' => false,
+                        'error'   => $e->getMessage(),
+                    ],
+                    500
+                    );
+        }//end try
+
+    }//end getObjectVectorizationCount()
+
 
 }//end class

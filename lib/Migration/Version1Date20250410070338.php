@@ -1,5 +1,5 @@
 <?php
-// phpcs:ignoreFile
+// phpcs:ignoreFile.
 /**
  * Migration to add and modify columns in various tables and drop unused tables.
  *
@@ -36,11 +36,14 @@ class Version1Date20250410070338 extends SimpleMigrationStep
      *
      * @param IOutput        $output Output for the migration process
      * @param Closure       $schemaClosure The schema closure
-     * @param array<string> $options Migration options
+     * @param array<array-key, mixed> $options Migration options
      *
      * @phpstan-return ISchemaWrapper|null
+     *
      * @psalm-return ISchemaWrapper|null
-     * @return ISchemaWrapper|null The modified schema
+     * @return ISchemaWrapper
+     *
+     * @psalm-suppress MoreSpecificImplementedParamType
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
         /** @var ISchemaWrapper $schema */
@@ -90,10 +93,10 @@ class Version1Date20250410070338 extends SimpleMigrationStep
             $table->addIndex(['updated'], 'openregister_config_updated_idx');
         }
         
-        // Update the openregister_configurations table
+        // Update the openregister_configurations table.
         $table = $schema->getTable('openregister_schemas');
 
-        // Add the authorization column if it doesn't exist
+        // Add the authorization column if it doesn't exist.
         if (!$table->hasColumn('authorization')) {
             $table->addColumn('authorization', Types::JSON, [
                 'notnull' => false,
@@ -104,10 +107,10 @@ class Version1Date20250410070338 extends SimpleMigrationStep
             ]);
         }
 
-        // Update the openregister_registers table
+        // Update the openregister_registers table.
         $table = $schema->getTable('openregister_registers');
 
-        // Add the authorization column if it doesn't exist
+        // Add the authorization column if it doesn't exist.
         if (!$table->hasColumn('authorization')) {
             $table->addColumn('authorization', Types::JSON, [
                 'notnull' => false,

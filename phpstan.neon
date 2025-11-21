@@ -1,0 +1,17 @@
+parameters:
+    level: 5
+    paths:
+        - lib
+    bootstrapFiles:
+        - vendor/autoload.php
+    excludePaths:
+        - lib/Migration/*
+    scanDirectories:
+        - vendor/nextcloud/ocp
+    reportUnmatchedIgnoredErrors: false
+    ignoreErrors:
+        # Nextcloud internal classes that PHPStan might not recognize
+        - '#Call to an undefined method OC::#'
+        - '#Class OC not found#'
+        - '#Access to static property \$server on an unknown class OC#'
+

@@ -112,7 +112,6 @@ class RevertService
         $savedObject = $this->objectEntityMapper->update($revertedObject);
 
         // Dispatch revert event.
-        error_log("RevertService: Dispatching ObjectRevertedEvent for object ID: " . ($savedObject->getId() ?? 'NULL') . ", UUID: " . ($savedObject->getUuid() ?? 'NULL') . ", Until: " . ($until ?? 'NULL'));
         $this->eventDispatcher->dispatchTyped(new ObjectRevertedEvent($savedObject, $until));
 
         return $savedObject;

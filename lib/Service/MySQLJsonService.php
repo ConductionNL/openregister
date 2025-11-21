@@ -78,7 +78,7 @@ class MySQLJsonService implements IDatabaseJsonService
 
         return $builder;
 
-    }//end orderJson()
+    }//end orderInRoot()
 
 
     /**
@@ -164,6 +164,10 @@ class MySQLJsonService implements IDatabaseJsonService
                     $builder->andWhere("json_unquote(json_extract(object, :path$filter)) < (:value{$filter}before)");
                     break;
                 default:
+                    if (is_array($value) === false) {
+                        $value = explode(',', $value);
+                    }
+
                     // Add IN clause for array of values.
                     $builder->createNamedParameter(
                         value: $value,
@@ -257,8 +261,8 @@ class MySQLJsonService implements IDatabaseJsonService
         unset($filters['register'], $filters['schema'], $filters['updated'], $filters['created'], $filters['_queries']);
 
         foreach ($filters as $filter => $value) {
-            // Handle special @self.deleted filters
-            if (str_starts_with($filter, '@self.deleted')) {
+            // Handle special @self.deleted filters.
+            if (str_starts_with($filter, '@self.deleted') === true) {
                 $builder = $this->handleSelfDeletedFilter($builder, $filter, $value);
                 continue;
             }
@@ -271,11 +275,26 @@ class MySQLJsonService implements IDatabaseJsonService
                 placeHolder: ":path$filter"
             );
 
+            if ($value === 'IS NULL') {
+                $builder->andWhere(
+                    "json_unquote(json_extract(object, :path$filter)) = 'null' OR json_unquote(json_extract(object, :path$filter)) IS NULL"
+                );
+                continue;
+            } else if ($value === 'IS NOT NULL') {
+                $builder->andWhere(
+                    "json_unquote(json_extract(object, :path$filter)) != 'null' AND json_unquote(json_extract(object, :path$filter)) IS NOT NULL"
+                );
+                continue;
+            }
+
             if (is_array($value) === true && array_is_list($value) === false) {
                 // Handle complex filters (after/before).
                 $builder = $this->jsonFilterArray(builder: $builder, filter: $filter, values: $value);
                 continue;
-            } else if (is_array($value) === true) {
+            }
+
+            // @psalm-suppress RedundantCondition
+            if (is_array($value) === true) {
                 // Handle array of values with IN clause and contains check.
                 $builder->createNamedParameter(
                     value: $value,
@@ -288,20 +307,21 @@ class MySQLJsonService implements IDatabaseJsonService
                 continue;
             }
 
-			// Handle simple equality filter.
-			if (is_bool($value) === true) {
-				$builder->createNamedParameter(
-					value: $value,
-					type: IQueryBuilder::PARAM_BOOL,
-					placeHolder: ":value$filter"
-				);
-			} else {
-				$builder->createNamedParameter(
-					value: $value,
-					placeHolder: ":value$filter"
-				);
-			}
-
+            // Handle simple equality filter.
+            // After handling arrays and special string values, $value can still be bool, string, int, float, etc.
+            // @psalm-suppress TypeDoesNotContainType - $value can be bool, string, int, float, null, etc. at this point.
+            if (is_bool($value) === true) {
+                $builder->createNamedParameter(
+                    value: $value,
+                    type: IQueryBuilder::PARAM_BOOL,
+                    placeHolder: ":value$filter"
+                );
+            } else {
+                $builder->createNamedParameter(
+                    value: $value,
+                    placeHolder: ":value$filter"
+                );
+            }
 
             $builder->andWhere(
                 "json_extract(object, :path$filter) = :value$filter OR json_contains(json_extract(object, :path$filter), json_quote(:value$filter))"
@@ -311,6 +331,7 @@ class MySQLJsonService implements IDatabaseJsonService
         return $builder;
 
     }//end filterJson()
+
 
     /**
      * Handle @self.deleted.* filters for deleted object properties
@@ -324,95 +345,97 @@ class MySQLJsonService implements IDatabaseJsonService
     private function handleSelfDeletedFilter(IQueryBuilder $builder, string $filter, $value): IQueryBuilder
     {
         if ($filter === '@self.deleted') {
-            // Handle @self.deleted filter (check if object is deleted or not)
+            // Handle @self.deleted filter (check if object is deleted or not).
             if ($value === 'IS NOT NULL') {
-                $builder->andWhere($builder->expr()->isNotNull('deleted'));
+                $builder->andWhere($builder->expr()->isNotNull('o.deleted'));
             } else if ($value === 'IS NULL') {
-                $builder->andWhere($builder->expr()->isNull('deleted'));
+                $builder->andWhere($builder->expr()->isNull('o.deleted'));
             }
+
             return $builder;
         }
 
-        // Handle specific deleted properties like @self.deleted.deletedBy
+        // Handle specific deleted properties like @self.deleted.deletedBy.
         $deletedProperty = str_replace('@self.deleted.', '', $filter);
-        
-        // Create parameter name for this specific deleted filter
+
+        // Create parameter name for this specific deleted filter.
         $paramName = str_replace('@self.deleted.', 'deleted_', $filter);
         $paramName = str_replace('.', '_', $paramName);
 
         if ($value === 'IS NOT NULL') {
-            // Check if the deleted property exists and is not null
+            // Check if the deleted property exists and is not null.
             $builder->andWhere(
                 $builder->expr()->isNotNull(
                     $builder->createFunction(
-                        "JSON_UNQUOTE(JSON_EXTRACT(deleted, '$.$deletedProperty'))"
+                        "JSON_UNQUOTE(JSON_EXTRACT(o.deleted, '$.$deletedProperty'))"
                     )
                 )
             );
         } else if ($value === 'IS NULL') {
-            // Check if the deleted property is null or doesn't exist
+            // Check if the deleted property is null or doesn't exist.
             $builder->andWhere(
                 $builder->expr()->isNull(
                     $builder->createFunction(
-                        "JSON_UNQUOTE(JSON_EXTRACT(deleted, '$.$deletedProperty'))"
+                        "JSON_UNQUOTE(JSON_EXTRACT(o.deleted, '$.$deletedProperty'))"
                     )
                 )
             );
-        } else if (is_array($value)) {
-            // Handle array filters for deleted properties
+        } else if (is_array($value) === true) {
+            // Handle array filters for deleted properties.
             if (array_is_list($value) === false) {
-                // Handle complex filters (after/before) for deleted properties
+                // Handle complex filters (after/before) for deleted properties.
                 foreach ($value as $op => $filterValue) {
-                    $opParamName = $paramName . '_' . $op;
+                    $opParamName = $paramName.'_'.$op;
                     $builder->createNamedParameter(
                         value: $filterValue,
                         type: IQueryBuilder::PARAM_STR,
                         placeHolder: ":$opParamName"
                     );
-                    
+
                     switch ($op) {
                         case 'after':
                         case 'gte':
                         case '>=':
-                            $builder->andWhere("JSON_UNQUOTE(JSON_EXTRACT(deleted, '$.$deletedProperty')) >= :$opParamName");
+                            $builder->andWhere("JSON_UNQUOTE(JSON_EXTRACT(o.deleted, '$.$deletedProperty')) >= :$opParamName");
                             break;
                         case 'before':
                         case 'lte':
                         case '<=':
-                            $builder->andWhere("JSON_UNQUOTE(JSON_EXTRACT(deleted, '$.$deletedProperty')) <= :$opParamName");
+                            $builder->andWhere("JSON_UNQUOTE(JSON_EXTRACT(o.deleted, '$.$deletedProperty')) <= :$opParamName");
                             break;
                         case 'strictly_after':
                         case 'gt':
                         case '>':
-                            $builder->andWhere("JSON_UNQUOTE(JSON_EXTRACT(deleted, '$.$deletedProperty')) > :$opParamName");
+                            $builder->andWhere("JSON_UNQUOTE(JSON_EXTRACT(o.deleted, '$.$deletedProperty')) > :$opParamName");
                             break;
                         case 'strictly_before':
                         case 'lt':
                         case '<':
-                            $builder->andWhere("JSON_UNQUOTE(JSON_EXTRACT(deleted, '$.$deletedProperty')) < :$opParamName");
+                            $builder->andWhere("JSON_UNQUOTE(JSON_EXTRACT(o.deleted, '$.$deletedProperty')) < :$opParamName");
                             break;
-                    }
-                }
+                    }//end switch
+                }//end foreach
             } else {
-                // Handle IN array for deleted properties
+                // Handle IN array for deleted properties.
                 $builder->createNamedParameter(
                     value: $value,
                     type: IQueryBuilder::PARAM_STR_ARRAY,
                     placeHolder: ":$paramName"
                 );
-                $builder->andWhere("JSON_UNQUOTE(JSON_EXTRACT(deleted, '$.$deletedProperty')) IN (:$paramName)");
-            }
+                $builder->andWhere("JSON_UNQUOTE(JSON_EXTRACT(o.deleted, '$.$deletedProperty')) IN (:$paramName)");
+            }//end if
         } else {
-            // Handle simple equality filter for deleted properties
+            // Handle simple equality filter for deleted properties.
             $builder->createNamedParameter(
                 value: $value,
                 placeHolder: ":$paramName"
             );
-            $builder->andWhere("JSON_UNQUOTE(JSON_EXTRACT(deleted, '$.$deletedProperty')) = :$paramName");
-        }
+            $builder->andWhere("JSON_UNQUOTE(JSON_EXTRACT(o.deleted, '$.$deletedProperty')) = :$paramName");
+        }//end if
 
         return $builder;
-    }
+
+    }//end handleSelfDeletedFilter()
 
 
     /**
@@ -428,7 +451,9 @@ class MySQLJsonService implements IDatabaseJsonService
      * @param array         $filters  Additional filters to apply
      * @param string|null   $search   Optional search term
      *
-     * @return array Array of facets with counts for each field
+     * @return array[] Array of facets with counts for each field
+     *
+     * @psalm-return array<array>
      */
     public function getAggregations(IQueryBuilder $builder, array $fields, int $register, int $schema, array $filters=[], ?string $search=null): array
     {

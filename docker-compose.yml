@@ -1,9 +1,13 @@
-version: "3.5"
 volumes:
   nextcloud:
   apps:
   db:
   config:
+  solr:
+  zookeeper:
+  ollama:
+  presidio-models:
+  n8n:
 
 services:
   db:
@@ -17,6 +21,154 @@ services:
       - MYSQL_PASSWORD='!ChangeMe!'
       - MYSQL_DATABASE=nextcloud
       - MYSQL_USER=nextcloud
+
+  # ZooKeeper for SolrCloud coordination
+  zookeeper:
+    image: zookeeper:3.8
+    container_name: openregister-zookeeper
+    restart: always
+    environment:
+      - ZOO_MY_ID=1
+      - ZOO_SERVERS=server.1=0.0.0.0:2888:3888;2181
+    volumes:
+      - zookeeper:/data
+    ports:
+      - "2181:2181"
+
+  # SOLR in SolrCloud mode
+  solr:
+    image: solr:9-slim
+    container_name: openregister-solr
+    restart: always
+    ports:
+      - "8983:8983"
+    volumes:
+      - solr:/var/solr
+    environment:
+      - SOLR_HEAP=512m
+      - ZK_HOST=zookeeper:2181
+    depends_on:
+      - zookeeper
+    command:
+      - bash
+      - -c
+      - |
+        # Wait for ZooKeeper to be ready
+        echo "Waiting for ZooKeeper..."
+        while ! nc -z zookeeper 2181; do sleep 1; done
+        echo "ZooKeeper is ready!"
+        
+        # Start SOLR in SolrCloud mode
+        solr-foreground -c -z zookeeper:2181
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8983/solr/admin/info/system || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Ollama for local LLM inference
+  # Provides local AI models for chat, RAG, and agent functionality
+  # Access at: http://localhost:11434
+  # Pull models: docker exec openregister-ollama ollama pull llama3.2
+  ollama:
+    image: ollama/ollama:latest
+    container_name: openregister-ollama
+    restart: always
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+      # Allow multiple concurrent requests
+      - OLLAMA_NUM_PARALLEL=2
+      # Keep models loaded for faster responses
+      - OLLAMA_KEEP_ALIVE=15m
+    # Memory limits for larger models (Llama 3.2 8B, Mistral, etc.)
+    # GPU support enabled for NVIDIA GPUs
+    deploy:
+      resources:
+        limits:
+          memory: 16G  # Sufficient for 8B models
+        reservations:
+          memory: 8G   # Minimum required
+          devices:
+            - driver: nvidia
+              count: all  # Use all available GPUs
+              capabilities: [gpu]
+    # Shared memory for model loading
+    shm_size: '2gb'
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:11434/api/tags || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Presidio Analyzer for PII detection and NER
+  # Microsoft's open-source PII detection service (RECOMMENDED FOR PRODUCTION)
+  # Access at: http://localhost:5001
+  # Documentation: https://microsoft.github.io/presidio/
+  presidio-analyzer:
+    image: mcr.microsoft.com/presidio-analyzer:latest
+    container_name: openregister-presidio-analyzer
+    restart: always
+    ports:
+      - "5001:5001"
+    environment:
+      - GRPC_PORT=5001
+      - LOG_LEVEL=INFO
+      # Enable multi-language support
+      - PRESIDIO_ANALYZER_LANGUAGES=en,nl,de,fr,es
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 512M
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5001/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # n8n Workflow Automation
+  # Integrates with OpenRegister via Nextcloud webhooks
+  # Access at: http://localhost:5678
+  # Default credentials: admin / admin (change in production!)
+  # Documentation: https://docs.n8n.io
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: openregister-n8n
+    restart: always
+    ports:
+      - "5678:5678"
+    volumes:
+      - n8n:/home/node/.n8n
+    environment:
+      # Basic authentication
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=admin
+      - N8N_BASIC_AUTH_PASSWORD=admin
+      # Host configuration
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - WEBHOOK_URL=http://localhost:5678/
+      # Timezone
+      - GENERIC_TIMEZONE=Europe/Amsterdam
+      - TZ=Europe/Amsterdam
+      # Enable execution data saving for debugging
+      - EXECUTIONS_DATA_SAVE_ON_ERROR=all
+      - EXECUTIONS_DATA_SAVE_ON_SUCCESS=all
+      - EXECUTIONS_DATA_SAVE_MANUAL_EXECUTIONS=true
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:5678/healthz || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
   # init-ubuntu:
   #   image: ubuntu
@@ -35,6 +187,9 @@ services:
       - 8080:80
     links:
       - db
+      - solr
+      - ollama
+      - presidio-analyzer
     volumes:
       - nextcloud:/var/www/html:rw
       - ./custom_apps:/var/www/html/custom_apps
@@ -47,6 +202,10 @@ services:
       - TZ=Europe/Amsterdam
       - NEXTCLOUD_ADMIN_USER=admin
       - NEXTCLOUD_ADMIN_PASSWORD=admin
+      # PHP Configuration - Match production settings
+      - PHP_MEMORY_LIMIT=4G
+      - PHP_UPLOAD_LIMIT=2G
+      - PHP_POST_MAX_SIZE=2G
     # depends_on:
     #   init-ubuntu:
     #     condition: service_completed_successfully

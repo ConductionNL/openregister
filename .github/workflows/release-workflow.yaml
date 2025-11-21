@@ -3,8 +3,8 @@ name: Release Workflow
 on:
   push:
     branches:
-      - master
       - main
+      - master
   workflow_dispatch:
     inputs:
       version:
@@ -74,49 +74,122 @@ jobs:
       - run: npm run build
 
       # Step 7: Build composer dependencies
-      - run: composer i --no-dev
+      - run: composer install --no-dev --optimize-autoloader --classmap-authoritative
+      
+      # Step 7a: Verify vendor dependencies are installed
+      - name: Verify vendor dependencies
+        run: |
+          echo "Checking critical dependencies..."
+          
+          # Check that vendor directory exists and has content
+          if [ ! -d "vendor" ] || [ -z "$(ls -A vendor 2>/dev/null)" ]; then
+            echo "ERROR: vendor directory is missing or empty"
+            exit 1
+          fi
+          
+          # Check specific critical dependencies
+          missing_deps=0
+          
+          if [ ! -d "vendor/openai-php/client/src" ]; then
+            echo "ERROR: openai-php/client source files not found"
+            missing_deps=1
+          fi
+          
+          if [ ! -d "vendor/theodo-group/llphant/src" ]; then
+            echo "ERROR: theodo-group/llphant source files not found"
+            missing_deps=1
+          fi
+          
+          if [ $missing_deps -eq 1 ]; then
+            echo "HINT: Check composer.json dependencies and composer install output"
+            exit 1
+          fi
+          
+          echo "✓ All critical dependencies verified with source files"
 
       # Step 8: Copy the files into the package directory
       - name: Copy the package files into the package
         run: |
           mkdir -p package/${{ github.event.repository.name }}
           rsync -av --progress \
-            --exclude='package' \
-            --exclude='.git' \
-            --exclude='.github' \
-            --exclude='.vscode' \
-            --exclude='docker' \
-            --exclude='docs' \
-            --exclude='website' \
-            --exclude='node_modules' \
+            --exclude='/package' \
+            --exclude='/.git' \
+            --exclude='/.github' \
+            --exclude='/.cursor' \
+            --exclude='/.vscode' \
+            --exclude='/.nextcloud' \
+            --exclude='/docker' \
+            --exclude='/docker-compose.yml' \
+            --exclude='/docs' \
+            --exclude='/website' \
+            --exclude='/node_modules' \
             --exclude='/src' \
-            --exclude='test' \
-            --exclude='package-lock.json' \
-            --exclude='composer.lock' \
-            --exclude='composer-setup.php' \
+            --exclude='/phpcs-custom-sniffs' \
+            --exclude='/resources' \
+            --exclude='/tests' \
+            --exclude='/path' \
+            --exclude='/package.json' \
+            --exclude='/package-lock.json' \
+            --exclude='/composer.json' \
+            --exclude='/composer.lock' \
+            --exclude='/composer-setup.php' \
+            --exclude='/phpcs.xml' \
+            --exclude='/phpmd.xml' \
+            --exclude='/psalm.xml' \
+            --exclude='/phpunit.xml' \
+            --exclude='/.phpunit.cache' \
             --exclude='.phpunit.result.cache' \
-            --exclude='phpmd.xml' \
-            --exclude='signing-key.key' \
-            --exclude='package.json' \
-            --exclude='composer.json' \
-            --exclude='coverage.txt' \
-            --exclude='signing-cert.crt' \
-            --exclude='docker-compose.yml' \
-            --exclude='webpack.config.js' \
-            --exclude='.prettierrc' \
-            --exclude='psalm.xml' \
-            --exclude='phpunit.xml' \
-            --exclude='tsconfig.json' \
-            --exclude='changelog-ci-config.json' \
-            --exclude='jest.config.js' \
-            --exclude='.gitattributes' \
-            --exclude='.php-cs-fixer.dist.php' \
-            --exclude='.gitignore' \
-            --exclude='.eslintrc.js' \
-            --exclude='stylelint.config.js' \
-            --exclude='.babelrc' \
-            --exclude='.nvmrc' \
+            --exclude='/jest.config.js' \
+            --exclude='/webpack.config.js' \
+            --exclude='/tsconfig.json' \
+            --exclude='/.babelrc' \
+            --exclude='/.eslintrc.js' \
+            --exclude='/.prettierrc' \
+            --exclude='/stylelint.config.js' \
+            --exclude='/.spectral.yml' \
+            --exclude='/.gitignore' \
+            --exclude='/.gitattributes' \
+            --exclude='/.php-cs-fixer.dist.php' \
+            --exclude='/.nvmrc' \
+            --exclude='/changelog-ci-config.json' \
+            --exclude='/coverage.txt' \
+            --exclude='/signing-key.key' \
+            --exclude='/signing-cert.crt' \
+            --exclude='/openapi.json' \
+            --exclude='/*_ANALYSIS.md' \
+            --exclude='/*_FIX.md' \
+            --exclude='/*_SUMMARY.md' \
+            --exclude='/*_GUIDE.md' \
             ./ package/${{ github.event.repository.name }}/
+
+      # Step 8a: Verify package contents before creating tarball
+      - name: Verify package vendor directory
+        run: |
+          echo "Verifying package contains complete vendor dependencies..."
+          
+          # Check vendor directory was copied
+          if [ ! -d "package/${{ github.event.repository.name }}/vendor" ]; then
+            echo "ERROR: vendor directory not found in package"
+            exit 1
+          fi
+          
+          # Verify vendor packages have source files (not just LICENSE)
+          if [ ! -d "package/${{ github.event.repository.name }}/vendor/openai-php/client/src" ]; then
+            echo "ERROR: openai-php/client/src not found in package"
+            echo "HINT: Check rsync exclusion patterns - they may be too broad"
+            ls -la package/${{ github.event.repository.name }}/vendor/openai-php/client/ || true
+            exit 1
+          fi
+          
+          # Quick sanity check: count vendor subdirectories
+          vendor_count=$(find package/${{ github.event.repository.name }}/vendor -maxdepth 1 -type d | wc -l)
+          if [ $vendor_count -lt 10 ]; then
+            echo "WARNING: Only $vendor_count vendor directories found (expected 20+)"
+            echo "Listing vendor contents:"
+            ls -la package/${{ github.event.repository.name }}/vendor/
+          fi
+          
+          echo "✓ Package vendor directory verified with source files"
 
       # Step 9: Create the TAR.GZ archive
       - name: Create Tarball
@@ -127,6 +200,16 @@ jobs:
       - name: Sign the TAR.GZ file with OpenSSL
         run: |
           openssl dgst -sha512 -sign signing-key.key nextcloud-release.tar.gz | openssl base64 -out nextcloud-release.signature
+
+      # Step 10a: Upload tarball as workflow artifact for easy inspection
+      - name: Upload tarball as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nextcloud-release-${{ env.NEW_VERSION }}
+          path: |
+            nextcloud-release.tar.gz
+            nextcloud-release.signature
+          retention-days: 30
 
       # Step 11: Generate Git version information
       - name: Git Version
@@ -146,12 +229,6 @@ jobs:
       - name: Use the version
         run: |
           echo ${{ steps.version.outputs.version }}
-
-      # Step 15: Copy the package files into the package (this step seems redundant, consider removing)
-      - name: Copy the package files into the package
-        run: |
-          mkdir -p package/${{ github.event.repository.name }}
-          rsync -av --progress --exclude='package' --exclude='.git' ./ package/${{ github.event.repository.name }}/
 
       # Step 18: Create a new release on GitHub
       - name: Upload Release
@@ -185,7 +262,9 @@ jobs:
         run: |
           echo "App version: ${{ env.NEW_VERSION }}"
           echo "Tarball contents:"
-          tar -tvf nextcloud-release.tar.gz
+          tar -tvf nextcloud-release.tar.gz | head -100
+          echo "Verify vendor directory in tarball:"
+          tar -tvf nextcloud-release.tar.gz | grep "vendor/openai-php/client" | head -5 || echo "WARNING: openai-php/client not found in tarball!"
           echo "info.xml contents:"
           tar -xOf nextcloud-release.tar.gz ${{ env.APP_NAME }}/appinfo/info.xml
 

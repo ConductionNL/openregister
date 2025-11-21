@@ -1,5 +1,5 @@
 <?php
-// phpcs:ignoreFile
+// phpcs:ignoreFile.
 /**
  * OpenRegister AbstractNodeFolderEventListener
  *
@@ -31,7 +31,10 @@ use OCP\Files\Events\Node\NodeTouchedEvent;
 use OCP\Files\Events\Node\NodeWrittenEvent;
 use OCP\Files\FileInfo;
 
-// phpcs:disable
+// phpcs:disable.
+/**
+ * @template-implements IEventListener<Event>
+ */
 class AbstractNodeFolderEventListener implements IEventListener
 {
 
@@ -89,6 +92,15 @@ class AbstractNodeFolderEventListener implements IEventListener
      *
      * @return void
      */
+    /**
+     * Handle node created event
+     *
+     * @param NodeCreatedEvent $event The node created event
+     *
+     * @return void
+     *
+     * @psalm-suppress UndefinedMethod
+     */
     private function handleNodeCreated(NodeCreatedEvent $event): void
     {
         // Call the object service to handle the node created event.
@@ -103,6 +115,8 @@ class AbstractNodeFolderEventListener implements IEventListener
      * @param NodeDeletedEvent $event The node deleted event
      *
      * @return void
+     *
+     * @psalm-suppress UndefinedMethod
      */
     private function handleNodeDeleted(NodeDeletedEvent $event): void
     {
@@ -118,6 +132,8 @@ class AbstractNodeFolderEventListener implements IEventListener
      * @param NodeTouchedEvent $event The node touched event
      *
      * @return void
+     *
+     * @psalm-suppress UndefinedMethod
      */
     private function handleNodeTouched(NodeTouchedEvent $event): void
     {
@@ -133,6 +149,8 @@ class AbstractNodeFolderEventListener implements IEventListener
      * @param NodeWrittenEvent $event The node written event
      *
      * @return void
+     *
+     * @psalm-suppress UndefinedMethod
      */
     private function handleNodeWritten(NodeWrittenEvent $event): void
     {

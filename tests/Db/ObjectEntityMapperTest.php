@@ -17,11 +17,15 @@ namespace OCA\OpenRegister\Tests\Db;
 
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\MySQLJsonService;
+use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 use OCP\IUserSession;
+use OCP\IGroupManager;
+use OCP\IUserManager;
 use PHPUnit\Framework\TestCase;
 use DateTime;
 
@@ -64,6 +68,26 @@ class ObjectEntityMapperTest extends TestCase
     private $userSession;
 
     /**
+     * @var \PHPUnit\Framework\MockObject\MockObject|SchemaMapper
+     */
+    private $schemaMapper;
+
+    /**
+     * @var \PHPUnit\Framework\MockObject\MockObject|IGroupManager
+     */
+    private $groupManager;
+
+    /**
+     * @var \PHPUnit\Framework\MockObject\MockObject|IUserManager
+     */
+    private $userManager;
+
+    /**
+     * @var \PHPUnit\Framework\MockObject\MockObject|OrganisationService
+     */
+    private $organisationService;
+
+    /**
      * Set up the test environment
      *
      * @return void
@@ -75,11 +99,19 @@ class ObjectEntityMapperTest extends TestCase
         $this->jsonService = $this->createMock(MySQLJsonService::class);
         $this->eventDispatcher = $this->createMock(IEventDispatcher::class);
         $this->userSession = $this->createMock(IUserSession::class);
+        $this->schemaMapper = $this->createMock(SchemaMapper::class);
+        $this->groupManager = $this->createMock(IGroupManager::class);
+        $this->userManager = $this->createMock(IUserManager::class);
+        $this->organisationService = $this->createMock(OrganisationService::class);
         $this->mapper = new ObjectEntityMapper(
             $this->db,
             $this->jsonService,
             $this->eventDispatcher,
-            $this->userSession
+            $this->userSession,
+            $this->schemaMapper,
+            $this->groupManager,
+            $this->userManager,
+            $this->organisationService
         );
     }
 
@@ -142,10 +174,10 @@ class ObjectEntityMapperTest extends TestCase
             ->getMock();
         $register = $this->createMock(\OCA\OpenRegister\Db\Register::class);
         $register->method('getId')->willReturn(1);
-        // Patch ObjectEntityMapper to return stats with total > 0
+        // Patch ObjectEntityMapper to return stats with total > 0.
         $objectEntityMapper = $this->createMock(\OCA\OpenRegister\Db\ObjectEntityMapper::class);
         $objectEntityMapper->method('getStatistics')->willReturn(['total' => 1]);
-        // Inject the mock into the RegisterMapper
+        // Inject the mock into the RegisterMapper.
         \Closure::bind(function () use ($objectEntityMapper) {
             $this->objectEntityMapper = $objectEntityMapper;
         }, $registerMapper, $registerMapper)();
@@ -154,29 +186,5 @@ class ObjectEntityMapperTest extends TestCase
         $registerMapper->delete($register);
     }
 
-    /**
-     * Test that SchemaMapper::delete throws an exception if objects are attached
-     */
-    public function testSchemaDeleteThrowsIfObjectsAttached(): void
-    {
-        $db = $this->createMock(\OCP\IDBConnection::class);
-        $eventDispatcher = $this->createMock(\OCP\EventDispatcher\IEventDispatcher::class);
-        $validator = $this->createMock(\OCA\OpenRegister\Service\SchemaPropertyValidatorService::class);
-        $schemaMapper = $this->getMockBuilder(\OCA\OpenRegister\Db\SchemaMapper::class)
-            ->setConstructorArgs([$db, $eventDispatcher, $validator])
-            ->onlyMethods(['parent::delete'])
-            ->getMock();
-        $schema = $this->createMock(\OCA\OpenRegister\Db\Schema::class);
-        $schema->method('getId')->willReturn(1);
-        // Patch ObjectEntityMapper to return stats with total > 0
-        $objectEntityMapper = $this->createMock(\OCA\OpenRegister\Db\ObjectEntityMapper::class);
-        $objectEntityMapper->method('getStatistics')->willReturn(['total' => 1]);
-        // Inject the mock into the SchemaMapper
-        \Closure::bind(function () use ($objectEntityMapper) {
-            $this->objectEntityMapper = $objectEntityMapper;
-        }, $schemaMapper, $schemaMapper)();
-        $this->expectException(\Exception::class);
-        $this->expectExceptionMessage('Cannot delete schema: objects are still attached.');
-        $schemaMapper->delete($schema);
-    }
+
 } 

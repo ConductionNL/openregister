@@ -1,5 +1,5 @@
 <script setup>
-import { registerStore, navigationStore } from '../../store/store.js'
+import { registerStore, navigationStore, schemaStore } from '../../store/store.js'
 import { generateUrl } from '@nextcloud/router'
 import axios from '@nextcloud/axios'
 </script>
@@ -26,6 +26,17 @@ import axios from '@nextcloud/axios'
 					:reduce="option => option.value" />
 			</div>
 
+			<div v-if="exportFormat === 'csv'" class="formGroup">
+				<label>Schema:</label>
+				<NcSelect v-bind="schemaOptions"
+					:model-value="selectedSchemaValue"
+					:loading="schemaLoading"
+					:disabled="!registerStore.registerItem || schemaLoading"
+					aria-label-combobox="Select a schema"
+					placeholder="Select a schema"
+					@update:model-value="handleSchemaChange" />
+			</div>
+
 			<NcCheckboxRadioSwitch
 				:checked="includeObjects"
 				type="switch"
@@ -42,7 +53,7 @@ import axios from '@nextcloud/axios'
 				Cancel
 			</NcButton>
 			<NcButton
-				:disabled="loading"
+				:disabled="loading || (exportFormat === 'csv' && !schemaStore.schemaItem)"
 				type="primary"
 				@click="exportRegister">
 				<template #icon>
@@ -92,6 +103,7 @@ export default {
 				{ label: 'Excel', value: 'excel' },
 				{ label: 'CSV', value: 'csv' },
 			],
+			schemaLoading: false,
 		}
 	},
 	computed: {
@@ -99,6 +111,43 @@ export default {
 			const item = registerStore.registerItem
 			return item?.title || 'Unknown'
 		},
+		schemaOptions() {
+			if (!registerStore.registerItem) return { options: [] }
+
+			return {
+				options: schemaStore.schemaList
+					.filter(schema => registerStore.registerItem.schemas.includes(schema.id))
+					.map(schema => ({
+						value: schema.id,
+						label: schema.title,
+						title: schema.title,
+						schema,
+					})),
+				reduce: option => option.schema,
+				label: 'title',
+				getOptionLabel: option => {
+					return option.title || (option.schema && option.schema.title) || option.label || ''
+				},
+			}
+		},
+		selectedSchemaValue() {
+			if (!schemaStore.schemaItem) return null
+			const schema = schemaStore.schemaItem
+			return {
+				value: schema.id,
+				label: schema.title,
+				title: schema.title,
+				schema,
+			}
+		},
+	},
+	mounted() {
+		// Load schemas if not already loaded
+		if (!schemaStore.schemaList.length) {
+			this.schemaLoading = true
+			schemaStore.refreshSchemaList()
+				.finally(() => (this.schemaLoading = false))
+		}
 	},
 	methods: {
 		closeModal() {
@@ -107,11 +156,21 @@ export default {
 			this.error = null
 			this.includeObjects = true
 			this.exportFormat = 'configuration'
+			schemaStore.setSchemaItem(null)
+		},
+		handleSchemaChange(option) {
+			schemaStore.setSchemaItem(option)
 		},
 		async exportRegister() {
 			const item = registerStore.registerItem
 			if (!item?.id) {
 				this.error = 'Invalid register selected'
+				return
+			}
+
+			// For CSV export, schema must be selected
+			if (this.exportFormat === 'csv' && !schemaStore.schemaItem) {
+				this.error = 'Please select a schema for CSV export'
 				return
 			}
 
@@ -124,6 +183,11 @@ export default {
 				const params = {
 					format: this.exportFormat,
 					includeObjects: this.includeObjects,
+				}
+
+				// Add schema parameter for CSV exports
+				if (this.exportFormat === 'csv' && schemaStore.schemaItem) {
+					params.schema = schemaStore.schemaItem.id
 				}
 
 				// Make the API call

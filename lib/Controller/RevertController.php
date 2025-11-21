@@ -68,7 +68,10 @@ class RevertController extends Controller
      * @return JSONResponse A JSON response containing the reverted object
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|400|403|404|423|500, array<array-key, mixed>, array<never, never>>
      */
     public function revert(string $register, string $schema, string $id): JSONResponse
     {
@@ -87,8 +90,8 @@ class RevertController extends Controller
 
             if ($until === null) {
                 return new JSONResponse(
-                    ['error' => 'Must specify either datetime, auditTrailId, or version'],
-                    400
+                    data: ['error' => 'Must specify either datetime, auditTrailId, or version'],
+                    statusCode: 400
                 );
             }
 
@@ -97,22 +100,22 @@ class RevertController extends Controller
 
             // Revert the object.
             $revertedObject = $this->revertService->revert(
-                $register,
-                $schema,
-                $id,
-                $until,
-                $overwriteVersion
+                register: $register,
+                schema: $schema,
+                id: $id,
+                until: $until,
+                overwriteVersion: $overwriteVersion
             );
 
             return new JSONResponse($revertedObject->jsonSerialize());
         } catch (DoesNotExistException $e) {
-            return new JSONResponse(['error' => 'Object not found'], 404);
+            return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
         } catch (NotAuthorizedException $e) {
-            return new JSONResponse(['error' => $e->getMessage()], 403);
+            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 403);
         } catch (LockedException $e) {
-            return new JSONResponse(['error' => $e->getMessage()], 423);
+            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 423);
         } catch (\Exception $e) {
-            return new JSONResponse(['error' => $e->getMessage()], 500);
+            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }//end try
 
     }//end revert()

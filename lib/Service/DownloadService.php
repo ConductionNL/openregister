@@ -66,7 +66,9 @@ class DownloadService
      *
      * @throws Exception
      *
-     * @return array The response data for the download request.
+     * @return (int|string)[] The response data for the download request.
+     *
+     * @psalm-return array{error: string, statusCode: 400|404}
      */
     public function download(string $objectType, string | int $id, string $accept): array
     {
@@ -112,9 +114,9 @@ class DownloadService
      * @param string $jsonData The json data to create a json file with.
      * @param string $filename The filename, .json will be added after this filename in this function.
      *
-     * @return void
+     * @return never
      */
-    private function downloadJson(string $jsonData, string $filename): void
+    private function downloadJson(string $jsonData, string $filename)
     {
         // Define the file name and path for the temporary JSON file.
         $fileName = $filename.'.json';
@@ -158,7 +160,7 @@ class DownloadService
         return match ($objectTypeLower) {
             'schema' => $this->schemaMapper,
             'register' => $this->registerMapper,
-        default => throw new InvalidArgumentException("Unknown object type: $objectType"),
+            default => throw new InvalidArgumentException("Unknown object type: $objectType"),
         };
 
     }//end getMapper()

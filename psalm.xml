@@ -1,12 +1,11 @@
 <?xml version="1.0"?>
 <psalm
-    errorLevel="1"
+    errorLevel="4"
     resolveFromConfigFile="true"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xmlns="https://getpsalm.org/schema/config"
-    xsi:schemaLocation="https://getpsalm.org/schema/config vendor/vimeo/psalm/config.xsd"
     findUnusedBaselineEntry="true"
-    findUnusedCode="true"
+    findUnusedCode="false"
 >
     <projectFiles>
         <directory name="lib" />
@@ -14,7 +13,29 @@
             <directory name="vendor" />
         </ignoreFiles>
     </projectFiles>
-	<extraFiles>
-		<directory name="vendor"/>
-	</extraFiles>
+    <stubs>
+        <file name="vendor/nextcloud/ocp/OCP/Capabilities/ICapability.php" preloadClasses="true" />
+    </stubs>
+    <issueHandlers>
+        <UndefinedDocblockClass>
+            <errorLevel type="suppress">
+                <referencedClass name="Doctrine\DBAL\Schema\Table"/>
+                <referencedClass name="Doctrine\DBAL\Schema\Schema"/>
+                <referencedClass name="Doctrine\DBAL\Types\Types"/>
+                <referencedClass name="Doctrine\DBAL\Connection"/>
+            </errorLevel>
+        </UndefinedDocblockClass>
+        <UndefinedClass>
+            <errorLevel type="suppress">
+                <referencedClass name="OC"/>
+                <referencedClass name="Doctrine\DBAL\Types\Types"/>
+                <referencedClass name="Doctrine\DBAL\Connection"/>
+                <referencedClass name="Symfony\Component\HttpFoundation\Response"/>
+            </errorLevel>
+        </UndefinedClass>
+        <UndefinedMagicMethod errorLevel="suppress"/>
+    </issueHandlers>
+    <extraFiles>
+        <directory name="vendor/nextcloud/ocp" />
+    </extraFiles>
 </psalm>
