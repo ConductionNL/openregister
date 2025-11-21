@@ -268,7 +268,7 @@ class ObjectEntityMapper extends QBMapper
     private function isAdminOverrideEnabled(): bool
     {
         $rbacConfig = $this->appConfig->getValueString('openregister', 'rbac', '');
-        if (empty($rbacConfig)) {
+        if (empty($rbacConfig) === true) {
             return true; // Default to true if no RBAC config exists
         }
 
@@ -286,7 +286,7 @@ class ObjectEntityMapper extends QBMapper
             $stmt = $this->db->executeQuery('SHOW VARIABLES LIKE \'max_allowed_packet\'');
             $result = $stmt->fetch();
 
-            if ($result && isset($result['Value'])) {
+            if (($result !== null && $result !== false) === true && isset($result['Value']) === true) {
                 $maxPacketSize = (int) $result['Value'];
 
                 // Adjust buffer based on detected packet size.
@@ -328,7 +328,7 @@ class ObjectEntityMapper extends QBMapper
             $stmt = $this->db->executeQuery('SHOW VARIABLES LIKE \'max_allowed_packet\'');
             $result = $stmt->fetch();
 
-            if ($result && isset($result['Value'])) {
+            if (($result !== null && $result !== false) === true && isset($result['Value']) === true) {
                 return (int) $result['Value'];
             }
         } catch (\Exception $e) {
@@ -460,7 +460,7 @@ class ObjectEntityMapper extends QBMapper
                     'action'      => $action,
                     'object_uuid' => $object->getUuid(),
                     'schema_uuid' => $schemaUuid,
-                    'result'      => $exceptionResult === true ? 'allowed' : 'denied',
+                    'result'      => $this->getPermissionResult($exceptionResult),
                 ]);
                 return $exceptionResult;
             }
@@ -475,18 +475,18 @@ class ObjectEntityMapper extends QBMapper
         // Removed automatic published object access - this should be handled via explicit published filter.
 
         // Check schema-level permissions.
-        if ($schema !== null && $this->checkSchemaPermission($userId, $action, $schema)) {
+        if ($schema !== null && $this->checkSchemaPermission($userId, $action, $schema) === true) {
             return true;
         }
 
         // Check object-level group permissions.
         $objectGroups = $object->getGroups();
-        if (!empty($objectGroups) && isset($objectGroups[$action])) {
+        if (empty($objectGroups) === false && isset($objectGroups[$action]) === true) {
             if ($userObj !== null) {
                 $userGroups = $this->groupManager->getUserGroupIds($userObj);
                 $allowedGroups = $objectGroups[$action];
 
-                if (array_intersect($userGroups, $allowedGroups)) {
+                if (empty(array_intersect($userGroups, $allowedGroups)) === false) {
                     return true;
                 }
             }
@@ -539,12 +539,12 @@ class ObjectEntityMapper extends QBMapper
     private function checkSchemaPermission(string $userId, string $action, Schema $schema): bool
     {
         $authorization = $schema->getAuthorization();
-        if (empty($authorization)) {
+        if (empty($authorization) === true) {
             return true; // Open access if no authorization defined
         }
 
         // Check if action allows public access.
-        if (isset($authorization[$action]) && in_array('public', $authorization[$action], true)) {
+        if (isset($authorization[$action]) === true && in_array('public', $authorization[$action], true) === true) {
             return true;
         }
 
@@ -554,7 +554,7 @@ class ObjectEntityMapper extends QBMapper
             $userGroups = $this->groupManager->getUserGroupIds($userObj);
             $authorizedGroups = $authorization[$action] ?? [];
 
-            if (array_intersect($userGroups, $authorizedGroups)) {
+            if (empty(array_intersect($userGroups, $authorizedGroups)) === false) {
                 return true;
             }
         }
@@ -584,7 +584,7 @@ class ObjectEntityMapper extends QBMapper
         $rbacMethodStart = microtime(true);
 
         // If RBAC is disabled, skip all permission filtering.
-        if ($rbac === false || !$this->isRbacEnabled()) {
+        if ($rbac === false || $this->isRbacEnabled() === false) {
             $this->logger->info('🔓 RBAC DISABLED - Skipping authorization checks', [
                 'rbacParam' => $rbac,
                 'rbacConfigEnabled' => $this->isRbacEnabled()
@@ -657,7 +657,7 @@ class ObjectEntityMapper extends QBMapper
         $userGroups = $this->groupManager->getUserGroupIds($userObj);
 
         // Admin users and schema owners see everything.
-        if (in_array('admin', $userGroups)) {
+        if (in_array('admin', $userGroups) === true) {
             return; // No filtering needed for admin users
         }
 
@@ -1206,7 +1206,7 @@ class ObjectEntityMapper extends QBMapper
 
         $sortInRoot = [];
         foreach ($sort as $key => $descOrAsc) {
-            if (str_starts_with($key, '@self.')) {
+            if (str_starts_with($key, '@self.') === true) {
                 $sortInRoot = [str_replace('@self.', '', $key) => $descOrAsc];
                 break;
             }
