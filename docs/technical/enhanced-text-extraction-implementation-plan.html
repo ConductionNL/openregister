@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="en" dir="ltr" class="docs-wrapper plugin-docs plugin-id-default docs-version-current docs-doc-page docs-doc-id-technical/enhanced-text-extraction-implementation-plan" data-has-hydrated="false">
+<head>
+<meta charset="UTF-8">
+<meta name="generator" content="Docusaurus v3.7.0">
+<title data-rh="true">Enhanced Text Extraction Implementation Plan | Open Register</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://openregisters.app/docs/technical/enhanced-text-extraction-implementation-plan"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Enhanced Text Extraction Implementation Plan | Open Register"><meta data-rh="true" name="description" content="Overview"><meta data-rh="true" property="og:description" content="Overview"><link data-rh="true" rel="canonical" href="https://openregisters.app/docs/technical/enhanced-text-extraction-implementation-plan"><link data-rh="true" rel="alternate" href="https://openregisters.app/docs/technical/enhanced-text-extraction-implementation-plan" hreflang="en"><link data-rh="true" rel="alternate" href="https://openregisters.app/docs/technical/enhanced-text-extraction-implementation-plan" hreflang="x-default"><link rel="stylesheet" href="/assets/css/styles.3a202f4d.css">
+<script src="/assets/js/runtime~main.7c9b7be8.js" defer="defer"></script>
+<script src="/assets/js/main.8e6b3835.js" defer="defer"></script>
+</head>
+<body class="navigation-with-keyboard">
+<script>!function(){function t(t){document.documentElement.setAttribute("data-theme",t)}var e=function(){try{return new URLSearchParams(window.location.search).get("docusaurus-theme")}catch(t){}}()||function(){try{return window.localStorage.getItem("theme")}catch(t){}}();t(null!==e?e:"light")}(),function(){try{const n=new URLSearchParams(window.location.search).entries();for(var[t,e]of n)if(t.startsWith("docusaurus-data-")){var a=t.replace("docusaurus-data-","data-");document.documentElement.setAttribute(a,e)}}catch(t){}}()</script><div id="__docusaurus"><div role="region" aria-label="Skip to main content"><a class="skipToContent_fXgn" href="#__docusaurus_skipToContent_fallback">Skip to main content</a></div><nav aria-label="Main" class="navbar navbar--fixed-top"><div class="navbar__inner"><div class="navbar__items"><button aria-label="Toggle navigation bar" aria-expanded="false" class="navbar__toggle clean-btn" type="button"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><path stroke="currentColor" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2" d="M4 7h22M4 15h22M4 23h22"></path></svg></button><a class="navbar__brand" href="/"><div class="navbar__logo"><img src="/img/logo.svg" alt="Open Register Logo" class="themedComponent_mlkZ themedComponent--light_NVdE"><img src="/img/logo.svg" alt="Open Register Logo" class="themedComponent_mlkZ themedComponent--dark_xIcU"></div><b class="navbar__title text--truncate">Open Register</b></a><a aria-current="page" class="navbar__item navbar__link navbar__link--active" href="/docs/Integrations">Documentation</a></div><div class="navbar__items navbar__items--right"><a class="navbar__item navbar__link" href="/api">API Documentation</a><a href="https://github.com/conductionnl/openregister" target="_blank" rel="noopener noreferrer" class="navbar__item navbar__link">GitHub<svg width="13.5" height="13.5" aria-hidden="true" viewBox="0 0 24 24" class="iconExternalLink_nPIU"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"></path></svg></a><div class="toggle_vylO colorModeToggle_DEke"><button class="clean-btn toggleButton_gllP toggleButtonDisabled_aARS" type="button" disabled="" title="Switch between dark and light mode (currently light mode)" aria-label="Switch between dark and light mode (currently light mode)" aria-live="polite" aria-pressed="false"><svg viewBox="0 0 24 24" width="24" height="24" class="lightToggleIcon_pyhR"><path fill="currentColor" d="M12,9c1.65,0,3,1.35,3,3s-1.35,3-3,3s-3-1.35-3-3S10.35,9,12,9 M12,7c-2.76,0-5,2.24-5,5s2.24,5,5,5s5-2.24,5-5 S14.76,7,12,7L12,7z M2,13l2,0c0.55,0,1-0.45,1-1s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S1.45,13,2,13z M20,13l2,0c0.55,0,1-0.45,1-1 s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S19.45,13,20,13z M11,2v2c0,0.55,0.45,1,1,1s1-0.45,1-1V2c0-0.55-0.45-1-1-1S11,1.45,11,2z M11,20v2c0,0.55,0.45,1,1,1s1-0.45,1-1v-2c0-0.55-0.45-1-1-1C11.45,19,11,19.45,11,20z M5.99,4.58c-0.39-0.39-1.03-0.39-1.41,0 c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0s0.39-1.03,0-1.41L5.99,4.58z M18.36,16.95 c-0.39-0.39-1.03-0.39-1.41,0c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0c0.39-0.39,0.39-1.03,0-1.41 L18.36,16.95z M19.42,5.99c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06c-0.39,0.39-0.39,1.03,0,1.41 s1.03,0.39,1.41,0L19.42,5.99z M7.05,18.36c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06 c-0.39,0.39-0.39,1.03,0,1.41s1.03,0.39,1.41,0L7.05,18.36z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" class="darkToggleIcon_wfgR"><path fill="currentColor" d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27C17.45,17.19,14.93,19,12,19 c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z M12,3c-4.97,0-9,4.03-9,9s4.03,9,9,9s9-4.03,9-9c0-0.46-0.04-0.92-0.1-1.36 c-0.98,1.37-2.58,2.26-4.4,2.26c-2.98,0-5.4-2.42-5.4-5.4c0-1.81,0.89-3.42,2.26-4.4C12.92,3.04,12.46,3,12,3L12,3z"></path></svg></button></div><div class="navbarSearchContainer_Bca1"></div></div></div><div role="presentation" class="navbar-sidebar__backdrop"></div></nav><div id="__docusaurus_skipToContent_fallback" class="main-wrapper mainWrapper_z2l0"><div class="docsWrapper_hBAB"><button aria-label="Scroll back to top" class="clean-btn theme-back-to-top-button backToTopButton_sjWU" type="button"></button><div class="docRoot_UBD9"><aside class="theme-doc-sidebar-container docSidebarContainer_YfHR"><div class="sidebarViewport_aRkj"><div class="sidebar_njMd"><nav aria-label="Docs sidebar" class="menu thin-scrollbar menu_SIkG"><ul class="theme-doc-sidebar-menu menu__list"><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist" href="/docs/Integrations">Integrations Overview</a><button aria-label="Expand sidebar category &#x27;Integrations Overview&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/docs/Development/Services">Development</a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist" href="/docs/Features">Core Features</a><button aria-label="Expand sidebar category &#x27;Core Features&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/docs/Technical/vectorization-architecture">Technical</a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/docs/UseCases/clientRegisters">UseCases</a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/docs/api/bulk-operations">api</a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/docs/developers/external-app-optimization">developers</a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/docs/development/deeplinking-spot">development</a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/docs/features/ai">features</a></div></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/docs">Introduction</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/docs/intro">Introduction</a></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist menu__link--sublist-caret menu__link--active" role="button" aria-expanded="true" href="/docs/technical/vector-search-backends">technical</a></div><ul style="display:block;overflow:visible;height:auto" class="menu__list"><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs/technical/vector-search-backends">Vector Search Backends</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs/technical/text-extraction-implementation">Text Extraction Implementation</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs/technical/schemas">Schema Technical Documentation</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs/technical/faceting-performance">Hyper-Performant Faceting System</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs/technical/authorization-exceptions-performance">Authorization Exceptions Performance</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs/technical/text-extraction-entities">Text Extraction Database Entities</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs/technical/property-validation">Property Validation Test Matrix</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link menu__link--active" aria-current="page" tabindex="0" href="/docs/technical/enhanced-text-extraction-implementation-plan">Enhanced Text Extraction Implementation Plan</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs/technical/entity-relationship-model-updated">Entity Relationship Model Update</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs/technical/entity-relationships-addition">Entity Relationships Addition</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs/technical/entity-relationships-corrected">Entity Relationships Correction</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs/technical/text-extraction-readme">Text Extraction Quick Start</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs/technical/MultiTenancyImplementationStatus">Multi-Tenancy Implementation Status</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs/technical/MultiTenancyTestingResults">Multi-Tenancy API Testing Results</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs/technical/MultiTenancy_Implementation_Summary">Multi-Tenancy Implementation Summary</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs/technical/MultiTenancy_Test_Results">Multi-Tenancy Object Access Test Results</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs/technical/api-caching">API Caching System</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs/technical/array-faceting">Array Faceting</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs/technical/bulk-operations-implementation">Bulk Operations Implementation</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs/technical/cache-invalidation-system">Cache Invalidation System</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs/technical/file-processing-formats">File Processing: Supported Formats and Limits</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs/technical/import-export-implementation">Import/Export Implementation</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs/technical/import-export">Import and Export</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs/technical/import-service">Import Service</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs/technical/multi-tenancy-testing">Multi-Tenancy Testing Framework</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs/technical/organization-filter-consolidation">Organization Filter Consolidation</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs/technical/php">php</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs/technical/schema-based-facets">Schema-Based Faceting</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs/technical/solr-dashboard-management">SOLR Dashboard Management - Technical Implementation</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs/technical/solr-guzzle-migration">SOLR Guzzle Migration Progress</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs/technical/solr-published-only-indexing">Solr Published-Only Indexing</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs/technical/solr-setup-configuration">SOLR Setup and Configuration Guide</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs/technical/unified-faceting-system">Unified Faceting System</a></li></ul></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/docs/user/ai-conversations">user</a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/docs/user-guide/configuration/api-tokens">user-guide</a></div></li></ul></nav></div></div></aside><main class="docMainContainer_TBSr"><div class="container padding-top--md padding-bottom--lg"><div class="row"><div class="col docItemCol_VOVn"><div class="docItemContainer_Djhp"><article><nav class="theme-doc-breadcrumbs breadcrumbsContainer_Z_bl" aria-label="Breadcrumbs"><ul class="breadcrumbs" itemscope="" itemtype="https://schema.org/BreadcrumbList"><li class="breadcrumbs__item"><a aria-label="Home page" class="breadcrumbs__link" href="/"><svg viewBox="0 0 24 24" class="breadcrumbHomeIcon_YNFT"><path d="M10 19v-5h4v5c0 .55.45 1 1 1h3c.55 0 1-.45 1-1v-7h1.7c.46 0 .68-.57.33-.87L12.67 3.6c-.38-.34-.96-.34-1.34 0l-8.36 7.53c-.34.3-.13.87.33.87H5v7c0 .55.45 1 1 1h3c.55 0 1-.45 1-1z" fill="currentColor"></path></svg></a></li><li class="breadcrumbs__item"><span class="breadcrumbs__link">technical</span><meta itemprop="position" content="1"></li><li itemscope="" itemprop="itemListElement" itemtype="https://schema.org/ListItem" class="breadcrumbs__item breadcrumbs__item--active"><span class="breadcrumbs__link" itemprop="name">Enhanced Text Extraction Implementation Plan</span><meta itemprop="position" content="2"></li></ul></nav><div class="tocCollapsible_ETCw theme-doc-toc-mobile tocMobile_ITEo"><button type="button" class="clean-btn tocCollapsibleButton_TO0P">On this page</button></div><div class="theme-doc-markdown markdown"><header><h1>Enhanced Text Extraction Implementation Plan</h1></header>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="overview">Overview<a href="#overview" class="hash-link" aria-label="Direct link to Overview" title="Direct link to Overview">​</a></h2>
+<p>This document outlines the implementation plan for adding entity extraction, language detection, and language level assessment to OpenRegister&#x27;s text extraction system, including GDPR entity tracking capabilities.</p>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="documentation-created">Documentation Created<a href="#documentation-created" class="hash-link" aria-label="Direct link to Documentation Created" title="Direct link to Documentation Created">​</a></h2>
+<ol>
+<li>
+<p><strong><a href="/docs/features/text-extraction-enhanced">Enhanced Text Extraction &amp; GDPR Entity Tracking</a></strong></p>
+<ul>
+<li>Complete feature documentation</li>
+<li>Processing methods (local, external services, LLM, hybrid)</li>
+<li>GDPR entity register design</li>
+<li>Language detection and assessment</li>
+<li>Preparing for anonymization</li>
+<li>API endpoints</li>
+</ul>
+</li>
+<li>
+<p><strong><a href="/docs/features/text-extraction-sources">Text Extraction Sources: Files vs Objects</a></strong></p>
+<ul>
+<li>Visual separation of file and object processing paths</li>
+<li>Detailed flow diagrams for each source type</li>
+<li>Comparison and combined use cases</li>
+<li>Configuration options</li>
+</ul>
+</li>
+<li>
+<p><strong><a href="/docs/technical/text-extraction-entities">Text Extraction Database Entities</a></strong></p>
+<ul>
+<li>Complete database schema</li>
+<li>Entity relationship diagrams</li>
+<li>PHP entity classes</li>
+<li>Migration strategy</li>
+<li>Performance considerations</li>
+</ul>
+</li>
+</ol>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="key-features-added-to-documentation">Key Features Added to Documentation<a href="#key-features-added-to-documentation" class="hash-link" aria-label="Direct link to Key Features Added to Documentation" title="Direct link to Key Features Added to Documentation">​</a></h2>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="1-two-processing-paths">1. Two Processing Paths<a href="#1-two-processing-paths" class="hash-link" aria-label="Direct link to 1. Two Processing Paths" title="Direct link to 1. Two Processing Paths">​</a></h3>
+<h4 class="anchor anchorWithStickyNavbar_LWe7" id="file-path">File Path<a href="#file-path" class="hash-link" aria-label="Direct link to File Path" title="Direct link to File Path">​</a></h4>
+<div class="codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_biex"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">File Upload → Text Extraction (LLPhant/Dolphin) → Complete Text → Chunks</span><br></span></code></pre><div class="buttonGroup__atx"><button type="button" aria-label="Copy code to clipboard" title="Copy" class="clean-btn"><span class="copyButtonIcons_eSgA" aria-hidden="true"><svg viewBox="0 0 24 24" class="copyButtonIcon_y97N"><path fill="currentColor" d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"></path></svg><svg viewBox="0 0 24 24" class="copyButtonSuccessIcon_LjdS"><path fill="currentColor" d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"></path></svg></span></button></div></div></div>
+<h4 class="anchor anchorWithStickyNavbar_LWe7" id="object-path">Object Path<a href="#object-path" class="hash-link" aria-label="Direct link to Object Path" title="Direct link to Object Path">​</a></h4>
+<div class="codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_biex"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">Object Creation → Property Values → Text Blob → Chunks</span><br></span></code></pre><div class="buttonGroup__atx"><button type="button" aria-label="Copy code to clipboard" title="Copy" class="clean-btn"><span class="copyButtonIcons_eSgA" aria-hidden="true"><svg viewBox="0 0 24 24" class="copyButtonIcon_y97N"><path fill="currentColor" d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"></path></svg><svg viewBox="0 0 24 24" class="copyButtonSuccessIcon_LjdS"><path fill="currentColor" d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"></path></svg></span></button></div></div></div>
+<p>Both paths converge at chunks, which can then undergo:</p>
+<ul>
+<li>Text search indexing (Solr)</li>
+<li>Vector embeddings (RAG)</li>
+<li>Entity extraction (GDPR)</li>
+<li>Language detection</li>
+<li>Language level assessment</li>
+</ul>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="2-gdpr-entity-register">2. GDPR Entity Register<a href="#2-gdpr-entity-register" class="hash-link" aria-label="Direct link to 2. GDPR Entity Register" title="Direct link to 2. GDPR Entity Register">​</a></h3>
+<p><strong>Two new entities</strong>:</p>
+<ol>
+<li>
+<p><strong>Entity</strong>: Stores unique entities (persons, emails, organizations)</p>
+<ul>
+<li>UUID, type, value, category</li>
+<li>Detection timestamp and metadata</li>
+<li>Supports deduplication</li>
+</ul>
+</li>
+<li>
+<p><strong>EntityRelation</strong>: Links entities to chunk positions</p>
+<ul>
+<li>Entity ID + Chunk ID</li>
+<li>Precise character positions</li>
+<li>Confidence score and detection method</li>
+<li>Anonymization tracking</li>
+<li>Context for verification</li>
+</ul>
+</li>
+</ol>
+<p><strong>Prepared for anonymization</strong>:</p>
+<ul>
+<li>Precise position tracking</li>
+<li>Consistent replacement values</li>
+<li>Reversible anonymization</li>
+<li>Metadata preservation</li>
+</ul>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="3-language-detection--assessment">3. Language Detection &amp; Assessment<a href="#3-language-detection--assessment" class="hash-link" aria-label="Direct link to 3. Language Detection &amp; Assessment" title="Direct link to 3. Language Detection &amp; Assessment">​</a></h3>
+<p><strong>Chunk entity enhancements</strong>:</p>
+<ul>
+<li><code>language</code> field: ISO 639-1 codes (e.g., &#x27;en&#x27;, &#x27;nl&#x27;, &#x27;de&#x27;)</li>
+<li><code>language_level</code> field: Reading level (e.g., &#x27;B2&#x27;, &#x27;Grade 8&#x27;, &#x27;65&#x27;)</li>
+<li><code>language_confidence</code> field: Detection confidence (0.0-1.0)</li>
+<li><code>detection_method</code> field: How it was detected</li>
+</ul>
+<p><strong>Use cases</strong>:</p>
+<ul>
+<li>Multi-language content management</li>
+<li>Accessibility compliance (plain language)</li>
+<li>Content routing by language</li>
+<li>Readability assessment</li>
+</ul>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="4-multiple-processing-methods">4. Multiple Processing Methods<a href="#4-multiple-processing-methods" class="hash-link" aria-label="Direct link to 4. Multiple Processing Methods" title="Direct link to 4. Multiple Processing Methods">​</a></h3>
+<p>All enhancements support three methods:</p>
+<ol>
+<li><strong>Local Algorithms</strong>: Fast, privacy-friendly, no external deps</li>
+<li><strong>External Services</strong>: Specialized APIs (Presidio, NLDocs, Dolphin)</li>
+<li><strong>LLM Processing</strong>: Context-aware, handles ambiguity</li>
+<li><strong>Hybrid (Recommended)</strong>: Multiple methods with confidence scoring</li>
+</ol>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="5-extended-chunking-support">5. Extended Chunking Support<a href="#5-extended-chunking-support" class="hash-link" aria-label="Direct link to 5. Extended Chunking Support" title="Direct link to 5. Extended Chunking Support">​</a></h3>
+<p><strong>Email chunking</strong>:</p>
+<ul>
+<li>Segment by headers, body, signature, attachments</li>
+<li>Preserve sender/recipient as entities</li>
+<li>Link chunks to email threads</li>
+</ul>
+<p><strong>Chat message chunking</strong>:</p>
+<ul>
+<li>Process individual messages with context</li>
+<li>Track conversation participants as entities</li>
+<li>Maintain threading</li>
+<li>Include previous messages for coherent search</li>
+</ul>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="database-changes-required">Database Changes Required<a href="#database-changes-required" class="hash-link" aria-label="Direct link to Database Changes Required" title="Direct link to Database Changes Required">​</a></h2>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="new-tables">New Tables<a href="#new-tables" class="hash-link" aria-label="Direct link to New Tables" title="Direct link to New Tables">​</a></h3>
+<ol>
+<li><strong>oc_openregister_object_texts</strong>: Text blobs from objects</li>
+<li><strong>oc_openregister_chunks</strong>: Individual chunks (migrated from chunks_json)</li>
+<li><strong>oc_openregister_entities</strong>: GDPR entity register</li>
+<li><strong>oc_openregister_entity_relations</strong>: Entity-to-chunk mappings</li>
+</ol>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="updated-tables">Updated Tables<a href="#updated-tables" class="hash-link" aria-label="Direct link to Updated Tables" title="Direct link to Updated Tables">​</a></h3>
+<p><strong>oc_openregister_file_texts</strong>: No changes required (already has chunks_json)</p>
+<p>Future migration will move chunks from JSON to dedicated table for better querying.</p>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="implementation-phases">Implementation Phases<a href="#implementation-phases" class="hash-link" aria-label="Direct link to Implementation Phases" title="Direct link to Implementation Phases">​</a></h2>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="phase-1-database-schema-week-1">Phase 1: Database Schema (Week 1)<a href="#phase-1-database-schema-week-1" class="hash-link" aria-label="Direct link to Phase 1: Database Schema (Week 1)" title="Direct link to Phase 1: Database Schema (Week 1)">​</a></h3>
+<p><strong>Tasks</strong>:</p>
+<ol>
+<li>Create migration for new tables</li>
+<li>Create PHP entity classes</li>
+<li>Create mapper classes</li>
+<li>Add unit tests for entities</li>
+</ol>
+<p><strong>Deliverables</strong>:</p>
+<ul>
+<li><code>lib/Migration/Version1DateXXXXXXXX.php</code></li>
+<li><code>lib/Db/ObjectText.php</code></li>
+<li><code>lib/Db/Chunk.php</code></li>
+<li><code>lib/Db/GdprEntity.php</code></li>
+<li><code>lib/Db/EntityRelation.php</code></li>
+<li>Corresponding mapper classes</li>
+</ul>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="phase-2-object-text-extraction-week-2">Phase 2: Object Text Extraction (Week 2)<a href="#phase-2-object-text-extraction-week-2" class="hash-link" aria-label="Direct link to Phase 2: Object Text Extraction (Week 2)" title="Direct link to Phase 2: Object Text Extraction (Week 2)">​</a></h3>
+<p><strong>Tasks</strong>:</p>
+<ol>
+<li>Create ObjectTextExtractionService</li>
+<li>Integrate with SaveObject event</li>
+<li>Property value concatenation logic</li>
+<li>Chunking for objects</li>
+<li>Add configuration settings</li>
+</ol>
+<p><strong>Deliverables</strong>:</p>
+<ul>
+<li><code>lib/Service/ObjectTextExtractionService.php</code></li>
+<li>Integration with existing SaveObject flow</li>
+<li>Settings UI for object extraction</li>
+<li>Unit tests</li>
+</ul>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="phase-3-chunk-migration-week-3">Phase 3: Chunk Migration (Week 3)<a href="#phase-3-chunk-migration-week-3" class="hash-link" aria-label="Direct link to Phase 3: Chunk Migration (Week 3)" title="Direct link to Phase 3: Chunk Migration (Week 3)">​</a></h3>
+<p><strong>Tasks</strong>:</p>
+<ol>
+<li>Create ChunkService</li>
+<li>Migrate FileText chunks_json to Chunk table</li>
+<li>Background job for migration</li>
+<li>Update services to use Chunk entity</li>
+<li>Maintain backward compatibility</li>
+</ol>
+<p><strong>Deliverables</strong>:</p>
+<ul>
+<li><code>lib/Service/ChunkService.php</code></li>
+<li><code>lib/BackgroundJob/MigrateChunksJob.php</code></li>
+<li>Updated TextExtractionService</li>
+<li>Migration status tracking</li>
+</ul>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="phase-4-language-detection-week-4">Phase 4: Language Detection (Week 4)<a href="#phase-4-language-detection-week-4" class="hash-link" aria-label="Direct link to Phase 4: Language Detection (Week 4)" title="Direct link to Phase 4: Language Detection (Week 4)">​</a></h3>
+<p><strong>Tasks</strong>:</p>
+<ol>
+<li>Create LanguageDetectionService</li>
+<li>Implement local algorithm (lingua or similar)</li>
+<li>Implement API integration (optional)</li>
+<li>Implement LLM integration (optional)</li>
+<li>Add background job for batch processing</li>
+<li>Add configuration UI</li>
+</ol>
+<p><strong>Deliverables</strong>:</p>
+<ul>
+<li><code>lib/Service/LanguageDetectionService.php</code></li>
+<li><code>lib/BackgroundJob/DetectLanguageJob.php</code></li>
+<li>Settings UI for language detection</li>
+<li>Unit tests</li>
+</ul>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="phase-5-language-level-assessment-week-5">Phase 5: Language Level Assessment (Week 5)<a href="#phase-5-language-level-assessment-week-5" class="hash-link" aria-label="Direct link to Phase 5: Language Level Assessment (Week 5)" title="Direct link to Phase 5: Language Level Assessment (Week 5)">​</a></h3>
+<p><strong>Tasks</strong>:</p>
+<ol>
+<li>Create LanguageLevelService</li>
+<li>Implement readability formulas (Flesch-Kincaid, etc.)</li>
+<li>Implement API integration (optional)</li>
+<li>Implement LLM integration (optional)</li>
+<li>Add background job</li>
+<li>Add configuration UI</li>
+</ol>
+<p><strong>Deliverables</strong>:</p>
+<ul>
+<li><code>lib/Service/LanguageLevelService.php</code></li>
+<li><code>lib/BackgroundJob/AssessLanguageLevelJob.php</code></li>
+<li>Settings UI for level assessment</li>
+<li>Unit tests</li>
+</ul>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="phase-6-entity-extraction-week-6-7">Phase 6: Entity Extraction (Week 6-7)<a href="#phase-6-entity-extraction-week-6-7" class="hash-link" aria-label="Direct link to Phase 6: Entity Extraction (Week 6-7)" title="Direct link to Phase 6: Entity Extraction (Week 6-7)">​</a></h3>
+<p><strong>Tasks</strong>:</p>
+<ol>
+<li>Create EntityExtractionService</li>
+<li>Implement regex patterns (local)</li>
+<li>Implement Presidio integration (optional)</li>
+<li>Implement LLM integration (optional)</li>
+<li>Entity deduplication logic</li>
+<li>EntityRelation creation</li>
+<li>Background job for batch processing</li>
+<li>Add configuration UI</li>
+</ol>
+<p><strong>Deliverables</strong>:</p>
+<ul>
+<li><code>lib/Service/EntityExtractionService.php</code></li>
+<li><code>lib/BackgroundJob/ExtractEntitiesJob.php</code></li>
+<li>Settings UI for entity extraction</li>
+<li>Unit tests</li>
+</ul>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="phase-7-gdpr-register-ui-week-8">Phase 7: GDPR Register UI (Week 8)<a href="#phase-7-gdpr-register-ui-week-8" class="hash-link" aria-label="Direct link to Phase 7: GDPR Register UI (Week 8)" title="Direct link to Phase 7: GDPR Register UI (Week 8)">​</a></h3>
+<p><strong>Tasks</strong>:</p>
+<ol>
+<li>Create EntityController</li>
+<li>Create Vue components for entity list</li>
+<li>Entity details view</li>
+<li>Occurrence list</li>
+<li>GDPR report generation</li>
+<li>Export functionality</li>
+<li>Search and filtering</li>
+</ol>
+<p><strong>Deliverables</strong>:</p>
+<ul>
+<li><code>lib/Controller/EntityController.php</code></li>
+<li><code>src/views/gdpr/EntitiesIndex.vue</code></li>
+<li><code>src/views/gdpr/EntityDetails.vue</code></li>
+<li><code>src/modals/gdpr/GdprReportModal.vue</code></li>
+<li>API endpoints</li>
+</ul>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="phase-8-email--chat-chunking-week-9">Phase 8: Email &amp; Chat Chunking (Week 9)<a href="#phase-8-email--chat-chunking-week-9" class="hash-link" aria-label="Direct link to Phase 8: Email &amp; Chat Chunking (Week 9)" title="Direct link to Phase 8: Email &amp; Chat Chunking (Week 9)">​</a></h3>
+<p><strong>Tasks</strong>:</p>
+<ol>
+<li>Create EmailChunkingService</li>
+<li>Create ChatChunkingService</li>
+<li>Integration with Mail app (if available)</li>
+<li>Integration with Talk app (if available)</li>
+<li>Special handling for email metadata</li>
+<li>Conversation threading</li>
+</ol>
+<p><strong>Deliverables</strong>:</p>
+<ul>
+<li><code>lib/Service/EmailChunkingService.php</code></li>
+<li><code>lib/Service/ChatChunkingService.php</code></li>
+<li>Event listeners for Mail/Talk</li>
+<li>Unit tests</li>
+</ul>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="phase-9-testing--documentation-week-10">Phase 9: Testing &amp; Documentation (Week 10)<a href="#phase-9-testing--documentation-week-10" class="hash-link" aria-label="Direct link to Phase 9: Testing &amp; Documentation (Week 10)" title="Direct link to Phase 9: Testing &amp; Documentation (Week 10)">​</a></h3>
+<p><strong>Tasks</strong>:</p>
+<ol>
+<li>Integration tests for all services</li>
+<li>Performance testing</li>
+<li>API documentation updates</li>
+<li>User documentation updates</li>
+<li>Admin guide for GDPR features</li>
+<li>Video tutorials (optional)</li>
+</ol>
+<p><strong>Deliverables</strong>:</p>
+<ul>
+<li>Full test coverage</li>
+<li>Updated API documentation</li>
+<li>User guides</li>
+<li>Admin documentation</li>
+</ul>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="phase-10-deployment--monitoring-week-11">Phase 10: Deployment &amp; Monitoring (Week 11)<a href="#phase-10-deployment--monitoring-week-11" class="hash-link" aria-label="Direct link to Phase 10: Deployment &amp; Monitoring (Week 11)" title="Direct link to Phase 10: Deployment &amp; Monitoring (Week 11)">​</a></h3>
+<p><strong>Tasks</strong>:</p>
+<ol>
+<li>Beta deployment</li>
+<li>Monitor background jobs</li>
+<li>Performance tuning</li>
+<li>Bug fixes</li>
+<li>Collect user feedback</li>
+<li>Production deployment</li>
+</ol>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="configuration-structure">Configuration Structure<a href="#configuration-structure" class="hash-link" aria-label="Direct link to Configuration Structure" title="Direct link to Configuration Structure">​</a></h2>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="settings--openregister--text-analysis">Settings → OpenRegister → Text Analysis<a href="#settings--openregister--text-analysis" class="hash-link" aria-label="Direct link to Settings → OpenRegister → Text Analysis" title="Direct link to Settings → OpenRegister → Text Analysis">​</a></h3>
+<div class="codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_biex"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">┌─ Text Extraction ─────────────────────────────┐</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│ ☑ Enable Object Text Extraction              │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│ ☑ Enable File Text Extraction                │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│                                                │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│ Chunking Strategy: [Recursive ▼]              │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│ Chunk Size: [1000] characters                 │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│ Chunk Overlap: [200] characters               │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">└────────────────────────────────────────────────┘</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">┌─ Language Detection ──────────────────────────┐</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│ ☑ Enable Language Detection                   │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│                                                │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│ Detection Method: [Hybrid ▼]                  │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│   • Local Algorithm                           │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│   • External API (optional)                   │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│   • LLM (optional)                            │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│                                                │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│ Confidence Threshold: [0.70] (0.0-1.0)        │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">└────────────────────────────────────────────────┘</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">┌─ Language Level Assessment ───────────────────┐</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│ ☑ Enable Language Level Assessment            │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│                                                │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│ Assessment Method: [Formula ▼]                │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│ Scale: [CEFR ▼]                               │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">└────────────────────────────────────────────────┘</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">┌─ Entity Extraction (GDPR) ────────────────────┐</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│ ☑ Enable Entity Extraction                    │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│                                                │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│ Extraction Method: [Hybrid ▼]                 │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│   • Local Patterns: ☑ Enabled                 │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│   • Presidio API: ☐ Enabled (API key req.)    │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│   • LLM: ☑ Enabled                            │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│                                                │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│ Entity Types to Detect:                       │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│   ☑ Persons                                   │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│   ☑ Email Addresses                           │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│   ☑ Phone Numbers                             │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│   ☑ Organizations                             │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│   ☑ Locations                                 │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│   ☑ Dates of Birth                            │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│   ☐ ID Numbers                                │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│   ☐ Bank Accounts                             │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│   ☐ IP Addresses                              │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│                                                │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│ Confidence Threshold: [0.80] (0.0-1.0)        │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│ Context Window: [100] characters              │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│                                                │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│ [View GDPR Register] [Generate Report]        │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">└────────────────────────────────────────────────┘</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">┌─ Vector Embeddings (RAG) ─────────────────────┐</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│ ☑ Enable Vectorization                        │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│                                                │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│ Embedding Model: [OpenAI text-embedding-3 ▼]  │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│ Vector Backend: [Solr ▼]                      │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">└────────────────────────────────────────────────┘</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">┌─ Processing ──────────────────────────────────┐</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│ Background Job Interval: [5] minutes          │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│ Batch Size: [100] chunks per job              │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│                                                │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│ [Process Pending Chunks Now]                  │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│ [Reprocess All Chunks]                        │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">└────────────────────────────────────────────────┘</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">┌─ Statistics ──────────────────────────────────┐</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│ Total Chunks: 145,782                         │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│ Languages Detected: 8                         │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│ Entities Found: 2,341                         │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│ Pending Processing: 234                       │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│                                                │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│ Top Languages:                                │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│   • English: 98,452 chunks (67.5%)            │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│   • Dutch: 42,119 chunks (28.9%)              │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│   • German: 5,211 chunks (3.6%)               │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">└────────────────────────────────────────────────┘</span><br></span></code></pre><div class="buttonGroup__atx"><button type="button" aria-label="Copy code to clipboard" title="Copy" class="clean-btn"><span class="copyButtonIcons_eSgA" aria-hidden="true"><svg viewBox="0 0 24 24" class="copyButtonIcon_y97N"><path fill="currentColor" d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"></path></svg><svg viewBox="0 0 24 24" class="copyButtonSuccessIcon_LjdS"><path fill="currentColor" d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"></path></svg></span></button></div></div></div>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="api-endpoints">API Endpoints<a href="#api-endpoints" class="hash-link" aria-label="Direct link to API Endpoints" title="Direct link to API Endpoints">​</a></h2>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="chunks">Chunks<a href="#chunks" class="hash-link" aria-label="Direct link to Chunks" title="Direct link to Chunks">​</a></h3>
+<div class="codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_biex"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">GET  /api/chunks</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">GET  /api/chunks/{id}</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">POST /api/chunks/{id}/analyze</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">GET  /api/chunks/languages</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">GET  /api/chunks/levels</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">POST /api/chunks/batch-analyze</span><br></span></code></pre><div class="buttonGroup__atx"><button type="button" aria-label="Copy code to clipboard" title="Copy" class="clean-btn"><span class="copyButtonIcons_eSgA" aria-hidden="true"><svg viewBox="0 0 24 24" class="copyButtonIcon_y97N"><path fill="currentColor" d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"></path></svg><svg viewBox="0 0 24 24" class="copyButtonSuccessIcon_LjdS"><path fill="currentColor" d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"></path></svg></span></button></div></div></div>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="entities-gdpr">Entities (GDPR)<a href="#entities-gdpr" class="hash-link" aria-label="Direct link to Entities (GDPR)" title="Direct link to Entities (GDPR)">​</a></h3>
+<div class="codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_biex"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">GET  /api/entities</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">GET  /api/entities/{id}</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">GET  /api/entities/{id}/occurrences</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">POST /api/entities/{id}/anonymize</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">GET  /api/gdpr/report</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">POST /api/gdpr/export</span><br></span></code></pre><div class="buttonGroup__atx"><button type="button" aria-label="Copy code to clipboard" title="Copy" class="clean-btn"><span class="copyButtonIcons_eSgA" aria-hidden="true"><svg viewBox="0 0 24 24" class="copyButtonIcon_y97N"><path fill="currentColor" d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"></path></svg><svg viewBox="0 0 24 24" class="copyButtonSuccessIcon_LjdS"><path fill="currentColor" d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"></path></svg></span></button></div></div></div>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="object-text">Object Text<a href="#object-text" class="hash-link" aria-label="Direct link to Object Text" title="Direct link to Object Text">​</a></h3>
+<div class="codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_biex"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">GET  /api/object-texts</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">GET  /api/object-texts/{id}</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">POST /api/objects/{id}/extract-text</span><br></span></code></pre><div class="buttonGroup__atx"><button type="button" aria-label="Copy code to clipboard" title="Copy" class="clean-btn"><span class="copyButtonIcons_eSgA" aria-hidden="true"><svg viewBox="0 0 24 24" class="copyButtonIcon_y97N"><path fill="currentColor" d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"></path></svg><svg viewBox="0 0 24 24" class="copyButtonSuccessIcon_LjdS"><path fill="currentColor" d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"></path></svg></span></button></div></div></div>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="service-architecture">Service Architecture<a href="#service-architecture" class="hash-link" aria-label="Direct link to Service Architecture" title="Direct link to Service Architecture">​</a></h2>
+<div class="codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_biex"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">TextExtractionService (existing)</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  ├─ FileTextExtractionService (existing)</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  └─ ObjectTextExtractionService (new)</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">ChunkService (new)</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  ├─ createChunksFromFile()</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  ├─ createChunksFromObject()</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  ├─ migrateFromJson()</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  └─ getChunksBySource()</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">EnhancementService (new)</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  ├─ LanguageDetectionService</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  │   ├─ detectLocal()</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  │   ├─ detectApi()</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  │   └─ detectLlm()</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  ├─ LanguageLevelService</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  │   ├─ assessFormula()</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  │   ├─ assessApi()</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  │   └─ assessLlm()</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  └─ EntityExtractionService</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">      ├─ extractLocal()</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">      ├─ extractPresidio()</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">      ├─ extractLlm()</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">      └─ createEntityRelations()</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">GdprService (new)</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  ├─ generateReport()</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  ├─ findEntityOccurrences()</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  ├─ anonymizeEntity()</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  └─ exportGdprData()</span><br></span></code></pre><div class="buttonGroup__atx"><button type="button" aria-label="Copy code to clipboard" title="Copy" class="clean-btn"><span class="copyButtonIcons_eSgA" aria-hidden="true"><svg viewBox="0 0 24 24" class="copyButtonIcon_y97N"><path fill="currentColor" d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"></path></svg><svg viewBox="0 0 24 24" class="copyButtonSuccessIcon_LjdS"><path fill="currentColor" d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"></path></svg></span></button></div></div></div>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="background-jobs">Background Jobs<a href="#background-jobs" class="hash-link" aria-label="Direct link to Background Jobs" title="Direct link to Background Jobs">​</a></h2>
+<ol>
+<li><strong>MigrateChunksJob</strong>: Migrate chunks from JSON to table</li>
+<li><strong>ProcessChunksJob</strong>: Apply enhancements to pending chunks</li>
+<li><strong>DetectLanguageJob</strong>: Batch language detection</li>
+<li><strong>AssessLanguageLevelJob</strong>: Batch level assessment</li>
+<li><strong>ExtractEntitiesJob</strong>: Batch entity extraction</li>
+<li><strong>UpdateEntityStatsJob</strong>: Update entity occurrence counts</li>
+</ol>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="performance-targets">Performance Targets<a href="#performance-targets" class="hash-link" aria-label="Direct link to Performance Targets" title="Direct link to Performance Targets">​</a></h2>
+<ul>
+<li><strong>Object text extraction</strong>: &lt;100ms per object</li>
+<li><strong>Chunk creation</strong>: &lt;50ms per 100KB text</li>
+<li><strong>Language detection (local)</strong>: &lt;10ms per chunk</li>
+<li><strong>Language level (formula)</strong>: &lt;20ms per chunk</li>
+<li><strong>Entity extraction (local)</strong>: &lt;100ms per chunk</li>
+<li><strong>GDPR report generation</strong>: &lt;5s for 10,000 entities</li>
+</ul>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="testing-strategy">Testing Strategy<a href="#testing-strategy" class="hash-link" aria-label="Direct link to Testing Strategy" title="Direct link to Testing Strategy">​</a></h2>
+<ol>
+<li><strong>Unit Tests</strong>: All services and entities</li>
+<li><strong>Integration Tests</strong>: End-to-end flows</li>
+<li><strong>Performance Tests</strong>: Background job processing</li>
+<li><strong>Load Tests</strong>: 10,000+ files and objects</li>
+<li><strong>API Tests</strong>: All endpoints</li>
+<li><strong>UI Tests</strong>: GDPR register interface</li>
+</ol>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="security-considerations">Security Considerations<a href="#security-considerations" class="hash-link" aria-label="Direct link to Security Considerations" title="Direct link to Security Considerations">​</a></h2>
+<ol>
+<li><strong>Access Control</strong>: GDPR register admin-only</li>
+<li><strong>Encryption</strong>: Entities encrypted at rest</li>
+<li><strong>Audit Trail</strong>: Log all entity access</li>
+<li><strong>Data Minimization</strong>: Only extract necessary entities</li>
+<li><strong>Retention</strong>: Configurable entity retention periods</li>
+<li><strong>Export</strong>: Secure GDPR data export</li>
+</ol>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="compliance">Compliance<a href="#compliance" class="hash-link" aria-label="Direct link to Compliance" title="Direct link to Compliance">​</a></h2>
+<ul>
+<li><strong>GDPR</strong>: Complete entity tracking for data subject requests</li>
+<li><strong>Right to Erasure</strong>: Prepared for anonymization</li>
+<li><strong>Data Mapping</strong>: Know where all PII exists</li>
+<li><strong>Audit Trail</strong>: Complete access logging</li>
+<li><strong>Retention</strong>: Configurable data retention</li>
+</ul>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="next-steps">Next Steps<a href="#next-steps" class="hash-link" aria-label="Direct link to Next Steps" title="Direct link to Next Steps">​</a></h2>
+<ol>
+<li>Review this implementation plan with stakeholders</li>
+<li>Prioritize phases based on business needs</li>
+<li>Allocate resources (developers, QA, etc.)</li>
+<li>Set up development environment</li>
+<li>Create feature branch</li>
+<li>Begin Phase 1 implementation</li>
+</ol>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="questions-for-stakeholders">Questions for Stakeholders<a href="#questions-for-stakeholders" class="hash-link" aria-label="Direct link to Questions for Stakeholders" title="Direct link to Questions for Stakeholders">​</a></h2>
+<ol>
+<li>Which entity types are most important for initial release?</li>
+<li>Should we integrate with external services (Presidio, etc.) or start with local only?</li>
+<li>What is the target timeline for GDPR compliance?</li>
+<li>Are there specific languages to prioritize for detection?</li>
+<li>Should email/chat chunking be in first release or later?</li>
+<li>What is the performance budget for background job processing?</li>
+<li>Are there existing GDPR workflows to integrate with?</li>
+</ol>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="success-metrics">Success Metrics<a href="#success-metrics" class="hash-link" aria-label="Direct link to Success Metrics" title="Direct link to Success Metrics">​</a></h2>
+<ul>
+<li><strong>Coverage</strong>: 100% of files and objects chunked</li>
+<li><strong>Accuracy</strong>: &gt;90% entity detection accuracy</li>
+<li><strong>Performance</strong>: &lt;5min to process 1000 files</li>
+<li><strong>Adoption</strong>: GDPR register used for data subject requests</li>
+<li><strong>Compliance</strong>: Pass GDPR audit</li>
+<li><strong>User Satisfaction</strong>: Positive feedback on search quality</li>
+</ul>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="conclusion">Conclusion<a href="#conclusion" class="hash-link" aria-label="Direct link to Conclusion" title="Direct link to Conclusion">​</a></h2>
+<p>This enhanced text extraction system provides OpenRegister with:</p>
+<p>✅ Unified processing for files and objects<br>
+<!-- -->✅ GDPR compliance with entity tracking<br>
+<!-- -->✅ Language detection and assessment<br>
+<!-- -->✅ Prepared for anonymization<br>
+<!-- -->✅ Extended support for emails and chats<br>
+<!-- -->✅ Flexible processing methods (local, API, LLM)<br>
+<!-- -->✅ Comprehensive documentation<br>
+<!-- -->✅ Clear implementation roadmap</p>
+<p>The system is designed to be implemented incrementally, with each phase delivering value independently while building toward the complete feature set.</p></div><footer class="theme-doc-footer docusaurus-mt-lg"><div class="row margin-top--sm theme-doc-footer-edit-meta-row"><div class="col"><a href="https://github.com/conductionnl/openregister/tree/main/website/docs/technical/enhanced-text-extraction-implementation-plan.md" target="_blank" rel="noopener noreferrer" class="theme-edit-this-page"><svg fill="currentColor" height="20" width="20" viewBox="0 0 40 40" class="iconEdit_Z9Sw" aria-hidden="true"><g><path d="m34.5 11.7l-3 3.1-6.3-6.3 3.1-3q0.5-0.5 1.2-0.5t1.1 0.5l3.9 3.9q0.5 0.4 0.5 1.1t-0.5 1.2z m-29.5 17.1l18.4-18.5 6.3 6.3-18.4 18.4h-6.3v-6.2z"></path></g></svg>Edit this page</a></div><div class="col lastUpdated_JAkA"></div></div></footer></article><nav class="pagination-nav docusaurus-mt-lg" aria-label="Docs pages"><a class="pagination-nav__link pagination-nav__link--prev" href="/docs/technical/property-validation"><div class="pagination-nav__sublabel">Previous</div><div class="pagination-nav__label">Property Validation Test Matrix</div></a><a class="pagination-nav__link pagination-nav__link--next" href="/docs/technical/entity-relationship-model-updated"><div class="pagination-nav__sublabel">Next</div><div class="pagination-nav__label">Entity Relationship Model Update</div></a></nav></div></div><div class="col col--3"><div class="tableOfContents_bqdL thin-scrollbar theme-doc-toc-desktop"><ul class="table-of-contents table-of-contents__left-border"><li><a href="#overview" class="table-of-contents__link toc-highlight">Overview</a></li><li><a href="#documentation-created" class="table-of-contents__link toc-highlight">Documentation Created</a></li><li><a href="#key-features-added-to-documentation" class="table-of-contents__link toc-highlight">Key Features Added to Documentation</a><ul><li><a href="#1-two-processing-paths" class="table-of-contents__link toc-highlight">1. Two Processing Paths</a></li><li><a href="#2-gdpr-entity-register" class="table-of-contents__link toc-highlight">2. GDPR Entity Register</a></li><li><a href="#3-language-detection--assessment" class="table-of-contents__link toc-highlight">3. Language Detection &amp; Assessment</a></li><li><a href="#4-multiple-processing-methods" class="table-of-contents__link toc-highlight">4. Multiple Processing Methods</a></li><li><a href="#5-extended-chunking-support" class="table-of-contents__link toc-highlight">5. Extended Chunking Support</a></li></ul></li><li><a href="#database-changes-required" class="table-of-contents__link toc-highlight">Database Changes Required</a><ul><li><a href="#new-tables" class="table-of-contents__link toc-highlight">New Tables</a></li><li><a href="#updated-tables" class="table-of-contents__link toc-highlight">Updated Tables</a></li></ul></li><li><a href="#implementation-phases" class="table-of-contents__link toc-highlight">Implementation Phases</a><ul><li><a href="#phase-1-database-schema-week-1" class="table-of-contents__link toc-highlight">Phase 1: Database Schema (Week 1)</a></li><li><a href="#phase-2-object-text-extraction-week-2" class="table-of-contents__link toc-highlight">Phase 2: Object Text Extraction (Week 2)</a></li><li><a href="#phase-3-chunk-migration-week-3" class="table-of-contents__link toc-highlight">Phase 3: Chunk Migration (Week 3)</a></li><li><a href="#phase-4-language-detection-week-4" class="table-of-contents__link toc-highlight">Phase 4: Language Detection (Week 4)</a></li><li><a href="#phase-5-language-level-assessment-week-5" class="table-of-contents__link toc-highlight">Phase 5: Language Level Assessment (Week 5)</a></li><li><a href="#phase-6-entity-extraction-week-6-7" class="table-of-contents__link toc-highlight">Phase 6: Entity Extraction (Week 6-7)</a></li><li><a href="#phase-7-gdpr-register-ui-week-8" class="table-of-contents__link toc-highlight">Phase 7: GDPR Register UI (Week 8)</a></li><li><a href="#phase-8-email--chat-chunking-week-9" class="table-of-contents__link toc-highlight">Phase 8: Email &amp; Chat Chunking (Week 9)</a></li><li><a href="#phase-9-testing--documentation-week-10" class="table-of-contents__link toc-highlight">Phase 9: Testing &amp; Documentation (Week 10)</a></li><li><a href="#phase-10-deployment--monitoring-week-11" class="table-of-contents__link toc-highlight">Phase 10: Deployment &amp; Monitoring (Week 11)</a></li></ul></li><li><a href="#configuration-structure" class="table-of-contents__link toc-highlight">Configuration Structure</a><ul><li><a href="#settings--openregister--text-analysis" class="table-of-contents__link toc-highlight">Settings → OpenRegister → Text Analysis</a></li></ul></li><li><a href="#api-endpoints" class="table-of-contents__link toc-highlight">API Endpoints</a><ul><li><a href="#chunks" class="table-of-contents__link toc-highlight">Chunks</a></li><li><a href="#entities-gdpr" class="table-of-contents__link toc-highlight">Entities (GDPR)</a></li><li><a href="#object-text" class="table-of-contents__link toc-highlight">Object Text</a></li></ul></li><li><a href="#service-architecture" class="table-of-contents__link toc-highlight">Service Architecture</a></li><li><a href="#background-jobs" class="table-of-contents__link toc-highlight">Background Jobs</a></li><li><a href="#performance-targets" class="table-of-contents__link toc-highlight">Performance Targets</a></li><li><a href="#testing-strategy" class="table-of-contents__link toc-highlight">Testing Strategy</a></li><li><a href="#security-considerations" class="table-of-contents__link toc-highlight">Security Considerations</a></li><li><a href="#compliance" class="table-of-contents__link toc-highlight">Compliance</a></li><li><a href="#next-steps" class="table-of-contents__link toc-highlight">Next Steps</a></li><li><a href="#questions-for-stakeholders" class="table-of-contents__link toc-highlight">Questions for Stakeholders</a></li><li><a href="#success-metrics" class="table-of-contents__link toc-highlight">Success Metrics</a></li><li><a href="#conclusion" class="table-of-contents__link toc-highlight">Conclusion</a></li></ul></div></div></div></div></main></div></div></div><footer class="footer footer--dark"><div class="container container-fluid"><div class="row footer__links"><div class="col footer__col"><div class="footer__title">Docs</div><ul class="footer__items clean-list"><li class="footer__item"><a class="footer__link-item" href="/docs/intro">Documentation</a></li></ul></div><div class="col footer__col"><div class="footer__title">Community</div><ul class="footer__items clean-list"><li class="footer__item"><a href="https://github.com/conductionnl/openregister" target="_blank" rel="noopener noreferrer" class="footer__link-item">GitHub<svg width="13.5" height="13.5" aria-hidden="true" viewBox="0 0 24 24" class="iconExternalLink_nPIU"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"></path></svg></a></li></ul></div></div><div class="footer__bottom text--center"><div class="footer__copyright">Copyright © 2025 for <a href="https://openwebconcept.nl">Open Webconcept</a> by <a href="https://conduction.nl">Conduction B.V.</a></div></div></div></footer></div>
+</body>
+</html>

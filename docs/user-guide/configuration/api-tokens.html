@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="en" dir="ltr" class="docs-wrapper plugin-docs plugin-id-default docs-version-current docs-doc-page docs-doc-id-user-guide/configuration/api-tokens" data-has-hydrated="false">
+<head>
+<meta charset="UTF-8">
+<meta name="generator" content="Docusaurus v3.7.0">
+<title data-rh="true">API Tokens for Configuration Discovery | Open Register</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://openregisters.app/docs/user-guide/configuration/api-tokens"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="API Tokens for Configuration Discovery | Open Register"><meta data-rh="true" name="description" content="API tokens allow OpenRegister to discover and import configurations from GitHub and GitLab repositories. This guide explains how to obtain and configure these tokens."><meta data-rh="true" property="og:description" content="API tokens allow OpenRegister to discover and import configurations from GitHub and GitLab repositories. This guide explains how to obtain and configure these tokens."><link data-rh="true" rel="canonical" href="https://openregisters.app/docs/user-guide/configuration/api-tokens"><link data-rh="true" rel="alternate" href="https://openregisters.app/docs/user-guide/configuration/api-tokens" hreflang="en"><link data-rh="true" rel="alternate" href="https://openregisters.app/docs/user-guide/configuration/api-tokens" hreflang="x-default"><link rel="stylesheet" href="/assets/css/styles.3a202f4d.css">
+<script src="/assets/js/runtime~main.7c9b7be8.js" defer="defer"></script>
+<script src="/assets/js/main.8e6b3835.js" defer="defer"></script>
+</head>
+<body class="navigation-with-keyboard">
+<script>!function(){function t(t){document.documentElement.setAttribute("data-theme",t)}var e=function(){try{return new URLSearchParams(window.location.search).get("docusaurus-theme")}catch(t){}}()||function(){try{return window.localStorage.getItem("theme")}catch(t){}}();t(null!==e?e:"light")}(),function(){try{const n=new URLSearchParams(window.location.search).entries();for(var[t,e]of n)if(t.startsWith("docusaurus-data-")){var a=t.replace("docusaurus-data-","data-");document.documentElement.setAttribute(a,e)}}catch(t){}}()</script><div id="__docusaurus"><div role="region" aria-label="Skip to main content"><a class="skipToContent_fXgn" href="#__docusaurus_skipToContent_fallback">Skip to main content</a></div><nav aria-label="Main" class="navbar navbar--fixed-top"><div class="navbar__inner"><div class="navbar__items"><button aria-label="Toggle navigation bar" aria-expanded="false" class="navbar__toggle clean-btn" type="button"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><path stroke="currentColor" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2" d="M4 7h22M4 15h22M4 23h22"></path></svg></button><a class="navbar__brand" href="/"><div class="navbar__logo"><img src="/img/logo.svg" alt="Open Register Logo" class="themedComponent_mlkZ themedComponent--light_NVdE"><img src="/img/logo.svg" alt="Open Register Logo" class="themedComponent_mlkZ themedComponent--dark_xIcU"></div><b class="navbar__title text--truncate">Open Register</b></a><a aria-current="page" class="navbar__item navbar__link navbar__link--active" href="/docs/Integrations">Documentation</a></div><div class="navbar__items navbar__items--right"><a class="navbar__item navbar__link" href="/api">API Documentation</a><a href="https://github.com/conductionnl/openregister" target="_blank" rel="noopener noreferrer" class="navbar__item navbar__link">GitHub<svg width="13.5" height="13.5" aria-hidden="true" viewBox="0 0 24 24" class="iconExternalLink_nPIU"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"></path></svg></a><div class="toggle_vylO colorModeToggle_DEke"><button class="clean-btn toggleButton_gllP toggleButtonDisabled_aARS" type="button" disabled="" title="Switch between dark and light mode (currently light mode)" aria-label="Switch between dark and light mode (currently light mode)" aria-live="polite" aria-pressed="false"><svg viewBox="0 0 24 24" width="24" height="24" class="lightToggleIcon_pyhR"><path fill="currentColor" d="M12,9c1.65,0,3,1.35,3,3s-1.35,3-3,3s-3-1.35-3-3S10.35,9,12,9 M12,7c-2.76,0-5,2.24-5,5s2.24,5,5,5s5-2.24,5-5 S14.76,7,12,7L12,7z M2,13l2,0c0.55,0,1-0.45,1-1s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S1.45,13,2,13z M20,13l2,0c0.55,0,1-0.45,1-1 s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S19.45,13,20,13z M11,2v2c0,0.55,0.45,1,1,1s1-0.45,1-1V2c0-0.55-0.45-1-1-1S11,1.45,11,2z M11,20v2c0,0.55,0.45,1,1,1s1-0.45,1-1v-2c0-0.55-0.45-1-1-1C11.45,19,11,19.45,11,20z M5.99,4.58c-0.39-0.39-1.03-0.39-1.41,0 c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0s0.39-1.03,0-1.41L5.99,4.58z M18.36,16.95 c-0.39-0.39-1.03-0.39-1.41,0c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0c0.39-0.39,0.39-1.03,0-1.41 L18.36,16.95z M19.42,5.99c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06c-0.39,0.39-0.39,1.03,0,1.41 s1.03,0.39,1.41,0L19.42,5.99z M7.05,18.36c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06 c-0.39,0.39-0.39,1.03,0,1.41s1.03,0.39,1.41,0L7.05,18.36z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" class="darkToggleIcon_wfgR"><path fill="currentColor" d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27C17.45,17.19,14.93,19,12,19 c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z M12,3c-4.97,0-9,4.03-9,9s4.03,9,9,9s9-4.03,9-9c0-0.46-0.04-0.92-0.1-1.36 c-0.98,1.37-2.58,2.26-4.4,2.26c-2.98,0-5.4-2.42-5.4-5.4c0-1.81,0.89-3.42,2.26-4.4C12.92,3.04,12.46,3,12,3L12,3z"></path></svg></button></div><div class="navbarSearchContainer_Bca1"></div></div></div><div role="presentation" class="navbar-sidebar__backdrop"></div></nav><div id="__docusaurus_skipToContent_fallback" class="main-wrapper mainWrapper_z2l0"><div class="docsWrapper_hBAB"><button aria-label="Scroll back to top" class="clean-btn theme-back-to-top-button backToTopButton_sjWU" type="button"></button><div class="docRoot_UBD9"><aside class="theme-doc-sidebar-container docSidebarContainer_YfHR"><div class="sidebarViewport_aRkj"><div class="sidebar_njMd"><nav aria-label="Docs sidebar" class="menu thin-scrollbar menu_SIkG"><ul class="theme-doc-sidebar-menu menu__list"><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist" href="/docs/Integrations">Integrations Overview</a><button aria-label="Expand sidebar category &#x27;Integrations Overview&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/docs/Development/Services">Development</a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist" href="/docs/Features">Core Features</a><button aria-label="Expand sidebar category &#x27;Core Features&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/docs/Technical/vectorization-architecture">Technical</a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/docs/UseCases/clientRegisters">UseCases</a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/docs/api/bulk-operations">api</a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/docs/developers/external-app-optimization">developers</a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/docs/development/deeplinking-spot">development</a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/docs/features/ai">features</a></div></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/docs">Introduction</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/docs/intro">Introduction</a></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/docs/technical/vector-search-backends">technical</a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/docs/user/ai-conversations">user</a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist menu__link--sublist-caret menu__link--active" role="button" aria-expanded="true" href="/docs/user-guide/configuration/api-tokens">user-guide</a></div><ul style="display:block;overflow:visible;height:auto" class="menu__list"><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-2 menu__list-item"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist menu__link--sublist-caret menu__link--active" role="button" aria-expanded="true" tabindex="0" href="/docs/user-guide/configuration/api-tokens">configuration</a></div><ul style="display:block;overflow:visible;height:auto" class="menu__list"><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-3 menu__list-item"><a class="menu__link menu__link--active" aria-current="page" tabindex="0" href="/docs/user-guide/configuration/api-tokens">API Tokens for Configuration Discovery</a></li></ul></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs/user-guide/importing-data">Importing Data</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs/user-guide/semantic-search">Semantic Search User Guide</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs/user-guide/solr-dashboard-user-guide">SOLR Dashboard User Guide</a></li></ul></li></ul></nav></div></div></aside><main class="docMainContainer_TBSr"><div class="container padding-top--md padding-bottom--lg"><div class="row"><div class="col docItemCol_VOVn"><div class="docItemContainer_Djhp"><article><nav class="theme-doc-breadcrumbs breadcrumbsContainer_Z_bl" aria-label="Breadcrumbs"><ul class="breadcrumbs" itemscope="" itemtype="https://schema.org/BreadcrumbList"><li class="breadcrumbs__item"><a aria-label="Home page" class="breadcrumbs__link" href="/"><svg viewBox="0 0 24 24" class="breadcrumbHomeIcon_YNFT"><path d="M10 19v-5h4v5c0 .55.45 1 1 1h3c.55 0 1-.45 1-1v-7h1.7c.46 0 .68-.57.33-.87L12.67 3.6c-.38-.34-.96-.34-1.34 0l-8.36 7.53c-.34.3-.13.87.33.87H5v7c0 .55.45 1 1 1h3c.55 0 1-.45 1-1z" fill="currentColor"></path></svg></a></li><li class="breadcrumbs__item"><span class="breadcrumbs__link">user-guide</span><meta itemprop="position" content="1"></li><li class="breadcrumbs__item"><span class="breadcrumbs__link">configuration</span><meta itemprop="position" content="2"></li><li itemscope="" itemprop="itemListElement" itemtype="https://schema.org/ListItem" class="breadcrumbs__item breadcrumbs__item--active"><span class="breadcrumbs__link" itemprop="name">API Tokens for Configuration Discovery</span><meta itemprop="position" content="3"></li></ul></nav><div class="tocCollapsible_ETCw theme-doc-toc-mobile tocMobile_ITEo"><button type="button" class="clean-btn tocCollapsibleButton_TO0P">On this page</button></div><div class="theme-doc-markdown markdown"><header><h1>API Tokens for Configuration Discovery</h1></header>
+<p>API tokens allow OpenRegister to discover and import configurations from GitHub and GitLab repositories. This guide explains how to obtain and configure these tokens.</p>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="overview">Overview<a href="#overview" class="hash-link" aria-label="Direct link to Overview" title="Direct link to Overview">​</a></h2>
+<p>The Configuration Discovery feature enables you to search for and import OpenRegister configurations shared by the community. To use this feature, you need to configure API tokens for:</p>
+<ul>
+<li><strong>GitHub</strong> - Access GitHub&#x27;s Code Search API</li>
+<li><strong>GitLab</strong> - Access GitLab&#x27;s Global Search API</li>
+</ul>
+<div class="theme-admonition theme-admonition-info admonition_xJq3 alert alert--info"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 14 16"><path fill-rule="evenodd" d="M7 2.3c3.14 0 5.7 2.56 5.7 5.7s-2.56 5.7-5.7 5.7A5.71 5.71 0 0 1 1.3 8c0-3.14 2.56-5.7 5.7-5.7zM7 1C3.14 1 0 4.14 0 8s3.14 7 7 7 7-3.14 7-7-3.14-7-7-7zm1 3H6v5h2V4zm0 6H6v2h2v-2z"></path></svg></span>info</div><div class="admonitionContent_BuS1"><p>API tokens are optional. You can still manually import configurations using direct URLs without configuring tokens.</p></div></div>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="github-personal-access-token">GitHub Personal Access Token<a href="#github-personal-access-token" class="hash-link" aria-label="Direct link to GitHub Personal Access Token" title="Direct link to GitHub Personal Access Token">​</a></h2>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="creating-a-github-token">Creating a GitHub Token<a href="#creating-a-github-token" class="hash-link" aria-label="Direct link to Creating a GitHub Token" title="Direct link to Creating a GitHub Token">​</a></h3>
+<ol>
+<li>
+<p><strong>Log in to GitHub</strong></p>
+<ul>
+<li>Navigate to <a href="https://github.com" target="_blank" rel="noopener noreferrer">github.com</a> and sign in</li>
+</ul>
+</li>
+<li>
+<p><strong>Access Token Settings</strong></p>
+<ul>
+<li>Click your profile picture in the top-right corner</li>
+<li>Select &#x27;Settings&#x27; from the dropdown menu</li>
+<li>Scroll down the left sidebar and click &#x27;Developer settings&#x27;</li>
+<li>Click &#x27;Personal access tokens&#x27; → &#x27;Tokens (classic)&#x27;</li>
+</ul>
+</li>
+<li>
+<p><strong>Generate New Token</strong></p>
+<ul>
+<li>Click &#x27;Generate new token&#x27; → &#x27;Generate new token (classic)&#x27;</li>
+<li>Give your token a descriptive name (e.g., &#x27;OpenRegister Configuration Discovery&#x27;)</li>
+<li>Set an expiration date (recommended: 90 days or custom)</li>
+</ul>
+</li>
+<li>
+<p><strong>Select Scopes</strong></p>
+<ul>
+<li>Check the <code>repo</code> scope</li>
+<li>This grants access to the Code Search API which is required</li>
+</ul>
+</li>
+<li>
+<p><strong>Generate and Copy</strong></p>
+<ul>
+<li>Click &#x27;Generate token&#x27; at the bottom</li>
+<li><strong>Important:</strong> Copy the token immediately - you won&#x27;t be able to see it again!</li>
+<li>The token will look like: <code>ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</code></li>
+</ul>
+</li>
+</ol>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="token-format">Token Format<a href="#token-format" class="hash-link" aria-label="Direct link to Token Format" title="Direct link to Token Format">​</a></h3>
+<p>GitHub Personal Access Tokens start with:</p>
+<ul>
+<li><code>ghp_</code> for personal access tokens</li>
+<li><code>github_pat_</code> for fine-grained personal access tokens</li>
+</ul>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="required-permissions">Required Permissions<a href="#required-permissions" class="hash-link" aria-label="Direct link to Required Permissions" title="Direct link to Required Permissions">​</a></h3>
+<table><thead><tr><th>Scope</th><th>Why Needed</th></tr></thead><tbody><tr><td><code>repo</code></td><td>Access the Code Search API to find OpenRegister configuration files</td></tr></tbody></table>
+<div class="theme-admonition theme-admonition-warning admonition_xJq3 alert alert--warning"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8.893 1.5c-.183-.31-.52-.5-.887-.5s-.703.19-.886.5L.138 13.499a.98.98 0 0 0 0 1.001c.193.31.53.501.886.501h13.964c.367 0 .704-.19.877-.5a1.03 1.03 0 0 0 .01-1.002L8.893 1.5zm.133 11.497H6.987v-2.003h2.039v2.003zm0-3.004H6.987V5.987h2.039v4.006z"></path></svg></span>Security Note</div><div class="admonitionContent_BuS1"><p>Never share your GitHub token. Treat it like a password. If compromised, revoke it immediately and generate a new one.</p></div></div>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="gitlab-personal-access-token">GitLab Personal Access Token<a href="#gitlab-personal-access-token" class="hash-link" aria-label="Direct link to GitLab Personal Access Token" title="Direct link to GitLab Personal Access Token">​</a></h2>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="creating-a-gitlab-token">Creating a GitLab Token<a href="#creating-a-gitlab-token" class="hash-link" aria-label="Direct link to Creating a GitLab Token" title="Direct link to Creating a GitLab Token">​</a></h3>
+<ol>
+<li>
+<p><strong>Log in to GitLab</strong></p>
+<ul>
+<li>Navigate to <a href="https://gitlab.com" target="_blank" rel="noopener noreferrer">gitlab.com</a> and sign in</li>
+<li>For self-hosted instances, use your GitLab URL</li>
+</ul>
+</li>
+<li>
+<p><strong>Access Token Settings</strong></p>
+<ul>
+<li>Click your profile picture in the top-right corner</li>
+<li>Select &#x27;Edit profile&#x27; or &#x27;Preferences&#x27;</li>
+<li>In the left sidebar, click &#x27;Access Tokens&#x27;</li>
+</ul>
+</li>
+<li>
+<p><strong>Create New Token</strong></p>
+<ul>
+<li>Enter a token name (e.g., &#x27;OpenRegister Configuration Discovery&#x27;)</li>
+<li>Set an expiration date (optional but recommended)</li>
+<li>Select the <code>read_api</code> scope</li>
+</ul>
+</li>
+<li>
+<p><strong>Generate Token</strong></p>
+<ul>
+<li>Click &#x27;Create personal access token&#x27;</li>
+<li><strong>Important:</strong> Copy the token immediately - you won&#x27;t be able to see it again!</li>
+<li>The token will look like: <code>glpat-xxxxxxxxxxxxxxxxxxxx</code></li>
+</ul>
+</li>
+</ol>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="token-format-1">Token Format<a href="#token-format-1" class="hash-link" aria-label="Direct link to Token Format" title="Direct link to Token Format">​</a></h3>
+<p>GitLab Personal Access Tokens start with:</p>
+<ul>
+<li><code>glpat-</code> for personal access tokens</li>
+</ul>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="required-permissions-1">Required Permissions<a href="#required-permissions-1" class="hash-link" aria-label="Direct link to Required Permissions" title="Direct link to Required Permissions">​</a></h3>
+<table><thead><tr><th>Scope</th><th>Why Needed</th></tr></thead><tbody><tr><td><code>read_api</code></td><td>Access GitLab&#x27;s Global Search API to find OpenRegister configuration files</td></tr></tbody></table>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="self-hosted-gitlab-instances">Self-Hosted GitLab Instances<a href="#self-hosted-gitlab-instances" class="hash-link" aria-label="Direct link to Self-Hosted GitLab Instances" title="Direct link to Self-Hosted GitLab Instances">​</a></h3>
+<p>If you&#x27;re using a self-hosted GitLab instance:</p>
+<ol>
+<li>Follow the same token creation process on your GitLab instance</li>
+<li>In OpenRegister settings, configure the &#x27;GitLab Instance URL&#x27; field</li>
+<li>Enter your GitLab API base URL (e.g., <code>https://gitlab.yourcompany.com/api/v4</code>)</li>
+<li>Leave this field empty if using GitLab.com</li>
+</ol>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="configuring-tokens-in-openregister">Configuring Tokens in OpenRegister<a href="#configuring-tokens-in-openregister" class="hash-link" aria-label="Direct link to Configuring Tokens in OpenRegister" title="Direct link to Configuring Tokens in OpenRegister">​</a></h2>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="step-1-navigate-to-settings">Step 1: Navigate to Settings<a href="#step-1-navigate-to-settings" class="hash-link" aria-label="Direct link to Step 1: Navigate to Settings" title="Direct link to Step 1: Navigate to Settings">​</a></h3>
+<ol>
+<li>Open your Nextcloud instance</li>
+<li>Go to <strong>Settings</strong> → <strong>Administration</strong> → <strong>OpenRegister</strong></li>
+<li>Scroll to the <strong>API Token Configuration</strong> section</li>
+</ol>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="step-2-enter-your-tokens">Step 2: Enter Your Tokens<a href="#step-2-enter-your-tokens" class="hash-link" aria-label="Direct link to Step 2: Enter Your Tokens" title="Direct link to Step 2: Enter Your Tokens">​</a></h3>
+<h4 class="anchor anchorWithStickyNavbar_LWe7" id="github-token">GitHub Token<a href="#github-token" class="hash-link" aria-label="Direct link to GitHub Token" title="Direct link to GitHub Token">​</a></h4>
+<ol>
+<li>Paste your GitHub Personal Access Token in the &#x27;GitHub Token&#x27; field</li>
+<li>Click &#x27;Save GitHub Token&#x27;</li>
+<li>You should see a success message</li>
+</ol>
+<h4 class="anchor anchorWithStickyNavbar_LWe7" id="gitlab-token">GitLab Token<a href="#gitlab-token" class="hash-link" aria-label="Direct link to GitLab Token" title="Direct link to GitLab Token">​</a></h4>
+<ol>
+<li>Paste your GitLab Personal Access Token in the &#x27;GitLab Token&#x27; field</li>
+<li>(Optional) If using self-hosted GitLab, enter your GitLab API URL</li>
+<li>Click &#x27;Save GitLab Token&#x27;</li>
+<li>You should see a success message</li>
+</ol>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="step-3-test-the-configuration">Step 3: Test the Configuration<a href="#step-3-test-the-configuration" class="hash-link" aria-label="Direct link to Step 3: Test the Configuration" title="Direct link to Step 3: Test the Configuration">​</a></h3>
+<ol>
+<li>Navigate to <strong>Configurations</strong> in OpenRegister</li>
+<li>Click &#x27;+ Import Configuration&#x27;</li>
+<li>Go to the &#x27;Discover&#x27; tab</li>
+<li>Try searching for configurations:<!-- -->
+<ul>
+<li>Click &#x27;Search GitHub&#x27; to test GitHub integration</li>
+<li>Click &#x27;Search GitLab&#x27; to test GitLab integration</li>
+</ul>
+</li>
+</ol>
+<p>If configured correctly, you should see search results from the respective platforms.</p>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="security-best-practices">Security Best Practices<a href="#security-best-practices" class="hash-link" aria-label="Direct link to Security Best Practices" title="Direct link to Security Best Practices">​</a></h2>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="token-management">Token Management<a href="#token-management" class="hash-link" aria-label="Direct link to Token Management" title="Direct link to Token Management">​</a></h3>
+<ul>
+<li><strong>Rotate Regularly</strong>: Change your tokens every 90 days</li>
+<li><strong>Use Minimal Permissions</strong>: Only grant the required scopes</li>
+<li><strong>Revoke Unused Tokens</strong>: Delete tokens you&#x27;re no longer using</li>
+<li><strong>Monitor Usage</strong>: Check token activity in GitHub/GitLab settings</li>
+</ul>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="storage">Storage<a href="#storage" class="hash-link" aria-label="Direct link to Storage" title="Direct link to Storage">​</a></h3>
+<ul>
+<li>Tokens are stored encrypted in your Nextcloud database</li>
+<li>Only administrators can view and modify API tokens</li>
+<li>Tokens are masked in the UI (only first/last 4 characters visible)</li>
+</ul>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="revoking-tokens">Revoking Tokens<a href="#revoking-tokens" class="hash-link" aria-label="Direct link to Revoking Tokens" title="Direct link to Revoking Tokens">​</a></h3>
+<p>If a token is compromised:</p>
+<ol>
+<li><strong>GitHub</strong>: Settings → Developer settings → Personal access tokens → Revoke</li>
+<li><strong>GitLab</strong>: Preferences → Access Tokens → Revoke</li>
+<li><strong>OpenRegister</strong>: Click &#x27;Clear Token&#x27; to remove from OpenRegister</li>
+<li>Generate a new token and reconfigure</li>
+</ol>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="troubleshooting">Troubleshooting<a href="#troubleshooting" class="hash-link" aria-label="Direct link to Troubleshooting" title="Direct link to Troubleshooting">​</a></h2>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="401-unauthorized-errors">&quot;401 Unauthorized&quot; Errors<a href="#401-unauthorized-errors" class="hash-link" aria-label="Direct link to &quot;401 Unauthorized&quot; Errors" title="Direct link to &quot;401 Unauthorized&quot; Errors">​</a></h3>
+<p>If you see unauthorized errors when discovering configurations:</p>
+<ol>
+<li>
+<p><strong>Verify Token is Correct</strong></p>
+<ul>
+<li>Re-enter the token in settings</li>
+<li>Ensure you copied the complete token</li>
+</ul>
+</li>
+<li>
+<p><strong>Check Token Permissions</strong></p>
+<ul>
+<li>GitHub: Verify <code>repo</code> scope is enabled</li>
+<li>GitLab: Verify <code>read_api</code> scope is enabled</li>
+</ul>
+</li>
+<li>
+<p><strong>Token Expiration</strong></p>
+<ul>
+<li>Check if your token has expired</li>
+<li>Generate a new token if necessary</li>
+</ul>
+</li>
+<li>
+<p><strong>Rate Limiting</strong></p>
+<ul>
+<li>GitHub allows 30 code searches per minute</li>
+<li>Wait a few minutes and try again</li>
+</ul>
+</li>
+</ol>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="no-search-results">No Search Results<a href="#no-search-results" class="hash-link" aria-label="Direct link to No Search Results" title="Direct link to No Search Results">​</a></h3>
+<p>If searches return no results:</p>
+<ol>
+<li>
+<p><strong>Try Different Search Terms</strong></p>
+<ul>
+<li>Leave empty to browse all OpenRegister configurations</li>
+<li>Use specific keywords to narrow results</li>
+</ul>
+</li>
+<li>
+<p><strong>Check Token Configuration</strong></p>
+<ul>
+<li>Ensure token is properly saved</li>
+<li>Test with the opposite platform (GitHub vs GitLab)</li>
+</ul>
+</li>
+<li>
+<p><strong>Verify Platform Access</strong></p>
+<ul>
+<li>Confirm you can access the platform directly</li>
+<li>Check for service outages</li>
+</ul>
+</li>
+</ol>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="self-hosted-gitlab-issues">Self-Hosted GitLab Issues<a href="#self-hosted-gitlab-issues" class="hash-link" aria-label="Direct link to Self-Hosted GitLab Issues" title="Direct link to Self-Hosted GitLab Issues">​</a></h3>
+<p>If using self-hosted GitLab:</p>
+<ol>
+<li>
+<p><strong>Verify URL Format</strong></p>
+<ul>
+<li>Must include <code>/api/v4</code> (e.g., <code>https://gitlab.company.com/api/v4</code>)</li>
+<li>Use HTTPS if possible</li>
+</ul>
+</li>
+<li>
+<p><strong>Network Access</strong></p>
+<ul>
+<li>Ensure your Nextcloud server can reach your GitLab instance</li>
+<li>Check firewall rules</li>
+</ul>
+</li>
+<li>
+<p><strong>Certificate Issues</strong></p>
+<ul>
+<li>For self-signed certificates, you may need to configure certificate trust</li>
+</ul>
+</li>
+</ol>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="api-rate-limits">API Rate Limits<a href="#api-rate-limits" class="hash-link" aria-label="Direct link to API Rate Limits" title="Direct link to API Rate Limits">​</a></h2>
+<p>Be aware of rate limits for API calls:</p>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="github">GitHub<a href="#github" class="hash-link" aria-label="Direct link to GitHub" title="Direct link to GitHub">​</a></h3>
+<ul>
+<li><strong>Authenticated</strong>: 5,000 requests per hour</li>
+<li><strong>Code Search</strong>: 30 requests per minute</li>
+<li><strong>Unauthenticated</strong>: 60 requests per hour (not usable for code search)</li>
+</ul>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="gitlab">GitLab<a href="#gitlab" class="hash-link" aria-label="Direct link to GitLab" title="Direct link to GitLab">​</a></h3>
+<ul>
+<li><strong>Authenticated</strong>: 2,000 requests per minute (GitLab.com)</li>
+<li><strong>Self-Hosted</strong>: Configurable by administrator</li>
+</ul>
+<p>Rate limit headers are returned with each API response. OpenRegister respects these limits automatically.</p>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="further-reading">Further Reading<a href="#further-reading" class="hash-link" aria-label="Direct link to Further Reading" title="Direct link to Further Reading">​</a></h2>
+<ul>
+<li><a href="https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token" target="_blank" rel="noopener noreferrer">GitHub Personal Access Tokens Documentation</a></li>
+<li><a href="https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html" target="_blank" rel="noopener noreferrer">GitLab Personal Access Tokens Documentation</a></li>
+<li><a href="https://docs.github.com/en/rest/search#search-code" target="_blank" rel="noopener noreferrer">GitHub Code Search API</a></li>
+<li><a href="https://docs.gitlab.com/ee/api/search.html" target="_blank" rel="noopener noreferrer">GitLab Search API</a></li>
+</ul>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="support">Support<a href="#support" class="hash-link" aria-label="Direct link to Support" title="Direct link to Support">​</a></h2>
+<p>If you encounter issues:</p>
+<ol>
+<li>Check this documentation for troubleshooting steps</li>
+<li>Contact your system administrator for support</li>
+<li>Contact your system administrator</li>
+<li>Report bugs on <a href="https://github.com/ConductionNL/openregister/issues" target="_blank" rel="noopener noreferrer">GitHub Issues</a></li>
+</ol></div><footer class="theme-doc-footer docusaurus-mt-lg"><div class="row margin-top--sm theme-doc-footer-edit-meta-row"><div class="col"><a href="https://github.com/conductionnl/openregister/tree/main/website/docs/user-guide/configuration/api-tokens.md" target="_blank" rel="noopener noreferrer" class="theme-edit-this-page"><svg fill="currentColor" height="20" width="20" viewBox="0 0 40 40" class="iconEdit_Z9Sw" aria-hidden="true"><g><path d="m34.5 11.7l-3 3.1-6.3-6.3 3.1-3q0.5-0.5 1.2-0.5t1.1 0.5l3.9 3.9q0.5 0.4 0.5 1.1t-0.5 1.2z m-29.5 17.1l18.4-18.5 6.3 6.3-18.4 18.4h-6.3v-6.2z"></path></g></svg>Edit this page</a></div><div class="col lastUpdated_JAkA"></div></div></footer></article><nav class="pagination-nav docusaurus-mt-lg" aria-label="Docs pages"><a class="pagination-nav__link pagination-nav__link--prev" href="/docs/user/solr-dashboard"><div class="pagination-nav__sublabel">Previous</div><div class="pagination-nav__label">SOLR Management Dashboard</div></a><a class="pagination-nav__link pagination-nav__link--next" href="/docs/user-guide/importing-data"><div class="pagination-nav__sublabel">Next</div><div class="pagination-nav__label">Importing Data</div></a></nav></div></div><div class="col col--3"><div class="tableOfContents_bqdL thin-scrollbar theme-doc-toc-desktop"><ul class="table-of-contents table-of-contents__left-border"><li><a href="#overview" class="table-of-contents__link toc-highlight">Overview</a></li><li><a href="#github-personal-access-token" class="table-of-contents__link toc-highlight">GitHub Personal Access Token</a><ul><li><a href="#creating-a-github-token" class="table-of-contents__link toc-highlight">Creating a GitHub Token</a></li><li><a href="#token-format" class="table-of-contents__link toc-highlight">Token Format</a></li><li><a href="#required-permissions" class="table-of-contents__link toc-highlight">Required Permissions</a></li></ul></li><li><a href="#gitlab-personal-access-token" class="table-of-contents__link toc-highlight">GitLab Personal Access Token</a><ul><li><a href="#creating-a-gitlab-token" class="table-of-contents__link toc-highlight">Creating a GitLab Token</a></li><li><a href="#token-format-1" class="table-of-contents__link toc-highlight">Token Format</a></li><li><a href="#required-permissions-1" class="table-of-contents__link toc-highlight">Required Permissions</a></li><li><a href="#self-hosted-gitlab-instances" class="table-of-contents__link toc-highlight">Self-Hosted GitLab Instances</a></li></ul></li><li><a href="#configuring-tokens-in-openregister" class="table-of-contents__link toc-highlight">Configuring Tokens in OpenRegister</a><ul><li><a href="#step-1-navigate-to-settings" class="table-of-contents__link toc-highlight">Step 1: Navigate to Settings</a></li><li><a href="#step-2-enter-your-tokens" class="table-of-contents__link toc-highlight">Step 2: Enter Your Tokens</a></li><li><a href="#step-3-test-the-configuration" class="table-of-contents__link toc-highlight">Step 3: Test the Configuration</a></li></ul></li><li><a href="#security-best-practices" class="table-of-contents__link toc-highlight">Security Best Practices</a><ul><li><a href="#token-management" class="table-of-contents__link toc-highlight">Token Management</a></li><li><a href="#storage" class="table-of-contents__link toc-highlight">Storage</a></li><li><a href="#revoking-tokens" class="table-of-contents__link toc-highlight">Revoking Tokens</a></li></ul></li><li><a href="#troubleshooting" class="table-of-contents__link toc-highlight">Troubleshooting</a><ul><li><a href="#401-unauthorized-errors" class="table-of-contents__link toc-highlight">&quot;401 Unauthorized&quot; Errors</a></li><li><a href="#no-search-results" class="table-of-contents__link toc-highlight">No Search Results</a></li><li><a href="#self-hosted-gitlab-issues" class="table-of-contents__link toc-highlight">Self-Hosted GitLab Issues</a></li></ul></li><li><a href="#api-rate-limits" class="table-of-contents__link toc-highlight">API Rate Limits</a><ul><li><a href="#github" class="table-of-contents__link toc-highlight">GitHub</a></li><li><a href="#gitlab" class="table-of-contents__link toc-highlight">GitLab</a></li></ul></li><li><a href="#further-reading" class="table-of-contents__link toc-highlight">Further Reading</a></li><li><a href="#support" class="table-of-contents__link toc-highlight">Support</a></li></ul></div></div></div></div></main></div></div></div><footer class="footer footer--dark"><div class="container container-fluid"><div class="row footer__links"><div class="col footer__col"><div class="footer__title">Docs</div><ul class="footer__items clean-list"><li class="footer__item"><a class="footer__link-item" href="/docs/intro">Documentation</a></li></ul></div><div class="col footer__col"><div class="footer__title">Community</div><ul class="footer__items clean-list"><li class="footer__item"><a href="https://github.com/conductionnl/openregister" target="_blank" rel="noopener noreferrer" class="footer__link-item">GitHub<svg width="13.5" height="13.5" aria-hidden="true" viewBox="0 0 24 24" class="iconExternalLink_nPIU"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"></path></svg></a></li></ul></div></div><div class="footer__bottom text--center"><div class="footer__copyright">Copyright © 2025 for <a href="https://openwebconcept.nl">Open Webconcept</a> by <a href="https://conduction.nl">Conduction B.V.</a></div></div></div></footer></div>
+</body>
+</html>
