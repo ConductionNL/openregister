@@ -9,10 +9,11 @@
  *
  * @category  BackgroundJob
  * @package   OCA\OpenRegister\BackgroundJob
- * @author    OpenRegister Team <info@conduction.nl>
- * @copyright 2024 OpenRegister
- * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
- * @link      https://github.com/OpenRegister/OpenRegister
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version   GIT: <git-id>
+ * @link      https://OpenRegister.app
  */
 
 declare(strict_types=1);

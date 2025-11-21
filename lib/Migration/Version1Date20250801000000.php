@@ -84,7 +84,7 @@ class Version1Date20250801000000 extends SimpleMigrationStep
         // 1. Add new fields to organisations table.
         if ($schema->hasTable('openregister_organisations')) {
             $table = $schema->getTable('openregister_organisations');
-            
+
             // Add users field (JSON array of user IDs).
             if (!$table->hasColumn('users')) {
                 $table->addColumn('users', Types::JSON, [
@@ -142,4 +142,4 @@ class Version1Date20250801000000 extends SimpleMigrationStep
         // No post-schema changes required.
 
     }//end postSchemaChange()
-} 
+}

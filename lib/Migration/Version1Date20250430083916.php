@@ -57,8 +57,8 @@ class Version1Date20250430083916 extends SimpleMigrationStep
                 'length' => 255,
             ]);
         }
-        
-        
+
+
         // Update the openregister_configurations table.
         $table = $schema->getTable('openregister_objects');
 
@@ -100,4 +100,4 @@ class Version1Date20250430083916 extends SimpleMigrationStep
 
         return $schema;
     }
-} 
+}

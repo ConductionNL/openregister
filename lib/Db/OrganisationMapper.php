@@ -723,17 +723,17 @@ class OrganisationMapper extends QBMapper
                 SELECT uuid, parent, 0 as level
                 FROM ".$this->getTablePrefix().$this->getTableName()."
                 WHERE uuid = :org_uuid
-                
+
                 UNION ALL
-                
+
                 -- Recursive case: get parent organisations
                 SELECT o.uuid, o.parent, oh.level + 1
                 FROM ".$this->getTablePrefix().$this->getTableName()." o
                 INNER JOIN org_hierarchy oh ON o.uuid = oh.parent
                 WHERE oh.level < 10  -- Prevent infinite loops, max 10 levels
             )
-            SELECT uuid 
-            FROM org_hierarchy 
+            SELECT uuid
+            FROM org_hierarchy
             WHERE level > 0
             ORDER BY level ASC
         ";
@@ -805,16 +805,16 @@ class OrganisationMapper extends QBMapper
                 SELECT uuid, parent, 0 as level
                 FROM ".$this->getTablePrefix().$this->getTableName()."
                 WHERE parent = :org_uuid
-                
+
                 UNION ALL
-                
+
                 -- Recursive case: children of children
                 SELECT o.uuid, o.parent, oh.level + 1
                 FROM ".$this->getTablePrefix().$this->getTableName()." o
                 INNER JOIN org_hierarchy oh ON o.parent = oh.uuid
                 WHERE oh.level < 10  -- Prevent infinite loops, max 10 levels
             )
-            SELECT uuid 
+            SELECT uuid
             FROM org_hierarchy
             ORDER BY level ASC
         ";

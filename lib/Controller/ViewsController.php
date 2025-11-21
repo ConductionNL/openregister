@@ -8,12 +8,13 @@ declare(strict_types=1);
  * Controller for managing saved search views across multiple registers and schemas.
  * Provides CRUD operations for views that store search configurations.
  *
- * @category Controller
- * @package  OCA\OpenRegister\Controller
- * @author   Conduction Development Team
- * @license  AGPL-3.0-or-later
- * @link     https://github.com/ConductionNL/openregister
- * @version  1.0.0
+ * @category  Controller
+ * @package   OCA\OpenRegister\Controller
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @version   1.0.0
+ * @link      https://github.com/ConductionNL/openregister
  */
 
 namespace OCA\OpenRegister\Controller;
@@ -121,12 +122,12 @@ class ViewsController extends Controller
             if (isset($params['_limit']) === true) {
                 $limit = (int) $params['_limit'];
             }
-            
+
             $offset = null;
             if (isset($params['_offset']) === true) {
                 $offset = (int) $params['_offset'];
             }
-            
+
             $page = null;
             if (isset($params['_page']) === true) {
                 $page = (int) $params['_page'];
@@ -447,12 +448,12 @@ class ViewsController extends Controller
      * Updates only the fields provided in the request.
      * This is different from PUT (update) which requires all fields.
      *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
      * @param string $id View ID.
      *
      * @return JSONResponse Updated view data.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
      */
     public function patch(string $id): JSONResponse
     {

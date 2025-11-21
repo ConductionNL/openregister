@@ -798,8 +798,8 @@ class ObjectEntityMapper extends QBMapper
         $systemDefaultOrgUuid = $this->organisationService->getDefaultOrganisationId();
 
         // Check if one of the active organisations is the system default (for backwards compatibility).
-        $isSystemDefaultOrg = $activeOrganisationUuids !== null && 
-                             $systemDefaultOrgUuid !== null && 
+        $isSystemDefaultOrg = $activeOrganisationUuids !== null &&
+                             $systemDefaultOrgUuid !== null &&
                              in_array($systemDefaultOrgUuid, $activeOrganisationUuids);
 
         if ($user !== null) {

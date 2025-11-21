@@ -278,12 +278,12 @@ class OptimizedBulkOperations
             $selectSql    = "
                 SELECT *,
                        '{$operationStartTime}' as operation_start_time,
-                       CASE 
+                       CASE
                            WHEN created >= '{$operationStartTime}' THEN 'created'
-                           WHEN updated >= '{$operationStartTime}' THEN 'updated' 
+                           WHEN updated >= '{$operationStartTime}' THEN 'updated'
                            ELSE 'unchanged'
                        END as object_status
-                FROM {$tableName} 
+                FROM {$tableName}
                 WHERE uuid IN ({$placeholders})
             ";
 

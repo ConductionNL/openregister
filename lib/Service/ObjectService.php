@@ -1970,10 +1970,10 @@ class ObjectService
 
                 // Apply search terms.
                 if (!empty($viewQuery['searchTerms'])) {
-                    $searchTerms = is_array($viewQuery['searchTerms']) 
-                        ? implode(' ', $viewQuery['searchTerms']) 
+                    $searchTerms = is_array($viewQuery['searchTerms'])
+                        ? implode(' ', $viewQuery['searchTerms'])
                         : $viewQuery['searchTerms'];
-                    
+
                     $existingSearch = $query['_search'] ?? '';
                     $query['_search'] = trim($existingSearch . ' ' . $searchTerms);
                 }

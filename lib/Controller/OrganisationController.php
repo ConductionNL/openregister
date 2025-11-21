@@ -138,7 +138,7 @@ class OrganisationController extends Controller
             $success = $this->organisationService->setActiveOrganisation($uuid);
 
             if ($success === true) {
-                $activeOrg = $this->organisationService->getActiveOrganisation();
+                $activeOrg     = $this->organisationService->getActiveOrganisation();
                 $activeOrgData = null;
                 if ($activeOrg !== null) {
                     $activeOrgData = $activeOrg->jsonSerialize();
@@ -158,7 +158,7 @@ class OrganisationController extends Controller
                         ],
                         Http::STATUS_BAD_REQUEST
                         );
-            }
+            }//end if
         } catch (Exception $e) {
             $this->logger->error(
                     'Failed to set active organisation',
@@ -359,6 +359,7 @@ class OrganisationController extends Controller
                 if ($userId !== null) {
                     $message = "Successfully removed user from organisation";
                 }
+
                 return new JSONResponse(
                         [
                             'message' => $message,
@@ -505,6 +506,7 @@ class OrganisationController extends Controller
                 if ($data['active'] !== '') {
                     $active = (bool) $data['active'];
                 }
+
                 $organisation->setActive($active);
             }
 

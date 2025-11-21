@@ -283,10 +283,10 @@ Follow these guidelines:
 
 ## Related Documentation
 
-- [Features Index](../Features/) - Browse all features
-- [Technical Documentation](../technical/) - Implementation details
-- [Integrations](../Integrations/) - Integration guides
-- [API Reference](../api/) - API documentation
+- [Features Index](../Features/index.md) - Browse all features
+- [Technical Documentation](../technical/schemas.md) - Implementation details
+- [Integrations](../Integrations/index.md) - Integration guides
+- [API Reference](../api/objects.md) - API documentation
 
 
 
