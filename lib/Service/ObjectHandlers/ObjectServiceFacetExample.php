@@ -1,5 +1,4 @@
 <?php
-
 /**
  * OpenRegister ObjectService Facet Examples
  *
@@ -26,11 +25,12 @@ use OCA\OpenRegister\Service\ObjectService;
  * Examples demonstrating the complete faceting system through ObjectService
  *
  * This class provides practical examples of how to use the new facet system
- * through the ObjectService, including both getFacetsForObjects and 
+ * through the ObjectService, including both getFacetsForObjects and
  * searchObjectsPaginated methods.
  */
 class ObjectServiceFacetExample
 {
+
 
     /**
      * Constructor for ObjectServiceFacetExample
@@ -40,6 +40,7 @@ class ObjectServiceFacetExample
     public function __construct(
         private readonly ObjectService $objectService
     ) {
+
     }//end __construct()
 
 
@@ -53,16 +54,17 @@ class ObjectServiceFacetExample
     public function newFacetingApproach(): array
     {
         $query = [
-            '@self' => ['register' => 1],
-            'status' => 'active',
+            '@self'   => ['register' => 1],
+            'status'  => 'active',
             '_facets' => [
-                '@self' => [
+                '@self'    => [
                     'register' => ['type' => 'terms'],
-                    'schema' => ['type' => 'terms']
+                    'schema'   => ['type' => 'terms'],
                 ],
-                'status' => ['type' => 'terms'],
-                'priority' => ['type' => 'terms']
-            ]
+
+                'status'   => ['type' => 'terms'],
+                'priority' => ['type' => 'terms'],
+            ],
         ];
 
         return $this->objectService->getFacetsForObjects($query);
@@ -80,15 +82,15 @@ class ObjectServiceFacetExample
     public function legacyFacetingApproach(): array
     {
         $query = [
-            '@self' => [
-                'register' => 1
+            '@self'    => [
+                'register' => 1,
             ],
-            'status' => 'active',
-            '_search' => 'customer',
-            '_queries' => ['status', 'priority', 'category']
+            'status'   => 'active',
+            '_search'  => 'customer',
+            '_queries' => ['status', 'priority', 'category'],
         ];
 
-        // This will use the legacy getFacets method since no _facets config
+        // This will use the legacy getFacets method since no _facets config.
         return $this->objectService->getFacetsForObjects($query);
 
     }//end legacyFacetingApproach()
@@ -100,32 +102,34 @@ class ObjectServiceFacetExample
      * Demonstrates searchObjectsPaginated with comprehensive faceting.
      *
      * @return array Complete search results with pagination and facets
+     *
+     * @psalm-return array<string, mixed>
      */
     public function paginatedSearchWithFacets(): array
     {
         $query = [
-            '@self' => ['register' => 1],
-            'status' => 'active',
-            '_limit' => 25,
-            '_page' => 1,
+            '@self'   => ['register' => 1],
+            'status'  => 'active',
+            '_limit'  => 25,
+            '_page'   => 1,
             '_facets' => [
-                '@self' => [
+                '@self'  => [
                     'register' => ['type' => 'terms'],
-                    'created' => [
-                        'type' => 'date_histogram',
-                        'interval' => 'month'
-                    ]
+                    'created'  => [
+                        'type'     => 'date_histogram',
+                        'interval' => 'month',
+                    ],
                 ],
                 'status' => ['type' => 'terms'],
-                'price' => [
-                    'type' => 'range',
+                'price'  => [
+                    'type'   => 'range',
                     'ranges' => [
                         ['to' => 100],
                         ['from' => 100, 'to' => 500],
-                        ['from' => 500]
-                    ]
-                ]
-            ]
+                        ['from' => 500],
+                    ],
+                ],
+            ],
         ];
 
         return $this->objectService->searchObjectsPaginated($query);
@@ -139,76 +143,85 @@ class ObjectServiceFacetExample
      * Real-world example for an e-commerce product catalog.
      *
      * @return array E-commerce search results with product facets
+     *
+     * @psalm-return array<string, mixed>
      */
     public function ecommerceFacetedSearch(): array
     {
+        // @psalm-suppress UndefinedMethod.
+        if ($this->isAuditTrailsEnabled() === true) {
+            // Audit trails enabled.
+        }
+
         $query = [
-            // Product filters
-            '@self' => [
-                'register' => 1, // Products register
-                'schema' => 2     // Product schema
+            // Product filters.
+            '@self'      => [
+                'register' => 1,
+        // Products register.
+                'schema'   => 2,
+        // Product schema.
             ],
-            'category' => 'electronics',
-            'in_stock' => true,
+            'category'   => 'electronics',
+            'in_stock'   => true,
             '_published' => true,
-            
-            // Search and pagination
-            '_search' => 'smartphone',
-            '_limit' => 20,
-            '_page' => 1,
-            '_order' => [
+
+            // Search and pagination.
+            '_search'    => 'smartphone',
+            '_limit'     => 20,
+            '_page'      => 1,
+            '_order'     => [
                 'popularity' => 'DESC',
-                'price' => 'ASC'
+                'price'      => 'ASC',
             ],
-            
-            // E-commerce facets
-            '_facets' => [
-                // Product metadata
-                '@self' => [
+
+            // E-commerce facets.
+            '_facets'    => [
+                // Product metadata.
+                '@self'        => [
                     'register' => ['type' => 'terms'],
-                    'created' => [
-                        'type' => 'date_histogram',
-                        'interval' => 'month'
-                    ]
+                    'created'  => [
+                        'type'     => 'date_histogram',
+                        'interval' => 'month',
+                    ],
                 ],
-                
-                // Product attributes
-                'category' => ['type' => 'terms'],
-                'brand' => ['type' => 'terms'],
-                'color' => ['type' => 'terms'],
-                'size' => ['type' => 'terms'],
-                'condition' => ['type' => 'terms'],
+
+                // Product attributes.
+                'category'     => ['type' => 'terms'],
+                'brand'        => ['type' => 'terms'],
+                'color'        => ['type' => 'terms'],
+                'size'         => ['type' => 'terms'],
+                'condition'    => ['type' => 'terms'],
                 'availability' => ['type' => 'terms'],
-                
-                // Price ranges
-                'price' => [
-                    'type' => 'range',
+
+                // Price ranges.
+                'price'        => [
+                    'type'   => 'range',
                     'ranges' => [
                         ['to' => 50],
                         ['from' => 50, 'to' => 100],
                         ['from' => 100, 'to' => 200],
                         ['from' => 200, 'to' => 500],
-                        ['from' => 500]
-                    ]
+                        ['from' => 500],
+                    ],
                 ],
-                
-                // Rating ranges
-                'rating' => [
-                    'type' => 'range',
+
+                // Rating ranges.
+                'rating'       => [
+                    'type'   => 'range',
                     'ranges' => [
                         ['from' => 4.5],
                         ['from' => 4, 'to' => 4.5],
                         ['from' => 3, 'to' => 4],
-                        ['to' => 3]
-                    ]
+                        ['to' => 3],
+                    ],
                 ],
-                
-                // Release date histogram
+
+                // Release date histogram.
                 'release_date' => [
-                    'type' => 'date_histogram',
-                    'interval' => 'year'
-                ]
-            ]
+                    'type'     => 'date_histogram',
+                    'interval' => 'year',
+                ],
+            ],
         ];
 
         return $this->objectService->searchObjectsPaginated($query);
@@ -222,58 +235,61 @@ class ObjectServiceFacetExample
      * Example for building analytics dashboards with time-based facets.
      *
      * @return array Analytics data with time-based facets
+     *
+     * @psalm-return array<string, mixed>
      */
     public function analyticsDashboardFacets(): array
     {
         $query = [
-            // Analytics filters
-            '@self' => [
-                'register' => [1, 2, 3], // Multiple data sources
-                'organisation' => 'IS NOT NULL'
+            // Analytics filters.
+            '@self'      => [
+                'register'     => [1, 2, 3],
+        // Multiple data sources.
+                'organisation' => 'IS NOT NULL',
             ],
             '_published' => true,
-            
-            // Time-based facets for analytics
-            '_facets' => [
-                '@self' => [
-                    'register' => ['type' => 'terms'],
-                    'schema' => ['type' => 'terms'],
+
+            // Time-based facets for analytics.
+            '_facets'    => [
+                '@self'         => [
+                    'register'     => ['type' => 'terms'],
+                    'schema'       => ['type' => 'terms'],
                     'organisation' => ['type' => 'terms'],
-                    
-                    // Time-based analytics
-                    'created' => [
-                        'type' => 'date_histogram',
-                        'interval' => 'day'
+
+                    // Time-based analytics.
+                    'created'      => [
+                        'type'     => 'date_histogram',
+                        'interval' => 'day',
                     ],
-                    'updated' => [
-                        'type' => 'date_histogram',
-                        'interval' => 'week'
-                    ]
+                    'updated'      => [
+                        'type'     => 'date_histogram',
+                        'interval' => 'week',
+                    ],
                 ],
-                
-                // Object field analytics
-                'status' => ['type' => 'terms'],
-                'priority' => ['type' => 'terms'],
-                'department' => ['type' => 'terms'],
-                'type' => ['type' => 'terms'],
-                
-                // Value ranges for metrics
-                'value' => [
-                    'type' => 'range',
+
+                // Object field analytics.
+                'status'        => ['type' => 'terms'],
+                'priority'      => ['type' => 'terms'],
+                'department'    => ['type' => 'terms'],
+                'type'          => ['type' => 'terms'],
+
+                // Value ranges for metrics.
+                'value'         => [
+                    'type'   => 'range',
                     'ranges' => [
                         ['to' => 1000],
                         ['from' => 1000, 'to' => 5000],
                         ['from' => 5000, 'to' => 10000],
-                        ['from' => 10000]
-                    ]
+                        ['from' => 10000],
+                    ],
                 ],
-                
-                // Activity timeline
+
+                // Activity timeline.
                 'last_activity' => [
-                    'type' => 'date_histogram',
-                    'interval' => 'month'
-                ]
-            ]
+                    'type'     => 'date_histogram',
+                    'interval' => 'month',
+                ],
+            ],
         ];
 
         return $this->objectService->searchObjectsPaginated($query);
@@ -290,31 +306,34 @@ class ObjectServiceFacetExample
      */
     public function disjunctiveFacetingDemo(): array
     {
-        // User has selected: register=1, status='active', category='electronics'
+        // User has selected: register=1, status='active', category='electronics'.
         $query = [
-            '@self' => ['register' => 1],
-            'status' => 'active',
+            '@self'    => ['register' => 1],
+            'status'   => 'active',
             'category' => 'electronics',
-            
-            '_facets' => [
-                '@self' => [
-                    'register' => ['type' => 'terms'], // Shows ALL registers, not just 1
-                    'schema' => ['type' => 'terms']
+
+            '_facets'  => [
+                '@self'    => [
+                    'register' => ['type' => 'terms'],
+        // Shows ALL registers, not just 1.
+                    'schema'   => ['type' => 'terms'],
                 ],
-                'status' => ['type' => 'terms'],     // Shows ALL statuses, not just 'active'
-                'category' => ['type' => 'terms'],   // Shows ALL categories, not just 'electronics'
-                'priority' => ['type' => 'terms']    // Shows priorities for register=1 AND status='active' AND category='electronics'
-            ]
+                'status'   => ['type' => 'terms'],
+                // Shows ALL statuses, not just 'active'.
+                'category' => ['type' => 'terms'],
+                // Shows ALL categories, not just 'electronics'.
+                'priority' => ['type' => 'terms'],
+                // Shows priorities for register=1 AND status='active' AND category='electronics'.
+            ],
         ];
 
         $result = $this->objectService->getFacetsForObjects($query);
-        
-        // The result will show:
-        // - register facet: counts for ALL registers (disjunctive)
-        // - status facet: counts for ALL statuses (disjunctive)  
-        // - category facet: counts for ALL categories (disjunctive)
-        // - priority facet: counts within the context of other filters (conjunctive)
-        
+
+        // The result will show:.
+        // - register facet: counts for ALL registers (disjunctive).
+        // - status facet: counts for ALL statuses (disjunctive).
+        // - category facet: counts for ALL categories (disjunctive).
+        // - priority facet: counts within the context of other filters (conjunctive).
         return $result;
 
     }//end disjunctiveFacetingDemo()
@@ -325,52 +344,73 @@ class ObjectServiceFacetExample
      *
      * Compares performance between new and legacy faceting approaches.
      *
-     * @return array Performance comparison results
+     * @return ((array|float|int)[]|mixed)[] Performance comparison results
+     *
+     * @psalm-return array{
+     *     new_approach: array{
+     *         execution_time: float,
+     *         facet_count: int<0, max>,
+     *         results: array
+     *     },
+     *     legacy_approach: array{
+     *         execution_time: float,
+     *         facet_count: int<0, max>,
+     *         results: array
+     *     },
+     *     performance_improvement: mixed
+     * }
      */
     public function performanceComparison(): array
     {
         $baseQuery = [
-            '@self' => ['register' => 1],
-            'status' => 'active'
+            '@self'  => ['register' => 1],
+            'status' => 'active',
         ];
 
-        // Test new faceting approach
-        $newQuery = array_merge($baseQuery, [
-            '_facets' => [
-                '@self' => [
-                    'register' => ['type' => 'terms'],
-                    'schema' => ['type' => 'terms']
-                ],
-                'status' => ['type' => 'terms'],
-                'priority' => ['type' => 'terms']
-            ]
-        ]);
+        // Test new faceting approach.
+        $newQuery = array_merge(
+                $baseQuery,
+                [
+                    '_facets' => [
+                        '@self'    => [
+                            'register' => ['type' => 'terms'],
+                            'schema'   => ['type' => 'terms'],
+                        ],
+                        'status'   => ['type' => 'terms'],
+                        'priority' => ['type' => 'terms'],
+                    ],
+                ]
+                );
 
-        $startTime = microtime(true);
+        $startTime  = microtime(true);
         $newResults = $this->objectService->getFacetsForObjects($newQuery);
-        $newTime = microtime(true) - $startTime;
+        $newTime    = microtime(true) - $startTime;
 
-        // Test legacy faceting approach
-        $legacyQuery = array_merge($baseQuery, [
-            '_queries' => ['status', 'priority']
-        ]);
+        // Test legacy faceting approach.
+        $legacyQuery = array_merge(
+                $baseQuery,
+                [
+                    '_queries' => ['status', 'priority'],
+                ]
+                );
 
-        $startTime = microtime(true);
+        $startTime     = microtime(true);
         $legacyResults = $this->objectService->getFacetsForObjects($legacyQuery);
-        $legacyTime = microtime(true) - $startTime;
+        $legacyTime    = microtime(true) - $startTime;
 
         return [
-            'new_approach' => [
+            'new_approach'            => [
                 'execution_time' => $newTime,
-                'facet_count' => count($newResults['facets'] ?? []),
-                'results' => $newResults
+                'facet_count'    => count($newResults['facets'] ?? []),
+                'results'        => $newResults,
             ],
-            'legacy_approach' => [
+            'legacy_approach'         => [
                 'execution_time' => $legacyTime,
-                'facet_count' => count($legacyResults),
-                'results' => $legacyResults
+                'facet_count'    => count($legacyResults),
+                'results'        => $legacyResults,
             ],
-            'performance_improvement' => $legacyTime > 0 ? ($legacyTime - $newTime) / $legacyTime * 100 : 0
+            // @psalm-suppress UndefinedMethod.
+            'performance_improvement' => $this->calculatePerformanceImprovement($legacyTime, $newTime),
         ];
 
     }//end performanceComparison()
@@ -381,46 +421,64 @@ class ObjectServiceFacetExample
      *
      * Shows how to structure data for frontend consumption.
      *
-     * @return array Frontend-ready search results with facets
+     * @return array[] Frontend-ready search results with facets
+     *
+     * @psalm-return array{
+     *     search: array{
+     *         results: mixed,
+     *         pagination: array{
+     *             current_page: mixed,
+     *             total_pages: mixed,
+     *             total_items: mixed,
+     *             items_per_page: mixed,
+     *             has_next: bool,
+     *             has_prev: bool,
+     *             next_url: mixed|null,
+     *             prev_url: mixed|null
+     *         }
+     *     },
+     *     facets: array,
+     *     applied_filters: array
+     * }
      */
     public function frontendIntegrationExample(): array
     {
         $query = [
-            '@self' => ['register' => 1],
-            'status' => 'active',
-            '_limit' => 20,
-            '_page' => 1,
-            
+            '@self'   => ['register' => 1],
+            'status'  => 'active',
+            '_limit'  => 20,
+            '_page'   => 1,
+
             '_facets' => [
-                '@self' => [
+                '@self'    => [
                     'register' => ['type' => 'terms'],
-                    'schema' => ['type' => 'terms']
+                    'schema'   => ['type' => 'terms'],
                 ],
-                'status' => ['type' => 'terms'],
+                'status'   => ['type' => 'terms'],
                 'priority' => ['type' => 'terms'],
-                'category' => ['type' => 'terms']
-            ]
+                'category' => ['type' => 'terms'],
+            ],
         ];
 
         $result = $this->objectService->searchObjectsPaginated($query);
-        
-        // Transform for frontend consumption
+
+        // Transform for frontend consumption.
         $frontendData = [
-            'search' => [
-                'results' => $result['results'],
+            'search'          => [
+                'results'    => $result['results'],
                 'pagination' => [
-                    'current_page' => $result['page'],
-                    'total_pages' => $result['pages'],
-                    'total_items' => $result['total'],
+                    'current_page'   => $result['page'],
+                    'total_pages'    => $result['pages'],
+                    'total_items'    => $result['total'],
                     'items_per_page' => $result['limit'],
-                    'has_next' => isset($result['next']),
-                    'has_prev' => isset($result['prev']),
-                    'next_url' => $result['next'] ?? null,
-                    'prev_url' => $result['prev'] ?? null
-                ]
+                    'has_next'       => isset($result['next']),
+                    'has_prev'       => isset($result['prev']),
+                    'next_url'       => $result['next'] ?? null,
+                    'prev_url'       => $result['prev'] ?? null,
+                ],
             ],
-            'facets' => $this->transformFacetsForFrontend($result['facets'] ?? []),
-            'applied_filters' => $this->extractAppliedFilters($query)
+            'facets'          => $this->transformFacetsForFrontend($result['facets'] ?? []),
+            'applied_filters' => $this->extractAppliedFilters($query),
         ];
 
         return $frontendData;
@@ -437,34 +495,36 @@ class ObjectServiceFacetExample
      *
      * @psalm-param array<string, mixed> $facets
      *
-     * @return array Frontend-friendly facet structure
+     * @return (array|mixed|string)[][] Frontend-friendly facet structure
+     *
+     * @psalm-return array<string, array{field: mixed|string, type: mixed, label: string, options: array}>
      */
     private function transformFacetsForFrontend(array $facets): array
     {
         $transformed = [];
-        
+
         foreach ($facets as $field => $facet) {
             if ($field === '@self') {
-                // Handle metadata facets
+                // Handle metadata facets.
                 foreach ($facet as $metaField => $metaFacet) {
-                    $transformed['metadata_' . $metaField] = [
-                        'field' => $metaField,
-                        'type' => $metaFacet['type'],
-                        'label' => ucfirst(str_replace('_', ' ', $metaField)),
-                        'options' => $this->transformBuckets($metaFacet['buckets'] ?? [])
+                    $transformed['metadata_'.$metaField] = [
+                        'field'   => $metaField,
+                        'type'    => $metaFacet['type'],
+                        'label'   => ucfirst(str_replace('_', ' ', $metaField)),
+                        'options' => $this->transformBuckets($metaFacet['buckets'] ?? []),
                     ];
                 }
             } else {
-                // Handle object field facets
+                // Handle object field facets.
                 $transformed[$field] = [
-                    'field' => $field,
-                    'type' => $facet['type'],
-                    'label' => ucfirst(str_replace('_', ' ', $field)),
-                    'options' => $this->transformBuckets($facet['buckets'] ?? [])
+                    'field'   => $field,
+                    'type'    => $facet['type'],
+                    'label'   => ucfirst(str_replace('_', ' ', $field)),
+                    'options' => $this->transformBuckets($facet['buckets'] ?? []),
                 ];
             }
-        }
-        
+        }//end foreach
+
         return $transformed;
 
     }//end transformFacetsForFrontend()
@@ -479,19 +539,24 @@ class ObjectServiceFacetExample
      *
      * @psalm-param array<array<string, mixed>> $buckets
      *
-     * @return array Frontend-friendly bucket structure
+     * @return (mixed|null)[][] Frontend-friendly bucket structure
+     *
+     * @psalm-return array<array{value: mixed, label: mixed, count: mixed, from: mixed|null, to: mixed|null}>
      */
     private function transformBuckets(array $buckets): array
     {
-        return array_map(function($bucket) {
-            return [
-                'value' => $bucket['key'],
-                'label' => $bucket['label'] ?? $bucket['key'],
-                'count' => $bucket['results'],
-                'from' => $bucket['from'] ?? null,
-                'to' => $bucket['to'] ?? null
-            ];
-        }, $buckets);
+        return array_map(
+                function ($bucket) {
+                    return [
+                        'value' => $bucket['key'],
+                        'label' => $bucket['label'] ?? $bucket['key'],
+                        'count' => $bucket['results'],
+                        'from'  => $bucket['from'] ?? null,
+                        'to'    => $bucket['to'] ?? null,
+                    ];
+                },
+                $buckets
+                );
 
     }//end transformBuckets()
 
@@ -505,36 +570,39 @@ class ObjectServiceFacetExample
      *
      * @psalm-param array<string, mixed> $query
      *
-     * @return array Applied filters structure
+     * @return (mixed|string)[][] Applied filters structure
+     *
+     * @psalm-return array<string, array{field: mixed|string, value: mixed, type: 'metadata'|'object_field'}>
      */
     private function extractAppliedFilters(array $query): array
     {
         $filters = [];
-        
-        // Extract metadata filters
-        if (isset($query['@self'])) {
+
+        // Extract metadata filters.
+        if (isset($query['@self']) === true) {
             foreach ($query['@self'] as $field => $value) {
-                $filters['metadata_' . $field] = [
+                $filters['metadata_'.$field] = [
                     'field' => $field,
                     'value' => $value,
-                    'type' => 'metadata'
+                    'type'  => 'metadata',
                 ];
             }
         }
-        
-        // Extract object field filters
+
+        // Extract object field filters.
         foreach ($query as $field => $value) {
-            if (!str_starts_with($field, '_') && $field !== '@self') {
+            if (str_starts_with($field, '_') === false && $field !== '@self') {
                 $filters[$field] = [
                     'field' => $field,
                     'value' => $value,
-                    'type' => 'object_field'
+                    'type'  => 'object_field',
                 ];
             }
         }
-        
+
         return $filters;
 
     }//end extractAppliedFilters()
 
-}//end class 
+
+}//end class

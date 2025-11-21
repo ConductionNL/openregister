@@ -1,80 +1,119 @@
-<script setup>
-import { navigationStore } from '../store/store.js'
-</script>
-
 <template>
 	<NcAppNavigation>
+		<NcAppNavigationNew
+			:text="activeOrganisationName"
+			@click="handleNavigate('/')">
+			<template #icon>
+				<Finance :size="20" />
+			</template>
+		</NcAppNavigationNew>
+
 		<NcAppNavigationList>
-			<NcAppNavigationItem :active="navigationStore.selected === 'dashboard'" :name="t('openregister', 'Dashboard')" @click="navigationStore.setSelected('dashboard')">
+			<NcAppNavigationItem :active="$route.path.startsWith('/chat')" :name="t('openregister', 'AI Chat')" @click="handleNavigate('/chat')">
 				<template #icon>
-					<Finance :size="20" />
+					<MessageTextOutline :size="20" />
 				</template>
 			</NcAppNavigationItem>
-			<NcAppNavigationItem :active="navigationStore.selected === 'registers'" :name="t('openregister', 'Registers')" @click="navigationStore.setSelected('registers')">
+			<NcAppNavigationItem :active="$route.path.startsWith('/registers')" :name="t('openregister', 'Registers')" @click="handleNavigate('/registers')">
 				<template #icon>
 					<DatabaseOutline :size="20" />
 				</template>
 			</NcAppNavigationItem>
-			<NcAppNavigationItem :active="navigationStore.selected === 'schemas'" :name="t('openregister', 'Schemas')" @click="navigationStore.setSelected('schemas')">
+			<NcAppNavigationItem :active="$route.path.startsWith('/schemas')" :name="t('openregister', 'Schemas')" @click="handleNavigate('/schemas')">
 				<template #icon>
 					<FileTreeOutline :size="20" />
 				</template>
 			</NcAppNavigationItem>
-			<NcAppNavigationItem :active="navigationStore.selected === 'tableSearch'" :name="t('openregister', 'Tables')" @click="navigationStore.setSelected('tableSearch')">
+			<NcAppNavigationItem :active="$route.path.startsWith('/tables')" :name="t('openregister', 'Search / Views')" @click="handleNavigate('/tables')">
 				<template #icon>
-					<TableMultiple :size="20" />
+					<Magnify :size="20" />
 				</template>
 			</NcAppNavigationItem>
-			<!-- <NcAppNavigationItem :active="navigationStore.selected === 'objects'" name="Search" @click="navigationStore.setSelected('search')">
+			<NcAppNavigationItem :active="$route.path.startsWith('/files')" :name="t('openregister', 'Files')" @click="handleNavigate('/files')">
 				<template #icon>
-					<LayersSearchOutline :size="20" />
+					<FileDocumentMultipleOutline :size="20" />
 				</template>
-			</NcAppNavigationItem> -->
+			</NcAppNavigationItem>
+			<NcAppNavigationItem :active="$route.path.startsWith('/agents')" :name="t('openregister', 'Agents')" @click="handleNavigate('/agents')">
+				<template #icon>
+					<RobotOutline :size="20" />
+				</template>
+			</NcAppNavigationItem>
+		<!-- <NcAppNavigationItem :active="$route.path.startsWith('/search')" name="Search" @click="handleNavigate('/search')">
+			<template #icon>
+				<LayersSearchOutline :size="20" />
+			</template>
+		</NcAppNavigationItem> -->
 		</NcAppNavigationList>
 
 		<NcAppNavigationSettings>
-			<NcAppNavigationItem :active="navigationStore.selected === 'sources'" :name="t('openregister', 'Data sources')" @click="navigationStore.setSelected('sources')">
+			<NcAppNavigationItem :active="$route.path.startsWith('/organisation')" :name="t('openregister', 'Organisations')" @click="handleNavigate('/organisation')">
+				<template #icon>
+					<OfficeBuildingOutline :size="20" />
+				</template>
+			</NcAppNavigationItem>
+			<NcAppNavigationItem :active="$route.path.startsWith('/applications')" :name="t('openregister', 'Applications')" @click="handleNavigate('/applications')">
+				<template #icon>
+					<ApplicationOutline :size="20" />
+				</template>
+			</NcAppNavigationItem>
+			<NcAppNavigationItem :active="$route.path.startsWith('/sources')" :name="t('openregister', 'Data sources')" @click="handleNavigate('/sources')">
 				<template #icon>
 					<DatabaseArrowRightOutline :size="20" />
 				</template>
 			</NcAppNavigationItem>
-			<NcAppNavigationItem :active="navigationStore.selected === 'configurations'" :name="t('openregister', 'Configurations')" @click="navigationStore.setSelected('configurations')">
+			<NcAppNavigationItem :active="$route.path.startsWith('/configurations')" :name="t('openregister', 'Configurations')" @click="handleNavigate('/configurations')">
 				<template #icon>
 					<CogOutline :size="20" />
 				</template>
 			</NcAppNavigationItem>
-			<NcAppNavigationItem :active="navigationStore.selected === 'deleted'" :name="t('openregister', 'Deleted')" @click="navigationStore.setSelected('deleted')">
+			<NcAppNavigationItem :active="$route.path.startsWith('/deleted')" :name="t('openregister', 'Deleted')" @click="handleNavigate('/deleted')">
 				<template #icon>
 					<DeleteRestore :size="20" />
 				</template>
 			</NcAppNavigationItem>
-			<NcAppNavigationItem :active="navigationStore.selected === 'auditTrails'" :name="t('openregister', 'Audit Trails')" @click="navigationStore.setSelected('auditTrails')">
+			<NcAppNavigationItem :active="$route.path.startsWith('/audit-trails')" :name="t('openregister', 'Audit Trails')" @click="handleNavigate('/audit-trails')">
 				<template #icon>
 					<TextBoxOutline :size="20" />
+				</template>
+			</NcAppNavigationItem>
+			<NcAppNavigationItem :active="$route.path.startsWith('/search-trails')" :name="t('openregister', 'Search Trails')" @click="handleNavigate('/search-trails')">
+				<template #icon>
+					<MagnifyPlus :size="20" />
 				</template>
 			</NcAppNavigationItem>
 		</NcAppNavigationSettings>
 	</NcAppNavigation>
 </template>
 <script>
+import { t } from '@nextcloud/l10n'
 
 import {
 	NcAppNavigation,
 	NcAppNavigationList,
 	NcAppNavigationSettings,
 	NcAppNavigationItem,
+	NcAppNavigationNew,
 } from '@nextcloud/vue'
 
 // Icons
 import Finance from 'vue-material-design-icons/Finance.vue'
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
 import FileTreeOutline from 'vue-material-design-icons/FileTreeOutline.vue'
+import OfficeBuildingOutline from 'vue-material-design-icons/OfficeBuildingOutline.vue'
+import ApplicationOutline from 'vue-material-design-icons/ApplicationOutline.vue'
 import DatabaseArrowRightOutline from 'vue-material-design-icons/DatabaseArrowRightOutline.vue'
-// import LayersSearchOutline from 'vue-material-design-icons/LayersSearchOutline.vue'
-import TableMultiple from 'vue-material-design-icons/TableMultiple.vue'
+import Magnify from 'vue-material-design-icons/Magnify.vue'
+import MessageTextOutline from 'vue-material-design-icons/MessageTextOutline.vue'
+import RobotOutline from 'vue-material-design-icons/RobotOutline.vue'
+import FileDocumentMultipleOutline from 'vue-material-design-icons/FileDocumentMultipleOutline.vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 import DeleteRestore from 'vue-material-design-icons/DeleteRestore.vue'
 import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
+import MagnifyPlus from 'vue-material-design-icons/MagnifyPlus.vue'
+
+// Store
+import { organisationStore } from '../store/store.js'
 
 export default {
 	name: 'MainMenu',
@@ -84,18 +123,44 @@ export default {
 		NcAppNavigationList,
 		NcAppNavigationItem,
 		NcAppNavigationSettings,
+		NcAppNavigationNew,
 		// icons
 		Finance,
 		DatabaseOutline,
 		DatabaseArrowRightOutline,
 		FileTreeOutline,
-		TableMultiple,
-		// LayersSearchOutline,
+		OfficeBuildingOutline,
+		ApplicationOutline,
+		Magnify,
+		MessageTextOutline,
+		RobotOutline,
+		FileDocumentMultipleOutline,
 		CogOutline,
 		DeleteRestore,
 		TextBoxOutline,
+		MagnifyPlus,
+	},
+	computed: {
+		/**
+		 * Get the active organisation name to display in navigation.
+		 * Shows the current organisational context for the user.
+		 *
+		 * @return {string} The active organisation name or a fallback
+		 */
+		activeOrganisationName() {
+			const activeOrg = organisationStore.activeOrganisation
+			if (activeOrg && activeOrg.name) {
+				return activeOrg.name
+			}
+			// Fallback if no organisation is active
+			return t('openregister', 'No Organisation')
+		},
 	},
 	methods: {
+		t,
+		handleNavigate(path) {
+			this.$router.push(path)
+		},
 		openLink(url, type = '') {
 			window.open(url, type)
 		},

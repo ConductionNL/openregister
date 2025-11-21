@@ -1,0 +1,281 @@
+{
+  "name": "OpenRegister Object Sync",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "openregister-object-sync",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "webhook-1",
+      "name": "Webhook - OpenRegister Object Event",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ],
+      "webhookId": "openregister-object-sync"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.body.event}}",
+              "operation": "contains",
+              "value2": "ObjectCreatedEvent"
+            }
+          ]
+        }
+      },
+      "id": "if-created",
+      "name": "If Object Created",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=http://master-nextcloud-1/apps/openregister/api/objects/{{$json.body.data.object.uuid}}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": true
+            }
+          }
+        }
+      },
+      "id": "http-get-object",
+      "name": "Get Full Object Data",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        680,
+        200
+      ],
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "1",
+          "name": "OpenRegister API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Transform OpenRegister object to external system format.\nconst object = $input.item.json;\n\nreturn {\n  external_id: object.uuid,\n  title: object.data.title || 'Untitled',\n  description: object.data.description || '',\n  register: object.register,\n  schema: object.schema,\n  created_at: object.created,\n  updated_at: object.updated,\n  metadata: object.data\n};"
+      },
+      "id": "transform-data",
+      "name": "Transform Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://your-external-system.com/api/sync",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "data",
+              "value": "={{$json}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "send-to-external",
+      "name": "Send to External System",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        1120,
+        200
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "2",
+          "name": "External System API"
+        }
+      },
+      "notes": "Configure this node with your external system's API endpoint and credentials"
+    },
+    {
+      "parameters": {
+        "url": "=http://master-nextcloud-1/apps/openregister/api/objects/{{$json.body.data.object.uuid}}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": true
+            }
+          }
+        }
+      },
+      "id": "http-get-object-updated",
+      "name": "Get Updated Object Data",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        680,
+        400
+      ],
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "1",
+          "name": "OpenRegister API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Transform updated object data.\nconst object = $input.item.json;\n\nreturn {\n  external_id: object.uuid,\n  title: object.data.title || 'Untitled',\n  description: object.data.description || '',\n  register: object.register,\n  schema: object.schema,\n  created_at: object.created,\n  updated_at: object.updated,\n  metadata: object.data\n};"
+      },
+      "id": "transform-updated",
+      "name": "Transform Updated Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://your-external-system.com/api/sync/{{$json.external_id}}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "data",
+              "value": "={{$json}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "update-external",
+      "name": "Update External System",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        1120,
+        400
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "2",
+          "name": "External System API"
+        }
+      },
+      "notes": "Configure this node with your external system's API endpoint and credentials"
+    }
+  ],
+  "connections": {
+    "Webhook - OpenRegister Object Event": {
+      "main": [
+        [
+          {
+            "node": "If Object Created",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Object Created": {
+      "main": [
+        [
+          {
+            "node": "Get Full Object Data",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Updated Object Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Full Object Data": {
+      "main": [
+        [
+          {
+            "node": "Transform Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transform Data": {
+      "main": [
+        [
+          {
+            "node": "Send to External System",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Updated Object Data": {
+      "main": [
+        [
+          {
+            "node": "Transform Updated Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transform Updated Data": {
+      "main": [
+        [
+          {
+            "node": "Update External System",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {},
+  "staticData": null,
+  "tags": [
+    {
+      "name": "OpenRegister",
+      "id": "1"
+    },
+    {
+      "name": "Sync",
+      "id": "2"
+    }
+  ],
+  "pinData": {},
+  "versionId": "1"
+}
+

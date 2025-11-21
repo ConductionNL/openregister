@@ -17,10 +17,18 @@ export class Schema implements TSchema {
 	public configuration?: {
 		objectNameField?: string
 		objectDescriptionField?: string
+		objectSummaryField?: string
+		objectImageField?: string
+		allowFiles?: boolean
+		allowedTags?: string[]
+		unique?: boolean
+		facetCacheTtl?: number
+		autoPublish?: boolean
 	}
 
 	public hardValidation: boolean
 	public maxDepth: number
+	public authorization?: Record<string, string[]>
 	public stats?: TSchema['stats']
 
 	constructor(schema: TSchema) {
@@ -38,9 +46,17 @@ export class Schema implements TSchema {
 		this.configuration = schema.configuration || {
 			objectNameField: '',
 			objectDescriptionField: '',
+			objectSummaryField: '',
+			objectImageField: '',
+			allowFiles: false,
+			allowedTags: [],
+			unique: false,
+			facetCacheTtl: 0,
+			autoPublish: false,
 		}
 		this.hardValidation = schema.hardValidation || false
 		this.maxDepth = schema.maxDepth || 0
+		this.authorization = schema.authorization || {}
 		this.stats = schema.stats
 	}
 
@@ -63,6 +79,7 @@ export class Schema implements TSchema {
 			}).optional(),
 			hardValidation: z.boolean(),
 			maxDepth: z.number().int().min(0),
+			authorization: z.record(z.array(z.string())).optional(),
 		})
 
 		return schema.safeParse(this)

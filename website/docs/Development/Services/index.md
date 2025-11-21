@@ -52,3 +52,44 @@ The next step is to set up a database connection. Use DBeaver as your database m
 | password  | nextcloud  |
 
 By completing these steps, you will have a fully functional development environment for OpenRegister. Happy coding!
+
+## Core Services
+
+OpenRegister is built on several key services that handle different aspects of the application:
+
+### Performance & Caching
+- **[CacheInvalidationService](../../technical/cache-invalidation-system.md)**: Enterprise-grade cache consistency across all CRUD operations with RBAC compliance
+
+### Object Management  
+- **ObjectService**: High-level object orchestration and bulk operations
+- **SaveObject**: Individual object save/create/update logic with relations handling
+- **GetObject**: Object retrieval with RBAC and multi-tenancy
+- **DeleteObject**: Object deletion with cascade handling
+
+### Data Validation
+- **ValidateObject**: Schema validation and error handling
+- **ValidationService**: General validation utilities
+
+### Search & Faceting
+- **[FacetService](../../technical/unified-faceting-system.md)**: Hyper-performant faceting system with intelligent caching
+- **SearchService**: Full-text search capabilities
+- **SearchTrailService**: Search analytics and trail logging
+
+### Configuration & Schema
+- **ConfigurationService**: Schema and register configuration management  
+- **SchemaPropertyValidatorService**: Schema property validation
+
+### Multi-tenancy & Organizations
+- **OrganisationService**: Multi-tenant organization management
+- **RegisterService**: Register lifecycle management
+
+### Import/Export
+- **[ImportService](../../technical/import-export-implementation.md)**: Bulk data import capabilities
+- **ExportService**: Data export in various formats
+- **UploadService**: File upload handling
+
+### Files & Assets
+- **FileService**: File attachment management
+- **DownloadService**: File download and streaming
+
+For detailed technical documentation on these services, see the [Cache Invalidation System](../../technical/cache-invalidation-system.md) and [Unified Faceting System](../../technical/unified-faceting-system.md).

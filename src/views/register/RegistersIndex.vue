@@ -1,5 +1,5 @@
 <script setup>
-import { dashboardStore, registerStore, navigationStore } from '../../store/store.js'
+import { dashboardStore, registerStore, navigationStore, configurationStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -17,7 +17,7 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 			<div class="viewActionsBar">
 				<div class="viewInfo">
 					<span class="viewTotalCount">
-						{{ t('openregister', 'Showing {showing} of {total} registers', { showing: filteredRegisters.length, total: dashboardStore.registers.length }) }}
+						{{ t('openregister', 'Showing {showing} of {total} registers', { showing: filteredRegisters.length, total: registerStore.registerList.length }) }}
 					</span>
 					<span v-if="selectedRegisters.length > 0" class="viewIndicator">
 						({{ t('openregister', '{count} selected', { count: selectedRegisters.length }) }})
@@ -61,7 +61,7 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 							</template>
 							Add Register
 						</NcActionButton>
-						<NcActionButton close-after-click @click="dashboardStore.fetchRegisters()">
+						<NcActionButton close-after-click @click="registerStore.refreshRegisterList()">
 							<template #icon>
 								<Refresh :size="20" />
 							</template>
@@ -84,11 +84,11 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 			</div>
 
 			<!-- Loading, Error, and Empty States -->
-			<NcEmptyContent v-if="dashboardStore.loading || dashboardStore.error || !filteredRegisters.length"
+			<NcEmptyContent v-if="registerStore.loading || registerStore.error || !filteredRegisters.length"
 				:name="emptyContentName"
 				:description="emptyContentDescription">
 				<template #icon>
-					<NcLoadingIcon v-if="dashboardStore.loading" :size="64" />
+					<NcLoadingIcon v-if="registerStore.loading" :size="64" />
 					<DatabaseOutline v-else :size="64" />
 				</template>
 			</NcEmptyContent>
@@ -97,11 +97,25 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 			<div v-else>
 				<template v-if="registerStore.viewMode === 'cards'">
 					<div class="cardGrid">
-						<div v-for="register in paginatedRegisters" :key="register.id" class="card">
+						<div v-for="register in paginatedRegisters"
+							:key="register.id"
+							class="card"
+							:class="{
+								'card--managed': isManagedByExternalConfig(register),
+								'card--local': isManagedByLocalConfig(register)
+							}">
 							<div class="cardHeader">
 								<h2 v-tooltip.bottom="register.description">
 									<DatabaseOutline :size="20" />
 									{{ register.title }}
+									<span v-if="isManagedByExternalConfig(register)" class="managedBadge managedBadge--external">
+										<CogOutline :size="16" />
+										{{ t('openregister', 'Managed') }}
+									</span>
+									<span v-else-if="isManagedByLocalConfig(register)" class="managedBadge managedBadge--local">
+										<CogOutline :size="16" />
+										{{ t('openregister', 'Local') }}
+									</span>
 								</h2>
 								<NcActions :primary="true" menu-name="Actions">
 									<template #icon>
@@ -113,10 +127,15 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 										</template>
 										Calculate Sizes
 									</NcActionButton>
-									<NcActionButton close-after-click
+									<NcActionButton
+										v-tooltip="isManagedByExternalConfig(register) ? 'Cannot edit: This register is managed by external configuration ' + getManagingConfiguration(register).title : ''"
+										close-after-click
+										:disabled="isManagedByExternalConfig(register)"
 										@click="registerStore.setRegisterItem({
 											...register,
-											schemas: register.schemas.map(schema => schema.id)
+											schemas: Array.isArray(register.schemas)
+												? register.schemas.map(schema => typeof schema === 'object' ? schema.id : schema)
+												: []
 										}); navigationStore.setModal('editRegister')">
 										<template #icon>
 											<Pencil :size="20" />
@@ -128,6 +147,12 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 											<Export :size="20" />
 										</template>
 										Export
+									</NcActionButton>
+									<NcActionButton close-after-click @click="registerStore.setRegisterItem(register); navigationStore.setModal('publishRegister')">
+										<template #icon>
+											<CloudUploadOutline :size="20" />
+										</template>
+										Publish OAS
 									</NcActionButton>
 									<NcActionButton close-after-click @click="registerStore.setRegisterItem(register); navigationStore.setModal('importRegister')">
 										<template #icon>
@@ -164,146 +189,49 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 									</NcActionButton>
 								</NcActions>
 							</div>
-							<!-- Register Statistics Table -->
-							<table class="statisticsTable registerStats">
+
+							<!-- Register Description -->
+							<div class="registerDescription"
+								:class="{ 'registerDescription--expanded': isDescriptionExpanded(register.id), 'registerDescription--empty': !register.description }"
+								@click="register.description ? toggleDescriptionExpanded(register.id) : null">
+								{{ register.description || t('openregister', 'No description found') }}
+							</div>
+
+							<!-- Schemas section -->
+							<table class="statisticsTable registerSchemas">
 								<thead>
 									<tr>
+										<th>{{ t('openregister', 'Schema Name') }}</th>
 										<th>{{ t('openregister', 'Type') }}</th>
-										<th>{{ t('openregister', 'Total') }}</th>
-										<th>{{ t('openregister', 'Size') }}</th>
 									</tr>
 								</thead>
 								<tbody>
-									<tr>
-										<td>{{ t('openregister', 'Objects') }}</td>
-										<td>{{ register.stats?.objects?.total || 0 }}</td>
-										<td>{{ formatBytes(register.stats?.objects?.size || 0) }}</td>
+									<tr v-for="schema in getDisplayedSchemas(register)" :key="schema.id">
+										<td>{{ schema.title }}</td>
+										<td>{{ schema.type || 'object' }}</td>
 									</tr>
-									<tr class="subRow">
-										<td class="indented">
-											{{ t('openregister', 'Invalid') }}
-										</td>
-										<td>{{ register.stats?.objects?.invalid || 0 }}</td>
-										<td>-</td>
-									</tr>
-									<tr class="subRow">
-										<td class="indented">
-											{{ t('openregister', 'Deleted') }}
-										</td>
-										<td>{{ register.stats?.objects?.deleted || 0 }}</td>
-										<td>-</td>
-									</tr>
-									<tr class="subRow">
-										<td class="indented">
-											{{ t('openregister', 'Locked') }}
-										</td>
-										<td>{{ register.stats?.objects?.locked || 0 }}</td>
-										<td>-</td>
-									</tr>
-									<tr class="subRow">
-										<td class="indented">
-											{{ t('openregister', 'Published') }}
-										</td>
-										<td>{{ register.stats?.objects?.published || 0 }}</td>
-										<td>-</td>
-									</tr>
-									<tr>
-										<td>{{ t('openregister', 'Logs') }}</td>
-										<td>{{ register.stats?.logs?.total || 0 }}</td>
-										<td>{{ formatBytes(register.stats?.logs?.size || 0) }}</td>
-									</tr>
-									<tr>
-										<td>{{ t('openregister', 'Files') }}</td>
-										<td>{{ register.stats?.files?.total || 0 }}</td>
-										<td>{{ formatBytes(register.stats?.files?.size || 0) }}</td>
-									</tr>
-									<tr>
-										<td>{{ t('openregister', 'Schemas') }}</td>
-										<td>{{ register.schemas?.length || 0 }}</td>
-										<td>
-											<button class="toggleButton" @click.stop="toggleSchemaVisibility(register.id)">
-												{{ isSchemasVisible(register.id) ? t('openregister', 'Hide') : t('openregister', 'Show') }}
-											</button>
+									<tr v-if="!register.schemas || register.schemas.length === 0">
+										<td colspan="2" class="emptyText">
+											{{ t('openregister', 'No schemas found') }}
 										</td>
 									</tr>
 								</tbody>
 							</table>
 
-							<!-- Schemas section with v-show -->
-							<div v-show="isSchemasVisible(register.id)" class="nestedCardContainer">
-								<div v-for="schema in register.schemas" :key="schema.id" class="nestedCard">
-									<div
-										class="nestedCardHeader"
-										@click="toggleSchema(schema.id)">
-										<div class="nestedCardTitle">
-											<FileCodeOutline :size="16" />
-											<span>{{ schema.stats?.objects?.total || 0 }} </span>
-											{{ schema.title }}
-											<span class="schemaSize">({{ formatBytes(schema.stats?.objects?.size || 0) }})</span>
-										</div>
-										<button class="toggleButton">
-											<ChevronUp v-if="isSchemaExpanded(schema.id)" :size="20" />
-											<ChevronDown v-else :size="20" />
-										</button>
-									</div>
-
-									<div v-show="isSchemaExpanded(schema.id)" class="nestedCardContent">
-										<table class="statisticsTable schemaStats">
-											<thead>
-												<tr>
-													<th>{{ t('openregister', 'Type') }}</th>
-													<th>{{ t('openregister', 'Total') }}</th>
-													<th>{{ t('openregister', 'Size') }}</th>
-												</tr>
-											</thead>
-											<tbody>
-												<tr>
-													<td>{{ t('openregister', 'Objects') }}</td>
-													<td>{{ schema.stats?.objects?.total || 0 }}</td>
-													<td>{{ formatBytes(schema.stats?.objects?.size || 0) }}</td>
-												</tr>
-												<tr class="subRow">
-													<td class="indented">
-														{{ t('openregister', 'Invalid') }}
-													</td>
-													<td>{{ schema.stats?.objects?.invalid || 0 }}</td>
-													<td>-</td>
-												</tr>
-												<tr class="subRow">
-													<td class="indented">
-														{{ t('openregister', 'Deleted') }}
-													</td>
-													<td>{{ schema.stats?.objects?.deleted || 0 }}</td>
-													<td>-</td>
-												</tr>
-												<tr class="subRow">
-													<td class="indented">
-														{{ t('openregister', 'Locked') }}
-													</td>
-													<td>{{ schema.stats?.objects?.locked || 0 }}</td>
-													<td>-</td>
-												</tr>
-												<tr class="subRow">
-													<td class="indented">
-														{{ t('openregister', 'Published') }}
-													</td>
-													<td>{{ schema.stats?.objects?.published || 0 }}</td>
-													<td>-</td>
-												</tr>
-												<tr>
-													<td>{{ t('openregister', 'Logs') }}</td>
-													<td>{{ schema.stats?.logs?.total || 0 }}</td>
-													<td>{{ formatBytes(schema.stats?.logs?.size || 0) }}</td>
-												</tr>
-												<tr>
-													<td>{{ t('openregister', 'Files') }}</td>
-													<td>{{ schema.stats?.files?.total || 0 }}</td>
-													<td>{{ formatBytes(schema.stats?.files?.size || 0) }}</td>
-												</tr>
-											</tbody>
-										</table>
-									</div>
-								</div>
+							<!-- View More Button -->
+							<div v-if="getRemainingSchemasCount(register) > 0" class="viewMoreContainer">
+								<NcButton
+									type="secondary"
+									@click="toggleRegisterExpanded(register.id)">
+									<template #icon>
+										<ChevronDown v-if="!isRegisterExpanded(register.id)" :size="20" />
+										<ChevronUp v-else :size="20" />
+									</template>
+									{{ isRegisterExpanded(register.id)
+										? t('openregister', 'Show less')
+										: t('openregister', 'View {count} more', { count: getRemainingSchemasCount(register) })
+									}}
+								</NcButton>
 							</div>
 						</div>
 					</div>
@@ -320,9 +248,6 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 											@update:checked="toggleSelectAll" />
 									</th>
 									<th>{{ t('openregister', 'Title') }}</th>
-									<th>{{ t('openregister', 'Objects (Total/Size)') }}</th>
-									<th>{{ t('openregister', 'Logs (Total/Size)') }}</th>
-									<th>{{ t('openregister', 'Files (Total/Size)') }}</th>
 									<th>{{ t('openregister', 'Schemas') }}</th>
 									<th>{{ t('openregister', 'Created') }}</th>
 									<th>{{ t('openregister', 'Updated') }}</th>
@@ -335,7 +260,11 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 								<tr v-for="register in paginatedRegisters"
 									:key="register.id"
 									class="viewTableRow"
-									:class="{ viewTableRowSelected: selectedRegisters.includes(register.id) }">
+									:class="{
+										viewTableRowSelected: selectedRegisters.includes(register.id),
+										'viewTableRow--managed': isManagedByExternalConfig(register),
+										'viewTableRow--local': isManagedByLocalConfig(register)
+									}">
 									<td class="tableColumnCheckbox">
 										<NcCheckboxRadioSwitch
 											:checked="selectedRegisters.includes(register.id)"
@@ -343,15 +272,24 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 									</td>
 									<td class="tableColumnTitle">
 										<div class="titleContent">
-											<strong>{{ register.title }}</strong>
+											<strong>
+												{{ register.title }}
+												<span v-if="isManagedByExternalConfig(register)" class="managedBadge managedBadge--external">
+													<CogOutline :size="16" />
+													{{ t('openregister', 'Managed') }}
+												</span>
+												<span v-else-if="isManagedByLocalConfig(register)" class="managedBadge managedBadge--local">
+													<CogOutline :size="16" />
+													{{ t('openregister', 'Local') }}
+												</span>
+											</strong>
 											<span v-if="register.description" class="textDescription textEllipsis">{{ register.description }}</span>
 										</div>
 									</td>
-									<td>{{ register.stats?.objects?.total || 0 }}/{{ formatBytes(register.stats?.objects?.size || 0) }}</td>
-									<td>{{ register.stats?.logs?.total || 0 }}/{{ formatBytes(register.stats?.logs?.size || 0) }}</td>
-									<td>{{ register.stats?.files?.total || 0 }}/{{ formatBytes(register.stats?.files?.size || 0) }}</td>
 									<td class="tableColumnConstrained">
-										{{ register.schemas.map(schema => schema.title).join(', ') }}
+										{{ register.schemas?.length || 0 }} {{ t('openregister', 'schema{plural}', {
+											plural: register.schemas?.length !== 1 ? 's' : ''
+										}) }}
 									</td>
 									<td>{{ register.created ? new Date(register.created).toLocaleDateString({day: '2-digit', month: '2-digit', year: 'numeric'}) + ', ' + new Date(register.created).toLocaleTimeString({hour: '2-digit', minute: '2-digit', second: '2-digit'}) : '-' }}</td>
 									<td>{{ register.updated ? new Date(register.updated).toLocaleDateString({day: '2-digit', month: '2-digit', year: 'numeric'}) + ', ' + new Date(register.updated).toLocaleTimeString({hour: '2-digit', minute: '2-digit', second: '2-digit'}) : '-' }}</td>
@@ -366,10 +304,15 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 												</template>
 												Calculate Sizes
 											</NcActionButton>
-											<NcActionButton close-after-click
+											<NcActionButton
+												v-tooltip="isManagedByExternalConfig(register) ? 'Cannot edit: This register is managed by external configuration ' + getManagingConfiguration(register).title : ''"
+												close-after-click
+												:disabled="isManagedByExternalConfig(register)"
 												@click="registerStore.setRegisterItem({
 													...register,
-													schemas: register.schemas.map(schema => schema.id)
+													schemas: Array.isArray(register.schemas)
+														? register.schemas.map(schema => typeof schema === 'object' ? schema.id : schema)
+														: []
 												}); navigationStore.setModal('editRegister')">
 												<template #icon>
 													<Pencil :size="20" />
@@ -381,6 +324,12 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 													<Export :size="20" />
 												</template>
 												Export
+											</NcActionButton>
+											<NcActionButton close-after-click @click="registerStore.setRegisterItem(register); navigationStore.setModal('publishRegister')">
+												<template #icon>
+													<CloudUploadOutline :size="20" />
+												</template>
+												Publish OAS
 											</NcActionButton>
 											<NcActionButton close-after-click @click="registerStore.setRegisterItem(register); navigationStore.setModal('importRegister')">
 												<template #icon>
@@ -439,11 +388,8 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 </template>
 
 <script>
-import { NcAppContent, NcEmptyContent, NcLoadingIcon, NcActions, NcActionButton, NcCheckboxRadioSwitch } from '@nextcloud/vue'
+import { NcAppContent, NcEmptyContent, NcLoadingIcon, NcActions, NcActionButton, NcCheckboxRadioSwitch, NcButton } from '@nextcloud/vue'
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
-import FileCodeOutline from 'vue-material-design-icons/FileCodeOutline.vue'
-import ChevronDown from 'vue-material-design-icons/ChevronDown.vue'
-import ChevronUp from 'vue-material-design-icons/ChevronUp.vue'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
@@ -455,9 +401,12 @@ import Calculator from 'vue-material-design-icons/Calculator.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
+import ChevronDown from 'vue-material-design-icons/ChevronDown.vue'
+import ChevronUp from 'vue-material-design-icons/ChevronUp.vue'
+import CogOutline from 'vue-material-design-icons/CogOutline.vue'
+import CloudUploadOutline from 'vue-material-design-icons/CloudUploadOutline.vue'
 import axios from '@nextcloud/axios'
 import { showError } from '@nextcloud/dialogs'
-import formatBytes from '../../services/formatBytes.js'
 import PaginationComponent from '../../components/PaginationComponent.vue'
 
 export default {
@@ -469,10 +418,8 @@ export default {
 		NcActions,
 		NcActionButton,
 		NcCheckboxRadioSwitch,
+		NcButton,
 		DatabaseOutline,
-		FileCodeOutline,
-		ChevronDown,
-		ChevronUp,
 		DotsHorizontal,
 		Pencil,
 		TrashCanOutline,
@@ -484,19 +431,26 @@ export default {
 		Refresh,
 		Plus,
 		InformationOutline,
+		ChevronDown,
+		ChevronUp,
+		CogOutline,
+		CloudUploadOutline,
 		PaginationComponent,
 	},
 	data() {
 		return {
-			expandedSchemas: [],
 			calculating: null,
-			showSchemas: {},
 			selectedRegisters: [],
+			expandedRegisters: [], // Track which registers are expanded
+			expandedDescriptions: [], // Track which descriptions are expanded
 		}
 	},
 	computed: {
+		registerStore() {
+			return registerStore
+		},
 		filteredRegisters() {
-			return dashboardStore.registers.filter(register =>
+			return registerStore.registerList.filter(register =>
 				register.title !== 'System Totals'
 				&& register.title !== 'Orphaned Items',
 			)
@@ -506,12 +460,7 @@ export default {
 			const end = start + (registerStore.pagination.limit || 20)
 			return this.filteredRegisters.slice(start, end)
 		},
-		isSchemaExpanded() {
-			return (schemaId) => this.expandedSchemas.includes(schemaId)
-		},
-		isSchemasVisible() {
-			return (registerId) => this.showSchemas[registerId] || false
-		},
+
 		allSelected() {
 			return this.filteredRegisters.length > 0 && this.filteredRegisters.every(register => this.selectedRegisters.includes(register.id))
 		},
@@ -519,8 +468,8 @@ export default {
 			return this.selectedRegisters.length > 0 && !this.allSelected
 		},
 		emptyContentName() {
-			if (dashboardStore.error) {
-				return dashboardStore.error
+			if (registerStore.error) {
+				return registerStore.error
 			} else if (!this.filteredRegisters.length) {
 				return t('openregister', 'No registers found')
 			} else {
@@ -528,7 +477,7 @@ export default {
 			}
 		},
 		emptyContentDescription() {
-			if (dashboardStore.error) {
+			if (registerStore.error) {
 				return t('openregister', 'Please try again later.')
 			} else if (!this.filteredRegisters.length) {
 				return t('openregister', 'No registers are available.')
@@ -537,8 +486,16 @@ export default {
 			}
 		},
 	},
-	mounted() {
-		dashboardStore.preload()
+	async mounted() {
+		try {
+			// Load registers and configurations in parallel
+			await Promise.all([
+				registerStore.refreshRegisterList(),
+				configurationStore.refreshConfigurationList(),
+			])
+		} catch (error) {
+			console.error('Failed to load data:', error)
+		}
 	},
 	methods: {
 		onPageChanged(page) {
@@ -547,16 +504,127 @@ export default {
 		onPageSizeChanged(pageSize) {
 			registerStore.setPagination(1, pageSize)
 		},
-		toggleSchema(schemaId) {
-			const index = this.expandedSchemas.indexOf(schemaId)
+
+		/**
+		 * Check if a register is expanded
+		 *
+		 * @param {number} registerId - Register ID
+		 * @return {boolean} True if register is expanded
+		 */
+		isRegisterExpanded(registerId) {
+			return this.expandedRegisters.includes(registerId)
+		},
+
+		/**
+		 * Toggle register expanded state
+		 *
+		 * @param {number} registerId - Register ID
+		 * @return {void}
+		 */
+		toggleRegisterExpanded(registerId) {
+			const index = this.expandedRegisters.indexOf(registerId)
 			if (index > -1) {
-				this.expandedSchemas.splice(index, 1)
+				this.expandedRegisters.splice(index, 1)
 			} else {
-				this.expandedSchemas.push(schemaId)
+				this.expandedRegisters.push(registerId)
+			}
+		},
+
+		/**
+		 * Check if a description is expanded
+		 *
+		 * @param {number} registerId - Register ID
+		 * @return {boolean} True if description is expanded
+		 */
+		isDescriptionExpanded(registerId) {
+			return this.expandedDescriptions.includes(registerId)
+		},
+
+		/**
+		 * Toggle description expanded state
+		 *
+		 * @param {number} registerId - Register ID
+		 * @return {void}
+		 */
+		toggleDescriptionExpanded(registerId) {
+			const index = this.expandedDescriptions.indexOf(registerId)
+			if (index > -1) {
+				this.expandedDescriptions.splice(index, 1)
+			} else {
+				this.expandedDescriptions.push(registerId)
+			}
+		},
+
+		/**
+		 * Get displayed schemas for a register (first 5 or all if expanded)
+		 *
+		 * @param {object} register - Register object
+		 * @return {Array} Schemas to display
+		 */
+		getDisplayedSchemas(register) {
+			if (!register.schemas || register.schemas.length === 0) {
+				return []
 			}
 
-			// Force reactivity update
-			this.expandedSchemas = [...this.expandedSchemas]
+			if (this.isRegisterExpanded(register.id)) {
+				return register.schemas
+			}
+
+			// Show only first 5 schemas
+			return register.schemas.slice(0, 5)
+		},
+
+		/**
+		 * Get count of remaining schemas not displayed
+		 *
+		 * @param {object} register - Register object
+		 * @return {number} Count of remaining schemas
+		 */
+		getRemainingSchemasCount(register) {
+			const total = register.schemas?.length || 0
+			return Math.max(0, total - 5)
+		},
+
+		/**
+		 * Get the configuration that manages this register
+		 *
+		 * @param {object} register - Register object
+		 * @return {object|null} Configuration object or null if not managed
+		 */
+		getManagingConfiguration(register) {
+			if (!register || !register.id) return null
+
+			return configurationStore.configurationList.find(
+				config => config.registers && config.registers.includes(register.id),
+			) || null
+		},
+		/**
+		 * Check if register is managed by an external (imported) configuration
+		 * External configurations are locked and cannot be edited
+		 *
+		 * @param {object} register - Register object
+		 * @return {boolean} True if managed by external configuration
+		 */
+		isManagedByExternalConfig(register) {
+			const config = this.getManagingConfiguration(register)
+			if (!config) return false
+
+			// External configurations: github, gitlab, url sources, or isLocal === false
+			return (config.sourceType && ['github', 'gitlab', 'url'].includes(config.sourceType)) || config.isLocal === false
+		},
+		/**
+		 * Check if register is managed by a local configuration
+		 * Local configurations are editable
+		 *
+		 * @param {object} register - Register object
+		 * @return {boolean} True if managed by local configuration
+		 */
+		isManagedByLocalConfig(register) {
+			const config = this.getManagingConfiguration(register)
+			if (!config) return false
+
+			// Local configurations: sourceType === 'local' or 'manual', or isLocal === true
+			return config.sourceType === 'local' || config.sourceType === 'manual' || config.isLocal === true
 		},
 
 		async calculateSizes(register) {
@@ -569,7 +637,7 @@ export default {
 				// Call the dashboard store to calculate sizes
 				await dashboardStore.calculateSizes(register.id)
 				// Refresh the registers list to get updated sizes
-				await dashboardStore.fetchRegisters()
+				await registerStore.refreshRegisterList()
 			} catch (error) {
 				console.error('Error calculating sizes:', error)
 				showError(t('openregister', 'Failed to calculate sizes'))
@@ -603,10 +671,6 @@ export default {
 			window.open(`https://redocly.github.io/redoc/?url=${encodeURIComponent(apiUrl)}`, '_blank')
 		},
 
-		toggleSchemaVisibility(registerId) {
-			this.$set(this.showSchemas, registerId, !this.showSchemas[registerId])
-		},
-
 		openAllApisDoc() {
 			const baseUrl = window.location.origin
 			const apiUrl = `${baseUrl}/apps/openregister/api/registers/oas`
@@ -617,7 +681,7 @@ export default {
 			// Set the register ID in the register store for reference
 			registerStore.setRegisterItem({ id: register.id })
 			// Navigate to detail view which will use dashboard store data
-			navigationStore.setSelected('register-detail')
+			this.$router.push(`/registers/${register.id}`)
 		},
 
 		toggleSelectAll(checked) {
@@ -640,14 +704,147 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.schemaSize {
+/* Register card description */
+.registerDescription {
+	padding: 16px;
+	margin: 12px 0 12px 0;
+	background-color: var(--color-background-hover);
+	color: var(--color-text-lighter);
+	font-size: 0.95em;
+	line-height: 1.5;
+	min-height: 80px;
+	max-height: 100px;
+	overflow: hidden;
+	word-wrap: break-word;
+	overflow-wrap: break-word;
+	word-break: break-word;
+	hyphens: auto;
+	box-sizing: border-box;
+	cursor: pointer;
+	transition: max-height 0.3s ease;
+	display: -webkit-box;
+	-webkit-line-clamp: 4;
+	line-clamp: 4;
+	-webkit-box-orient: vertical;
+}
+
+.registerDescription:hover {
+	background-color: var(--color-background-dark);
+}
+
+.registerDescription--expanded {
+	max-height: none !important;
+	display: block;
+	-webkit-line-clamp: unset;
+	line-clamp: unset;
+}
+
+.registerDescription--empty {
+	cursor: default;
+	font-style: italic;
 	color: var(--color-text-maxcontrast);
-	font-size: 0.9em;
-	margin-inline-start: 4px;
+}
+
+.registerDescription--empty:hover {
+	background-color: var(--color-background-hover);
+}
+
+/* View more button container */
+.viewMoreContainer {
+	display: flex;
+	justify-content: stretch;
+	padding: 0;
+}
+
+.viewMoreContainer button {
+	width: 100%;
+	border-radius: 0 0 8px 8px;
+}
+
+/* Empty text styling */
+.emptyText {
+	text-align: center;
+	color: var(--color-text-lighter);
+	font-style: italic;
+	padding: 16px !important;
+}
+
+/* Remove all borders between sections */
+.card .registerSchemas {
+	border-top: none !important;
+	margin-top: 0 !important;
+}
+
+.card .registerSchemas thead {
+	border-top: none !important;
+}
+
+.card .registerSchemas thead tr {
+	border-top: none !important;
+}
+
+.card .registerSchemas thead th {
+	border-top: none !important;
+}
+
+/* Remove border after card header */
+.card .cardHeader {
+	border-bottom: none !important;
+	margin-bottom: 0 !important;
+	padding-bottom: 0 !important;
+}
+
+.card .cardHeader h2 {
+	margin-bottom: 0;
 }
 
 /* So that the actions menu is not overlapped by the sidebar button when it is closed */
 .sidebar-closed {
 	margin-right: 35px;
+}
+
+/* Card borders for managed registers (external - green) */
+.card--managed {
+	border: 2px solid var(--color-success);
+}
+
+/* Card borders for local configurations (orange) */
+.card--local {
+	border: 2px solid var(--color-warning);
+}
+
+/* Table row borders for managed registers (external - green) */
+.viewTableRow--managed {
+	border-left: 4px solid var(--color-success);
+}
+
+/* Table row borders for local configurations (orange) */
+.viewTableRow--local {
+	border-left: 4px solid var(--color-warning);
+}
+
+/* Managed by Configuration badge */
+.managedBadge {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 4px 8px;
+	border-radius: 12px;
+	font-size: 0.75rem;
+	font-weight: 600;
+	margin-left: 8px;
+	vertical-align: middle;
+}
+
+/* External (managed) badge - green */
+.managedBadge--external {
+	background: var(--color-success);
+	color: white;
+}
+
+/* Local configuration badge - orange */
+.managedBadge--local {
+	background: var(--color-warning);
+	color: var(--color-main-background);
 }
 </style>

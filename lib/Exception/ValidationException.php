@@ -58,9 +58,9 @@ class ValidationException extends Exception
     /**
      * Returns the validation errors.
      *
-     * @return ValidationError The validation errors.
+     * @return ValidationError|null The validation errors or null if none set.
      */
-    public function getErrors(): ValidationError
+    public function getErrors(): ?ValidationError
     {
         return $this->errors;
 

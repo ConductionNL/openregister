@@ -62,6 +62,8 @@ Excel files (.xlsx) should follow these guidelines:
 - Each subsequent row represents an object
 - Multiple sheets can be used for different schemas
 - Sheet names should match schema names
+- **Column Order**: The 'id' column is always first, followed by schema properties, then metadata columns
+- **Metadata Columns**: Metadata columns are prefixed with '_' (e.g., '_created', '_updated', '_owner') and are placed at the end
 
 #### CSV Format
 CSV files should follow these guidelines:
@@ -69,6 +71,8 @@ CSV files should follow these guidelines:
 - Each subsequent row represents an object
 - Use comma as delimiter
 - Use double quotes for text fields
+- **Column Order**: The 'id' column is always first, followed by schema properties, then metadata columns
+- **Metadata Columns**: Metadata columns are prefixed with '_' (e.g., '_created', '_updated', '_owner') and are placed at the end
 
 ### Import Validation
 
@@ -77,6 +81,41 @@ The system will validate your import file to ensure:
 - All required fields are present
 - Schema references in objects are valid
 - Data types match the schema definitions
+
+### Metadata Columns
+
+When importing data, the system automatically handles metadata columns:
+
+- **Ignored Columns**: Columns with headers starting with '_' (e.g., '_created', '_updated', '_owner') are automatically ignored during import
+- **Purpose**: These columns contain system metadata that should not be modified during import
+- **Export Only**: Metadata columns are included in exports for reference but are not processed during import
+
+#### Available Metadata Columns
+
+The following metadata columns are exported with '_' prefix:
+- `_created`: Object creation timestamp
+- `_updated`: Last update timestamp  
+- `_published`: Publication timestamp
+- `_depublished`: Depublication timestamp
+- `_deleted`: Deletion information
+- `_locked`: Lock status and information
+- `_owner`: Object owner
+- `_organisation`: Associated organisation
+- `_application`: Associated application
+- `_folder`: Storage folder path
+- `_size`: Object size in bytes
+- `_version`: Object version
+- `_schemaVersion`: Schema version when object was created
+- `_uri`: Object URI
+- `_register`: Associated register
+- `_schema`: Associated schema
+- `_name`: Object name
+- `_description`: Object description
+- `_validation`: Validation results
+- `_geo`: Geographical information
+- `_retention`: Retention policy information
+- `_authorization`: Authorization details
+- `_groups`: Group permissions
 
 ### Import Results Summary
 
@@ -131,12 +170,33 @@ The Excel export will:
 - Create a separate sheet for each schema
 - Include all object data in tabular format
 - Use headers matching schema properties
+- **Column Structure**: 
+  - Column A: 'id' (object UUID)
+  - Columns B onwards: Schema properties (e.g., 'naam', 'website', 'type')
+  - Last columns: Metadata fields with '_' prefix (e.g., '_created', '_updated')
 
 #### CSV Format
 The CSV export will:
 - Include all object data in a single file
 - Use headers matching schema properties
 - Use comma as delimiter
+- **Column Structure**: 
+  - First column: 'id' (object UUID)
+  - Middle columns: Schema properties (e.g., 'naam', 'website', 'type')
+  - Last columns: Metadata fields with '_' prefix (e.g., '_created', '_updated')
+
+#### Export Column Order Example
+
+For a schema with properties 'naam', 'website', and 'type', the export will have this column order:
+
+```
+id | naam | website | type | _created | _updated | _owner | _organisation | ... (other metadata)
+```
+
+This structure ensures:
+- Object data is easily accessible in the first columns
+- Metadata is clearly separated and identifiable
+- Import compatibility is maintained by ignoring metadata columns
 
 ### Error Handling
 
@@ -156,4 +216,12 @@ If any errors occur during the export process:
 6. **Format Choice**: 
    - Use JSON for configuration and complex data structures
    - Use Excel for bulk data and when working with multiple schemas
-   - Use CSV for simple data and when working with external tools 
+   - Use CSV for simple data and when working with external tools
+7. **Metadata Handling**:
+   - Do not modify metadata columns (those starting with '_') in import files
+   - Use metadata columns for reference and audit purposes
+   - Keep metadata columns when re-importing data to maintain data integrity
+8. **Column Management**:
+   - Always keep the 'id' column as the first column for consistency
+   - Use schema property names exactly as defined in your schema
+   - Avoid renaming metadata columns to prevent import issues 

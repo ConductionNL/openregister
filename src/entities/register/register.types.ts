@@ -9,6 +9,21 @@ export type TRegister = {
     updated?: string
     created: string
     slug: string // Slug for the register
+    groups?: string[]
+    quota?: {
+        storage?: number | null
+        bandwidth?: number | null
+        requests?: number | null
+        users?: number | null
+        groups?: number | null
+    }
+    usage?: {
+        storage?: number
+        bandwidth?: number
+        requests?: number
+        users?: number
+        groups?: number
+    }
     stats?: {
         objects: {
             total: number

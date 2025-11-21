@@ -225,6 +225,8 @@ class MongoDbService
      * @throws \GuzzleHttp\Exception\GuzzleException When API request fails.
      *
      * @return array Empty array on successful deletion.
+     *
+     * @psalm-return array<never, never>
      */
     public function deleteObject(array $filters, array $config): array
     {

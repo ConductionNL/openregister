@@ -8,22 +8,28 @@ import { navigationStore } from '../store/store.js'
 		<EditRegister />
 		<ImportRegister />
 		<ExportRegister />
+		<PublishRegister />
 		<DeleteRegister />
 		<EditConfiguration v-if="navigationStore.modal === 'editConfiguration'" />
-		<DeleteConfiguration />
+		<DeleteConfiguration v-if="navigationStore.dialog === 'deleteConfiguration'" />
 		<ImportConfiguration />
 		<ExportConfiguration />
+		<PublishConfiguration />
 		<EditSchema v-if="navigationStore.modal === 'editSchema'" />
+		<ExploreSchema v-if="navigationStore.modal === 'exploreSchema'" />
 		<DeleteSchema />
+		<ValidateSchema v-if="navigationStore.modal === 'validateSchema'" />
+		<DeleteSchemaObjects v-if="navigationStore.modal === 'deleteSchemaObjects'" />
+		<PublishSchemaObjects v-if="navigationStore.modal === 'publishSchemaObjects'" />
 		<UploadSchema />
 		<EditSchemaProperty v-if="navigationStore.modal === 'editSchemaProperty'" />
 		<DeleteSchemaProperty />
 		<EditSource />
 		<DeleteSource />
-		<EditObject v-if="navigationStore.modal === 'editObject'" />
 		<MergeObject v-if="navigationStore.modal === 'mergeObject'" />
 		<MigrationObject v-if="navigationStore.modal === 'migrationObject'" />
 		<DeleteObject />
+		<CopyObject v-if="navigationStore.dialog === 'copyObject'" />
 		<LockObject />
 		<ViewObject />
 		<DownloadObject v-if="navigationStore.modal === 'downloadObject'" />
@@ -38,6 +44,14 @@ import { navigationStore } from '../store/store.js'
 		<UploadFiles />
 		<ViewSource />
 		<ViewConfiguration />
+		<JoinOrganisation v-if="navigationStore.modal === 'joinOrganisation'" />
+		<!-- EditOrganisation: modal={{ navigationStore.modal }} -->
+		<EditOrganisation v-if="navigationStore.modal === 'editOrganisation'" />
+		<DeleteOrganisation v-if="navigationStore.modal === 'deleteOrganisation'" />
+		<ManageOrganisationRoles v-if="navigationStore.modal === 'manageOrganisationRoles'" />
+		<EditApplication v-if="navigationStore.modal === 'editApplication'" />
+		<EditAgent v-if="navigationStore.modal === 'editAgent'" />
+		<DeleteAgent />
 	</div>
 </template>
 
@@ -45,22 +59,28 @@ import { navigationStore } from '../store/store.js'
 import EditRegister from './register/EditRegister.vue'
 import ImportRegister from './register/ImportRegister.vue'
 import ExportRegister from './register/ExportRegister.vue'
+import PublishRegister from './register/PublishRegister.vue'
 import DeleteRegister from './register/DeleteRegister.vue'
 import EditConfiguration from './configuration/EditConfiguration.vue'
 import DeleteConfiguration from './configuration/DeleteConfiguration.vue'
 import ImportConfiguration from './configuration/ImportConfiguration.vue'
 import ExportConfiguration from './configuration/ExportConfiguration.vue'
+import PublishConfiguration from './configuration/PublishConfiguration.vue'
 import EditSchema from './schema/EditSchema.vue'
+import ExploreSchema from './schema/ExploreSchema.vue'
 import DeleteSchema from './schema/DeleteSchema.vue'
+import ValidateSchema from './schema/ValidateSchema.vue'
+import DeleteSchemaObjects from './schema/DeleteSchemaObjects.vue'
+import PublishSchemaObjects from './schema/PublishSchemaObjects.vue'
 import UploadSchema from './schema/UploadSchema.vue'
 import EditSchemaProperty from './schema/EditSchemaProperty.vue'
 import DeleteSchemaProperty from './schema/DeleteSchemaProperty.vue'
 import EditSource from './source/EditSource.vue'
 import DeleteSource from './source/DeleteSource.vue'
-import EditObject from './object/EditObject.vue'
 import MergeObject from './object/MergeObject.vue'
 import MigrationObject from './object/MigrationObject.vue'
 import DeleteObject from './object/DeleteObject.vue'
+import CopyObject from './object/CopyObject.vue'
 import UploadObject from './object/UploadObject.vue'
 import ViewObjectAuditTrail from './objectAuditTrail/ViewObjectAuditTrail.vue'
 import LockObject from './object/LockObject.vue'
@@ -75,28 +95,41 @@ import RestoreMultiple from './deleted/RestoreMultiple.vue'
 import PurgeMultiple from './deleted/PurgeMultiple.vue'
 import ViewSource from './source/ViewSource.vue'
 import ViewConfiguration from './configuration/ViewConfiguration.vue'
+import JoinOrganisation from './organisation/JoinOrganisation.vue'
+import EditOrganisation from './organisation/EditOrganisation.vue'
+import DeleteOrganisation from './organisation/DeleteOrganisation.vue'
+import ManageOrganisationRoles from './organisation/ManageOrganisationRoles.vue'
+import EditApplication from './application/EditApplication.vue'
+import EditAgent from './agent/EditAgent.vue'
+import DeleteAgent from './agent/DeleteAgent.vue'
 export default {
 	name: 'Modals',
 	components: {
 		EditRegister,
 		ImportRegister,
 		ExportRegister,
+		PublishRegister,
 		DeleteRegister,
 		EditConfiguration,
 		DeleteConfiguration,
 		ImportConfiguration,
 		ExportConfiguration,
+		PublishConfiguration,
 		EditSchema,
+		ExploreSchema,
 		DeleteSchema,
+		ValidateSchema,
+		DeleteSchemaObjects,
+		PublishSchemaObjects,
 		UploadSchema,
 		EditSchemaProperty,
 		DeleteSchemaProperty,
 		EditSource,
 		DeleteSource,
-		EditObject,
 		MergeObject,
 		MigrationObject,
 		DeleteObject,
+		CopyObject,
 		UploadObject,
 		ViewObjectAuditTrail,
 		LockObject,
@@ -111,6 +144,13 @@ export default {
 		PurgeMultiple,
 		ViewSource,
 		ViewConfiguration,
+		JoinOrganisation,
+		EditOrganisation,
+		DeleteOrganisation,
+		ManageOrganisationRoles,
+		EditApplication,
+		EditAgent,
+		DeleteAgent,
 	},
 }
 </script>

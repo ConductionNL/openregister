@@ -296,12 +296,12 @@ export default {
 		metadataDateFields() {
 			// eslint-disable-next-line no-console
 			console.log('metadataDateFields computed - availableMetadataFacets:', this.objectStore.availableMetadataFacets)
-			
+
 			const fields = {}
 			Object.entries(this.objectStore.availableMetadataFacets).forEach(([fieldName, field]) => {
 				// eslint-disable-next-line no-console
 				console.log('Checking field:', fieldName, 'with data:', field)
-				
+
 				// Include fields that are date type and support range faceting
 				if (field.type === 'date' && field.facet_types && field.facet_types.includes('range')) {
 					// eslint-disable-next-line no-console
@@ -309,7 +309,7 @@ export default {
 					fields[fieldName] = field
 				}
 			})
-			
+
 			// eslint-disable-next-line no-console
 			console.log('Final metadataDateFields:', fields)
 			return fields
@@ -350,6 +350,11 @@ export default {
 		},
 	},
 	methods: {
+		/**
+		 * Check if a facet is currently active
+		 * @param {string} fieldName - Name of the field to check
+		 * @return {boolean} True if facet is active
+		 */
 		isActiveFacet(fieldName) {
 			if (fieldName.startsWith('@self.')) {
 				const field = fieldName.replace('@self.', '')
@@ -358,11 +363,22 @@ export default {
 				return Boolean(this.objectStore.activeFacets._facets?.[fieldName])
 			}
 		},
+		/**
+		 * Toggle a facet's active state
+		 * @param {string} fieldName - Name of the field to toggle
+		 * @param {string} facetType - Type of facet
+		 * @param {boolean} enabled - Whether to enable or disable the facet
+		 */
 		async toggleFacet(fieldName, facetType, enabled) {
 			await this.objectStore.updateActiveFacet(fieldName, facetType, enabled)
 			// Trigger search after toggling facet
 			await this.objectStore.refreshObjectList()
 		},
+		/**
+		 * Get display name for a facet field
+		 * @param {string} facetField - Name of the facet field
+		 * @return {string} Display name for the facet
+		 */
 		getFacetDisplayName(facetField) {
 			if (facetField === '@self') {
 				return 'Metadata'
@@ -381,6 +397,11 @@ export default {
 
 			return facetField
 		},
+		/**
+		 * Get display name for an active facet field
+		 * @param {string} facetField - Name of the facet field
+		 * @return {string} Display name for the active facet
+		 */
 		getActiveFacetDisplayName(facetField) {
 			// Handle nested facet fields (e.g., '@self' contains multiple sub-facets)
 			if (facetField === '@self') {
@@ -390,6 +411,10 @@ export default {
 			// For individual fields, use the same logic as getFacetDisplayName
 			return this.getFacetDisplayName(facetField)
 		},
+		/**
+		 * Remove a specific filter
+		 * @param {string} facetField - Name of the facet field to remove
+		 */
 		async removeFilter(facetField) {
 			// Remove a specific active filter
 			if (facetField === '@self') {
@@ -405,6 +430,9 @@ export default {
 			// Trigger search after removing filter
 			await this.objectStore.refreshObjectList()
 		},
+		/**
+		 * Clear all active filters
+		 */
 		async clearAllFilters() {
 			// Clear all active facets and filters
 			this.objectStore.setActiveFacets({})
@@ -414,7 +442,8 @@ export default {
 		/**
 		 * Get dropdown options for a specific field
 		 * Uses facet results if available, otherwise uses sample values
-		 * @param fieldName
+		 * @param {string} fieldName - Name of the field
+		 * @return {Array} Array of dropdown options
 		 */
 		getDropdownOptions(fieldName) {
 			const options = []
@@ -470,7 +499,8 @@ export default {
 		},
 		/**
 		 * Get currently selected values for a dropdown
-		 * @param fieldName
+		 * @param {string} fieldName - Name of the field
+		 * @return {Array} Array of selected values
 		 */
 		getSelectedDropdownValues(fieldName) {
 			// Get selected values from active filters
@@ -501,8 +531,8 @@ export default {
 		},
 		/**
 		 * Update dropdown selection for a field
-		 * @param fieldName
-		 * @param selectedOptions
+		 * @param {string} fieldName - Name of the field
+		 * @param {Array} selectedOptions - Array of selected options
 		 */
 		async updateDropdownSelection(fieldName, selectedOptions) {
 			// eslint-disable-next-line no-console
@@ -532,8 +562,8 @@ export default {
 		},
 		/**
 		 * Update a field facet with specific configuration
-		 * @param fieldName
-		 * @param facetConfig
+		 * @param {string} fieldName - Name of the field
+		 * @param {object} facetConfig - Facet configuration object
 		 */
 		async updateFieldFacet(fieldName, facetConfig) {
 			// eslint-disable-next-line no-console
@@ -564,7 +594,8 @@ export default {
 		},
 		/**
 		 * Capitalize field names for display
-		 * @param fieldName
+		 * @param {string} fieldName - Name of the field to capitalize
+		 * @return {string} Capitalized field name
 		 */
 		capitalizeFieldName(fieldName) {
 			// Handle common field names and provide proper capitalization
@@ -594,7 +625,8 @@ export default {
 		},
 		/**
 		 * Format date range for display
-		 * @param dateRange
+		 * @param {object} dateRange - Date range object with min and max dates
+		 * @return {string} Formatted date range string
 		 */
 		formatDateRange(dateRange) {
 			if (!dateRange || !dateRange.min || !dateRange.max) {
@@ -613,17 +645,18 @@ export default {
 		},
 		/**
 		 * Get date range value for a specific field and bound (from/to)
-		 * @param fieldName
-		 * @param bound
+		 * @param {string} fieldName - Name of the field
+		 * @param {string} bound - Bound type ('from' or 'to')
+		 * @return {string|null} Date value or null
 		 */
 		getDateRangeValue(fieldName, bound) {
 			// eslint-disable-next-line no-console
 			console.log('getDateRangeValue called:', { fieldName, bound })
-			
+
 			const activeFacetData = this.objectStore.activeFacets._facets?.['@self']?.[fieldName]
 			// eslint-disable-next-line no-console
 			console.log('Active facet data for', fieldName, ':', activeFacetData)
-			
+
 			if (!activeFacetData || activeFacetData.type !== 'range' || !activeFacetData.ranges) {
 				// eslint-disable-next-line no-console
 				console.log('No valid range data found, returning null')
@@ -645,14 +678,14 @@ export default {
 		},
 		/**
 		 * Update date range for a field
-		 * @param fieldName
-		 * @param bound
-		 * @param value
+		 * @param {string} fieldName - Name of the field
+		 * @param {string} bound - Bound type ('from' or 'to')
+		 * @param {string} value - Date value
 		 */
 		async updateDateRange(fieldName, bound, value) {
 			// eslint-disable-next-line no-console
 			console.log('updateDateRange called:', { fieldName, bound, value })
-			
+
 			// Get current facet configuration
 			const currentFacets = { ...this.objectStore.activeFacets }
 			// eslint-disable-next-line no-console
@@ -694,10 +727,10 @@ export default {
 			try {
 				// Update store facets
 				this.objectStore.setActiveFacets(currentFacets)
-				
+
 				// IMPORTANT: Also update activeFilters with proper operator-based filters
 				this.updateActiveFiltersFromDateRange(fieldName, rangeFacet)
-				
+
 				// eslint-disable-next-line no-console
 				console.log('About to refresh object list...')
 				await this.objectStore.refreshObjectList()
@@ -712,16 +745,16 @@ export default {
 		/**
 		 * Update activeFilters based on date range facet
 		 * Converts range facets to proper filter parameters like @self[created][>=]=2025-06-24T00:00:00+00:00
-		 * @param fieldName
-		 * @param rangeFacet
+		 * @param {string} fieldName - Name of the field
+		 * @param {object} rangeFacet - Range facet configuration object
 		 */
 		updateActiveFiltersFromDateRange(fieldName, rangeFacet) {
 			// eslint-disable-next-line no-console
 			console.log('updateActiveFiltersFromDateRange called:', { fieldName, rangeFacet })
-			
+
 			// Get current active filters
 			const currentFilters = { ...this.objectStore.activeFilters }
-			
+
 			// Remove existing date range filters for this field
 			const filterPrefix = `@self.${fieldName}`
 			Object.keys(currentFilters).forEach(key => {
@@ -729,7 +762,7 @@ export default {
 					delete currentFilters[key]
 				}
 			})
-			
+
 			// Add new range filters if we have valid ranges
 			if (rangeFacet && rangeFacet.ranges && rangeFacet.ranges.length > 0) {
 				rangeFacet.ranges.forEach(range => {
@@ -751,16 +784,17 @@ export default {
 					}
 				})
 			}
-			
+
 			// Update the store
 			this.objectStore.setActiveFilters(currentFilters)
-			
+
 			// eslint-disable-next-line no-console
 			console.log('updateActiveFiltersFromDateRange - Updated activeFilters:', currentFilters)
 		},
 		/**
 		 * Check if a field has an active date range
-		 * @param fieldName
+		 * @param {string} fieldName - Name of the field to check
+		 * @return {boolean} True if field has an active date range
 		 */
 		hasDateRange(fieldName) {
 			const activeFacetData = this.objectStore.activeFacets._facets?.['@self']?.[fieldName]
@@ -772,7 +806,7 @@ export default {
 		},
 		/**
 		 * Clear date range for a field
-		 * @param fieldName
+		 * @param {string} fieldName - Name of the field to clear date range for
 		 */
 		async clearDateRange(fieldName) {
 			// Remove the date range facet
@@ -799,7 +833,8 @@ export default {
 		/**
 		 * Get dropdown options for a metadata field
 		 * Uses facet results if available, otherwise uses sample values
-		 * @param fieldName
+		 * @param {string} fieldName - Name of the metadata field
+		 * @return {Array} Array of dropdown options
 		 */
 		getMetadataDropdownOptions(fieldName) {
 			const options = []
@@ -874,7 +909,8 @@ export default {
 		},
 		/**
 		 * Get currently selected values for a metadata dropdown
-		 * @param fieldName
+		 * @param {string} fieldName - Name of the metadata field
+		 * @return {Array} Array of selected dropdown options
 		 */
 		getSelectedMetadataDropdownValues(fieldName) {
 			// Metadata filters use @self. prefix
@@ -906,8 +942,8 @@ export default {
 		},
 		/**
 		 * Update metadata dropdown selection for a field
-		 * @param fieldName
-		 * @param selectedOptions
+		 * @param {string} fieldName - Name of the metadata field
+		 * @param {Array} selectedOptions - Array of selected options
 		 */
 		async updateMetadataDropdownSelection(fieldName, selectedOptions) {
 			// eslint-disable-next-line no-console

@@ -20,13 +20,12 @@
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
-use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Service\ConfigurationService;
-use OCA\OpenRegister\Service\SearchService;
 use OCA\OpenRegister\Service\UploadService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\DataDownloadResponse;
+use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use Symfony\Component\Uid\Uuid;
@@ -41,13 +40,13 @@ class ConfigurationsController extends Controller
 
 
     /**
-     * Constructor for ConfigurationController
+     * Constructor for ConfigurationController.
      *
      * @param string               $appName              The name of the app
      * @param IRequest             $request              The request object
-     * @param ConfigurationMapper  $configurationMapper  The configuration mapper
-     * @param ConfigurationService $configurationService The configuration service
-     * @param UploadService        $uploadService        The upload service
+     * @param ConfigurationMapper  $configurationMapper  The configuration mapper instance
+     * @param ConfigurationService $configurationService The configuration service instance
+     * @param UploadService        $uploadService        The upload service instance
      */
     public function __construct(
         string $appName,
@@ -64,26 +63,21 @@ class ConfigurationsController extends Controller
     /**
      * List all configurations
      *
-     * @param SearchService $searchService The search service.
-     *
      * @return JSONResponse List of configurations.
      *
      * @NoAdminRequired
      * @NoCSRFRequired
      */
-    public function index(SearchService $searchService): JSONResponse
+    public function index(): JSONResponse
     {
         // Get request parameters for filtering and searching.
-        $filters        = $this->request->getParams();
-        $fieldsToSearch = ['title', 'description'];
+        $filters = $this->request->getParams();
 
-        // Create search parameters and conditions.
-        $searchParams     = $searchService->createMySQLSearchParams($filters);
-        $searchConditions = $searchService->createMySQLSearchConditions(
-            $filters,
-            $fieldsToSearch
-        );
-        $filters          = $searchService->unsetSpecialQueryParams($filters);
+        unset($filters['_route']);
+
+        $searchParams     = [];
+        $searchConditions = [];
+        $filters          = $filters;
 
         // Return all configurations that match the search conditions.
         return new JSONResponse(
@@ -149,6 +143,24 @@ class ConfigurationsController extends Controller
             $data['uuid'] = Uuid::v4();
         }
 
+        // Set default values for new local configurations.
+        // If sourceType is not provided, assume it's a local configuration.
+        if (isset($data['sourceType']) === false || $data['sourceType'] === null || $data['sourceType'] === '') {
+            $data['sourceType'] = 'local';
+        }
+
+        // Set isLocal based on sourceType (enforce consistency).
+        // Local configurations: sourceType === 'local' or 'manual' → isLocal = true.
+        // External configurations: sourceType === 'github', 'gitlab', or 'url' → isLocal = false.
+        if (in_array($data['sourceType'], ['local', 'manual'], true) === true) {
+            $data['isLocal'] = true;
+        } else if (in_array($data['sourceType'], ['github', 'gitlab', 'url'], true) === true) {
+            $data['isLocal'] = false;
+        } else if (isset($data['isLocal']) === false) {
+            // Fallback: if sourceType is something else and isLocal not set, default to true.
+            $data['isLocal'] = true;
+        }
+
         try {
             return new JSONResponse(
                 $this->configurationMapper->createFromArray($data)
@@ -184,6 +196,21 @@ class ConfigurationsController extends Controller
             }
         }
 
+        // Remove immutable fields to prevent tampering.
+        unset($data['id']);
+        unset($data['organisation']);
+        unset($data['owner']);
+        unset($data['created']);
+
+        // Enforce consistency between sourceType and isLocal.
+        if (isset($data['sourceType']) === true) {
+            if (in_array($data['sourceType'], ['local', 'manual'], true) === true) {
+                $data['isLocal'] = true;
+            } else if (in_array($data['sourceType'], ['github', 'gitlab', 'url'], true) === true) {
+                $data['isLocal'] = false;
+            }
+        }
+
         try {
             return new JSONResponse(
                 $this->configurationMapper->updateFromArray($id, $data)
@@ -196,6 +223,23 @@ class ConfigurationsController extends Controller
         }
 
     }//end update()
+
+
+    /**
+     * Patch (partially update) a configuration.
+     *
+     * @param int $id The ID of the configuration to patch
+     *
+     * @return JSONResponse The updated configuration data
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function patch(int $id): JSONResponse
+    {
+        return $this->update($id);
+
+    }//end patch()
 
 
     /**
@@ -277,13 +321,14 @@ class ConfigurationsController extends Controller
      * Import a configuration
      *
      * @param bool $includeObjects Whether to include objects in the import.
+     * @param bool $force          Force import even if the same or newer version already exists
      *
      * @return JSONResponse The import result.
      *
      * @NoAdminRequired
      * @NoCSRFRequired
      */
-    public function import(bool $includeObjects=false): JSONResponse
+    public function import(bool $includeObjects=false, bool $force=false): JSONResponse
     {
         try {
             // Get the uploaded file from the request if a single file has been uploaded.
@@ -301,8 +346,10 @@ class ConfigurationsController extends Controller
             // Import the data.
             $result = $this->configurationService->importFromJson(
                 $jsonData,
-                $includeObjects,
-                $this->request->getParam('owner')
+                $this->request->getParam('owner'),
+                $this->request->getParam('appId'),
+                $this->request->getParam('version'),
+                $force
             );
 
             return new JSONResponse(

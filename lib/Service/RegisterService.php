@@ -25,6 +25,7 @@ use Exception;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\OrganisationService;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -36,17 +37,20 @@ use Psr\Log\LoggerInterface;
 class RegisterService
 {
 
+
     /**
      * Constructor for RegisterService.
      *
-     * @param RegisterMapper  $registerMapper  Mapper for register operations.
-     * @param FileService     $fileService     Service for file operations.
-     * @param LoggerInterface $logger          Logger for error handling.
+     * @param RegisterMapper      $registerMapper      Mapper for register operations.
+     * @param FileService         $fileService         Service for file operations.
+     * @param LoggerInterface     $logger              Logger for error handling.
+     * @param OrganisationService $organisationService Service for organisation operations.
      */
     public function __construct(
         private readonly RegisterMapper $registerMapper,
         private readonly FileService $fileService,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly OrganisationService $organisationService
     ) {
 
     }//end __construct()
@@ -64,7 +68,7 @@ class RegisterService
      * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple found
      * @throws \OCP\DB\Exception If database error occurs
      */
-    public function find(int | string $id, array $extend = []): Register
+    public function find(int | string $id, array $extend=[]): Register
     {
         return $this->registerMapper->find($id, $extend);
 
@@ -95,15 +99,17 @@ class RegisterService
      * @param array|null $searchParams     Array of search parameters
      * @param array      $extend           Optional extensions
      *
-     * @return array Array of found registers
+     * @return Register[] Array of found registers
+     *
+     * @psalm-return array<Register>
      */
     public function findAll(
-        ?int $limit = null,
-        ?int $offset = null,
-        ?array $filters = [],
-        ?array $searchConditions = [],
-        ?array $searchParams = [],
-        ?array $extend = []
+        ?int $limit=null,
+        ?int $offset=null,
+        ?array $filters=[],
+        ?array $searchConditions=[],
+        ?array $searchParams=[],
+        ?array $extend=[]
     ): array {
         return $this->registerMapper->findAll(
             $limit,
@@ -128,10 +134,17 @@ class RegisterService
      */
     public function createFromArray(array $data): Register
     {
-        // Create the register first
+        // Create the register first.
         $register = $this->registerMapper->createFromArray($data);
 
-        // Ensure folder exists for the new register
+        // Set organisation from active organisation for multi-tenancy (if not already set).
+        if ($register->getOrganisation() === null || $register->getOrganisation() === '') {
+            $organisationUuid = $this->organisationService->getOrganisationForNewEntity();
+            $register->setOrganisation($organisationUuid);
+            $register = $this->registerMapper->update($register);
+        }
+
+        // Ensure folder exists for the new register.
         $this->ensureRegisterFolderExists($register);
 
         return $register;
@@ -151,10 +164,10 @@ class RegisterService
      */
     public function updateFromArray(int $id, array $data): Register
     {
-        // Update the register first
+        // Update the register first.
         $register = $this->registerMapper->updateFromArray($id, $data);
 
-        // Ensure folder exists for the updated register (handles legacy folder properties)
+        // Ensure folder exists for the updated register (handles legacy folder properties).
         $this->ensureRegisterFolderExists($register);
 
         return $register;
@@ -224,7 +237,9 @@ class RegisterService
     /**
      * Get ID to slug mappings.
      *
-     * @return array Array mapping IDs to slugs
+     * @return string[] Array mapping IDs to slugs
+     *
+     * @psalm-return array<string, string>
      */
     public function getIdToSlugMap(): array
     {
@@ -236,7 +251,9 @@ class RegisterService
     /**
      * Get slug to ID mappings.
      *
-     * @return array Array mapping slugs to IDs
+     * @return string[] Array mapping slugs to IDs
+     *
+     * @psalm-return array<string, string>
      */
     public function getSlugToIdMap(): array
     {
@@ -255,37 +272,38 @@ class RegisterService
      *
      * @return void
      *
-     * @psalm-return void
+     * @psalm-return   void
      * @phpstan-return void
      */
     private function ensureRegisterFolderExists(Register $entity): void
     {
         $folderProperty = $entity->getFolder();
-        
-        // Check if folder needs to be created (null, empty string, or legacy string path)
-        if ($folderProperty === null || $folderProperty === '' || is_string($folderProperty)) {
+
+        // Check if folder needs to be created (null, empty string, or legacy string path).
+        if ($folderProperty === null || $folderProperty === '' || is_string($folderProperty) === true) {
             try {
-                // Create folder and get the folder node
+                // Create folder and get the folder node.
                 $folderNode = $this->fileService->createEntityFolder($entity);
-                
+
                 if ($folderNode !== null) {
-                    // Update the entity with the folder ID
-                    $entity->setFolder($folderNode->getId());
-                    
-                    // Save the entity with the new folder ID
+                    // Update the entity with the folder ID.
+                    $entity->setFolder((string) $folderNode->getId());
+
+                    // Save the entity with the new folder ID.
                     $this->registerMapper->update($entity);
-                    
+
                     $this->logger->info("Created folder with ID {$folderNode->getId()} for register {$entity->getId()}");
                 } else {
                     $this->logger->warning("Failed to create folder for register {$entity->getId()}");
                 }
             } catch (Exception $e) {
-                // Log the error but don't fail the register creation/update
-                // The register can still function without a folder
-                $this->logger->error("Failed to create folder for register {$entity->getId()}: " . $e->getMessage());
+                // Log the error but don't fail the register creation/update.
+                // The register can still function without a folder.
+                $this->logger->error("Failed to create folder for register {$entity->getId()}: ".$e->getMessage());
             }
-        }
+        }//end if
+
     }//end ensureRegisterFolderExists()
 
 
-}//end class 
+}//end class

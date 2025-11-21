@@ -19,28 +19,91 @@
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Event\SourceCreatedEvent;
+use OCA\OpenRegister\Event\SourceDeletedEvent;
+use OCA\OpenRegister\Event\SourceUpdatedEvent;
+use OCA\OpenRegister\Service\OrganisationService;
+use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
+use OCP\IGroupManager;
+use OCP\IUserSession;
 use Symfony\Component\Uid\Uuid;
 
 /**
  * The SourceMapper class
  *
+ * Mapper for Source entities with multi-tenancy and RBAC support.
+ *
  * @package OCA\OpenRegister\Db
+ *
+ * @method Source insert(Entity $entity)
+ * @method Source update(Entity $entity)
+ * @method Source insertOrUpdate(Entity $entity)
+ * @method Source delete(Entity $entity)
+ * @method Source find(int|string $id)
+ * @method Source findEntity(IQueryBuilder $query)
+ * @method Source[] findAll(int|null $limit = null, int|null $offset = null)
+ * @method list<Source> findEntities(IQueryBuilder $query)
+ *
+ * @template-extends QBMapper<Source>
  */
 class SourceMapper extends QBMapper
 {
+    use MultiTenancyTrait;
+
+    /**
+     * Organisation service for multi-tenancy
+     *
+     * @var OrganisationService
+     */
+    private OrganisationService $organisationService;
+
+    /**
+     * User session for current user
+     *
+     * @var IUserSession
+     */
+    private IUserSession $userSession;
+
+    /**
+     * Group manager for RBAC
+     *
+     * @var IGroupManager
+     */
+    private IGroupManager $groupManager;
+
+    /**
+     * Event dispatcher for dispatching source events
+     *
+     * @var IEventDispatcher
+     */
+    private IEventDispatcher $eventDispatcher;
 
 
     /**
      * Constructor for the SourceMapper
      *
-     * @param IDBConnection $db The database connection
+     * @param IDBConnection       $db                  The database connection
+     * @param OrganisationService $organisationService Organisation service for multi-tenancy
+     * @param IUserSession        $userSession         User session
+     * @param IGroupManager       $groupManager        Group manager for RBAC
+     * @param IEventDispatcher    $eventDispatcher     Event dispatcher
      */
-    public function __construct(IDBConnection $db)
-    {
+    public function __construct(
+        IDBConnection $db,
+        OrganisationService $organisationService,
+        IUserSession $userSession,
+        IGroupManager $groupManager,
+        IEventDispatcher $eventDispatcher
+    ) {
         parent::__construct($db, 'openregister_sources');
+        $this->organisationService = $organisationService;
+        $this->userSession         = $userSession;
+        $this->groupManager        = $groupManager;
+        $this->eventDispatcher     = $eventDispatcher;
 
     }//end __construct()
 
@@ -51,9 +114,13 @@ class SourceMapper extends QBMapper
      * @param int $id The id of the source
      *
      * @return Source The source
+     * @throws \Exception If user doesn't have read permission
      */
     public function find(int $id): Source
     {
+        // Verify RBAC permission to read.
+        $this->verifyRbacPermission('read', 'source');
+
         $qb = $this->db->getQueryBuilder();
 
         $qb->select('*')
@@ -61,6 +128,9 @@ class SourceMapper extends QBMapper
             ->where(
                 $qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT))
             );
+
+        // Apply organisation filter (all users including admins must have active org).
+        $this->applyOrganisationFilter($qb);
 
         return $this->findEntity(query: $qb);
 
@@ -77,6 +147,7 @@ class SourceMapper extends QBMapper
      * @param array|null $searchParams     The search parameters to apply
      *
      * @return array The sources
+     * @throws \Exception If user doesn't have read permission
      */
     public function findAll(
         ?int $limit=null,
@@ -85,6 +156,9 @@ class SourceMapper extends QBMapper
         ?array $searchConditions=[],
         ?array $searchParams=[]
     ): array {
+        // Verify RBAC permission to read.
+        $this->verifyRbacPermission('read', 'source');
+
         $qb = $this->db->getQueryBuilder();
 
         $qb->select('*')
@@ -109,9 +183,107 @@ class SourceMapper extends QBMapper
             }
         }
 
+        // Apply organisation filter (all users including admins must have active org).
+        $this->applyOrganisationFilter($qb);
+
         return $this->findEntities(query: $qb);
 
     }//end findAll()
+
+
+    /**
+     * Insert a new source
+     *
+     * @param Entity $entity Source entity to insert
+     *
+     * @return Source The inserted source
+     * @throws \Exception If user doesn't have create permission
+     */
+    public function insert(Entity $entity): Source
+    {
+        // Verify RBAC permission to create.
+        $this->verifyRbacPermission('create', 'source');
+
+        if ($entity instanceof Source) {
+            // Generate UUID if not set.
+            if (empty($entity->getUuid()) === true) {
+                $entity->setUuid((string) Uuid::v4());
+            }
+
+            $entity->setCreated(new \DateTime());
+            $entity->setUpdated(new \DateTime());
+        }
+
+        // Auto-set organisation from active session.
+        $this->setOrganisationOnCreate($entity);
+
+        $entity = parent::insert($entity);
+
+        // Dispatch creation event.
+        $this->eventDispatcher->dispatchTyped(new SourceCreatedEvent($entity));
+
+        return $entity;
+
+    }//end insert()
+
+
+    /**
+     * Update an existing source
+     *
+     * @param Entity $entity Source entity to update
+     *
+     * @return Source The updated source
+     * @throws \Exception If user doesn't have update permission or access to this organisation
+     */
+    public function update(Entity $entity): Source
+    {
+        // Verify RBAC permission to update.
+        $this->verifyRbacPermission('update', 'source');
+
+        // Verify user has access to this organisation.
+        $this->verifyOrganisationAccess($entity);
+
+        // Get old state before update.
+        $oldEntity = $this->find($entity->getId());
+
+        if ($entity instanceof Source) {
+            $entity->setUpdated(new \DateTime());
+        }
+
+        $entity = parent::update($entity);
+
+        // Dispatch update event.
+        $this->eventDispatcher->dispatchTyped(new SourceUpdatedEvent($entity, $oldEntity));
+
+        return $entity;
+
+    }//end update()
+
+
+    /**
+     * Delete a source
+     *
+     * @param Entity $entity Source entity to delete
+     *
+     * @return Source The deleted source
+     * @throws \Exception If user doesn't have delete permission or access to this organisation
+     */
+    public function delete(Entity $entity): Source
+    {
+        // Verify RBAC permission to delete.
+        $this->verifyRbacPermission('delete', 'source');
+
+        // Verify user has access to this organisation.
+        $this->verifyOrganisationAccess($entity);
+
+        $entity = parent::delete($entity);
+
+        // Dispatch deletion event.
+        $this->eventDispatcher->dispatchTyped(new SourceDeletedEvent($entity));
+
+        return $entity;
+
+    }//end delete()
 
 
     /**
@@ -128,7 +300,7 @@ class SourceMapper extends QBMapper
 
         // Set uuid if not provided.
         if ($source->getUuid() === null) {
-            $source->setUuid(Uuid::v4());
+                $source->setUuid((string) Uuid::v4());
         }
 
         return $this->insert(entity: $source);

@@ -32,7 +32,12 @@ use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\ObjectCacheService;
+use OCA\OpenRegister\Service\SchemaCacheService;
+use OCA\OpenRegister\Service\SchemaFacetCacheService;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Service\SettingsService;
+use Psr\Log\LoggerInterface;
 
 /**
  * Handler class for deleting objects in the OpenRegister application.
@@ -50,24 +55,55 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
  */
 class DeleteObject
 {
+
     /**
+     * Audit trail mapper
+     *
      * @var AuditTrailMapper
      */
     private AuditTrailMapper $auditTrailMapper;
 
     /**
+     * Settings service
+     *
+     * @var SettingsService
+     */
+    private SettingsService $settingsService;
+
+    /**
+     * Logger interface
+     *
+     * @var LoggerInterface
+     */
+    private LoggerInterface $logger;
+
+
+    /**
      * Constructor for DeleteObject handler.
      *
-     * @param ObjectEntityMapper $objectEntityMapper Object entity data mapper.
-     * @param FileService        $fileService        File service for managing files.
-     * @param AuditTrailMapper   $auditTrailMapper   Audit trail mapper for logs.
+     * @param ObjectEntityMapper      $objectEntityMapper      Object entity data mapper.
+     * @param FileService             $fileService             File service for managing files.
+     * @param ObjectCacheService      $objectCacheService      Object cache service for entity and query caching.
+     * @param SchemaCacheService      $schemaCacheService      Schema cache service for schema entity caching.
+     * @param SchemaFacetCacheService $schemaFacetCacheService Schema facet cache service for facet caching.
+     * @param AuditTrailMapper        $auditTrailMapper        Audit trail mapper for logs.
+     * @param SettingsService         $settingsService         Settings service for accessing trail settings.
+     * @param LoggerInterface         $logger                  Logger for error handling.
      */
     public function __construct(
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly FileService $fileService,
-        AuditTrailMapper $auditTrailMapper
+        private readonly ObjectCacheService $objectCacheService,
+        private readonly SchemaCacheService $schemaCacheService,
+        private readonly SchemaFacetCacheService $schemaFacetCacheService,
+        AuditTrailMapper $auditTrailMapper,
+        SettingsService $settingsService,
+        LoggerInterface $logger
     ) {
         $this->auditTrailMapper = $auditTrailMapper;
+        $this->settingsService  = $settingsService;
+        $this->logger           = $logger;
+
     }//end __construct()
 
 
@@ -92,15 +128,30 @@ class DeleteObject
         // Delete associated files from storage.
         $files = $this->fileService->getFiles($objectEntity);
         foreach ($files as $file) {
-            $this->fileService->deleteFile($objectEntity, $file->getName());
+            $this->fileService->deleteFile(file: $file->getName(), object: $objectEntity);
         }
+
+        // Delete the object folder if it exists (for hard deletes).
+        $this->deleteObjectFolder($objectEntity);
 
         // Delete the object from database.
         $result = $this->objectEntityMapper->delete($objectEntity) !== null;
 
-        // Create audit trail for delete and set lastLog
-        $log = $this->auditTrailMapper->createAuditTrail(old: $objectEntity, new: null, action: 'delete');
-//        $result->setLastLog($log->jsonSerialize());
+        // **CACHE INVALIDATION**: Clear collection and facet caches so deleted objects disappear immediately.
+        if ($result === true) {
+            $this->objectCacheService->invalidateForObjectChange(
+                $objectEntity,
+                'delete',
+                $objectEntity->getRegister(),
+                $objectEntity->getSchema()
+            );
+        }
+
+        // Create audit trail for delete if audit trails are enabled.
+        if ($this->isAuditTrailsEnabled() === true) {
+            $log = $this->auditTrailMapper->createAuditTrail(old: $objectEntity, new: null, action: 'delete');
+            // $result->setLastLog($log->jsonSerialize());
+        }
 
         return $result;
 
@@ -114,6 +165,8 @@ class DeleteObject
      * @param Schema|int|string   $schema           The schema of the object.
      * @param string              $uuid             The UUID of the object to delete.
      * @param string|null         $originalObjectId The ID of original object for cascading.
+     * @param bool                $rbac             Whether to apply RBAC checks (default: true).
+     * @param bool                $multi            Whether to apply multitenancy filtering (default: true).
      *
      * @return bool Whether the deletion was successful.
      *
@@ -123,10 +176,12 @@ class DeleteObject
         Register | int | string $register,
         Schema | int | string $schema,
         string $uuid,
-        ?string $originalObjectId=null
+        ?string $originalObjectId=null,
+        bool $rbac=true,
+        bool $multi=true
     ): bool {
         try {
-            $object = $this->objectEntityMapper->findByUuid($uuid);
+            $object = $this->objectEntityMapper->find($uuid, null, null, true);
 
             // Handle cascading deletes if this is the root object.
             if ($originalObjectId === null) {
@@ -178,6 +233,48 @@ class DeleteObject
         }
 
     }//end cascadeDeleteObjects()
+
+
+    /**
+     * Delete the object folder when performing hard delete
+     *
+     * @param ObjectEntity $objectEntity The object entity to delete folder for
+     *
+     * @return void
+     */
+    private function deleteObjectFolder(ObjectEntity $objectEntity): void
+    {
+        try {
+            $folder = $this->fileService->getObjectFolder($objectEntity);
+            if ($folder !== null) {
+                $folder->delete();
+                $this->logger->info('Deleted object folder for hard deleted object: '.$objectEntity->getId());
+            }
+        } catch (\Exception $e) {
+            // Log error but don't fail the deletion process.
+            $this->logger->warning('Failed to delete object folder for object '.$objectEntity->getId().': '.$e->getMessage());
+        }
+
+    }//end deleteObjectFolder()
+
+
+    /**
+     * Check if audit trails are enabled in the settings
+     *
+     * @return bool True if audit trails are enabled, false otherwise
+     */
+    private function isAuditTrailsEnabled(): bool
+    {
+        try {
+            $retentionSettings = $this->settingsService->getRetentionSettingsOnly();
+            return $retentionSettings['auditTrailsEnabled'] ?? true;
+        } catch (\Exception $e) {
+            // If we can't get settings, default to enabled for safety.
+            $this->logger->warning('Failed to check audit trails setting, defaulting to enabled', ['error' => $e->getMessage()]);
+            return true;
+        }
+
+    }//end isAuditTrailsEnabled()
 
 
 }//end class

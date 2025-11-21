@@ -1,5 +1,5 @@
 <?php
-// phpcs:ignoreFile
+// phpcs:ignoreFile.
 /**
  * OpenRegister Migration
  *
@@ -50,7 +50,7 @@ class Version1Date20241022135300 extends SimpleMigrationStep
      * @param Closure(): ISchemaWrapper $schemaClosure
      * @param array                     $options
      *
-     * @return null|ISchemaWrapper
+     * @return ISchemaWrapper
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
@@ -59,7 +59,7 @@ class Version1Date20241022135300 extends SimpleMigrationStep
          */
         $schema = $schemaClosure();
 
-        // rename the register column to regsiter
+        // rename the register column to regsiter.
         $table = $schema->getTable('openregister_audit_trails');
         if (!$table->hasColumn('register')) {
             $table->addColumn('register', Types::INTEGER, ['notnull' => false]);

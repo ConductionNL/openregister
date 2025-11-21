@@ -107,12 +107,6 @@ class DashboardController extends Controller
      *
      * This method returns a JSON response containing dashboard data.
      *
-     * @param int|null   $limit            Optional limit for the number of results
-     * @param int|null   $offset           Optional offset for pagination
-     * @param array|null $filters          Optional filters to apply
-     * @param array|null $searchConditions Optional search conditions
-     * @param array|null $searchParams     Optional search parameters
-     *
      * @return JSONResponse A JSON response containing the dashboard data
      *
      * @NoAdminRequired
@@ -185,8 +179,17 @@ class DashboardController extends Controller
     public function getAuditTrailActionChart(?string $from=null, ?string $till=null, ?int $registerId=null, ?int $schemaId=null): JSONResponse
     {
         try {
-            $fromDate = $from ? new \DateTime($from) : null;
-            $tillDate = $till ? new \DateTime($till) : null;
+            if ($from !== null) {
+                $fromDate = new \DateTime($from);
+            } else {
+                $fromDate = null;
+            }
+
+            if ($till !== null) {
+                $tillDate = new \DateTime($till);
+            } else {
+                $tillDate = null;
+            }
 
             $data = $this->dashboardService->getAuditTrailActionChartData($fromDate, $tillDate, $registerId, $schemaId);
             return new JSONResponse($data);
