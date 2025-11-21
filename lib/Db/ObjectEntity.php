@@ -129,8 +129,9 @@ class ObjectEntity extends Entity implements JsonSerializable
      * Configure in schema: { "configuration": { "objectSlugField": "naam" } }
      * The field value will be converted to a URL-friendly slug format.
      *
-     * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
      * @var string|null URL-friendly slug for the object, unique within register+schema combination
+     *
+     * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
      */
     protected ?string $slug = null;
 
@@ -297,8 +298,9 @@ class ObjectEntity extends Entity implements JsonSerializable
      * ⚠️  PARTIALLY DATABASE-MANAGED: Auto-publish logic sets this for NEW objects only.
      * Excluded from bulk change detection to avoid false updates on existing objects.
      *
-     * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
      * @var DateTime|null Published timestamp
+     *
+     * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
      */
     protected ?DateTime $published = null;
 
@@ -309,8 +311,9 @@ class ObjectEntity extends Entity implements JsonSerializable
      * Configure in schema: { "configuration": { "objectDepublishedField": "einddatum" } }
      * Supports various datetime formats which will be parsed to DateTime objects.
      *
-     * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
      * @var DateTime|null Depublished timestamp
+     *
+     * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
      */
     protected ?DateTime $depublished = null;
 
@@ -330,8 +333,9 @@ class ObjectEntity extends Entity implements JsonSerializable
      * Configure in schema: { "configuration": { "objectNameField": "naam" } } or
      * with twig-like concatenation: { "objectNameField": "{{ voornaam }} {{ achternaam }}" }
      *
-     * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
      * @var string|null Name of the object
+     *
+     * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
      */
     protected ?string $name = null;
 
@@ -342,8 +346,9 @@ class ObjectEntity extends Entity implements JsonSerializable
      * Configure in schema: { "configuration": { "objectDescriptionField": "beschrijving" } }
      * Supports dot notation for nested fields: "contact.beschrijving"
      *
-     * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
      * @var string|null Description of the object
+     *
+     * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
      */
     protected ?string $description = null;
 
@@ -354,8 +359,9 @@ class ObjectEntity extends Entity implements JsonSerializable
      * Configure in schema: { "configuration": { "objectSummaryField": "beschrijvingKort" } }
      * Supports twig-like templates for combining fields.
      *
-     * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
      * @var string|null Summary of the object
+     *
+     * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
      */
     protected ?string $summary = null;
 
@@ -366,8 +372,9 @@ class ObjectEntity extends Entity implements JsonSerializable
      * Configure in schema: { "configuration": { "objectImageField": "afbeelding" } }
      * Can reference file fields or contain base64 encoded image data.
      *
-     * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
      * @var string|null Image of the object (base64 encoded or file reference)
+     *
+     * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
      */
     protected ?string $image = null;
 
@@ -468,7 +475,7 @@ class ObjectEntity extends Entity implements JsonSerializable
         ];
 
         // If this is an array field and it's null, return empty array.
-        if (in_array($name, $arrayFieldsWithEmptyDefault) && property_exists($this, $name)) {
+        if (in_array($name, $arrayFieldsWithEmptyDefault) === true && property_exists($this, $name) === true) {
             return $this->$name ?? [];
         }
 
@@ -586,12 +593,17 @@ class ObjectEntity extends Entity implements JsonSerializable
     public function jsonSerialize(): array
     {
         // Backwards compatibility for old objects.
-        $object = ($this->object ?? []);
+        if (isset($this->object) === true) {
+            $object = $this->object;
+        } else {
+            $object = [];
+        }
+
         // Default to an empty array if $this->object is null.
         $object['@self'] = $this->getObjectArray($object);
 
         // Check if name is empty and set uuid as fallback.
-        if (empty($object['@self']['name'])) {
+        if (empty($object['@self']['name']) === true) {
             $object['@self']['name'] = $this->uuid;
         }
 
@@ -603,6 +615,8 @@ class ObjectEntity extends Entity implements JsonSerializable
 
     /**
      * Get array representation of all object properties
+     *
+     * @param array $object Object array parameter
      *
      * @return array Array containing all object properties
      */
@@ -881,7 +895,8 @@ class ObjectEntity extends Entity implements JsonSerializable
     /**
      * Set the last log entry for this object (runtime only)
      *
-     * @param         array|null $log The log entry to set
+     * @param array|null $log The log entry to set
+     *
      * @phpstan-param array<string, mixed>|null $log
      * @psalm-param   array<string, mixed>|null $log
      *

@@ -358,7 +358,18 @@ class VectorEmbeddingService
      *
      * @return ((array|int|mixed|string)[]|bool|string)[] Test results with success status and embedding info
      *
-     * @psalm-return array{success: bool, error?: string, message: string, data?: array{provider: string, model: 'unknown'|mixed, vectorLength: int<0, max>, sampleValues: array, testText: string}}
+     * @psalm-return array{
+     *     success: bool,
+     *     error?: string,
+     *     message: string,
+     *     data?: array{
+     *         provider: string,
+     *         model: 'unknown'|mixed,
+     *         vectorLength: int<0, max>,
+     *         sampleValues: array,
+     *         testText: string
+     *     }
+     * }
      */
     public function testEmbedding(string $provider, array $config, string $testText='Test.'): array
     {
@@ -653,7 +664,18 @@ class VectorEmbeddingService
      *
      * @throws \Exception If search fails or Solr is not configured
      *
-     * @psalm-return list<array{chunk_index: 0|mixed, chunk_text: mixed|null, dimensions: 0|mixed, entity_id: string, entity_type: string, metadata: array, model: ''|mixed, similarity: float(0)|mixed, total_chunks: 1|mixed, vector_id: mixed}>
+     * @psalm-return list<array{
+     *     chunk_index: 0|mixed,
+     *     chunk_text: mixed|null,
+     *     dimensions: 0|mixed,
+     *     entity_id: string,
+     *     entity_type: string,
+     *     metadata: array,
+     *     model: ''|mixed,
+     *     similarity: float(0)|mixed,
+     *     total_chunks: 1|mixed,
+     *     vector_id: mixed
+     * }>
      */
     private function searchVectorsInSolr(
         array $queryEmbedding,
@@ -1277,7 +1299,17 @@ class VectorEmbeddingService
      *
      * @throws \Exception If hybrid search fails
      *
-     * @psalm-return array{results: array, total: int<0, max>, search_time_ms: float, source_breakdown: array{vector_only: int<0, max>, solr_only: int<0, max>, both: int<0, max>}, weights: array{solr: float, vector: float}}
+     * @psalm-return array{
+     *     results: array,
+     *     total: int<0, max>,
+     *     search_time_ms: float,
+     *     source_breakdown: array{
+     *         vector_only: int<0, max>,
+     *         solr_only: int<0, max>,
+     *         both: int<0, max>
+     *     },
+     *     weights: array{solr: float, vector: float}
+     * }
      */
     public function hybridSearch(
         string $query,
@@ -1423,7 +1455,20 @@ class VectorEmbeddingService
      *
      * @return (array|bool|float|int|mixed|null)[][] Combined and ranked results
      *
-     * @psalm-return list<array{chunk_index: 0|mixed, chunk_text: mixed|null, combined_score: 0|float, entity_id: mixed, entity_type: mixed, in_solr: bool, in_vector: bool, metadata: array<never, never>|mixed, solr_rank: float|int|null, solr_score: mixed|null, vector_rank: float|int|null, vector_similarity: mixed|null}>
+     * @psalm-return list<array{
+     *     chunk_index: 0|mixed,
+     *     chunk_text: mixed|null,
+     *     combined_score: 0|float,
+     *     entity_id: mixed,
+     *     entity_type: mixed,
+     *     in_solr: bool,
+     *     in_vector: bool,
+     *     metadata: array<never, never>|mixed,
+     *     solr_rank: float|int|null,
+     *     solr_score: mixed|null,
+     *     vector_rank: float|int|null,
+     *     vector_similarity: mixed|null
+     * }>
      */
     private function reciprocalRankFusion(
         array $vectorResults,
@@ -1673,7 +1718,14 @@ class VectorEmbeddingService
      *
      * @return (array|int|string)[] Vector statistics from Solr
      *
-     * @psalm-return array{total_vectors: int, by_type: array{object?: int, file?: int}, by_model: array, object_vectors: int, file_vectors: int, source: 'solr'|'solr_error'|'solr_unavailable'}
+     * @psalm-return array{
+     *     total_vectors: int,
+     *     by_type: array{object?: int, file?: int},
+     *     by_model: array,
+     *     object_vectors: int,
+     *     file_vectors: int,
+     *     source: 'solr'|'solr_error'|'solr_unavailable'
+     * }
      */
     private function getVectorStatsFromSolr(): array
     {
@@ -1942,8 +1994,10 @@ class VectorEmbeddingService
      *
      * @throws \Exception If model is not supported
      */
-    private function createOpenAIGenerator(string $model, array $config): OpenAIADA002EmbeddingGenerator|OpenAI3SmallEmbeddingGenerator|OpenAI3LargeEmbeddingGenerator
-    {
+    private function createOpenAIGenerator(
+        string $model,
+        array $config
+    ): OpenAIADA002EmbeddingGenerator|OpenAI3SmallEmbeddingGenerator|OpenAI3LargeEmbeddingGenerator {
         $llphantConfig = new OpenAIConfig();
 
         if (empty($config['api_key']) === false) {
@@ -2069,6 +2123,7 @@ class VectorEmbeddingService
                 /*
                  * @psalm-suppress RedundantCondition
                  */
+
                 if ($error !== null && $error !== '') {
                     throw new \Exception("Fireworks API request failed: {$error}");
                 }
@@ -2078,7 +2133,7 @@ class VectorEmbeddingService
                 }
 
                 // Ensure $response is a string (curl_exec can return bool on failure).
-                if (!is_string($response)) {
+                if (is_string($response) === false) {
                     throw new \Exception("Fireworks API request failed: Invalid response type");
                 }
 
@@ -2331,9 +2386,7 @@ class VectorEmbeddingService
         }
 
         // Search similar vectors.
-        /*
-         * @psalm-suppress UndefinedMethod
-         */
+        // @psalm-suppress UndefinedMethod.
         $results = $this->searchSimilarVectors(
             $queryEmbedding['embedding'],
             $limit,
@@ -2431,7 +2484,17 @@ class VectorEmbeddingService
      *
      * @return (array|bool|int|mixed|string)[] Status information with mismatch details
      *
-     * @psalm-return array{has_vectors: bool, mismatch: bool, error?: string, message?: 'No embedding model configured'|'No vectors exist yet'|mixed, current_model?: mixed, existing_models?: list<mixed>, total_vectors?: int, null_model_count?: int, mismatched_models?: list<mixed>}
+     * @psalm-return array{
+     *     has_vectors: bool,
+     *     mismatch: bool,
+     *     error?: string,
+     *     message?: 'No embedding model configured'|'No vectors exist yet'|mixed,
+     *     current_model?: mixed,
+     *     existing_models?: list<mixed>,
+     *     total_vectors?: int,
+     *     null_model_count?: int,
+     *     mismatched_models?: list<mixed>
+     * }
      */
     public function checkEmbeddingModelMismatch(): array
     {
@@ -2518,9 +2581,11 @@ class VectorEmbeddingService
                 'total_vectors'     => $totalVectors,
                 'null_model_count'  => $nullModelCount,
                 'mismatched_models' => $mismatchDetails,
+
                 /*
                  * @psalm-suppress UndefinedMethod
                  */
+
                 'message'           => $this->getModelMismatchMessage($hasMismatch, $nullModelCount),
             ];
         } catch (\Exception $e) {

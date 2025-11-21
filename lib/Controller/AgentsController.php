@@ -147,9 +147,23 @@ class AgentsController extends Controller
             $params = $this->request->getParams();
 
             // Extract pagination parameters.
-            $limit  = isset($params['_limit']) ? (int) $params['_limit'] : 50;
-            $offset = isset($params['_offset']) ? (int) $params['_offset'] : 0;
-            $page   = isset($params['_page']) ? (int) $params['_page'] : null;
+            if (isset($params['_limit']) === true) {
+                $limit = (int) $params['_limit'];
+            } else {
+                $limit = 50;
+            }
+
+            if (isset($params['_offset']) === true) {
+                $offset = (int) $params['_offset'];
+            } else {
+                $offset = 0;
+            }
+
+            if (isset($params['_page']) === true) {
+                $page = (int) $params['_page'];
+            } else {
+                $page = null;
+            }
 
             // Convert page to offset if provided.
             if ($page !== null) {
@@ -157,7 +171,16 @@ class AgentsController extends Controller
             }
 
             // Get agents with RBAC filtering (handled in mapper).
-            $agents = $organisationUuid !== null ? $this->agentMapper->findByOrganisation($organisationUuid, $this->userId, $limit, $offset) : $this->agentMapper->findAll($limit, $offset);
+            if ($organisationUuid !== null) {
+                $agents = $this->agentMapper->findByOrganisation(
+                    $organisationUuid,
+                    $this->userId,
+                    $limit,
+                    $offset
+                );
+            } else {
+                $agents = $this->agentMapper->findAll($limit, $offset);
+            }
 
             return new JSONResponse(['results' => $agents], Http::STATUS_OK);
         } catch (Exception $e) {
@@ -183,10 +206,10 @@ class AgentsController extends Controller
      *
      * RBAC check is handled in the mapper layer.
      *
+     * @param int $id Agent ID
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
-     *
-     * @param int $id Agent ID
      *
      * @return JSONResponse Agent details
      */
@@ -196,7 +219,7 @@ class AgentsController extends Controller
             $agent = $this->agentMapper->find($id);
 
             // Check access rights using mapper method.
-            if (!$this->agentMapper->canUserAccessAgent($agent, $this->userId)) {
+            if ($this->agentMapper->canUserAccessAgent($agent, $this->userId) === false) {
                 return new JSONResponse(
                     ['error' => 'Access denied to this agent'],
                     Http::STATUS_FORBIDDEN
@@ -244,17 +267,17 @@ class AgentsController extends Controller
             $data['owner'] = $this->userId;
 
             // Set default values for new properties if not provided.
-            if (!isset($data['isPrivate']) && !isset($data['is_private'])) {
+            if (isset($data['isPrivate']) === false && isset($data['is_private']) === false) {
                 $data['isPrivate'] = true;
                 // Private by default.
             }
 
-            if (!isset($data['searchFiles']) && !isset($data['search_files'])) {
+            if (isset($data['searchFiles']) === false && isset($data['search_files']) === false) {
                 $data['searchFiles'] = true;
                 // Search files by default.
             }
 
-            if (!isset($data['searchObjects']) && !isset($data['search_objects'])) {
+            if (isset($data['searchObjects']) === false && isset($data['search_objects']) === false) {
                 $data['searchObjects'] = true;
                 // Search objects by default.
             }
@@ -292,10 +315,10 @@ class AgentsController extends Controller
     /**
      * Update an existing agent
      *
+     * @param int $id Agent ID
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
-     *
-     * @param int $id Agent ID
      *
      * @return JSONResponse Updated agent
      */
@@ -305,7 +328,7 @@ class AgentsController extends Controller
             $agent = $this->agentMapper->find($id);
 
             // Check if user can modify this agent using mapper method.
-            if (!$this->agentMapper->canUserModifyAgent($agent, $this->userId)) {
+            if ($this->agentMapper->canUserModifyAgent($agent, $this->userId) === false) {
                 return new JSONResponse(
                     ['error' => 'You do not have permission to modify this agent'],
                     Http::STATUS_FORBIDDEN
@@ -359,10 +382,10 @@ class AgentsController extends Controller
     /**
      * Patch (partially update) an agent
      *
+     * @param int $id The ID of the agent to patch
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
-     *
-     * @param int $id The ID of the agent to patch
      *
      * @return JSONResponse The updated agent data
      */
@@ -378,10 +401,10 @@ class AgentsController extends Controller
      *
      * RBAC check is handled in the mapper layer.
      *
+     * @param int $id Agent ID
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
-     *
-     * @param int $id Agent ID
      *
      * @return JSONResponse Success message
      */
@@ -391,7 +414,7 @@ class AgentsController extends Controller
             $agent = $this->agentMapper->find($id);
 
             // Check if user can modify (delete) this agent using mapper method.
-            if (!$this->agentMapper->canUserModifyAgent($agent, $this->userId)) {
+            if ($this->agentMapper->canUserModifyAgent($agent, $this->userId) === false) {
                 return new JSONResponse(
                     ['error' => 'You do not have permission to delete this agent'],
                     Http::STATUS_FORBIDDEN
