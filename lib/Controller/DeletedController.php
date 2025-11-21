@@ -75,9 +75,21 @@ class DeletedController extends Controller
         $params = $this->request->getParams();
 
         // Extract pagination parameters.
-        $limit  = (int) ($params['limit'] ?? $params['_limit'] ?? 20);
-        $offset = isset($params['offset']) ? (int) $params['offset'] : (isset($params['_offset']) ? (int) $params['_offset'] : null);
-        $page   = isset($params['page']) ? (int) $params['page'] : (isset($params['_page']) ? (int) $params['_page'] : null);
+        $limit = (int) ($params['limit'] ?? $params['_limit'] ?? 20);
+
+        $offset = null;
+        if (isset($params['offset']) === true) {
+            $offset = (int) $params['offset'];
+        } else if (isset($params['_offset']) === true) {
+            $offset = (int) $params['_offset'];
+        }
+
+        $page = null;
+        if (isset($params['page']) === true) {
+            $page = (int) $params['page'];
+        } else if (isset($params['_page']) === true) {
+            $page = (int) $params['_page'];
+        }
 
         // If we have a page but no offset, calculate the offset.
         if ($page !== null && $offset === null) {
@@ -89,7 +101,7 @@ class DeletedController extends Controller
 
         // Extract sort parameters.
         $sort = [];
-        if (isset($params['sort']) || isset($params['_sort'])) {
+        if (isset($params['sort']) === true || isset($params['_sort']) === true) {
             $sortField        = $params['sort'] ?? $params['_sort'] ?? 'deleted';
             $sortOrder        = $params['order'] ?? $params['_order'] ?? 'DESC';
             $sort[$sortField] = $sortOrder;
@@ -169,7 +181,7 @@ class DeletedController extends Controller
                     function ($object) {
                         return $object->getDeleted() !== null;
                     }
-                    );
+            );
 
             // Get total count for pagination.
             $total = $this->objectEntityMapper->countAll(
@@ -179,7 +191,10 @@ class DeletedController extends Controller
             );
 
             // Calculate pagination.
-            $pages = $params['limit'] ? ceil($total / $params['limit']) : 1;
+            $pages = 1;
+            if (isset($params['limit']) === true && $params['limit'] > 0) {
+                $pages = ceil($total / $params['limit']);
+            }
 
             return new JSONResponse(
                     [
@@ -414,7 +429,7 @@ class DeletedController extends Controller
                         'restored' => $restored,
                         'failed'   => $failed,
                         'notFound' => $notFound,
-                        'message'  => "Restored {$restored} objects, {$failed} failed".($notFound > 0 ? " ({$notFound} not found)" : ""),
+                        'message'  => $this->formatRestoreMessage($restored, $failed, $notFound),
                     ]
                     );
         } catch (\Exception $e) {
@@ -546,7 +561,7 @@ class DeletedController extends Controller
                         'deleted'  => $deleted,
                         'failed'   => $failed,
                         'notFound' => $notFound,
-                        'message'  => "Permanently deleted {$deleted} objects, {$failed} failed".($notFound > 0 ? " ({$notFound} not found)" : ""),
+                        'message'  => $this->formatDeleteMessage($deleted, $failed, $notFound),
                     ]
                     );
         } catch (\Exception $e) {
@@ -559,6 +574,48 @@ class DeletedController extends Controller
         }//end try
 
     }//end destroyMultiple()
+
+
+    /**
+     * Format restore message.
+     *
+     * @param int $restored Number of restored objects.
+     * @param int $failed   Number of failed restorations.
+     * @param int $notFound Number of objects not found.
+     *
+     * @return string Formatted message.
+     */
+    private function formatRestoreMessage(int $restored, int $failed, int $notFound): string
+    {
+        $message = "Restored {$restored} objects, {$failed} failed";
+        if ($notFound > 0) {
+            $message .= " ({$notFound} not found)";
+        }
+
+        return $message;
+
+    }//end formatRestoreMessage()
+
+
+    /**
+     * Format delete message.
+     *
+     * @param int $deleted  Number of deleted objects.
+     * @param int $failed   Number of failed deletions.
+     * @param int $notFound Number of objects not found.
+     *
+     * @return string Formatted message.
+     */
+    private function formatDeleteMessage(int $deleted, int $failed, int $notFound): string
+    {
+        $message = "Permanently deleted {$deleted} objects, {$failed} failed";
+        if ($notFound > 0) {
+            $message .= " ({$notFound} not found)";
+        }
+
+        return $message;
+
+    }//end formatDeleteMessage()
 
 
 }//end class

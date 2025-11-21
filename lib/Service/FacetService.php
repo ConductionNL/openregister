@@ -9,14 +9,13 @@ declare(strict_types=1);
  * with intelligent fallback strategies, response caching, and performance optimization.
  * Solves the fundamental pagination vs faceting architectural conflict.
  *
- * @category Service
- * @package  OCA\OpenRegister\Service
- *
- * @author   Conduction Development Team <dev@conduction.nl>
+ * @category  Service
+ * @package   OCA\OpenRegister\Service
+ * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @version  GIT: <git-id>
- * @link     https://OpenRegister.app
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version   GIT: <git-id>
+ * @link      https://OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Service;
@@ -46,24 +45,39 @@ use Psr\Log\LoggerInterface;
 class FacetService
 {
 
-    /** @var int Cache TTL for facet responses (5 minutes) */
+    /**
+     * Cache TTL for facet responses (5 minutes).
+     *
+     * @var int
+     */
     private const FACET_CACHE_TTL = 300;
 
-    /** @var int Cache TTL for collection-wide facets (15 minutes) */
+    /**
+     * Cache TTL for collection-wide facets (15 minutes).
+     *
+     * @var int
+     */
     private const COLLECTION_FACET_TTL = 900;
 
-    /** @var IMemcache|null Distributed cache for facet responses */
+    /**
+     * Distributed cache for facet responses.
+     *
+     * @var IMemcache|null
+     */
     private ?IMemcache $facetCache = null;
 
 
     /**
      * Constructor for FacetService
      *
-     * @param ObjectEntityMapper $objectEntityMapper Object database mapper
-     * @param SchemaMapper       $schemaMapper       Schema database mapper
-     * @param RegisterMapper     $registerMapper     Register database mapper
-     * @param ICacheFactory      $cacheFactory       Cache factory for distributed caching
-     * @param LoggerInterface    $logger             Logger for debugging and monitoring
+     * @param ObjectEntityMapper $objectEntityMapper Object database mapper.
+     * @param SchemaMapper       $schemaMapper       Schema database mapper.
+     * @param RegisterMapper     $registerMapper     Register database mapper.
+     * @param ICacheFactory      $cacheFactory       Cache factory for distributed caching.
+     * @param IUserSession       $userSession        User session for tenant isolation.
+     * @param LoggerInterface    $logger             Logger for debugging and monitoring.
+     *
+     * @return void
      */
     public function __construct(
         private readonly ObjectEntityMapper $objectEntityMapper,
@@ -86,7 +100,8 @@ class FacetService
                 $this->logger->warning('Facet caching unavailable', ['error' => $e->getMessage()]);
             }
         }
-    }
+
+    }//end __construct()
 
 
     /**

@@ -66,7 +66,7 @@ The system automatically selects the optimal calculation strategy based on datas
 
 ### Strategy 3: **HyperLogLog Estimation**
 - **When**: Large datasets (>10K objects)
-- **Performance**: <50ms response time  
+- **Performance**: &lt;50ms response time  
 - **Accuracy**: ~90% estimated accuracy
 - **Method**: Probabilistic cardinality estimation
 
