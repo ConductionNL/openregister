@@ -121,12 +121,12 @@ class ViewsController extends Controller
             if (isset($params['_limit']) === true) {
                 $limit = (int) $params['_limit'];
             }
-
+            
             $offset = null;
             if (isset($params['_offset']) === true) {
                 $offset = (int) $params['_offset'];
             }
-
+            
             $page = null;
             if (isset($params['_page']) === true) {
                 $page = (int) $params['_page'];
