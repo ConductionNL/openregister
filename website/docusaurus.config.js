@@ -123,7 +123,14 @@ const config = {
         theme: require('prism-react-renderer/themes/github'),
         darkTheme: require('prism-react-renderer/themes/dracula'),
       },
+      mermaid: {
+        theme: { light: 'default', dark: 'dark' },
+      },
     }),
+  markdown: {
+    mermaid: true,
+  },
+  themes: ['@docusaurus/theme-mermaid'],
 };
 
 module.exports = config;
