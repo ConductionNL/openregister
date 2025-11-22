@@ -61,7 +61,7 @@ class Version1Date20250908174500 extends SimpleMigrationStep
         if ($schema->hasTable('openregister_objects') === true) {
             $table = $schema->getTable('openregister_objects');
 
-            $output->info('🔧 Adding UNIQUE constraint on UUID field...');
+            $output->info(message: ('🔧 Adding UNIQUE constraint on UUID field...');
 
             // Check if uuid column exists before adding constraint.
             if ($table->hasColumn('uuid') === true) {
@@ -70,27 +70,27 @@ class Version1Date20250908174500 extends SimpleMigrationStep
                     try {
                         // Add unique constraint on uuid field.
                         $table->addUniqueIndex(['uuid'], 'unique_uuid');
-                        $output->info('✅ Added UNIQUE constraint on uuid field');
-                        $output->info('🎯 This enables proper bulk update operations');
-                        $output->info('🚀 INSERT...ON DUPLICATE KEY UPDATE will now work correctly');
+                        $output->info(message: ('✅ Added UNIQUE constraint on uuid field');
+                        $output->info(message: ('🎯 This enables proper bulk update operations');
+                        $output->info(message: ('🚀 INSERT...ON DUPLICATE KEY UPDATE will now work correctly');
                     } catch (\Exception $e) {
                         $output->info('❌ Could not create UUID unique constraint: '.$e->getMessage());
-                        $output->info('⚠️  This may cause duplicate object creation during imports');
+                        $output->info(message: ('⚠️  This may cause duplicate object creation during imports');
 
                         // Don't fail the migration - log the issue but continue.
-                        $output->info('ℹ️  Migration continuing without UUID constraint');
+                        $output->info(message: ('ℹ️  Migration continuing without UUID constraint');
                     }
                 } else {
-                    $output->info('ℹ️  UUID unique constraint already exists');
+                    $output->info(message: ('ℹ️  UUID unique constraint already exists');
                 }
             } else {
-                $output->info('⚠️  UUID column not found - cannot add unique constraint');
+                $output->info(message: ('⚠️  UUID column not found - cannot add unique constraint');
             }//end if
         } else {
-            $output->info('⚠️  openregister_objects table not found');
+            $output->info(message: ('⚠️  openregister_objects table not found');
         }//end if
 
-        $output->info('🎉 UUID unique constraint migration completed');
+        $output->info(message: ('🎉 UUID unique constraint migration completed');
 
         return $schema;
 
@@ -108,11 +108,11 @@ class Version1Date20250908174500 extends SimpleMigrationStep
      */
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
-        $output->info('📋 Post-migration verification...');
-        $output->info('✅ Bulk import operations will now properly deduplicate objects');
-        $output->info('✅ No more duplicate object creation on re-imports');
-        $output->info('✅ Performance maintained with optimized bulk operations');
-        $output->info('🎯 Migration successful - deduplication system ready');
+        $output->info(message: ('📋 Post-migration verification...');
+        $output->info(message: ('✅ Bulk import operations will now properly deduplicate objects');
+        $output->info(message: ('✅ No more duplicate object creation on re-imports');
+        $output->info(message: ('✅ Performance maintained with optimized bulk operations');
+        $output->info(message: ('🎯 Migration successful - deduplication system ready');
 
     }//end postSchemaChange()
 

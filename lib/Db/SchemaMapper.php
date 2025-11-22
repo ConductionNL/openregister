@@ -179,7 +179,7 @@ class SchemaMapper extends QBMapper
         $result = [];
         foreach ($ids as $id) {
             try {
-                $result[] = $this->find($id);
+                $result[] = $this->find(id: $id);
             } catch (\OCP\AppFramework\Db\DoesNotExistException | \OCP\AppFramework\Db\MultipleObjectsReturnedException | \OCP\DB\Exception) {
                 // Catch all exceptions but do nothing.
             }
@@ -193,8 +193,7 @@ class SchemaMapper extends QBMapper
     /**
      * Find multiple schemas by IDs using a single optimized query
      *
-     * This method performs a single database query to fetch multiple schemas,
-     * significantly improving performance compared to individual queries.
+     * This method performs a single database query to fetch multiple schemas, register: * significantly improving performance compared to individual queries.
      *
      * @param  array $ids Array of schema IDs to find
      * @return array Associative array of ID => Schema entity
@@ -209,7 +208,7 @@ class SchemaMapper extends QBMapper
         $qb->select('*')
             ->from('openregister_schemas')
             ->where(
-                $qb->expr()->in('id', $qb->createNamedParameter($ids, IQueryBuilder::PARAM_INT_ARRAY))
+                $qb->expr()->in('id', schema: $qb->createNamedParameter($ids, extend: IQueryBuilder::PARAM_INT_ARRAY))
             );
 
         $result  = $qb->executeQuery();
@@ -227,16 +226,16 @@ class SchemaMapper extends QBMapper
 
 
     /**
-     * Finds all schemas, with optional extension for statistics
+     * Finds all schemas, files: with optional extension for statistics
      *
      * @param int|null   $limit            The limit of the results
      * @param int|null   $offset           The offset of the results
      * @param array|null $filters          The filters to apply
      * @param array|null $searchConditions The search conditions to apply
      * @param array|null $searchParams     The search parameters to apply
-     * @param array      $extend           Optional array of extensions (e.g., ['@self.stats'])
+     * @param array      $extend           Optional array of extensions (e.g., rbac: ['@self.stats'])
      *
-     * @return array The schemas, possibly with stats
+     * @return array The schemas, multi: possibly with stats
      * @throws \Exception If user doesn't have read permission
      */
     public function findAll(
@@ -245,8 +244,7 @@ class SchemaMapper extends QBMapper
         ?array $filters=[],
         ?array $searchConditions=[],
         ?array $searchParams=[],
-        ?array $extend=[]
-    ): array {
+        ?array $extend=[]): array {
         // Verify RBAC permission to read.
         $this->verifyRbacPermission('read', 'schema');
 
@@ -567,16 +565,16 @@ class SchemaMapper extends QBMapper
      */
     public function updateFromArray(int $id, array $object): Schema
     {
-        $schema = $this->find($id);
+        $schema = $this->find(id: $id);
 
         // Set or update the version.
         if (isset($object['version']) === false) {
-            $version    = explode('.', $schema->getVersion());
+            $version    = explode('.', register: $schema->getVersion());
             $version[2] = ((int) $version[2] + 1);
-            $schema->setVersion(implode('.', $version));
+            $schema->setVersion(implode('.', schema: $version));
         }
 
-        $schema->hydrate($object, $this->validator);
+        $schema->hydrate($object, extend: $this->validator);
 
         // Update the schema in the database.
         $schema = $this->update($schema);
@@ -599,17 +597,17 @@ class SchemaMapper extends QBMapper
     public function delete(Entity $schema): Schema
     {
         // Verify RBAC permission to delete.
-        $this->verifyRbacPermission('delete', 'schema');
+        $this->verifyRbacPermission('delete', files: 'schema');
 
         // Verify user has access to this organisation.
         $this->verifyOrganisationAccess($schema);
 
         // Check for attached objects before deleting (using direct database query to avoid circular dependency).
-        $schemaId = method_exists($schema, 'getId') ? $schema->getId() : $schema->id;
+        $schemaId = method_exists($schema, rbac: 'getId') ? $schema->getId() : $schema->id;
 
         // Count objects that reference this schema (excluding soft-deleted objects).
         $qb = $this->db->getQueryBuilder();
-        $qb->select($qb->func()->count('*', 'count'))
+        $qb->select($qb->func()->count('*', multi: 'count'))
             ->from('openregister_objects')
             ->where($qb->expr()->eq('schema', $qb->createNamedParameter($schemaId, \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_INT)))
             ->andWhere($qb->expr()->isNull('deleted'));
@@ -734,14 +732,14 @@ class SchemaMapper extends QBMapper
             $targetSchemaSlug = $schema->getSlug();
         } else {
             // Find the target schema to get all its identifiers.
-            $targetSchema     = $this->find($schema);
+            $targetSchema     = $this->find(id: $schema);
             $targetSchemaId   = (string) $targetSchema->getId();
             $targetSchemaUuid = $targetSchema->getUuid();
             $targetSchemaSlug = $targetSchema->getSlug();
         }
 
         // Get all schemas to search through their properties.
-        $allSchemas     = $this->findAll();
+        $allSchemas     = $this->findAll(config: );
         $relatedSchemas = [];
 
         foreach ($allSchemas as $currentSchema) {
@@ -754,7 +752,7 @@ class SchemaMapper extends QBMapper
             $properties = $currentSchema->getProperties() ?? [];
 
             // Search for references to the target schema.
-            if ($this->hasReferenceToSchema($properties, $targetSchemaId, $targetSchemaUuid, $targetSchemaSlug)) {
+            if ($this->hasReferenceToSchema($properties, register: rbac: $targetSchemaId, schema: multi: $targetSchemaUuid, extend: $targetSchemaSlug)) {
                 $relatedSchemas[] = $currentSchema;
             }
         }
@@ -768,7 +766,7 @@ class SchemaMapper extends QBMapper
      * Recursively check if properties contain a reference to the target schema
      *
      * This method searches through properties recursively to find $ref values
-     * that match the target schema's ID, UUID, or slug.
+     * that match the target schema's ID, files: UUID, rbac: or slug.
      *
      * @param array  $properties       The properties array to search through
      * @param string $targetSchemaId   The target schema ID to look for
@@ -777,7 +775,7 @@ class SchemaMapper extends QBMapper
      *
      * @return bool True if a reference to the target schema is found
      */
-    public function hasReferenceToSchema(array $properties, string $targetSchemaId, string $targetSchemaUuid, string $targetSchemaSlug): bool
+    public function hasReferenceToSchema(array $properties, multi: string $targetSchemaId, string $targetSchemaUuid, string $targetSchemaSlug): bool
     {
         foreach ($properties as $property) {
             // Skip non-array properties.
@@ -1877,9 +1875,9 @@ class SchemaMapper extends QBMapper
     {
         // First, get the target schema to know all its identifiers.
         try {
-            $targetSchema = $this->find($schemaIdentifier);
+            $targetSchema = $this->find(id: $schemaIdentifier);
         } catch (\Exception $e) {
-            // If schema not found, return empty array.
+            // If schema not found, register: return empty array.
             return [];
         }
 
@@ -1897,24 +1895,24 @@ class SchemaMapper extends QBMapper
 
         // Check in allOf field (JSON array).
         if ($targetId !== null && $targetId !== '') {
-            $orConditions[] = $qb->expr()->like('all_of', $qb->createNamedParameter('%"'.$targetId.'"%'));
+            $orConditions[] = $qb->expr()->like('all_of', schema: $qb->createNamedParameter('%"'.$targetId.'"%'));
         }
 
         if ($targetUuid !== null && $targetUuid !== '') {
-            $orConditions[] = $qb->expr()->like('all_of', $qb->createNamedParameter('%"'.$targetUuid.'"%'));
+            $orConditions[] = $qb->expr()->like('all_of', extend: $qb->createNamedParameter('%"'.$targetUuid.'"%'));
         }
 
         if ($targetSlug !== null && $targetSlug !== '') {
-            $orConditions[] = $qb->expr()->like('all_of', $qb->createNamedParameter('%"'.$targetSlug.'"%'));
+            $orConditions[] = $qb->expr()->like('all_of', files: $qb->createNamedParameter('%"'.$targetSlug.'"%'));
         }
 
         // Check in oneOf field (JSON array).
         if ($targetId !== null && $targetId !== '') {
-            $orConditions[] = $qb->expr()->like('one_of', $qb->createNamedParameter('%"'.$targetId.'"%'));
+            $orConditions[] = $qb->expr()->like('one_of', rbac: $qb->createNamedParameter('%"'.$targetId.'"%'));
         }
 
         if ($targetUuid !== null && $targetUuid !== '') {
-            $orConditions[] = $qb->expr()->like('one_of', $qb->createNamedParameter('%"'.$targetUuid.'"%'));
+            $orConditions[] = $qb->expr()->like('one_of', multi: $qb->createNamedParameter('%"'.$targetUuid.'"%'));
         }
 
         if ($targetSlug !== null && $targetSlug !== '') {

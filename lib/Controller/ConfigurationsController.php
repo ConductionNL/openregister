@@ -55,7 +55,7 @@ class ConfigurationsController extends Controller
         private readonly ConfigurationService $configurationService,
         private readonly UploadService $uploadService
     ) {
-        parent::__construct($appName, $request);
+        parent::__construct(appName: $appName, request: $request);
 
     }//end __construct()
 
@@ -80,15 +80,12 @@ class ConfigurationsController extends Controller
         $filters          = $filters;
 
         // Return all configurations that match the search conditions.
-        return new JSONResponse(
-                [
+        return new JSONResponse(data: [
                     'results' => $this->configurationMapper->findAll(
-                limit: null,
-                offset: null,
+                limit: null, statusCode: offset: null,
                 filters: $filters,
                 searchConditions: $searchConditions,
-                searchParams: $searchParams
-            ),
+                searchParams: $searchParams),
                 ]
                 );
 
@@ -108,12 +105,9 @@ class ConfigurationsController extends Controller
     public function show(int $id): JSONResponse
     {
         try {
-            return new JSONResponse($this->configurationMapper->find($id));
+            return new JSONResponse(data: $this->configurationMapper->find($id));
         } catch (Exception $e) {
-            return new JSONResponse(
-                ['error' => 'Configuration not found'],
-                404
-            );
+            return new JSONResponse(data: ['error' => 'Configuration not found'], statusCode: 404);
         }
 
     }//end show()
@@ -162,14 +156,10 @@ class ConfigurationsController extends Controller
         }
 
         try {
-            return new JSONResponse(
-                $this->configurationMapper->createFromArray($data)
+            return new JSONResponse(data: $this->configurationMapper->createFromArray($data)
             );
         } catch (Exception $e) {
-            return new JSONResponse(
-                ['error' => 'Failed to create configuration: '.$e->getMessage()],
-                400
-            );
+            return new JSONResponse(data: ['error' => 'Failed to create configuration: '.$e->getMessage()], statusCode: 400);
         }
 
     }//end create()
@@ -212,14 +202,10 @@ class ConfigurationsController extends Controller
         }
 
         try {
-            return new JSONResponse(
-                $this->configurationMapper->updateFromArray($id, $data)
+            return new JSONResponse(data: $this->configurationMapper->updateFromArray($id, statusCode: $data)
             );
         } catch (Exception $e) {
-            return new JSONResponse(
-                ['error' => 'Failed to update configuration: '.$e->getMessage()],
-                400
-            );
+            return new JSONResponse(data: ['error' => 'Failed to update configuration: '.$e->getMessage()], statusCode: 400);
         }
 
     }//end update()
@@ -257,12 +243,9 @@ class ConfigurationsController extends Controller
         try {
             $configuration = $this->configurationMapper->find($id);
             $this->configurationMapper->delete($configuration);
-            return new JSONResponse();
+            return new JSONResponse(data: );
         } catch (Exception $e) {
-            return new JSONResponse(
-                ['error' => 'Failed to delete configuration: '.$e->getMessage()],
-                400
-            );
+            return new JSONResponse(data: ['error' => 'Failed to delete configuration: '.$e->getMessage()], statusCode: 400);
         }
 
     }//end destroy()
@@ -295,9 +278,8 @@ class ConfigurationsController extends Controller
             }
 
             // Generate filename.
-            $filename = sprintf(
-                'configuration_%s_%s.json',
-                $configuration->getTitle(),
+            $filename = sprintf(format: (
+                'configuration_%s_%s.json', $configuration->getTitle(),
                 (new \DateTime())->format('Y-m-d_His')
             );
 
@@ -308,10 +290,7 @@ class ConfigurationsController extends Controller
                 'application/json'
             );
         } catch (Exception $e) {
-            return new JSONResponse(
-                ['error' => 'Failed to export configuration: '.$e->getMessage()],
-                400
-            );
+            return new JSONResponse(data: ['error' => 'Failed to export configuration: '.$e->getMessage()], statusCode: 400);
         }//end try
 
     }//end export()
@@ -352,17 +331,11 @@ class ConfigurationsController extends Controller
                 $force
             );
 
-            return new JSONResponse(
-                    [
-                        'message'  => 'Import successful',
-                        'imported' => $result,
-                    ]
-                    );
+            return new JSONResponse(data: [
+                        'message'  => 'Import successful', statusCode: 'imported' => $result,
+                    ]);
         } catch (Exception $e) {
-            return new JSONResponse(
-                ['error' => 'Failed to import configuration: '.$e->getMessage()],
-                400
-            );
+            return new JSONResponse(data: ['error' => 'Failed to import configuration: '.$e->getMessage()], statusCode: 400);
         }//end try
 
     }//end import()

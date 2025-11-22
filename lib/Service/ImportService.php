@@ -1133,7 +1133,7 @@ class ImportService
         // Handle ISO 8601 format with timezone (e.g., "2025-01-01T00:00:00+00:00").
         if (preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/', $value)) {
             try {
-                $dateTime = new \DateTime($value);
+                $dateTime = new \DateTime(datetime: $value);
                 return $dateTime->format('Y-m-d H:i:s');
             } catch (\Exception $e) {
                 // Fallback to original value if parsing fails.
@@ -1144,7 +1144,7 @@ class ImportService
         // Handle ISO 8601 format without timezone (e.g., "2025-01-01T00:00:00").
         if (preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/', $value)) {
             try {
-                $dateTime = new \DateTime($value);
+                $dateTime = new \DateTime(datetime: $value);
                 return $dateTime->format('Y-m-d H:i:s');
             } catch (\Exception $e) {
                 // Fallback to original value if parsing fails.
@@ -1911,6 +1911,7 @@ class ImportService
      * @param int    $delaySeconds  Delay before running the warmup (default: 30 seconds)
      * @param string $mode          Warmup mode - 'serial', 'parallel', or 'hyper' (default: 'serial')
      * @param int    $maxObjects    Maximum objects to index during warmup (default: 5000)
+     *
      * @return bool True if job was scheduled successfully
      */
     public function scheduleSolrWarmup(
@@ -1970,6 +1971,7 @@ class ImportService
      * Calculate total objects imported from import summary
      *
      * @param array $importSummary Import summary from Excel/CSV import
+     *
      * @return int Total number of objects imported
      */
     private function calculateTotalImported(array $importSummary): int
@@ -1991,6 +1993,7 @@ class ImportService
      * Determine optimal warmup mode based on import size
      *
      * @param int $totalImported Total objects imported
+     *
      * @return string Recommended warmup mode
      */
     public function getRecommendedWarmupMode(int $totalImported): string
@@ -2012,6 +2015,7 @@ class ImportService
      *
      * @param array $importSummary Import summary
      * @param bool  $immediate     Whether to run immediately (default: false, 30s delay)
+     *
      * @return bool True if job was scheduled successfully
      */
     public function scheduleSmartSolrWarmup(array $importSummary, bool $immediate = false): bool

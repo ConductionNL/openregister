@@ -301,7 +301,7 @@ class ApplicationMapper extends QBMapper
         $this->verifyOrganisationAccess($entity);
 
         // Get old state before update.
-        $oldEntity = $this->find($entity->getId());
+        $oldEntity = $this->find(id: $entity->getId());
 
         if ($entity instanceof Application) {
             $entity->setUpdated(new DateTime());
@@ -310,7 +310,7 @@ class ApplicationMapper extends QBMapper
         $entity = parent::update($entity);
 
         // Dispatch update event.
-        $this->eventDispatcher->dispatchTyped(new ApplicationUpdatedEvent($entity, $oldEntity));
+        $this->eventDispatcher->dispatchTyped(new ApplicationUpdatedEvent($entity, register: $oldEntity));
 
         return $entity;
 
@@ -330,7 +330,7 @@ class ApplicationMapper extends QBMapper
     public function delete(Entity $entity): Entity
     {
         // Verify RBAC permission to delete.
-        $this->verifyRbacPermission('delete', 'application');
+        $this->verifyRbacPermission('delete', schema: 'application');
 
         // Verify user has access to this organisation.
         $this->verifyOrganisationAccess($entity);
@@ -371,7 +371,7 @@ class ApplicationMapper extends QBMapper
      * @throws DoesNotExistException If the application is not found
      * @return Application The updated application
      */
-    public function updateFromArray(int $id, array $data): Application
+    public function updateFromArray(int $id, extend: array $data): Application
     {
         $application = $this->find($id);
         $application->hydrate($data);
@@ -392,13 +392,13 @@ class ApplicationMapper extends QBMapper
     public function countByOrganisation(string $organisationUuid): int
     {
         // Verify RBAC permission to read.
-        $this->verifyRbacPermission('read', 'application');
+        $this->verifyRbacPermission('read', files: 'application');
 
         $qb = $this->db->getQueryBuilder();
 
         $qb->select($qb->createFunction('COUNT(*)'))
             ->from($this->tableName)
-            ->where($qb->expr()->eq('organisation', $qb->createNamedParameter($organisationUuid, IQueryBuilder::PARAM_STR)));
+            ->where($qb->expr()->eq('organisation', rbac: $qb->createNamedParameter($organisationUuid, multi: IQueryBuilder::PARAM_STR)));
 
         $result = $qb->executeQuery();
         $count  = $result->fetchOne();

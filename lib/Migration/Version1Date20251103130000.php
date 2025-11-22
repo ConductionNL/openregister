@@ -68,7 +68,7 @@ class Version1Date20251103130000 extends SimpleMigrationStep
                         'default' => null,
                     ]
                 );
-                $output->info('Added authorization column to openregister_organisations');
+                $output->info(message: ('Added authorization column to openregister_organisations');
                 $updated = true;
             }
         }//end if
@@ -86,7 +86,7 @@ class Version1Date20251103130000 extends SimpleMigrationStep
                         'default' => null,
                     ]
                 );
-                $output->info('Added authorization column to openregister_applications');
+                $output->info(message: ('Added authorization column to openregister_applications');
                 $updated = true;
             }
         }//end if

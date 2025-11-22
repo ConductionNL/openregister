@@ -61,7 +61,7 @@ class FileTextController extends Controller
         private readonly LoggerInterface $logger,
         private readonly IAppConfig $config
     ) {
-        parent::__construct($appName, $request);
+        parent::__construct(appName: $appName, request: $request);
 
     }//end __construct()
 
@@ -83,9 +83,9 @@ class FileTextController extends Controller
 
             if ($fileText === null) {
                 return new JSONResponse(
-                        [
-                            'success' => false,
-                            'message' => 'No text found for this file',
+                        data: [
+                            'success' => false, statusCode:
+                'message' => 'No text found for this file',
                             'file_id' => $fileId,
                         ],
                         404
@@ -93,9 +93,9 @@ class FileTextController extends Controller
             }
 
             return new JSONResponse(
-                    [
-                        'success'   => true,
-                        'file_text' => $fileText->jsonSerialize(),
+                    data: [
+                        'success'   => true, statusCode:
+            'file_text' => $fileText->jsonSerialize(),
                     ]
                     );
         } catch (\Exception $e) {
@@ -108,9 +108,9 @@ class FileTextController extends Controller
                     );
 
             return new JSONResponse(
-                    [
-                        'success' => false,
-                        'message' => 'Failed to retrieve file text: '.$e->getMessage(),
+                    data: [
+                        'success' => false, statusCode:
+            'message' => 'Failed to retrieve file text: '.$e->getMessage(),
                     ],
                     500
                     );
@@ -143,17 +143,17 @@ class FileTextController extends Controller
 
             if ($result['success'] === true) {
                 return new JSONResponse(
-                        [
-                            'success'   => true,
-                            'message'   => 'Text extracted successfully',
+                        data: [
+                            'success'   => true, statusCode:
+                'message'   => 'Text extracted successfully',
                             'file_text' => $result['fileText']->jsonSerialize(),
                         ]
                         );
             } else {
                 return new JSONResponse(
-                        [
-                            'success' => false,
-                            'message' => $result['error'] ?? 'Extraction failed',
+                        data: [
+                            'success' => false, statusCode:
+                'message' => $result['error'] ?? 'Extraction failed',
                         ],
                         422
                         );
@@ -168,9 +168,9 @@ class FileTextController extends Controller
                     );
 
             return new JSONResponse(
-                    [
-                        'success' => false,
-                        'message' => 'Failed to extract file text: '.$e->getMessage(),
+                    data: [
+                        'success' => false, statusCode:
+            'message' => 'Failed to extract file text: '.$e->getMessage(),
                     ],
                     500
                     );
@@ -196,9 +196,9 @@ class FileTextController extends Controller
             $result = $this->fileTextService->processPendingFiles($limit);
 
             return new JSONResponse(
-                    [
-                        'success'   => true,
-                        'processed' => $result['processed'],
+                    data: [
+                        'success'   => true, statusCode:
+            'processed' => $result['processed'],
                         'succeeded' => $result['succeeded'],
                         'failed'    => $result['failed'],
                         'errors'    => $result['errors'],
@@ -213,9 +213,9 @@ class FileTextController extends Controller
                     );
 
             return new JSONResponse(
-                    [
-                        'success' => false,
-                        'message' => 'Bulk extraction failed: '.$e->getMessage(),
+                    data: [
+                        'success' => false, statusCode:
+            'message' => 'Bulk extraction failed: '.$e->getMessage(),
                     ],
                     500
                     );
@@ -238,9 +238,9 @@ class FileTextController extends Controller
             $stats = $this->fileTextService->getStats();
 
             return new JSONResponse(
-                    [
-                        'success' => true,
-                        'stats'   => $stats,
+                    data: [
+                        'success' => true, statusCode:
+            'stats'   => $stats,
                     ]
                     );
         } catch (\Exception $e) {
@@ -252,9 +252,9 @@ class FileTextController extends Controller
                     );
 
             return new JSONResponse(
-                    [
-                        'success' => false,
-                        'message' => 'Failed to retrieve statistics: '.$e->getMessage(),
+                    data: [
+                        'success' => false, statusCode:
+            'message' => 'Failed to retrieve statistics: '.$e->getMessage(),
                     ],
                     500
                     );
@@ -279,9 +279,9 @@ class FileTextController extends Controller
             $this->fileTextService->deleteFileText($fileId);
 
             return new JSONResponse(
-                    [
-                        'success' => true,
-                        'message' => 'File text deleted successfully',
+                    data: [
+                        'success' => true, statusCode:
+            'message' => 'File text deleted successfully',
                     ]
                     );
         } catch (\Exception $e) {
@@ -294,9 +294,9 @@ class FileTextController extends Controller
                     );
 
             return new JSONResponse(
-                    [
-                        'success' => false,
-                        'message' => 'Failed to delete file text: '.$e->getMessage(),
+                    data: [
+                        'success' => false, statusCode:
+            'message' => 'Failed to delete file text: '.$e->getMessage(),
                     ],
                     500
                     );
@@ -331,19 +331,19 @@ class FileTextController extends Controller
 
             $result = $this->solrFileService->processExtractedFiles($limit, $options);
 
-            return new JSONResponse($result);
+            return new JSONResponse(data: $result);
         } catch (\Exception $e) {
             $this->logger->error(
                     '[FileTextController] Failed to process extracted files',
-                    [
+                    statusCode: [
                         'error' => $e->getMessage(),
                     ]
                     );
 
             return new JSONResponse(
-                    [
-                        'success' => false,
-                        'message' => 'Failed to process extracted files: '.$e->getMessage(),
+                    data: [
+                        'success' => false, statusCode:
+            'message' => 'Failed to process extracted files: '.$e->getMessage(),
                     ],
                     500
                     );
@@ -378,20 +378,20 @@ class FileTextController extends Controller
 
             $result = $this->solrFileService->processExtractedFile($fileId, $options);
 
-            return new JSONResponse($result);
+            return new JSONResponse(data: $result);
         } catch (\Exception $e) {
             $this->logger->error(
                     '[FileTextController] Failed to process file',
-                    [
+                    statusCode: [
                         'file_id' => $fileId,
                         'error'   => $e->getMessage(),
                     ]
                     );
 
             return new JSONResponse(
-                    [
-                        'success' => false,
-                        'message' => 'Failed to process file: '.$e->getMessage(),
+                    data: [
+                        'success' => false, statusCode:
+            'message' => 'Failed to process file: '.$e->getMessage(),
                     ],
                     500
                     );
@@ -414,9 +414,9 @@ class FileTextController extends Controller
             $stats = $this->solrFileService->getChunkingStats();
 
             return new JSONResponse(
-                    [
-                        'success' => true,
-                        'stats'   => $stats,
+                    data: [
+                        'success' => true, statusCode:
+            'stats'   => $stats,
                     ]
                     );
         } catch (\Exception $e) {
@@ -428,9 +428,9 @@ class FileTextController extends Controller
                     );
 
             return new JSONResponse(
-                    [
-                        'success' => false,
-                        'message' => 'Failed to get chunking stats: '.$e->getMessage(),
+                    data: [
+                        'success' => false, statusCode:
+            'message' => 'Failed to get chunking stats: '.$e->getMessage(),
                     ],
                     500
                     );

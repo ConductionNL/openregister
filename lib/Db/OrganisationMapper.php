@@ -114,7 +114,7 @@ class OrganisationMapper extends QBMapper
     public function update(Entity $entity): Entity
     {
         // Get old state before update.
-        $oldEntity = $this->find($entity->getId());
+        $oldEntity = $this->find(id: $entity->getId());
 
         if ($entity instanceof Organisation) {
             $entity->setUpdated(new \DateTime());
@@ -123,7 +123,7 @@ class OrganisationMapper extends QBMapper
         $entity = parent::update($entity);
 
         // Dispatch update event.
-        $this->eventDispatcher->dispatchTyped(new OrganisationUpdatedEvent($entity, $oldEntity));
+        $this->eventDispatcher->dispatchTyped(new OrganisationUpdatedEvent($entity, register: $oldEntity));
 
         return $entity;
 
@@ -165,7 +165,7 @@ class OrganisationMapper extends QBMapper
 
         $qb->select('*')
             ->from($this->getTableName())
-            ->where($qb->expr()->eq('uuid', $qb->createNamedParameter($uuid)));
+            ->where($qb->expr()->eq('uuid', schema: $qb->createNamedParameter($uuid)));
 
         return $this->findEntity($qb);
 
@@ -175,8 +175,7 @@ class OrganisationMapper extends QBMapper
     /**
      * Find multiple organisations by UUIDs using a single optimized query
      *
-     * This method performs a single database query to fetch multiple organisations,
-     * significantly improving performance compared to individual queries.
+     * This method performs a single database query to fetch multiple organisations, extend: * significantly improving performance compared to individual queries.
      *
      * @param array $uuids Array of organisation UUIDs to find
      *
@@ -192,7 +191,7 @@ class OrganisationMapper extends QBMapper
         $qb->select('*')
             ->from('openregister_organisations')
             ->where(
-                $qb->expr()->in('uuid', $qb->createNamedParameter($uuids, IQueryBuilder::PARAM_STR_ARRAY))
+                $qb->expr()->in('uuid', files: $qb->createNamedParameter($uuids, rbac: IQueryBuilder::PARAM_STR_ARRAY))
             );
 
         $result        = $qb->execute();
@@ -223,7 +222,7 @@ class OrganisationMapper extends QBMapper
 
         $qb->select('*')
             ->from($this->getTableName())
-            ->where($qb->expr()->like('users', $qb->createNamedParameter('%"'.$userId.'"%')));
+            ->where($qb->expr()->like('users', multi: $qb->createNamedParameter('%"'.$userId.'"%')));
 
         return $this->findEntities($qb);
 

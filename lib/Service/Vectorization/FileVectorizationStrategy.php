@@ -18,7 +18,9 @@
 
 namespace OCA\OpenRegister\Service\Vectorization;
 
-use OCA\OpenRegister\Db\FileTextMapper;
+use OCA\OpenRegister\Db\ChunkMapper;
+use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -37,11 +39,18 @@ class FileVectorizationStrategy implements VectorizationStrategyInterface
 {
 
     /**
-     * File text mapper
+     * Chunk mapper
      *
-     * @var FileTextMapper
+     * @var ChunkMapper
      */
-    private FileTextMapper $fileTextMapper;
+    private ChunkMapper $chunkMapper;
+
+    /**
+     * Database connection
+     *
+     * @var IDBConnection
+     */
+    private IDBConnection $db;
 
     /**
      * Logger
@@ -54,27 +63,30 @@ class FileVectorizationStrategy implements VectorizationStrategyInterface
     /**
      * Constructor
      *
-     * @param FileTextMapper  $fileTextMapper File text mapper
-     * @param LoggerInterface $logger         Logger
+     * @param ChunkMapper     $chunkMapper Chunk mapper
+     * @param IDBConnection   $db          Database connection
+     * @param LoggerInterface $logger      Logger
      */
     public function __construct(
-        FileTextMapper $fileTextMapper,
+        ChunkMapper $chunkMapper,
+        IDBConnection $db,
         LoggerInterface $logger
     ) {
-        $this->fileTextMapper = $fileTextMapper;
-        $this->logger         = $logger;
+        $this->chunkMapper = $chunkMapper;
+        $this->db          = $db;
+        $this->logger      = $logger;
 
     }//end __construct()
 
 
     /**
-     * Fetch files with completed extractions and chunks
+     * Fetch file chunks for vectorization
      *
      * @param array $options Options: max_files, file_types
      *
-     * @return \OCA\OpenRegister\Db\FileText[]
+     * @return \OCA\OpenRegister\Db\Chunk[]
      *
-     * @psalm-return list<\OCA\OpenRegister\Db\FileText>
+     * @psalm-return list<\OCA\OpenRegister\Db\Chunk>
      */
     public function fetchEntities(array $options): array
     {
@@ -82,46 +94,45 @@ class FileVectorizationStrategy implements VectorizationStrategyInterface
         $fileTypes = $options['file_types'] ?? [];
 
         $this->logger->debug(
-                '[FileVectorizationStrategy] Fetching files',
+                '[FileVectorizationStrategy] Fetching file chunks',
                 [
                     'maxFiles'  => $maxFiles,
                     'fileTypes' => $fileTypes,
                 ]
                 );
 
-        // Get files with completed extraction.
+        // Get all chunks for files (source_type = 'file').
+        // We'll need to query by source_type only.
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('*')
+            ->from('openregister_chunks')
+            ->where($qb->expr()->eq('source_type', $qb->createNamedParameter('file', IQueryBuilder::PARAM_STR)))
+            ->orderBy('source_id', 'ASC')
+            ->addOrderBy('chunk_index', 'ASC');
+
         if ($maxFiles > 0) {
-            $limit = $maxFiles;
-        } else {
-            $limit = 1000;
+            $qb->setMaxResults($maxFiles * 100);
         }
 
-        $files = $this->fileTextMapper->findByStatus('completed', $limit);
+        $allChunks = $this->chunkMapper->findEntities($qb);
 
-        // Filter by file types if specified.
-        if (empty($fileTypes) === false) {
-            $files = array_filter(
-                    $files,
-                    function ($file) use ($fileTypes) {
-                        return in_array($file->getMimeType(), $fileTypes);
-                    }
-                    );
-        }
+        // Group by source_id and apply max_files limit.
+        $uniqueFiles = [];
+        $fileChunks  = [];
 
-        // Filter files that have chunks.
-        $files = array_filter(
-                $files,
-                function ($file) {
-                    return $file->getChunked() && $file->getChunkCount() > 0;
+        foreach ($allChunks as $chunk) {
+            $sourceId = $chunk->getSourceId();
+            if (isset($uniqueFiles[$sourceId]) === false) {
+                $uniqueFiles[$sourceId] = true;
+                if ($maxFiles > 0 && count($uniqueFiles) > $maxFiles) {
+                    break;
                 }
-                );
+            }
 
-        // Apply max files limit.
-        if ($maxFiles > 0 && count($files) > $maxFiles) {
-            $files = array_slice($files, 0, $maxFiles);
+            $fileChunks[] = $chunk;
         }
 
-        return array_values($files);
+        return $fileChunks;
 
     }//end fetchEntities()
 
@@ -129,7 +140,7 @@ class FileVectorizationStrategy implements VectorizationStrategyInterface
     /**
      * Extract chunks from file
      *
-     * @param mixed $entity FileText entity
+     * @param mixed $entity Chunk entity
      *
      * @return ((int|string)|mixed|null)[][] Array of items with 'text' and chunk data
      *
@@ -137,42 +148,15 @@ class FileVectorizationStrategy implements VectorizationStrategyInterface
      */
     public function extractVectorizationItems($entity): array
     {
-        $chunksJson = $entity->getChunksJson();
-
-        if ($chunksJson === '' || $chunksJson === null) {
-            $this->logger->warning(
-                    '[FileVectorizationStrategy] No chunks JSON found',
-                    [
-                        'fileId' => $entity->getFileId(),
-                    ]
-                    );
-            return [];
-        }
-
-        $chunks = json_decode($chunksJson, true);
-
-        if (is_array($chunks) === false) {
-            $this->logger->error(
-                    '[FileVectorizationStrategy] Invalid chunks data',
-                    [
-                        'fileId' => $entity->getFileId(),
-                    ]
-                    );
-            return [];
-        }
-
-        // Add index to each chunk for tracking.
-        $items = [];
-        foreach ($chunks as $index => $chunk) {
-            $items[] = [
-                'text'         => $chunk['text'],
-                'index'        => $index,
-                'start_offset' => $chunk['start_offset'] ?? null,
-                'end_offset'   => $chunk['end_offset'] ?? null,
-            ];
-        }
-
-        return $items;
+        // Entity is already a chunk, return it as a single item.
+        return [
+            [
+                'text'         => $entity->getTextContent(),
+                'index'        => $entity->getChunkIndex(),
+                'start_offset' => $entity->getStartOffset(),
+                'end_offset'   => $entity->getEndOffset(),
+            ],
+        ];
 
     }//end extractVectorizationItems()
 
@@ -180,7 +164,7 @@ class FileVectorizationStrategy implements VectorizationStrategyInterface
     /**
      * Prepare metadata for file chunk vector
      *
-     * @param mixed $entity FileText entity
+     * @param mixed $entity Chunk entity
      * @param array $item   Chunk item
      *
      * @return (array|int|mixed|string)[] Metadata for storage
@@ -192,10 +176,7 @@ class FileVectorizationStrategy implements VectorizationStrategyInterface
      *     total_chunks: int<0, max>,
      *     chunk_text: string,
      *     additional_metadata: array{
-     *         file_id: mixed,
-     *         file_name: mixed,
-     *         file_path: mixed,
-     *         mime_type: mixed,
+     *         source_id: mixed,
      *         start_offset: mixed,
      *         end_offset: mixed
      *     }
@@ -203,25 +184,19 @@ class FileVectorizationStrategy implements VectorizationStrategyInterface
      */
     public function prepareVectorMetadata($entity, array $item): array
     {
-        $chunks = json_decode($entity->getChunksJson(), true);
-        if (is_array($chunks) === true) {
-            $totalChunks = count($chunks);
-        } else {
-            $totalChunks = 1;
-        }
+        // Get total chunks for this source.
+        $sourceChunks = $this->chunkMapper->findBySource('file', $entity->getSourceId());
+        $totalChunks  = count($sourceChunks);
 
         return [
             'entity_type'         => 'file',
-            'entity_id'           => (string) $entity->getFileId(),
+            'entity_id'           => (string) $entity->getSourceId(),
             'chunk_index'         => $item['index'],
             'total_chunks'        => $totalChunks,
             'chunk_text'          => substr($item['text'], 0, 500),
         // Preview.
             'additional_metadata' => [
-                'file_id'      => $entity->getFileId(),
-                'file_name'    => $entity->getFileName(),
-                'file_path'    => $entity->getFilePath(),
-                'mime_type'    => $entity->getMimeType(),
+                'source_id'    => $entity->getSourceId(),
                 'start_offset' => $item['start_offset'],
                 'end_offset'   => $item['end_offset'],
             ],
@@ -233,13 +208,13 @@ class FileVectorizationStrategy implements VectorizationStrategyInterface
     /**
      * Get file ID as identifier
      *
-     * @param mixed $entity FileText entity
+     * @param mixed $entity Chunk entity
      *
-     * @return string|int File ID
+     * @return string|int Source ID (file ID)
      */
     public function getEntityIdentifier($entity)
     {
-        return $entity->getFileId();
+        return $entity->getSourceId();
 
     }//end getEntityIdentifier()
 

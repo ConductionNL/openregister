@@ -657,7 +657,7 @@ class OptimizedBulkOperations
 
         // NO ERROR SUPPRESSION: Let datetime parsing errors bubble up immediately!
         // Convert ISO 8601 to MySQL datetime format.
-        $dateTime = new \DateTime($value);
+        $dateTime = new \DateTime(datetime: $value);
         return $dateTime->format('Y-m-d H:i:s');
 
     }//end convertDateTimeToMySQLFormat()

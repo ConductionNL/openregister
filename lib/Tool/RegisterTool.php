@@ -265,7 +265,7 @@ class RegisterTool extends AbstractTool
                 $registers
                 );
 
-        return $this->formatSuccess($registerList, sprintf('Found %d registers', count($registerList)));
+        return $this->formatSuccess($registerList, sprintf(format: ('Found %d registers', count($registerList)));
 
     }//end listRegisters()
 

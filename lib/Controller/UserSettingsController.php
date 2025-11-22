@@ -72,7 +72,7 @@ class UserSettingsController extends Controller
         IUserSession $userSession,
         LoggerInterface $logger
     ) {
-        parent::__construct($appName, $request);
+        parent::__construct(appName: $appName, request: $request);
 
         $this->gitHubService = $gitHubService;
         $this->userSession   = $userSession;
@@ -106,19 +106,16 @@ class UserSettingsController extends Controller
         try {
             $user = $this->userSession->getUser();
             if ($user === null) {
-                return new JSONResponse(
-                    ['error' => 'User not authenticated'],
-                    401
-                );
+                return new JSONResponse(data: ['error' => 'User not authenticated'], statusCode: 401);
             }
 
             $token = $this->gitHubService->getUserToken($user->getUID());
 
             if ($token === null) {
                 return new JSONResponse(
-                        [
-                            'hasToken' => false,
-                            'isValid'  => false,
+                        data: [
+                            'hasToken' => false, statusCode:
+                'isValid'  => false,
                             'message'  => 'No GitHub token configured',
                         ],
                         200
@@ -130,9 +127,9 @@ class UserSettingsController extends Controller
             $isValid = $this->gitHubService->validateToken($user->getUID());
 
             return new JSONResponse(
-                    [
-                        'hasToken' => true,
-                        'isValid'  => $isValid,
+                    data: [
+                        'hasToken' => true, statusCode:
+            'isValid'  => $isValid,
                         'message'  => $this->getTokenValidationMessage($isValid),
                     ],
                     200
@@ -140,10 +137,7 @@ class UserSettingsController extends Controller
         } catch (Exception $e) {
             $this->logger->error('Failed to get GitHub token status: '.$e->getMessage());
 
-            return new JSONResponse(
-                ['error' => 'Failed to get token status'],
-                500
-            );
+            return new JSONResponse(data: ['error' => 'Failed to get token status'], statusCode: 500);
         }//end try
 
     }//end getGitHubTokenStatus()
@@ -173,48 +167,36 @@ class UserSettingsController extends Controller
         try {
             $user = $this->userSession->getUser();
             if ($user === null) {
-                return new JSONResponse(
-                    ['error' => 'User not authenticated'],
-                    401
-                );
+                return new JSONResponse(data: ['error' => 'User not authenticated'], statusCode: 401);
             }
 
             $data  = $this->request->getParams();
             $token = $data['token'] ?? null;
 
             if ($token === null || trim($token) === '') {
-                return new JSONResponse(
-                    ['error' => 'Token is required'],
-                    400
-                );
+                return new JSONResponse(data: ['error' => 'Token is required'], statusCode: 400);
             }
 
             // Validate the token before saving.
             $this->gitHubService->setUserToken($token, $user->getUID());
             if ($this->gitHubService->validateToken($user->getUID()) === false) {
-                return new JSONResponse(
-                    ['error' => 'Invalid GitHub token'],
-                    400
-                );
+                return new JSONResponse(data: ['error' => 'Invalid GitHub token'], statusCode: 400);
             }
 
             // Save the token (it's already saved by setUserToken).
             $this->logger->info("GitHub token set for user: {$user->getUID()}");
 
             return new JSONResponse(
-                    [
-                        'success' => true,
-                        'message' => 'GitHub token saved successfully',
+                    data: [
+                        'success' => true, statusCode:
+            'message' => 'GitHub token saved successfully',
                     ],
                     200
                     );
         } catch (Exception $e) {
             $this->logger->error('Failed to set GitHub token: '.$e->getMessage());
 
-            return new JSONResponse(
-                ['error' => 'Failed to save token: '.$e->getMessage()],
-                500
-            );
+            return new JSONResponse(data: ['error' => 'Failed to save token: '.$e->getMessage()], statusCode: 500);
         }//end try
 
     }//end setGitHubToken()
@@ -244,10 +226,7 @@ class UserSettingsController extends Controller
         try {
             $user = $this->userSession->getUser();
             if ($user === null) {
-                return new JSONResponse(
-                    ['error' => 'User not authenticated'],
-                    401
-                );
+                return new JSONResponse(data: ['error' => 'User not authenticated'], statusCode: 401);
             }
 
             // Clear the token.
@@ -256,19 +235,16 @@ class UserSettingsController extends Controller
             $this->logger->info("GitHub token removed for user: {$user->getUID()}");
 
             return new JSONResponse(
-                    [
-                        'success' => true,
-                        'message' => 'GitHub token removed successfully',
+                    data: [
+                        'success' => true, statusCode:
+            'message' => 'GitHub token removed successfully',
                     ],
                     200
                     );
         } catch (Exception $e) {
             $this->logger->error('Failed to remove GitHub token: '.$e->getMessage());
 
-            return new JSONResponse(
-                ['error' => 'Failed to remove token'],
-                500
-            );
+            return new JSONResponse(data: ['error' => 'Failed to remove token'], statusCode: 500);
         }//end try
 
     }//end removeGitHubToken()

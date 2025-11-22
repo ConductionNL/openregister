@@ -1,10 +1,10 @@
 <?php
-
-declare(strict_types=1);
-
-/*
+/**
  * SPDX-FileCopyrightText: 2024 Nextcloud GmbH and Nextcloud contributors
  * SPDX-License-Identifier: AGPL-3.0-or-later
+ *
+ * @author  Conduction Development Team <dev@conduction.nl>
+ * @license AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  */
 
 namespace OCA\OpenRegister\Db;
@@ -62,46 +62,151 @@ use OCP\AppFramework\Db\Entity;
 class Webhook extends Entity implements JsonSerializable
 {
 
+    /**
+     * UUID
+     *
+     * @var string
+     */
     protected string $uuid = '';
 
+    /**
+     * Name
+     *
+     * @var string
+     */
     protected string $name = '';
 
+    /**
+     * URL
+     *
+     * @var string
+     */
     protected string $url = '';
 
+    /**
+     * Method
+     *
+     * @var string
+     */
     protected string $method = 'POST';
 
+    /**
+     * Events
+     *
+     * @var string
+     */
     protected string $events = '[]';
 
+    /**
+     * Headers
+     *
+     * @var string|null
+     */
     protected ?string $headers = null;
 
+    /**
+     * Secret
+     *
+     * @var string|null
+     */
     protected ?string $secret = null;
 
+    /**
+     * Enabled
+     *
+     * @var boolean
+     */
     protected bool $enabled = true;
 
+    /**
+     * Organisation
+     *
+     * @var string|null
+     */
     protected ?string $organisation = null;
 
+    /**
+     * Filters
+     *
+     * @var string|null
+     */
     protected ?string $filters = null;
 
+    /**
+     * Retry policy
+     *
+     * @var string
+     */
     protected string $retryPolicy = 'exponential';
 
+    /**
+     * Max retries
+     *
+     * @var integer
+     */
     protected int $maxRetries = 3;
 
+    /**
+     * Timeout
+     *
+     * @var integer
+     */
     protected int $timeout = 30;
 
+    /**
+     * Last triggered at
+     *
+     * @var DateTime|null
+     */
     protected ?DateTime $lastTriggeredAt = null;
 
+    /**
+     * Last success at
+     *
+     * @var DateTime|null
+     */
     protected ?DateTime $lastSuccessAt = null;
 
+    /**
+     * Last failure at
+     *
+     * @var DateTime|null
+     */
     protected ?DateTime $lastFailureAt = null;
 
+    /**
+     * Total deliveries
+     *
+     * @var integer
+     */
     protected int $totalDeliveries = 0;
 
+    /**
+     * Successful deliveries
+     *
+     * @var integer
+     */
     protected int $successfulDeliveries = 0;
 
+    /**
+     * Failed deliveries
+     *
+     * @var integer
+     */
     protected int $failedDeliveries = 0;
 
+    /**
+     * Created
+     *
+     * @var DateTime|null
+     */
     protected ?DateTime $created = null;
 
+    /**
+     * Updated
+     *
+     * @var DateTime|null
+     */
     protected ?DateTime $updated = null;
 
 
@@ -271,6 +376,11 @@ class Webhook extends Entity implements JsonSerializable
      */
     public function jsonSerialize(): array
     {
+        $secretValue = null;
+        if ($this->secret !== null) {
+            $secretValue = '***';
+        }
+
         return [
             'id'                   => $this->id,
             'uuid'                 => $this->uuid,
@@ -279,7 +389,7 @@ class Webhook extends Entity implements JsonSerializable
             'method'               => $this->method,
             'events'               => $this->getEventsArray(),
             'headers'              => $this->getHeadersArray(),
-            'secret'               => $this->secret !== null ? '***' : null,
+            'secret'               => $secretValue,
             'enabled'              => $this->enabled,
             'organisation'         => $this->organisation,
             'filters'              => $this->getFiltersArray(),

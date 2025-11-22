@@ -107,7 +107,7 @@ class Version1Date20251103120000 extends SimpleMigrationStep
                 }
             }//end foreach
 
-            $output->info('Created new table openregister_view');
+            $output->info(message: ('Created new table openregister_view');
 
             return $schema;
         }//end if
@@ -139,12 +139,12 @@ class Version1Date20251103120000 extends SimpleMigrationStep
             $connection = \OC::$server->getDatabaseConnection();
             $connection->executeQuery('INSERT INTO `*PREFIX*openregister_view` SELECT * FROM `*PREFIX*openregister_views`');
 
-            $output->info('Copied data from openregister_views to openregister_view');
+            $output->info(message: ('Copied data from openregister_views to openregister_view');
 
             // Drop old table.
             $schema->dropTable('openregister_views');
 
-            $output->info('Dropped old table openregister_views');
+            $output->info(message: ('Dropped old table openregister_views');
         }//end if
 
     }//end postSchemaChange()

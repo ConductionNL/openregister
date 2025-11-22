@@ -93,7 +93,7 @@ class Version1Date20250102000001 extends SimpleMigrationStep
                     'default' => true,
                     'comment' => 'Whether the organisation is active'
                 ]);
-                $output->info('Added active column to organisations table');
+                $output->info(message: ('Added active column to organisations table');
             }
         }
 
@@ -113,7 +113,7 @@ class Version1Date20250102000001 extends SimpleMigrationStep
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
         // All organisations should be active by default (already set by column default).
-        $output->info('All existing organisations are now active by default');
+        $output->info(message: ('All existing organisations are now active by default');
 
     }//end postSchemaChange()
 }//end class

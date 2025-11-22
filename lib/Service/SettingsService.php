@@ -1468,13 +1468,11 @@ class SettingsService
                 }
 
                 // Test Zookeeper connection using SOLR's Zookeeper API.
-                $url = sprintf(
-                    '%s://%s:%d%s/admin/collections?action=CLUSTERSTATUS&wt=json',
-                    $solrSettings['scheme'],
+                $url = sprintf(format: (
+                    '%s://%s:%d%s/admin/collections?action=CLUSTERSTATUS&wt=json', $solrSettings['scheme'],
                     $solrSettings['host'],
                     $solrSettings['port'],
-                    $solrSettings['path']
-                );
+                    $solrSettings['path']);
 
                 $context = stream_context_create(
                         [
@@ -1538,22 +1536,18 @@ class SettingsService
             // Check if it's a Kubernetes service name (contains .svc.cluster.local).
             if (strpos($host, '.svc.cluster.local') !== false) {
                 // Kubernetes service - don't append port, it's handled by the service.
-                $baseUrl = sprintf(
-                    '%s://%s%s',
-                    $solrSettings['scheme'],
+                $baseUrl = sprintf(format: (
+                    '%s://%s%s', $solrSettings['scheme'],
                     $host,
-                    $solrSettings['path']
-                );
+                    $solrSettings['path']);
             } else {
                 // Regular hostname - append port (default to 8983 if not provided).
                 $port    = !empty($solrSettings['port']) ? $solrSettings['port'] : 8983;
-                $baseUrl = sprintf(
-                    '%s://%s:%d%s',
-                    $solrSettings['scheme'],
+                $baseUrl = sprintf(format: (
+                    '%s://%s:%d%s', $solrSettings['scheme'],
                     $host,
                     $port,
-                    $solrSettings['path']
-                );
+                    $solrSettings['path']);
             }
 
             // Test basic SOLR connectivity with admin endpoints.
@@ -1720,22 +1714,18 @@ class SettingsService
             // Check if it's a Kubernetes service name (contains .svc.cluster.local).
             if (strpos($host, '.svc.cluster.local') !== false) {
                 // Kubernetes service - don't append port, it's handled by the service.
-                $baseUrl = sprintf(
-                    '%s://%s%s',
-                    $solrSettings['scheme'],
+                $baseUrl = sprintf(format: (
+                    '%s://%s%s', $solrSettings['scheme'],
                     $host,
-                    $solrSettings['path']
-                );
+                    $solrSettings['path']);
             } else {
                 // Regular hostname - append port (default to 8983 if not provided).
                 $port    = !empty($solrSettings['port']) ? $solrSettings['port'] : 8983;
-                $baseUrl = sprintf(
-                    '%s://%s:%d%s',
-                    $solrSettings['scheme'],
+                $baseUrl = sprintf(format: (
+                    '%s://%s:%d%s', $solrSettings['scheme'],
                     $host,
                     $port,
-                    $solrSettings['path']
-                );
+                    $solrSettings['path']);
             }
 
             // For SolrCloud, test collection existence.
@@ -1860,22 +1850,18 @@ class SettingsService
             // Check if it's a Kubernetes service name (contains .svc.cluster.local).
             if (strpos($host, '.svc.cluster.local') !== false) {
                 // Kubernetes service - don't append port, it's handled by the service.
-                $baseUrl = sprintf(
-                    '%s://%s%s',
-                    $solrSettings['scheme'],
+                $baseUrl = sprintf(format: (
+                    '%s://%s%s', $solrSettings['scheme'],
                     $host,
-                    $solrSettings['path']
-                );
+                    $solrSettings['path']);
             } else {
                 // Regular hostname - append port (default to 8983 if not provided).
                 $port    = !empty($solrSettings['port']) ? $solrSettings['port'] : 8983;
-                $baseUrl = sprintf(
-                    '%s://%s:%d%s',
-                    $solrSettings['scheme'],
+                $baseUrl = sprintf(format: (
+                    '%s://%s:%d%s', $solrSettings['scheme'],
                     $host,
                     $port,
-                    $solrSettings['path']
-                );
+                    $solrSettings['path']);
             }
 
             // Test collection select query.
@@ -2001,14 +1987,14 @@ class SettingsService
             $schemas = [];
             try {
                 $schemaMapper = $this->container->get('OCA\OpenRegister\Db\SchemaMapper');
-                $schemas      = $schemaMapper->findAll();
+                $schemas      = $schemaMapper->findAll(config: );
             } catch (Exception $e) {
                 // Continue without schema mirroring if schema mapper is not available.
-                $this->logger->warning('Schema mapper not available for warmup', ['error' => $e->getMessage()]);
+                $this->logger->warning('Schema mapper not available for warmup', rbac: ['error' => $e->getMessage()]);
             }
 
             // **COMPLETE WARMUP**: Mirror schemas + index objects + cache warmup.
-            $warmupResult = $solrService->warmupIndex($schemas, $maxObjects, $mode, $collectErrors);
+            $warmupResult = $solrService->warmupIndex($schemas, multi: $maxObjects, $mode, $collectErrors);
 
             $totalDuration = microtime(true) - $startTime;
 

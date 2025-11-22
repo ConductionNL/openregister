@@ -93,7 +93,7 @@ class Version1Date20250102000000 extends SimpleMigrationStep
                     'default' => '[]',
                     'comment' => 'Array of Nextcloud group IDs that have access to this organisation'
                 ]);
-                $output->info('Added groups column to organisations table');
+                $output->info(message: ('Added groups column to organisations table');
             }
         }
 
@@ -122,7 +122,7 @@ class Version1Date20250102000000 extends SimpleMigrationStep
         $affected = $qb->executeStatement();
 
         if ($affected > 0) {
-            $output->info("Initialized groups field for {$affected} existing organisations");
+            $output->info(message: ("Initialized groups field for {$affected} existing organisations");
         }
 
     }//end postSchemaChange()

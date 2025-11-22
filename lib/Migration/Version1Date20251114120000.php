@@ -62,7 +62,7 @@ class Version1Date20251114120000 extends SimpleMigrationStep
 
         $schema = $schemaClosure();
 
-        $output->info('🔧 Adding JSON Schema composition support...');
+        $output->info(message: ('🔧 Adding JSON Schema composition support...');
 
         // Add allOf, oneOf, anyOf fields to schemas table.
         if ($schema->hasTable('openregister_schemas') === true) {
@@ -80,9 +80,9 @@ class Version1Date20251114120000 extends SimpleMigrationStep
                         ]
                         );
 
-                $output->info('   ✓ Added all_of column to schemas table');
+                $output->info(message: ('   ✓ Added all_of column to schemas table');
             } else {
-                $output->info('   ⚠️  all_of column already exists');
+                $output->info(message: ('   ⚠️  all_of column already exists');
             }
 
             // Add oneOf field (array of schema identifiers - must validate against EXACTLY ONE).
@@ -97,9 +97,9 @@ class Version1Date20251114120000 extends SimpleMigrationStep
                         ]
                         );
 
-                $output->info('   ✓ Added one_of column to schemas table');
+                $output->info(message: ('   ✓ Added one_of column to schemas table');
             } else {
-                $output->info('   ⚠️  one_of column already exists');
+                $output->info(message: ('   ⚠️  one_of column already exists');
             }
 
             // Add anyOf field (array of schema identifiers - must validate against AT LEAST ONE).
@@ -114,21 +114,21 @@ class Version1Date20251114120000 extends SimpleMigrationStep
                         ]
                         );
 
-                $output->info('   ✓ Added any_of column to schemas table');
+                $output->info(message: ('   ✓ Added any_of column to schemas table');
             } else {
-                $output->info('   ⚠️  any_of column already exists');
+                $output->info(message: ('   ⚠️  any_of column already exists');
             }
 
-            $output->info('✅ JSON Schema composition support added successfully');
+            $output->info(message: ('✅ JSON Schema composition support added successfully');
             $output->info('🎯 Features enabled:');
             $output->info('   • allOf: Multiple inheritance/composition (validate against ALL)');
             $output->info('   • oneOf: Mutually exclusive options (validate against EXACTLY ONE)');
             $output->info('   • anyOf: Flexible composition (validate against AT LEAST ONE)');
-            $output->info('   • Liskov Substitution Principle enforcement');
-            $output->info('   • Metadata override support (title, description, order)');
+            $output->info(message: ('   • Liskov Substitution Principle enforcement');
+            $output->info(message: ('   • Metadata override support (title, description, order)');
             $output->info('📚 See: https://json-schema.org/understanding-json-schema/reference/combining');
         } else {
-            $output->info('⚠️  Schemas table does not exist!');
+            $output->info(message: ('⚠️  Schemas table does not exist!');
         }//end if
 
         return $schema;

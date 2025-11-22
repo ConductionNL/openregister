@@ -40,7 +40,7 @@ class HeartbeatController extends Controller
         string $appName,
         IRequest $request,
     ) {
-        parent::__construct($appName, $request);
+        parent::__construct(appName: $appName, request: $request);
 
     }//end __construct()
 
@@ -66,7 +66,7 @@ class HeartbeatController extends Controller
     public function heartbeat(): JSONResponse
     {
         return new JSONResponse(
-          [
+          data: [
               'status'    => 'alive',
               'timestamp' => time(),
               'message'   => 'Heartbeat successful - connection kept alive',

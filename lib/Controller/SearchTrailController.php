@@ -46,7 +46,7 @@ class SearchTrailController extends Controller
         IRequest $request,
         private readonly SearchTrailService $searchTrailService
     ) {
-        parent::__construct($appName, $request);
+        parent::__construct(appName: $appName, request: $request);
 
     }//end __construct()
 
@@ -111,7 +111,7 @@ class SearchTrailController extends Controller
         $to   = null;
         if (isset($params['from']) === true) {
             try {
-                $from = new DateTime($params['from']);
+                $from = new \DateTime(datetime: $params['from']);
             } catch (\Exception $e) {
                 // Invalid date format, ignore.
             }
@@ -119,7 +119,7 @@ class SearchTrailController extends Controller
 
         if (isset($params['to']) === true) {
             try {
-                $to = new DateTime($params['to']);
+                $to = new \DateTime(datetime: $params['to']);
             } catch (\Exception $e) {
                 // Invalid date format, ignore.
             }
@@ -310,7 +310,7 @@ class SearchTrailController extends Controller
             // Use the paginate method to ensure consistent format with ObjectsController.
             $paginatedResult = $this->paginate($results, $total, $limit, $offset, $page);
 
-            return new JSONResponse($paginatedResult);
+            return new JSONResponse(data: $paginatedResult);
         } catch (\Exception $e) {
             return new JSONResponse(
                 data: ['error' => 'Failed to retrieve search trails: '.$e->getMessage()],
@@ -338,17 +338,14 @@ class SearchTrailController extends Controller
     {
         try {
             $log = $this->searchTrailService->getSearchTrail($id);
-            return new JSONResponse($log);
+            return new JSONResponse(data: $log);
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             return new JSONResponse(
                 data: ['error' => 'Search trail not found'],
                 statusCode: 404
             );
         } catch (\Exception $e) {
-            return new JSONResponse(
-                ['error' => 'Failed to retrieve search trail: '.$e->getMessage()],
-                500
-            );
+            return new JSONResponse(data: ['error' => 'Failed to retrieve search trail: '.$e->getMessage()], statusCode: 500);
         }
 
     }//end show()
@@ -376,12 +373,9 @@ class SearchTrailController extends Controller
                 to: $params['to']
             );
 
-            return new JSONResponse($statistics);
+            return new JSONResponse(data: $statistics);
         } catch (\Exception $e) {
-            return new JSONResponse(
-                ['error' => 'Failed to get search statistics: '.$e->getMessage()],
-                500
-            );
+            return new JSONResponse(data: ['error' => 'Failed to get search statistics: '.$e->getMessage()], statusCode: 500);
         }
 
     }//end statistics()
@@ -427,12 +421,9 @@ class SearchTrailController extends Controller
             $paginatedTerms['total_searches'] = $totalSearches;
             $paginatedTerms['period']         = $period;
 
-            return new JSONResponse($paginatedTerms);
+            return new JSONResponse(data: $paginatedTerms);
         } catch (\Exception $e) {
-            return new JSONResponse(
-                ['error' => 'Failed to get popular search terms: '.$e->getMessage()],
-                500
-            );
+            return new JSONResponse(data: ['error' => 'Failed to get popular search terms: '.$e->getMessage()], statusCode: 500);
         }//end try
 
     }//end popularTerms()
@@ -462,12 +453,9 @@ class SearchTrailController extends Controller
                 to: $params['to']
             );
 
-            return new JSONResponse($result);
+            return new JSONResponse(data: $result);
         } catch (\Exception $e) {
-            return new JSONResponse(
-                ['error' => 'Failed to get search activity: '.$e->getMessage()],
-                500
-            );
+            return new JSONResponse(data: ['error' => 'Failed to get search activity: '.$e->getMessage()], statusCode: 500);
         }
 
     }//end activity()
@@ -513,12 +501,9 @@ class SearchTrailController extends Controller
             $paginatedStats['total_searches'] = $totalSearches;
             $paginatedStats['period']         = $period;
 
-            return new JSONResponse($paginatedStats);
+            return new JSONResponse(data: $paginatedStats);
         } catch (\Exception $e) {
-            return new JSONResponse(
-                ['error' => 'Failed to get register/schema statistics: '.$e->getMessage()],
-                500
-            );
+            return new JSONResponse(data: ['error' => 'Failed to get register/schema statistics: '.$e->getMessage()], statusCode: 500);
         }//end try
 
     }//end registerSchemaStats()
@@ -584,9 +569,9 @@ class SearchTrailController extends Controller
                     $paginatedUserAgents['browser_breakdown'] = $browserStats;
                 }
 
-                return new JSONResponse($paginatedUserAgents);
+                return new JSONResponse(data: $paginatedUserAgents);
             } else {
-                // If service returns a simple array, treat it as the user agents list.
+                // If service returns a simple array, statusCode: treat it as the user agents list.
                 // $serviceResult is always an array at this point (non-null).
                 $userAgentsArray = $serviceResult;
                 // Ensure we have a proper indexed array for pagination.
@@ -599,13 +584,10 @@ class SearchTrailController extends Controller
                 $offset = $params['offset'] ?? 0;
                 $paginatedUserAgents = $this->paginate($userAgents, $totalUniqueAgents, $limit, $offset, $page);
 
-                return new JSONResponse($paginatedUserAgents);
+                return new JSONResponse(data: $paginatedUserAgents);
             }//end if
         } catch (\Exception $e) {
-            return new JSONResponse(
-                ['error' => 'Failed to get user agent statistics: '.$e->getMessage()],
-                500
-            );
+            return new JSONResponse(data: ['error' => 'Failed to get user agent statistics: '.$e->getMessage()], statusCode: 500);
         }//end try
 
     }//end userAgentStats()
@@ -630,24 +612,18 @@ class SearchTrailController extends Controller
 
         if ($before !== null) {
             try {
-                $beforeDate = new DateTime($before);
+                $beforeDate = new \DateTime(datetime: $before);
             } catch (\Exception $e) {
-                return new JSONResponse(
-                    ['error' => 'Invalid date format for before parameter'],
-                    400
-                );
+                return new JSONResponse(data: ['error' => 'Invalid date format for before parameter'], statusCode: 400);
             }
         }
 
         try {
             $result = $this->searchTrailService->cleanupSearchTrails($beforeDate);
 
-            return new JSONResponse($result);
+            return new JSONResponse(data: $result);
         } catch (\Exception $e) {
-            return new JSONResponse(
-                ['error' => 'Cleanup failed: '.$e->getMessage()],
-                500
-            );
+            return new JSONResponse(data: ['error' => 'Cleanup failed: '.$e->getMessage()], statusCode: 500);
         }
 
     }//end cleanup()
@@ -736,20 +712,20 @@ class SearchTrailController extends Controller
 
             // Return export data.
             return new JSONResponse(
-                    [
-                        'success' => true,
-                        'data'    => [
-                            'content'     => $content,
-                            'filename'    => $filename,
-                            'contentType' => $contentType,
-                            'size'        => strlen($content),
-                        ],
+                    data: [
+                        'success' => true, statusCode:
+            'data'    => [
+                'content'     => $content,
+                'filename'    => $filename,
+                'contentType' => $contentType,
+                'size'        => strlen($content),
+            ],
                     ]
                     );
         } catch (\Exception $e) {
             return new JSONResponse(
-                    [
-                        'error' => 'Export failed: '.$e->getMessage(),
+                    data: [
+                        'error' => 'Export failed: '.$e->getMessage(), statusCode:
                     ],
                     500
                     );
@@ -779,22 +755,22 @@ class SearchTrailController extends Controller
             // For now, we'll just return a success message since we don't have a delete method in the service.
             // In a real implementation, you'd add a deleteSearchTrail method to the service.
             return new JSONResponse(
-                    [
-                        'success' => true,
-                        'message' => 'Search trail deletion not implemented yet',
+                    data: [
+                        'success' => true, statusCode:
+            'message' => 'Search trail deletion not implemented yet',
                     ]
                     );
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             return new JSONResponse(
-                    [
-                        'error' => 'Search trail not found',
+                    data: [
+                        'error' => 'Search trail not found', statusCode:
                     ],
                     404
                     );
         } catch (\Exception $e) {
             return new JSONResponse(
-                    [
-                        'error' => 'Deletion failed: '.$e->getMessage(),
+                    data: [
+                        'error' => 'Deletion failed: '.$e->getMessage(), statusCode:
                     ],
                     500
                     );
@@ -832,16 +808,16 @@ class SearchTrailController extends Controller
             ];
 
             return new JSONResponse(
-                    [
-                        'success' => true,
-                        'results' => $result,
+                    data: [
+                        'success' => true, statusCode:
+            'results' => $result,
                         'message' => 'Multiple search trail deletion not implemented yet',
                     ]
                     );
         } catch (\Exception $e) {
             return new JSONResponse(
-                    [
-                        'error' => 'Mass deletion failed: '.$e->getMessage(),
+                    data: [
+                        'error' => 'Mass deletion failed: '.$e->getMessage(), statusCode:
                     ],
                     500
                     );
@@ -900,33 +876,33 @@ class SearchTrailController extends Controller
             /*
              * @var \OCA\OpenRegister\Db\SearchTrailMapper $searchTrailMapper
              */
-            $searchTrailMapper = \OC::$server->get('OCA\OpenRegister\Db\SearchTrailMapper');
+            $searchTrailMapper = \OC::$server->get(userId: 'OCA\OpenRegister\Db\SearchTrailMapper');
 
                     // Use the clearAllLogs method from the mapper.
                     $result = $searchTrailMapper->clearAllLogs();
 
             if ($result === true) {
                 return new JSONResponse(
-                        [
-                            'success' => true,
-                            'message' => 'All search trails cleared successfully',
+                        data: [
+                            'success' => true, statusCode:
+                'message' => 'All search trails cleared successfully',
                             'deleted' => 'All expired search trails have been deleted',
                         ]
                         );
             } else {
                 return new JSONResponse(
-                        [
-                            'success' => true,
-                            'message' => 'No expired search trails found to clear',
+                        data: [
+                            'success' => true, statusCode:
+                'message' => 'No expired search trails found to clear',
                             'deleted' => 0,
                         ]
                         );
             }
         } catch (\Exception $e) {
             return new JSONResponse(
-                    [
-                        'success' => false,
-                        'error'   => 'Failed to clear search trails: '.$e->getMessage(),
+                    data: [
+                        'success' => false, statusCode:
+            'error'   => 'Failed to clear search trails: '.$e->getMessage(),
                     ],
                     500
                     );

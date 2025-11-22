@@ -76,7 +76,7 @@ class ApplicationsController extends Controller
         ApplicationMapper $applicationMapper,
         LoggerInterface $logger
     ) {
-        parent::__construct($appName, $request);
+        parent::__construct(appName: $appName, request: $request);
         $this->applicationService = $applicationService;
         $this->applicationMapper  = $applicationMapper;
         $this->logger = $logger;
@@ -95,9 +95,9 @@ class ApplicationsController extends Controller
     public function page(): TemplateResponse
     {
         return new TemplateResponse(
-            'openregister',
-            'index',
-            []
+                appName: 'openregister',
+                templateName: 'index',
+                params: []
         );
 
     }//end page()
@@ -129,7 +129,7 @@ class ApplicationsController extends Controller
 
             // Remove special query params from filters.
             $filters = $params;
-            unset($filters['_limit'], $filters['_offset'], $filters['_page'], $filters['_search'], $filters['_route']);
+            unset($filters['_limit'], renderAs: $filters['_offset'], $filters['_page'], $filters['_search'], $filters['_route']);
 
             $applications = $this->applicationMapper->findAll(
                 $limit,
@@ -137,7 +137,7 @@ class ApplicationsController extends Controller
                 $filters
             );
 
-            return new JSONResponse(['results' => $applications], Http::STATUS_OK);
+            return new JSONResponse(data: ['results' => $applications], statusCode: Http::STATUS_OK);
         } catch (Exception $e) {
             $this->logger->error(
                 'Failed to get applications',
@@ -147,10 +147,7 @@ class ApplicationsController extends Controller
                 ]
             );
 
-            return new JSONResponse(
-                ['error' => 'Failed to retrieve applications'],
-                Http::STATUS_INTERNAL_SERVER_ERROR
-            );
+            return new JSONResponse(data: ['error' => 'Failed to retrieve applications'], statusCode: Http::STATUS_INTERNAL_SERVER_ERROR);
         }//end try
 
     }//end index()
@@ -171,7 +168,7 @@ class ApplicationsController extends Controller
         try {
             $application = $this->applicationService->find($id);
 
-            return new JSONResponse($application, Http::STATUS_OK);
+            return new JSONResponse(data: $application, statusCode: Http::STATUS_OK);
         } catch (Exception $e) {
             $this->logger->error(
                 'Failed to get application',
@@ -181,10 +178,7 @@ class ApplicationsController extends Controller
                 ]
             );
 
-            return new JSONResponse(
-                ['error' => 'Application not found'],
-                Http::STATUS_NOT_FOUND
-            );
+            return new JSONResponse(data: ['error' => 'Application not found'], statusCode: Http::STATUS_NOT_FOUND);
         }
 
     }//end show()
@@ -206,7 +200,7 @@ class ApplicationsController extends Controller
 
             $application = $this->applicationService->create($data);
 
-            return new JSONResponse($application, Http::STATUS_CREATED);
+            return new JSONResponse(data: $application, statusCode: Http::STATUS_CREATED);
         } catch (Exception $e) {
             $this->logger->error(
                 'Failed to create application',
@@ -216,10 +210,7 @@ class ApplicationsController extends Controller
                 ]
             );
 
-            return new JSONResponse(
-                ['error' => 'Failed to create application: '.$e->getMessage()],
-                Http::STATUS_BAD_REQUEST
-            );
+            return new JSONResponse(data: ['error' => 'Failed to create application: '.$e->getMessage()], statusCode: Http::STATUS_BAD_REQUEST);
         }//end try
 
     }//end create()
@@ -249,7 +240,7 @@ class ApplicationsController extends Controller
 
             $application = $this->applicationService->update($id, $data);
 
-            return new JSONResponse($application, Http::STATUS_OK);
+            return new JSONResponse(data: $application, statusCode: Http::STATUS_OK);
         } catch (Exception $e) {
             $this->logger->error(
                 'Failed to update application',
@@ -259,10 +250,7 @@ class ApplicationsController extends Controller
                 ]
             );
 
-            return new JSONResponse(
-                ['error' => 'Failed to update application: '.$e->getMessage()],
-                Http::STATUS_BAD_REQUEST
-            );
+            return new JSONResponse(data: ['error' => 'Failed to update application: '.$e->getMessage()], statusCode: Http::STATUS_BAD_REQUEST);
         }//end try
 
     }//end update()
@@ -300,7 +288,7 @@ class ApplicationsController extends Controller
         try {
             $this->applicationService->delete($id);
 
-            return new JSONResponse(['message' => 'Application deleted successfully'], Http::STATUS_OK);
+            return new JSONResponse(data: ['message' => 'Application deleted successfully'], statusCode: Http::STATUS_OK);
         } catch (Exception $e) {
             $this->logger->error(
                 'Failed to delete application',
@@ -310,10 +298,7 @@ class ApplicationsController extends Controller
                 ]
             );
 
-            return new JSONResponse(
-                ['error' => 'Failed to delete application'],
-                Http::STATUS_BAD_REQUEST
-            );
+            return new JSONResponse(data: ['error' => 'Failed to delete application'], statusCode: Http::STATUS_BAD_REQUEST);
         }
 
     }//end destroy()

@@ -67,13 +67,13 @@ class Version1Date20251107170000 extends SimpleMigrationStep
                             'comment' => 'JSON-encoded array of text chunks with metadata',
                         ]
                         );
-                $output->info('✅ Added chunks_json column to file_texts table');
+                $output->info(message: ('✅ Added chunks_json column to file_texts table');
                 $updated = true;
             } else {
-                $output->info('ℹ️  chunks_json column already exists in file_texts table');
+                $output->info(message: ('ℹ️  chunks_json column already exists in file_texts table');
             }
         } else {
-            $output->warning('⚠️  openregister_file_texts table does not exist');
+            $output->warning(message: ('⚠️  openregister_file_texts table does not exist');
         }//end if
 
         if ($updated === true) {
@@ -96,8 +96,8 @@ class Version1Date20251107170000 extends SimpleMigrationStep
      */
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
-        $output->info('✅ Migration complete - Text extraction is now independent of SOLR');
-        $output->info('   Chunks will be generated during extraction and stored for later use');
+        $output->info(message: ('✅ Migration complete - Text extraction is now independent of SOLR');
+        $output->info(message: ('   Chunks will be generated during extraction and stored for later use');
 
     }//end postSchemaChange()
 

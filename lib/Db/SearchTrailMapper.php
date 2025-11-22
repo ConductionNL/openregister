@@ -1066,7 +1066,7 @@ class SearchTrailMapper extends QBMapper
                 ->set(
                        'expires',
                        $qb->createFunction(
-                   sprintf('DATE_ADD(created, INTERVAL %d SECOND)', $retentionSeconds)
+                   sprintf(format: ('DATE_ADD(created, INTERVAL %d SECOND)', $retentionSeconds)
                 )
                        )
                 ->where($qb->expr()->isNull('expires'));

@@ -226,11 +226,12 @@ class ObjectService
      *
      * @param string $appId Unique identifier for the external app
      *
+     * @phpstan-param  string $appId
+     * @psalm-param    string $appId
+     *
      * @return self For method chaining
      *
-     * @phpstan-param  string $appId
      * @phpstan-return self
-     * @psalm-param    string $appId
      * @psalm-return   self
      */
     public function setExternalAppContext(string $appId): self
@@ -350,18 +351,6 @@ class ObjectService
 
 
     /**
-     * Validate user has permission for a specific action, throw exception if not
-     *
-     * @param Schema      $schema      The schema to check permissions for
-     * @param string      $action      The CRUD action (create, read, update, delete)
-     * @param string|null $userId      Optional user ID (defaults to current user)
-     * @param string|null $objectOwner Optional object owner for ownership check
-     *
-     * @throws \Exception If user does not have permission
-     *
-     * @return void
-     */
-    /**
      * Check permission and throw exception if not granted
      *
      * @param Schema      $schema      Schema to check permissions for
@@ -371,6 +360,7 @@ class ObjectService
      * @param bool        $rbac        Whether to enforce RBAC checks
      *
      * @return void
+     *
      * @throws \Exception If permission is not granted
      */
     private function checkPermission(Schema $schema, string $action, ?string $userId=null, ?string $objectOwner=null, bool $rbac=true): void
@@ -396,10 +386,10 @@ class ObjectService
      *
      * @param ObjectEntity $entity The object entity to ensure folder for
      *
-     * @return void
-     *
      * @psalm-return   void
      * @phpstan-return void
+     *
+     * @return void
      */
     public function ensureObjectFolderExists(ObjectEntity $entity): void
     {
@@ -535,9 +525,9 @@ class ObjectService
     /**
      * Clears the current schema and current register, so that a new call on the ObjectService does not retain old values.
      *
+     * @return void
      *
      * @deprecated Deprecated as public function, should be called from within at appropriate locations.
-     * @return void
      */
     public function clearCurrents(): void
     {
@@ -602,10 +592,10 @@ class ObjectService
         }
 
         // If the object is not published, check the permissions.
-        $now = new \DateTime('now');
+        $now = new \DateTime(datetime: 'now');
         if ($object->getPublished() === null || $now < $object->getPublished() || ($object->getDepublished() !== null && $object->getDepublished() <= $now)) {
             // Check user has permission to read this specific object (includes object owner check).
-            $this->checkPermission($this->currentSchema, 'read', null, $object->getOwner(), $rbac);
+            $this->checkPermission(schema: $this->currentSchema, action: 'read', userId: null, objectOwner: $object->getOwner(), rbac: $rbac);
         }
 
         // Render the object before returning.
@@ -1039,6 +1029,7 @@ class ObjectService
      *                      - ids: Array of IDs or UUIDs to filter by
      *
      * @return int The number of matching objects.
+     *
      * @throws \Exception If register or schema is not set
      */
     public function count(
@@ -1367,6 +1358,7 @@ class ObjectService
      * Get all registers extended with their schemas
      *
      * @return array The registers with schema data
+     *
      * @throws Exception If extension fails
      */
     public function getRegisters(): array
@@ -1421,7 +1413,8 @@ class ObjectService
     /**
      * Find applicable ids for objects that have an inversed relationship through which a search request is performed.
      *
-     * @param  array $filters The set of filters to find the inversed relationships through.
+     * @param array $filters The set of filters to find the inversed relationships through.
+     *
      * @return array|null The list of ids that have an inversed relationship to an object that meets the filters. Returns NULL if no filters are found that are applicable.
      *
      * @throws \OCP\DB\Exception
@@ -1766,12 +1759,11 @@ class ObjectService
      *                     - _count: Return count instead of objects (boolean)
      *
      * @phpstan-param array<string, mixed> $query
-     *
      * @psalm-param array<string, mixed> $query
      *
-     * @throws \OCP\DB\Exception If a database error occurs
-     *
      * @return array<int, ObjectEntity>|int An array of ObjectEntity objects matching the criteria, or integer count if _count is true
+     *
+     * @throws \OCP\DB\Exception If a database error occurs
      */
     /**
      * Build a search query from request parameters for faceting-enabled methods
@@ -1784,24 +1776,25 @@ class ObjectService
      * @param int|string|null $schema        Optional schema identifier (should be resolved numeric ID)
      * @param array|null      $ids           Optional array of specific IDs to filter
      *
-     * @return array Query array containing:
-     *               - @self: Metadata filters (register, schema, etc.)
-     *               - Direct keys: Object field filters
-     *               - _limit: Maximum number of items per page
-     *               - _offset: Number of items to skip
-     *               - _page: Current page number
-     *               - _order: Sort parameters
-     *               - _search: Search term
-     *               - _extend: Properties to extend
-     *               - _fields: Fields to include
-     *               - _filter/_unset: Fields to exclude
-     *               - _facets: Facet configuration
-     *               - _facetable: Include facetable field discovery
-     *               - _ids: Specific IDs to filter
-     *
      * @phpstan-param  array<string, mixed> $requestParams
-     * @phpstan-return array<string, mixed>
      * @psalm-param    array<string, mixed> $requestParams
+     *
+     * @return array<string, mixed> Query array containing:
+     *                               - @self: Metadata filters (register, schema, etc.)
+     *                               - Direct keys: Object field filters
+     *                               - _limit: Maximum number of items per page
+     *                               - _offset: Number of items to skip
+     *                               - _page: Current page number
+     *                               - _order: Sort parameters
+     *                               - _search: Search term
+     *                               - _extend: Properties to extend
+     *                               - _fields: Fields to include
+     *                               - _filter/_unset: Fields to exclude
+     *                               - _facets: Facet configuration
+     *                               - _facetable: Include facetable field discovery
+     *                               - _ids: Specific IDs to filter
+     *
+     * @phpstan-return array<string, mixed>
      * @psalm-return   array<string, mixed>
      */
     public function buildSearchQuery(array $requestParams, int | string | array | null $register=null, int | string | array | null $schema=null, ?array $ids=null): array
@@ -6512,9 +6505,11 @@ class ObjectService
     /**
      * Bulk load all relationship objects in a single optimized query (legacy method - kept for compatibility)
      *
-     * @deprecated Use bulkLoadRelationshipsBatched() instead for better performance
      * @param array $relationshipIds Array of all relationship IDs to load
+     *
      * @return array Array of objects indexed by ID/UUID for instant lookup
+     *
+     * @deprecated Use bulkLoadRelationshipsBatched() instead for better performance
      */
     private function bulkLoadRelationships(array $relationshipIds): array
     {

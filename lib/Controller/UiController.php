@@ -38,7 +38,7 @@ class UiController extends Controller
      */
     public function __construct(string $appName, IRequest $request)
     {
-        parent::__construct($appName, $request);
+        parent::__construct(appName: $appName, request: $request);
 
     }//end __construct()
 
@@ -55,21 +55,21 @@ class UiController extends Controller
     {
         try {
             $response = new TemplateResponse(
-                $this->appName,
-                'index',
-                []
+                    appName: $this->appName,
+                    templateName: 'index',
+                    params: []
             );
 
             $csp = new ContentSecurityPolicy();
-            $csp->addAllowedConnectDomain('*');
-            $response->setContentSecurityPolicy($csp);
+            $csp->addAllowedConnectDomain(domain: '*');
+            $response->setContentSecurityPolicy(policy: $csp);
 
             return $response;
         } catch (\Exception $e) {
             return new TemplateResponse(
-                $this->appName,
-                'error',
-                ['error' => $e->getMessage()],
+                    appName: $this->appName,
+                    templateName: renderAs: 'error',
+                    params: ['error' => $e->getMessage()],
                 '500'
             );
         }

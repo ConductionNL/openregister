@@ -57,7 +57,7 @@ class Version1Date20251101120000 extends SimpleMigrationStep
 
         $schema = $schemaClosure();
 
-        $output->info('🔧 Creating applications table...');
+        $output->info(message: ('🔧 Creating applications table...');
 
         if ($schema->hasTable('openregister_applications') === false) {
             $table = $schema->createTable('openregister_applications');
@@ -231,16 +231,16 @@ class Version1Date20251101120000 extends SimpleMigrationStep
             $table->addIndex(['owner'], 'applications_owner_index');
             $table->addIndex(['active'], 'applications_active_index');
 
-            $output->info('✅ Created openregister_applications table');
+            $output->info(message: ('✅ Created openregister_applications table');
             $output->info('🎯 Applications support:');
-            $output->info('   • Grouping of configurations, registers, and schemas');
-            $output->info('   • Multi-tenancy via organisation assignment');
-            $output->info('   • Resource allocation quotas (storage, bandwidth, requests)');
-            $output->info('   • Version tracking and activation status');
+            $output->info(message: ('   • Grouping of configurations, registers, and schemas');
+            $output->info(message: ('   • Multi-tenancy via organisation assignment');
+            $output->info(message: ('   • Resource allocation quotas (storage, bandwidth, requests)');
+            $output->info(message: ('   • Version tracking and activation status');
 
             return $schema;
         } else {
-            $output->info('ℹ️  Applications table already exists, skipping...');
+            $output->info(message: ('ℹ️  Applications table already exists, skipping...');
         }//end if
 
         return null;

@@ -91,7 +91,7 @@ class Version1Date20250801000000 extends SimpleMigrationStep
                     'notnull' => false,
                     'default' => '[]'
                 ]);
-                $output->info('Added users column to organisations table');
+                $output->info(message: ('Added users column to organisations table');
             }
 
             // Add owner field (user ID who owns the organisation).
@@ -100,7 +100,7 @@ class Version1Date20250801000000 extends SimpleMigrationStep
                     'notnull' => false,
                     'length' => 255
                 ]);
-                $output->info('Added owner column to organisations table');
+                $output->info(message: ('Added owner column to organisations table');
             }
 
             // Add slug field (URL-friendly identifier).
@@ -109,18 +109,18 @@ class Version1Date20250801000000 extends SimpleMigrationStep
                     'notnull' => false,
                     'length' => 255
                 ]);
-                $output->info('Added slug column to organisations table');
+                $output->info(message: ('Added slug column to organisations table');
             }
 
             // Add unique constraints for uuid and slug.
             if ($table->hasColumn('uuid') && !$table->hasIndex('organisations_uuid_unique')) {
                 $table->addUniqueIndex(['uuid'], 'organisations_uuid_unique');
-                $output->info('Added unique constraint on uuid column');
+                $output->info(message: ('Added unique constraint on uuid column');
             }
 
             if ($table->hasColumn('slug') && !$table->hasIndex('organisations_slug_unique')) {
                 $table->addUniqueIndex(['slug'], 'organisations_slug_unique');
-                $output->info('Added unique constraint on slug column');
+                $output->info(message: ('Added unique constraint on slug column');
             }
         }
 

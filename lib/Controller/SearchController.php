@@ -66,7 +66,7 @@ class SearchController extends Controller
         ISearch $searchService,
         SolrService $solrService
     ) {
-        parent::__construct($appName, $request);
+        parent::__construct(appName: $appName, request: $request);
         $this->searchService = $searchService;
         $this->solrService   = $solrService;
 
@@ -140,7 +140,7 @@ class SearchController extends Controller
             $results
         );
 
-        return new JSONResponse($formattedResults);
+        return new JSONResponse(data: $formattedResults);
 
     }//end search()
 
@@ -152,7 +152,7 @@ class SearchController extends Controller
      * 1. Supporting comma-separated values in the query parameter
      * 2. Supporting array parameters (_search[])
      * 3. Making searches case-insensitive
-     * 4. Enabling partial matches (e.g., 'tes' matches 'test')
+     * 4. Enabling partial matches (e.g., statusCode: 'tes' matches 'test')
      *
      * @param string $query The raw search query from the request
      *

@@ -524,7 +524,7 @@ class FileService
 
         try {
             // Try to get existing folder first.
-            $objectFolder = $registerFolder->get($objectFolderName);
+            $objectFolder = $registerFolder->get(userId: $objectFolderName);
             $this->logger->info("Object folder already exists: " . $objectFolderName);
         } catch (NotFoundException) {
             // Create new folder if it doesn't exist.
@@ -865,15 +865,15 @@ class FileService
     /**
      * Set file ownership to the OpenRegister user at database level.
      *
-     * @TODO: This is a hack to fix NextCloud file ownership issues on production
-     * @TODO: where files exist but can't be accessed due to permission problems.
-     * @TODO: This should be removed once the underlying NextCloud rights issue is resolved.
-     *
      * @param Node $file The file node to change ownership for
      *
      * @return bool True if ownership was updated successfully, false otherwise
      *
      * @throws Exception If the ownership update fails
+     *
+     * @TODO: This is a hack to fix NextCloud file ownership issues on production
+     * @TODO: where files exist but can't be accessed due to permission problems.
+     * @TODO: This should be removed once the underlying NextCloud rights issue is resolved.
      *
      * @psalm-return bool
      * @phpstan-return bool
@@ -905,15 +905,15 @@ class FileService
     /**
      * Check file ownership and fix it if needed to prevent "File not found" errors.
      *
-     * @TODO: This is a hack to fix NextCloud file ownership issues on production
-     * @TODO: where files exist but can't be accessed due to permission problems.
-     * @TODO: This should be removed once the underlying NextCloud rights issue is resolved.
-     *
      * @param Node $file The file node to check ownership for
      *
      * @return void
      *
      * @throws Exception If ownership check/fix fails
+     *
+     * @TODO: This is a hack to fix NextCloud file ownership issues on production
+     * @TODO: where files exist but can't be accessed due to permission problems.
+     * @TODO: This should be removed once the underlying NextCloud rights issue is resolved.
      *
      * @psalm-return void
      * @phpstan-return void
@@ -1975,14 +1975,14 @@ class FileService
 
                     // Try to get the file from object folder using just the filename.
                     try {
-                        $file = $objectFolder->get($fileName);
+                        $file = $objectFolder->get(userId: $fileName);
                         $this->logger->info("updateFile: Found file in object folder: " . $file->getName() . " (ID: " . $file->getId() . ")");
                     } catch (NotFoundException) {
                         $this->logger->warning("updateFile: File '$fileName' not found in object folder.");
 
                         // Also try with the full path in case it's nested.
                         try {
-                            $file = $objectFolder->get($filePath);
+                            $file = $objectFolder->get(userId: $filePath);
                             $this->logger->info("updateFile: Found file using full path in object folder: " . $file->getName());
                         } catch (NotFoundException) {
                             $this->logger->warning("updateFile: File '$filePath' also not found with full path in object folder.");
@@ -2611,7 +2611,7 @@ class FileService
         if ($folder instanceof Folder === true) {
             try {
                 // First try with just the filename.
-                $fileNode = $folder->get($fileName);
+                $fileNode = $folder->get(userId: $fileName);
 
                 // Check ownership for NextCloud rights issues.
                 $this->checkOwnership($fileNode);
@@ -2620,7 +2620,7 @@ class FileService
             } catch (NotFoundException) {
                 try {
                     // If that fails, try with the full path.
-                    $fileNode = $folder->get($filePath);
+                    $fileNode = $folder->get(userId: $filePath);
 
                     // Check ownership for NextCloud rights issues.
                     $this->checkOwnership($fileNode);
@@ -2783,13 +2783,13 @@ class FileService
 
             try {
                 $this->logger->info("publishFile: Attempting to get file '$fileName' from object folder");
-                $fileNode = $objectFolder->get($fileName);
+                $fileNode = $objectFolder->get(userId: $fileName);
                 $this->logger->info("publishFile: Successfully found file: " . $fileNode->getName() . " at " . $fileNode->getPath());
             } catch (NotFoundException $e) {
                 // Try with full path if filename didn't work.
                 try {
                     $this->logger->info("publishFile: Attempting to get file '$filePath' (full path) from object folder");
-                    $fileNode = $objectFolder->get($filePath);
+                    $fileNode = $objectFolder->get(userId: $filePath);
                     $this->logger->info("publishFile: Successfully found file using full path: " . $fileNode->getName() . " at " . $fileNode->getPath());
                 } catch (NotFoundException $e2) {
                     $this->logger->error("publishFile: File '$fileName' and '$filePath' not found in object folder. NotFoundException: " . $e2->getMessage());
@@ -2905,13 +2905,13 @@ class FileService
 
             try {
                 $this->logger->info("unpublishFile: Attempting to get file '$fileName' from object folder");
-                $file = $objectFolder->get($fileName);
+                $file = $objectFolder->get(userId: $fileName);
                 $this->logger->info("unpublishFile: Successfully found file: " . $file->getName() . " at " . $file->getPath());
             } catch (NotFoundException $e) {
                 // Try with full path if filename didn't work.
                 try {
                     $this->logger->info("unpublishFile: Attempting to get file '$filePath' (full path) from object folder");
-                    $file = $objectFolder->get($filePath);
+                    $file = $objectFolder->get(userId: $filePath);
                     $this->logger->info("unpublishFile: Successfully found file using full path: " . $file->getName() . " at " . $file->getPath());
                 } catch (NotFoundException $e2) {
                     $this->logger->error("unpublishFile: File '$fileName' and '$filePath' not found in object folder. NotFoundException: " . $e2->getMessage());
@@ -3333,7 +3333,7 @@ class FileService
                         $objectFolder = $this->getObjectFolder($object);
                         if ($objectFolder !== null) {
                             try {
-                                $file = $objectFolder->get($fileName);
+                                $file = $objectFolder->get(userId: $fileName);
                                 $foundByFilename = true;
                             } catch (\Exception $e) {
                                 // Not found by filename.
@@ -3346,7 +3346,7 @@ class FileService
 
                 // Test user folder path lookup.
                 try {
-                    $file = $userFolder->get($testPath);
+                    $file = $userFolder->get(userId: $testPath);
                     $foundByPath = true;
                 } catch (\Exception $e) {
                     // Not found by path.
@@ -3536,7 +3536,7 @@ class FileService
 
         try {
             // Try to get existing folder first.
-            $objectFolder = $registerFolder->get($objectFolderName);
+            $objectFolder = $registerFolder->get(userId: $objectFolderName);
             $this->logger->info("Object folder already exists: " . $objectFolderName);
         } catch (NotFoundException) {
             // Create new folder if it doesn't exist.

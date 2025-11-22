@@ -54,7 +54,7 @@ class DashboardController extends Controller
         IRequest $request,
         DashboardService $dashboardService
     ) {
-        parent::__construct($appName, $request);
+        parent::__construct(appName: $appName, request: $request);
         $this->dashboardService = $dashboardService;
 
     }//end __construct()
@@ -77,22 +77,22 @@ class DashboardController extends Controller
     {
         try {
             $response = new TemplateResponse(
-                $this->appName,
-                'index',
-                []
+                appName: $this->appName,
+                templateName: 'index',
+                params: []
             );
 
             $csp = new ContentSecurityPolicy();
-            $csp->addAllowedConnectDomain('*');
-            $response->setContentSecurityPolicy($csp);
+            $csp->addAllowedConnectDomain(domain: '*');
+            $response->setContentSecurityPolicy(policy: $csp);
 
             return $response;
         } catch (\Exception $e) {
             return new TemplateResponse(
-                $this->appName,
-                'error',
-                ['error' => $e->getMessage()],
-                '500'
+                appName: $this->appName,
+                templateName: 'error',
+                params: ['error' => $e->getMessage()],
+                renderAs: '500'
             );
         }
 
@@ -122,9 +122,9 @@ class DashboardController extends Controller
                 schemaId: $params['schemaId'] ?? null
             );
 
-            return new JSONResponse(['registers' => $registers]);
+            return new JSONResponse(data: ['registers' => $registers]);
         } catch (\Exception $e) {
-            return new JSONResponse(['error' => $e->getMessage()], 500);
+            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
 
     }//end index()
@@ -144,16 +144,16 @@ class DashboardController extends Controller
     public function calculate(?int $registerId=null, ?int $schemaId=null): JSONResponse
     {
         try {
-            $result = $this->dashboardService->calculate($registerId, $schemaId);
-            return new JSONResponse($result);
+            $result = $this->dashboardService->calculate(registerId: $registerId, schemaId: $schemaId);
+            return new JSONResponse(data: $result);
         } catch (\Exception $e) {
             return new JSONResponse(
-                [
+                data: [
                     'status'    => 'error',
                     'message'   => $e->getMessage(),
-                    'timestamp' => (new \DateTime())->format('c'),
+                    'timestamp' => (new \DateTime(datetime: 'now'))->format('c'),
                 ],
-                500
+                statusCode: 500
             );
         }
 
@@ -177,21 +177,21 @@ class DashboardController extends Controller
     {
         try {
             if ($from !== null) {
-                $fromDate = new \DateTime($from);
+                $fromDate = new \DateTime(datetime: $from);
             } else {
                 $fromDate = null;
             }
 
             if ($till !== null) {
-                $tillDate = new \DateTime($till);
+                $tillDate = new \DateTime(datetime: $till);
             } else {
                 $tillDate = null;
             }
 
-            $data = $this->dashboardService->getAuditTrailActionChartData($fromDate, $tillDate, $registerId, $schemaId);
-            return new JSONResponse($data);
+            $data = $this->dashboardService->getAuditTrailActionChartData(from: $fromDate, till: $tillDate, registerId: $registerId, schemaId: $schemaId);
+            return new JSONResponse(data: $data);
         } catch (\Exception $e) {
-            return new JSONResponse(['error' => $e->getMessage()], 500);
+            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
 
     }//end getAuditTrailActionChart()
@@ -211,10 +211,10 @@ class DashboardController extends Controller
     public function getObjectsByRegisterChart(?int $registerId=null, ?int $schemaId=null): JSONResponse
     {
         try {
-            $data = $this->dashboardService->getObjectsByRegisterChartData($registerId, $schemaId);
-            return new JSONResponse($data);
+            $data = $this->dashboardService->getObjectsByRegisterChartData(registerId: $registerId, schemaId: $schemaId);
+            return new JSONResponse(data: $data);
         } catch (\Exception $e) {
-            return new JSONResponse(['error' => $e->getMessage()], 500);
+            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
 
     }//end getObjectsByRegisterChart()
@@ -234,10 +234,10 @@ class DashboardController extends Controller
     public function getObjectsBySchemaChart(?int $registerId=null, ?int $schemaId=null): JSONResponse
     {
         try {
-            $data = $this->dashboardService->getObjectsBySchemaChartData($registerId, $schemaId);
-            return new JSONResponse($data);
+            $data = $this->dashboardService->getObjectsBySchemaChartData(registerId: $registerId, schemaId: $schemaId);
+            return new JSONResponse(data: $data);
         } catch (\Exception $e) {
-            return new JSONResponse(['error' => $e->getMessage()], 500);
+            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
 
     }//end getObjectsBySchemaChart()
@@ -257,10 +257,10 @@ class DashboardController extends Controller
     public function getObjectsBySizeChart(?int $registerId=null, ?int $schemaId=null): JSONResponse
     {
         try {
-            $data = $this->dashboardService->getObjectsBySizeChartData($registerId, $schemaId);
-            return new JSONResponse($data);
+            $data = $this->dashboardService->getObjectsBySizeChartData(registerId: $registerId, schemaId: $schemaId);
+            return new JSONResponse(data: $data);
         } catch (\Exception $e) {
-            return new JSONResponse(['error' => $e->getMessage()], 500);
+            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
 
     }//end getObjectsBySizeChart()
@@ -281,10 +281,10 @@ class DashboardController extends Controller
     public function getAuditTrailStatistics(?int $registerId=null, ?int $schemaId=null, ?int $hours=24): JSONResponse
     {
         try {
-            $data = $this->dashboardService->getAuditTrailStatistics($registerId, $schemaId, $hours);
-            return new JSONResponse($data);
+            $data = $this->dashboardService->getAuditTrailStatistics(registerId: $registerId, schemaId: $schemaId, hours: $hours);
+            return new JSONResponse(data: $data);
         } catch (\Exception $e) {
-            return new JSONResponse(['error' => $e->getMessage()], 500);
+            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
 
     }//end getAuditTrailStatistics()
@@ -305,10 +305,10 @@ class DashboardController extends Controller
     public function getAuditTrailActionDistribution(?int $registerId=null, ?int $schemaId=null, ?int $hours=24): JSONResponse
     {
         try {
-            $data = $this->dashboardService->getAuditTrailActionDistribution($registerId, $schemaId, $hours);
-            return new JSONResponse($data);
+            $data = $this->dashboardService->getAuditTrailActionDistribution(registerId: $registerId, schemaId: $schemaId, hours: $hours);
+            return new JSONResponse(data: $data);
         } catch (\Exception $e) {
-            return new JSONResponse(['error' => $e->getMessage()], 500);
+            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
 
     }//end getAuditTrailActionDistribution()
@@ -330,10 +330,10 @@ class DashboardController extends Controller
     public function getMostActiveObjects(?int $registerId=null, ?int $schemaId=null, ?int $limit=10, ?int $hours=24): JSONResponse
     {
         try {
-            $data = $this->dashboardService->getMostActiveObjects($registerId, $schemaId, $limit, $hours);
-            return new JSONResponse($data);
+            $data = $this->dashboardService->getMostActiveObjects(registerId: $registerId, schemaId: $schemaId, limit: $limit, hours: $hours);
+            return new JSONResponse(data: $data);
         } catch (\Exception $e) {
-            return new JSONResponse(['error' => $e->getMessage()], 500);
+            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
 
     }//end getMostActiveObjects()

@@ -41,7 +41,9 @@ GET /api/objects/5/24?_facets[@self][register][type]=terms&_facets[status][type]
 
 Content Search provides powerful search capabilities across objects and their associated files through text extraction and indexing.
 
-For detailed information about text extraction, see the **[Text Extraction Sources Documentation](../features/text-extraction-sources.md)**.
+> **📚 For complete pipeline documentation**: See **[Text Extraction, Vectorization & Named Entity Recognition](./text-extraction-vectorization-ner.md)** which covers all three services in detail.
+
+For detailed information about text extraction sources, see the **[Text Extraction Sources Documentation](../features/text-extraction-sources.md)**.
 
 ### Text Extraction Overview
 

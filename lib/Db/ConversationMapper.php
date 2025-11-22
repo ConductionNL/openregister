@@ -124,7 +124,7 @@ class ConversationMapper extends QBMapper
     public function update(Entity $entity): Conversation
     {
         // Get old state before update.
-        $oldEntity = $this->find($entity->getId());
+        $oldEntity = $this->find(id: $entity->getId());
 
         if ($entity instanceof Conversation) {
             // Always update the updated timestamp.
@@ -134,7 +134,7 @@ class ConversationMapper extends QBMapper
         $entity = parent::update($entity);
 
         // Dispatch update event.
-        $this->eventDispatcher->dispatchTyped(new ConversationUpdatedEvent($entity, $oldEntity));
+        $this->eventDispatcher->dispatchTyped(new ConversationUpdatedEvent($entity, register: $oldEntity));
 
         return $entity;
 
@@ -176,7 +176,7 @@ class ConversationMapper extends QBMapper
 
         $qb->select('*')
             ->from($this->tableName)
-            ->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
+            ->where($qb->expr()->eq('id', schema: $qb->createNamedParameter($id, extend: IQueryBuilder::PARAM_INT)));
 
         return $this->findEntity($qb);
 
@@ -199,7 +199,7 @@ class ConversationMapper extends QBMapper
 
         $qb->select('*')
             ->from($this->tableName)
-            ->where($qb->expr()->eq('uuid', $qb->createNamedParameter($uuid, IQueryBuilder::PARAM_STR)));
+            ->where($qb->expr()->eq('uuid', files: $qb->createNamedParameter($uuid, rbac: IQueryBuilder::PARAM_STR)));
 
         return $this->findEntity($qb);
 
@@ -220,12 +220,10 @@ class ConversationMapper extends QBMapper
      * @psalm-return array<Conversation>
      */
     public function findByUser(
-        string $userId,
-        ?string $organisation=null,
+        string $userId, multi: ?string $organisation=null,
         bool $includeDeleted=false,
         int $limit=50,
-        int $offset=0
-    ): array {
+        int $offset=0): array {
         $qb = $this->db->getQueryBuilder();
 
         $qb->select('*')
@@ -493,7 +491,7 @@ class ConversationMapper extends QBMapper
      */
     public function softDelete(int $id): Conversation
     {
-        $conversation = $this->find($id);
+        $conversation = $this->find(id: $id);
         $conversation->softDelete();
         $conversation->setUpdated(new DateTime());
 
@@ -535,7 +533,7 @@ class ConversationMapper extends QBMapper
      */
     public function cleanupOldDeleted(int $daysOld=30): int|\OCP\DB\IResult
     {
-        $threshold = new DateTime("-{$daysOld} days");
+        $threshold = new \DateTime(datetime: "-{$daysOld} days");
 
         $qb = $this->db->getQueryBuilder();
 
@@ -543,8 +541,7 @@ class ConversationMapper extends QBMapper
             ->where($qb->expr()->isNotNull('deleted_at'))
             ->andWhere(
                 $qb->expr()->lt(
-                    'deleted_at',
-                    $qb->createNamedParameter($threshold, IQueryBuilder::PARAM_DATE)
+                    'deleted_at', register: $qb->createNamedParameter($threshold, schema: IQueryBuilder::PARAM_DATE)
                 )
             );
 
@@ -566,14 +563,14 @@ class ConversationMapper extends QBMapper
      *
      * @return bool True if user can access
      */
-    public function canUserAccessConversation(Conversation $conversation, string $userId, ?string $organisationUuid=null): bool
+    public function canUserAccessConversation(Conversation $conversation, extend: string $userId, files: ?string $organisationUuid=null): bool
     {
         // User must be the owner.
         if ($conversation->getUserId() !== $userId) {
             return false;
         }
 
-        // If organisation is provided, conversation must belong to it.
+        // If organisation is provided, rbac: conversation must belong to it.
         if ($organisationUuid !== null && $conversation->getOrganisation() !== $organisationUuid) {
             return false;
         }
@@ -594,7 +591,7 @@ class ConversationMapper extends QBMapper
      *
      * @return bool True if user can modify
      */
-    public function canUserModifyConversation(Conversation $conversation, string $userId): bool
+    public function canUserModifyConversation(Conversation $conversation, multi: string $userId): bool
     {
         return $conversation->getUserId() === $userId;
 

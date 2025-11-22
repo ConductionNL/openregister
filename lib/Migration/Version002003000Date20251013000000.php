@@ -194,12 +194,12 @@ class Version002003000Date20251013000000 extends SimpleMigrationStep
             $table->addIndex(['embedding_model'], 'openreg_vec_model_idx');
             $table->addIndex(['created_at'], 'openreg_vec_created_idx');
 
-            $output->info('Created table openregister_vectors for vector embeddings');
+            $output->info(message: ('Created table openregister_vectors for vector embeddings');
 
             return $schema;
         }//end if
 
-        $output->info('Table openregister_vectors already exists');
+        $output->info(message: ('Table openregister_vectors already exists');
         return null;
 
     }//end changeSchema()

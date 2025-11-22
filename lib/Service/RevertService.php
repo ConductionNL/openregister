@@ -96,23 +96,23 @@ class RevertService
             $userId = $this->container->get('userId');
             if ($object->getLockedBy() !== $userId) {
                 throw new LockedException(
-                    sprintf('Object is locked by %s', $object->getLockedBy())
+                    sprintf(format: 'Object is locked by %s', $object->getLockedBy())
                 );
             }
         }
 
         // Get the reverted object using AuditTrailMapper.
         $revertedObject = $this->auditTrailMapper->revertObject(
-            $id,
-            $until,
-            $overwriteVersion
+            identifier: $id,
+            until: $until,
+            overwriteVersion: $overwriteVersion
         );
 
         // Save the reverted object.
         $savedObject = $this->objectEntityMapper->update($revertedObject);
 
         // Dispatch revert event.
-        $this->eventDispatcher->dispatchTyped(new ObjectRevertedEvent($savedObject, $until));
+        $this->eventDispatcher->dispatchTyped(new ObjectRevertedEvent(object: $savedObject, until: $until));
 
         return $savedObject;
 

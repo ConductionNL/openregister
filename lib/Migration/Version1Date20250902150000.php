@@ -86,7 +86,7 @@ class Version1Date20250902150000 extends SimpleMigrationStep
                         'comment' => 'Pre-computed facetable field configurations for performance optimization',
                     ]
                     );
-            $output->info('Added facets column to openregister_schemas table for facet caching');
+            $output->info(message: ('Added facets column to openregister_schemas table for facet caching');
         }
 
         return $schema;

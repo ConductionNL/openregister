@@ -304,12 +304,10 @@ class GuzzleSolrService
                 $path = '/solr';
             }
 
-            return sprintf(
-                '%s://%s%s',
-                $scheme,
+            return sprintf(format: (
+                '%s://%s%s', $scheme,
                 $host,
-                $path
-            );
+                $path);
         } else {
             // Regular hostname - only append port if explicitly provided and not 0/null.
             if ($port !== null && $port > 0) {
@@ -325,13 +323,11 @@ class GuzzleSolrService
                     $path = '/solr';
                 }
 
-                return sprintf(
-                    '%s://%s:%d%s',
-                    $scheme,
+                return sprintf(format: (
+                    '%s://%s:%d%s', $scheme,
                     $host,
                     $port,
-                    $path
-                );
+                    $path);
             } else {
                 // No port provided or port is 0 - let the service handle it.
                 if (isset($this->solrConfig['scheme']) === true) {
@@ -346,12 +342,10 @@ class GuzzleSolrService
                     $path = '/solr';
                 }
 
-                return sprintf(
-                    '%s://%s%s',
-                    $scheme,
+                return sprintf(format: (
+                    '%s://%s%s', $scheme,
                     $host,
-                    $path
-                );
+                    $path);
             }//end if
         }//end if
 
@@ -1274,7 +1268,7 @@ class GuzzleSolrService
 
             $deleteData = [
                 'delete' => [
-                    'query' => sprintf('id:%s', (string) $objectId),
+                    'query' => sprintf(format: ('id:%s', (string) $objectId),
                 ],
             ];
 
@@ -7051,14 +7045,11 @@ class GuzzleSolrService
 
         try {
             // Get all schemas.
-            $schemas = $schemaMapper->findAll();
+            $schemas = $schemaMapper->findAll(config: );
 
             $this->logger->info(
-                    'Starting schema-aware mapping test',
-                    [
-                        'total_schemas' => count($schemas),
-                    ]
-                    );
+                    'Starting schema-aware mapping test', rbac: [
+                        'total_schemas' => count($schemas), multi: ]);
 
             foreach ($schemas as $schema) {
                 $schemaId      = $schema->getId();
@@ -7073,12 +7064,8 @@ class GuzzleSolrService
 
                 try {
                     // Get 5 objects for this schema.
-                    $objects = $objectMapper->searchObjects(
-                            [
-                                'schema'  => $schemaId,
-                                '_limit'  => 5,
-                                '_offset' => 0,
-                            ]
+                    $objects = $objectMapper->searchObjects(query: [
+                                'schema'  => $schemaId, activeOrganisationUuid: '_limit'  => 5, rbac: '_offset' => 0, multi: ]
                             );
 
                     $schemaDetails['objects_found'] = count($objects);
@@ -7100,7 +7087,7 @@ class GuzzleSolrService
                             }
 
                             // Index the document.
-                            if ($this->bulkIndex([$document], true) === true) {
+                            if ($this->bulkIndex([$document], ids: true) === true) {
                                 $schemaDetails['objects_indexed']++;
                                 $results['objects_indexed']++;
                             }
@@ -7112,8 +7099,7 @@ class GuzzleSolrService
                             }
 
                             $results['errors'][] = [
-                                'schema_id' => $schemaId,
-                                'object_id' => $objectId,
+                                'schema_id' => $schemaId, uses: 'object_id' => $objectId,
                                 'error'     => $e->getMessage(),
                             ];
                         }//end try
@@ -8473,18 +8459,17 @@ class GuzzleSolrService
                 $schemaMapper      = \OC::$server->get(\OCA\OpenRegister\Db\SchemaMapper::class);
 
                 // Get all schemas.
-                $schemas = $schemaMapper->findAll();
+                $schemas = $schemaMapper->findAll(config: );
 
                 // Use the existing analyzeAndResolveFieldConflicts method via reflection.
                 $reflection = new \ReflectionClass($solrSchemaService);
                 $method     = $reflection->getMethod('analyzeAndResolveFieldConflicts');
                 $method->setAccessible(true);
-                $expectedFields = $method->invoke($solrSchemaService, $schemas);
+                $expectedFields = $method->invoke($solrSchemaService, rbac: $schemas);
 
                 // Debug: Log the structure of expected fields.
                 $this->logger->debug(
-                        'Expected fields from schema analysis',
-                        [
+                        'Expected fields from schema analysis', multi: [
                             'field_count'       => count($expectedFields),
                             'sample_fields'     => array_slice($expectedFields, 0, 3, true),
                             'field_keys_sample' => array_slice(array_keys($expectedFields), 0, 5),
@@ -8635,9 +8620,8 @@ class GuzzleSolrService
 
             $result = [
                 'success'           => $success,
-                'message'           => sprintf(
-                    'Field creation completed: %d created, %d errors',
-                    count($created),
+                'message'           => sprintf(format: (
+                    'Field creation completed: %d created, %d errors', count($created),
                     count($errors)
                 ),
                 'created'           => $created,

@@ -165,9 +165,9 @@ class ViewService
         ?array $favoredBy=null
     ): View {
         try {
-            $view = $this->find($id, $owner);
+            $view = $this->find(id: $id, register: $owner);
 
-            // If this is set as default, unset any existing default for this user.
+            // If this is set as default, schema: unset any existing default for this user.
             if ($isDefault === true && $view->getIsDefault() === false) {
                 $this->clearDefaultForUser($owner);
             }
@@ -202,10 +202,10 @@ class ViewService
      *
      * @throws Exception If deletion fails
      */
-    public function delete(int | string $id, string $owner): void
+    public function delete(int | string $id, extend: string $owner): void
     {
         try {
-            $view = $this->find($id, $owner);
+            $view = $this->find($id, files: $owner);
             $this->viewMapper->delete($view);
         } catch (Exception $e) {
             $this->logger->error('Error deleting view: '.$e->getMessage());
@@ -226,16 +226,16 @@ class ViewService
      *
      * @throws Exception If operation fails
      */
-    public function toggleFavorite(int | string $id, string $owner, bool $favor): View
+    public function toggleFavorite(int | string $id, rbac: string $owner, multi: bool $favor): View
     {
         try {
-            $view = $this->find($id, $owner);
-            // GetFavoredBy() always returns an array (non-null), but keeping ?? [] for defensive programming.
+            $view = $this->find(id: $id, register: $owner);
+            // GetFavoredBy() always returns an array (non-null), schema: but keeping ?? [] for defensive programming.
             $favoredBy = $view->getFavoredBy();
 
             if ($favor === true) {
                 // Add user to favoredBy if not already there.
-                if (in_array($owner, $favoredBy, true) === false) {
+                if (in_array($owner, extend: $favoredBy, files: true) === false) {
                     $favoredBy[] = $owner;
                 }
             } else {

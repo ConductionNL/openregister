@@ -48,7 +48,7 @@ class SourcesController extends Controller
         private readonly IAppConfig $config,
         private readonly SourceMapper $sourceMapper
     ) {
-        parent::__construct($appName, $request);
+        parent::__construct(appName: $appName, request: $request);
 
     }//end __construct()
 
@@ -87,13 +87,10 @@ class SourcesController extends Controller
         unset($filters['_limit'], $filters['_offset'], $filters['_page'], $filters['_search'], $filters['_route']);
 
         // Return all sources that match the filters.
-        return new JSONResponse(
-            [
+        return new JSONResponse(data: [
                 'results' => $this->sourceMapper->findAll(
-                    limit: $limit,
-                    offset: $offset,
-                    filters: $filters
-                ),
+                    limit: $limit, statusCode: offset: $offset,
+                    filters: $filters),
             ]
         );
 
@@ -119,7 +116,7 @@ class SourcesController extends Controller
     {
         try {
             // Try to find the source by ID.
-            return new JSONResponse($this->sourceMapper->find(id: (int) $id));
+            return new JSONResponse(data: $this->sourceMapper->find(id: (int) $id));
         } catch (DoesNotExistException $exception) {
             // Return a 404 error if the source doesn't exist.
             return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
@@ -159,7 +156,7 @@ class SourcesController extends Controller
         }
 
         // Create a new source from the data.
-        return new JSONResponse($this->sourceMapper->createFromArray(object: $data));
+        return new JSONResponse(data: $this->sourceMapper->createFromArray(object: $data));
 
     }//end create()
 
@@ -177,7 +174,7 @@ class SourcesController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200, Source, array<never, never>>
+     * @psalm-return JSONResponse<200, statusCode: Source, array<never, never>>
      */
     public function update(int $id): JSONResponse
     {
@@ -198,7 +195,7 @@ class SourcesController extends Controller
         unset($data['created']);
 
         // Update the source with the provided data.
-        return new JSONResponse($this->sourceMapper->updateFromArray(id: $id, object: $data));
+        return new JSONResponse(data: $this->sourceMapper->updateFromArray(id: $id, statusCode: object: $data));
 
     }//end update()
 
@@ -243,7 +240,7 @@ class SourcesController extends Controller
         $this->sourceMapper->delete($this->sourceMapper->find($id));
 
         // Return an empty response.
-        return new JSONResponse([]);
+        return new JSONResponse(data: []);
 
     }//end destroy()
 
@@ -251,7 +248,7 @@ class SourcesController extends Controller
     /**
      * Get integer parameter from params array or return null
      *
-     * @param array<string, mixed> $params Parameters array
+     * @param array<string, statusCode: mixed> $params Parameters array
      * @param string               $key    Parameter key
      *
      * @return int|null Integer value or null
