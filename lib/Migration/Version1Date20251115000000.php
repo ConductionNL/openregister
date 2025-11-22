@@ -58,7 +58,7 @@ class Version1Date20251115000000 extends SimpleMigrationStep
 
         $schema = $schemaClosure();
 
-        $output->info('🔧 Adding configuration management columns...');
+        $output->info(message: ('🔧 Adding configuration management columns...');
 
         if ($schema->hasTable('openregister_configurations') === true) {
             $table = $schema->getTable('openregister_configurations');
@@ -75,9 +75,9 @@ class Version1Date20251115000000 extends SimpleMigrationStep
                         ]
                         );
 
-                $output->info('   ✓ Added is_local column to configurations table');
+                $output->info(message: ('   ✓ Added is_local column to configurations table');
             } else {
-                $output->info('   ⚠️  is_local column already exists');
+                $output->info(message: ('   ⚠️  is_local column already exists');
             }
 
             // Add syncEnabled field (boolean) - whether auto-sync is enabled.
@@ -92,9 +92,9 @@ class Version1Date20251115000000 extends SimpleMigrationStep
                         ]
                         );
 
-                $output->info('   ✓ Added sync_enabled column to configurations table');
+                $output->info(message: ('   ✓ Added sync_enabled column to configurations table');
             } else {
-                $output->info('   ⚠️  sync_enabled column already exists');
+                $output->info(message: ('   ⚠️  sync_enabled column already exists');
             }
 
             // Add syncInterval field (integer) - sync interval in hours.
@@ -109,9 +109,9 @@ class Version1Date20251115000000 extends SimpleMigrationStep
                         ]
                         );
 
-                $output->info('   ✓ Added sync_interval column to configurations table');
+                $output->info(message: ('   ✓ Added sync_interval column to configurations table');
             } else {
-                $output->info('   ⚠️  sync_interval column already exists');
+                $output->info(message: ('   ⚠️  sync_interval column already exists');
             }
 
             // Add lastSyncDate field (datetime) - last synchronization timestamp.
@@ -126,9 +126,9 @@ class Version1Date20251115000000 extends SimpleMigrationStep
                         ]
                         );
 
-                $output->info('   ✓ Added last_sync_date column to configurations table');
+                $output->info(message: ('   ✓ Added last_sync_date column to configurations table');
             } else {
-                $output->info('   ⚠️  last_sync_date column already exists');
+                $output->info(message: ('   ⚠️  last_sync_date column already exists');
             }
 
             // Add syncStatus field (string) - status of last sync.
@@ -144,9 +144,9 @@ class Version1Date20251115000000 extends SimpleMigrationStep
                         ]
                         );
 
-                $output->info('   ✓ Added sync_status column to configurations table');
+                $output->info(message: ('   ✓ Added sync_status column to configurations table');
             } else {
-                $output->info('   ⚠️  sync_status column already exists');
+                $output->info(message: ('   ⚠️  sync_status column already exists');
             }
 
             // Add openregister field (string) - required OpenRegister version.
@@ -162,19 +162,19 @@ class Version1Date20251115000000 extends SimpleMigrationStep
                         ]
                         );
 
-                $output->info('   ✓ Added openregister column to configurations table');
+                $output->info(message: ('   ✓ Added openregister column to configurations table');
             } else {
-                $output->info('   ⚠️  openregister column already exists');
+                $output->info(message: ('   ⚠️  openregister column already exists');
             }
 
-            $output->info('✅ Configuration management columns added successfully');
+            $output->info(message: ('✅ Configuration management columns added successfully');
             $output->info('🎯 Features enabled:');
-            $output->info('   • Local vs External configuration tracking');
-            $output->info('   • Automatic synchronization from external sources');
-            $output->info('   • Synchronization status and history tracking');
-            $output->info('   • Configurable sync intervals per configuration');
+            $output->info(message: ('   • Local vs External configuration tracking');
+            $output->info(message: ('   • Automatic synchronization from external sources');
+            $output->info(message: ('   • Synchronization status and history tracking');
+            $output->info(message: ('   • Configurable sync intervals per configuration');
         } else {
-            $output->info('⚠️  Configurations table does not exist!');
+            $output->info(message: ('⚠️  Configurations table does not exist!');
         }//end if
 
         return $schema;

@@ -63,6 +63,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setOwner(?string $owner)
  * @method string|null getOrganisation()
  * @method void setOrganisation(?string $organisation)
+ * @method string|null getChecksum()
+ * @method void setChecksum(?string $checksum)
  * @method DateTime getCreatedAt()
  * @method void setCreatedAt(DateTime $createdAt)
  * @method DateTime getUpdatedAt()
@@ -198,6 +200,13 @@ class Chunk extends Entity implements JsonSerializable
     protected ?string $organisation = null;
 
     /**
+     * Checksum.
+     *
+     * @var string|null
+     */
+    protected ?string $checksum = null;
+
+    /**
      * Created at timestamp.
      *
      * @var DateTime|null
@@ -235,6 +244,7 @@ class Chunk extends Entity implements JsonSerializable
         $this->addType('overlapSize', 'integer');
         $this->addType('owner', 'string');
         $this->addType('organisation', 'string');
+        $this->addType('checksum', 'string');
         $this->addType('createdAt', 'datetime');
         $this->addType('updatedAt', 'datetime');
 
@@ -265,6 +275,7 @@ class Chunk extends Entity implements JsonSerializable
             'overlapSize'        => $this->overlapSize,
             'owner'              => $this->owner,
             'organisation'       => $this->organisation,
+            'checksum'           => $this->checksum,
             'createdAt'          => $this->createdAt?->format(DateTime::ATOM),
             'updatedAt'          => $this->updatedAt?->format(DateTime::ATOM),
             'positionReference'  => $this->positionReference,

@@ -155,7 +155,7 @@ class RegistersController extends Controller
         IAppManager $appManager,
         OasService $oasService
     ) {
-        parent::__construct($appName, $request);
+        parent::__construct(appName: $appName, request: $request);
         $this->configurationService = $configurationService;
         $this->auditTrailMapper     = $auditTrailMapper;
         $this->exportService        = $exportService;
@@ -237,7 +237,7 @@ class RegistersController extends Controller
             }
         }
 
-        return new JSONResponse(['results' => $registersArr]);
+        return new JSONResponse(data: ['results' => $registersArr]);
 
     }//end index()
 
@@ -245,7 +245,8 @@ class RegistersController extends Controller
     /**
      * Retrieves a single register by ID
      *
-     * @param  int|string $id The ID of the register
+     * @param int|string $id The ID of the register
+     *
      * @return JSONResponse
      *
      * @NoAdminRequired
@@ -254,7 +255,7 @@ class RegistersController extends Controller
      */
     public function show($id): JSONResponse
     {
-        $extend = $this->request->getParam(key: '_extend', default: []);
+        $extend = $this->request->getParam(key: '_extend', statusCode: default: []);
         if (is_string($extend)) {
             $extend = [$extend];
         }
@@ -270,7 +271,7 @@ class RegistersController extends Controller
             ];
         }
 
-        return new JSONResponse($registerArr);
+        return new JSONResponse(data: $registerArr);
 
     }//end show()
 
@@ -293,7 +294,7 @@ class RegistersController extends Controller
 
         // Remove internal parameters (starting with '_').
         foreach ($data as $key => $value) {
-            if (str_starts_with($key, '_') === true) {
+            if (str_starts_with($key, statusCode: '_') === true) {
                 unset($data[$key]);
             }
         }
@@ -305,14 +306,14 @@ class RegistersController extends Controller
 
         try {
             // Create a new register from the data.
-            return new JSONResponse($this->registerService->createFromArray($data), 201);
+            return new JSONResponse(data: $this->registerService->createFromArray($data), statusCode: 201);
         } catch (DBException $e) {
             // Handle database constraint violations with user-friendly messages.
             $constraintException = DatabaseConstraintException::fromDatabaseException($e, 'register');
             return new JSONResponse(data: ['error' => $constraintException->getMessage()], statusCode: $constraintException->getHttpStatusCode());
         } catch (DatabaseConstraintException $e) {
             // Handle our custom database constraint exceptions.
-            return new JSONResponse(['error' => $e->getMessage()], $e->getHttpStatusCode());
+            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: $e->getHttpStatusCode());
         }
 
     }//end create()
@@ -351,14 +352,14 @@ class RegistersController extends Controller
 
         try {
             // Update the register with the provided data.
-            return new JSONResponse($this->registerService->updateFromArray((int) $id, $data));
+            return new JSONResponse(data: $this->registerService->updateFromArray((int) $id, statusCode: $data));
         } catch (DBException $e) {
             // Handle database constraint violations with user-friendly messages.
             $constraintException = DatabaseConstraintException::fromDatabaseException($e, 'register');
-            return new JSONResponse(['error' => $constraintException->getMessage()], $constraintException->getHttpStatusCode());
+            return new JSONResponse(data: ['error' => $constraintException->getMessage()], statusCode: $constraintException->getHttpStatusCode());
         } catch (DatabaseConstraintException $e) {
             // Handle our custom database constraint exceptions.
-            return new JSONResponse(['error' => $e->getMessage()], $e->getHttpStatusCode());
+            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: $e->getHttpStatusCode());
         }
 
     }//end update()
@@ -371,12 +372,12 @@ class RegistersController extends Controller
      * the fields provided in the request body. This is different from PUT
      * which typically requires all fields to be provided.
      *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
      * @param int $id The ID of the register to patch
      *
      * @return JSONResponse The updated register data
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
      */
     public function patch(int $id): JSONResponse
     {
@@ -410,13 +411,13 @@ class RegistersController extends Controller
             $this->registerService->delete($register);
 
             // Return an empty response.
-            return new JSONResponse([]);
+            return new JSONResponse(data: []);
         } catch (\OCA\OpenRegister\Exception\ValidationException $e) {
             // Return 409 Conflict for cascade protection (objects still attached).
-            return new JSONResponse(['error' => $e->getMessage()], 409);
+            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 409);
         } catch (\Exception $e) {
             // Return 500 for other errors.
-            return new JSONResponse(['error' => $e->getMessage()], 500);
+            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
 
     }//end destroy()
@@ -448,18 +449,16 @@ class RegistersController extends Controller
             // Convert schemas to array format for JSON response.
             $schemasArray = array_map(fn($schema) => $schema->jsonSerialize(), $schemas);
 
-            return new JSONResponse(
-                    [
-                        'results' => $schemasArray,
-                        'total'   => count($schemasArray),
+            return new JSONResponse(data: [
+                        'results' => $schemasArray, statusCode: 'total'   => count($schemasArray),
                     ]
                     );
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             // Return a 404 error if the register doesn't exist.
-            return new JSONResponse(['error' => 'Register not found'], 404);
+            return new JSONResponse(data: ['error' => 'Register not found'], statusCode: 404);
         } catch (\Exception $e) {
             // Return a 500 error for other exceptions.
-            return new JSONResponse(['error' => 'Internal server error: '.$e->getMessage()], 500);
+            return new JSONResponse(data: ['error' => 'Internal server error: '.$e->getMessage()], statusCode: 500);
         }//end try
 
     }//end schemas()
@@ -488,8 +487,7 @@ class RegistersController extends Controller
                 'schema'   => $schema,
             ],
         ];
-        return new JSONResponse(
-            $this->objectEntityMapper->searchObjects($query)
+        return new JSONResponse(data: $this->objectEntityMapper->searchObjects($query)
         );
 
     }//end objects()
@@ -498,7 +496,7 @@ class RegistersController extends Controller
     /**
      * Export a register and its related data
      *
-     * This method exports a register, its schemas, and optionally its objects
+     * This method exports a register, statusCode: its schemas, and optionally its objects
      * in the specified format.
      *
      * @param int $id The ID of the register to export
@@ -520,7 +518,7 @@ class RegistersController extends Controller
                 case 'excel':
                     $spreadsheet = $this->exportService->exportToExcel($register, null, [], $this->userSession->getUser());
                     $writer      = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
-                    $filename    = sprintf('%s_%s.xlsx', $register->getSlug(), (new \DateTime())->format('Y-m-d_His'));
+                    $filename    = sprintf(format: ('%s_%s.xlsx', $register->getSlug(), (new \DateTime())->format('Y-m-d_His'));
                     ob_start();
                     $writer->save('php://output');
                     $content = ob_get_clean();
@@ -536,7 +534,7 @@ class RegistersController extends Controller
 
                     $schema   = $this->schemaMapper->find($schemaId);
                     $csv      = $this->exportService->exportToCsv($register, $schema, [], $this->userSession->getUser());
-                    $filename = sprintf('%s_%s_%s.csv', $register->getSlug(), $schema->getSlug(), (new \DateTime())->format('Y-m-d_His'));
+                    $filename = sprintf(format: ('%s_%s_%s.csv', $register->getSlug(), $schema->getSlug(), (new \DateTime())->format('Y-m-d_His'));
                     return new DataDownloadResponse($csv, $filename, 'text/csv');
                 case 'configuration':
                 default:
@@ -546,11 +544,11 @@ class RegistersController extends Controller
                         throw new Exception('Failed to encode register data to JSON');
                     }
 
-                    $filename = sprintf('%s_%s.json', $register->getSlug(), (new \DateTime())->format('Y-m-d_His'));
+                    $filename = sprintf(format: ('%s_%s.json', $register->getSlug(), (new \DateTime())->format('Y-m-d_His'));
                     return new DataDownloadResponse($jsonContent, $filename, 'application/json');
             }//end switch
         } catch (Exception $e) {
-            return new JSONResponse(['error' => 'Failed to export register: '.$e->getMessage()], 400);
+            return new JSONResponse(data: ['error' => 'Failed to export register: '.$e->getMessage()], statusCode: 400);
         }//end try
 
     }//end export()
@@ -581,10 +579,7 @@ class RegistersController extends Controller
             $commitMessage = $data['commitMessage'] ?? "Update register OAS: {$register->getTitle()}";
 
             if (empty($owner) || empty($repo)) {
-                return new JSONResponse(
-                    ['error' => 'Owner and repo parameters are required'],
-                    400
-                );
+                return new JSONResponse(data: ['error' => 'Owner and repo parameters are required'], statusCode: 400);
             }
 
             // Strip leading slash from path.
@@ -668,10 +663,8 @@ class RegistersController extends Controller
                 $message .= ". Note: GitHub Code Search may take a few minutes to index new files.";
             }
 
-            return new JSONResponse(
-                    [
-                        'success'        => true,
-                        'message'        => $message,
+            return new JSONResponse(data: [
+                        'success'        => true, statusCode: 'message'        => $message,
                         'registerId'     => $register->getId(),
                         'commit_sha'     => $result['commit_sha'],
                         'commit_url'     => $result['commit_url'],
@@ -684,17 +677,11 @@ class RegistersController extends Controller
                     );
         } catch (DoesNotExistException $e) {
             $this->logger->error('Register not found for publishing', ['register_id' => $id]);
-            return new JSONResponse(
-                ['error' => 'Register not found'],
-                404
-            );
+            return new JSONResponse(data: ['error' => 'Register not found'], statusCode: 404);
         } catch (\Exception $e) {
             $this->logger->error('Failed to publish register OAS to GitHub: '.$e->getMessage());
 
-            return new JSONResponse(
-                ['error' => 'Failed to publish register OAS: '.$e->getMessage()],
-                500
-            );
+            return new JSONResponse(data: ['error' => 'Failed to publish register OAS: '.$e->getMessage()], statusCode: 500);
         }//end try
 
     }//end publishToGitHub()
@@ -721,7 +708,7 @@ class RegistersController extends Controller
             // Get the uploaded file.
             $uploadedFile = $this->request->getUploadedFile('file');
             if ($uploadedFile === null) {
-                return new JSONResponse(['error' => 'No file uploaded'], 400);
+                return new JSONResponse(data: ['error' => 'No file uploaded'], statusCode: 400);
             }
 
             // Dynamically determine import type if not provided.
@@ -786,7 +773,7 @@ class RegistersController extends Controller
                     $schemaId = $this->request->getParam('schema');
 
                     if ($schemaId === null || $schemaId === '') {
-                        return new JSONResponse(['error' => 'Schema parameter is required for CSV imports. Please specify ?schema=105 in your request.'], 400);
+                        return new JSONResponse(data: ['error' => 'Schema parameter is required for CSV imports. Please specify ?schema=105 in your request.'], statusCode: 400);
                     }
 
                     $schema = $this->schemaMapper->find($schemaId);
@@ -876,14 +863,11 @@ class RegistersController extends Controller
                     break;
             }//end switch
 
-            return new JSONResponse(
-                    [
-                        'message' => 'Import successful',
-                        'summary' => $summary,
-                    ]
-                    );
+            return new JSONResponse(data: [
+                        'message' => 'Import successful', statusCode: 'summary' => $summary,
+                    ]);
         } catch (\Exception $e) {
-            return new JSONResponse(['error' => $e->getMessage()], 400);
+            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
         }//end try
 
     }//end import()
@@ -892,8 +876,10 @@ class RegistersController extends Controller
     /**
      * Get statistics for a specific register
      *
-     * @param  int $id The register ID
+     * @param int $id The register ID
+     *
      * @return JSONResponse The register statistics
+     *
      * @throws DoesNotExistException When the register is not found
      *
      * @NoAdminRequired
@@ -906,17 +892,17 @@ class RegistersController extends Controller
             $register = $this->registerService->find($id);
 
             if ($register === null) {
-                return new JSONResponse(['error' => 'Register not found'], 404);
+                return new JSONResponse(data: ['error' => 'Register not found'], statusCode: 404);
             }
 
             // Calculate statistics for this register.
             $stats = $this->registerService->calculateStats($register);
 
-            return new JSONResponse($stats);
+            return new JSONResponse(data: $stats);
         } catch (DoesNotExistException $e) {
-            return new JSONResponse(['error' => 'Register not found'], 404);
+            return new JSONResponse(data: ['error' => 'Register not found'], statusCode: 404);
         } catch (\Exception $e) {
-            return new JSONResponse(['error' => $e->getMessage()], 500);
+            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
 
     }//end stats()

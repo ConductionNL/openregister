@@ -827,7 +827,7 @@ class SchemaFacetCacheService
 
         // Check if expired.
         if ($result['expires'] !== null) {
-            $expires = new \DateTime($result['expires']);
+            $expires = new \DateTime(datetime: $result['expires']);
             if ($expires <= new \DateTime()) {
                 // Cache expired, remove it.
                 $this->removeCachedFacetData($schemaId, $cacheKey);

@@ -1365,13 +1365,13 @@ class ValidateObject
         }
 
         return new JSONResponse(
-            [
-                'status'  => 'error',
-                'message' => 'Validation failed',
-                'errors'  => $errors,
-            ],
-            400
-        );
+                data: [
+                    'status'  => 'error', statusCode:
+        'message' => 'Validation failed',
+                    'errors'  => $errors,
+                ],
+                400
+                );
 
     }//end handleValidationException()
 

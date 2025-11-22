@@ -58,7 +58,7 @@ class Version1Date20251102160000 extends SimpleMigrationStep
 
         $schema = $schemaClosure();
 
-        $output->info('🤖 Creating agents table...');
+        $output->info(message: ('🤖 Creating agents table...');
 
         if ($schema->hasTable('openregister_agents') === false) {
             $table = $schema->createTable('openregister_agents');
@@ -321,18 +321,18 @@ class Version1Date20251102160000 extends SimpleMigrationStep
                     ]
                     );
 
-            $output->info('   ✓ Created agents table structure');
-            $output->info('   ✓ Added indexes for uuid, organisation, and owner');
-            $output->info('✅ Agents table created successfully');
+            $output->info(message: ('   ✓ Created agents table structure');
+            $output->info(message: ('   ✓ Added indexes for uuid, organisation, and owner');
+            $output->info(message: ('✅ Agents table created successfully');
             $output->info('🎯 Agents table supports:');
-            $output->info('   • Multiple LLM providers (OpenAI, Ollama, Fireworks, Azure)');
-            $output->info('   • RAG (Retrieval-Augmented Generation) configuration');
-            $output->info('   • Agent types (chat, automation, analysis, assistant)');
-            $output->info('   • Organisation and user ownership');
+            $output->info(message: ('   • Multiple LLM providers (OpenAI, Ollama, Fireworks, Azure)');
+            $output->info(message: ('   • RAG (Retrieval-Augmented Generation) configuration');
+            $output->info(message: ('   • Agent types (chat, automation, analysis, assistant)');
+            $output->info(message: ('   • Organisation and user ownership');
 
             return $schema;
         } else {
-            $output->info('⚠️  Agents table already exists!');
+            $output->info(message: ('⚠️  Agents table already exists!');
         }//end if
 
         return null;

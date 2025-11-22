@@ -689,7 +689,7 @@ class SaveObject
             $published = $this->extractMetadataValue($objectData, $config['objectPublishedField']);
             if ($published !== null && trim($published) !== '') {
                 try {
-                    $publishedDate = new DateTime(trim($published));
+                    $publishedDate = new \DateTime(datetime: trim($published));
                     $entity->setPublished($publishedDate);
                 } catch (Exception $e) {
                     // Log warning but don't fail the entire operation.
@@ -709,7 +709,7 @@ class SaveObject
             $depublished = $this->extractMetadataValue($objectData, $config['objectDepublishedField']);
             if ($depublished !== null && trim($depublished) !== '') {
                 try {
-                    $depublishedDate = new DateTime(trim($depublished));
+                    $depublishedDate = new \DateTime(datetime: trim($depublished));
                     $entity->setDepublished($depublishedDate);
                 } catch (Exception $e) {
                     // Log warning but don't fail the entire operation.
@@ -2055,7 +2055,7 @@ class SaveObject
                                     'publishedValue' => $publishedValue,
                                 ]
                                 );
-                        $objectEntity->setPublished(new DateTime($publishedValue));
+                        $objectEntity->setPublished(new \DateTime(datetime: $publishedValue));
                     }
                 } catch (Exception $exception) {
                     $this->logger->warning(
@@ -2081,7 +2081,7 @@ class SaveObject
             try {
                 // Convert string to DateTime if it's a valid date string.
                 if (is_string($selfData['depublished']) === true) {
-                    $objectEntity->setDepublished(new DateTime($selfData['depublished']));
+                    $objectEntity->setDepublished(new \DateTime(datetime: $selfData['depublished']));
                 }
             } catch (Exception $exception) {
                 // Silently ignore invalid date formats.

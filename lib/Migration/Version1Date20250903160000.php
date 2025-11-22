@@ -75,7 +75,7 @@ class Version1Date20250903160000 extends SimpleMigrationStep
                 ['subject_type', 'subject_id', 'action', 'active', 'priority'],
                 'openregister_auth_exc_perf_lookup'
             );
-            $output->info('Added performance lookup index for authorization exceptions');
+            $output->info(message: ('Added performance lookup index for authorization exceptions');
             $changed = true;
         }
 
@@ -85,7 +85,7 @@ class Version1Date20250903160000 extends SimpleMigrationStep
                 ['schema_uuid', 'action', 'active', 'subject_type', 'priority'],
                 'openregister_auth_exc_schema_perf'
             );
-            $output->info('Added schema performance index for authorization exceptions');
+            $output->info(message: ('Added schema performance index for authorization exceptions');
             $changed = true;
         }
 
@@ -95,7 +95,7 @@ class Version1Date20250903160000 extends SimpleMigrationStep
                 ['organization_uuid', 'action', 'active', 'priority'],
                 'openregister_auth_exc_org_perf'
             );
-            $output->info('Added organization performance index for authorization exceptions');
+            $output->info(message: ('Added organization performance index for authorization exceptions');
             $changed = true;
         }
 
@@ -105,7 +105,7 @@ class Version1Date20250903160000 extends SimpleMigrationStep
                 ['subject_id', 'subject_type', 'action', 'active', 'priority', 'type'],
                 'openregister_auth_exc_bulk_users'
             );
-            $output->info('Added bulk user lookup index for authorization exceptions');
+            $output->info(message: ('Added bulk user lookup index for authorization exceptions');
             $changed = true;
         }
 
@@ -115,7 +115,7 @@ class Version1Date20250903160000 extends SimpleMigrationStep
                 ['type', 'priority', 'active'],
                 'openregister_auth_exc_type_priority'
             );
-            $output->info('Added type and priority index for authorization exceptions');
+            $output->info(message: ('Added type and priority index for authorization exceptions');
             $changed = true;
         }
 
@@ -125,7 +125,7 @@ class Version1Date20250903160000 extends SimpleMigrationStep
                 ['register_uuid', 'action', 'active', 'priority'],
                 'openregister_auth_exc_register_perf'
             );
-            $output->info('Added register performance index for authorization exceptions');
+            $output->info(message: ('Added register performance index for authorization exceptions');
             $changed = true;
         }
 
@@ -135,7 +135,7 @@ class Version1Date20250903160000 extends SimpleMigrationStep
                 ['created_by', 'created_at', 'active'],
                 'openregister_auth_exc_audit'
             );
-            $output->info('Added audit index for authorization exceptions');
+            $output->info(message: ('Added audit index for authorization exceptions');
             $changed = true;
         }
 

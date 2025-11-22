@@ -666,7 +666,7 @@ class SchemaCacheService
 
         // Check if expired.
         if ($result['expires'] !== null) {
-            $expires = new \DateTime($result['expires']);
+            $expires = new \DateTime(datetime: $result['expires']);
             if ($expires <= new \DateTime()) {
                 // Cache expired, remove it.
                 $this->removeCachedData($schemaId, $cacheKey);
@@ -837,11 +837,11 @@ class SchemaCacheService
             $schema->setOwner($cachedData['owner']);
 
             if (isset($cachedData['created']) === true && $cachedData['created'] !== null && $cachedData['created'] !== '') {
-                $schema->setCreated(new \DateTime($cachedData['created']));
+                $schema->setCreated(new \DateTime(datetime: $cachedData['created']));
             }
 
             if (isset($cachedData['updated']) === true && $cachedData['updated'] !== null && $cachedData['updated'] !== '') {
-                $schema->setUpdated(new \DateTime($cachedData['updated']));
+                $schema->setUpdated(new \DateTime(datetime: $cachedData['updated']));
             }
 
             return $schema;

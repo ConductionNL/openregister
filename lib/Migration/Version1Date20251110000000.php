@@ -70,7 +70,7 @@ class Version1Date20251110000000 extends SimpleMigrationStep
         $schema  = $schemaClosure();
         $updated = false;
 
-        $output->info('🏗️  Adding organisation hierarchy support...');
+        $output->info(message: ('🏗️  Adding organisation hierarchy support...');
 
         // ============================================================.
         // Add parent column to openregister_organisations.
@@ -79,7 +79,7 @@ class Version1Date20251110000000 extends SimpleMigrationStep
             $table = $schema->getTable('openregister_organisations');
 
             if ($table->hasColumn('parent') === false) {
-                $output->info('  📝 Adding organisations.parent column for hierarchy support');
+                $output->info(message: ('  📝 Adding organisations.parent column for hierarchy support');
 
                 $table->addColumn(
                         'parent',
@@ -92,49 +92,49 @@ class Version1Date20251110000000 extends SimpleMigrationStep
                         ]
                         );
 
-                $output->info('    ✅ organisations.parent column added');
+                $output->info(message: ('    ✅ organisations.parent column added');
                 $updated = true;
             } else {
-                $output->info('  ℹ️  organisations.parent column already exists');
+                $output->info(message: ('  ℹ️  organisations.parent column already exists');
             }
 
             // Add index for fast parent lookups (used in recursive queries).
             if ($table->hasIndex('parent_organisation_idx') === false) {
-                $output->info('  📝 Adding index on parent column');
+                $output->info(message: ('  📝 Adding index on parent column');
 
                 $table->addIndex(['parent'], 'parent_organisation_idx');
 
-                $output->info('    ✅ Index on parent column added');
+                $output->info(message: ('    ✅ Index on parent column added');
                 $updated = true;
             } else {
-                $output->info('  ℹ️  Index on parent column already exists');
+                $output->info(message: ('  ℹ️  Index on parent column already exists');
             }
         } else {
-            $output->warning('  ⚠️  organisations table not found - skipping hierarchy migration');
+            $output->warning(message: ('  ⚠️  organisations table not found - skipping hierarchy migration');
         }//end if
 
         if ($updated === true) {
-            $output->info('');
-            $output->info('🎉 Organisation hierarchy support added successfully!');
-            $output->info('');
+            $output->info(message: ('');
+            $output->info(message: ('🎉 Organisation hierarchy support added successfully!');
+            $output->info(message: ('');
             $output->info('📊 Summary:');
-            $output->info('   • Parent column added to organisations table');
-            $output->info('   • Index created for efficient parent lookups');
-            $output->info('   • Foreign key constraint will be handled at application level');
-            $output->info('');
+            $output->info(message: ('   • Parent column added to organisations table');
+            $output->info(message: ('   • Index created for efficient parent lookups');
+            $output->info(message: ('   • Foreign key constraint will be handled at application level');
+            $output->info(message: ('');
             $output->info('✨ Features enabled:');
-            $output->info('   • Parent-child organisation relationships');
-            $output->info('   • Children inherit parent resource access');
-            $output->info('   • Recursive parent chain lookups');
-            $output->info('   • Support for multi-level hierarchies (max 10 levels)');
-            $output->info('');
+            $output->info(message: ('   • Parent-child organisation relationships');
+            $output->info(message: ('   • Children inherit parent resource access');
+            $output->info(message: ('   • Recursive parent chain lookups');
+            $output->info(message: ('   • Support for multi-level hierarchies (max 10 levels)');
+            $output->info(message: ('');
             $output->info('📖 Use Case Example:');
-            $output->info('   VNG (root) → Amsterdam → Deelgemeente Noord');
-            $output->info('   → Noord sees schemas from Amsterdam and VNG');
-            $output->info('');
+            $output->info(message: ('   VNG (root) → Amsterdam → Deelgemeente Noord');
+            $output->info(message: ('   → Noord sees schemas from Amsterdam and VNG');
+            $output->info(message: ('');
         } else {
-            $output->info('');
-            $output->info('ℹ️  No changes needed - organisation hierarchy already configured');
+            $output->info(message: ('');
+            $output->info(message: ('ℹ️  No changes needed - organisation hierarchy already configured');
         }//end if
 
         if ($updated === true) {
@@ -162,14 +162,14 @@ class Version1Date20251110000000 extends SimpleMigrationStep
      */
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
-        $output->info('');
+        $output->info(message: ('');
         $output->info('ℹ️  Post-migration notes:');
-        $output->info('   • Foreign key constraint enforced at application level');
+        $output->info(message: ('   • Foreign key constraint enforced at application level');
         $output->info('   • Circular reference prevention: max depth 10 levels');
-        $output->info('   • If parent organisation is deleted, parent field will be set to NULL');
-        $output->info('   • All existing organisations have parent = NULL (no hierarchy)');
-        $output->info('');
-        $output->info('✅ Migration completed successfully');
+        $output->info(message: ('   • If parent organisation is deleted, parent field will be set to NULL');
+        $output->info(message: ('   • All existing organisations have parent = NULL (no hierarchy)');
+        $output->info(message: ('');
+        $output->info(message: ('✅ Migration completed successfully');
 
     }//end postSchemaChange()
 

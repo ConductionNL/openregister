@@ -79,7 +79,7 @@ class Version1Date20251114130000 extends SimpleMigrationStep
             return;
         }
 
-        $output->info('🔄 Migrating extend values to allOf...');
+        $output->info(message: ('🔄 Migrating extend values to allOf...');
 
         // Find all schemas with extend field set.
         $qb = $this->connection->getQueryBuilder();
@@ -111,9 +111,9 @@ class Version1Date20251114130000 extends SimpleMigrationStep
         $result->closeCursor();
 
         if ($migratedCount > 0) {
-            $output->info("   ✓ Migrated {$migratedCount} schema(s) from extend to allOf");
+            $output->info(message: ("   ✓ Migrated {$migratedCount} schema(s) from extend to allOf");
         } else {
-            $output->info('   ℹ️  No schemas with extend field found');
+            $output->info(message: ('   ℹ️  No schemas with extend field found');
         }
 
     }//end preSchemaChange()
@@ -136,7 +136,7 @@ class Version1Date20251114130000 extends SimpleMigrationStep
 
         $schema = $schemaClosure();
 
-        $output->info('🔧 Removing deprecated extend column...');
+        $output->info(message: ('🔧 Removing deprecated extend column...');
 
         // Remove extend field from schemas table.
         if ($schema->hasTable('openregister_schemas') === true) {
@@ -146,15 +146,15 @@ class Version1Date20251114130000 extends SimpleMigrationStep
             if ($table->hasColumn('extend')) {
                 $table->dropColumn('extend');
 
-                $output->info('   ✓ Removed extend column from schemas table');
-                $output->info('✅ Migration completed successfully');
-                $output->info('📚 Use allOf, oneOf, or anyOf for schema composition');
+                $output->info(message: ('   ✓ Removed extend column from schemas table');
+                $output->info(message: ('✅ Migration completed successfully');
+                $output->info(message: ('📚 Use allOf, oneOf, or anyOf for schema composition');
                 $output->info('   See: https://json-schema.org/understanding-json-schema/reference/combining');
             } else {
-                $output->info('   ⚠️  extend column does not exist (already removed)');
+                $output->info(message: ('   ⚠️  extend column does not exist (already removed)');
             }
         } else {
-            $output->info('⚠️  Schemas table does not exist!');
+            $output->info(message: ('⚠️  Schemas table does not exist!');
         }
 
         return $schema;

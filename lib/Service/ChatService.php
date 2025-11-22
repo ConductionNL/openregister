@@ -1708,7 +1708,7 @@ class ChatService
         // Check if we recently summarized.
         $lastSummary = $metadata['last_summary_at'] ?? null;
         if ($lastSummary !== null) {
-            $lastSummaryTime       = new DateTime($lastSummary);
+            $lastSummaryTime       = new \DateTime(datetime: $lastSummary);
             $hoursSinceLastSummary = (time() - $lastSummaryTime->getTimestamp()) / 3600;
 
             // Don't summarize more than once per hour.

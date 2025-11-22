@@ -98,7 +98,7 @@ class AgentsController extends Controller
         LoggerInterface $logger,
         ?string $userId
     ) {
-        parent::__construct($appName, $request);
+        parent::__construct(appName: $appName, request: $request);
         $this->agentMapper         = $agentMapper;
         $this->organisationService = $organisationService;
         $this->toolRegistry        = $toolRegistry;
@@ -119,9 +119,9 @@ class AgentsController extends Controller
     public function page(): TemplateResponse
     {
         return new TemplateResponse(
-            'openregister',
-            'index',
-            []
+                appName: 'openregister',
+                templateName: 'index',
+                params: []
         );
 
     }//end page()
@@ -174,15 +174,15 @@ class AgentsController extends Controller
             if ($organisationUuid !== null) {
                 $agents = $this->agentMapper->findByOrganisation(
                     $organisationUuid,
-                    $this->userId,
+                        renderAs: $this->userId,
                     $limit,
                     $offset
-                );
+                        );
             } else {
                 $agents = $this->agentMapper->findAll($limit, $offset);
             }
 
-            return new JSONResponse(['results' => $agents], Http::STATUS_OK);
+            return new JSONResponse(data: ['results' => $agents], statusCode: Http::STATUS_OK);
         } catch (Exception $e) {
             $this->logger->error(
                 'Failed to get agents',
@@ -192,10 +192,7 @@ class AgentsController extends Controller
                 ]
             );
 
-            return new JSONResponse(
-                ['error' => 'Failed to retrieve agents'],
-                Http::STATUS_INTERNAL_SERVER_ERROR
-            );
+            return new JSONResponse(data: ['error' => 'Failed to retrieve agents'], statusCode: Http::STATUS_INTERNAL_SERVER_ERROR);
         }//end try
 
     }//end index()
@@ -220,13 +217,10 @@ class AgentsController extends Controller
 
             // Check access rights using mapper method.
             if ($this->agentMapper->canUserAccessAgent($agent, $this->userId) === false) {
-                return new JSONResponse(
-                    ['error' => 'Access denied to this agent'],
-                    Http::STATUS_FORBIDDEN
-                );
+                return new JSONResponse(data: ['error' => 'Access denied to this agent'], statusCode: Http::STATUS_FORBIDDEN);
             }
 
-            return new JSONResponse($agent, Http::STATUS_OK);
+            return new JSONResponse(data: $agent, statusCode: Http::STATUS_OK);
         } catch (Exception $e) {
             $this->logger->error(
                 'Failed to get agent',
@@ -236,10 +230,7 @@ class AgentsController extends Controller
                 ]
             );
 
-            return new JSONResponse(
-                ['error' => 'Agent not found'],
-                Http::STATUS_NOT_FOUND
-            );
+            return new JSONResponse(data: ['error' => 'Agent not found'], statusCode: Http::STATUS_NOT_FOUND);
         }//end try
 
     }//end show()
@@ -293,7 +284,7 @@ class AgentsController extends Controller
                     ]
                     );
 
-            return new JSONResponse($agent, Http::STATUS_CREATED);
+            return new JSONResponse(data: $agent, statusCode: Http::STATUS_CREATED);
         } catch (Exception $e) {
             $this->logger->error(
                 'Failed to create agent',
@@ -303,10 +294,7 @@ class AgentsController extends Controller
                 ]
             );
 
-            return new JSONResponse(
-                ['error' => 'Failed to create agent: '.$e->getMessage()],
-                Http::STATUS_BAD_REQUEST
-            );
+            return new JSONResponse(data: ['error' => 'Failed to create agent: '.$e->getMessage()], statusCode: Http::STATUS_BAD_REQUEST);
         }//end try
 
     }//end create()
@@ -329,10 +317,7 @@ class AgentsController extends Controller
 
             // Check if user can modify this agent using mapper method.
             if ($this->agentMapper->canUserModifyAgent($agent, $this->userId) === false) {
-                return new JSONResponse(
-                    ['error' => 'You do not have permission to modify this agent'],
-                    Http::STATUS_FORBIDDEN
-                );
+                return new JSONResponse(data: ['error' => 'You do not have permission to modify this agent'], statusCode: Http::STATUS_FORBIDDEN);
             }
 
             $data = $this->request->getParams();
@@ -360,7 +345,7 @@ class AgentsController extends Controller
 
             $this->logger->info('Agent updated successfully', ['id' => $id]);
 
-            return new JSONResponse($updatedAgent, Http::STATUS_OK);
+            return new JSONResponse(data: $updatedAgent, statusCode: Http::STATUS_OK);
         } catch (Exception $e) {
             $this->logger->error(
                 'Failed to update agent',
@@ -370,10 +355,7 @@ class AgentsController extends Controller
                 ]
             );
 
-            return new JSONResponse(
-                ['error' => 'Failed to update agent: '.$e->getMessage()],
-                Http::STATUS_BAD_REQUEST
-            );
+            return new JSONResponse(data: ['error' => 'Failed to update agent: '.$e->getMessage()], statusCode: Http::STATUS_BAD_REQUEST);
         }//end try
 
     }//end update()
@@ -415,17 +397,14 @@ class AgentsController extends Controller
 
             // Check if user can modify (delete) this agent using mapper method.
             if ($this->agentMapper->canUserModifyAgent($agent, $this->userId) === false) {
-                return new JSONResponse(
-                    ['error' => 'You do not have permission to delete this agent'],
-                    Http::STATUS_FORBIDDEN
-                );
+                return new JSONResponse(data: ['error' => 'You do not have permission to delete this agent'], statusCode: Http::STATUS_FORBIDDEN);
             }
 
             $this->agentMapper->delete($agent);
 
             $this->logger->info('Agent deleted successfully', ['id' => $id]);
 
-            return new JSONResponse(['message' => 'Agent deleted successfully'], Http::STATUS_OK);
+            return new JSONResponse(data: ['message' => 'Agent deleted successfully'], statusCode: Http::STATUS_OK);
         } catch (Exception $e) {
             $this->logger->error(
                 'Failed to delete agent',
@@ -435,10 +414,7 @@ class AgentsController extends Controller
                 ]
             );
 
-            return new JSONResponse(
-                ['error' => 'Failed to delete agent'],
-                Http::STATUS_BAD_REQUEST
-            );
+            return new JSONResponse(data: ['error' => 'Failed to delete agent'], statusCode: Http::STATUS_BAD_REQUEST);
         }//end try
 
     }//end destroy()
@@ -465,7 +441,7 @@ class AgentsController extends Controller
                 'inactive' => $inactive,
             ];
 
-            return new JSONResponse($stats, Http::STATUS_OK);
+            return new JSONResponse(data: $stats, statusCode: Http::STATUS_OK);
         } catch (Exception $e) {
             $this->logger->error(
                 'Failed to get agent statistics',
@@ -474,10 +450,7 @@ class AgentsController extends Controller
                 ]
             );
 
-            return new JSONResponse(
-                ['error' => 'Failed to retrieve statistics'],
-                Http::STATUS_INTERNAL_SERVER_ERROR
-            );
+            return new JSONResponse(data: ['error' => 'Failed to retrieve statistics'], statusCode: Http::STATUS_INTERNAL_SERVER_ERROR);
         }//end try
 
     }//end stats()
@@ -506,7 +479,7 @@ class AgentsController extends Controller
                     ]
                     );
 
-            return new JSONResponse(['results' => $tools], Http::STATUS_OK);
+            return new JSONResponse(data: ['results' => $tools], statusCode: Http::STATUS_OK);
         } catch (Exception $e) {
             $this->logger->error(
                 'Failed to get available tools',
@@ -516,10 +489,7 @@ class AgentsController extends Controller
                 ]
             );
 
-            return new JSONResponse(
-                ['error' => 'Failed to retrieve tools'],
-                Http::STATUS_INTERNAL_SERVER_ERROR
-            );
+            return new JSONResponse(data: ['error' => 'Failed to retrieve tools'], statusCode: Http::STATUS_INTERNAL_SERVER_ERROR);
         }//end try
 
     }//end tools()

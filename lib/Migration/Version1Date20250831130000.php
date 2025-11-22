@@ -74,7 +74,7 @@ class Version1Date20250831130000 extends SimpleMigrationStep
                         'comment' => 'Expiration timestamp for permanent deletion',
                     ]
                     );
-            $output->info('Added expires column to openregister_objects table');
+            $output->info(message: ('Added expires column to openregister_objects table');
         }
 
         return $schema;

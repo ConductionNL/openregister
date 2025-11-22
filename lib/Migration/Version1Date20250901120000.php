@@ -75,7 +75,7 @@ class Version1Date20250901120000 extends SimpleMigrationStep
                         'comment' => 'Summary of the object extracted from configured schema property',
                     ]
                     );
-            $output->info('Added summary column to openregister_objects table');
+            $output->info(message: ('Added summary column to openregister_objects table');
         }
 
         return $schema;

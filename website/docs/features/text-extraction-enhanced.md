@@ -808,3 +808,9 @@ The enhanced text extraction system provides a comprehensive foundation for:
 
 By processing both files and objects into a unified chunk structure, OpenRegister enables powerful cross-content search, analysis, and compliance features while maintaining flexibility in processing methods and preparing for future capabilities.
 
+---
+
+**📚 See Also**:
+- **[Text Extraction, Vectorization & Named Entity Recognition](../Features/text-extraction-vectorization-ner.md)** - Unified documentation covering text extraction, vectorization, and NER in one place
+- [Text Extraction Sources](./text-extraction-sources.md) - Detailed source-specific documentation
+

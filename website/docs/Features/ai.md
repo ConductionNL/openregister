@@ -266,6 +266,7 @@ Function calling is integrated into the chat service:
 
 ## Related Documentation
 
+- **[Text Extraction, Vectorization & Named Entity Recognition](./text-extraction-vectorization-ner.md)** - Unified documentation for text extraction, vectorization, and NER
 - [Agents](../features/agents.md) - Agent management and configuration
 - [RAG Implementation](../features/rag-implementation.md) - Detailed RAG documentation
 - [Function Calling](../features/function-calling.md) - Function calling guide

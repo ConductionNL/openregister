@@ -242,7 +242,7 @@ class AuditTrailMapper extends QBMapper
             $object            = $this->objectEntityMapper->find(identifier: $identifier);
             $objectId          = $object->getId();
             $filters['object'] = $objectId;
-            return $this->findAll($limit, $offset, $filters);
+            return $this->findAll(config: $limit, rbac: $offset, multi: $filters);
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             // Object not found.
             return [];
@@ -270,7 +270,7 @@ class AuditTrailMapper extends QBMapper
 
         // Set default expiration date if not provided (30 days from now).
         if ($auditTrail->getExpires() === null) {
-            $auditTrail->setExpires(new \DateTime('+30 days'));
+            $auditTrail->setExpires(new \DateTime(datetime: '+30 days'));
         }
 
         // Set the size to the byte size of the serialized object, with a minimum default of 14 bytes.
@@ -370,7 +370,7 @@ class AuditTrailMapper extends QBMapper
         $auditTrail->setSize(max($serializedSize, 14));
 
         // Set default expiration date (30 days from now).
-        $auditTrail->setExpires(new \DateTime('+30 days'));
+        $auditTrail->setExpires(new \DateTime(datetime: '+30 days'));
 
         // Insert the new AuditTrail into the database and return it.
         return $this->insert(entity: $auditTrail);
@@ -429,9 +429,8 @@ class AuditTrailMapper extends QBMapper
                     $qb->expr()->gt(
                         'created',
                         $qb->createFunction(
-                            sprintf(
-                                '(SELECT created FROM `*PREFIX*openregister_audit_trails` WHERE id = %s)',
-                                $qb->createNamedParameter($until, IQueryBuilder::PARAM_STR)
+                            sprintf(format: (
+                                '(SELECT created FROM `*PREFIX*openregister_audit_trails` WHERE id = %s)', $qb->createNamedParameter($until, IQueryBuilder::PARAM_STR)
                             )
                         )
                     )
@@ -1277,7 +1276,7 @@ class AuditTrailMapper extends QBMapper
                 ->set(
                        'expires',
                        $qb->createFunction(
-                   sprintf('DATE_ADD(created, INTERVAL %d SECOND)', $retentionSeconds)
+                   sprintf(format: ('DATE_ADD(created, INTERVAL %d SECOND)', $retentionSeconds)
                 )
                        )
                 ->where($qb->expr()->isNull('expires'));

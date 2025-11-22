@@ -55,8 +55,8 @@ class Version1Date20251102170000 extends SimpleMigrationStep
 
         $schema = $schemaClosure();
 
-        $output->info('⚠️  Schema extension (extend column) is deprecated - skipping migration');
-        $output->info('   Schema inheritance now uses allOf, oneOf, and anyOf fields instead');
+        $output->info(message: ('⚠️  Schema extension (extend column) is deprecated - skipping migration');
+        $output->info(message: ('   Schema inheritance now uses allOf, oneOf, and anyOf fields instead');
 
         // DEPRECATED: The extend column functionality has been replaced by JSON Schema.
         // composition using allOf, oneOf, and anyOf fields. This migration is kept.

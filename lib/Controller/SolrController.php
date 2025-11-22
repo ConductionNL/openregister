@@ -2,6 +2,9 @@
 /**
  * SPDX-FileCopyrightText: 2024 Nextcloud GmbH and Nextcloud contributors
  * SPDX-License-Identifier: AGPL-3.0-or-later
+ *
+ * @author  Conduction Development Team <info@conduction.nl>
+ * @license AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  */
 
 namespace OCA\OpenRegister\Controller;
@@ -54,7 +57,7 @@ class SolrController extends Controller
         private readonly ContainerInterface $container,
         private readonly LoggerInterface $logger
     ) {
-        parent::__construct($appName, $request);
+        parent::__construct(appName: $appName, request: $request);
 
     }//end __construct()
 
@@ -66,15 +69,15 @@ class SolrController extends Controller
      * vector embeddings. It's particularly useful for finding conceptually
      * similar documents even when they don't share exact keywords.
      *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
      * @param string      $query    Search query text
      * @param int         $limit    Maximum number of results (default: 10)
      * @param array       $filters  Optional filters (entity_type, entity_id, embedding_model)
      * @param string|null $provider Embedding provider override (openai, ollama)
      *
      * @return JSONResponse Search results with similarity scores
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
      */
     public function semanticSearch(
         string $query,
@@ -84,11 +87,11 @@ class SolrController extends Controller
     ): JSONResponse {
         try {
             // Validate input.
-            if (empty(trim($query))) {
+            if (trim($query) === '') {
                 return new JSONResponse(
-                        [
-                            'success' => false,
-                            'error'   => 'Query parameter is required and cannot be empty',
+                        data: [
+                            'success' => false, statusCode:
+                'error'   => 'Query parameter is required and cannot be empty',
                         ],
                         400
                         );
@@ -96,9 +99,9 @@ class SolrController extends Controller
 
             if ($limit < 1 || $limit > 100) {
                 return new JSONResponse(
-                        [
-                            'success' => false,
-                            'error'   => 'Limit must be between 1 and 100',
+                        data: [
+                            'success' => false, statusCode:
+                'error'   => 'Limit must be between 1 and 100',
                         ],
                         400
                         );
@@ -111,9 +114,9 @@ class SolrController extends Controller
             $results = $vectorService->semanticSearch($query, $limit, $filters, $provider);
 
             return new JSONResponse(
-                    [
-                        'success'     => true,
-                        'query'       => $query,
+                    data: [
+                        'success'     => true, statusCode:
+            'query'       => $query,
                         'results'     => $results,
                         'total'       => count($results),
                         'limit'       => $limit,
@@ -132,9 +135,9 @@ class SolrController extends Controller
                     );
 
             return new JSONResponse(
-                    [
-                        'success' => false,
-                        'error'   => $e->getMessage(),
+                    data: [
+                        'success' => false, statusCode:
+            'error'   => $e->getMessage(),
                         'query'   => $query ?? null,
                     ],
                     500
@@ -151,9 +154,6 @@ class SolrController extends Controller
      * AI-powered semantic search for optimal results. Uses Reciprocal Rank
      * Fusion (RRF) to intelligently merge results from both methods.
      *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
      * @param string      $query       Search query text
      * @param int         $limit       Maximum number of results (default: 20)
      * @param array       $solrFilters SOLR-specific filters
@@ -161,6 +161,9 @@ class SolrController extends Controller
      * @param string|null $provider    Embedding provider override
      *
      * @return JSONResponse Combined search results with source breakdown
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
      */
     public function hybridSearch(
         string $query,
@@ -171,11 +174,11 @@ class SolrController extends Controller
     ): JSONResponse {
         try {
             // Validate input.
-            if (empty(trim($query))) {
+            if (trim($query) === '') {
                 return new JSONResponse(
-                        [
-                            'success' => false,
-                            'error'   => 'Query parameter is required and cannot be empty',
+                        data: [
+                            'success' => false, statusCode:
+                'error'   => 'Query parameter is required and cannot be empty',
                         ],
                         400
                         );
@@ -183,9 +186,9 @@ class SolrController extends Controller
 
             if ($limit < 1 || $limit > 200) {
                 return new JSONResponse(
-                        [
-                            'success' => false,
-                            'error'   => 'Limit must be between 1 and 200',
+                        data: [
+                            'success' => false, statusCode:
+                'error'   => 'Limit must be between 1 and 200',
                         ],
                         400
                         );
@@ -197,9 +200,9 @@ class SolrController extends Controller
 
             if ($solrWeight < 0 || $solrWeight > 1 || $vectorWeight < 0 || $vectorWeight > 1) {
                 return new JSONResponse(
-                        [
-                            'success' => false,
-                            'error'   => 'Weights must be between 0 and 1',
+                        data: [
+                            'success' => false, statusCode:
+                'error'   => 'Weights must be between 0 and 1',
                         ],
                         400
                         );
@@ -212,9 +215,9 @@ class SolrController extends Controller
             $result = $vectorService->hybridSearch($query, $solrFilters, $limit, $weights, $provider);
 
             return new JSONResponse(
-                    [
-                        'success'     => true,
-                        'query'       => $query,
+                    data: [
+                        'success'     => true, statusCode:
+            'query'       => $query,
                         'search_type' => 'hybrid',
                         ...$result,
                         'timestamp'   => date('c'),
@@ -230,9 +233,9 @@ class SolrController extends Controller
                     );
 
             return new JSONResponse(
-                    [
-                        'success' => false,
-                        'error'   => $e->getMessage(),
+                    data: [
+                        'success' => false, statusCode:
+            'error'   => $e->getMessage(),
                         'query'   => $query ?? null,
                     ],
                     500
@@ -266,9 +269,9 @@ class SolrController extends Controller
             $stats = $vectorService->getVectorStats();
 
             return new JSONResponse(
-                    [
-                        'success'   => true,
-                        'stats'     => $stats,
+                    data: [
+                        'success'   => true, statusCode:
+            'stats'     => $stats,
                         'timestamp' => date('c'),
                     ]
                     );
@@ -281,9 +284,9 @@ class SolrController extends Controller
                     );
 
             return new JSONResponse(
-                    [
-                        'success' => false,
-                        'error'   => $e->getMessage(),
+                    data: [
+                        'success' => false, statusCode:
+            'error'   => $e->getMessage(),
                     ],
                     500
                     );
@@ -316,19 +319,19 @@ class SolrController extends Controller
             // Validate provider.
             if ($provider === null || $provider === '') {
                 return new JSONResponse(
-                        [
-                            'success' => false,
-                            'error'   => 'Provider is required (openai, ollama, or fireworks)',
+                        data: [
+                            'success' => false, statusCode:
+                'error'   => 'Provider is required (openai, ollama, or fireworks)',
                         ],
                         400
                         );
             }
 
-            if (!in_array($provider, ['openai', 'ollama', 'fireworks'])) {
+            if (in_array($provider, ['openai', 'ollama', 'fireworks']) === false) {
                 return new JSONResponse(
-                        [
-                            'success' => false,
-                            'error'   => 'Invalid provider. Must be one of: openai, ollama, fireworks',
+                        data: [
+                            'success' => false, statusCode:
+                'error'   => 'Invalid provider. Must be one of: openai, ollama, fireworks',
                         ],
                         400
                         );
@@ -345,11 +348,11 @@ class SolrController extends Controller
             // Add provider-specific configuration.
             switch ($provider) {
                 case 'openai':
-                    if (empty($config['apiKey'])) {
+                    if (($config['apiKey'] ?? '') === '') {
                         return new JSONResponse(
-                                [
-                                    'success' => false,
-                                    'error'   => 'OpenAI API key is required in config.apiKey',
+                                data: [
+                                    'success' => false, statusCode:
+                        'error'   => 'OpenAI API key is required in config.apiKey',
                                 ],
                                 400
                                 );
@@ -365,11 +368,11 @@ class SolrController extends Controller
                     break;
 
                 case 'fireworks':
-                    if (empty($config['apiKey'])) {
+                    if (($config['apiKey'] ?? '') === '') {
                         return new JSONResponse(
-                                [
-                                    'success' => false,
-                                    'error'   => 'Fireworks AI API key is required in config.apiKey',
+                                data: [
+                                    'success' => false, statusCode:
+                        'error'   => 'Fireworks AI API key is required in config.apiKey',
                                 ],
                                 400
                                 );
@@ -396,11 +399,11 @@ class SolrController extends Controller
             $embedding = $vectorService->generateEmbeddingWithCustomConfig($testText, $embeddingConfig);
             $duration  = round((microtime(true) - $startTime) * 1000, 2);
 
-            if ($embedding === null || empty($embedding)) {
+            if ($embedding === null || $embedding === []) {
                 return new JSONResponse(
-                        [
-                            'success' => false,
-                            'error'   => 'Failed to generate embedding. Check provider configuration and credentials.',
+                        data: [
+                            'success' => false, statusCode:
+                'error'   => 'Failed to generate embedding. Check provider configuration and credentials.',
                         ],
                         500
                         );
@@ -408,9 +411,9 @@ class SolrController extends Controller
 
             // Return success with metadata.
             return new JSONResponse(
-                    [
-                        'success'   => true,
-                        'message'   => 'Embedding generated successfully',
+                    data: [
+                        'success'   => true, statusCode:
+            'message'   => 'Embedding generated successfully',
                         'metadata'  => [
                             'provider'    => $provider,
                             'model'       => $embeddingConfig['model'] ?? 'default',
@@ -433,9 +436,9 @@ class SolrController extends Controller
                     );
 
             return new JSONResponse(
-                    [
-                        'success' => false,
-                        'error'   => $e->getMessage(),
+                    data: [
+                        'success' => false, statusCode:
+            'error'   => $e->getMessage(),
                     ],
                     500
                     );
@@ -459,9 +462,9 @@ class SolrController extends Controller
             $collections       = $guzzleSolrService->listCollections();
 
             return new JSONResponse(
-                    [
-                        'success'     => true,
-                        'collections' => $collections,
+                    data: [
+                        'success'     => true, statusCode:
+            'collections' => $collections,
                         'total'       => count($collections),
                         'timestamp'   => date('c'),
                     ]
@@ -475,9 +478,9 @@ class SolrController extends Controller
                     );
 
             return new JSONResponse(
-                    [
-                        'success' => false,
-                        'error'   => $e->getMessage(),
+                    data: [
+                        'success' => false, statusCode:
+            'error'   => $e->getMessage(),
                     ],
                     500
                     );
@@ -501,9 +504,9 @@ class SolrController extends Controller
             $configSets        = $guzzleSolrService->listConfigSets();
 
             return new JSONResponse(
-                    [
-                        'success'    => true,
-                        'configSets' => $configSets,
+                    data: [
+                        'success'    => true, statusCode:
+            'configSets' => $configSets,
                         'total'      => count($configSets),
                         'timestamp'  => date('c'),
                     ]
@@ -517,9 +520,9 @@ class SolrController extends Controller
                     );
 
             return new JSONResponse(
-                    [
-                        'success' => false,
-                        'error'   => $e->getMessage(),
+                    data: [
+                        'success' => false, statusCode:
+            'error'   => $e->getMessage(),
                     ],
                     500
                     );
@@ -531,9 +534,6 @@ class SolrController extends Controller
     /**
      * Create a new SOLR collection
      *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
      * @param string $collectionName    Name for the new collection
      * @param string $configName        ConfigSet to use
      * @param int    $numShards         Number of shards (default: 1)
@@ -541,6 +541,9 @@ class SolrController extends Controller
      * @param int    $maxShardsPerNode  Max shards per node (default: 1)
      *
      * @return JSONResponse Creation result
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
      */
     public function createCollection(
         string $collectionName,
@@ -561,9 +564,9 @@ class SolrController extends Controller
             );
 
             return new JSONResponse(
-                    [
-                        'success'    => true,
-                        'message'    => 'Collection created successfully',
+                    data: [
+                        'success'    => true, statusCode:
+            'message'    => 'Collection created successfully',
                         'collection' => $collectionName,
                         'result'     => $result,
                         'timestamp'  => date('c'),
@@ -579,9 +582,9 @@ class SolrController extends Controller
                     );
 
             return new JSONResponse(
-                    [
-                        'success' => false,
-                        'error'   => $e->getMessage(),
+                    data: [
+                        'success' => false, statusCode:
+            'error'   => $e->getMessage(),
                     ],
                     500
                     );
@@ -593,13 +596,13 @@ class SolrController extends Controller
     /**
      * Create a new SOLR ConfigSet
      *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
      * @param string $name          Name for the new ConfigSet
      * @param string $baseConfigSet Base ConfigSet to copy from (default: _default)
      *
      * @return JSONResponse Creation result
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
      */
     public function createConfigSet(string $name, string $baseConfigSet='_default'): JSONResponse
     {
@@ -609,9 +612,9 @@ class SolrController extends Controller
             $result = $guzzleSolrService->createConfigSet($name, $baseConfigSet);
 
             return new JSONResponse(
-                    [
-                        'success'   => true,
-                        'message'   => 'ConfigSet created successfully',
+                    data: [
+                        'success'   => true, statusCode:
+            'message'   => 'ConfigSet created successfully',
                         'configSet' => $name,
                         'result'    => $result,
                         'timestamp' => date('c'),
@@ -627,9 +630,9 @@ class SolrController extends Controller
                     );
 
             return new JSONResponse(
-                    [
-                        'success' => false,
-                        'error'   => $e->getMessage(),
+                    data: [
+                        'success' => false, statusCode:
+            'error'   => $e->getMessage(),
                     ],
                     500
                     );
@@ -641,12 +644,12 @@ class SolrController extends Controller
     /**
      * Delete a SOLR ConfigSet
      *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
      * @param string $name ConfigSet name to delete
      *
      * @return JSONResponse Deletion result
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
      */
     public function deleteConfigSet(string $name): JSONResponse
     {
@@ -656,9 +659,9 @@ class SolrController extends Controller
             $result = $guzzleSolrService->deleteConfigSet($name);
 
             return new JSONResponse(
-                    [
-                        'success'   => true,
-                        'message'   => 'ConfigSet deleted successfully',
+                    data: [
+                        'success'   => true, statusCode:
+            'message'   => 'ConfigSet deleted successfully',
                         'configSet' => $name,
                         'result'    => $result,
                         'timestamp' => date('c'),
@@ -674,9 +677,9 @@ class SolrController extends Controller
                     );
 
             return new JSONResponse(
-                    [
-                        'success' => false,
-                        'error'   => $e->getMessage(),
+                    data: [
+                        'success' => false, statusCode:
+            'error'   => $e->getMessage(),
                     ],
                     500
                     );
@@ -688,13 +691,13 @@ class SolrController extends Controller
     /**
      * Copy/duplicate an existing SOLR collection
      *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
      * @param string $sourceCollection Source collection name
      * @param string $targetCollection Target collection name
      *
      * @return JSONResponse Copy result
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
      */
     public function copyCollection(string $sourceCollection, string $targetCollection): JSONResponse
     {
@@ -704,9 +707,9 @@ class SolrController extends Controller
             $result = $guzzleSolrService->copyCollection($sourceCollection, $targetCollection);
 
             return new JSONResponse(
-                    [
-                        'success'   => true,
-                        'message'   => 'Collection copied successfully',
+                    data: [
+                        'success'   => true, statusCode:
+            'message'   => 'Collection copied successfully',
                         'source'    => $sourceCollection,
                         'target'    => $targetCollection,
                         'result'    => $result,
@@ -724,9 +727,9 @@ class SolrController extends Controller
                     );
 
             return new JSONResponse(
-                    [
-                        'success' => false,
-                        'error'   => $e->getMessage(),
+                    data: [
+                        'success' => false, statusCode:
+            'error'   => $e->getMessage(),
                     ],
                     500
                     );
@@ -741,13 +744,13 @@ class SolrController extends Controller
      * This endpoint generates an AI embedding for an object and stores it
      * in the vector database for semantic search.
      *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
      * @param int         $objectId Object ID to vectorize
      * @param string|null $provider Optional embedding provider override
      *
      * @return JSONResponse Vectorization result
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
      */
     public function vectorizeObject(int $objectId, ?string $provider=null): JSONResponse
     {
@@ -757,32 +760,28 @@ class SolrController extends Controller
             $solrObjectService = $this->container->get(SolrObjectService::class);
 
             // Fetch the object.
-            $object = $objectMapper->find($objectId);
+            $object = $objectMapper->find(id: $objectId);
 
             // Vectorize the object.
-            $result = $solrObjectService->vectorizeObject($object, $provider);
+            $result = $solrObjectService->vectorizeObject($object, register: $provider);
 
             return new JSONResponse(
-                    [
-                        'success'   => true,
-                        'message'   => 'Object vectorized successfully',
-                        ...$result,
-                        'timestamp' => date('c'),
-                    ]
+                    data: [
+                        'success'   => true, schema: statusCode:
+            'message'   => 'Object vectorized successfully', extend: ...$result, files: 'timestamp' => date('c'), rbac: ]
                     );
         } catch (\Exception $e) {
             $this->logger->error(
-                    'Failed to vectorize object',
-                    [
+                    'Failed to vectorize object', multi: [
                         'error'     => $e->getMessage(),
                         'object_id' => $objectId ?? null,
                     ]
                     );
 
             return new JSONResponse(
-                    [
-                        'success'   => false,
-                        'error'     => $e->getMessage(),
+                    data: [
+                        'success'   => false, statusCode:
+            'error'     => $e->getMessage(),
                         'object_id' => $objectId ?? null,
                     ],
                     500
@@ -798,9 +797,6 @@ class SolrController extends Controller
      * This endpoint allows vectorizing multiple objects at once, optionally
      * filtered by schema or register. Supports pagination for large datasets.
      *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
      * @param int|null    $schemaId   Optional schema ID to filter
      * @param int|null    $registerId Optional register ID to filter
      * @param int         $limit      Maximum objects to process (default: 100, max: 1000)
@@ -808,6 +804,9 @@ class SolrController extends Controller
      * @param string|null $provider   Optional embedding provider override
      *
      * @return JSONResponse Bulk vectorization results with progress
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
      */
     public function bulkVectorizeObjects(
         ?int $schemaId=null,
@@ -820,9 +819,9 @@ class SolrController extends Controller
             // Validate limits.
             if ($limit < 1 || $limit > 1000) {
                 return new JSONResponse(
-                        [
-                            'success' => false,
-                            'error'   => 'Limit must be between 1 and 1000',
+                        data: [
+                            'success' => false, statusCode:
+                'error'   => 'Limit must be between 1 and 1000',
                         ],
                         400
                         );
@@ -830,9 +829,9 @@ class SolrController extends Controller
 
             if ($offset < 0) {
                 return new JSONResponse(
-                        [
-                            'success' => false,
-                            'error'   => 'Offset must be >= 0',
+                        data: [
+                            'success' => false, statusCode:
+                'error'   => 'Offset must be >= 0',
                         ],
                         400
                         );
@@ -854,13 +853,13 @@ class SolrController extends Controller
 
             // Fetch objects with conditions.
             // Note: This is a simplified example - adjust based on actual ObjectEntityMapper methods.
-            $objects = $objectMapper->findAll($limit, $offset);
+            $objects = $objectMapper->findAll(config: $limit, rbac: $offset);
 
-            if (empty($objects)) {
+            if (count($objects) === 0) {
                 return new JSONResponse(
-                        [
-                            'success'    => true,
-                            'message'    => 'No objects found to vectorize',
+                        data: [
+                            'success'    => true, multi: statusCode:
+                'message'    => 'No objects found to vectorize',
                             'total'      => 0,
                             'successful' => 0,
                             'failed'     => 0,
@@ -874,9 +873,9 @@ class SolrController extends Controller
             $result = $solrObjectService->vectorizeObjects($objects, $provider);
 
             return new JSONResponse(
-                    [
-                        'success'    => $result['success'],
-                        'message'    => "Processed {$result['successful']} of {$result['total']} objects",
+                    data: [
+                        'success'    => $result['success'], statusCode:
+            'message'    => "Processed {$result['successful']} of {$result['total']} objects",
                         ...$result,
                         'pagination' => [
                             'limit'    => $limit,
@@ -903,9 +902,9 @@ class SolrController extends Controller
                     );
 
             return new JSONResponse(
-                    [
-                        'success' => false,
-                        'error'   => $e->getMessage(),
+                    data: [
+                        'success' => false, statusCode:
+            'error'   => $e->getMessage(),
                     ],
                     500
                     );
@@ -940,18 +939,22 @@ class SolrController extends Controller
 
             // Calculate progress.
             $vectorizedObjects = $vectorStats['object_vectors'] ?? 0;
-            $progress          = $totalObjects > 0 ? round(($vectorizedObjects / $totalObjects) * 100, 2) : 0;
+            if ($totalObjects > 0) {
+                $progress = round(($vectorizedObjects / $totalObjects) * 100, 2);
+            } else {
+                $progress = 0;
+            }
 
             return new JSONResponse(
-                    [
-                        'success'   => true,
-                        'stats'     => [
-                            'total_objects'       => $totalObjects,
-                            'vectorized_objects'  => $vectorizedObjects,
-                            'progress_percentage' => $progress,
-                            'remaining_objects'   => $totalObjects - $vectorizedObjects,
-                            'vector_breakdown'    => $vectorStats,
-                        ],
+                    data: [
+                        'success'   => true, statusCode:
+            'stats'     => [
+                'total_objects'       => $totalObjects,
+                'vectorized_objects'  => $vectorizedObjects,
+                'progress_percentage' => $progress,
+                'remaining_objects'   => $totalObjects - $vectorizedObjects,
+                'vector_breakdown'    => $vectorStats,
+            ],
                         'timestamp' => date('c'),
                     ]
                     );
@@ -965,9 +968,9 @@ class SolrController extends Controller
                     );
 
             return new JSONResponse(
-                    [
-                        'success' => false,
-                        'error'   => $e->getMessage(),
+                    data: [
+                        'success' => false, statusCode:
+            'error'   => $e->getMessage(),
                     ],
                     500
                     );

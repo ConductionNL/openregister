@@ -116,7 +116,7 @@ class ConfigurationController extends Controller
         IAppManager $appManager,
         LoggerInterface $logger
     ) {
-        parent::__construct($appName, $request);
+        parent::__construct(appName: $appName, request: $request);
 
         $this->configurationMapper  = $configurationMapper;
         $this->configurationService = $configurationService;
@@ -142,14 +142,11 @@ class ConfigurationController extends Controller
         try {
             $configurations = $this->configurationMapper->findAll();
 
-            return new JSONResponse($configurations, 200);
+            return new JSONResponse(data: $configurations, statusCode: 200);
         } catch (Exception $e) {
             $this->logger->error('Failed to fetch configurations: '.$e->getMessage());
 
-            return new JSONResponse(
-                ['error' => 'Failed to fetch configurations'],
-                500
-            );
+            return new JSONResponse(data: ['error' => 'Failed to fetch configurations'], statusCode: 500);
         }//end try
 
     }//end index()
@@ -170,19 +167,13 @@ class ConfigurationController extends Controller
         try {
             $configuration = $this->configurationMapper->find($id);
 
-            return new JSONResponse($configuration, 200);
+            return new JSONResponse(data: $configuration, statusCode: 200);
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-            return new JSONResponse(
-                ['error' => 'Configuration not found'],
-                404
-            );
+            return new JSONResponse(data: ['error' => 'Configuration not found'], statusCode: 404);
         } catch (Exception $e) {
             $this->logger->error("Failed to fetch configuration {$id}: ".$e->getMessage());
 
-            return new JSONResponse(
-                ['error' => 'Failed to fetch configuration'],
-                500
-            );
+            return new JSONResponse(data: ['error' => 'Failed to fetch configuration'], statusCode: 500);
         }//end try
 
     }//end show()
@@ -208,10 +199,8 @@ class ConfigurationController extends Controller
 
             // Validate required parameters.
             if (empty($owner) === true || empty($repo) === true || empty($path) === true) {
-                return new JSONResponse(
-                    ['error' => 'Missing required parameters: owner, repo, path'],
-                    400
-                );
+                return new JSONResponse(data: ['error' => 'Missing required parameters: owner, statusCode: repo, path'],
+                    400);
             }
 
             $this->logger->info(
@@ -234,13 +223,10 @@ class ConfigurationController extends Controller
             }
 
             if ($details === null) {
-                return new JSONResponse(
-                    ['error' => 'Failed to fetch configuration details'],
-                    404
-                );
+                return new JSONResponse(data: ['error' => 'Failed to fetch configuration details'], statusCode: 404);
             }
 
-            return new JSONResponse($details, 200);
+            return new JSONResponse(data: $details, statusCode: 200);
         } catch (Exception $e) {
             $this->logger->error(
                     'Configuration enrichment failed: '.$e->getMessage(),
@@ -250,10 +236,7 @@ class ConfigurationController extends Controller
                     ]
                     );
 
-            return new JSONResponse(
-                ['error' => 'Failed to enrich configuration: '.$e->getMessage()],
-                500
-            );
+            return new JSONResponse(data: ['error' => 'Failed to enrich configuration: '.$e->getMessage()], statusCode: 500);
         }//end try
 
     }//end enrichDetails()
@@ -301,14 +284,11 @@ class ConfigurationController extends Controller
 
             $this->logger->info("Created configuration: {$created->getTitle()} (ID: {$created->getId()})");
 
-            return new JSONResponse($created, 201);
+            return new JSONResponse(data: $created, statusCode: 201);
         } catch (Exception $e) {
             $this->logger->error('Failed to create configuration: '.$e->getMessage());
 
-            return new JSONResponse(
-                ['error' => 'Failed to create configuration: '.$e->getMessage()],
-                500
-            );
+            return new JSONResponse(data: ['error' => 'Failed to create configuration: '.$e->getMessage()], statusCode: 500);
         }//end try
 
     }//end create()
@@ -403,19 +383,13 @@ class ConfigurationController extends Controller
 
             $this->logger->info("Updated configuration: {$updated->getTitle()} (ID: {$updated->getId()})");
 
-            return new JSONResponse($updated, 200);
+            return new JSONResponse(data: $updated, statusCode: 200);
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-            return new JSONResponse(
-                ['error' => 'Configuration not found'],
-                404
-            );
+            return new JSONResponse(data: ['error' => 'Configuration not found'], statusCode: 404);
         } catch (Exception $e) {
             $this->logger->error("Failed to update configuration {$id}: ".$e->getMessage());
 
-            return new JSONResponse(
-                ['error' => 'Failed to update configuration: '.$e->getMessage()],
-                500
-            );
+            return new JSONResponse(data: ['error' => 'Failed to update configuration: '.$e->getMessage()], statusCode: 500);
         }//end try
 
     }//end update()
@@ -439,19 +413,13 @@ class ConfigurationController extends Controller
 
             $this->logger->info("Deleted configuration: {$configuration->getTitle()} (ID: {$id})");
 
-            return new JSONResponse(['success' => true], 200);
+            return new JSONResponse(data: ['success' => true], statusCode: 200);
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-            return new JSONResponse(
-                ['error' => 'Configuration not found'],
-                404
-            );
+            return new JSONResponse(data: ['error' => 'Configuration not found'], statusCode: 404);
         } catch (Exception $e) {
             $this->logger->error("Failed to delete configuration {$id}: ".$e->getMessage());
 
-            return new JSONResponse(
-                ['error' => 'Failed to delete configuration'],
-                500
-            );
+            return new JSONResponse(data: ['error' => 'Failed to delete configuration'], statusCode: 500);
         }//end try
 
     }//end destroy()
@@ -476,35 +444,23 @@ class ConfigurationController extends Controller
             $remoteVersion = $this->configurationService->checkRemoteVersion($configuration);
 
             if ($remoteVersion === null) {
-                return new JSONResponse(
-                    ['error' => 'Could not check remote version'],
-                    500
-                );
+                return new JSONResponse(data: ['error' => 'Could not check remote version'], statusCode: 500);
             }
 
             // Get version comparison.
             $comparison = $this->configurationService->compareVersions($configuration);
 
-            return new JSONResponse($comparison, 200);
+            return new JSONResponse(data: $comparison, statusCode: 200);
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-            return new JSONResponse(
-                ['error' => 'Configuration not found'],
-                404
-            );
+            return new JSONResponse(data: ['error' => 'Configuration not found'], statusCode: 404);
         } catch (GuzzleException $e) {
             $this->logger->error("Failed to check version for configuration {$id}: ".$e->getMessage());
 
-            return new JSONResponse(
-                ['error' => 'Failed to fetch remote version: '.$e->getMessage()],
-                500
-            );
+            return new JSONResponse(data: ['error' => 'Failed to fetch remote version: '.$e->getMessage()], statusCode: 500);
         } catch (Exception $e) {
             $this->logger->error("Failed to check version for configuration {$id}: ".$e->getMessage());
 
-            return new JSONResponse(
-                ['error' => 'Failed to check version'],
-                500
-            );
+            return new JSONResponse(data: ['error' => 'Failed to check version'], statusCode: 500);
         }//end try
 
     }//end checkVersion()
@@ -531,19 +487,13 @@ class ConfigurationController extends Controller
                 return $preview;
             }
 
-            return new JSONResponse($preview, 200);
+            return new JSONResponse(data: $preview, statusCode: 200);
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-            return new JSONResponse(
-                ['error' => 'Configuration not found'],
-                404
-            );
+            return new JSONResponse(data: ['error' => 'Configuration not found'], statusCode: 404);
         } catch (Exception $e) {
             $this->logger->error("Failed to preview configuration {$id}: ".$e->getMessage());
 
-            return new JSONResponse(
-                ['error' => 'Failed to preview configuration changes'],
-                500
-            );
+            return new JSONResponse(data: ['error' => 'Failed to preview configuration changes'], statusCode: 500);
         }//end try
 
     }//end preview()
@@ -584,27 +534,19 @@ class ConfigurationController extends Controller
                     )
                     );
 
-            return new JSONResponse(
-                    [
-                        'success'        => true,
-                        'registersCount' => count($result['registers']),
+            return new JSONResponse(data: [
+                        'success'        => true, statusCode: 'registersCount' => count($result['registers']),
                         'schemasCount'   => count($result['schemas']),
                         'objectsCount'   => count($result['objects']),
                     ],
                     200
                     );
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-            return new JSONResponse(
-                ['error' => 'Configuration not found'],
-                404
-            );
+            return new JSONResponse(data: ['error' => 'Configuration not found'], statusCode: 404);
         } catch (Exception $e) {
             $this->logger->error("Failed to import configuration {$id}: ".$e->getMessage());
 
-            return new JSONResponse(
-                ['error' => 'Failed to import configuration: '.$e->getMessage()],
-                500
-            );
+            return new JSONResponse(data: ['error' => 'Failed to import configuration: '.$e->getMessage()], statusCode: 500);
         }//end try
 
     }//end import()
@@ -635,19 +577,13 @@ class ConfigurationController extends Controller
             );
 
             // Return the export data directly for download.
-            return new JSONResponse($exportData, 200);
+            return new JSONResponse(data: $exportData, statusCode: 200);
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-            return new JSONResponse(
-                ['error' => 'Configuration not found'],
-                404
-            );
+            return new JSONResponse(data: ['error' => 'Configuration not found'], statusCode: 404);
         } catch (Exception $e) {
             $this->logger->error("Failed to export configuration {$id}: ".$e->getMessage());
 
-            return new JSONResponse(
-                ['error' => 'Failed to export configuration: '.$e->getMessage()],
-                500
-            );
+            return new JSONResponse(data: ['error' => 'Failed to export configuration: '.$e->getMessage()], statusCode: 500);
         }//end try
 
     }//end export()
@@ -682,10 +618,7 @@ class ConfigurationController extends Controller
 
             // Validate source.
             if (in_array($source, ['github', 'gitlab']) === false) {
-                return new JSONResponse(
-                    ['error' => 'Invalid source. Must be "github" or "gitlab"'],
-                    400
-                );
+                return new JSONResponse(data: ['error' => 'Invalid source. Must be "github" or "gitlab"'], statusCode: 400);
             }
 
             // Call appropriate service.
@@ -699,7 +632,7 @@ class ConfigurationController extends Controller
                 $this->logger->info('GitLab search completed', ['result_count' => count($results['results'] ?? [])]);
             }
 
-            return new JSONResponse($results, 200);
+            return new JSONResponse(data: $results, statusCode: 200);
         } catch (Exception $e) {
             $this->logger->error(
                     'Configuration discovery failed: '.$e->getMessage(),
@@ -710,10 +643,7 @@ class ConfigurationController extends Controller
                     ]
                     );
 
-            return new JSONResponse(
-                ['error' => 'Failed to discover configurations: '.$e->getMessage()],
-                500
-            );
+            return new JSONResponse(data: ['error' => 'Failed to discover configurations: '.$e->getMessage()], statusCode: 500);
         }//end try
 
     }//end discover()
@@ -737,10 +667,7 @@ class ConfigurationController extends Controller
             $repo  = $data['repo'] ?? '';
 
             if (empty($owner) === true || empty($repo) === true) {
-                return new JSONResponse(
-                    ['error' => 'Owner and repo parameters are required'],
-                    400
-                );
+                return new JSONResponse(data: ['error' => 'Owner and repo parameters are required'], statusCode: 400);
             }
 
             $this->logger->info(
@@ -753,14 +680,11 @@ class ConfigurationController extends Controller
 
             $branches = $this->githubService->getBranches($owner, $repo);
 
-            return new JSONResponse(['branches' => $branches], 200);
+            return new JSONResponse(data: ['branches' => $branches], statusCode: 200);
         } catch (Exception $e) {
             $this->logger->error('Failed to get GitHub branches: '.$e->getMessage());
 
-            return new JSONResponse(
-                ['error' => 'Failed to fetch branches: '.$e->getMessage()],
-                500
-            );
+            return new JSONResponse(data: ['error' => 'Failed to fetch branches: '.$e->getMessage()], statusCode: 500);
         }//end try
 
     }//end getGitHubBranches()
@@ -800,14 +724,11 @@ class ConfigurationController extends Controller
 
             $repositories = $this->githubService->getRepositories($page, $perPage);
 
-            return new JSONResponse(['repositories' => $repositories], 200);
+            return new JSONResponse(data: ['repositories' => $repositories], statusCode: 200);
         } catch (Exception $e) {
             $this->logger->error('Failed to get GitHub repositories: '.$e->getMessage());
 
-            return new JSONResponse(
-                ['error' => 'Failed to fetch repositories: '.$e->getMessage()],
-                500
-            );
+            return new JSONResponse(data: ['error' => 'Failed to fetch repositories: '.$e->getMessage()], statusCode: 500);
         }//end try
 
     }//end getGitHubRepositories()
@@ -832,10 +753,7 @@ class ConfigurationController extends Controller
             $branch = $data['branch'] ?? 'main';
 
             if (empty($owner) === true || empty($repo) === true) {
-                return new JSONResponse(
-                    ['error' => 'Owner and repo parameters are required'],
-                    400
-                );
+                return new JSONResponse(data: ['error' => 'Owner and repo parameters are required'], statusCode: 400);
             }
 
             $this->logger->info(
@@ -849,14 +767,11 @@ class ConfigurationController extends Controller
 
             $files = $this->githubService->listConfigurationFiles($owner, $repo, $branch);
 
-            return new JSONResponse(['files' => $files], 200);
+            return new JSONResponse(data: ['files' => $files], statusCode: 200);
         } catch (Exception $e) {
             $this->logger->error('Failed to get GitHub configurations: '.$e->getMessage());
 
-            return new JSONResponse(
-                ['error' => 'Failed to fetch configurations: '.$e->getMessage()],
-                500
-            );
+            return new JSONResponse(data: ['error' => 'Failed to fetch configurations: '.$e->getMessage()], statusCode: 500);
         }//end try
 
     }//end getGitHubConfigurations()
@@ -880,10 +795,7 @@ class ConfigurationController extends Controller
             $project   = $data['project'] ?? '';
 
             if (empty($namespace) === true || empty($project) === true) {
-                return new JSONResponse(
-                    ['error' => 'Namespace and project parameters are required'],
-                    400
-                );
+                return new JSONResponse(data: ['error' => 'Namespace and project parameters are required'], statusCode: 400);
             }
 
             // Get project ID from namespace/project path.
@@ -901,14 +813,11 @@ class ConfigurationController extends Controller
 
             $branches = $this->gitlabService->getBranches($projectId);
 
-            return new JSONResponse(['branches' => $branches], 200);
+            return new JSONResponse(data: ['branches' => $branches], statusCode: 200);
         } catch (Exception $e) {
             $this->logger->error('Failed to get GitLab branches: '.$e->getMessage());
 
-            return new JSONResponse(
-                ['error' => 'Failed to fetch branches: '.$e->getMessage()],
-                500
-            );
+            return new JSONResponse(data: ['error' => 'Failed to fetch branches: '.$e->getMessage()], statusCode: 500);
         }//end try
 
     }//end getGitLabBranches()
@@ -933,10 +842,7 @@ class ConfigurationController extends Controller
             $ref       = $data['ref'] ?? 'main';
 
             if (empty($namespace) === true || empty($project) === true) {
-                return new JSONResponse(
-                    ['error' => 'Namespace and project parameters are required'],
-                    400
-                );
+                return new JSONResponse(data: ['error' => 'Namespace and project parameters are required'], statusCode: 400);
             }
 
             // Get project ID from namespace/project path.
@@ -955,14 +861,11 @@ class ConfigurationController extends Controller
 
             $files = $this->gitlabService->listConfigurationFiles($projectId, $ref);
 
-            return new JSONResponse(['files' => $files], 200);
+            return new JSONResponse(data: ['files' => $files], statusCode: 200);
         } catch (Exception $e) {
             $this->logger->error('Failed to get GitLab configurations: '.$e->getMessage());
 
-            return new JSONResponse(
-                ['error' => 'Failed to fetch configurations: '.$e->getMessage()],
-                500
-            );
+            return new JSONResponse(data: ['error' => 'Failed to fetch configurations: '.$e->getMessage()], statusCode: 500);
         }//end try
 
     }//end getGitLabConfigurations()
@@ -992,10 +895,8 @@ class ConfigurationController extends Controller
             $syncInterval = (int) ($data['syncInterval'] ?? 24);
 
             if (empty($owner) === true || empty($repo) === true || empty($path) === true) {
-                return new JSONResponse(
-                    ['error' => 'Owner, repo, and path parameters are required'],
-                    400
-                );
+                return new JSONResponse(data: ['error' => 'Owner, statusCode: repo, and path parameters are required'],
+                    400);
             }
 
             $this->logger->info(
@@ -1022,10 +923,8 @@ class ConfigurationController extends Controller
             // Check if configuration already exists for this app.
             $existingConfigurations = $this->configurationMapper->findByApp($appId);
             if (count($existingConfigurations) > 0) {
-                return new JSONResponse(
-                    [
-                        'error'                   => $this->getExistingConfigErrorMessage($appId),
-                        'existingConfigurationId' => $existingConfigurations[0]->getId(),
+                return new JSONResponse(data: [
+                        'error'                   => $this->getExistingConfigErrorMessage($appId), statusCode: 'existingConfigurationId' => $existingConfigurations[0]->getId(),
                     ],
                     409
                 );
@@ -1078,10 +977,8 @@ class ConfigurationController extends Controller
 
             $this->logger->info("Successfully imported configuration {$configuration->getTitle()} from GitHub");
 
-            return new JSONResponse(
-                    [
-                        'success'         => true,
-                        'message'         => 'Configuration imported successfully from GitHub',
+            return new JSONResponse(data: [
+                        'success'         => true, statusCode: 'message'         => 'Configuration imported successfully from GitHub',
                         'configurationId' => $configuration->getId(),
                         'result'          => [
                             'registersCount' => count($result['registers']),
@@ -1094,10 +991,7 @@ class ConfigurationController extends Controller
         } catch (Exception $e) {
             $this->logger->error('Failed to import from GitHub: '.$e->getMessage());
 
-            return new JSONResponse(
-                ['error' => 'Failed to import configuration: '.$e->getMessage()],
-                500
-            );
+            return new JSONResponse(data: ['error' => 'Failed to import configuration: '.$e->getMessage()], statusCode: 500);
         }//end try
 
     }//end importFromGitHub()
@@ -1127,10 +1021,8 @@ class ConfigurationController extends Controller
             $syncInterval = (int) ($data['syncInterval'] ?? 24);
 
             if (empty($namespace) === true || empty($project) === true || empty($path) === true) {
-                return new JSONResponse(
-                    ['error' => 'Namespace, project, and path parameters are required'],
-                    400
-                );
+                return new JSONResponse(data: ['error' => 'Namespace, statusCode: project, and path parameters are required'],
+                    400);
             }
 
             // Get project ID from namespace/project path.
@@ -1167,10 +1059,8 @@ class ConfigurationController extends Controller
             // Check if configuration already exists for this app.
             $existingConfigurations = $this->configurationMapper->findByApp($appId);
             if (count($existingConfigurations) > 0) {
-                return new JSONResponse(
-                    [
-                        'error'                   => $this->getExistingConfigErrorMessage($appId),
-                        'existingConfigurationId' => $existingConfigurations[0]->getId(),
+                return new JSONResponse(data: [
+                        'error'                   => $this->getExistingConfigErrorMessage($appId), statusCode: 'existingConfigurationId' => $existingConfigurations[0]->getId(),
                     ],
                     409
                 );
@@ -1220,10 +1110,8 @@ class ConfigurationController extends Controller
 
             $this->logger->info("Successfully imported configuration {$configuration->getTitle()} from GitLab");
 
-            return new JSONResponse(
-                    [
-                        'success'         => true,
-                        'message'         => 'Configuration imported successfully from GitLab',
+            return new JSONResponse(data: [
+                        'success'         => true, statusCode: 'message'         => 'Configuration imported successfully from GitLab',
                         'configurationId' => $configuration->getId(),
                         'result'          => [
                             'registersCount' => count($result['registers']),
@@ -1236,10 +1124,7 @@ class ConfigurationController extends Controller
         } catch (Exception $e) {
             $this->logger->error('Failed to import from GitLab: '.$e->getMessage());
 
-            return new JSONResponse(
-                ['error' => 'Failed to import configuration: '.$e->getMessage()],
-                500
-            );
+            return new JSONResponse(data: ['error' => 'Failed to import configuration: '.$e->getMessage()], statusCode: 500);
         }//end try
 
     }//end importFromGitLab()
@@ -1266,18 +1151,12 @@ class ConfigurationController extends Controller
             $syncInterval = (int) ($data['syncInterval'] ?? 24);
 
             if (empty($url) === true) {
-                return new JSONResponse(
-                    ['error' => 'URL parameter is required'],
-                    400
-                );
+                return new JSONResponse(data: ['error' => 'URL parameter is required'], statusCode: 400);
             }
 
             // Validate URL.
             if (filter_var($url, FILTER_VALIDATE_URL) === false) {
-                return new JSONResponse(
-                    ['error' => 'Invalid URL provided'],
-                    400
-                );
+                return new JSONResponse(data: ['error' => 'Invalid URL provided'], statusCode: 400);
             }
 
             $this->logger->info(
@@ -1308,10 +1187,8 @@ class ConfigurationController extends Controller
             // Check if configuration already exists for this app.
             $existingConfigurations = $this->configurationMapper->findByApp($appId);
             if (count($existingConfigurations) > 0) {
-                return new JSONResponse(
-                    [
-                        'error'                   => $this->getExistingConfigErrorMessage($appId),
-                        'existingConfigurationId' => $existingConfigurations[0]->getId(),
+                return new JSONResponse(data: [
+                        'error'                   => $this->getExistingConfigErrorMessage($appId), statusCode: 'existingConfigurationId' => $existingConfigurations[0]->getId(),
                     ],
                     409
                 );
@@ -1361,10 +1238,8 @@ class ConfigurationController extends Controller
 
             $this->logger->info("Successfully imported configuration {$configuration->getTitle()} from URL");
 
-            return new JSONResponse(
-                    [
-                        'success'         => true,
-                        'message'         => 'Configuration imported successfully from URL',
+            return new JSONResponse(data: [
+                        'success'         => true, statusCode: 'message'         => 'Configuration imported successfully from URL',
                         'configurationId' => $configuration->getId(),
                         'result'          => [
                             'registersCount' => count($result['registers']),
@@ -1377,10 +1252,7 @@ class ConfigurationController extends Controller
         } catch (Exception $e) {
             $this->logger->error('Failed to import from URL: '.$e->getMessage());
 
-            return new JSONResponse(
-                ['error' => 'Failed to import configuration: '.$e->getMessage()],
-                500
-            );
+            return new JSONResponse(data: ['error' => 'Failed to import configuration: '.$e->getMessage()], statusCode: 500);
         }//end try
 
     }//end importFromUrl()
@@ -1406,10 +1278,7 @@ class ConfigurationController extends Controller
 
             // Only allow publishing local configurations.
             if ($configuration->getIsLocal() !== true) {
-                return new JSONResponse(
-                    ['error' => 'Only local configurations can be published'],
-                    400
-                );
+                return new JSONResponse(data: ['error' => 'Only local configurations can be published'], statusCode: 400);
             }
 
             $data          = $this->request->getParams();
@@ -1420,10 +1289,7 @@ class ConfigurationController extends Controller
             $commitMessage = $data['commitMessage'] ?? "Update configuration: {$configuration->getTitle()}";
 
             if (empty($owner) === true || empty($repo) === true) {
-                return new JSONResponse(
-                    ['error' => 'Owner and repo parameters are required'],
-                    400
-                );
+                return new JSONResponse(data: ['error' => 'Owner and repo parameters are required'], statusCode: 400);
             }
 
             // Strip leading slash from path (GitHub API doesn't allow paths starting with /).
@@ -1543,10 +1409,8 @@ class ConfigurationController extends Controller
                 $message .= ". Note: GitHub Code Search may take a few minutes to index new files.";
             }
 
-            return new JSONResponse(
-                    [
-                        'success'         => true,
-                        'message'         => $message,
+            return new JSONResponse(data: [
+                        'success'         => true, statusCode: 'message'         => $message,
                         'configurationId' => $configuration->getId(),
                         'commit_sha'      => $result['commit_sha'],
                         'commit_url'      => $result['commit_url'],
@@ -1560,10 +1424,7 @@ class ConfigurationController extends Controller
         } catch (Exception $e) {
             $this->logger->error('Failed to publish to GitHub: '.$e->getMessage());
 
-            return new JSONResponse(
-                ['error' => 'Failed to publish configuration: '.$e->getMessage()],
-                500
-            );
+            return new JSONResponse(data: ['error' => 'Failed to publish configuration: '.$e->getMessage()], statusCode: 500);
         }//end try
 
     }//end publishToGitHub()

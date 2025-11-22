@@ -704,12 +704,12 @@ class SaveObjects
      * METADATA MAPPING: Each object gets schema-based metadata hydration using SaveObject::hydrateObjectMetadata()
      * to extract name, description, summary, etc. based on the object's specific schema configuration.
      *
-     * @see website/docs/developers/import-flow.md for complete import flow documentation
-     * @see SaveObject::hydrateObjectMetadata() for metadata extraction details
-     *
      * @param array $objects Array of objects in serialized format
      *
      * @return array Array containing [prepared objects, schema cache]
+     *
+     * @see website/docs/developers/import-flow.md for complete import flow documentation
+     * @see SaveObject::hydrateObjectMetadata() for metadata extraction details
      */
     private function prepareObjectsForBulkSave(array $objects): array
     {
@@ -789,14 +789,14 @@ class SaveObjects
                 // Convert published/depublished strings to DateTime objects.
                 if (isset($selfDataForHydration['published']) && is_string($selfDataForHydration['published'])) {
                     try {
-                        $selfDataForHydration['published'] = new \DateTime($selfDataForHydration['published']);
+                        $selfDataForHydration['published'] = new \DateTime(datetime: $selfDataForHydration['published']);
                     } catch (\Exception $e) {
                         // Keep as string if conversion fails.
                     }
                 }
                 if (isset($selfDataForHydration['depublished']) && is_string($selfDataForHydration['depublished'])) {
                     try {
-                        $selfDataForHydration['depublished'] = new \DateTime($selfDataForHydration['depublished']);
+                        $selfDataForHydration['depublished'] = new \DateTime(datetime: $selfDataForHydration['depublished']);
                     } catch (\Exception $e) {
                         // Keep as string if conversion fails.
                     }
@@ -903,14 +903,14 @@ class SaveObjects
      * SaveObject::hydrateObjectMetadata() to extract name, description, summary, etc.
      * from object data based on schema configuration.
      *
-     * @see website/docs/developers/import-flow.md for complete import flow documentation
-     * @see SaveObject::hydrateObjectMetadata() for metadata extraction details
-     *
      * @param array                  $objects  Array of objects in serialized format
      * @param Register|string|int    $register Register context
      * @param Schema|string|int      $schema   Schema context
      *
      * @return array Array containing [prepared objects, schema cache, invalid objects]
+     *
+     * @see website/docs/developers/import-flow.md for complete import flow documentation
+     * @see SaveObject::hydrateObjectMetadata() for metadata extraction details
      */
     private function prepareSingleSchemaObjectsOptimized(array $objects, Register|string|int $register, Schema|string|int $schema): array
     {
@@ -995,7 +995,7 @@ class SaveObjects
                     // Convert published/depublished strings to DateTime objects.
                     if (isset($selfDataForHydration['published']) && is_string($selfDataForHydration['published'])) {
                         try {
-                            $selfDataForHydration['published'] = new \DateTime($selfDataForHydration['published']);
+                            $selfDataForHydration['published'] = new \DateTime(datetime: $selfDataForHydration['published']);
                         } catch (\Exception $e) {
                             // Keep as string if conversion fails.
                             $this->logger->warning('Failed to convert published date to DateTime', [
@@ -1006,7 +1006,7 @@ class SaveObjects
                     }
                     if (isset($selfDataForHydration['depublished']) && is_string($selfDataForHydration['depublished'])) {
                         try {
-                            $selfDataForHydration['depublished'] = new \DateTime($selfDataForHydration['depublished']);
+                            $selfDataForHydration['depublished'] = new \DateTime(datetime: $selfDataForHydration['depublished']);
                         } catch (\Exception $e) {
                             // Keep as string if conversion fails.
                         }
@@ -1657,6 +1657,7 @@ class SaveObjects
      * Handles string "true"/"false", integers 1/0, and actual booleans
      *
      * @param mixed $value The value to cast to boolean
+     *
      * @return bool The boolean value
      */
     private function castToBoolean($value): bool
@@ -2266,7 +2267,7 @@ class SaveObjects
                     if (isset($incomingData['object']) && is_array($incomingData['object']) && !empty($incomingData['object'])) {
                         $existingObject->setObject($incomingData['object']);
                         if (isset($incomingData['updated'])) {
-                            $existingObject->setUpdated(new \DateTime($incomingData['updated']));
+                            $existingObject->setUpdated(new \DateTime(datetime: $incomingData['updated']));
                         }
                         if (isset($incomingData['owner'])) {
                             $existingObject->setOwner($incomingData['owner']);
@@ -2275,7 +2276,7 @@ class SaveObjects
                             $existingObject->setOrganisation($incomingData['organisation']);
                         }
                         if (isset($incomingData['published'])) {
-                            $existingObject->setPublished(new \DateTime($incomingData['published']));
+                            $existingObject->setPublished(new \DateTime(datetime: $incomingData['published']));
                         }
 
                         // CRITICAL FIX: Update register and schema to support object migration between registers/schemas.

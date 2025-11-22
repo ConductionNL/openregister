@@ -1727,33 +1727,27 @@ class SolrSchemaService
         // Check if it's a Kubernetes service name (contains .svc.cluster.local).
         if (strpos($host, '.svc.cluster.local') !== false) {
             // Kubernetes service - don't append port, it's handled by the service.
-            $url = sprintf(
-                    '%s://%s%s/%s/schema',
-                $solrConfig['scheme'] ?? 'http',
+            $url = sprintf(format: (
+                    '%s://%s%s/%s/schema', $solrConfig['scheme'] ?? 'http',
                 $host,
                 $solrConfig['path'] ?? '/solr',
-                $baseCollectionName
-            );
+                $baseCollectionName);
         } else {
             // Regular hostname - only append port if explicitly provided and not 0/null.
             if ($port !== null && $port > 0) {
-                $url = sprintf(
-                        '%s://%s:%d%s/%s/schema',
-                    $solrConfig['scheme'] ?? 'http',
+                $url = sprintf(format: (
+                        '%s://%s:%d%s/%s/schema', $solrConfig['scheme'] ?? 'http',
                     $host,
                     $port,
                     $solrConfig['path'] ?? '/solr',
-                    $baseCollectionName
-                );
+                    $baseCollectionName);
             } else {
                 // No port provided - let the service handle it.
-                $url = sprintf(
-                        '%s://%s%s/%s/schema',
-                    $solrConfig['scheme'] ?? 'http',
+                $url = sprintf(format: (
+                        '%s://%s%s/%s/schema', $solrConfig['scheme'] ?? 'http',
                     $host,
                     $solrConfig['path'] ?? '/solr',
-                    $baseCollectionName
-                );
+                    $baseCollectionName);
             }
         }//end if
 
@@ -1923,9 +1917,8 @@ class SolrSchemaService
 
         return [
             'success'           => empty($errors),
-            'message'           => sprintf(
-                '%s: %d created, %d errors',
-                $dryRun ? 'Dry run' : 'Created fields',
+            'message'           => sprintf(format: (
+                '%s: %d created, %d errors', $dryRun ? 'Dry run' : 'Created fields',
                 count($created),
                 count($errors)
             ),

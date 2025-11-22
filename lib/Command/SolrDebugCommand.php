@@ -334,13 +334,11 @@ class SolrDebugCommand extends Command
     private function testSolrAdminAPI(OutputInterface $output, array $solrSettings): void
     {
         // Test cores listing (standalone SOLR).
-        $coresUrl = sprintf(
-            '%s://%s:%d%s/admin/cores?action=STATUS&wt=json',
-            $solrSettings['scheme'],
+        $coresUrl = sprintf(format: (
+            '%s://%s:%d%s/admin/cores?action=STATUS&wt=json', $solrSettings['scheme'],
             $solrSettings['host'],
             $solrSettings['port'],
-            $solrSettings['path']
-        );
+            $solrSettings['path']);
 
         $output->writeln("  Testing cores API: <comment>$coresUrl</comment>");
 
@@ -360,13 +358,11 @@ class SolrDebugCommand extends Command
         }
 
         // Test collections listing (SolrCloud).
-        $collectionsUrl = sprintf(
-            '%s://%s:%d%s/admin/collections?action=CLUSTERSTATUS&wt=json',
-            $solrSettings['scheme'],
+        $collectionsUrl = sprintf(format: (
+            '%s://%s:%d%s/admin/collections?action=CLUSTERSTATUS&wt=json', $solrSettings['scheme'],
             $solrSettings['host'],
             $solrSettings['port'],
-            $solrSettings['path']
-        );
+            $solrSettings['path']);
 
         $output->writeln("  Testing collections API: <comment>$collectionsUrl</comment>");
 
@@ -385,13 +381,11 @@ class SolrDebugCommand extends Command
         }
 
         // Test configSets listing.
-        $configSetsUrl = sprintf(
-            '%s://%s:%d%s/admin/configs?action=LIST&wt=json',
-            $solrSettings['scheme'],
+        $configSetsUrl = sprintf(format: (
+            '%s://%s:%d%s/admin/configs?action=LIST&wt=json', $solrSettings['scheme'],
             $solrSettings['host'],
             $solrSettings['port'],
-            $solrSettings['path']
-        );
+            $solrSettings['path']);
 
         $output->writeln("  Testing configSets API: <comment>$configSetsUrl</comment>");
 

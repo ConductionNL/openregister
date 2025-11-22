@@ -61,7 +61,7 @@ class Version1Date20251105150000 extends SimpleMigrationStep
 
         // Create conversations table.
         if ($schema->hasTable('openregister_conversations') === false) {
-            $output->info('💬 Creating conversations table...');
+            $output->info(message: ('💬 Creating conversations table...');
 
             $table = $schema->createTable('openregister_conversations');
 
@@ -184,13 +184,13 @@ class Version1Date20251105150000 extends SimpleMigrationStep
             $table->addIndex(['created'], 'conversations_created_index');
             $table->addIndex(['user_id', 'organisation', 'deleted_at'], 'conversations_user_org_deleted_index');
 
-            $output->info('✅ Conversations table created');
+            $output->info(message: ('✅ Conversations table created');
             $updated = true;
         }//end if
 
         // Create messages table.
         if ($schema->hasTable('openregister_messages') === false) {
-            $output->info('💬 Creating messages table...');
+            $output->info(message: ('💬 Creating messages table...');
 
             $table = $schema->createTable('openregister_messages');
 
@@ -285,13 +285,13 @@ class Version1Date20251105150000 extends SimpleMigrationStep
                 'messages_conversation_fk'
             );
 
-            $output->info('✅ Messages table created');
+            $output->info(message: ('✅ Messages table created');
             $updated = true;
         }//end if
 
         // Update agents table with new columns.
         if ($schema->hasTable('openregister_agents') === true) {
-            $output->info('🤖 Updating agents table with new columns...');
+            $output->info(message: ('🤖 Updating agents table with new columns...');
 
             $table = $schema->getTable('openregister_agents');
 
@@ -306,7 +306,7 @@ class Version1Date20251105150000 extends SimpleMigrationStep
                             'comment' => 'JSON array of view UUIDs for data scope',
                         ]
                         );
-                $output->info('  ✅ Added views column');
+                $output->info(message: ('  ✅ Added views column');
                 $updated = true;
             }
 
@@ -321,7 +321,7 @@ class Version1Date20251105150000 extends SimpleMigrationStep
                             'comment' => 'Whether agent searches in files',
                         ]
                         );
-                $output->info('  ✅ Added search_files column');
+                $output->info(message: ('  ✅ Added search_files column');
                 $updated = true;
             }
 
@@ -336,7 +336,7 @@ class Version1Date20251105150000 extends SimpleMigrationStep
                             'comment' => 'Whether agent searches in objects',
                         ]
                         );
-                $output->info('  ✅ Added search_objects column');
+                $output->info(message: ('  ✅ Added search_objects column');
                 $updated = true;
             }
 
@@ -351,7 +351,7 @@ class Version1Date20251105150000 extends SimpleMigrationStep
                             'comment' => 'Whether agent is private (not shared with org)',
                         ]
                         );
-                $output->info('  ✅ Added is_private column');
+                $output->info(message: ('  ✅ Added is_private column');
                 $updated = true;
             }
 
@@ -366,11 +366,11 @@ class Version1Date20251105150000 extends SimpleMigrationStep
                             'comment' => 'JSON array of user IDs with access to private agent',
                         ]
                         );
-                $output->info('  ✅ Added invited_users column');
+                $output->info(message: ('  ✅ Added invited_users column');
                 $updated = true;
             }
 
-            $output->info('✅ Agents table updated');
+            $output->info(message: ('✅ Agents table updated');
         }//end if
 
         if ($updated === true) {

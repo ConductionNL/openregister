@@ -58,7 +58,7 @@ class FileSearchController extends Controller
         private readonly SettingsService $settingsService,
         private readonly LoggerInterface $logger
     ) {
-        parent::__construct($appName, $request);
+        parent::__construct(appName: $appName, request: $request);
 
     }//end __construct()
 
@@ -81,9 +81,9 @@ class FileSearchController extends Controller
 
             if (empty($query) === true) {
                 return new JSONResponse(
-                        [
-                            'success' => false,
-                            'message' => 'Query parameter is required',
+                        data: [
+                            'success' => false, statusCode:
+                'message' => 'Query parameter is required',
                         ],
                         400
                         );
@@ -94,9 +94,9 @@ class FileSearchController extends Controller
             $fileCollection = $settings['solr']['fileCollection'] ?? null;
             if ($fileCollection === null || $fileCollection === '') {
                 return new JSONResponse(
-                        [
-                            'success' => false,
-                            'message' => 'File collection not configured',
+                        data: [
+                            'success' => false, statusCode:
+                'message' => 'File collection not configured',
                         ],
                         422
                         );
@@ -164,9 +164,9 @@ class FileSearchController extends Controller
             }
 
             return new JSONResponse(
-                    [
-                        'success'     => true,
-                        'query'       => $query,
+                    data: [
+                        'success'     => true, statusCode:
+            'query'       => $query,
                         'total'       => $numFound,
                         'results'     => array_values($groupedResults),
                         'search_type' => 'keyword',
@@ -181,9 +181,9 @@ class FileSearchController extends Controller
                     );
 
             return new JSONResponse(
-                    [
-                        'success' => false,
-                        'message' => 'Search failed: '.$e->getMessage(),
+                    data: [
+                        'success' => false, statusCode:
+            'message' => 'Search failed: '.$e->getMessage(),
                     ],
                     500
                     );
@@ -222,9 +222,9 @@ class FileSearchController extends Controller
 
             if (empty($query) === true) {
                 return new JSONResponse(
-                        [
-                            'success' => false,
-                            'message' => 'Query parameter is required',
+                        data: [
+                            'success' => false, statusCode:
+                'message' => 'Query parameter is required',
                         ],
                         400
                         );
@@ -238,9 +238,9 @@ class FileSearchController extends Controller
             );
 
             return new JSONResponse(
-                    [
-                        'success'     => true,
-                        'query'       => $query,
+                    data: [
+                        'success'     => true, statusCode:
+            'query'       => $query,
                         'total'       => count($results),
                         'results'     => $results,
                         'search_type' => 'semantic',
@@ -255,9 +255,9 @@ class FileSearchController extends Controller
                     );
 
             return new JSONResponse(
-                    [
-                        'success' => false,
-                        'message' => 'Semantic search failed: '.$e->getMessage(),
+                    data: [
+                        'success' => false, statusCode:
+            'message' => 'Semantic search failed: '.$e->getMessage(),
                     ],
                     500
                     );
@@ -299,9 +299,9 @@ class FileSearchController extends Controller
 
             if (empty($query) === true) {
                 return new JSONResponse(
-                        [
-                            'success' => false,
-                            'message' => 'Query parameter is required',
+                        data: [
+                            'success' => false, statusCode:
+                'message' => 'Query parameter is required',
                         ],
                         400
                         );
@@ -316,9 +316,9 @@ class FileSearchController extends Controller
             );
 
             return new JSONResponse(
-                    [
-                        'success'     => true,
-                        'query'       => $query,
+                    data: [
+                        'success'     => true, statusCode:
+            'query'       => $query,
                         'total'       => count($results),
                         'results'     => $results,
                         'search_type' => 'hybrid',
@@ -337,9 +337,9 @@ class FileSearchController extends Controller
                     );
 
             return new JSONResponse(
-                    [
-                        'success' => false,
-                        'message' => 'Hybrid search failed: '.$e->getMessage(),
+                    data: [
+                        'success' => false, statusCode:
+            'message' => 'Hybrid search failed: '.$e->getMessage(),
                     ],
                     500
                     );

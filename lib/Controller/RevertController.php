@@ -48,7 +48,7 @@ class RevertController extends Controller
         IRequest $request,
         private readonly RevertService $revertService
     ) {
-        parent::__construct($appName, $request);
+        parent::__construct(appName: $appName, request: $request);
 
     }//end __construct()
 
@@ -81,7 +81,7 @@ class RevertController extends Controller
             // Parse the revert point.
             $until = null;
             if (isset($data['datetime']) === true) {
-                $until = new \DateTime($data['datetime']);
+                $until = new \DateTime(datetime: $data['datetime']);
             } else if (isset($data['auditTrailId']) === true) {
                 $until = $data['auditTrailId'];
             } else if (isset($data['version']) === true) {
@@ -107,7 +107,7 @@ class RevertController extends Controller
                 overwriteVersion: $overwriteVersion
             );
 
-            return new JSONResponse($revertedObject->jsonSerialize());
+            return new JSONResponse(data: $revertedObject->jsonSerialize());
         } catch (DoesNotExistException $e) {
             return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
         } catch (NotAuthorizedException $e) {

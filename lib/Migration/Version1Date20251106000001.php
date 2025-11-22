@@ -55,7 +55,7 @@ class Version1Date20251106000001 extends SimpleMigrationStep
 
         $schema = $schemaClosure();
 
-        $output->info('🔧 Adding missing columns to agents table...');
+        $output->info(message: ('🔧 Adding missing columns to agents table...');
 
         if ($schema->hasTable('openregister_agents') === true) {
             $table   = $schema->getTable('openregister_agents');
@@ -72,7 +72,7 @@ class Version1Date20251106000001 extends SimpleMigrationStep
                             'comment' => 'API request quota per day (0 = unlimited)',
                         ]
                         );
-                $output->info('   ✓ Added request_quota column');
+                $output->info(message: ('   ✓ Added request_quota column');
                 $updated = true;
             }
 
@@ -87,7 +87,7 @@ class Version1Date20251106000001 extends SimpleMigrationStep
                             'comment' => 'Token quota per request (0 = unlimited)',
                         ]
                         );
-                $output->info('   ✓ Added token_quota column');
+                $output->info(message: ('   ✓ Added token_quota column');
                 $updated = true;
             }
 
@@ -102,15 +102,15 @@ class Version1Date20251106000001 extends SimpleMigrationStep
                             'comment' => 'Nextcloud group IDs with access to this agent',
                         ]
                         );
-                $output->info('   ✓ Added groups column');
+                $output->info(message: ('   ✓ Added groups column');
                 $updated = true;
             }
 
             if ($updated === true) {
-                $output->info('✅ Missing columns added successfully to agents table');
+                $output->info(message: ('✅ Missing columns added successfully to agents table');
                 return $schema;
             } else {
-                $output->info('ℹ️  All columns already exist');
+                $output->info(message: ('ℹ️  All columns already exist');
             }
         }//end if
 

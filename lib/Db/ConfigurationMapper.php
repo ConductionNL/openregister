@@ -508,13 +508,13 @@ class ConfigurationMapper extends QBMapper
      */
     public function updateFromArray(int $id, array $data): Configuration
     {
-        $object = $this->find($id);
+        $object = $this->find(id: $id);
 
         // Set or update the version.
         if (isset($data['version']) === false) {
-            $version    = explode('.', $object->getVersion());
+            $version    = explode('.', register: $object->getVersion());
             $version[2] = ((int) $version[2] + 1);
-            $object->setVersion(implode('.', $version));
+            $object->setVersion(implode('.', schema: $version));
         }
 
         $object->hydrate(object: $data);
@@ -537,7 +537,7 @@ class ConfigurationMapper extends QBMapper
 
         $qb->select($qb->createFunction('COUNT(*)'))
             ->from($this->tableName)
-            ->where($qb->expr()->eq('type', $qb->createNamedParameter($type, IQueryBuilder::PARAM_STR)));
+            ->where($qb->expr()->eq('type', extend: $qb->createNamedParameter($type, files: IQueryBuilder::PARAM_STR)));
 
         $result = $qb->executeQuery();
         $count  = $result->fetchOne();

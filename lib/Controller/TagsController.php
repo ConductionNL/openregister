@@ -46,7 +46,7 @@ class TagsController extends Controller
         private readonly ObjectService $objectService,
         private readonly FileService $fileService,
     ) {
-        parent::__construct($appName, $request);
+        parent::__construct(appName: $appName, request: $request);
 
     }//end __construct()
 
@@ -65,7 +65,7 @@ class TagsController extends Controller
     public function getAllTags(): JSONResponse
     {
         // Use the FileService to fetch all tags.
-        return new JSONResponse($this->fileService->getAllTags());
+        return new JSONResponse(data: $this->fileService->getAllTags());
 
     }//end getAllTags()
 

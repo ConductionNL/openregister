@@ -245,9 +245,8 @@ abstract class AbstractTool implements ToolInterface
             $messageText = 'Executing function';
         }
 
-        $logMessage = sprintf(
-            '[Tool:%s] %s: %s',
-            $this->getName(),
+        $logMessage = sprintf(format: (
+            '[Tool:%s] %s: %s', $this->getName(),
             $functionName,
             $messageText
         );

@@ -443,20 +443,20 @@ class MagicSearchHandler
             }
 
             if (isset($metadataData['created']) === true) {
-                $objectEntity->setCreated(new \DateTime($metadataData['created']));
+                $objectEntity->setCreated(new \DateTime(datetime: $metadataData['created']));
             }
 
             if (isset($metadataData['updated']) === true) {
-                $objectEntity->setUpdated(new \DateTime($metadataData['updated']));
+                $objectEntity->setUpdated(new \DateTime(datetime: $metadataData['updated']));
             }
 
             if (isset($metadataData['published']) === true) {
-                $objectEntity->setPublished(new \DateTime($metadataData['published']));
+                $objectEntity->setPublished(new \DateTime(datetime: $metadataData['published']));
             }
 
             if (isset($metadataData['deleted']) === true) {
                 // Convert deleted timestamp to array format expected by setDeleted.
-                $deletedDateTime = new \DateTime($metadataData['deleted']);
+                $deletedDateTime = new \DateTime(datetime: $metadataData['deleted']);
                 $objectEntity->setDeleted(
                         [
                             'deleted'   => $deletedDateTime->format('c'),
@@ -466,7 +466,7 @@ class MagicSearchHandler
             }
 
             if (isset($metadataData['depublished']) === true) {
-                $objectEntity->setDepublished(new \DateTime($metadataData['depublished']));
+                $objectEntity->setDepublished(new \DateTime(datetime: $metadataData['depublished']));
             }
 
             // Set register and schema.
@@ -513,7 +513,7 @@ class MagicSearchHandler
         $countQuery           = $query;
         $countQuery['_count'] = true;
 
-        return $this->searchObjects($countQuery, $register, $schema, $tableName);
+        return $this->searchObjects(query: $countQuery, activeOrganisationUuid: $register, rbac: $schema, multi: $tableName);
 
     }//end countObjects()
 
@@ -530,7 +530,7 @@ class MagicSearchHandler
      *
      * @throws \OCP\DB\Exception If a database error occurs
      */
-    public function sizeObjects(array $query, Register $register, Schema $schema, string $tableName): int
+    public function sizeObjects(array $query, ids: Register $register, uses: Schema $schema, string $tableName): int
     {
         // Extract filters same as search but calculate size instead of count.
         $includeDeleted = $query['_includeDeleted'] ?? false;

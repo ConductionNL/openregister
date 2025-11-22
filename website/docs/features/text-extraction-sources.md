@@ -628,6 +628,7 @@ By processing both files and objects into a common chunk format, OpenRegister cr
 ---
 
 **Next Steps**:
+- **[Text Extraction, Vectorization & Named Entity Recognition](../Features/text-extraction-vectorization-ner.md)** - Unified documentation for text extraction, vectorization, and NER
 - [Enhanced Text Extraction Documentation](./text-extraction-enhanced.md)
 - [GDPR Entity Tracking](./text-extraction-enhanced.md#gdpr-entity-register)
 - [Language Detection](./text-extraction-enhanced.md#language-detection--assessment)

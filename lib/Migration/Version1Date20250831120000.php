@@ -74,7 +74,7 @@ class Version1Date20250831120000 extends SimpleMigrationStep
                         'comment' => 'Size of the search trail entry in bytes',
                     ]
                     );
-            $output->info('Added size column to openregister_search_trails table');
+            $output->info(message: ('Added size column to openregister_search_trails table');
         }
 
         return $schema;

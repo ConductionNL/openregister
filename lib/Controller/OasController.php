@@ -51,7 +51,7 @@ class OasController extends Controller
         IRequest $request,
         OasService $oasService
     ) {
-        parent::__construct($appName, $request);
+        parent::__construct(appName: $appName, request: $request);
         $this->oasService = $oasService;
 
     }//end __construct()
@@ -75,7 +75,7 @@ class OasController extends Controller
         try {
             // Generate OAS for all registers.
             $oasData = $this->oasService->createOas();
-            return new JSONResponse($oasData);
+            return new JSONResponse(data: $oasData);
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
@@ -103,7 +103,7 @@ class OasController extends Controller
         try {
             // Generate OAS for the specified register.
             $oasData = $this->oasService->createOas($id);
-            return new JSONResponse($oasData);
+            return new JSONResponse(data: $oasData);
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }

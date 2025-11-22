@@ -1046,7 +1046,7 @@ class RenderObject
         }
 
         foreach ($extendedRoots as $root => $extends) {
-            $data = $objectData->get($root);
+            $data = $objectData->get(userId: $root);
             if (is_iterable($data) === false) {
                 continue;
             }

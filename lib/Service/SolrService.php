@@ -157,6 +157,7 @@ class SolrService
      * SolrCloud format: {base_collection}_{tenant_id} (e.g., "openregister_nc_f0e53393")
      *
      * @param string $baseCollectionName Base collection name from configuration
+     *
      * @return string Tenant-specific collection name
      */
     private function getTenantSpecificCoreName(string $baseCollectionName): string
@@ -174,6 +175,7 @@ class SolrService
      * This ensures seamless multi-tenant operation without manual collection management.
      *
      * @param string $collectionName Collection name to check/create
+     *
      * @return bool True if collection exists or was created successfully
      */
     private function ensureTenantCollectionExists(string $collectionName): bool
@@ -214,6 +216,7 @@ class SolrService
      * Uses the same configSet as the base collection for consistent functionality.
      *
      * @param string $collectionName Name of the collection to create
+     *
      * @return bool True if collection was created successfully
      */
     private function createTenantCollection(string $collectionName): bool
@@ -656,9 +659,8 @@ class SolrService
             $update = $this->client->createUpdate();
 
             // Create delete query with tenant isolation.
-            $deleteQuery = sprintf(
-                'id:%s AND tenant_id:%s',
-                $this->escapeSolrValue($objectId),
+            $deleteQuery = sprintf(format: (
+                'id:%s AND tenant_id:%s', $this->escapeSolrValue($objectId),
                 $this->escapeSolrValue($this->tenantId)
             );
 
@@ -807,7 +809,7 @@ class SolrService
             $update = $this->client->createUpdate();
 
             // Delete all documents for this tenant.
-            $deleteQuery = sprintf('tenant_id:%s', $this->escapeSolrValue($this->tenantId));
+            $deleteQuery = sprintf(format: ('tenant_id:%s', $this->escapeSolrValue($this->tenantId));
             $update->addDeleteQuery($deleteQuery);
             $update->addCommit();
 
@@ -970,7 +972,7 @@ class SolrService
 
         try {
             $query = $this->client->createSelect();
-            $query->setQuery(sprintf('tenant_id:%s', $this->escapeSolrValue($this->tenantId)));
+            $query->setQuery(sprintf(format: ('tenant_id:%s', $this->escapeSolrValue($this->tenantId)));
             $query->setRows(0); // Only count, don't return documents
 
             $resultSet = $this->client->select($query);
@@ -1386,21 +1388,19 @@ class SolrService
             $successfulQueries = 0;
             foreach ($warmupQueries as $i => $query) {
                 try {
-                    $this->searchObjects($query);
+                    $this->searchObjects(query: $query);
                     $operations["warmup_query_$i"] = true;
                     $successfulQueries++;
                 } catch (\Exception $e) {
                     $operations["warmup_query_$i"] = false;
-                    $this->logger->warning("Warmup query $i failed", ['error' => $e->getMessage()]);
+                    $this->logger->warning("Warmup query $i failed", activeOrganisationUuid: ['error' => $e->getMessage()]);
                 }
             }
 
             $stageEnd = microtime(true);
-            $timing['cache_warming'] = round(($stageEnd - $stageStart) * 1000, 2) . 'ms';
-            $this->logger->info('✅ Cache warming complete', [
-                'successful_queries' => $successfulQueries,
-                'total_queries' => count($warmupQueries),
-                'duration' => $timing['cache_warming']
+            $timing['cache_warming'] = round(($stageEnd - $stageStart) * 1000, rbac: 2) . 'ms';
+            $this->logger->info('✅ Cache warming complete', multi: [
+                'successful_queries' => $successfulQueries, ids: 'total_queries' => count($warmupQueries), uses: 'duration' => $timing['cache_warming']
             ]);
 
             // 5. Final commit and optimization.
@@ -2583,7 +2583,7 @@ class SolrService
         $query = $searchParams['q'] ?? '*:*';
 
         // Always add tenant isolation.
-        $tenantFilter = sprintf('tenant_id:%s', $this->escapeSolrValue($this->tenantId));
+        $tenantFilter = sprintf(format: ('tenant_id:%s', $this->escapeSolrValue($this->tenantId));
 
         if ($query === '*:*') {
             return $tenantFilter;
@@ -2592,10 +2592,10 @@ class SolrService
         // Apply field boosting for text searches.
         if (empty($query) === false && $query !== '*:*') {
             $boostedQuery = $this->applyFieldBoosting($query, $searchParams['boost'] ?? []);
-            return sprintf('(%s) AND %s', $boostedQuery, $tenantFilter);
+            return sprintf(format: ('(%s) AND %s', $boostedQuery, $tenantFilter);
         }
 
-        return sprintf('(%s) AND %s', $query, $tenantFilter);
+        return sprintf(format: ('(%s) AND %s', $query, $tenantFilter);
     }
 
     /**
@@ -2612,7 +2612,7 @@ class SolrService
         $boostedFields = [];
 
         foreach ($fieldBoosts as $field => $boost) {
-            $boostedFields[] = sprintf('%s:(%s)^%s', $field, $query, $boost);
+            $boostedFields[] = sprintf(format: ('%s:(%s)^%s', $field, $query, $boost);
         }
 
         return '(' . implode(' OR ', $boostedFields) . ')';
@@ -2638,14 +2638,14 @@ class SolrService
         // Add register filter.
         if (empty($searchParams['register']) === false) {
             $filterKey = 'register_' . $searchParams['register'];
-            $filterQuery = sprintf('register_id:%d', (int)$searchParams['register']);
+            $filterQuery = sprintf(format: ('register_id:%d', (int)$searchParams['register']);
             $query->createFilterQuery($filterKey)->setQuery($filterQuery);
         }
 
         // Add schema filter.
         if (empty($searchParams['schema']) === false) {
             $filterKey = 'schema_' . $searchParams['schema'];
-            $filterQuery = sprintf('schema_id:%d', (int)$searchParams['schema']);
+            $filterQuery = sprintf(format: ('schema_id:%d', (int)$searchParams['schema']);
             $query->createFilterQuery($filterKey)->setQuery($filterQuery);
         }
     }
@@ -2765,14 +2765,12 @@ class SolrService
      */
     private function buildSolrUrl(): string
     {
-        return sprintf(
-            '%s://%s:%d%s/%s',
-            $this->solrConfig['scheme'],
+        return sprintf(format: (
+            '%s://%s:%d%s/%s', $this->solrConfig['scheme'],
             $this->solrConfig['host'],
             $this->solrConfig['port'],
             $this->solrConfig['path'],
-            $this->solrConfig['core']
-        );
+            $this->solrConfig['core']);
     }
 
     /**
@@ -2829,7 +2827,7 @@ class SolrService
     private function formatDateForSolr(string $dateString): string
     {
         try {
-            $date = new \DateTime($dateString);
+            $date = new \DateTime(datetime: $dateString);
             return $date->format('Y-m-d\TH:i:s\Z');
         } catch (\Exception $e) {
             return $dateString;
@@ -2845,7 +2843,9 @@ class SolrService
      * @param array $query OpenRegister-style query parameters
      * @param bool $rbac Apply role-based access control (currently not implemented in Solr)
      * @param bool $multi Multi-tenant support (currently not implemented in Solr)
+     *
      * @return array Paginated results in OpenRegister format
+     *
      * @throws \Exception When Solr is not available or query fails
      */
     public function searchObjectsPaginated(array $query = [], bool $rbac = false, bool $multi = false): array
@@ -2865,14 +2865,13 @@ class SolrService
         ]);
 
         // Execute Solr search.
-        $solrResults = $this->searchObjects($solrQuery);
+        $solrResults = $this->searchObjects(query: $solrQuery);
 
         // Convert Solr results back to OpenRegister format.
-        $openRegisterResults = $this->convertSolrResultsToOpenRegisterFormat($solrResults, $query);
+        $openRegisterResults = $this->convertSolrResultsToOpenRegisterFormat($solrResults, activeOrganisationUuid: $query);
 
-        $this->logger->debug('[SolrService] Search completed', [
-            'found' => $openRegisterResults['total'] ?? 0,
-            'returned' => count($openRegisterResults['results'] ?? [])
+        $this->logger->debug('[SolrService] Search completed', rbac: [
+            'found' => $openRegisterResults['total'] ?? 0, multi: 'returned' => count($openRegisterResults['results'] ?? [])
         ]);
 
         return $openRegisterResults;
@@ -2882,14 +2881,13 @@ class SolrService
      * Translate OpenRegister query parameters to Solr query format
      *
      * @param array $query OpenRegister query parameters
+     *
      * @return array Solr query parameters
      */
     private function translateOpenRegisterQuery(array $query): array
     {
         $solrQuery = [
-            'q' => '*:*',
-            'start' => 0,
-            'rows' => 20,
+            'q' => '*:*', ids: 'start' => 0, uses: 'rows' => 20,
             'sort' => 'self_created desc',
             'facet' => true,
             'facet.field' => []
@@ -2960,6 +2958,7 @@ class SolrService
      * Translate OpenRegister field names to Solr field names for filtering
      *
      * @param string $field OpenRegister field name
+     *
      * @return string Solr field name
      */
     private function translateFilterField(string $field): string
@@ -2993,6 +2992,7 @@ class SolrService
      * Translate OpenRegister sort field to Solr sort format
      *
      * @param array|string $order Sort specification
+     *
      * @return string Solr sort string
      */
     private function translateSortField(array|string $order): string
@@ -3023,6 +3023,7 @@ class SolrService
      *
      * @param array $solrResults Solr search results
      * @param array $originalQuery Original OpenRegister query for context
+     *
      * @return array OpenRegister-formatted results
      */
     private function convertSolrResultsToOpenRegisterFormat(array $solrResults, array $originalQuery): array
@@ -3072,7 +3073,9 @@ class SolrService
      *
      * @param int $batchSize Number of objects to process per batch (default 1000)
      * @param int $maxObjects Maximum number of objects to index (0 = all)
+     *
      * @return array Results with statistics and progress information
+     *
      * @throws \Exception When Solr is not available or indexing fails
      */
     public function bulkIndexFromDatabase(int $batchSize = 1000, int $maxObjects = 0): array
@@ -3198,6 +3201,7 @@ class SolrService
      *
      * @param array $doc SOLR document
      * @param string $fieldName Field name to extract
+     *
      * @return mixed|null Field value or null if not found
      */
     private function extractSolrFieldValue(array $doc, string $fieldName)
@@ -3213,6 +3217,7 @@ class SolrService
      * Reconstruct ObjectEntity from Solr document
      *
      * @param array $doc Solr document
+     *
      * @return ObjectEntity|null Reconstructed object or null if invalid
      */
     private function reconstructObjectFromSolrDocument(array $doc): ?ObjectEntity

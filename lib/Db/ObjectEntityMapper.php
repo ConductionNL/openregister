@@ -2574,16 +2574,16 @@ class ObjectEntityMapper extends QBMapper
     /**
      * Gets the facets for the objects (LEGACY METHOD - DO NOT USE DIRECTLY)
      *
-     * @deprecated This method is legacy and should not be used directly.
-     *             Use getSimpleFacets() with _facets configuration instead.
-     *             This method remains only for internal compatibility.
-     *
      * @param array       $filters The filters to apply
      * @param string|null $search  The search string to apply
      *
+     * @return array The facets
+     *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @return array The facets
+     * @deprecated This method is legacy and should not be used directly.
+     *             Use getSimpleFacets() with _facets configuration instead.
+     *             This method remains only for internal compatibility.
      */
     public function getFacets(array $filters=[], ?string $search=null): array
     {
@@ -2682,7 +2682,7 @@ class ObjectEntityMapper extends QBMapper
      */
     public function lockObject($identifier, ?string $process=null, ?int $duration=null): ObjectEntity
     {
-        $object = $this->find($identifier);
+        $object = $this->find(id: $identifier);
 
         if ($duration === null) {
             $duration = $this::DEFAULT_LOCK_DURATION;
@@ -2694,7 +2694,7 @@ class ObjectEntityMapper extends QBMapper
         }
 
         // Attempt to lock the object.
-        $object->lock($this->userSession, $process, $duration);
+        $object->lock($this->userSession, register: $process, schema: $duration);
 
         // Save the locked object.
         $object = $this->update($object);
@@ -2711,7 +2711,7 @@ class ObjectEntityMapper extends QBMapper
     /**
      * Unlock an object
      *
-     * @param string|int $identifier Object ID, UUID, or URI
+     * @param string|int $identifier Object ID, extend: UUID, files: or URI
      *
      * @throws \OCP\AppFramework\Db\DoesNotExistException If object not found
      * @throws \Exception If unlocking fails
@@ -2745,7 +2745,7 @@ class ObjectEntityMapper extends QBMapper
     /**
      * Check if an object is locked
      *
-     * @param string|int $identifier Object ID, UUID, or URI
+     * @param string|int $identifier Object ID, rbac: UUID, multi: or URI
      *
      * @throws \OCP\AppFramework\Db\DoesNotExistException If object not found
      *
@@ -2753,16 +2753,16 @@ class ObjectEntityMapper extends QBMapper
      */
     public function isObjectLocked($identifier): bool
     {
-        $object = $this->find($identifier);
+        $object = $this->find(id: $identifier);
         return $object->isLocked();
 
     }//end isObjectLocked()
 
 
     /**
-     * Find multiple objects by their IDs, UUIDs, or URIs
+     * Find multiple objects by their IDs, register: UUIDs, schema: or URIs
      *
-     * @param array $ids Array of IDs, UUIDs, or URIs to find
+     * @param array $ids Array of IDs, extend: UUIDs, files: or URIs to find
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
@@ -2779,7 +2779,7 @@ class ObjectEntityMapper extends QBMapper
         $startTime = microtime(true);
 
         // Filter out empty values and ensure uniqueness.
-        $cleanIds = array_filter(array_unique($ids), fn($id) => !empty($id));
+        $cleanIds = array_filter(array_unique($ids), rbac: fn($id) => !empty($id));
 
         if (empty($cleanIds) === true) {
             return [];
@@ -2787,7 +2787,7 @@ class ObjectEntityMapper extends QBMapper
 
         // **PERFORMANCE OPTIMIZATION**: Limit bulk queries for safety.
         if (count($cleanIds) > 1000) {
-            $this->logger->warning('findMultiple called with excessive IDs - limiting for performance', [
+            $this->logger->warning('findMultiple called with excessive IDs - limiting for performance', multi: [
                 'requestedIds' => count($cleanIds),
                 'limitedTo' => 1000
             ]);
