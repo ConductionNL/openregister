@@ -1054,7 +1054,7 @@ class FileService
                 $value = trim($value);
 
                 // Skip if key exists in base metadata.
-                if (isset($metadata[$key])) {
+                if (isset($metadata[$key]) === true) {
                     $remainingLabels[] = $label;
                     continue;
                 }
@@ -1201,19 +1201,19 @@ class FileService
         $filters = [];
 
         // Labels filtering (business logic filters prefixed with underscore).
-        if (isset($requestParams['_hasLabels'])) {
+        if (isset($requestParams['_hasLabels']) === true) {
             $filters['_hasLabels'] = (bool) $requestParams['_hasLabels'];
         }
 
-        if (isset($requestParams['_noLabels'])) {
+        if (isset($requestParams['_noLabels']) === true) {
             $filters['_noLabels'] = (bool) $requestParams['_noLabels'];
         }
 
-        if (isset($requestParams['labels'])) {
+        if (isset($requestParams['labels']) === true) {
             $labels = $requestParams['labels'];
-            if (is_string($labels)) {
+            if (is_string($labels) === true) {
                 $filters['labels'] = array_map('trim', explode(',', $labels));
-            } else if (is_array($labels)) {
+            } elseif (is_array($labels) === true) {
                 $filters['labels'] = $labels;
             }
         }
@@ -3276,7 +3276,7 @@ class FileService
     {
         $results = [
             'file_id' => $fileId,
-            'object_id' => $object ? $object->getId() : null,
+            'object_id' => $this->getObjectId($object),
             'tests' => []
         ];
 
@@ -3308,7 +3308,7 @@ class FileService
             }
             $results['tests']['file_in_object_folder'] = [
                 'success' => $fileInObjectFolder,
-                'message' => $fileInObjectFolder ? "File $fileId found in object folder" : "File $fileId NOT found in object folder"
+                'message' => $this->getFileInObjectFolderMessage($fileInObjectFolder, $fileId)
             ];
         }
 
