@@ -195,7 +195,7 @@ class SourcesController extends Controller
         unset($data['created']);
 
         // Update the source with the provided data.
-        return new JSONResponse(data: $this->sourceMapper->updateFromArray(id: $id, statusCode: object: $data));
+        return new JSONResponse(data: $this->sourceMapper->updateFromArray(id: $id, object: $data));
 
     }//end update()
 

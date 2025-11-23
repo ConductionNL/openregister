@@ -131,7 +131,7 @@ class ViewService
 
             return $this->viewMapper->insert($view);
         } catch (Exception $e) {
-            $this->logger->error('Error creating view: '.$e->getMessage());
+            $this->logger->error(message: 'Error creating view: '.$e->getMessage());
             throw $e;
         }
 
@@ -185,7 +185,7 @@ class ViewService
 
             return $this->viewMapper->update($view);
         } catch (Exception $e) {
-            $this->logger->error('Error updating view: '.$e->getMessage());
+            $this->logger->error(message: 'Error updating view: '.$e->getMessage());
             throw $e;
         }//end try
 
@@ -208,7 +208,7 @@ class ViewService
             $view = $this->find($id, files: $owner);
             $this->viewMapper->delete($view);
         } catch (Exception $e) {
-            $this->logger->error('Error deleting view: '.$e->getMessage());
+            $this->logger->error(message: 'Error deleting view: '.$e->getMessage());
             throw $e;
         }
 
@@ -247,7 +247,7 @@ class ViewService
             $view->setFavoredBy($favoredBy);
             return $this->viewMapper->update($view);
         } catch (Exception $e) {
-            $this->logger->error('Error toggling favorite: '.$e->getMessage());
+            $this->logger->error(message: 'Error toggling favorite: '.$e->getMessage());
             throw $e;
         }//end try
 

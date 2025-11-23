@@ -299,7 +299,7 @@ class FilesController extends Controller
 
         $data = $this->request->getParams();
         try {
-            // Get the uploaded file$data = $this->request->getParams();
+            // Get the uploaded file.
             $uploadedFiles = [];
 
             // Check if multiple files have been uploaded.
@@ -313,7 +313,7 @@ class FilesController extends Controller
             // Normalize single file upload to array structure.
             if (isset($files['name']) === true && is_array($files['name']) === false) {
                 $tags = $data['tags'] ?? '';
-                if (!is_array($tags)) {
+                if (is_array($tags) === false) {
                     $tags = explode(',', $tags);
                 }
 
@@ -330,7 +330,7 @@ class FilesController extends Controller
                 // Loop through each file using the count of 'name'.
                 for ($i = 0; $i < count($files['name']); $i++) {
                     $tags = $data['tags'][$i] ?? '';
-                    if (!is_array($tags)) {
+                    if (is_array($tags) === false) {
                         $tags = explode(',', $tags);
                     }
 
@@ -385,7 +385,7 @@ class FilesController extends Controller
                 );
             }//end foreach
 
-            return new JSONResponse(data: $this->fileService->formatFiles($results, statusCode: $this->request->getParams())['results']);
+            return new JSONResponse(data: $this->fileService->formatFiles(files: $results, requestParams: $this->request->getParams())['results']);
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
         }//end try
@@ -400,7 +400,6 @@ class FilesController extends Controller
      * @param string $schema   The schema slug or identifier
      * @param string $id       The ID of the object to retrieve files for
      * @param int    $fileId   ID of the file to update
-     * @param array  $tags     Optional tags to update
      *
      * @return JSONResponse
      *

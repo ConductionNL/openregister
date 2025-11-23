@@ -254,7 +254,7 @@ class OrganisationService
                 }//end try
             } else {
                 // No UUID in settings, create a new default organisation.
-                $this->logger->info('No default organisation found in settings, creating new one');
+                $this->logger->info(message: 'No default organisation found in settings, creating new one');
                 $defaultOrg = $this->createOrganisation('Default Organisation', 'Auto-generated default organisation', false);
 
                 // Store in settings.
@@ -786,7 +786,7 @@ class OrganisationService
         self::$defaultOrganisationCache          = null;
         self::$defaultOrganisationCacheTimestamp = null;
 
-        $this->logger->info('Cleared default organisation static cache');
+        $this->logger->info(message: 'Cleared default organisation static cache');
 
     }//end clearDefaultOrganisationCache()
 
@@ -835,7 +835,7 @@ class OrganisationService
     {
         $adminGroup = $this->groupManager->get('admin');
         if ($adminGroup === null) {
-            $this->logger->warning('Admin group not found');
+            $this->logger->warning(message: 'Admin group not found');
             return [];
         }
 
@@ -1247,7 +1247,7 @@ class OrganisationService
         $activeOrg = $this->getActiveOrganisation();
 
         if ($activeOrg === null) {
-            $this->logger->debug('No active organisation found for user');
+            $this->logger->debug(message: 'No active organisation found for user');
             return [];
         }
 

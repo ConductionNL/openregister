@@ -114,11 +114,11 @@ class UserSettingsController extends Controller
             if ($token === null) {
                 return new JSONResponse(
                         data: [
-                            'hasToken' => false, statusCode:
-                'isValid'  => false,
+                            'hasToken' => false,
+                            'isValid'  => false,
                             'message'  => 'No GitHub token configured',
                         ],
-                        200
+                        statusCode: 200
                         );
             }
 
@@ -128,11 +128,11 @@ class UserSettingsController extends Controller
 
             return new JSONResponse(
                     data: [
-                        'hasToken' => true, statusCode:
-            'isValid'  => $isValid,
+                        'hasToken' => true,
+                        'isValid'  => $isValid,
                         'message'  => $this->getTokenValidationMessage($isValid),
                     ],
-                    200
+                    statusCode: 200
                     );
         } catch (Exception $e) {
             $this->logger->error('Failed to get GitHub token status: '.$e->getMessage());
@@ -184,17 +184,17 @@ class UserSettingsController extends Controller
             }
 
             // Save the token (it's already saved by setUserToken).
-            $this->logger->info("GitHub token set for user: {$user->getUID()}");
+            $this->logger->info(message: "GitHub token set for user: {$user->getUID()}");
 
             return new JSONResponse(
                     data: [
-                        'success' => true, statusCode:
-            'message' => 'GitHub token saved successfully',
+                        'success' => true,
+                        'message' => 'GitHub token saved successfully',
                     ],
-                    200
+                    statusCode: 200
                     );
         } catch (Exception $e) {
-            $this->logger->error('Failed to set GitHub token: '.$e->getMessage());
+            $this->logger->error(message: 'Failed to set GitHub token: '.$e->getMessage());
 
             return new JSONResponse(data: ['error' => 'Failed to save token: '.$e->getMessage()], statusCode: 500);
         }//end try
@@ -232,17 +232,17 @@ class UserSettingsController extends Controller
             // Clear the token.
             $this->gitHubService->setUserToken(null, $user->getUID());
 
-            $this->logger->info("GitHub token removed for user: {$user->getUID()}");
+            $this->logger->info(message: "GitHub token removed for user: {$user->getUID()}");
 
             return new JSONResponse(
                     data: [
-                        'success' => true, statusCode:
-            'message' => 'GitHub token removed successfully',
+                        'success' => true,
+                        'message' => 'GitHub token removed successfully',
                     ],
-                    200
+                    statusCode: 200
                     );
         } catch (Exception $e) {
-            $this->logger->error('Failed to remove GitHub token: '.$e->getMessage());
+            $this->logger->error(message: 'Failed to remove GitHub token: '.$e->getMessage());
 
             return new JSONResponse(data: ['error' => 'Failed to remove token'], statusCode: 500);
         }//end try

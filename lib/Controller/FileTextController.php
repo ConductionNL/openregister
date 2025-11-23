@@ -84,24 +84,24 @@ class FileTextController extends Controller
             if ($fileText === null) {
                 return new JSONResponse(
                         data: [
-                            'success' => false, statusCode:
-                'message' => 'No text found for this file',
+                            'success' => false,
+                            'message' => 'No text found for this file',
                             'file_id' => $fileId,
                         ],
-                        404
+                        statusCode: 404
                         );
             }
 
             return new JSONResponse(
                     data: [
-                        'success'   => true, statusCode:
-            'file_text' => $fileText->jsonSerialize(),
+                        'success'   => true,
+                        'file_text' => $fileText->jsonSerialize(),
                     ]
                     );
         } catch (\Exception $e) {
             $this->logger->error(
-                    '[FileTextController] Failed to get file text',
-                    [
+                    message: '[FileTextController] Failed to get file text',
+                    context: [
                         'file_id' => $fileId,
                         'error'   => $e->getMessage(),
                     ]
@@ -109,9 +109,11 @@ class FileTextController extends Controller
 
             return new JSONResponse(
                     data: [
-                        'success' => false, statusCode:
-            'message' => 'Failed to retrieve file text: '.$e->getMessage(),
+                        'success' => false,
+                        'message' => 'Failed to retrieve file text: '.$e->getMessage(),
                     ],
+                    statusCode: 500
+                    );
                     500
                     );
         }//end try
@@ -134,7 +136,7 @@ class FileTextController extends Controller
         if ($this->config->hasKey(app: 'openregister', key: 'fileManagement') === false
             || json_decode($this->config->getValueString(app: 'openregister', key: 'fileManagement'), true)['extractionScope'] === 'none'
         ) {
-            $this->logger->info('[FileTextController] File extraction is disabled. Not extracting text from files.');
+            $this->logger->info(message: '[FileTextController] File extraction is disabled. Not extracting text from files.');
             return new JSONResponse(data: ['success' => false, 'message' => 'Text extraction disabled'], statusCode: Http::STATUS_NOT_IMPLEMENTED);
         }
 
@@ -144,24 +146,26 @@ class FileTextController extends Controller
             if ($result['success'] === true) {
                 return new JSONResponse(
                         data: [
-                            'success'   => true, statusCode:
-                'message'   => 'Text extracted successfully',
+                            'success'   => true,
+                            'message'   => 'Text extracted successfully',
                             'file_text' => $result['fileText']->jsonSerialize(),
                         ]
                         );
             } else {
                 return new JSONResponse(
                         data: [
-                            'success' => false, statusCode:
-                'message' => $result['error'] ?? 'Extraction failed',
+                            'success' => false,
+                            'message' => $result['error'] ?? 'Extraction failed',
                         ],
+                        statusCode: 400
+                        );
                         422
                         );
             }
         } catch (\Exception $e) {
             $this->logger->error(
-                    '[FileTextController] Failed to extract file text',
-                    [
+                    message: '[FileTextController] Failed to extract file text',
+                    context: [
                         'file_id' => $fileId,
                         'error'   => $e->getMessage(),
                     ]
@@ -169,9 +173,11 @@ class FileTextController extends Controller
 
             return new JSONResponse(
                     data: [
-                        'success' => false, statusCode:
-            'message' => 'Failed to extract file text: '.$e->getMessage(),
+                        'success' => false,
+                        'message' => 'Failed to extract file text: '.$e->getMessage(),
                     ],
+                    statusCode: 500
+                    );
                     500
                     );
         }//end try
@@ -197,8 +203,8 @@ class FileTextController extends Controller
 
             return new JSONResponse(
                     data: [
-                        'success'   => true, statusCode:
-            'processed' => $result['processed'],
+                        'success'   => true,
+                        'processed' => $result['processed'],
                         'succeeded' => $result['succeeded'],
                         'failed'    => $result['failed'],
                         'errors'    => $result['errors'],
@@ -206,8 +212,8 @@ class FileTextController extends Controller
                     );
         } catch (\Exception $e) {
             $this->logger->error(
-                    '[FileTextController] Failed bulk extraction',
-                    [
+                    message: '[FileTextController] Failed bulk extraction',
+                    context: [
                         'error' => $e->getMessage(),
                     ]
                     );
@@ -286,8 +292,8 @@ class FileTextController extends Controller
                     );
         } catch (\Exception $e) {
             $this->logger->error(
-                    '[FileTextController] Failed to delete file text',
-                    [
+                    message: '[FileTextController] Failed to delete file text',
+                    context: [
                         'file_id' => $fileId,
                         'error'   => $e->getMessage(),
                     ]

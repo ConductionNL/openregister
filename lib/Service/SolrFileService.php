@@ -184,7 +184,7 @@ class SolrFileService
 
         try {
             // Step 1: Extract text from file (supports PDF, DOCX, XLSX, PPTX, images, etc.).
-            $this->logger->debug('Step 1: Extracting text from file');
+            $this->logger->debug(message: 'Step 1: Extracting text from file');
             $fullText = $this->extractTextFromFile($filePath);
 
             if (trim($fullText) === '' || trim($fullText) === null) {
@@ -192,7 +192,7 @@ class SolrFileService
             }
 
             // Step 2: Chunk the document intelligently (preserves sentence/paragraph boundaries).
-            $this->logger->debug('Step 2: Chunking document', ['text_length' => strlen($fullText)]);
+            $this->logger->debug(message: 'Step 2: Chunking document', context: ['text_length' => strlen($fullText)]);
             $chunks = $this->chunkDocument(
                     $fullText,
                     [
@@ -208,7 +208,7 @@ class SolrFileService
             }
 
             // Step 3: Index chunks to SOLR fileCollection with metadata.
-            $this->logger->debug('Step 3: Indexing chunks to SOLR', ['chunk_count' => count($chunks)]);
+            $this->logger->debug(message: 'Step 3: Indexing chunks to SOLR', context: ['chunk_count' => count($chunks)]);
             $indexResult = $this->indexFileChunks(
                 $metadata['file_id'] ?? basename($filePath),
                 $chunks,
@@ -229,7 +229,7 @@ class SolrFileService
                 'index_result'       => $indexResult,
             ];
 
-            $this->logger->info('File processing completed successfully', $result);
+            $this->logger->info(message: 'File processing completed successfully', context: $result);
 
             return $result;
         } catch (\Exception $e) {

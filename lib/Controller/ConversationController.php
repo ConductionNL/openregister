@@ -213,8 +213,8 @@ class ConversationController extends Controller
                     );
         } catch (\Exception $e) {
             $this->logger->error(
-                    '[ConversationController] Failed to list conversations',
-                    [
+                    message: '[ConversationController] Failed to list conversations',
+                    context: [
                         'error' => $e->getMessage(),
                         'trace' => $e->getTraceAsString(),
                     ]
@@ -273,8 +273,8 @@ class ConversationController extends Controller
                     404);
         } catch (\Exception $e) {
             $this->logger->error(
-                    '[ConversationController] Failed to get conversation',
-                    [
+                    message: '[ConversationController] Failed to get conversation',
+                    context: [
                         'uuid'  => $uuid,
                         'error' => $e->getMessage(),
                         'trace' => $e->getTraceAsString(),
@@ -282,9 +282,10 @@ class ConversationController extends Controller
                     );
 
             return new JSONResponse(data: [
-                        'error'   => 'Failed to fetch conversation', statusCode: 'message' => $e->getMessage(),
+                        'error'   => 'Failed to fetch conversation',
+                        'message' => $e->getMessage(),
                     ],
-                    500
+                    statusCode: 500
                     );
         }//end try
 
@@ -351,8 +352,8 @@ class ConversationController extends Controller
                     404);
         } catch (\Exception $e) {
             $this->logger->error(
-                    '[ConversationController] Failed to get messages',
-                    [
+                    message: '[ConversationController] Failed to get messages',
+                    context: [
                         'uuid'  => $uuid,
                         'error' => $e->getMessage(),
                         'trace' => $e->getTraceAsString(),
@@ -360,9 +361,10 @@ class ConversationController extends Controller
                     );
 
             return new JSONResponse(data: [
-                        'error'   => 'Failed to fetch messages', statusCode: 'message' => $e->getMessage(),
+                        'error'   => 'Failed to fetch messages',
+                        'message' => $e->getMessage(),
                     ],
-                    500
+                    statusCode: 500
                     );
         }//end try
 
@@ -398,8 +400,8 @@ class ConversationController extends Controller
                 } catch (\Exception $e) {
                     // If agent not found, log and continue with null agentId.
                     $this->logger->warning(
-                            '[ConversationController] Agent UUID not found',
-                            [
+                            message: '[ConversationController] Agent UUID not found',
+                            context: [
                                 'agentUuid' => $data['agentUuid'],
                             ]
                             );
@@ -442,17 +444,18 @@ class ConversationController extends Controller
             return new JSONResponse(data: $conversation->jsonSerialize(), statusCode: 201);
         } catch (\Exception $e) {
             $this->logger->error(
-                    '[ConversationController] Failed to create conversation',
-                    [
+                    message: '[ConversationController] Failed to create conversation',
+                    context: [
                         'error' => $e->getMessage(),
                         'trace' => $e->getTraceAsString(),
                     ]
                     );
 
             return new JSONResponse(data: [
-                        'error'   => 'Failed to create conversation', statusCode: 'message' => $e->getMessage(),
+                        'error'   => 'Failed to create conversation',
+                        'message' => $e->getMessage(),
                     ],
-                    500
+                    statusCode: 500
                     );
         }//end try
 
@@ -480,9 +483,10 @@ class ConversationController extends Controller
             // Check modify rights using mapper method.
             if ($this->conversationMapper->canUserModifyConversation($conversation, $this->userId) === false) {
                 return new JSONResponse(data: [
-                            'error'   => 'Access denied', statusCode: 'message' => 'You do not have permission to modify this conversation',
+                            'error'   => 'Access denied',
+                            'message' => 'You do not have permission to modify this conversation',
                         ],
-                        403);
+                        statusCode: 403);
             }
 
             // Get request data.

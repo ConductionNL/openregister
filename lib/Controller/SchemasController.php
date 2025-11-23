@@ -251,8 +251,8 @@ class SchemasController extends Controller
         } catch (Exception $e) {
             // Log the actual error for debugging.
             $this->logger->error(
-                    'Schema creation failed',
-                    [
+                    message: 'Schema creation failed',
+                    context: [
                         'error_message' => $e->getMessage(),
                         'error_code'    => $e->getCode(),
                         'trace'         => $e->getTraceAsString(),
@@ -336,8 +336,8 @@ class SchemasController extends Controller
         } catch (Exception $e) {
             // Log the actual error for debugging.
             $this->logger->error(
-                    'Schema update failed',
-                    [
+                    message: 'Schema update failed',
+                    context: [
                         'schema_id'     => $id,
                         'error_message' => $e->getMessage(),
                         'error_code'    => $e->getCode(),

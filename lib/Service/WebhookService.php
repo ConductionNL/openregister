@@ -110,8 +110,8 @@ class WebhookService
         }
 
         $this->logger->info(
-                'Dispatching event to webhooks',
-                [
+                message: 'Dispatching event to webhooks',
+                context: [
                     'event'         => $eventName,
                     'webhook_count' => count($webhooks),
                 ]
@@ -138,8 +138,8 @@ class WebhookService
     {
         if ($webhook->getEnabled() === false) {
             $this->logger->debug(
-                    'Webhook is disabled, skipping delivery',
-                    [
+                    message: 'Webhook is disabled, skipping delivery',
+                    context: [
                         'webhook_id' => $webhook->getId(),
                         'event'      => $eventName,
                     ]
@@ -150,8 +150,8 @@ class WebhookService
         // Apply filters if configured.
         if ($this->passesFilters($webhook, $payload) === false) {
             $this->logger->debug(
-                    'Webhook filters did not match, skipping delivery',
-                    [
+                    message: 'Webhook filters did not match, skipping delivery',
+                    context: [
                         'webhook_id' => $webhook->getId(),
                         'event'      => $eventName,
                     ]
@@ -165,8 +165,8 @@ class WebhookService
             $response = $this->sendRequest($webhook, $webhookPayload);
 
             $this->logger->info(
-                    'Webhook delivered successfully',
-                    [
+                    message: 'Webhook delivered successfully',
+                    context: [
                         'webhook_id'   => $webhook->getId(),
                         'webhook_name' => $webhook->getName(),
                         'event'        => $eventName,
@@ -180,8 +180,8 @@ class WebhookService
             return true;
         } catch (RequestException $e) {
             $this->logger->error(
-                    'Webhook delivery failed',
-                    [
+                    message: 'Webhook delivery failed',
+                    context: [
                         'webhook_id'   => $webhook->getId(),
                         'webhook_name' => $webhook->getName(),
                         'event'        => $eventName,
@@ -365,8 +365,8 @@ class WebhookService
         $delay = $this->calculateRetryDelay($webhook, $attempt);
 
         $this->logger->info(
-                'Scheduling webhook retry',
-                [
+                message: 'Scheduling webhook retry',
+                context: [
                     'webhook_id'   => $webhook->getId(),
                     'webhook_name' => $webhook->getName(),
                     'event'        => $eventName,

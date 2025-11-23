@@ -105,21 +105,27 @@ class WebhooksController extends Controller
         try {
             $webhooks = $this->webhookMapper->findAll();
 
-            return new JSONResponse(data: [
-                        'results' => $webhooks, statusCode: 'total'   => count($webhooks),
-                    ]
-                    );
+            return new JSONResponse(
+                data: [
+                    'results' => $webhooks,
+                    'total'   => count($webhooks),
+                ],
+                statusCode: 200
+            );
         } catch (\Exception $e) {
             $this->logger->error(
-                    'Error listing webhooks: '.$e->getMessage(),
-                    [
+                    message: 'Error listing webhooks: '.$e->getMessage(),
+                    context: [
                         'trace' => $e->getTraceAsString(),
                     ]
                     );
 
-            return new JSONResponse(data: [
-                        'error' => 'Failed to list webhooks', statusCode: ],
-                    500);
+            return new JSONResponse(
+                data: [
+                    'error' => 'Failed to list webhooks',
+                ],
+                statusCode: 500
+            );
         }//end try
 
     }//end index()
@@ -144,21 +150,27 @@ class WebhooksController extends Controller
 
             return new JSONResponse(data: $webhook);
         } catch (DoesNotExistException $e) {
-            return new JSONResponse(data: [
-                        'error' => 'Webhook not found', statusCode: ],
-                    404);
+            return new JSONResponse(
+                data: [
+                    'error' => 'Webhook not found',
+                ],
+                statusCode: 404
+            );
         } catch (\Exception $e) {
             $this->logger->error(
-                    'Error retrieving webhook: '.$e->getMessage(),
-                    [
+                    message: 'Error retrieving webhook: '.$e->getMessage(),
+                    context: [
                         'id'    => $id,
                         'trace' => $e->getTraceAsString(),
                     ]
                     );
 
-            return new JSONResponse(data: [
-                        'error' => 'Failed to retrieve webhook', statusCode: ],
-                    500);
+            return new JSONResponse(
+                data: [
+                    'error' => 'Failed to retrieve webhook',
+                ],
+                statusCode: 500
+            );
         }//end try
 
     }//end show()
@@ -181,16 +193,19 @@ class WebhooksController extends Controller
 
             // Validate required fields.
             if (empty($data['name']) === true || empty($data['url']) === true) {
-                return new JSONResponse(data: [
-                            'error' => 'Name and URL are required', statusCode: ],
-                        400);
+                return new JSONResponse(
+                    data: [
+                        'error' => 'Name and URL are required',
+                    ],
+                    statusCode: 400
+                );
             }
 
             $webhook = $this->webhookMapper->createFromArray($data);
 
             $this->logger->info(
-                    'Webhook created',
-                    [
+                    message: 'Webhook created',
+                    context: [
                         'id'   => $webhook->getId(),
                         'name' => $webhook->getName(),
                         'url'  => $webhook->getUrl(),
@@ -207,9 +222,12 @@ class WebhooksController extends Controller
                     ]
                     );
 
-            return new JSONResponse(data: [
-                        'error' => 'Failed to create webhook: '.$e->getMessage(), statusCode: ],
-                    500);
+            return new JSONResponse(
+                data: [
+                    'error' => 'Failed to create webhook: '.$e->getMessage(),
+                ],
+                statusCode: 500
+            );
         }//end try
 
     }//end create()
@@ -238,8 +256,8 @@ class WebhooksController extends Controller
             $webhook = $this->webhookMapper->updateFromArray($id, $data);
 
             $this->logger->info(
-                    'Webhook updated',
-                    [
+                    message: 'Webhook updated',
+                    context: [
                         'id'   => $webhook->getId(),
                         'name' => $webhook->getName(),
                     ]
@@ -247,9 +265,12 @@ class WebhooksController extends Controller
 
             return new JSONResponse(data: $webhook);
         } catch (DoesNotExistException $e) {
-            return new JSONResponse(data: [
-                        'error' => 'Webhook not found', statusCode: ],
-                    404);
+            return new JSONResponse(
+                data: [
+                    'error' => 'Webhook not found',
+                ],
+                statusCode: 404
+            );
         } catch (\Exception $e) {
             $this->logger->error(
                     'Error updating webhook: '.$e->getMessage(),
@@ -260,9 +281,12 @@ class WebhooksController extends Controller
                     ]
                     );
 
-            return new JSONResponse(data: [
-                        'error' => 'Failed to update webhook: '.$e->getMessage(), statusCode: ],
-                    500);
+            return new JSONResponse(
+                data: [
+                    'error' => 'Failed to update webhook: '.$e->getMessage(),
+                ],
+                statusCode: 500
+            );
         }//end try
 
     }//end update()
@@ -287,8 +311,8 @@ class WebhooksController extends Controller
             $this->webhookMapper->delete($webhook);
 
             $this->logger->info(
-                    'Webhook deleted',
-                    [
+                    message: 'Webhook deleted',
+                    context: [
                         'id'   => $webhook->getId(),
                         'name' => $webhook->getName(),
                     ]
@@ -296,9 +320,12 @@ class WebhooksController extends Controller
 
             return new JSONResponse(data: null, statusCode: 204);
         } catch (DoesNotExistException $e) {
-            return new JSONResponse(data: [
-                        'error' => 'Webhook not found', statusCode: ],
-                    404);
+            return new JSONResponse(
+                data: [
+                    'error' => 'Webhook not found',
+                ],
+                statusCode: 404
+            );
         } catch (\Exception $e) {
             $this->logger->error(
                     'Error deleting webhook: '.$e->getMessage(),
@@ -308,9 +335,12 @@ class WebhooksController extends Controller
                     ]
                     );
 
-            return new JSONResponse(data: [
-                        'error' => 'Failed to delete webhook', statusCode: ],
-                    500);
+            return new JSONResponse(
+                data: [
+                    'error' => 'Failed to delete webhook',
+                ],
+                statusCode: 500
+            );
         }//end try
 
     }//end destroy()
@@ -347,19 +377,28 @@ class WebhooksController extends Controller
             );
 
             if ($success === true) {
-                return new JSONResponse(data: [
-                            'success' => true, statusCode: 'message' => 'Test webhook delivered successfully',
-                        ]);
+                return new JSONResponse(
+                    data: [
+                        'success' => true,
+                        'message' => 'Test webhook delivered successfully',
+                    ]
+                );
             } else {
-                return new JSONResponse(data: [
-                            'success' => false, statusCode: 'message' => 'Test webhook delivery failed',
-                        ],
-                        500);
+                return new JSONResponse(
+                    data: [
+                        'success' => false,
+                        'message' => 'Test webhook delivery failed',
+                    ],
+                    statusCode: 500
+                );
             }//end if
         } catch (DoesNotExistException $e) {
-            return new JSONResponse(data: [
-                        'error' => 'Webhook not found', statusCode: ],
-                    404);
+            return new JSONResponse(
+                data: [
+                    'error' => 'Webhook not found',
+                ],
+                statusCode: 404
+            );
         } catch (GuzzleException $e) {
             $this->logger->error(
                     'Error testing webhook: '.$e->getMessage(),
@@ -369,11 +408,13 @@ class WebhooksController extends Controller
                     ]
                     );
 
-            return new JSONResponse(data: [
-                        'success' => false, statusCode: 'message' => 'Test webhook delivery failed: '.$e->getMessage(),
-                    ],
-                    500
-                    );
+            return new JSONResponse(
+                data: [
+                    'success' => false,
+                    'message' => 'Test webhook delivery failed: '.$e->getMessage(),
+                ],
+                statusCode: 500
+            );
         } catch (\Exception $e) {
             $this->logger->error(
                     'Error testing webhook: '.$e->getMessage(),
@@ -383,9 +424,12 @@ class WebhooksController extends Controller
                     ]
                     );
 
-            return new JSONResponse(data: [
-                        'error' => 'Failed to test webhook', statusCode: ],
-                    500);
+            return new JSONResponse(
+                data: [
+                    'error' => 'Failed to test webhook',
+                ],
+                statusCode: 500
+            );
         }//end try
 
     }//end test()
@@ -458,10 +502,12 @@ class WebhooksController extends Controller
             'OCA\OpenRegister\Event\OrganisationDeletedEvent',
         ];
 
-        return new JSONResponse(data: [
-                    'events' => $events, statusCode: 'total'  => count($events),
-                ]
-                );
+        return new JSONResponse(
+            data: [
+                'events' => $events,
+                'total'  => count($events),
+            ]
+        );
 
     }//end events()
 

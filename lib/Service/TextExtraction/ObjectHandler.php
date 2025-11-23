@@ -92,7 +92,7 @@ class ObjectHandler implements TextExtractionHandlerInterface
      */
     public function extractText(int $sourceId, array $sourceMeta, bool $force=false): array
     {
-        $this->logger->info('[ObjectHandler] Extracting text from object', ['objectId' => $sourceId]);
+        $this->logger->info(message: '[ObjectHandler] Extracting text from object', context: ['objectId' => $sourceId]);
 
         // Get object entity.
         $object = $this->objectMapper->find($sourceId);

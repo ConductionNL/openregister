@@ -244,7 +244,8 @@ class SchemaMapper extends QBMapper
         ?array $filters=[],
         ?array $searchConditions=[],
         ?array $searchParams=[],
-        ?array $extend=[]): array {
+        ?array $extend=[]
+    ): array {
         // Verify RBAC permission to read.
         $this->verifyRbacPermission('read', 'schema');
 
@@ -739,7 +740,7 @@ class SchemaMapper extends QBMapper
         }
 
         // Get all schemas to search through their properties.
-        $allSchemas     = $this->findAll(config: );
+        $allSchemas     = $this->findAll(config:);
         $relatedSchemas = [];
 
         foreach ($allSchemas as $currentSchema) {

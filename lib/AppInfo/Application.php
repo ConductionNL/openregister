@@ -171,19 +171,18 @@ class Application extends App implements IBootstrap
                 SearchTrailMapper::class,
                 function ($container) {
                     return new SearchTrailMapper(
-                    $container->get(userId: 'OCP\IDBConnection'),
-                    $container->get(userId: 'OCP\IRequest'),
-                    $container->get(userId: 'OCP\IUserSession')
+                    $container->get(id: 'OCP\IDBConnection'),
+                    $container->get(id: 'OCP\IRequest'),
+                    $container->get(id: 'OCP\IUserSession')
                     );
                 }
                 );
-
 
         $context->registerService(
                 ChunkMapper::class,
                 function ($container) {
                     return new ChunkMapper(
-                    $container->get(userId: 'OCP\IDBConnection')
+                    $container->get(id: 'OCP\IDBConnection')
                     );
                 }
                 );
@@ -192,7 +191,7 @@ class Application extends App implements IBootstrap
                 GdprEntityMapper::class,
                 function ($container) {
                     return new GdprEntityMapper(
-                    $container->get(userId: 'OCP\IDBConnection')
+                    $container->get('OCP\IDBConnection')
                     );
                 }
                 );
@@ -201,7 +200,7 @@ class Application extends App implements IBootstrap
                 EntityRelationMapper::class,
                 function ($container) {
                     return new EntityRelationMapper(
-                    $container->get(userId: 'OCP\IDBConnection')
+                    $container->get('OCP\IDBConnection')
                     );
                 }
                 );
@@ -220,7 +219,7 @@ class Application extends App implements IBootstrap
         // Register OrganisationMapper (event dispatching removed - handled by cron job).
         // $context->registerService(OrganisationMapper::class, function ($container) {
         // return new OrganisationMapper(.
-        // $container->get(userId: 'OCP\IDBConnection')
+        // $container->get('OCP\IDBConnection')
         // );
         // });
         // Register ObjectEntityMapper with IGroupManager and IUserManager dependencies.
@@ -228,15 +227,15 @@ class Application extends App implements IBootstrap
                 ObjectEntityMapper::class,
                 function ($container) {
                     return new ObjectEntityMapper(
-                    $container->get(userId: 'OCP\IDBConnection'),
+                    $container->get('OCP\IDBConnection'),
                     $container->get(MySQLJsonService::class),
-                    $container->get(userId: 'OCP\EventDispatcher\IEventDispatcher'),
-                    $container->get(userId: 'OCP\IUserSession'),
+                    $container->get('OCP\EventDispatcher\IEventDispatcher'),
+                    $container->get('OCP\IUserSession'),
                     $container->get(SchemaMapper::class),
-                    $container->get(userId: 'OCP\IGroupManager'),
-                    $container->get(userId: 'OCP\IUserManager'),
-                    $container->get(userId: 'OCP\IAppConfig'),
-                    $container->get(userId: 'Psr\Log\LoggerInterface'),
+                    $container->get('OCP\IGroupManager'),
+                    $container->get('OCP\IUserManager'),
+                    $container->get('OCP\IAppConfig'),
+                    $container->get('Psr\Log\LoggerInterface'),
                     $container->get(OrganisationService::class),
                     null
                     // AuthorizationExceptionService.
@@ -253,9 +252,9 @@ class Application extends App implements IBootstrap
          *     function ($container) {
          *         return new SolrService(
          *             $container->get(SettingsService::class),
-         *             $container->get(userId: 'Psr\Log\LoggerInterface'),
+         *             $container->get('Psr\Log\LoggerInterface'),
          *             $container->get(ObjectEntityMapper::class),
-         *             $container->get(userId: 'OCP\IConfig')
+         *             $container->get('OCP\IConfig')
          *         );
          *     }
          * );
@@ -277,11 +276,11 @@ class Application extends App implements IBootstrap
                     return new ObjectCacheService(
                     $container->get(ObjectEntityMapper::class),
                     $container->get(OrganisationMapper::class),
-                    $container->get(userId: 'Psr\Log\LoggerInterface'),
+                    $container->get('Psr\Log\LoggerInterface'),
                     $solrService,
                     // Lightweight SOLR service enabled!
-                    $container->get(userId: 'OCP\ICacheFactory'),
-                    $container->get(userId: 'OCP\IUserSession')
+                    $container->get('OCP\ICacheFactory'),
+                    $container->get('OCP\IUserSession')
                     );
                 }
                 );
@@ -294,9 +293,9 @@ class Application extends App implements IBootstrap
                     $container->get(ObjectEntityMapper::class),
                     $container->get(SchemaMapper::class),
                     $container->get(RegisterMapper::class),
-                    $container->get(userId: 'OCP\ICacheFactory'),
-                    $container->get(userId: 'OCP\IUserSession'),
-                    $container->get(userId: 'Psr\Log\LoggerInterface')
+                    $container->get('OCP\ICacheFactory'),
+                    $container->get('OCP\IUserSession'),
+                    $container->get('Psr\Log\LoggerInterface')
                     );
                 }
                 );
@@ -308,17 +307,17 @@ class Application extends App implements IBootstrap
                     return new SaveObject(
                     $container->get(ObjectEntityMapper::class),
                     $container->get(FileService::class),
-                    $container->get(userId: 'OCP\IUserSession'),
-                    $container->get(userId: 'OCA\OpenRegister\Db\AuditTrailMapper'),
+                    $container->get('OCP\IUserSession'),
+                    $container->get('OCA\OpenRegister\Db\AuditTrailMapper'),
                     $container->get(SchemaMapper::class),
                     $container->get(RegisterMapper::class),
-                    $container->get(userId: 'OCP\IURLGenerator'),
+                    $container->get('OCP\IURLGenerator'),
                     $container->get(OrganisationService::class),
                     $container->get(ObjectCacheService::class),
                     $container->get(SchemaCacheService::class),
                     $container->get(SchemaFacetCacheService::class),
                     $container->get(SettingsService::class),
-                    $container->get(userId: 'Psr\Log\LoggerInterface'),
+                    $container->get('Psr\Log\LoggerInterface'),
                     new \Twig\Loader\ArrayLoader([])
                     );
                 }
@@ -334,9 +333,9 @@ class Application extends App implements IBootstrap
                     $container->get(ObjectCacheService::class),
                     $container->get(SchemaCacheService::class),
                     $container->get(SchemaFacetCacheService::class),
-                    $container->get(userId: 'OCA\OpenRegister\Db\AuditTrailMapper'),
+                    $container->get('OCA\OpenRegister\Db\AuditTrailMapper'),
                     $container->get(SettingsService::class),
-                    $container->get(userId: 'Psr\Log\LoggerInterface')
+                    $container->get('Psr\Log\LoggerInterface')
                     );
                 }
                 );
@@ -348,7 +347,7 @@ class Application extends App implements IBootstrap
                     return new GetObject(
                     $container->get(ObjectEntityMapper::class),
                     $container->get(FileService::class),
-                    $container->get(userId: 'OCA\OpenRegister\Db\AuditTrailMapper'),
+                    $container->get('OCA\OpenRegister\Db\AuditTrailMapper'),
                     $container->get(SettingsService::class)
                     );
                 }
@@ -359,16 +358,16 @@ class Application extends App implements IBootstrap
                 RenderObject::class,
                 function ($container) {
                     return new RenderObject(
-                    $container->get(userId: 'OCP\IURLGenerator'),
-                    $container->get(userId: 'OCA\OpenRegister\Db\FileMapper'),
-                    $container->get(userId: 'OCA\OpenRegister\Service\FileService'),
+                    $container->get('OCP\IURLGenerator'),
+                    $container->get('OCA\OpenRegister\Db\FileMapper'),
+                    $container->get('OCA\OpenRegister\Service\FileService'),
                     $container->get(ObjectEntityMapper::class),
-                    $container->get(userId: 'OCA\OpenRegister\Db\RegisterMapper'),
-                    $container->get(userId: 'OCA\OpenRegister\Db\SchemaMapper'),
-                    $container->get(userId: 'OCP\SystemTag\ISystemTagManager'),
-                    $container->get(userId: 'OCP\SystemTag\ISystemTagObjectMapper'),
+                    $container->get('OCA\OpenRegister\Db\RegisterMapper'),
+                    $container->get('OCA\OpenRegister\Db\SchemaMapper'),
+                    $container->get('OCP\SystemTag\ISystemTagManager'),
+                    $container->get('OCP\SystemTag\ISystemTagObjectMapper'),
                     $container->get(ObjectCacheService::class),
-                    $container->get(userId: 'Psr\Log\LoggerInterface')
+                    $container->get('Psr\Log\LoggerInterface')
                     );
                 }
                 );
@@ -379,12 +378,12 @@ class Application extends App implements IBootstrap
                 function ($container) {
                     return new OrganisationService(
                     $container->get(OrganisationMapper::class),
-                    $container->get(userId: 'OCP\IUserSession'),
-                    $container->get(userId: 'OCP\ISession'),
-                    $container->get(userId: 'OCP\IConfig'),
-                    $container->get(userId: 'OCP\IGroupManager'),
-                    $container->get(userId: 'OCP\IUserManager'),
-                    $container->get(userId: 'Psr\Log\LoggerInterface')
+                    $container->get('OCP\IUserSession'),
+                    $container->get('OCP\ISession'),
+                    $container->get('OCP\IConfig'),
+                    $container->get('OCP\IGroupManager'),
+                    $container->get('OCP\IUserManager'),
+                    $container->get('Psr\Log\LoggerInterface')
                     );
                 }
                 );
@@ -399,9 +398,9 @@ class Application extends App implements IBootstrap
                     $container->get(RegisterMapper::class),
                     $container->get(SaveObject::class),
                     $container->get(ValidateObject::class),
-                    $container->get(userId: 'OCP\IUserSession'),
+                    $container->get('OCP\IUserSession'),
                     $container->get(OrganisationService::class),
-                    $container->get(userId: 'Psr\Log\LoggerInterface')
+                    $container->get('Psr\Log\LoggerInterface')
                     );
                 }
                 );
@@ -424,12 +423,12 @@ class Application extends App implements IBootstrap
                     $container->get(ViewMapper::class),
                     $container->get(ObjectEntityMapper::class),
                     $container->get(FileService::class),
-                    $container->get(userId: 'OCP\IUserSession'),
+                    $container->get('OCP\IUserSession'),
                     $container->get(SearchTrailService::class),
-                    $container->get(userId: 'OCP\IGroupManager'),
-                    $container->get(userId: 'OCP\IUserManager'),
+                    $container->get('OCP\IGroupManager'),
+                    $container->get('OCP\IUserManager'),
                     $container->get(OrganisationService::class),
-                    $container->get(userId: 'Psr\Log\LoggerInterface'),
+                    $container->get('Psr\Log\LoggerInterface'),
                     $container->get(FacetService::class),
                     $container->get(ObjectCacheService::class),
                     $container->get(SchemaCacheService::class),
@@ -448,10 +447,10 @@ class Application extends App implements IBootstrap
                     $container->get(ObjectEntityMapper::class),
                     $container->get(SchemaMapper::class),
                     $container->get(ObjectService::class),
-                    $container->get(userId: 'Psr\Log\LoggerInterface'),
-                    $container->get(userId: 'OCP\IUserManager'),
-                    $container->get(userId: 'OCP\IGroupManager'),
-                    $container->get(userId: 'OCP\BackgroundJob\IJobList')
+                    $container->get('Psr\Log\LoggerInterface'),
+                    $container->get('OCP\IUserManager'),
+                    $container->get('OCP\IGroupManager'),
+                    $container->get('OCP\BackgroundJob\IJobList')
                     );
                 }
                 );
@@ -463,8 +462,8 @@ class Application extends App implements IBootstrap
                     return new ExportService(
                     $container->get(ObjectEntityMapper::class),
                     $container->get(RegisterMapper::class),
-                    $container->get(userId: 'OCP\IUserManager'),
-                    $container->get(userId: 'OCP\IGroupManager'),
+                    $container->get('OCP\IUserManager'),
+                    $container->get('OCP\IGroupManager'),
                     $container->get(ObjectService::class)
                     );
                 }
@@ -476,7 +475,7 @@ class Application extends App implements IBootstrap
                 function ($container) {
                     return new SolrEventListener(
                     $container->get(ObjectCacheService::class),
-                    $container->get(userId: 'Psr\Log\LoggerInterface')
+                    $container->get('Psr\Log\LoggerInterface')
                     );
                 }
                 );
@@ -486,9 +485,9 @@ class Application extends App implements IBootstrap
                 SchemaCacheService::class,
                 function ($container) {
                     return new SchemaCacheService(
-                    $container->get(userId: 'OCP\IDBConnection'),
+                    $container->get('OCP\IDBConnection'),
                     $container->get(SchemaMapper::class),
-                    $container->get(userId: 'Psr\Log\LoggerInterface')
+                    $container->get('Psr\Log\LoggerInterface')
                     );
                 }
                 );
@@ -498,9 +497,9 @@ class Application extends App implements IBootstrap
                 SchemaFacetCacheService::class,
                 function ($container) {
                     return new SchemaFacetCacheService(
-                    $container->get(userId: 'OCP\IDBConnection'),
+                    $container->get('OCP\IDBConnection'),
                     $container->get(SchemaMapper::class),
-                    $container->get(userId: 'Psr\Log\LoggerInterface')
+                    $container->get('Psr\Log\LoggerInterface')
                     );
                 }
                 );
@@ -510,10 +509,10 @@ class Application extends App implements IBootstrap
                 ObjectsProvider::class,
                 function ($container) {
                     return new ObjectsProvider(
-                    $container->get(userId: 'OCP\IL10N'),
-                    $container->get(userId: 'OCP\IURLGenerator'),
+                    $container->get('OCP\IL10N'),
+                    $container->get('OCP\IURLGenerator'),
                     $container->get(ObjectService::class),
-                    $container->get(userId: 'Psr\Log\LoggerInterface')
+                    $container->get('Psr\Log\LoggerInterface')
                     );
                 }
                 );
@@ -527,8 +526,8 @@ class Application extends App implements IBootstrap
                 function ($container) {
                     return new SolrDebugCommand(
                     $container->get(SettingsService::class),
-                    $container->get(userId: 'Psr\Log\LoggerInterface'),
-                    $container->get(userId: 'OCP\IConfig')
+                    $container->get('Psr\Log\LoggerInterface'),
+                    $container->get('OCP\IConfig')
                     );
                 }
                 );
@@ -539,9 +538,9 @@ class Application extends App implements IBootstrap
                 function ($container) {
                     return new GuzzleSolrService(
                     $container->get(SettingsService::class),
-                    $container->get(userId: 'Psr\Log\LoggerInterface'),
-                    $container->get(userId: 'OCP\Http\Client\IClientService'),
-                    $container->get(userId: 'OCP\IConfig'),
+                    $container->get('Psr\Log\LoggerInterface'),
+                    $container->get('OCP\Http\Client\IClientService'),
+                    $container->get('OCP\IConfig'),
                     $container->get(SchemaMapper::class),
                     // Add SchemaMapper for schema-aware mapping.
                     $container->get(RegisterMapper::class),
@@ -566,7 +565,7 @@ class Application extends App implements IBootstrap
                     $container->get(SettingsService::class),
                     $container->get(SchemaMapper::class),
                     $container->get(RegisterMapper::class),
-                    $container->get(userId: 'Psr\Log\LoggerInterface')
+                    $container->get('Psr\Log\LoggerInterface')
                     );
                 }
                 );
@@ -579,7 +578,7 @@ class Application extends App implements IBootstrap
                     $container->get(GuzzleSolrService::class),
                     $container->get(SettingsService::class),
                     $container,
-                    $container->get(userId: 'Psr\Log\LoggerInterface')
+                    $container->get('Psr\Log\LoggerInterface')
                     );
                 }
                 );
@@ -589,10 +588,10 @@ class Application extends App implements IBootstrap
                 VectorEmbeddingService::class,
                 function ($container) {
                     return new VectorEmbeddingService(
-                    $container->get(userId: 'OCP\IDBConnection'),
+                    $container->get(id: 'OCP\IDBConnection'),
                     $container->get(SettingsService::class),
                     $container->get(GuzzleSolrService::class),
-                    $container->get(userId: 'Psr\Log\LoggerInterface')
+                    $container->get(id: 'Psr\Log\LoggerInterface')
                     );
                 }
                 );
@@ -606,7 +605,7 @@ class Application extends App implements IBootstrap
                     $container->get(EntityRelationMapper::class),
                     $container->get(ChunkMapper::class),
                     $container->get(SettingsService::class),
-                    $container->get(userId: 'Psr\Log\LoggerInterface')
+                    $container->get(id: 'Psr\Log\LoggerInterface')
                     );
                 }
                 );
@@ -617,8 +616,8 @@ class Application extends App implements IBootstrap
                 function ($container) {
                     return new FileVectorizationStrategy(
                     $container->get(ChunkMapper::class),
-                    $container->get(userId: 'OCP\IDBConnection'),
-                    $container->get(userId: 'Psr\Log\LoggerInterface')
+                    $container->get(id: 'OCP\IDBConnection'),
+                    $container->get(id: 'Psr\Log\LoggerInterface')
                     );
                 }
                 );
@@ -629,7 +628,7 @@ class Application extends App implements IBootstrap
                     return new ObjectVectorizationStrategy(
                     $container->get(ObjectService::class),
                     $container->get(SettingsService::class),
-                    $container->get(userId: 'Psr\Log\LoggerInterface')
+                    $container->get(id: 'Psr\Log\LoggerInterface')
                     );
                 }
                 );
@@ -640,7 +639,7 @@ class Application extends App implements IBootstrap
                 function ($container) {
                     $service = new VectorizationService(
                     $container->get(VectorEmbeddingService::class),
-                    $container->get(userId: 'Psr\Log\LoggerInterface')
+                    $container->get(id: 'Psr\Log\LoggerInterface')
                     );
 
                     // Register strategies.
@@ -656,14 +655,14 @@ class Application extends App implements IBootstrap
                 ChatService::class,
                 function ($container) {
                     return new ChatService(
-                    $container->get(userId: 'OCP\IDBConnection'),
+                    $container->get(id: 'OCP\IDBConnection'),
                     $container->get(\OCA\OpenRegister\Db\ConversationMapper::class),
                     $container->get(\OCA\OpenRegister\Db\MessageMapper::class),
                     $container->get(\OCA\OpenRegister\Db\AgentMapper::class),
                     $container->get(VectorEmbeddingService::class),
                     $container->get(GuzzleSolrService::class),
                     $container->get(SettingsService::class),
-                    $container->get(userId: 'Psr\Log\LoggerInterface'),
+                    $container->get(id: 'Psr\Log\LoggerInterface'),
                     $container->get(\OCA\OpenRegister\Tool\RegisterTool::class),
                     $container->get(\OCA\OpenRegister\Tool\SchemaTool::class),
                     $container->get(\OCA\OpenRegister\Tool\ObjectsTool::class),
@@ -678,10 +677,10 @@ class Application extends App implements IBootstrap
                 function ($container) {
                     return new FileTextService(
                     $container->get(FileTextMapper::class),
-                    $container->get(userId: 'OCA\OpenRegister\Db\FileMapper'),
+                    $container->get(id: 'OCA\OpenRegister\Db\FileMapper'),
                     $container->get(SolrFileService::class),
-                    $container->get(userId: 'OCP\Files\IRootFolder'),
-                    $container->get(userId: 'Psr\Log\LoggerInterface')
+                    $container->get(id: 'OCP\Files\IRootFolder'),
+                    $container->get(id: 'Psr\Log\LoggerInterface')
                     );
                 }
                 );
@@ -692,8 +691,8 @@ class Application extends App implements IBootstrap
                 function ($container) {
                     return new FileChangeListener(
                     $container->get(FileTextService::class),
-                    $container->get(userId: 'OCP\BackgroundJob\IJobList'),
-                    $container->get(userId: 'Psr\Log\LoggerInterface')
+                    $container->get(id: 'OCP\BackgroundJob\IJobList'),
+                    $container->get(id: 'Psr\Log\LoggerInterface')
                     );
                 }
                 );
@@ -706,8 +705,8 @@ class Application extends App implements IBootstrap
                     $container->get(SchemaMapper::class),
                     $container->get(GuzzleSolrService::class),
                     $container->get(SettingsService::class),
-                    $container->get(userId: 'Psr\Log\LoggerInterface'),
-                    $container->get(userId: 'OCP\IConfig')
+                    $container->get(id: 'Psr\Log\LoggerInterface'),
+                    $container->get(id: 'OCP\IConfig')
                     );
                 }
                 );
@@ -718,10 +717,10 @@ class Application extends App implements IBootstrap
                 function ($container) {
                     return new SolrManagementCommand(
                     $container->get(SettingsService::class),
-                    $container->get(userId: 'Psr\Log\LoggerInterface'),
+                    $container->get(id: 'Psr\Log\LoggerInterface'),
                     $container->get(GuzzleSolrService::class),
                     $container->get(SolrSchemaService::class),
-                    $container->get(userId: 'OCP\IConfig')
+                    $container->get(id: 'OCP\IConfig')
                     );
                 }
                 );
@@ -731,8 +730,8 @@ class Application extends App implements IBootstrap
                 \OCA\OpenRegister\Service\ToolRegistry::class,
                 function ($container) {
                     return new \OCA\OpenRegister\Service\ToolRegistry(
-                    $container->get(userId: 'OCP\EventDispatcher\IEventDispatcher'),
-                    $container->get(userId: 'Psr\Log\LoggerInterface')
+                    $container->get(id: 'OCP\EventDispatcher\IEventDispatcher'),
+                    $container->get(id: 'Psr\Log\LoggerInterface')
                     );
                 }
                 );
@@ -743,9 +742,9 @@ class Application extends App implements IBootstrap
                 function ($container) {
                     return new \OCA\OpenRegister\Service\GitHubService(
                     $container->get('OCP\Http\Client\IClientService')->newClient(),
-                    $container->get(userId: 'OCP\IConfig'),
-                    $container->get(userId: 'OCP\ICacheFactory'),
-                    $container->get(userId: 'Psr\Log\LoggerInterface')
+                    $container->get(id: 'OCP\IConfig'),
+                    $container->get(id: 'OCP\ICacheFactory'),
+                    $container->get(id: 'Psr\Log\LoggerInterface')
                     );
                 }
                 );
@@ -756,8 +755,8 @@ class Application extends App implements IBootstrap
                 function ($container) {
                     return new \OCA\OpenRegister\Service\GitLabService(
                     $container->get('OCP\Http\Client\IClientService')->newClient(),
-                    $container->get(userId: 'OCP\IConfig'),
-                    $container->get(userId: 'Psr\Log\LoggerInterface')
+                    $container->get(id: 'OCP\IConfig'),
+                    $container->get(id: 'Psr\Log\LoggerInterface')
                     );
                 }
                 );
@@ -829,36 +828,44 @@ class Application extends App implements IBootstrap
         // Register event listeners for testing and functionality.
         $container       = $context->getAppContainer();
         $eventDispatcher = $container->get(IEventDispatcher::class);
-        $logger          = $container->get(userId: 'Psr\Log\LoggerInterface');
+        $logger          = $container->get(id: 'Psr\Log\LoggerInterface');
 
         // Log boot process.
-        $logger->info(message: 'OpenRegister boot: Registering event listeners', context: [
+        $logger->info(
+                message: 'OpenRegister boot: Registering event listeners',
+                context: [
                     'app'       => 'openregister',
                     'timestamp' => date('Y-m-d H:i:s'),
-                ]);
+                ]
+                );
 
         try {
             $logger->info('OpenRegister boot: Event listeners registered successfully');
 
             // Register recurring SOLR nightly warmup job.
-            $jobList = $container->get(userId: 'OCP\BackgroundJob\IJobList');
+            $jobList = $container->get(id: 'OCP\BackgroundJob\IJobList');
 
             // Check if the nightly warmup job is already registered.
             if ($jobList->has(SolrNightlyWarmupJob::class, null) === false) {
                 $jobList->add(SolrNightlyWarmupJob::class);
-                $logger->info(message: '🌙 SOLR Nightly Warmup Job registered successfully', context: [
+                $logger->info(
+                        message: '🌙 SOLR Nightly Warmup Job registered successfully',
+                        context: [
                             'job_class' => SolrNightlyWarmupJob::class,
                             'interval'  => '24 hours (daily at 00:00)',
-                        ]);
+                        ]
+                        );
             } else {
                 $logger->debug(message: 'SOLR Nightly Warmup Job already registered');
             }
         } catch (\Exception $e) {
             $logger->error(
-                    'OpenRegister boot: Failed to register event listeners and background jobs', context: [
+                    'OpenRegister boot: Failed to register event listeners and background jobs',
+                    context: [
                         'exception' => $e->getMessage(),
                         'trace'     => $e->getTraceAsString(),
-                    ]);
+                    ]
+                    );
         }//end try
 
     }//end boot()

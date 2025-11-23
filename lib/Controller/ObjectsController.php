@@ -1,14 +1,15 @@
 <?php
+declare(strict_types=1);
 /**
- * Class ObjectsController
+ * ObjectsController
  *
  * Controller for managing object operations in the OpenRegister app.
  * Provides CRUD functionality for objects within registers and schemas.
  *
  * @category Controller
- * @package  OCA\OpenRegister\AppInfo
+ * @package  OCA\OpenRegister\Controller
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -47,9 +48,7 @@ use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\ImportService;
 use OCP\AppFramework\Http\DataDownloadResponse;
-/**
- * Class ObjectsController
- */
+
 class ObjectsController extends Controller
 {
 
@@ -82,6 +81,7 @@ class ObjectsController extends Controller
      * @param AuditTrailMapper   $auditTrailMapper   The audit trail mapper
      * @param ObjectService      $objectService      The object service
      * @param IUserSession       $userSession        The user session
+     * @param IGroupManager      $groupManager       The group manager
      * @param ExportService      $exportService      The export service
      * @param ImportService      $importService      The import service
      *
@@ -200,7 +200,11 @@ class ObjectsController extends Controller
             $nextPage = $page + 1;
             $nextUrl  = preg_replace('/([?&])page=\d+/', '$1page='.$nextPage, $currentUrl);
             if (strpos($nextUrl, 'page=') === false) {
-                $nextUrl .= (strpos($nextUrl, '?') === false ? '?' : '&').'page='.$nextPage;
+                if (strpos($nextUrl, '?') === false) {
+                    $nextUrl .= '?page='.$nextPage;
+                } else {
+                    $nextUrl .= '&page='.$nextPage;
+                }
             }
 
             $paginatedResults['next'] = $nextUrl;
@@ -211,7 +215,11 @@ class ObjectsController extends Controller
             $prevPage = $page - 1;
             $prevUrl  = preg_replace('/([?&])page=\d+/', '$1page='.$prevPage, $currentUrl);
             if (strpos($prevUrl, 'page=') === false) {
-                $prevUrl .= (strpos($prevUrl, '?') === false ? '?' : '&').'page='.$prevPage;
+                if (strpos($prevUrl, '?') === false) {
+                    $prevUrl .= '?page='.$prevPage;
+                } else {
+                    $prevUrl .= '&page='.$prevPage;
+                }
             }
 
             $paginatedResults['prev'] = $prevUrl;
@@ -254,8 +262,21 @@ class ObjectsController extends Controller
 
         // Extract and normalize parameters.
         $limit  = (int) ($params['limit'] ?? $params['_limit'] ?? 20);
-        $offset = isset($params['offset']) ? (int) $params['offset'] : (isset($params['_offset']) ? (int) $params['_offset'] : null);
-        $page   = isset($params['page']) ? (int) $params['page'] : (isset($params['_page']) ? (int) $params['_page'] : null);
+        if (isset($params['offset']) === true) {
+            $offset = (int) $params['offset'];
+        } else if (isset($params['_offset']) === true) {
+            $offset = (int) $params['_offset'];
+        } else {
+            $offset = null;
+        }
+
+        if (isset($params['page']) === true) {
+            $page = (int) $params['page'];
+        } else if (isset($params['_page']) === true) {
+            $page = (int) $params['_page'];
+        } else {
+            $page = null;
+        }
 
         // If we have a page but no offset, calculate the offset.
         if ($page !== null && $offset === null) {
@@ -615,14 +636,14 @@ class ObjectsController extends Controller
             }
         } catch (ValidationException | CustomValidationException $exception) {
             // Handle validation errors.
-                       return new JSONResponse(data: $exception->getMessage(), folderId: statusCode: 400);
+                       return new JSONResponse(data: $exception->getMessage(), statusCode: 400);
         } catch (\Exception $exception) {
             // Handle all other exceptions (including RBAC permission errors).
-            return new JSONResponse(data: ['error' => $exception->getMessage()], rbac: statusCode: 403);
+            return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 403);
         }//end try
 
         // Return the created object.
-        return new JSONResponse(data: $objectEntity->jsonSerialize(), multi: statusCode: 201);
+        return new JSONResponse(data: $objectEntity->jsonSerialize(), statusCode: 201);
 
     }//end create()
 
@@ -762,7 +783,7 @@ class ObjectsController extends Controller
             return $objectService->handleValidationException(exception: $exception);
         } catch (\Exception $exception) {
             // Handle all other exceptions (including RBAC permission errors).
-            return new JSONResponse(data: ['error' => $exception->getMessage()], rbac: statusCode: 403);
+            return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 403);
         }//end try
 
     }//end update()
@@ -867,7 +888,7 @@ class ObjectsController extends Controller
             return $objectService->handleValidationException(exception: $exception);
         } catch (\Exception $exception) {
             // Handle all other exceptions (including RBAC permission errors).
-            return new JSONResponse(data: ['error' => $exception->getMessage()], schema: statusCode: 403);
+            return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 403);
         }
 
     }//end patch()
@@ -1082,7 +1103,7 @@ class ObjectsController extends Controller
         try {
             $object = $objectService->find(id: $id);
         } catch (\Exception $e) {
-            return new JSONResponse(data: ['message' => 'Object not found'], register: statusCode: 404);
+            return new JSONResponse(data: ['message' => 'Object not found'], statusCode: 404);
         }
 
         // Normalize and compare register.

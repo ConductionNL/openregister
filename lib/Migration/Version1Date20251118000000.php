@@ -1,5 +1,5 @@
 <?php
-
+declare(strict_types=1);
 /**
  * Migration to drop deprecated file_texts and object_texts tables.
  *
@@ -41,10 +41,6 @@ class Version1Date20251118000000 extends SimpleMigrationStep
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /*
-         * @var ISchemaWrapper $schema
-         */
-
         $schema = $schemaClosure();
 
         $this->dropFileTextsTable($output, $schema);
@@ -66,12 +62,12 @@ class Version1Date20251118000000 extends SimpleMigrationStep
     private function dropFileTextsTable(IOutput $output, ISchemaWrapper $schema): void
     {
         if ($schema->hasTable('openregister_file_texts') === false) {
-            $output->info(message: ('ℹ️  Table openregister_file_texts does not exist, skipping.');
+            $output->info(message: 'ℹ️  Table openregister_file_texts does not exist, skipping.');
             return;
         }
 
         $schema->dropTable('openregister_file_texts');
-        $output->info(message: ('✅ Dropped deprecated openregister_file_texts table.');
+        $output->info(message: '✅ Dropped deprecated openregister_file_texts table.');
 
     }//end dropFileTextsTable()
 
@@ -87,15 +83,14 @@ class Version1Date20251118000000 extends SimpleMigrationStep
     private function dropObjectTextsTable(IOutput $output, ISchemaWrapper $schema): void
     {
         if ($schema->hasTable('openregister_object_texts') === false) {
-            $output->info(message: ('ℹ️  Table openregister_object_texts does not exist, skipping.');
+            $output->info(message: 'ℹ️  Table openregister_object_texts does not exist, skipping.');
             return;
         }
 
         $schema->dropTable('openregister_object_texts');
-        $output->info(message: ('✅ Dropped deprecated openregister_object_texts table.');
+        $output->info(message: '✅ Dropped deprecated openregister_object_texts table.');
 
     }//end dropObjectTextsTable()
 
 
 }//end class
-

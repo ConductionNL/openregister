@@ -1,5 +1,5 @@
 <?php
-
+declare(strict_types=1);
 /**
  * OpenRegister Migration - Add expires column to objects
  *
@@ -9,7 +9,7 @@
  * @category Migration
  * @package  OCA\OpenRegister\Migration
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -17,8 +17,6 @@
  *
  * @link https://OpenRegister.app
  */
-
-declare(strict_types=1);
 
 namespace OCA\OpenRegister\Migration;
 
@@ -50,10 +48,6 @@ class Version1Date20250831130000 extends SimpleMigrationStep
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /*
-         * @var ISchemaWrapper $schema
-         */
-
         $schema = $schemaClosure();
 
         // Check if the objects table exists.
@@ -66,15 +60,15 @@ class Version1Date20250831130000 extends SimpleMigrationStep
         // Add expires column if it doesn't exist.
         if ($table->hasColumn('expires') === false) {
             $table->addColumn(
-                    'expires',
-                    'datetime',
-                    [
-                        'notnull' => false,
-                        'default' => null,
-                        'comment' => 'Expiration timestamp for permanent deletion',
-                    ]
-                    );
-            $output->info(message: ('Added expires column to openregister_objects table');
+                'expires',
+                'datetime',
+                [
+                    'notnull' => false,
+                    'default' => null,
+                    'comment' => 'Expiration timestamp for permanent deletion',
+                ]
+            );
+            $output->info(message: 'Added expires column to openregister_objects table');
         }
 
         return $schema;

@@ -343,7 +343,7 @@ class AgentsController extends Controller
 
             $updatedAgent = $this->agentMapper->update($agent);
 
-            $this->logger->info('Agent updated successfully', ['id' => $id]);
+            $this->logger->info(message: 'Agent updated successfully', context: ['id' => $id]);
 
             return new JSONResponse(data: $updatedAgent, statusCode: Http::STATUS_OK);
         } catch (Exception $e) {
@@ -402,7 +402,7 @@ class AgentsController extends Controller
 
             $this->agentMapper->delete($agent);
 
-            $this->logger->info('Agent deleted successfully', ['id' => $id]);
+            $this->logger->info(message: 'Agent deleted successfully', context: ['id' => $id]);
 
             return new JSONResponse(data: ['message' => 'Agent deleted successfully'], statusCode: Http::STATUS_OK);
         } catch (Exception $e) {

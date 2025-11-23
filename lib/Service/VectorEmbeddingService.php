@@ -117,8 +117,8 @@ class VectorEmbeddingService
             return $llmSettings['vectorConfig']['backend'] ?? 'php';
         } catch (\Exception $e) {
             $this->logger->warning(
-                    '[VectorEmbeddingService] Failed to get vector search backend, defaulting to PHP',
-                    [
+                    message: '[VectorEmbeddingService] Failed to get vector search backend, defaulting to PHP',
+                    context: [
                         'error' => $e->getMessage(),
                     ]
                     );
@@ -155,8 +155,8 @@ class VectorEmbeddingService
 
             if ($collection === null || $collection === '') {
                 $this->logger->warning(
-                        '[VectorEmbeddingService] No Solr collection configured for entity type',
-                        [
+                        message: '[VectorEmbeddingService] No Solr collection configured for entity type',
+                        context: [
                             'entity_type' => $entityType,
                         ]
                         );
@@ -165,8 +165,8 @@ class VectorEmbeddingService
             return $collection;
         } catch (\Exception $e) {
             $this->logger->warning(
-                    '[VectorEmbeddingService] Failed to get Solr collection for entity type',
-                    [
+                    message: '[VectorEmbeddingService] Failed to get Solr collection for entity type',
+                    context: [
                         'entity_type' => $entityType,
                         'error'       => $e->getMessage(),
                     ]
@@ -189,8 +189,8 @@ class VectorEmbeddingService
             return $settings['llm']['vectorConfig']['solrField'] ?? '_embedding_';
         } catch (\Exception $e) {
             $this->logger->warning(
-                    '[VectorEmbeddingService] Failed to get Solr vector field, using default',
-                    [
+                    message: '[VectorEmbeddingService] Failed to get Solr vector field, using default',
+                    context: [
                         'error' => $e->getMessage(),
                     ]
                     );
@@ -217,8 +217,8 @@ class VectorEmbeddingService
         $config = $this->getEmbeddingConfig($provider);
 
         $this->logger->debug(
-                'Generating embedding',
-                [
+                message: 'Generating embedding',
+                context: [
                     'text_length' => strlen($text),
                     'provider'    => $config['provider'],
                     'model'       => $config['model'],
@@ -234,8 +234,8 @@ class VectorEmbeddingService
             $dimensions = count($embedding);
 
             $this->logger->debug(
-                    'Embedding generated successfully',
-                    [
+                    message: 'Embedding generated successfully',
+                    context: [
                         'dimensions' => $dimensions,
                         'model'      => $config['model'],
                     ]
@@ -248,8 +248,8 @@ class VectorEmbeddingService
             ];
         } catch (\Exception $e) {
             $this->logger->error(
-                    'Failed to generate embedding',
-                    [
+                    message: 'Failed to generate embedding',
+                    context: [
                         'error'       => $e->getMessage(),
                         'provider'    => $config['provider'],
                         'text_length' => strlen($text),
@@ -285,8 +285,8 @@ class VectorEmbeddingService
     public function generateEmbeddingWithCustomConfig(string $text, array $config): array
     {
         $this->logger->debug(
-                'Generating embedding with custom config',
-                [
+                message: 'Generating embedding with custom config',
+                context: [
                     'text_length' => strlen($text),
                     'provider'    => $config['provider'] ?? 'unknown',
                     'model'       => $config['model'] ?? 'unknown',
@@ -323,8 +323,8 @@ class VectorEmbeddingService
             $embedding = $generator->embedText($text);
 
             $this->logger->debug(
-                    'Embedding generated successfully with custom config',
-                    [
+                    message: 'Embedding generated successfully with custom config',
+                    context: [
                         'dimensions' => count($embedding),
                         'model'      => $normalizedConfig['model'],
                     ]
@@ -333,8 +333,8 @@ class VectorEmbeddingService
             return $embedding;
         } catch (\Exception $e) {
             $this->logger->error(
-                    'Failed to generate embedding with custom config',
-                    [
+                    message: 'Failed to generate embedding with custom config',
+                    context: [
                         'error'       => $e->getMessage(),
                         'provider'    => $config['provider'] ?? 'unknown',
                         'text_length' => strlen($text),
@@ -374,8 +374,8 @@ class VectorEmbeddingService
     public function testEmbedding(string $provider, array $config, string $testText='Test.'): array
     {
         $this->logger->info(
-                '[VectorEmbeddingService] Testing embedding generation',
-                [
+                message: '[VectorEmbeddingService] Testing embedding generation',
+                context: [
                     'provider'       => $provider,
                     'model'          => $config['model'] ?? 'unknown',
                     'testTextLength' => strlen($testText),
@@ -395,8 +395,8 @@ class VectorEmbeddingService
                     );
 
             $this->logger->info(
-                    '[VectorEmbeddingService] Embedding test successful',
-                    [
+                    message: '[VectorEmbeddingService] Embedding test successful',
+                    context: [
                         'provider'   => $provider,
                         'model'      => $config['model'] ?? 'unknown',
                         'dimensions' => count($embedding),
@@ -416,8 +416,8 @@ class VectorEmbeddingService
             ];
         } catch (\Exception $e) {
             $this->logger->error(
-                    '[VectorEmbeddingService] Embedding test failed',
-                    [
+                    message: '[VectorEmbeddingService] Embedding test failed',
+                    context: [
                         'provider' => $provider,
                         'error'    => $e->getMessage(),
                     ]
@@ -450,8 +450,8 @@ class VectorEmbeddingService
         $config = $this->getEmbeddingConfig($provider);
 
         $this->logger->info(
-                'Generating batch embeddings',
-                [
+                message: 'Generating batch embeddings',
+                context: [
                     'count'    => count($texts),
                     'provider' => $config['provider'],
                     'model'    => $config['model'],
@@ -474,8 +474,8 @@ class VectorEmbeddingService
                     ];
                 } catch (\Exception $e) {
                     $this->logger->warning(
-                            'Failed to generate embedding for text',
-                            [
+                            message: 'Failed to generate embedding for text',
+                            context: [
                                 'index' => $index,
                                 'error' => $e->getMessage(),
                             ]
@@ -493,8 +493,8 @@ class VectorEmbeddingService
             $successful = count(array_filter($results, fn($r) => $r['embedding'] !== null));
 
             $this->logger->info(
-                    'Batch embedding generation completed',
-                    [
+                    message: 'Batch embedding generation completed',
+                    context: [
                         'total'      => count($texts),
                         'successful' => $successful,
                         'failed'     => count($texts) - $successful,
@@ -504,8 +504,8 @@ class VectorEmbeddingService
             return $results;
         } catch (\Exception $e) {
             $this->logger->error(
-                    'Failed to generate batch embeddings',
-                    [
+                    message: 'Failed to generate batch embeddings',
+                    context: [
                         'error' => $e->getMessage(),
                         'count' => count($texts),
                     ]
@@ -548,8 +548,8 @@ class VectorEmbeddingService
         array $metadata=[]
     ): string {
         $this->logger->debug(
-                '[VectorEmbeddingService] Storing vector in Solr',
-                [
+                message: '[VectorEmbeddingService] Storing vector in Solr',
+                context: [
                     'entity_type' => $entityType,
                     'entity_id'   => $entityId,
                     'chunk_index' => $chunkIndex,
@@ -597,8 +597,8 @@ class VectorEmbeddingService
             ];
 
             $this->logger->debug(
-                    '[VectorEmbeddingService] Preparing atomic update',
-                    [
+                    message: '[VectorEmbeddingService] Preparing atomic update',
+                    context: [
                         'document_id'    => $documentId,
                         'collection'     => $collection,
                         'vector_field'   => $vectorField,
@@ -623,8 +623,8 @@ class VectorEmbeddingService
             }
 
             $this->logger->info(
-                    '[VectorEmbeddingService] Vector added to existing Solr document',
-                    [
+                    message: '[VectorEmbeddingService] Vector added to existing Solr document',
+                    context: [
                         'document_id' => $documentId,
                         'collection'  => $collection,
                         'entity_type' => $entityType,
@@ -636,8 +636,8 @@ class VectorEmbeddingService
             return $documentId;
         } catch (\Exception $e) {
             $this->logger->error(
-                    '[VectorEmbeddingService] Failed to store vector in Solr',
-                    [
+                    message: '[VectorEmbeddingService] Failed to store vector in Solr',
+                    context: [
                         'error'       => $e->getMessage(),
                         'entity_type' => $entityType,
                         'entity_id'   => $entityId,
@@ -683,8 +683,8 @@ class VectorEmbeddingService
         array $filters=[]
     ): array {
         $this->logger->debug(
-                '[VectorEmbeddingService] Searching vectors in Solr',
-                [
+                message: '[VectorEmbeddingService] Searching vectors in Solr',
+                context: [
                     'limit'   => $limit,
                     'filters' => $filters,
                 ]
@@ -747,8 +747,8 @@ class VectorEmbeddingService
                 $entityType = $collectionInfo['type'];
 
                 $this->logger->debug(
-                        '[VectorEmbeddingService] Searching collection',
-                        [
+                        message: '[VectorEmbeddingService] Searching collection',
+                        context: [
                             'collection'  => $collection,
                             'entity_type' => $entityType,
                         ]
@@ -777,8 +777,8 @@ class VectorEmbeddingService
 
                     if (isset($responseData['response']['docs']) === false) {
                         $this->logger->warning(
-                                '[VectorEmbeddingService] Invalid Solr response format',
-                                [
+                                message: '[VectorEmbeddingService] Invalid Solr response format',
+                                context: [
                                     'collection' => $collection,
                                 ]
                                 );
@@ -803,8 +803,8 @@ class VectorEmbeddingService
                     }
                 } catch (\Exception $e) {
                     $this->logger->warning(
-                            '[VectorEmbeddingService] Failed to search collection',
-                            [
+                            message: '[VectorEmbeddingService] Failed to search collection',
+                            context: [
                                 'collection' => $collection,
                                 'error'      => $e->getMessage(),
                             ]
@@ -818,8 +818,8 @@ class VectorEmbeddingService
             $allResults = array_slice($allResults, 0, $limit);
 
             $this->logger->info(
-                    '[VectorEmbeddingService] Solr vector search completed',
-                    [
+                    message: '[VectorEmbeddingService] Solr vector search completed',
+                    context: [
                         'results_count'        => count($allResults),
                         'collections_searched' => count($collectionsToSearch),
                     ]
@@ -828,8 +828,8 @@ class VectorEmbeddingService
             return $allResults;
         } catch (\Exception $e) {
             $this->logger->error(
-                    '[VectorEmbeddingService] Solr vector search failed',
-                    [
+                    message: '[VectorEmbeddingService] Solr vector search failed',
+                    context: [
                         'error' => $e->getMessage(),
                     ]
                     );
@@ -892,8 +892,8 @@ class VectorEmbeddingService
         $backend = $this->getVectorSearchBackend();
 
         $this->logger->debug(
-                '[VectorEmbeddingService] Routing vector storage',
-                [
+                message: '[VectorEmbeddingService] Routing vector storage',
+                context: [
                     'backend'     => $backend,
                     'entity_type' => $entityType,
                     'entity_id'   => $entityId,
@@ -935,8 +935,8 @@ class VectorEmbeddingService
             );
         } catch (\Exception $e) {
             $this->logger->error(
-                    '[VectorEmbeddingService] Failed to store vector',
-                    [
+                    message: '[VectorEmbeddingService] Failed to store vector',
+                    context: [
                         'backend'     => $backend,
                         'error'       => $e->getMessage(),
                         'entity_type' => $entityType,
@@ -978,7 +978,7 @@ class VectorEmbeddingService
         array $metadata=[]
     ): int {
         $this->logger->debug(
-                '[VectorEmbeddingService] Storing vector in database',
+                message: '[VectorEmbeddingService] Storing vector in database',
                 [
                     'entity_type' => $entityType,
                     'entity_id'   => $entityId,
@@ -1028,19 +1028,19 @@ class VectorEmbeddingService
             $vectorId = $qb->getLastInsertId();
 
             $this->logger->info(
-                    'Vector stored successfully',
-                    [
-                        'vector_id'   => $vectorId,
-                        'entity_type' => $entityType,
-                        'entity_id'   => $entityId,
-                    ]
+                message: 'Vector stored successfully',
+                context: [
+                    'vector_id'   => $vectorId,
+                    'entity_type' => $entityType,
+                    'entity_id'   => $entityId,
+                ]
                     );
 
             return $vectorId;
         } catch (\Exception $e) {
             $this->logger->error(
-                    'Failed to store vector',
-                    [
+                    message: 'Failed to store vector',
+                    context: [
                         'error'       => $e->getMessage(),
                         'entity_type' => $entityType,
                         'entity_id'   => $entityId,
@@ -1076,8 +1076,8 @@ class VectorEmbeddingService
         $backend   = $this->getVectorSearchBackend();
 
         $this->logger->info(
-                '[VectorEmbeddingService] Performing semantic search',
-                [
+                message: '[VectorEmbeddingService] Performing semantic search',
+                context: [
                     'backend'      => $backend,
                     'query_length' => strlen($query),
                     'limit'        => $limit,
@@ -1087,27 +1087,37 @@ class VectorEmbeddingService
 
         try {
             // Step 1: Generate embedding for query.
-            $this->logger->debug('Step 1: Generating query embedding');
+            $this->logger->debug(message: 'Step 1: Generating query embedding');
             $queryEmbeddingData = $this->generateEmbedding($query, $provider);
             $queryEmbedding     = $queryEmbeddingData['embedding'];
 
             // Step 2: Route to appropriate backend for vector search.
             if ($backend === 'solr') {
                 // Use Solr KNN search.
-                $this->logger->debug('Step 2: Searching vectors in Solr using KNN');
+                $this->logger->debug(
+                message:'Step 2: Searching vectors in Solr using KNN'
+                        );
                 $results = $this->searchVectorsInSolr($queryEmbedding, $limit, $filters);
             } else {
                 // Use PHP/database similarity calculation.
-                $this->logger->debug('Step 2: Fetching vectors from database');
+                $this->logger->debug(
+                message:'Step 2: Fetching vectors from database'
+                        );
                 $vectors = $this->fetchVectors($filters);
 
                 if ($vectors === []) {
-                    $this->logger->warning('No vectors found in database', ['filters' => $filters]);
+                    $this->logger->warning(
+                    message:'No vectors found in database',
+                            ['filters' => $filters]
+                            );
                     return [];
                 }
 
                 // Step 3: Calculate cosine similarity for each vector.
-                $this->logger->debug('Step 3: Calculating similarities', ['vector_count' => count($vectors)]);
+                $this->logger->debug(
+                message:'Step 3: Calculating similarities',
+                        ['vector_count' => count($vectors)]
+                        );
                 $results = [];
 
                 foreach ($vectors as $vector) {
@@ -1115,7 +1125,10 @@ class VectorEmbeddingService
                         $storedEmbedding = unserialize($vector['embedding']);
 
                         if (is_array($storedEmbedding) === false) {
-                            $this->logger->warning('Invalid embedding format', ['vector_id' => $vector['id']]);
+                            $this->logger->warning(
+                            message:'Invalid embedding format',
+                                    ['vector_id' => $vector['id']]
+                                    );
                             continue;
                         }
 
@@ -1141,11 +1154,11 @@ class VectorEmbeddingService
                         ];
                     } catch (\Exception $e) {
                         $this->logger->warning(
-                                'Failed to process vector',
-                                [
-                                    'vector_id' => $vector['id'],
-                                    'error'     => $e->getMessage(),
-                                ]
+                        message: 'Failed to process vector',
+                        context: [
+                            'vector_id' => $vector['id'],
+                            'error'     => $e->getMessage(),
+                        ]
                                 );
                     }//end try
                 }//end foreach
@@ -1161,13 +1174,13 @@ class VectorEmbeddingService
             $searchTime = round((microtime(true) - $startTime) * 1000, 2);
 
             $this->logger->info(
-                    '[VectorEmbeddingService] Semantic search completed',
-                    [
-                        'backend'        => $backend,
-                        'results_count'  => count($results),
-                        'top_similarity' => $results[0]['similarity'] ?? 0,
-                        'search_time_ms' => $searchTime,
-                    ]
+                message: '[VectorEmbeddingService] Semantic search completed',
+                context: [
+                    'backend'        => $backend,
+                    'results_count'  => count($results),
+                    'top_similarity' => $results[0]['similarity'] ?? 0,
+                    'search_time_ms' => $searchTime,
+                ]
                     );
 
             return $results;
@@ -1175,8 +1188,8 @@ class VectorEmbeddingService
             $searchTime = round((microtime(true) - $startTime) * 1000, 2);
 
             $this->logger->error(
-                    'Semantic search failed',
-                    [
+                    message: 'Semantic search failed',
+                    context: [
                         'error'          => $e->getMessage(),
                         'search_time_ms' => $searchTime,
                     ]
@@ -1252,29 +1265,29 @@ class VectorEmbeddingService
             $qb->orderBy('created_at', 'DESC');
             // Get most recent vectors first.
             $this->logger->debug(
-                    '[VectorEmbeddingService] Applied vector fetch limit for performance',
-                    [
-                        'max_vectors' => $maxVectors,
-                        'note'        => 'Temporary optimization until PostgreSQL + pgvector migration',
-                    ]
+                message: '[VectorEmbeddingService] Applied vector fetch limit for performance',
+                context: [
+                    'max_vectors' => $maxVectors,
+                    'note'        => 'Temporary optimization until PostgreSQL + pgvector migration',
+                ]
                     );
 
             $result  = $qb->executeQuery();
             $vectors = $result->fetchAll();
 
             $this->logger->debug(
-                    'Fetched vectors from database',
-                    [
-                        'count'   => count($vectors),
-                        'filters' => $filters,
-                    ]
+                message: 'Fetched vectors from database',
+                context: [
+                    'count'   => count($vectors),
+                    'filters' => $filters,
+                ]
                     );
 
             return $vectors;
         } catch (\Exception $e) {
             $this->logger->error(
-                    'Failed to fetch vectors',
-                    [
+                    message: 'Failed to fetch vectors',
+                    context: [
                         'error' => $e->getMessage(),
                     ]
                     );
@@ -1321,6 +1334,7 @@ class VectorEmbeddingService
         $startTime = microtime(true);
 
         $this->logger->info(
+                message:
                 'Performing hybrid search',
                 [
                     'query'        => $query,
@@ -1343,7 +1357,9 @@ class VectorEmbeddingService
             }
 
             // Step 1: Perform vector semantic search (get 2x limit for better coverage).
-            $this->logger->debug('Step 1: Performing semantic search');
+            $this->logger->debug(
+                message:'Step 1: Performing semantic search'
+                    );
             $vectorResults = [];
             if ($vectorWeight > 0) {
                 try {
@@ -1355,6 +1371,7 @@ class VectorEmbeddingService
                     );
                 } catch (\Exception $e) {
                     $this->logger->warning(
+                    message:
                             'Vector search failed, continuing with SOLR only',
                             [
                                 'error' => $e->getMessage(),
@@ -1365,13 +1382,17 @@ class VectorEmbeddingService
 
             // Step 2: TODO - Perform SOLR keyword search (get 2x limit).
             // This will be implemented when we integrate with SOLR services.
-            $this->logger->debug('Step 2: SOLR keyword search (not yet integrated)');
+            $this->logger->debug(
+                message:'Step 2: SOLR keyword search (not yet integrated)'
+                    );
             $solrResults = [];
 
             // For now, just use vector results.
             // In Phase 6.2, we'll integrate actual SOLR search.
             // Step 3: Combine results using Reciprocal Rank Fusion (RRF).
-            $this->logger->debug('Step 3: Merging results with RRF');
+            $this->logger->debug(
+                message:'Step 3: Merging results with RRF'
+                    );
             $combined = $this->reciprocalRankFusion(
                 $vectorResults,
                 $solrResults,
@@ -1400,6 +1421,7 @@ class VectorEmbeddingService
             }
 
             $this->logger->info(
+                message:
                     'Hybrid search completed',
                     [
                         'results_count'    => count($finalResults),
@@ -1430,6 +1452,7 @@ class VectorEmbeddingService
             $searchTime = round((microtime(true) - $startTime) * 1000, 2);
 
             $this->logger->error(
+                    message:
                     'Hybrid search failed',
                     [
                         'error'          => $e->getMessage(),
@@ -1557,6 +1580,7 @@ class VectorEmbeddingService
     public function deleteVectors(string $entityType, string $entityId): int
     {
         $this->logger->info(
+                message:
                 'Deleting vectors',
                 [
                     'entity_type' => $entityType,
@@ -1572,6 +1596,7 @@ class VectorEmbeddingService
                 ->executeStatement();
 
             $this->logger->info(
+                message:
                     'Vectors deleted',
                     [
                         'count'       => $deleted,
@@ -1583,6 +1608,7 @@ class VectorEmbeddingService
             return $deleted;
         } catch (\Exception $e) {
             $this->logger->error(
+                    message:
                     'Failed to delete vectors',
                     [
                         'error' => $e->getMessage(),
@@ -1626,6 +1652,7 @@ class VectorEmbeddingService
             return $count;
         } catch (\Exception $e) {
             $this->logger->error(
+                    message:
                     'Failed to get vector count',
                     [
                         'entity_type' => $entityType,
@@ -1696,6 +1723,7 @@ class VectorEmbeddingService
             ];
         } catch (\Exception $e) {
             $this->logger->error(
+                    message:
                     'Failed to get vector stats',
                     [
                         'error' => $e->getMessage(),
@@ -1731,7 +1759,9 @@ class VectorEmbeddingService
     {
         try {
             if ($this->solrService->isAvailable() === false) {
-                $this->logger->warning('[VectorEmbeddingService] Solr not available for stats');
+                $this->logger->warning(
+                    message:'[VectorEmbeddingService] Solr not available for stats'
+                        );
                 return [
                     'total_vectors'  => 0,
                     'by_type'        => [],
@@ -1759,6 +1789,7 @@ class VectorEmbeddingService
                     $byModel     = array_merge($byModel, $objectStats['by_model']);
                 } catch (\Exception $e) {
                     $this->logger->warning(
+                    message:
                             '[VectorEmbeddingService] Failed to get object vector stats from Solr',
                             [
                                 'error' => $e->getMessage(),
@@ -1778,6 +1809,7 @@ class VectorEmbeddingService
                     }
                 } catch (\Exception $e) {
                     $this->logger->warning(
+                    message:
                             '[VectorEmbeddingService] Failed to get file vector stats from Solr',
                             [
                                 'error' => $e->getMessage(),
@@ -1789,6 +1821,7 @@ class VectorEmbeddingService
             $total = $objectCount + $fileCount;
 
             $this->logger->debug(
+                message:
                     '[VectorEmbeddingService] Vector stats from Solr',
                     [
                         'total'   => $total,
@@ -1810,6 +1843,7 @@ class VectorEmbeddingService
             ];
         } catch (\Exception $e) {
             $this->logger->error(
+                    message:
                     '[VectorEmbeddingService] Failed to get vector stats from Solr',
                     [
                         'error' => $e->getMessage(),
@@ -1952,6 +1986,7 @@ class VectorEmbeddingService
 
         if (isset($this->generatorCache[$cacheKey]) === false) {
             $this->logger->debug(
+                message:
                     'Creating new embedding generator',
                     [
                         'provider' => $config['provider'],
@@ -1970,6 +2005,7 @@ class VectorEmbeddingService
             $this->generatorCache[$cacheKey] = $generator;
 
             $this->logger->info(
+                message:
                     'Embedding generator created',
                     [
                         'provider'   => $config['provider'],
@@ -2086,6 +2122,7 @@ class VectorEmbeddingService
                 $url = rtrim($this->config['base_url'] ?? 'https://api.fireworks.ai/inference/v1', '/').'/embeddings';
 
                 $this->logger->debug(
+                message:
                         'Calling Fireworks AI API',
                         [
                             'url'   => $url,
@@ -2280,6 +2317,7 @@ class VectorEmbeddingService
     public function vectorizeFileChunks(int $fileId, array $chunks, array $metadata=[], ?string $provider=null): array
     {
         $this->logger->info(
+                message:
                 'Vectorizing file chunks',
                 [
                     'file_id'     => $fileId,
@@ -2320,6 +2358,7 @@ class VectorEmbeddingService
             } catch (\Exception $e) {
                 $errors[$index] = $e->getMessage();
                 $this->logger->error(
+                    message:
                         'Failed to vectorize chunk',
                         [
                             'file_id'     => $fileId,
@@ -2333,6 +2372,7 @@ class VectorEmbeddingService
         $executionTime = round((microtime(true) - $startTime) * 1000, 2);
 
         $this->logger->info(
+                message:
                 'Completed file chunk vectorization',
                 [
                     'file_id'           => $fileId,
@@ -2367,6 +2407,7 @@ class VectorEmbeddingService
     public function searchFileChunks(string $query, int $limit=10, float $minScore=0.7, ?int $fileId=null): array
     {
         $this->logger->debug(
+                message:
                 'Searching file chunks',
                 [
                     'query'     => $query,
@@ -2590,6 +2631,7 @@ class VectorEmbeddingService
             ];
         } catch (\Exception $e) {
             $this->logger->error(
+                    message:
                     'Failed to check embedding model mismatch',
                     [
                         'error' => $e->getMessage(),
@@ -2641,6 +2683,7 @@ class VectorEmbeddingService
             $deletedCount = $qb->executeStatement();
 
             $this->logger->info(
+                message:
                     'All embeddings cleared',
                     [
                         'deleted_count' => $deletedCount,
@@ -2654,6 +2697,7 @@ class VectorEmbeddingService
             ];
         } catch (\Exception $e) {
             $this->logger->error(
+                    message:
                     'Failed to clear embeddings',
                     [
                         'error' => $e->getMessage(),

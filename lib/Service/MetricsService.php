@@ -123,11 +123,11 @@ class MetricsService
             $qb->execute();
         } catch (\Exception $e) {
             $this->logger->error(
-            '[MetricsService] Failed to record metric',
-            [
-                'metric_type' => $metricType,
-                'error'       => $e->getMessage(),
-            ]
+                    message: '[MetricsService] Failed to record metric',
+                    context: [
+                        'metric_type' => $metricType,
+                        'error'       => $e->getMessage(),
+                    ]
             );
         }//end try
 

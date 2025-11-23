@@ -202,7 +202,7 @@ class ConfigurationsController extends Controller
         }
 
         try {
-            return new JSONResponse(data: $this->configurationMapper->updateFromArray($id, statusCode: $data)
+            return new JSONResponse(data: $this->configurationMapper->updateFromArray(id: $id, data: $data)
             );
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => 'Failed to update configuration: '.$e->getMessage()], statusCode: 400);
@@ -243,7 +243,7 @@ class ConfigurationsController extends Controller
         try {
             $configuration = $this->configurationMapper->find($id);
             $this->configurationMapper->delete($configuration);
-            return new JSONResponse(data: );
+            return new JSONResponse(data: null, statusCode: 204);
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => 'Failed to delete configuration: '.$e->getMessage()], statusCode: 400);
         }

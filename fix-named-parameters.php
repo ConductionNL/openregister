@@ -30,6 +30,33 @@ class NamedParameterFixer
     /**
      * Fix a single file
      */
+    /**
+     * Find balanced brackets starting from a position
+     */
+    private function findBalancedBrackets(string $content, int $startPos, string $openChar, string $closeChar): ?array
+    {
+        $depth = 0;
+        $pos = $startPos;
+        $start = $pos;
+        
+        while ($pos < strlen($content)) {
+            $char = $content[$pos];
+            if ($char === $openChar) {
+                $depth++;
+            } elseif ($char === $closeChar) {
+                $depth--;
+                if ($depth === 0) {
+                    return [
+                        'content' => substr($content, $start, $pos - $start + 1),
+                        'endPos' => $pos + 1
+                    ];
+                }
+            }
+            $pos++;
+        }
+        return null;
+    }
+
     public function fixFile(string $filePath): void
     {
         if (!file_exists($filePath)) {
@@ -41,19 +68,118 @@ class NamedParameterFixer
         $originalContent = $content;
         $replacements = 0;
 
-        // Fix logger method calls: $logger->info('message', ['context'])
+        // Fix logger method calls: $this->logger->info('message', ['context'])
+        // First, handle simple cases with regex, then complex multi-line cases
+        // Pattern 1: Single-line logger calls with array: $this->logger->info('msg', ['key' => 'val'])
+        // Match arrays that may contain variables: ['key' => $var]
         $content = preg_replace_callback(
-            '/\$(\w+)->(info|warning|error|debug|critical|alert|emergency)\s*\(\s*([^,]+?)\s*,\s*(\[[^\]]+\])\s*\)/s',
+            '/\$(\w+)->logger->(info|warning|error|debug|critical|alert|emergency)\s*\(\s*([^,]+?)\s*,\s*(\[[^\]]*\])\s*\)/s',
             function ($matches) use (&$replacements) {
+                if (strpos($matches[0], 'message:') !== false) {
+                    return $matches[0]; // Already fixed
+                }
                 $replacements++;
                 $var = $matches[1];
                 $method = $matches[2];
                 $message = trim($matches[3]);
                 $context = trim($matches[4]);
-                return "\${$var}->{$method}(message: {$message}, context: {$context})";
+                return "\${$var}->logger->{$method}(message: {$message}, context: {$context})";
             },
             $content
         );
+        
+        // Pattern 2: Handle multi-line logger calls with arrays using balanced bracket matching
+        $offset = 0;
+        while (($pos = strpos($content, '->', $offset)) !== false) {
+            // Check if this is a logger method call - look backwards to find $this->logger or $var->logger
+            $checkStart = max(0, $pos - 100);
+            $checkStr = substr($content, $checkStart, $pos - $checkStart + 30);
+            if (!preg_match('/\$(\w+)->logger->(info|warning|error|debug|critical|alert|emergency)\s*\(/', $checkStr, $methodMatch, PREG_OFFSET_CAPTURE)) {
+                $offset = $pos + 1;
+                continue;
+            }
+            
+            $var = $methodMatch[1][0];
+            $method = $methodMatch[2][0];
+            $actualPos = $checkStart + $methodMatch[0][1]; // Actual position of the match
+            $openParen = strpos($content, '(', $actualPos);
+            if ($openParen === false) {
+                $offset = $actualPos + 1;
+                continue;
+            }
+            
+            // Skip if already has named parameters
+            $checkStr = substr($content, $openParen, 100);
+            if (strpos($checkStr, 'message:') !== false || strpos($checkStr, 'context:') !== false) {
+                $offset = $actualPos + 1;
+                continue;
+            }
+            
+            // Find the message parameter (first parameter) - handle strings with concatenation
+            $msgStart = $openParen + 1;
+            $msgEnd = $msgStart;
+            $depth = 0;
+            $inString = false;
+            $stringChar = '';
+            $foundComma = false;
+            
+            // Find end of first parameter
+            while ($msgEnd < strlen($content)) {
+                $char = $content[$msgEnd];
+                if (!$inString && ($char === '"' || $char === "'")) {
+                    $inString = true;
+                    $stringChar = $char;
+                } elseif ($inString && $char === $stringChar && ($msgEnd === 0 || $content[$msgEnd - 1] !== '\\')) {
+                    $inString = false;
+                } elseif (!$inString) {
+                    if ($char === '(' || $char === '[') {
+                        $depth++;
+                    } elseif ($char === ')' || $char === ']') {
+                        $depth--;
+                        if ($depth < 0 && $char === ')') {
+                            // Only one parameter, closing paren
+                            break;
+                        }
+                    } elseif ($char === ',' && $depth === 0) {
+                        $foundComma = true;
+                        break;
+                    }
+                }
+                $msgEnd++;
+            }
+            
+            $message = trim(substr($content, $msgStart, $msgEnd - $msgStart));
+            if ($foundComma && $msgEnd < strlen($content)) {
+                // There's a second parameter - find the context array
+                $ctxStart = $msgEnd + 1;
+                $arrayMatch = $this->findBalancedBrackets($content, $ctxStart - 1, '[', ']');
+                if ($arrayMatch) {
+                    $context = $arrayMatch['content'];
+                    $closeParenPos = $arrayMatch['endPos'];
+                    // Find the closing paren
+                    $closeParen = strpos($content, ')', $closeParenPos);
+                    if ($closeParen !== false) {
+                        $replacements++;
+                        $replacement = "\${$var}->logger->{$method}(message: {$message}, context: {$context})";
+                        $content = substr_replace($content, $replacement, $actualPos, $closeParen - $actualPos + 1);
+                        $offset = $actualPos + strlen($replacement);
+                        continue;
+                    }
+                }
+            } else {
+                // Single parameter - add message: prefix
+                $closeParen = strpos($content, ')', $msgEnd);
+                if ($closeParen !== false) {
+                    $replacements++;
+                    $replacement = "\${$var}->logger->{$method}(message: {$message})";
+                    $content = substr_replace($content, $replacement, $actualPos, $closeParen - $actualPos + 1);
+                    $offset = $actualPos + strlen($replacement);
+                    continue;
+                }
+            }
+            
+            $offset = $pos + 1;
+        }
 
         // Fix logger method calls with single string parameter: $logger->info('message')
         // Only match if it's a simple string literal (not a variable or complex expression)
@@ -78,8 +204,9 @@ class NamedParameterFixer
         );
 
         // Fix JSONResponse constructor: new JSONResponse($data, $statusCode)
+        // Handle multi-line calls by matching balanced brackets
         $content = preg_replace_callback(
-            '/new\s+JSONResponse\s*\(\s*([^,]+?)\s*,\s*([^\)]+?)\s*\)/s',
+            '/new\s+JSONResponse\s*\(\s*(\[.*?\]|\(.*?\)|[^,)]+)\s*,\s*(\d+|Http::[A-Z_]+|[^\)\s]+)\s*\)/s',
             function ($matches) use (&$replacements) {
                 if (strpos($matches[0], 'data:') !== false || strpos($matches[0], 'statusCode:') !== false) {
                     return $matches[0]; // Already fixed
@@ -91,6 +218,105 @@ class NamedParameterFixer
             },
             $content
         );
+        
+        // Fix multi-line JSONResponse calls with better bracket matching
+        // Pattern: new JSONResponse(\n    [\n        ...\n    ],\n    statusCode\n)
+        $content = preg_replace_callback(
+            '/new\s+JSONResponse\s*\(\s*(\[.*?\n.*?\],?)\s*\n\s*(\d+|Http::[A-Z_]+)\s*\)/s',
+            function ($matches) use (&$replacements) {
+                if (strpos($matches[0], 'data:') !== false || strpos($matches[0], 'statusCode:') !== false) {
+                    return $matches[0]; // Already fixed
+                }
+                $replacements++;
+                $data = trim($matches[1]);
+                $statusCode = trim($matches[2]);
+                // Remove trailing comma from array if present
+                $data = rtrim($data, ',');
+                return "new JSONResponse(data: {$data}, statusCode: {$statusCode})";
+            },
+            $content
+        );
+        
+        // Fix multi-line JSONResponse calls using balanced bracket matching
+        $offset = 0;
+        while (($pos = strpos($content, 'new JSONResponse(', $offset)) !== false) {
+            // Check if already has named parameters
+            $checkRange = substr($content, $pos, min(300, strlen($content) - $pos));
+            if (strpos($checkRange, 'data:') !== false || strpos($checkRange, 'statusCode:') !== false) {
+                $offset = $pos + 1;
+                continue;
+            }
+            
+            $parenPos = $pos + strlen('new JSONResponse(');
+            // Skip whitespace
+            while ($parenPos < strlen($content) && preg_match('/\s/', $content[$parenPos])) {
+                $parenPos++;
+            }
+            
+            if ($parenPos >= strlen($content)) {
+                break;
+            }
+            
+            // Check if it's an array
+            if ($content[$parenPos] === '[') {
+                $arrayResult = $this->findBalancedBrackets($content, $parenPos, '[', ']');
+                if ($arrayResult === null) {
+                    $offset = $pos + 1;
+                    continue;
+                }
+                
+                $arrayContent = $arrayResult['content'];
+                $afterArray = $arrayResult['endPos'];
+                
+                // Skip whitespace after array
+                while ($afterArray < strlen($content) && preg_match('/\s/', $content[$afterArray])) {
+                    $afterArray++;
+                }
+                
+                // Check for comma
+                if ($afterArray < strlen($content) && $content[$afterArray] === ',') {
+                    $afterComma = $afterArray + 1;
+                    // Skip whitespace after comma
+                    while ($afterComma < strlen($content) && preg_match('/\s/', $content[$afterComma])) {
+                        $afterComma++;
+                    }
+                    
+                    // Find status code (number or Http:: constant)
+                    $statusCodeStart = $afterComma;
+                    $statusCodeEnd = $statusCodeStart;
+                    while ($statusCodeEnd < strlen($content) && 
+                           $content[$statusCodeEnd] !== ')' && 
+                           (ctype_digit($content[$statusCodeEnd]) || 
+                            preg_match('/[A-Z_:]/', $content[$statusCodeEnd]) ||
+                            !preg_match('/\s/', $content[$statusCodeEnd]))) {
+                        $statusCodeEnd++;
+                    }
+                    
+                    // Find closing parenthesis
+                    $closeParen = strpos($content, ')', $statusCodeEnd);
+                    if ($closeParen !== false) {
+                        $statusCode = trim(substr($content, $statusCodeStart, $statusCodeEnd - $statusCodeStart));
+                        $data = trim($arrayContent);
+                        
+                        // Extract indentation from the original
+                        $lines = explode("\n", substr($content, $pos, $closeParen - $pos + 1));
+                        $indent = '';
+                        if (count($lines) > 1) {
+                            preg_match('/^(\s*)/', $lines[1], $indentMatch);
+                            $indent = $indentMatch[1] ?? '';
+                        }
+                        
+                        $replacement = "new JSONResponse(\n{$indent}                        data: {$data},\n{$indent}                        statusCode: {$statusCode}\n{$indent}                    )";
+                        $content = substr_replace($content, $replacement, $pos, $closeParen - $pos + 1);
+                        $replacements++;
+                        $offset = $pos + strlen($replacement);
+                        continue;
+                    }
+                }
+            }
+            
+            $offset = $pos + 1;
+        }
 
         // Fix JSONResponse constructor with single parameter: new JSONResponse($data)
         $content = preg_replace_callback(
@@ -422,6 +648,7 @@ class NamedParameterFixer
         );
 
         // Fix userManager->get: $userManager->get($userId)
+        // BUT exclude container->get() calls - those use 'id' parameter, not 'userId'
         $content = preg_replace_callback(
             '/\$(\w+)->get\s*\(\s*([^\)]+?)\s*\)(?!\s*->)/s',
             function ($matches) use (&$replacements) {
@@ -429,11 +656,15 @@ class NamedParameterFixer
                 if (strpos($matches[0], ':') !== false || preg_match('/\)\s*->/', $matches[0])) {
                     return $matches[0];
                 }
+                // Skip container->get() calls - they should use 'id' parameter, not 'userId'
+                $var = $matches[1];
+                if ($var === 'container') {
+                    return $matches[0]; // Don't fix container->get() - it uses 'id' parameter
+                }
                 // Only match if it looks like a user ID (string variable or literal)
                 $arg = trim($matches[2]);
                 if (preg_match('/^\$[a-zA-Z_][a-zA-Z0-9_]*$/', $arg) || preg_match('/^["\']/', $arg)) {
                     $replacements++;
-                    $var = $matches[1];
                     return "\${$var}->get(userId: {$arg})";
                 }
                 return $matches[0];

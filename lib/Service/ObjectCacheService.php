@@ -940,7 +940,7 @@ class ObjectCacheService
             }
         }
 
-        $this->logger->debug('🧹 SEARCH CACHE CLEARED', ['pattern' => $pattern ?? 'all']);
+        $this->logger->debug(message: '🧹 SEARCH CACHE CLEARED', context: ['pattern' => $pattern ?? 'all']);
 
     }//end clearSearchCache()
 
@@ -1335,7 +1335,7 @@ class ObjectCacheService
         // Check in-memory cache first (fastest).
         if (isset($this->nameCache[$key])) {
             $this->stats['name_hits']++;
-            $this->logger->debug('🚀 NAME CACHE HIT (in-memory)', ['identifier' => $key]);
+            $this->logger->debug(message: '🚀 NAME CACHE HIT (in-memory)', context: ['identifier' => $key]);
             return $this->nameCache[$key];
         }
 
@@ -1347,7 +1347,7 @@ class ObjectCacheService
                     // Store in in-memory cache for faster future access.
                     $this->nameCache[$key] = $cachedName;
                     $this->stats['name_hits']++;
-                    $this->logger->debug('⚡ NAME CACHE HIT (distributed)', ['identifier' => $key]);
+                    $this->logger->debug(message: '⚡ NAME CACHE HIT (distributed)', context: ['identifier' => $key]);
                     return $cachedName;
                 }
             } catch (\Exception $e) {
@@ -1363,7 +1363,7 @@ class ObjectCacheService
 
         // Cache miss - load from database.
         $this->stats['name_misses']++;
-        $this->logger->debug('❌ NAME CACHE MISS', ['identifier' => $key]);
+        $this->logger->debug(message: '❌ NAME CACHE MISS', context: ['identifier' => $key]);
 
         try {
             // STEP 1: Try to find as organisation first (they take priority).
@@ -1669,7 +1669,7 @@ class ObjectCacheService
             }
         }
 
-        $this->logger->debug('🧹 OBJECT NAME CACHE CLEARED');
+        $this->logger->debug(message: '🧹 OBJECT NAME CACHE CLEARED');
 
     }//end clearNameCache()
 
@@ -1875,7 +1875,7 @@ class ObjectCacheService
                 'errorRate'           => $totalProcessed > 0 ? round(($totalErrors / $totalProcessed) * 100, 2).'%' : '0%',
             ];
 
-            $this->logger->info('✅ SOLR INDEX WARMUP COMPLETED', $stats);
+            $this->logger->info(message: '✅ SOLR INDEX WARMUP COMPLETED', context: $stats);
 
             return ['success' => true, 'stats' => $stats];
         } catch (\Exception $e) {

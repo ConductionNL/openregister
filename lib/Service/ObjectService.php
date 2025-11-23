@@ -239,8 +239,8 @@ class ObjectService
         $this->externalAppId = $appId;
 
         $this->logger->debug(
-            'External app context set for cache isolation',
-            [
+            message: 'External app context set for cache isolation',
+            context: [
                 'appId'         => $appId,
                 'cacheNamespace' => "external_app_{$appId}",
                 'benefit'       => 'improved_cache_performance'
@@ -386,10 +386,10 @@ class ObjectService
      *
      * @param ObjectEntity $entity The object entity to ensure folder for
      *
+     * @return void
+     *
      * @psalm-return   void
      * @phpstan-return void
-     *
-     * @return void
      */
     public function ensureObjectFolderExists(ObjectEntity $entity): void
     {
@@ -1133,10 +1133,6 @@ class ObjectService
      *
      * FOR BULK OPERATIONS: Use saveObjects() method for optimized bulk processing
      *
-     * TODO: Add property-level RBAC validation here
-     * Before saving object data, check if user has permission to create/update specific properties
-     * based on property-level authorization arrays in the schema.
-     *
      * @param array|ObjectEntity       $object   The object data to save or ObjectEntity instance
      * @param array|null               $extend   Properties to extend the object with
      * @param Register|string|int|null $register The register object or its ID/UUID
@@ -1149,6 +1145,10 @@ class ObjectService
      * @return ObjectEntity The saved and rendered object
      *
      * @throws Exception If there is an error during save
+     *
+     * @TODO Add property-level RBAC validation here
+     * Before saving object data, check if user has permission to create/update specific properties
+     * based on property-level authorization arrays in the schema.
      */
     public function saveObject(
         array | ObjectEntity $object,
@@ -1740,32 +1740,6 @@ class ObjectService
 
 
     /**
-     * Search objects using clean query structure
-     *
-     * This method provides a cleaner search interface that uses the new searchObjects
-     * method from ObjectEntityMapper with proper query structure. It automatically
-     * handles metadata filters, object field searches, and search options.
-     *
-     * @param array $query The search query array containing filters and options
-     *                     - @self: Metadata filters (register, schema, uuid, etc.)
-     *                     - Direct keys: Object field filters for JSON data
-     *                     - _limit: Maximum results to return
-     *                     - _offset: Results to skip (pagination)
-     *                     - _order: Sorting criteria
-     *                     - _search: Full-text search term
-     *                     - _includeDeleted: Include soft-deleted objects
-     *                     - _published: Only published objects
-     *                     - _ids: Array of IDs/UUIDs to filter by
-     *                     - _count: Return count instead of objects (boolean)
-     *
-     * @phpstan-param array<string, mixed> $query
-     * @psalm-param array<string, mixed> $query
-     *
-     * @return array<int, ObjectEntity>|int An array of ObjectEntity objects matching the criteria, or integer count if _count is true
-     *
-     * @throws \OCP\DB\Exception If a database error occurs
-     */
-    /**
      * Build a search query from request parameters for faceting-enabled methods
      *
      * This method builds a query structure compatible with the searchObjectsPaginated method
@@ -1929,7 +1903,7 @@ class ObjectService
             return $query;
         }
 
-        $this->logger->debug('[ObjectService] Applying views to query', [
+        $this->logger->debug(message: '[ObjectService] Applying views to query', context: [
             'viewIds' => $viewIds,
             'originalQuery' => array_keys($query),
         ]);
@@ -2017,7 +1991,7 @@ class ObjectService
                     $query['_source'] = $viewQuery['source'];
                 }
 
-                $this->logger->debug('[ObjectService] Applied view to query', [
+                $this->logger->debug(message: '[ObjectService] Applied view to query', context: [
                     'viewId' => $viewId,
                     'viewName' => $view->getName(),
                     'addedFilters' => [
@@ -2028,7 +2002,7 @@ class ObjectService
                 ]);
 
             } catch (\Exception $e) {
-                $this->logger->warning('[ObjectService] Failed to apply view', [
+                $this->logger->warning(message: '[ObjectService] Failed to apply view', context: [
                     'viewId' => $viewId,
                     'error' => $e->getMessage(),
                 ]);
@@ -2036,7 +2010,7 @@ class ObjectService
             }
         }
 
-        $this->logger->info('[ObjectService] Views applied to query', [
+        $this->logger->info(message: '[ObjectService] Views applied to query', context: [
             'viewIds' => $viewIds,
             'resultingFilters' => [
                 'registers' => $query['@self']['register'] ?? null,
@@ -2050,6 +2024,37 @@ class ObjectService
     }//end applyViewsToQuery()
 
 
+    /**
+     * Search objects using clean query structure
+     *
+     * This method provides a cleaner search interface that uses the new searchObjects
+     * method from ObjectEntityMapper with proper query structure. It automatically
+     * handles metadata filters, object field searches, and search options.
+     *
+     * @param array $query The search query array containing filters and options
+     *                     - @self: Metadata filters (register, schema, uuid, etc.)
+     *                     - Direct keys: Object field filters for JSON data
+     *                     - _limit: Maximum results to return
+     *                     - _offset: Results to skip (pagination)
+     *                     - _order: Sorting criteria
+     *                     - _search: Full-text search term
+     *                     - _includeDeleted: Include soft-deleted objects
+     *                     - _published: Only published objects
+     *                     - _ids: Array of IDs/UUIDs to filter by
+     *                     - _count: Return count instead of objects (boolean)
+     * @param bool  $rbac  Whether to apply RBAC checks (default: true)
+     * @param bool  $multi Whether to apply multitenancy filtering (default: true)
+     * @param array|null $ids   Optional array of IDs to filter by
+     * @param string|null $uses Optional filter by object usage
+     * @param array|null $views Optional view IDs to apply
+     *
+     * @phpstan-param array<string, mixed> $query
+     * @psalm-param array<string, mixed> $query
+     *
+     * @return array<int, ObjectEntity>|int An array of ObjectEntity objects matching the criteria, or integer count if _count is true
+     *
+     * @throws \OCP\DB\Exception If a database error occurs
+     */
     public function searchObjects(array $query=[], bool $rbac=true, bool $multi=true, ?array $ids=null, ?string $uses=null, ?array $views=null): array|int
     {
         // Apply view filters if provided.
@@ -2074,7 +2079,7 @@ class ObjectService
         $dbStart = microtime(true);
         $limit = $query['_limit'] ?? 20;
 
-        $this->logger->info('🔍 MAPPER CALL - Starting database search', [
+        $this->logger->info(message: '🔍 MAPPER CALL - Starting database search', context: [
             'queryKeys' => array_keys($query),
             'rbac' => $rbac,
             'multi' => $multi,
@@ -2090,7 +2095,7 @@ class ObjectService
         if (is_array($result) === true) {
             $resultCount = count($result);
         }
-        $this->logger->info('✅ MAPPER CALL - Database search completed', [
+        $this->logger->info(message: '✅ MAPPER CALL - Database search completed', context: [
             'resultCount' => $resultCount,
             'mapperTime' => round((microtime(true) - $mapperStart) * 1000, 2) . 'ms',
             'requestUri' => $_SERVER['REQUEST_URI'] ?? 'unknown'
@@ -2101,7 +2106,7 @@ class ObjectService
         if (is_array($result) === true) {
             $resultCount = count($result);
         }
-        $this->logger->debug('Database query completed', [
+        $this->logger->debug(message: 'Database query completed', context: [
             'dbTime' => $dbTime . 'ms',
             'resultCount' => $resultCount,
             'limit' => $limit,
@@ -2118,7 +2123,7 @@ class ObjectService
 
         // **ULTRA-FAST PATH**: Skip all expensive operations for simple requests.
         if ($hasComplexRendering === false) {
-            $this->logger->debug('Ultra-fast path - skipping all expensive operations', [
+            $this->logger->debug(message: 'Ultra-fast path - skipping all expensive operations', context: [
                 'objectCount' => count($objects),
                 'skipOperations' => ['schema_loading', 'register_loading', 'relationship_preloading', 'complex_rendering']
             ]);
@@ -2163,7 +2168,7 @@ class ObjectService
             }
 
             $simpleRenderTime = round((microtime(true) - $startSimpleRender) * 1000, 2);
-            $this->logger->debug('Ultra-fast rendering completed', [
+            $this->logger->debug(message: 'Ultra-fast rendering completed', context: [
                 'renderTime' => $simpleRenderTime . 'ms',
                 'objectCount' => count($objects),
                 'avgPerObject' => $this->calculateAvgPerObject(count($objects), $simpleRenderTime),
@@ -2174,7 +2179,7 @@ class ObjectService
         }
 
         // **COMPLEX RENDERING PATH**: Full operations for requests needing extensions/filtering.
-        $this->logger->debug('Complex rendering path - loading additional context', [
+        $this->logger->debug(message: 'Complex rendering path - loading additional context', context: [
             'objectCount' => count($objects),
             'hasExtend' => $hasExtend,
             'hasFields' => $hasFields,
@@ -2281,7 +2286,7 @@ class ObjectService
             $allRelationshipIds = array_slice($allRelationshipIds, 0, $maxRelationships);
 
             if (!empty($allRelationshipIds)) {
-                $this->logger->info('🚀 PERFORMANCE: Smart relationship loading with limits', [
+                $this->logger->info(message: '🚀 PERFORMANCE: Smart relationship loading with limits', context: [
                     'originalObjects' => count($objects),
                     'limitedObjects' => $maxObjects,
                     'originalExtends' => count($extend),
@@ -2299,7 +2304,7 @@ class ObjectService
                 $this->renderHandler->setUltraPreloadCache($relatedObjectsMap);
 
                 $ultraPreloadTime = round((microtime(true) - $startUltraPreload) * 1000, 2);
-                $this->logger->info('✅ Smart relationship loading completed', [
+                $this->logger->info(message: '✅ Smart relationship loading completed', context: [
                     'ultraPreloadTime' => $ultraPreloadTime . 'ms',
                     'cachedObjects' => count($relatedObjectsMap),
                     'objectsToRender' => count($objects),
@@ -2308,7 +2313,7 @@ class ObjectService
 
                 // **PERFORMANCE ALERT**: Warn if still taking too long.
                 if ($ultraPreloadTime > 1000) {
-                    $this->logger->warning('⚠️  PERFORMANCE WARNING: Relationship loading still slow', [
+                    $this->logger->warning(message: '⚠️  PERFORMANCE WARNING: Relationship loading still slow', context: [
                         'time' => $ultraPreloadTime . 'ms',
                         'suggestion' => 'Consider reducing _extend parameters or object count'
                     ]);
@@ -2317,7 +2322,7 @@ class ObjectService
         } else {
             // **PERFORMANCE OPTIMIZATION**: Log that preloading was skipped for simple requests.
             if (empty($extend)) {
-                $this->logger->debug('Ultra preload skipped - no extend parameters', [
+                $this->logger->debug(message: 'Ultra preload skipped - no extend parameters', context: [
                     'objectCount' => count($objects),
                     'performanceImpact' => 'significant_improvement'
                 ]);
@@ -2333,7 +2338,7 @@ class ObjectService
         $isLargeDataset = $objectCount > 20 || !empty($extend);
 
         if ($isLargeDataset === true) {
-            $this->logger->info('📊 PERFORMANCE: Large dataset detected, using circuit breakers', [
+            $this->logger->info(message: '📊 PERFORMANCE: Large dataset detected, using circuit breakers', context: [
                 'objectCount' => $objectCount,
                 'hasExtend' => !empty($extend),
                 'renderTimeout' => $maxRenderTime . 'ms',
@@ -2345,7 +2350,7 @@ class ObjectService
             // **CIRCUIT BREAKER**: Stop rendering if taking too long to prevent frontend timeouts.
             $renderElapsed = round((microtime(true) - $startRender) * 1000, 2);
             if ($renderElapsed > $maxRenderTime) {
-                $this->logger->warning('⚠️  RENDER CIRCUIT BREAKER: Stopping early to prevent timeout', [
+                $this->logger->warning(message: '⚠️  RENDER CIRCUIT BREAKER: Stopping early to prevent timeout', context: [
                     'renderTime' => $renderElapsed . 'ms',
                     'processedObjects' => $key,
                     'totalObjects' => $objectCount,
@@ -2372,7 +2377,7 @@ class ObjectService
 
         $renderTime = round((microtime(true) - $startRender) * 1000, 2);
         $objectCount = count($objects);
-        $this->logger->debug('Ultra-fast rendering completed', [
+        $this->logger->debug(message: 'Ultra-fast rendering completed', context: [
             'renderTime' => $renderTime . 'ms',
             'objectCount' => $objectCount,
             'avgPerObject' => $this->calculateAvgPerObject($objectCount, $renderTime),
@@ -2795,7 +2800,7 @@ class ObjectService
         $includePerformance = ($query['_performance'] ?? false) === true || ($query['_performance'] ?? false) === 'true';
 
         if ($includePerformance === true) {
-            $this->logger->info('📊 PERFORMANCE MONITORING: _performance=true parameter detected', [
+            $this->logger->info(message: '📊 PERFORMANCE MONITORING: _performance=true parameter detected', context: [
                 'requestUri' => $_SERVER['REQUEST_URI'] ?? 'unknown',
                 'purpose' => 'performance_analysis',
                 'note' => 'Response will include detailed performance metrics'
@@ -2821,7 +2826,7 @@ class ObjectService
 
         // **PERFORMANCE OPTIMIZATION**: For complex requests, use async version for better performance.
         if ($isComplexRequest === true) {
-            $this->logger->debug('Complex request detected, using async processing', [
+            $this->logger->debug(message: 'Complex request detected, using async processing', context: [
                 'hasFacets' => $hasFacets,
                 'hasFacetable' => $hasFacetable,
                 'facetCount' => $this->getFacetCount($hasFacets, $query)
@@ -2832,7 +2837,7 @@ class ObjectService
         }
 
         // **PERFORMANCE OPTIMIZATION**: Simple requests - minimal operations for sub-500ms performance.
-        $this->logger->debug('Simple request detected, using optimized path', [
+        $this->logger->debug(message: 'Simple request detected, using optimized path', context: [
             'limit' => $query['_limit'] ?? 20,
             'hasExtend' => !empty($query['_extend']),
             'hasSearch' => !empty($query['_search'])
@@ -2923,7 +2928,7 @@ class ObjectService
         $executionTime = (microtime(true) - $startTime) * 1000;
 
         // **PERFORMANCE LOGGING**: Log performance metrics for simple requests.
-        $this->logger->debug('Simple search completed', [
+        $this->logger->debug(message: 'Simple search completed', context: [
             'totalTime' => round($executionTime, 2) . 'ms',
             'searchTime' => $searchTime . 'ms',
             'countTime' => $countTime . 'ms',
@@ -2962,10 +2967,10 @@ class ObjectService
                     'extendCount' => count($extend ?? []),
                 ],
                 'recommendations' => $this->getPerformanceRecommendations($totalTime, $perfTimings, $query),
-                'timestamp' => (new \DateTime())->format('c'),
+                'timestamp' => (new \DateTime(datetime: 'now'))->format(format: 'c'),
             ];
 
-            $this->logger->info('📊 PERFORMANCE METRICS INCLUDED', [
+            $this->logger->info(message: '📊 PERFORMANCE METRICS INCLUDED', context: [
                 'totalTime' => $totalTime,
                 'objectCount' => count($results),
                 'hasExtend' => !empty($extend),
@@ -3114,7 +3119,7 @@ class ObjectService
         $isSimpleRequest = $this->isSimpleRequest($query);
         if ($isSimpleRequest === true) {
             $query['_fast_path'] = true;
-            $this->logger->debug('🚀 FAST PATH: Simple request detected', [
+            $this->logger->debug(message: '🚀 FAST PATH: Simple request detected', context: [
                 'benefit' => 'skip_heavy_processing',
                 'estimatedSaving' => '200-300ms'
             ]);
@@ -3138,7 +3143,7 @@ class ObjectService
             }
 
             if ($newExtendCount < $originalExtendCount) {
-                $this->logger->info('⚡ EXTEND OPTIMIZATION: Reduced extend complexity', [
+                $this->logger->info(message: '⚡ EXTEND OPTIMIZATION: Reduced extend complexity', context: [
                     'original' => $originalExtendCount,
                     'optimized' => $newExtendCount,
                     'estimatedSaving' => ($originalExtendCount - $newExtendCount) * 100 . 'ms'
@@ -3260,7 +3265,7 @@ class ObjectService
                                 $results[] = $this->registerMapper->find($id);
                             } catch (\Exception $e) {
                                 // Log and skip invalid IDs.
-                                $this->logger->warning('Failed to preload register', ['id' => $id, 'error' => $e->getMessage()]);
+                                $this->logger->warning(message: 'Failed to preload register', context: ['id' => $id, 'error' => $e->getMessage()]);
                             }
                         }
                     }
@@ -3280,7 +3285,7 @@ class ObjectService
                                 $results[] = $this->schemaMapper->find($id);
                             } catch (\Exception $e) {
                                 // Log and skip invalid IDs.
-                                $this->logger->warning('Failed to preload schema', ['id' => $id, 'error' => $e->getMessage()]);
+                                $this->logger->warning(message: 'Failed to preload schema', context: ['id' => $id, 'error' => $e->getMessage()]);
                             }
                         }
                     }
@@ -3290,14 +3295,14 @@ class ObjectService
 
             $preloadTime = round((microtime(true) - $preloadStart) * 1000, 2);
             if ($preloadTime > 0) {
-                $this->logger->debug('🔥 CACHE WARMUP: Critical entities preloaded', [
+                $this->logger->debug(message: '🔥 CACHE WARMUP: Critical entities preloaded', context: [
                     'preloadTime' => $preloadTime . 'ms',
                     'benefit' => 'faster_main_query'
                 ]);
             }
         } catch (\Exception $e) {
             // Preloading failed, continue without cache warmup.
-            $this->logger->debug('Cache warmup failed, continuing', ['error' => $e->getMessage()]);
+            $this->logger->debug(message: 'Cache warmup failed, continuing', context: ['error' => $e->getMessage()]);
         }
     }
 
@@ -3391,7 +3396,7 @@ class ObjectService
     {
         // Start timing execution.
         $startTime = microtime(true);
-        $this->logger->debug('Starting searchObjectsPaginatedAsync', ['query_limit' => $query['_limit'] ?? 20]);
+        $this->logger->debug(message: 'Starting searchObjectsPaginatedAsync', context: ['query_limit' => $query['_limit'] ?? 20]);
 
         // Extract pagination parameters (same as synchronous version).
         $limit     = $query['_limit'] ?? 20;
@@ -3443,7 +3448,7 @@ class ObjectService
                             $result = $this->getFacetableFields($baseQuery, $sampleSize);
                             $resolve($result);
                         } catch (\Throwable $e) {
-                            $this->logger->error('❌ FACETABLE PROMISE ERROR', [
+                            $this->logger->error(message: '❌ FACETABLE PROMISE ERROR', context: [
                                 'error' => $e->getMessage(),
                                 'trace' => $e->getTraceAsString()
                             ]);
@@ -3460,7 +3465,7 @@ class ObjectService
                         $searchStart = microtime(true);
                         $result = $this->searchObjects($paginatedQuery, $rbac, $multi, null, null);
                         $searchTime = round((microtime(true) - $searchStart) * 1000, 2);
-                        $this->logger->debug('Search objects completed', [
+                        $this->logger->debug(message: 'Search objects completed', context: [
                             'searchTime' => $searchTime . 'ms',
                             'resultCount' => count($result),
                             'limit' => $paginatedQuery['_limit'] ?? 20
@@ -3917,7 +3922,7 @@ class ObjectService
             $totalAffected = $createdCount + $updatedCount;
 
             if ($totalAffected > 0) {
-                $this->logger->debug('Bulk operation cache invalidation starting', [
+                $this->logger->debug(message: 'Bulk operation cache invalidation starting', context: [
                     'objectsCreated' => $createdCount,
                     'objectsUpdated' => $updatedCount,
                     'totalAffected' => $totalAffected,
@@ -3934,14 +3939,14 @@ class ObjectService
                     schemaId: $this->currentSchema?->getId()
                 );
 
-                $this->logger->debug('Bulk operation cache invalidation completed', [
+                $this->logger->debug(message: 'Bulk operation cache invalidation completed', context: [
                     'totalAffected' => $totalAffected,
                     'cacheInvalidation' => 'success'
                 ]);
             }
         } catch (\Exception $e) {
             // Log cache invalidation errors but don't fail the bulk operation.
-            $this->logger->warning('Bulk operation cache invalidation failed', [
+            $this->logger->warning(message: 'Bulk operation cache invalidation failed', context: [
                 'error' => $e->getMessage(),
                 'totalAffected' => $totalAffected ?? 0
             ]);
@@ -5007,7 +5012,7 @@ class ObjectService
 
         $executionTime = round((microtime(true) - $startTime) * 1000, 2);
 
-        $this->logger->debug('🔗 RELATED DATA EXTRACTED', [
+        $this->logger->debug(message: '🔗 RELATED DATA EXTRACTED', context: [
             'related_ids_found' => count($allRelatedIds),
             'include_related' => $includeRelated,
             'include_related_names' => $includeRelatedNames,
@@ -5144,8 +5149,8 @@ class ObjectService
 
                     // Log the mapping result for debugging.
                     $this->logger->debug(
-                            'Object properties mapped',
-                            [
+                            message: 'Object properties mapped',
+                            context: [
                                 'mappedData' => $mappedData,
                             ]
                             );
@@ -5478,7 +5483,7 @@ class ObjectService
         // **BULK CACHE INVALIDATION**: Clear collection caches after bulk delete operations.
         if (!empty($deletedObjectIds)) {
             try {
-                $this->logger->debug('Bulk delete cache invalidation starting', [
+                $this->logger->debug(message: 'Bulk delete cache invalidation starting', context: [
                     'deletedCount' => count($deletedObjectIds),
                     'operation' => 'bulk_delete'
                 ]);
@@ -5490,12 +5495,12 @@ class ObjectService
                     schemaId: null   // Affects multiple schemas potentially
                 );
 
-                $this->logger->debug('Bulk delete cache invalidation completed', [
+                $this->logger->debug(message: 'Bulk delete cache invalidation completed', context: [
                     'deletedCount' => count($deletedObjectIds),
                     'cacheInvalidation' => 'success'
                 ]);
             } catch (\Exception $e) {
-                $this->logger->warning('Bulk delete cache invalidation failed', [
+                $this->logger->warning(message: 'Bulk delete cache invalidation failed', context: [
                     'error' => $e->getMessage(),
                     'deletedCount' => count($deletedObjectIds)
                 ]);
@@ -5545,7 +5550,7 @@ class ObjectService
         // **BULK CACHE INVALIDATION**: Clear collection caches after bulk publish operations.
         if (!empty($publishedObjectIds)) {
             try {
-                $this->logger->debug('Bulk publish cache invalidation starting', [
+                $this->logger->debug(message: 'Bulk publish cache invalidation starting', context: [
                     'publishedCount' => count($publishedObjectIds),
                     'operation' => 'bulk_publish'
                 ]);
@@ -5557,12 +5562,12 @@ class ObjectService
                     schemaId: null   // Affects multiple schemas potentially
                 );
 
-                $this->logger->debug('Bulk publish cache invalidation completed', [
+                $this->logger->debug(message: 'Bulk publish cache invalidation completed', context: [
                     'publishedCount' => count($publishedObjectIds),
                     'cacheInvalidation' => 'success'
                 ]);
             } catch (\Exception $e) {
-                $this->logger->warning('Bulk publish cache invalidation failed', [
+                $this->logger->warning(message: 'Bulk publish cache invalidation failed', context: [
                     'error' => $e->getMessage(),
                     'publishedCount' => count($publishedObjectIds)
                 ]);
@@ -5612,7 +5617,7 @@ class ObjectService
         // **BULK CACHE INVALIDATION**: Clear collection caches after bulk depublish operations.
         if (!empty($depublishedObjectIds)) {
             try {
-                $this->logger->debug('Bulk depublish cache invalidation starting', [
+                $this->logger->debug(message: 'Bulk depublish cache invalidation starting', context: [
                     'depublishedCount' => count($depublishedObjectIds),
                     'operation' => 'bulk_depublish'
                 ]);
@@ -5624,12 +5629,12 @@ class ObjectService
                     schemaId: null   // Affects multiple schemas potentially
                 );
 
-                $this->logger->debug('Bulk depublish cache invalidation completed', [
+                $this->logger->debug(message: 'Bulk depublish cache invalidation completed', context: [
                     'depublishedCount' => count($depublishedObjectIds),
                     'cacheInvalidation' => 'success'
                 ]);
             } catch (\Exception $e) {
-                $this->logger->warning('Bulk depublish cache invalidation failed', [
+                $this->logger->warning(message: 'Bulk depublish cache invalidation failed', context: [
                     'error' => $e->getMessage(),
                     'depublishedCount' => count($depublishedObjectIds)
                 ]);
@@ -5665,7 +5670,7 @@ class ObjectService
         // **BULK CACHE INVALIDATION**: Clear collection caches after bulk publish operations.
         if ($result['published_count'] > 0) {
             try {
-                $this->logger->debug('Schema objects publishing cache invalidation starting', [
+                $this->logger->debug(message: 'Schema objects publishing cache invalidation starting', context: [
                     'publishedCount' => $result['published_count'],
                     'schemaId' => $schemaId,
                     'operation' => 'schema_publish',
@@ -5679,13 +5684,13 @@ class ObjectService
                     schemaId: $schemaId
                 );
 
-                $this->logger->debug('Schema objects publishing cache invalidation completed', [
+                $this->logger->debug(message: 'Schema objects publishing cache invalidation completed', context: [
                     'publishedCount' => $result['published_count'],
                     'schemaId' => $schemaId,
                     'publishAll' => $publishAll
                 ]);
             } catch (\Exception $e) {
-                $this->logger->warning('Schema objects publishing cache invalidation failed', [
+                $this->logger->warning(message: 'Schema objects publishing cache invalidation failed', context: [
                     'error' => $e->getMessage(),
                     'schemaId' => $schemaId,
                     'publishedCount' => $result['published_count'],
@@ -5723,7 +5728,7 @@ class ObjectService
         // **BULK CACHE INVALIDATION**: Clear collection caches after bulk delete operations.
         if ($result['deleted_count'] > 0) {
             try {
-                $this->logger->debug('Schema objects deletion cache invalidation starting', [
+                $this->logger->debug(message: 'Schema objects deletion cache invalidation starting', context: [
                     'deletedCount' => $result['deleted_count'],
                     'schemaId' => $schemaId,
                     'operation' => 'schema_delete',
@@ -5737,13 +5742,13 @@ class ObjectService
                     schemaId: $schemaId
                 );
 
-                $this->logger->debug('Schema objects deletion cache invalidation completed', [
+                $this->logger->debug(message: 'Schema objects deletion cache invalidation completed', context: [
                     'deletedCount' => $result['deleted_count'],
                     'schemaId' => $schemaId,
                     'hardDelete' => $hardDelete
                 ]);
             } catch (\Exception $e) {
-                $this->logger->warning('Schema objects deletion cache invalidation failed', [
+                $this->logger->warning(message: 'Schema objects deletion cache invalidation failed', context: [
                     'error' => $e->getMessage(),
                     'schemaId' => $schemaId,
                     'deletedCount' => $result['deleted_count'],
@@ -5780,7 +5785,7 @@ class ObjectService
         // **BULK CACHE INVALIDATION**: Clear collection caches after bulk delete operations.
         if ($result['deleted_count'] > 0) {
             try {
-                $this->logger->debug('Register objects deletion cache invalidation starting', [
+                $this->logger->debug(message: 'Register objects deletion cache invalidation starting', context: [
                     'deletedCount' => $result['deleted_count'],
                     'registerId' => $registerId,
                     'operation' => 'register_delete'
@@ -5793,12 +5798,12 @@ class ObjectService
                     schemaId: null
                 );
 
-                $this->logger->debug('Register objects deletion cache invalidation completed', [
+                $this->logger->debug(message: 'Register objects deletion cache invalidation completed', context: [
                     'deletedCount' => $result['deleted_count'],
                     'registerId' => $registerId
                 ]);
             } catch (\Exception $e) {
-                $this->logger->warning('Register objects deletion cache invalidation failed', [
+                $this->logger->warning(message: 'Register objects deletion cache invalidation failed', context: [
                     'error' => $e->getMessage(),
                     'registerId' => $registerId,
                     'deletedCount' => $result['deleted_count']
@@ -6030,7 +6035,7 @@ class ObjectService
             }
 
             // Log detection result for monitoring.
-            $this->logger->debug('Environment performance detection', [
+            $this->logger->debug(message: 'Environment performance detection', context: [
                 'score' => $environmentScore,
                 'dbTime' => $dbTime ?? 'unknown',
                 'memoryLimit' => $memoryLimit,
@@ -6129,7 +6134,7 @@ class ObjectService
         // Determine optimal batch size based on dataset and resources.
         $batchSize = $this->calculateOptimalBatchSize($totalObjects);
 
-        $this->logger->debug('Parallel rendering configuration', [
+        $this->logger->debug(message: 'Parallel rendering configuration', context: [
             'totalObjects' => $totalObjects,
             'batchSize' => $batchSize,
             'batchCount' => ceil($totalObjects / $batchSize)
@@ -6163,7 +6168,7 @@ class ObjectService
                         }
 
                         $batchTime = round((microtime(true) - $startBatch) * 1000, 2);
-                        $this->logger->debug('Batch rendering completed', [
+                        $this->logger->debug(message: 'Batch rendering completed', context: [
                             'batchIndex' => $batchIndex,
                             'objectsInBatch' => count($batch),
                             'executionTime' => $batchTime . 'ms'
@@ -6171,7 +6176,7 @@ class ObjectService
 
                         $resolve($renderedBatch);
                     } catch (\Throwable $e) {
-                        $this->logger->error('Batch rendering failed', [
+                        $this->logger->error(message: 'Batch rendering failed', context: [
                             'batchIndex' => $batchIndex,
                             'exception' => $e->getMessage()
                         ]);
@@ -6323,7 +6328,7 @@ class ObjectService
         foreach ($objects as $objectIndex => $object) {
             // **PERFORMANCE BYPASS**: Stop early if we've extracted enough.
             if ($extractedCount >= $maxIds) {
-                $this->logger->info('🛑 RELATIONSHIP EXTRACTION: Stopped early to prevent timeout', [
+                $this->logger->info(message: '🛑 RELATIONSHIP EXTRACTION: Stopped early to prevent timeout', context: [
                     'extractedIds' => $extractedCount,
                     'maxIds' => $maxIds,
                     'processedObjects' => $objectIndex,
@@ -6357,7 +6362,7 @@ class ObjectService
 
                         // Log if we had to limit the array.
                         if (count($value) > 10) {
-                            $this->logger->debug('🔪 PERFORMANCE: Limited relationship array', [
+                            $this->logger->debug(message: '🔪 PERFORMANCE: Limited relationship array', context: [
                                 'property' => $extendProperty,
                                 'originalCount' => count($value),
                                 'limitedTo' => count($limitedArray),
@@ -6382,7 +6387,7 @@ class ObjectService
         // Remove duplicates and return unique IDs.
         $uniqueIds = array_unique($allIds);
 
-        $this->logger->info('🔍 RELATIONSHIP EXTRACTION: Completed with limits', [
+        $this->logger->info(message: '🔍 RELATIONSHIP EXTRACTION: Completed with limits', context: [
             'totalExtracted' => count($allIds),
             'uniqueIds' => count($uniqueIds),
             'maxAllowed' => $maxIds,
@@ -6423,7 +6428,7 @@ class ObjectService
 
         $batches = array_chunk($relationshipIds, $batchSize);
 
-        $this->logger->info('🔄 BATCHED LOADING: Processing relationship batches', [
+        $this->logger->info(message: '🔄 BATCHED LOADING: Processing relationship batches', context: [
             'totalIds' => count($relationshipIds),
             'batchCount' => count($batches),
             'batchSize' => $batchSize,
@@ -6436,7 +6441,7 @@ class ObjectService
             // **CIRCUIT BREAKER**: Stop if we've been running too long.
             $elapsedTime = round((microtime(true) - $startTime) * 1000, 2);
             if ($elapsedTime > 5000) { // 5 second total timeout
-                $this->logger->warning('⚠️  CIRCUIT BREAKER: Stopping relationship loading to prevent timeout', [
+                $this->logger->warning(message: '⚠️  CIRCUIT BREAKER: Stopping relationship loading to prevent timeout', context: [
                     'elapsedTime' => $elapsedTime . 'ms',
                     'processedBatches' => $batchIndex,
                     'totalBatches' => count($batches),
@@ -6473,7 +6478,7 @@ class ObjectService
 
                 // **PERFORMANCE MONITORING**: Log slow batches.
                 if ($batchTime > 500) {
-                    $this->logger->warning('⚠️  SLOW BATCH: Relationship batch taking too long', [
+                    $this->logger->warning(message: '⚠️  SLOW BATCH: Relationship batch taking too long', context: [
                         'batchIndex' => $batchIndex,
                         'batchTime' => $batchTime . 'ms',
                         'batchSize' => count($batch),
@@ -6482,7 +6487,7 @@ class ObjectService
                 }
 
             } catch (\Exception $e) {
-                $this->logger->error('❌ BATCH ERROR: Failed to load relationship batch', [
+                $this->logger->error(message: '❌ BATCH ERROR: Failed to load relationship batch', context: [
                     'batchIndex' => $batchIndex,
                     'error' => $e->getMessage(),
                     'batchSize' => count($batch)
@@ -6493,7 +6498,7 @@ class ObjectService
         }
 
         $totalTime = round((microtime(true) - $startTime) * 1000, 2);
-        $this->logger->info('✅ BATCHED LOADING: Completed', [
+        $this->logger->info(message: '✅ BATCHED LOADING: Completed', context: [
             'totalTime' => $totalTime . 'ms',
             'loadedObjects' => count($lookupMap),
             'efficiency' => $this->calculateEfficiency($lookupMap, $totalTime)
@@ -6546,7 +6551,7 @@ class ObjectService
         $chunks = array_chunk($relationshipIds, $chunkSize);
         $lookupMap = [];
 
-        $this->logger->info('🚀 PARALLEL LOADING: Starting parallel relationship loading', [
+        $this->logger->info(message: '🚀 PARALLEL LOADING: Starting parallel relationship loading', context: [
             'totalIds' => count($relationshipIds),
             'chunkCount' => count($chunks),
             'chunkSize' => $chunkSize,
@@ -6570,7 +6575,7 @@ class ObjectService
                     $results[$chunkIndex] = $chunkResults;
 
                 } catch (\Exception $e) {
-                    $this->logger->error('❌ PARALLEL ERROR: Chunk failed', [
+                    $this->logger->error(message: '❌ PARALLEL ERROR: Chunk failed', context: [
                         'groupIndex' => $groupIndex,
                         'chunkIndex' => $chunkIndex,
                         'chunkSize' => count($chunk),
@@ -6603,7 +6608,7 @@ class ObjectService
             }
 
             $groupTime = round((microtime(true) - $groupStart) * 1000, 2);
-            $this->logger->debug('✅ PARALLEL GROUP: Completed', [
+            $this->logger->debug(message: '✅ PARALLEL GROUP: Completed', context: [
                 'groupIndex' => $groupIndex,
                 'groupTime' => $groupTime . 'ms',
                 'chunksInGroup' => count($chunkGroup),
@@ -6612,7 +6617,7 @@ class ObjectService
         }
 
         $totalTime = round((microtime(true) - $startTime) * 1000, 2);
-        $this->logger->info('🎯 PARALLEL LOADING: Completed', [
+        $this->logger->info(message: '🎯 PARALLEL LOADING: Completed', context: [
             'totalTime' => $totalTime . 'ms',
             'loadedObjects' => count($lookupMap),
             'efficiency' => $this->calculateEfficiency($lookupMap, $totalTime),
@@ -6695,7 +6700,7 @@ class ObjectService
                 }
 
             } catch (\Exception $e) {
-                $this->logger->debug('Skipped invalid relationship object', [
+                $this->logger->debug(message: 'Skipped invalid relationship object', context: [
                     'id' => $row['id'] ?? 'unknown',
                     'error' => $e->getMessage()
                 ]);
@@ -6838,7 +6843,7 @@ class ObjectService
 
             if (!($schema instanceof Schema)) {
                 // Skip non-Schema objects.
-                $this->logger->warning('Invalid schema object in facetable fields processing', [
+                $this->logger->warning(message: 'Invalid schema object in facetable fields processing', context: [
                     'type' => gettype($schema),
                     'isArray' => is_array($schema)
                 ]);
@@ -6848,7 +6853,7 @@ class ObjectService
             try {
                 $schemaFacets = $schema->getFacets();
             } catch (\Exception $e) {
-                $this->logger->error('Failed to get facets from schema', [
+                $this->logger->error(message: 'Failed to get facets from schema', context: [
                     'error' => $e->getMessage(),
                     'schemaType' => gettype($schema),
                     'isSchemaInstance' => $schema instanceof Schema
@@ -6882,7 +6887,7 @@ class ObjectService
                 if ($schemaFacets === null) {
                     $reason = 'no_facets';
                 }
-                $this->logger->debug('Regenerating facets for schema (missing facets or queryParameter)', [
+                $this->logger->debug(message: 'Regenerating facets for schema (missing facets or queryParameter)', context: [
                     'schemaId' => $schema->getId(),
                     'schemaSlug' => $schema->getSlug(),
                     'reason' => $reason
@@ -6903,7 +6908,7 @@ class ObjectService
                         );
                     }
                 } catch (\Exception $e) {
-                    $this->logger->warning('Failed to save generated facets for schema', [
+                    $this->logger->warning(message: 'Failed to save generated facets for schema', context: [
                         'schemaId' => $schema->getId(),
                         'error' => $e->getMessage()
                     ]);
@@ -7088,7 +7093,7 @@ class ObjectService
             return $retentionSettings['searchTrailsEnabled'] ?? true;
         } catch (\Exception $e) {
             // If we can't get settings, default to enabled for safety.
-            $this->logger->warning('Failed to check search trails setting, defaulting to enabled', ['error' => $e->getMessage()]);
+            $this->logger->warning(message: 'Failed to check search trails setting, defaulting to enabled', context: ['error' => $e->getMessage()]);
             return true;
         }
     }//end isSearchTrailsEnabled()

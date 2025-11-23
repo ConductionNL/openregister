@@ -655,7 +655,7 @@ class SettingsService
     public function rebaseObjectsAndLogs(): array
     {
         try {
-            $startTime = new \DateTime();
+            $startTime = new \DateTime(datetime: 'now');
             $results   = [
                 'startTime'        => $startTime,
                 'ownershipResults' => null,
@@ -710,7 +710,7 @@ class SettingsService
                 $results['errors'][] = $error;
             }//end try
 
-            $results['endTime']  = new \DateTime();
+            $results['endTime']  = new \DateTime(datetime: 'now');
             $results['duration'] = $results['endTime']->diff($startTime)->format('%H:%I:%S');
             $results['success']  = empty($results['errors']);
 
@@ -781,7 +781,7 @@ class SettingsService
                     'expiredSearchTrailsSize' => 0,
                     'expiredObjectsSize'      => 0,
                 ],
-                'lastUpdated' => (new \DateTime())->format('c'),
+                'lastUpdated' => (new \DateTime(datetime: 'now'))->format(format: 'c'),
             ];
 
             // Get database connection for optimized queries.
@@ -948,7 +948,7 @@ class SettingsService
                 ],
                 'distributed' => $distributedStats,
                 'performance' => $performanceStats,
-                'lastUpdated' => (new \DateTime())->format('c'),
+                'lastUpdated' => (new \DateTime(datetime: 'now'))->format(format: 'c'),
             ];
 
             return $stats;
@@ -977,7 +977,7 @@ class SettingsService
                 ],
                 'distributed' => ['type' => 'none', 'backend' => 'Unknown', 'available' => false],
                 'performance' => ['averageHitTime' => 0, 'averageMissTime' => 0, 'performanceGain' => 0, 'optimalHitRate' => 85.0],
-                'lastUpdated' => (new \DateTime())->format('c'),
+                'lastUpdated' => (new \DateTime(datetime: 'now'))->format(format: 'c'),
                 'error'       => 'Cache statistics unavailable: '.$e->getMessage(),
             ];
         }//end try
@@ -1110,7 +1110,7 @@ class SettingsService
             $results = [
                 'type'         => $type,
                 'userId'       => $userId,
-                'timestamp'    => (new \DateTime())->format('c'),
+                'timestamp'    => (new \DateTime(datetime: 'now'))->format(format: 'c'),
                 'results'      => [],
                 'errors'       => [],
                 'totalCleared' => 0,
@@ -1990,7 +1990,7 @@ class SettingsService
                 $schemas      = $schemaMapper->findAll(config: );
             } catch (Exception $e) {
                 // Continue without schema mirroring if schema mapper is not available.
-                $this->logger->warning('Schema mapper not available for warmup', rbac: ['error' => $e->getMessage()]);
+                $this->logger->warning(message: 'Schema mapper not available for warmup', context: ['error' => $e->getMessage()]);
             }
 
             // **COMPLETE WARMUP**: Mirror schemas + index objects + cache warmup.
@@ -2038,8 +2038,8 @@ class SettingsService
             }//end if
         } catch (Exception $e) {
             $this->logger->error(
-                    'SOLR warmup failed with exception',
-                    [
+                    message: 'SOLR warmup failed with exception',
+                    context: [
                         'error' => $e->getMessage(),
                         'class' => get_class($e),
                         'file'  => $e->getFile(),
@@ -2763,7 +2763,7 @@ class SettingsService
             $settings = $this->getOrganisationSettingsOnly();
             return $settings['organisation']['default_organisation'] ?? null;
         } catch (Exception $e) {
-            $this->logger->warning('Failed to get default organisation UUID: '.$e->getMessage());
+            $this->logger->warning(message: 'Failed to get default organisation UUID: '.$e->getMessage());
             return null;
         }
 
@@ -2783,7 +2783,7 @@ class SettingsService
             $settings['organisation']['default_organisation'] = $uuid;
             $this->updateOrganisationSettingsOnly($settings['organisation']);
         } catch (Exception $e) {
-            $this->logger->error('Failed to set default organisation UUID: '.$e->getMessage());
+            $this->logger->error(message: 'Failed to set default organisation UUID: '.$e->getMessage());
         }
 
     }//end setDefaultOrganisationUuid()

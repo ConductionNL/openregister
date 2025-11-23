@@ -140,8 +140,8 @@ class ApplicationsController extends Controller
             return new JSONResponse(data: ['results' => $applications], statusCode: Http::STATUS_OK);
         } catch (Exception $e) {
             $this->logger->error(
-                'Failed to get applications',
-                [
+                message: 'Failed to get applications',
+                context: [
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString(),
                 ]
@@ -171,8 +171,8 @@ class ApplicationsController extends Controller
             return new JSONResponse(data: $application, statusCode: Http::STATUS_OK);
         } catch (Exception $e) {
             $this->logger->error(
-                'Failed to get application',
-                [
+                message: 'Failed to get application',
+                context: [
                     'id'    => $id,
                     'error' => $e->getMessage(),
                 ]
@@ -203,8 +203,8 @@ class ApplicationsController extends Controller
             return new JSONResponse(data: $application, statusCode: Http::STATUS_CREATED);
         } catch (Exception $e) {
             $this->logger->error(
-                'Failed to create application',
-                [
+                message: 'Failed to create application',
+                context: [
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString(),
                 ]
@@ -243,8 +243,8 @@ class ApplicationsController extends Controller
             return new JSONResponse(data: $application, statusCode: Http::STATUS_OK);
         } catch (Exception $e) {
             $this->logger->error(
-                'Failed to update application',
-                [
+                message: 'Failed to update application',
+                context: [
                     'id'    => $id,
                     'error' => $e->getMessage(),
                 ]
@@ -291,8 +291,8 @@ class ApplicationsController extends Controller
             return new JSONResponse(data: ['message' => 'Application deleted successfully'], statusCode: Http::STATUS_OK);
         } catch (Exception $e) {
             $this->logger->error(
-                'Failed to delete application',
-                [
+                message: 'Failed to delete application',
+                context: [
                     'id'    => $id,
                     'error' => $e->getMessage(),
                 ]
