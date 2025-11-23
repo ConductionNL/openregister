@@ -174,10 +174,10 @@ class AgentsController extends Controller
             if ($organisationUuid !== null) {
                 $agents = $this->agentMapper->findByOrganisation(
                     $organisationUuid,
-                        renderAs: $this->userId,
-                    $limit,
-                    $offset
-                        );
+                    renderAs: $this->userId,
+                    limit: $limit,
+                    offset: $offset
+                );
             } else {
                 $agents = $this->agentMapper->findAll($limit, $offset);
             }

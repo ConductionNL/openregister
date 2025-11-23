@@ -1,6 +1,8 @@
 <?php
 
-/**
+declare(strict_types=1);
+
+/*
  * OpenRegister Audit Trail Mapper
  *
  * This file contains the class for handling audit trail related operations
@@ -429,8 +431,9 @@ class AuditTrailMapper extends QBMapper
                     $qb->expr()->gt(
                         'created',
                         $qb->createFunction(
-                            sprintf(format: (
-                                '(SELECT created FROM `*PREFIX*openregister_audit_trails` WHERE id = %s)', $qb->createNamedParameter($until, IQueryBuilder::PARAM_STR)
+                            sprintf(
+                                '(SELECT created FROM `*PREFIX*openregister_audit_trails` WHERE id = %s)',
+                                    $qb->createNamedParameter($until, IQueryBuilder::PARAM_STR)
                             )
                         )
                     )
@@ -1276,7 +1279,7 @@ class AuditTrailMapper extends QBMapper
                 ->set(
                        'expires',
                        $qb->createFunction(
-                   sprintf(format: ('DATE_ADD(created, INTERVAL %d SECOND)', $retentionSeconds)
+                   sprintf('DATE_ADD(created, INTERVAL %d SECOND)', $retentionSeconds)
                 )
                        )
                 ->where($qb->expr()->isNull('expires'));

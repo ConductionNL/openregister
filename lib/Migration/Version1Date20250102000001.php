@@ -79,21 +79,21 @@ class Version1Date20250102000001 extends SimpleMigrationStep
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /** @var ISchemaWrapper $schema */
+        // Get schema wrapper instance from closure.
         $schema = $schemaClosure();
 
         // Add active field to organisations table.
-        if ($schema->hasTable('openregister_organisations')) {
+        if ($schema->hasTable('openregister_organisations') === true) {
             $table = $schema->getTable('openregister_organisations');
 
             // Add active field (boolean).
-            if (!$table->hasColumn('active')) {
+            if ($table->hasColumn('active') === false) {
                 $table->addColumn('active', Types::BOOLEAN, [
                     'notnull' => true,
                     'default' => true,
                     'comment' => 'Whether the organisation is active'
                 ]);
-                $output->info(message: ('Added active column to organisations table');
+                $output->info(message: 'Added active column to organisations table');
             }
         }
 
@@ -113,7 +113,7 @@ class Version1Date20250102000001 extends SimpleMigrationStep
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
         // All organisations should be active by default (already set by column default).
-        $output->info(message: ('All existing organisations are now active by default');
+        $output->info(message: 'All existing organisations are now active by default');
 
     }//end postSchemaChange()
 }//end class

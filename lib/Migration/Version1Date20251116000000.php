@@ -66,7 +66,7 @@ class Version1Date20251116000000 extends SimpleMigrationStep
     private function createObjectTextTable(IOutput $output, ISchemaWrapper $schema): void
     {
         if ($schema->hasTable('openregister_object_texts') === true) {
-            $output->info(message: ('ℹ️  Table openregister_object_texts already exists, skipping.');
+            $output->info(message: 'ℹ️  Table openregister_object_texts already exists, skipping.');
             return;
         }
 
@@ -198,7 +198,7 @@ class Version1Date20251116000000 extends SimpleMigrationStep
         $table->addIndex(['owner'], 'object_texts_owner_idx');
         $table->addIndex(['organisation'], 'object_texts_org_idx');
 
-        $output->info(message: ('✅ Created openregister_object_texts table.');
+        $output->info(message: '✅ Created openregister_object_texts table.');
 
     }//end createObjectTextTable()
 
@@ -214,7 +214,7 @@ class Version1Date20251116000000 extends SimpleMigrationStep
     private function createChunksTable(IOutput $output, ISchemaWrapper $schema): void
     {
         if ($schema->hasTable('openregister_chunks') === true) {
-            $output->info(message: ('ℹ️  Table openregister_chunks already exists, skipping.');
+            $output->info(message: 'ℹ️  Table openregister_chunks already exists, skipping.');
             return;
         }
 
@@ -396,7 +396,7 @@ class Version1Date20251116000000 extends SimpleMigrationStep
         $table->addIndex(['owner'], 'chunks_owner_idx');
         $table->addIndex(['organisation'], 'chunks_org_idx');
 
-        $output->info(message: ('✅ Created openregister_chunks table.');
+        $output->info(message: '✅ Created openregister_chunks table.');
 
     }//end createChunksTable()
 
@@ -412,7 +412,7 @@ class Version1Date20251116000000 extends SimpleMigrationStep
     private function createEntitiesTable(IOutput $output, ISchemaWrapper $schema): void
     {
         if ($schema->hasTable('openregister_entities') === true) {
-            $output->info(message: ('ℹ️  Table openregister_entities already exists, skipping.');
+            $output->info(message: 'ℹ️  Table openregister_entities already exists, skipping.');
             return;
         }
 
@@ -510,7 +510,7 @@ class Version1Date20251116000000 extends SimpleMigrationStep
         $table->addIndex(['owner'], 'entities_owner_idx');
         $table->addIndex(['organisation'], 'entities_org_idx');
 
-        $output->info(message: ('✅ Created openregister_entities table.');
+        $output->info(message: '✅ Created openregister_entities table.');
 
     }//end createEntitiesTable()
 
@@ -526,7 +526,7 @@ class Version1Date20251116000000 extends SimpleMigrationStep
     private function createEntityRelationsTable(IOutput $output, ISchemaWrapper $schema): void
     {
         if ($schema->hasTable('openregister_entity_relations') === true) {
-            $output->info(message: ('ℹ️  Table openregister_entity_relations already exists, skipping.');
+            $output->info(message: 'ℹ️  Table openregister_entity_relations already exists, skipping.');
             return;
         }
 
@@ -663,7 +663,7 @@ class Version1Date20251116000000 extends SimpleMigrationStep
         // The indexes above provide query performance benefits.
         // Foreign key constraints can be added in a separate migration if needed.
         // Referential integrity is maintained at the application level.
-        $output->info(message: ('✅ Created openregister_entity_relations table.');
+        $output->info(message: '✅ Created openregister_entity_relations table.');
 
     }//end createEntityRelationsTable()
 

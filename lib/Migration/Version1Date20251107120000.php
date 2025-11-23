@@ -64,7 +64,7 @@ class Version1Date20251107120000 extends SimpleMigrationStep
                 $column->setDefault('default');
                 $column->setNotnull(true);
 
-                $output->info(message: ('Added default value to openregister_configurations.type column');
+                $output->info(message: 'Added default value to openregister_configurations.type column');
             }
         }
 

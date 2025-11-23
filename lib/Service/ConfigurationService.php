@@ -1054,7 +1054,7 @@ class ConfigurationService
                                 $this->schemasMap[$schemaSlug] = $existingSchema;
                             } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
                                 $this->logger->info(
-                                    sprintf(format: ('Schema with slug %s not found in current organisation context during register import (will be created if defined in import).', $schemaSlug)
+                                    sprintf('Schema with slug %s not found in current organisation context during register import (will be created if defined in import).', $schemaSlug)
                                 );
                             }
                         }
@@ -1566,7 +1566,7 @@ class ConfigurationService
                                 $this->registersMap[$registerSlug] = $existingRegister;
                             } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
                                 $this->logger->info(
-                                    sprintf(format: ('Register with slug %s not found in current organisation context during schema property import (will be resolved after registers are imported).', $registerSlug)
+                                    sprintf('Register with slug %s not found in current organisation context during schema property import (will be resolved after registers are imported).', $registerSlug)
                                 );
                                 // Remove the register reference if not found - will be resolved in second pass if register is imported.
                                 unset($property['objectConfiguration']['register']);
@@ -1591,7 +1591,7 @@ class ConfigurationService
                                     $this->schemasMap[$schemaSlug] = $existingSchema;
                                 } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
                                     $this->logger->info(
-                                        sprintf(format: ('Schema with slug %s not found in current organisation context during schema property import (will be resolved after schemas are imported).', $schemaSlug)
+                                        sprintf('Schema with slug %s not found in current organisation context during schema property import (will be resolved after schemas are imported).', $schemaSlug)
                                     );
                                     // Remove the schema reference if not found - will be resolved in second pass if schema is imported.
                                     unset($property['objectConfiguration']['schema']);
@@ -1628,7 +1628,7 @@ class ConfigurationService
                                 $this->registersMap[$registerSlug] = $existingRegister;
                             } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
                                 $this->logger->info(
-                                    sprintf(format: ('Register with slug %s not found in current organisation context during array items schema property import (will be resolved after registers are imported).', $registerSlug)
+                                    sprintf('Register with slug %s not found in current organisation context during array items schema property import (will be resolved after registers are imported).', $registerSlug)
                                 );
                                 // Remove the register reference if not found - will be resolved in second pass if register is imported.
                                 unset($property['items']['objectConfiguration']['register']);
@@ -1653,7 +1653,7 @@ class ConfigurationService
                                     $this->schemasMap[$schemaSlug] = $existingSchema;
                                 } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
                                     $this->logger->info(
-                                        sprintf(format: ('Schema with slug %s not found in current organisation context during array items schema property import (will be resolved after schemas are imported).', $schemaSlug)
+                                        sprintf('Schema with slug %s not found in current organisation context during array items schema property import (will be resolved after schemas are imported).', $schemaSlug)
                                     );
                                     // Remove the schema reference if not found - will be resolved in second pass if schema is imported.
                                     unset($property['items']['objectConfiguration']['schema']);
@@ -1783,10 +1783,12 @@ class ConfigurationService
                 // Compare versions using version_compare for proper semver comparison.
                 if (version_compare($objectVersion, $existingVersion, '<=')) {
                     $this->logger->info(
-                        sprintf(format: (
-                            'Skipping object import as existing version (%s) is newer or equal to import version (%s) for object: %s', $existingVersion,
+                        sprintf(
+                            'Skipping object import as existing version (%s) is newer or equal to import version (%s) for object: %s',
+                            $existingVersion,
                             $objectVersion,
-                            $objectName)
+                            $objectName
+                        )
                     );
                     // Return the existing object without updating.
                     return $existingObject;

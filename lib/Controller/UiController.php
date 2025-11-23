@@ -68,9 +68,9 @@ class UiController extends Controller
         } catch (\Exception $e) {
             return new TemplateResponse(
                     appName: $this->appName,
-                    templateName: renderAs: 'error',
+                    templateName: 'error',
                     params: ['error' => $e->getMessage()],
-                '500'
+                    responseCode: '500'
             );
         }
 

@@ -237,7 +237,8 @@ class RegisterMapper extends QBMapper
         ?array $filters=[],
         ?array $searchConditions=[],
         ?array $searchParams=[],
-        ?array $extend=[]): array {
+        ?array $extend=[]
+    ): array {
         // Verify RBAC permission to read registers.
         $this->verifyRbacPermission('read', 'register');
 

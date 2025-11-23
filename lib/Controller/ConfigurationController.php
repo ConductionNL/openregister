@@ -533,13 +533,15 @@ class ConfigurationController extends Controller
                     )
                     );
 
-            return new JSONResponse(data: [
-                        'success'        => true, statusCode: 'registersCount' => count($result['registers']),
-                        'schemasCount'   => count($result['schemas']),
-                        'objectsCount'   => count($result['objects']),
-                    ],
-                    200
-                    );
+            return new JSONResponse(
+                data: [
+                    'success'        => true,
+                    'registersCount' => count($result['registers']),
+                    'schemasCount'   => count($result['schemas']),
+                    'objectsCount'   => count($result['objects']),
+                ],
+                statusCode: 200
+            );
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             return new JSONResponse(data: ['error' => 'Configuration not found'], statusCode: 404);
         } catch (Exception $e) {
@@ -894,8 +896,10 @@ class ConfigurationController extends Controller
             $syncInterval = (int) ($data['syncInterval'] ?? 24);
 
             if (empty($owner) === true || empty($repo) === true || empty($path) === true) {
-                return new JSONResponse(data: ['error' => 'Owner, statusCode: repo, and path parameters are required'],
-                    400);
+                return new JSONResponse(
+                    data: ['error' => 'Owner, repo, and path parameters are required'],
+                    statusCode: 400
+                );
             }
 
             $this->logger->info(
@@ -922,10 +926,12 @@ class ConfigurationController extends Controller
             // Check if configuration already exists for this app.
             $existingConfigurations = $this->configurationMapper->findByApp($appId);
             if (count($existingConfigurations) > 0) {
-                return new JSONResponse(data: [
-                        'error'                   => $this->getExistingConfigErrorMessage($appId), statusCode: 'existingConfigurationId' => $existingConfigurations[0]->getId(),
+                return new JSONResponse(
+                    data: [
+                        'error'                   => $this->getExistingConfigErrorMessage($appId),
+                        'existingConfigurationId' => $existingConfigurations[0]->getId(),
                     ],
-                    409
+                    statusCode: 409
                 );
             }
 
@@ -976,17 +982,19 @@ class ConfigurationController extends Controller
 
             $this->logger->info("Successfully imported configuration {$configuration->getTitle()} from GitHub");
 
-            return new JSONResponse(data: [
-                        'success'         => true, statusCode: 'message'         => 'Configuration imported successfully from GitHub',
-                        'configurationId' => $configuration->getId(),
-                        'result'          => [
-                            'registersCount' => count($result['registers']),
-                            'schemasCount'   => count($result['schemas']),
-                            'objectsCount'   => count($result['objects']),
-                        ],
+            return new JSONResponse(
+                data: [
+                    'success'         => true,
+                    'message'         => 'Configuration imported successfully from GitHub',
+                    'configurationId' => $configuration->getId(),
+                    'result'          => [
+                        'registersCount' => count($result['registers']),
+                        'schemasCount'   => count($result['schemas']),
+                        'objectsCount'   => count($result['objects']),
                     ],
-                    201
-                    );
+                ],
+                statusCode: 201
+            );
         } catch (Exception $e) {
             $this->logger->error('Failed to import from GitHub: '.$e->getMessage());
 
@@ -1020,8 +1028,10 @@ class ConfigurationController extends Controller
             $syncInterval = (int) ($data['syncInterval'] ?? 24);
 
             if (empty($namespace) === true || empty($project) === true || empty($path) === true) {
-                return new JSONResponse(data: ['error' => 'Namespace, statusCode: project, and path parameters are required'],
-                    400);
+                return new JSONResponse(
+                    data: ['error' => 'Namespace, project, and path parameters are required'],
+                    statusCode: 400
+                );
             }
 
             // Get project ID from namespace/project path.
@@ -1058,10 +1068,12 @@ class ConfigurationController extends Controller
             // Check if configuration already exists for this app.
             $existingConfigurations = $this->configurationMapper->findByApp($appId);
             if (count($existingConfigurations) > 0) {
-                return new JSONResponse(data: [
-                        'error'                   => $this->getExistingConfigErrorMessage($appId), statusCode: 'existingConfigurationId' => $existingConfigurations[0]->getId(),
+                return new JSONResponse(
+                    data: [
+                        'error'                   => $this->getExistingConfigErrorMessage($appId),
+                        'existingConfigurationId' => $existingConfigurations[0]->getId(),
                     ],
-                    409
+                    statusCode: 409
                 );
             }
 
@@ -1109,17 +1121,19 @@ class ConfigurationController extends Controller
 
             $this->logger->info("Successfully imported configuration {$configuration->getTitle()} from GitLab");
 
-            return new JSONResponse(data: [
-                        'success'         => true, statusCode: 'message'         => 'Configuration imported successfully from GitLab',
-                        'configurationId' => $configuration->getId(),
-                        'result'          => [
-                            'registersCount' => count($result['registers']),
-                            'schemasCount'   => count($result['schemas']),
-                            'objectsCount'   => count($result['objects']),
-                        ],
+            return new JSONResponse(
+                data: [
+                    'success'         => true,
+                    'message'         => 'Configuration imported successfully from GitLab',
+                    'configurationId' => $configuration->getId(),
+                    'result'          => [
+                        'registersCount' => count($result['registers']),
+                        'schemasCount'   => count($result['schemas']),
+                        'objectsCount'   => count($result['objects']),
                     ],
-                    201
-                    );
+                ],
+                statusCode: 201
+            );
         } catch (Exception $e) {
             $this->logger->error('Failed to import from GitLab: '.$e->getMessage());
 
@@ -1186,10 +1200,12 @@ class ConfigurationController extends Controller
             // Check if configuration already exists for this app.
             $existingConfigurations = $this->configurationMapper->findByApp($appId);
             if (count($existingConfigurations) > 0) {
-                return new JSONResponse(data: [
-                        'error'                   => $this->getExistingConfigErrorMessage($appId), statusCode: 'existingConfigurationId' => $existingConfigurations[0]->getId(),
+                return new JSONResponse(
+                    data: [
+                        'error'                   => $this->getExistingConfigErrorMessage($appId),
+                        'existingConfigurationId' => $existingConfigurations[0]->getId(),
                     ],
-                    409
+                    statusCode: 409
                 );
             }
 
@@ -1237,17 +1253,19 @@ class ConfigurationController extends Controller
 
             $this->logger->info("Successfully imported configuration {$configuration->getTitle()} from URL");
 
-            return new JSONResponse(data: [
-                        'success'         => true, statusCode: 'message'         => 'Configuration imported successfully from URL',
-                        'configurationId' => $configuration->getId(),
-                        'result'          => [
-                            'registersCount' => count($result['registers']),
-                            'schemasCount'   => count($result['schemas']),
-                            'objectsCount'   => count($result['objects']),
-                        ],
+            return new JSONResponse(
+                data: [
+                    'success'         => true,
+                    'message'         => 'Configuration imported successfully from URL',
+                    'configurationId' => $configuration->getId(),
+                    'result'          => [
+                        'registersCount' => count($result['registers']),
+                        'schemasCount'   => count($result['schemas']),
+                        'objectsCount'   => count($result['objects']),
                     ],
-                    201
-                    );
+                ],
+                statusCode: 201
+            );
         } catch (Exception $e) {
             $this->logger->error('Failed to import from URL: '.$e->getMessage());
 
@@ -1408,18 +1426,20 @@ class ConfigurationController extends Controller
                 $message .= ". Note: GitHub Code Search may take a few minutes to index new files.";
             }
 
-            return new JSONResponse(data: [
-                        'success'         => true, statusCode: 'message'         => $message,
-                        'configurationId' => $configuration->getId(),
-                        'commit_sha'      => $result['commit_sha'],
-                        'commit_url'      => $result['commit_url'],
-                        'file_url'        => $result['file_url'],
-                        'branch'          => $branch,
-                        'default_branch'  => $defaultBranch,
-                        'indexing_note'   => $this->getIndexingNote($defaultBranch, $branch),
-                    ],
-                    200
-                    );
+            return new JSONResponse(
+                data: [
+                    'success'         => true,
+                    'message'         => $message,
+                    'configurationId' => $configuration->getId(),
+                    'commit_sha'      => $result['commit_sha'],
+                    'commit_url'      => $result['commit_url'],
+                    'file_url'        => $result['file_url'],
+                    'branch'          => $branch,
+                    'default_branch'  => $defaultBranch,
+                    'indexing_note'   => $this->getIndexingNote($defaultBranch, $branch),
+                ],
+                statusCode: 200
+            );
         } catch (Exception $e) {
             $this->logger->error('Failed to publish to GitHub: '.$e->getMessage());
 

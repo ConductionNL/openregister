@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 /**
  * OpenRegister Migration - Add size column to search trails
  *

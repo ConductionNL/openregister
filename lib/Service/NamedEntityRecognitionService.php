@@ -117,9 +117,8 @@ class NamedEntityRecognitionService
     public function extractFromChunk(Chunk $chunk, array $options=[]): array
     {
         $this->logger->info(
-                message:
-                '[NamedEntityRecognitionService] Extracting entities from chunk',
-                [
+                message: '[NamedEntityRecognitionService] Extracting entities from chunk',
+                context: [
                     'chunk_id'    => $chunk->getId(),
                     'source_type' => $chunk->getSourceType(),
                     'source_id'   => $chunk->getSourceId(),
@@ -195,9 +194,8 @@ class NamedEntityRecognitionService
                 ];
             } catch (Exception $e) {
                 $this->logger->error(
-                        message:
-                        '[NamedEntityRecognitionService] Failed to store entity',
-                        [
+                        message: '[NamedEntityRecognitionService] Failed to store entity',
+                        context: [
                             'chunk_id' => $chunk->getId(),
                             'type'     => $detected['type'] ?? 'unknown',
                             'value'    => substr($detected['value'] ?? '', 0, 50),
@@ -208,9 +206,8 @@ class NamedEntityRecognitionService
         }//end foreach
 
         $this->logger->info(
-                message:
-                '[NamedEntityRecognitionService] Entity extraction complete',
-                [
+                message: '[NamedEntityRecognitionService] Entity extraction complete',
+                context: [
                     'chunk_id'          => $chunk->getId(),
                     'entities_found'    => $entitiesFound,
                     'relations_created' => $relationsCreated,
@@ -244,9 +241,8 @@ class NamedEntityRecognitionService
     public function extractFromChunks(array $chunks, array $options=[]): array
     {
         $this->logger->info(
-                message:
-                '[NamedEntityRecognitionService] Batch extracting entities',
-                [
+                message: '[NamedEntityRecognitionService] Batch extracting entities',
+                context: [
                     'chunk_count' => count($chunks),
                 ]
                 );
@@ -269,9 +265,8 @@ class NamedEntityRecognitionService
                 $errors[$chunk->getId()] = $e->getMessage();
 
                 $this->logger->error(
-                        message:
-                        '[NamedEntityRecognitionService] Failed to process chunk',
-                        [
+                        message: '[NamedEntityRecognitionService] Failed to process chunk',
+                        context: [
                             'chunk_id' => $chunk->getId(),
                             'error'    => $e->getMessage(),
                         ]

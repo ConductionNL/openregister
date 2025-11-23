@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/*
+/**
  * SolrSchemaService - Multi-Tenant, Multi-App Schema Mirroring
  *
  * This service handles automatic mirroring of OpenRegister schemas to SOLR
@@ -23,9 +23,8 @@ declare(strict_types=1);
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
  */
- * @copyright 2024 OpenRegister * @license   AGPL - 3.0 - or-later * @version   1.0.0 * @link      https:
-// github.com/OpenRegister/OpenRegister
- * / namespace OCA\OpenRegister\Service;
+
+namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\GuzzleSolrService;
@@ -473,7 +472,8 @@ class SolrSchemaService
      * and chooses the most permissive type (string > text > float > integer > boolean).
      * This prevents errors like "versie" being integer in one schema and string in another.
      *
-     * @param  bool $force Force recreation of existing fields
+     * @param bool $force Force recreation of existing fields
+     *
      * @return array Result with success status and statistics
      */
     public function mirrorSchemas(bool $force=false): array
@@ -936,7 +936,8 @@ class SolrSchemaService
      * - `string`: Exact matching for IDs, codes, names, faceting
      * - `docValues`: Enables fast sorting/faceting but uses more storage
      *
-     * @param  array $fieldDefinition OpenRegister field definition
+     * @param array $fieldDefinition OpenRegister field definition
+     *
      * @return string SOLR field type
      */
     private function determineSolrFieldType(array $fieldDefinition): string
@@ -946,7 +947,7 @@ class SolrSchemaService
 
         // **FILE TYPE HANDLING**: File fields should use text_general for large content.
         if ($type === 'file' || $format === 'file' || $format === 'binary'
-            || in_array($format, ['data-url', 'base64', 'image', 'document'])
+            || in_array($format, ['data-url', 'base64', 'image', 'document']) === true
         ) {
             return 'text_general';
             // Large text type for file content.
@@ -980,7 +981,8 @@ class SolrSchemaService
      * This prevents issues where string fields incorrectly become multi-valued due to
      * different SOLR configurations between environments.
      *
-     * @param  array $fieldDefinition Field definition from OpenRegister schema
+     * @param array $fieldDefinition Field definition from OpenRegister schema
+     *
      * @return bool True if field should be multi-valued
      */
     private function isMultiValued(array $fieldDefinition): bool
@@ -997,8 +999,9 @@ class SolrSchemaService
      * Only specific core fields that legitimately store multiple values should be multi-valued.
      * This prevents accidental multi-value configuration for single-value fields.
      *
-     * @param  string $fieldName Core field name
-     * @param  string $fieldType SOLR field type
+     * @param string $fieldName Core field name
+     * @param string $fieldType SOLR field type
+     *
      * @return bool True if field should be multi-valued
      */
     private function isCoreFieldMultiValued(string $fieldName, string $fieldType): bool
@@ -1026,7 +1029,8 @@ class SolrSchemaService
      * Some core fields like JSON storage fields should be stored but not indexed
      * since they're only used for reconstruction, not searching.
      *
-     * @param  string $fieldName Core field name
+     * @param string $fieldName Core field name
+     *
      * @return bool True if field should be indexed
      */
     private function shouldCoreFieldBeIndexed(string $fieldName): bool
@@ -1055,7 +1059,7 @@ class SolrSchemaService
     /**
      * Determine if a core metadata field should have docValues enabled
      *
-     * docValues enable fast sorting, faceting, grouping, and function queries.
+     * DocValues enable fast sorting, faceting, grouping, and function queries.
      * They should be enabled for fields that are used for:
      * - Sorting (e.g., name, created, updated dates)
      * - Faceting (e.g., owner, organisation, schema, register)
@@ -1063,7 +1067,8 @@ class SolrSchemaService
      *
      * JSON storage fields should have docValues=false to save storage space.
      *
-     * @param  string $fieldName Core field name
+     * @param string $fieldName Core field name
+     *
      * @return bool True if field should have docValues enabled
      */
     private function shouldCoreFieldHaveDocValues(string $fieldName): bool
@@ -1128,12 +1133,12 @@ class SolrSchemaService
         }
 
         // AI/ML fields configuration.
-        if (in_array($fieldName, ['_embedding_', '_confidence_', '_classification_'])) {
+        if (in_array($fieldName, ['_embedding_', '_confidence_', '_classification_']) === true) {
             return false;
             // Vector and classification fields don't need docValues for sorting.
         }
 
-        if (in_array($fieldName, ['_embedding_model_', '_embedding_dim_', 'vector_indexed', 'vector_model', 'vector_dimensions'])) {
+        if (in_array($fieldName, ['_embedding_model_', '_embedding_dim_', 'vector_indexed', 'vector_model', 'vector_dimensions']) === true) {
             return true;
             // Metadata fields that might be used for filtering/faceting.
         }
@@ -1146,8 +1151,9 @@ class SolrSchemaService
     /**
      * Determine if a file metadata field should be multi-valued
      *
-     * @param  string $fieldName File field name
-     * @param  string $fieldType Field type
+     * @param string $fieldName File field name
+     * @param string $fieldType Field type
+     *
      * @return bool True if field should be multi-valued
      */
     private function isFileFieldMultiValued(string $fieldName, string $fieldType): bool
@@ -1176,7 +1182,8 @@ class SolrSchemaService
     /**
      * Determine if a file metadata field should be indexed
      *
-     * @param  string $fieldName File field name
+     * @param string $fieldName File field name
+     *
      * @return bool True if field should be indexed
      */
     private function shouldFileFieldBeIndexed(string $fieldName): bool
@@ -1199,7 +1206,8 @@ class SolrSchemaService
     /**
      * Determine if a file metadata field should have docValues enabled
      *
-     * @param  string $fieldName File field name
+     * @param string $fieldName File field name
+     *
      * @return bool True if field should have docValues enabled
      */
     private function shouldFileFieldHaveDocValues(string $fieldName): bool
@@ -1262,13 +1270,13 @@ class SolrSchemaService
         ];
 
         // Special handling for system fields.
-        if (in_array($fieldName, ['_text_', 'chunk_text', 'text_content'])) {
+        if (in_array($fieldName, ['_text_', 'chunk_text', 'text_content']) === true) {
             return false;
             // Full-text search fields don't need docValues.
         }
 
         // AI/ML fields configuration.
-        if (in_array($fieldName, ['_embedding_', '_confidence_', '_classification_'])) {
+        if (in_array($fieldName, ['_embedding_', '_confidence_', '_classification_']) === true) {
             return false;
             // Vector and classification fields don't need docValues.
         }
@@ -1284,7 +1292,8 @@ class SolrSchemaService
      * These are the essential fields needed for object indexing including
      * register and schema metadata (UUID, slug, etc.)
      *
-     * @param  bool $force Force update existing fields
+     * @param bool $force Force update existing fields
+     *
      * @return bool Success status
      */
     private function ensureCoreMetadataFields(bool $force=false): bool
@@ -1331,7 +1340,7 @@ class SolrSchemaService
                     'docValues'   => $this->shouldCoreFieldHaveDocValues($fieldName),
                 ];
 
-                if ($this->addOrUpdateSolrField($fieldName, $fieldConfig, $force)) {
+                if ($this->addOrUpdateSolrField($fieldName, $fieldConfig, $force) === true) {
                     $successCount++;
                     $this->logger->debug(
                             '✅ Core metadata field ensured',
@@ -1368,7 +1377,8 @@ class SolrSchemaService
     /**
      * Ensure file metadata fields exist in file collection
      *
-     * @param  bool $force Force update existing fields
+     * @param bool $force Force update existing fields
+     *
      * @return bool Success status
      */
     private function ensureFileMetadataFields(bool $force=false): bool
@@ -1392,7 +1402,7 @@ class SolrSchemaService
                     'docValues'   => $this->shouldFileFieldHaveDocValues($fieldName),
                 ];
 
-                if ($this->addOrUpdateSolrField($fieldName, $fieldConfig, $force)) {
+                if ($this->addOrUpdateSolrField($fieldName, $fieldConfig, $force) === true) {
                     $successCount++;
                     $this->logger->debug(
                             '✅ File metadata field ensured',
@@ -1483,12 +1493,18 @@ class SolrSchemaService
         // Find extra fields (in SOLR but not expected).
         $extra = array_diff($current, $expectedNames);
 
+        if (empty($missing) === true) {
+            $status = 'complete';
+        } else {
+            $status = 'incomplete';
+        }
+
         return [
             'missing'    => $missing,
             'extra'      => array_values($extra),
             'expected'   => $expectedNames,
             'current'    => $current,
-            'status'     => empty($missing) ? 'complete' : 'incomplete',
+            'status'     => $status,
             'collection' => $objectCollection,
         ];
 
@@ -1551,12 +1567,18 @@ class SolrSchemaService
         // Find extra fields (in SOLR but not expected).
         $extra = array_diff($current, $expectedNames);
 
+        if (empty($missing) === true) {
+            $status = 'complete';
+        } else {
+            $status = 'incomplete';
+        }
+
         return [
             'missing'    => $missing,
             'extra'      => array_values($extra),
             'expected'   => $expectedNames,
             'current'    => $current,
-            'status'     => empty($missing) ? 'complete' : 'incomplete',
+            'status'     => $status,
             'collection' => $fileCollection,
         ];
 
@@ -1584,7 +1606,7 @@ class SolrSchemaService
             ];
 
             // Add authentication if configured.
-            if (!empty($solrConfig['username']) && !empty($solrConfig['password'])) {
+            if (empty($solrConfig['username']) === false && empty($solrConfig['password']) === false) {
                 $requestOptions['auth'] = [
                     $solrConfig['username'],
                     $solrConfig['password'],
@@ -1597,13 +1619,13 @@ class SolrSchemaService
             $responseBody = $response->getBody();
             $schemaData   = json_decode($responseBody, true);
 
-            if (!$schemaData || !isset($schemaData['schema']['fields'])) {
+            if ($schemaData === false || $schemaData === null || isset($schemaData['schema']['fields']) === false) {
                 $this->logger->warning(
                         'No fields data returned from SOLR',
                         [
                             'collection' => $collectionName,
                             'response'   => substr($responseBody, 0, 500),
-                // Log first 500 chars for debugging.
+                            // Log first 500 chars for debugging.
                         ]
                         );
                 return [];
@@ -1612,7 +1634,7 @@ class SolrSchemaService
             // Extract field names.
             $fieldNames = [];
             foreach ($schemaData['schema']['fields'] as $field) {
-                if (isset($field['name'])) {
+                if (isset($field['name']) === true) {
                     $fieldNames[] = $field['name'];
                 }
             }
@@ -1635,8 +1657,9 @@ class SolrSchemaService
     /**
      * Apply SOLR fields to the tenant collection using Schema API
      *
-     * @param  array $solrFields SOLR field definitions
-     * @param  bool  $force      Force update existing fields
+     * @param array $solrFields SOLR field definitions
+     * @param bool  $force      Force update existing fields
+     *
      * @return bool Success status
      */
     private function applySolrFields(array $solrFields, bool $force=false): bool
@@ -1654,7 +1677,7 @@ class SolrSchemaService
         $successCount = 0;
         foreach ($solrFields as $fieldName => $fieldConfig) {
             try {
-                if ($this->addOrUpdateSolrField($fieldName, $fieldConfig, $force)) {
+                if ($this->addOrUpdateSolrField($fieldName, $fieldConfig, $force) === true) {
                     $successCount++;
                     $this->logger->info(
                             '✅ Applied SOLR field',
@@ -1699,9 +1722,10 @@ class SolrSchemaService
     /**
      * Add or update a single SOLR field using Schema API
      *
-     * @param  string $fieldName   Field name
-     * @param  array  $fieldConfig Field configuration
-     * @param  bool   $force       Force update existing fields
+     * @param string $fieldName   Field name
+     * @param array  $fieldConfig Field configuration
+     * @param bool   $force       Force update existing fields
+     *
      * @return bool Success status
      */
     private function addOrUpdateSolrField(string $fieldName, array $fieldConfig, bool $force=false): bool
@@ -1727,27 +1751,33 @@ class SolrSchemaService
         // Check if it's a Kubernetes service name (contains .svc.cluster.local).
         if (strpos($host, '.svc.cluster.local') !== false) {
             // Kubernetes service - don't append port, it's handled by the service.
-            $url = sprintf(format: (
-                    '%s://%s%s/%s/schema', $solrConfig['scheme'] ?? 'http',
+            $url = sprintf(
+                    '%s://%s%s/%s/schema',
+                    $solrConfig['scheme'] ?? 'http',
                 $host,
                 $solrConfig['path'] ?? '/solr',
-                $baseCollectionName);
+                $baseCollectionName
+                    );
         } else {
             // Regular hostname - only append port if explicitly provided and not 0/null.
             if ($port !== null && $port > 0) {
-                $url = sprintf(format: (
-                        '%s://%s:%d%s/%s/schema', $solrConfig['scheme'] ?? 'http',
+                $url = sprintf(
+                        '%s://%s:%d%s/%s/schema',
+                        $solrConfig['scheme'] ?? 'http',
                     $host,
                     $port,
                     $solrConfig['path'] ?? '/solr',
-                    $baseCollectionName);
+                    $baseCollectionName
+                        );
             } else {
                 // No port provided - let the service handle it.
-                $url = sprintf(format: (
-                        '%s://%s%s/%s/schema', $solrConfig['scheme'] ?? 'http',
+                $url = sprintf(
+                        '%s://%s%s/%s/schema',
+                        $solrConfig['scheme'] ?? 'http',
                     $host,
                     $solrConfig['path'] ?? '/solr',
-                    $baseCollectionName);
+                    $baseCollectionName
+                        );
             }
         }//end if
 
@@ -1756,7 +1786,7 @@ class SolrSchemaService
             'add-field' => array_merge(['name' => $fieldName], $fieldConfig),
         ];
 
-        if ($this->makeSolrSchemaRequest($url, $payload)) {
+        if ($this->makeSolrSchemaRequest($url, $payload) === true) {
             return true;
         }
 
@@ -1776,8 +1806,9 @@ class SolrSchemaService
     /**
      * Make HTTP request to SOLR Schema API
      *
-     * @param  string $url     SOLR schema endpoint URL
-     * @param  array  $payload Request payload
+     * @param string $url     SOLR schema endpoint URL
+     * @param array  $payload Request payload
+     *
      * @return bool Success status
      */
     private function makeSolrSchemaRequest(string $url, array $payload): bool
@@ -1825,7 +1856,7 @@ class SolrSchemaService
                 'openregister_schemas' => count($schemaCount),
                 'solr_collection'      => $this->solrService->getTenantCollectionName(),
                 'last_sync'            => null,
-            // TODO: Track last sync time
+            // TODO: Track last sync time.
             ];
         } catch (\Exception $e) {
             return [
@@ -1862,8 +1893,12 @@ class SolrSchemaService
         $errors    = [];
 
         // Get the appropriate collection name.
-        $settings   = $this->settingsService->getSettings();
-        $collection = $collectionType === 'files' ? ($settings['solr']['fileCollection'] ?? null) : ($settings['solr']['objectCollection'] ?? $settings['solr']['collection'] ?? 'openregister');
+        $settings = $this->settingsService->getSettings();
+        if ($collectionType === 'files') {
+            $collection = $settings['solr']['fileCollection'] ?? null;
+        } else {
+            $collection = $settings['solr']['objectCollection'] ?? $settings['solr']['collection'] ?? 'openregister';
+        }
 
         if ($collection === null || $collection === '') {
             return [
@@ -1915,10 +1950,17 @@ class SolrSchemaService
 
         $executionTime = round((microtime(true) - $startTime) * 1000, 2);
 
+        if ($dryRun === true) {
+            $messagePrefix = 'Dry run';
+        } else {
+            $messagePrefix = 'Created fields';
+        }
+
         return [
-            'success'           => empty($errors),
-            'message'           => sprintf(format: (
-                '%s: %d created, %d errors', $dryRun ? 'Dry run' : 'Created fields',
+            'success'           => empty($errors) === true,
+            'message'           => sprintf(
+                '%s: %d created, %d errors',
+                $messagePrefix,
                 count($created),
                 count($errors)
             ),
@@ -1959,12 +2001,12 @@ class SolrSchemaService
         ];
 
         // Add multiValued if specified.
-        if (isset($fieldConfig['multiValued'])) {
+        if (isset($fieldConfig['multiValued']) === true) {
             $fieldDef['multiValued'] = $fieldConfig['multiValued'];
         }
 
         // Add docValues if specified.
-        if (isset($fieldConfig['docValues'])) {
+        if (isset($fieldConfig['docValues']) === true) {
             $fieldDef['docValues'] = $fieldConfig['docValues'];
         }
 
@@ -1983,7 +2025,7 @@ class SolrSchemaService
         // Add authentication if configured.
         $username = $settings['solr']['username'] ?? null;
         $password = $settings['solr']['password'] ?? null;
-        if ($username && $password) {
+        if ($username !== null && $password !== null) {
             $requestOptions['auth'] = [$username, $password];
         }
 

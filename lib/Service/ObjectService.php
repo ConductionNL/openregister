@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 /**
  * OpenRegister ObjectService
  *
@@ -294,6 +297,7 @@ class ObjectService
      * @param string      $action      The CRUD action (create, read, update, delete)
      * @param string|null $userId      Optional user ID (defaults to current user)
      * @param string|null $objectOwner Optional object owner for ownership check
+     * @param bool        $rbac        Whether to apply RBAC checks (default: true)
      *
      * @return bool True if user has permission, false otherwise
      *
@@ -593,9 +597,19 @@ class ObjectService
 
         // If the object is not published, check the permissions.
         $now = new \DateTime(datetime: 'now');
-        if ($object->getPublished() === null || $now < $object->getPublished() || ($object->getDepublished() !== null && $object->getDepublished() <= $now)) {
+        $published = $object->getPublished();
+        $depublished = $object->getDepublished();
+        $isNotPublished = $published === null || $now < $published;
+        $isDepublished = $depublished !== null && $depublished <= $now;
+        if ($isNotPublished === true || $isDepublished === true) {
             // Check user has permission to read this specific object (includes object owner check).
-            $this->checkPermission(schema: $this->currentSchema, action: 'read', userId: null, objectOwner: $object->getOwner(), rbac: $rbac);
+            $this->checkPermission(
+                schema: $this->currentSchema,
+                action: 'read',
+                userId: null,
+                objectOwner: $object->getOwner(),
+                rbac: $rbac
+            );
         }
 
         // Render the object before returning.
@@ -793,7 +807,8 @@ class ObjectService
      * @param Register|string|int|null $register      The register object or its ID/UUID.
      * @param Schema|string|int|null   $schema        The schema object or its ID/UUID.
      * @param bool                     $rbac          Whether to apply RBAC checks (default: true).
-     * @param bool                     $multi         Whether to apply multitenancy filtering (default: true).
+     * @param bool                     $multi          Whether to apply multitenancy filtering (default: true).
+     * @param bool                     $silent         Whether to skip audit trail creation and events (default: false).
      *
      * @return array The updated object.
      *
@@ -1138,9 +1153,10 @@ class ObjectService
      * @param Register|string|int|null $register The register object or its ID/UUID
      * @param Schema|string|int|null   $schema   The schema object or its ID/UUID
      * @param string|null              $uuid     The UUID of the object to update (if updating)
-     * @param bool                     $rbac     Whether to apply RBAC checks (default: true)
-     * @param bool                     $multi    Whether to apply multitenancy filtering (default: true)
-     * @param bool                     $silent   Whether to skip audit trail creation and events (default: false)
+     * @param bool                     $rbac          Whether to apply RBAC checks (default: true)
+     * @param bool                     $multi         Whether to apply multitenancy filtering (default: true)
+     * @param bool                     $silent        Whether to skip audit trail creation and events (default: false)
+     * @param array|null               $uploadedFiles Uploaded files from multipart/form-data (optional)
      *
      * @return ObjectEntity The saved and rendered object
      *
@@ -1227,7 +1243,7 @@ class ObjectService
 
         // Pre-validation cascading: Handle inversedBy properties BEFORE validation.
         // This creates related objects and replaces them with UUIDs so validation sees UUIDs, not objects.
-        // TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property
+        // TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property.
         [$object, $uuid] = $this->handlePreValidationCascading($object, $parentSchema, $uuid);
 
         // Restore the parent object's register and schema context after cascading.
@@ -1279,10 +1295,10 @@ class ObjectService
             $folderId,
             $rbac,
             $multi,
-            true, // persist
-            $silent, // silent
-            true, // validation
-            $uploadedFiles // uploaded files from multipart/form-data
+            true, // Persist.
+            $silent, // Silent.
+            true, // Validation.
+            $uploadedFiles // Uploaded files from multipart/form-data.
         );
 
         // Determine if register and schema should be passed to renderEntity.
@@ -1366,7 +1382,8 @@ class ObjectService
         // Get all registers.
         $registers = $this->getCachedEntities('register', 'all', function($ids) {
             // **TYPE SAFETY**: Convert 'all' to proper null limit for RegisterMapper::findAll().
-            return $this->registerMapper->findAll(null); // null = no limit (get all)
+            // Null = no limit (get all).
+            return $this->registerMapper->findAll(null);
         });
 
         // Convert to arrays and extend schemas.
@@ -1415,7 +1432,8 @@ class ObjectService
      *
      * @param array $filters The set of filters to find the inversed relationships through.
      *
-     * @return array|null The list of ids that have an inversed relationship to an object that meets the filters. Returns NULL if no filters are found that are applicable.
+     * @return array|null The list of ids that have an inversed relationship to an object that meets the filters.
+     *                    Returns NULL if no filters are found that are applicable.
      *
      * @throws \OCP\DB\Exception
      */
@@ -1541,7 +1559,15 @@ class ObjectService
         $filters = $requestParams;
         unset($filters['_route']);
         // TODO: Investigate why this is here and if it's needed.
-        unset($filters['_extend'], $filters['_limit'], $filters['_offset'], $filters['_order'], $filters['_page'], $filters['_search'], $filters['_facetable']);
+        unset(
+            $filters['_extend'],
+            $filters['_limit'],
+            $filters['_offset'],
+            $filters['_order'],
+            $filters['_page'],
+            $filters['_search'],
+            $filters['_facetable']
+        );
         unset($filters['extend'], $filters['limit'], $filters['offset'], $filters['order'], $filters['page']);
 
         if (isset($filters['register']) === false) {
@@ -1771,8 +1797,12 @@ class ObjectService
      * @phpstan-return array<string, mixed>
      * @psalm-return   array<string, mixed>
      */
-    public function buildSearchQuery(array $requestParams, int | string | array | null $register=null, int | string | array | null $schema=null, ?array $ids=null): array
-    {
+    public function buildSearchQuery(
+        array $requestParams,
+        int | string | array | null $register=null,
+        int | string | array | null $schema=null,
+        ?array $ids=null
+    ): array {
         // STEP 1: Fix PHP's dot-to-underscore mangling in query parameter names.
         // PHP converts dots to underscores in parameter names, e.g.:.
         // @self.register → @self_register.
@@ -1781,7 +1811,7 @@ class ObjectService
         $fixedParams = [];
         foreach ($requestParams as $key => $value) {
             // Skip parameters that start with underscore (system parameters like _limit, _offset).
-            if (str_starts_with($key, '_')) {
+            if (str_starts_with(haystack: $key, needle: '_') === true) {
                 $fixedParams[$key] = $value;
                 continue;
             }
@@ -1821,13 +1851,25 @@ class ObjectService
         $query = [];
 
         // Extract metadata filters into @self.
-        $metadataFields = ['register', 'schema', 'uuid', 'organisation', 'owner', 'application', 'created', 'updated', 'published', 'depublished', 'deleted'];
+        $metadataFields = [
+            'register',
+            'schema',
+            'uuid',
+            'organisation',
+            'owner',
+            'application',
+            'created',
+            'updated',
+            'published',
+            'depublished',
+            'deleted'
+        ];
         $query['@self'] = [];
 
         // Add register and schema to @self if provided.
         // Support both single values and arrays for multi-register/schema filtering.
-        if ($register !== null) {
-            if (is_array($register)) {
+        if ($register !== null) { // phpcs:ignore
+            if (is_array($register) === true) {
                 // Convert array values to integers.
                 $query['@self']['register'] = array_map('intval', $register);
             } else {
@@ -1835,8 +1877,8 @@ class ObjectService
             }
         }
 
-        if ($schema !== null) {
-            if (is_array($schema)) {
+        if ($schema !== null) { // phpcs:ignore
+            if (is_array($schema) === true) {
                 // Convert array values to integers.
                 $query['@self']['schema'] = array_map('intval', $schema);
             } else {
@@ -1851,9 +1893,9 @@ class ObjectService
         $objectFilters = [];
 
         foreach ($params as $key => $value) {
-            if (str_starts_with($key, '_')) {
+            if (str_starts_with(haystack: $key, needle: '_') === true) {
                 $specialParams[$key] = $value;
-            } else if (in_array($key, $metadataFields)) {
+            } elseif (in_array(needle: $key, haystack: $metadataFields) === true) {
                 // Only add to @self if not already set from function parameters.
                 if (isset($query['@self'][$key]) === false) {
                     $query['@self'][$key] = $value;
@@ -1873,9 +1915,10 @@ class ObjectService
         }
 
         // Support both 'ids' and '_ids' parameters for flexibility.
-        if (isset($specialParams['ids'])) {
+        if (isset($specialParams['ids']) === true) {
             $query['_ids'] = $specialParams['ids'];
-            unset($specialParams['ids']); // Remove to avoid duplication
+            // Remove to avoid duplication.
+            unset($specialParams['ids']);
         }
 
         // Add all special parameters (they'll be handled by searchObjectsPaginated).
@@ -1899,7 +1942,7 @@ class ObjectService
      */
     private function applyViewsToQuery(array $query, array $viewIds): array
     {
-        if (empty($viewIds)) {
+        if (empty($viewIds) === true) {
             return $query;
         }
 
@@ -1932,8 +1975,8 @@ class ObjectService
                 }
 
                 // Apply schemas filter using @self metadata (format ObjectEntityMapper understands).
-                if (!empty($viewQuery['schemas'])) {
-                    if (!isset($query['@self'])) {
+                if (empty($viewQuery['schemas']) === false) {
+                    if (isset($query['@self']) === false) {
                         $query['@self'] = [];
                     }
                     $schemaValue = $query['@self']['schema'] ?? null;
@@ -2055,10 +2098,16 @@ class ObjectService
      *
      * @throws \OCP\DB\Exception If a database error occurs
      */
-    public function searchObjects(array $query=[], bool $rbac=true, bool $multi=true, ?array $ids=null, ?string $uses=null, ?array $views=null): array|int
-    {
+    public function searchObjects(
+        array $query=[],
+        bool $rbac=true,
+        bool $multi=true,
+        ?array $ids=null,
+        ?string $uses=null,
+        ?array $views=null
+    ): array|int {
         // Apply view filters if provided.
-        if ($views !== null && !empty($views)) {
+        if ($views !== null && empty($views) === false) {
             $query = $this->applyViewsToQuery($query, $views);
         }
 
@@ -2114,7 +2163,7 @@ class ObjectService
         ]);
 
         // If _count option was used, return the integer count directly.
-        if (isset($query['_count']) && $query['_count'] === true) {
+        if (isset($query['_count']) === true && $query['_count'] === true) {
             return $result;
         }
 
@@ -2219,13 +2268,13 @@ class ObjectService
             $registers = array_combine(array_map(fn($register) => $register->getId(), $validRegisters), $validRegisters);
         }
 
-        if (!empty($schemaIds)) {
+        if (empty($schemaIds) === false) {
             $schemaEntities = $this->getCachedEntities('schema', $schemaIds, [$this->schemaMapper, 'findMultiple']);
 
             // **TYPE SAFETY**: Ensure we have Schema objects, not arrays.
             $validSchemas = [];
             foreach ($schemaEntities as $schema) {
-                if (is_array($schema)) {
+                if (is_array($schema) === true) {
                     // Hydrate array back to Schema object.
                     try {
                         $schemaObj = new \OCA\OpenRegister\Db\Schema();
@@ -2245,13 +2294,13 @@ class ObjectService
 
         // Extract extend configuration from query if present.
         $extend = $query['_extend'] ?? [];
-        if (is_string($extend)) {
+        if (is_string($extend) === true) {
             $extend = array_map('trim', explode(',', $extend));
         }
 
         // Extract fields configuration from query if present.
         $fields = $query['_fields'] ?? null;
-        if (is_string($fields)) {
+        if (is_string($fields) === true) {
             $fields = array_map('trim', explode(',', $fields));
         }
 
@@ -2259,24 +2308,27 @@ class ObjectService
 
         // Extract filter configuration from query if present.
         $filter = $query['_filter'] ?? null;
-        if (is_string($filter)) {
+        if (is_string($filter) === true) {
             $filter = array_map('trim', explode(',', $filter));
         }
 
         // Extract unset configuration from query if present.
         $unset = $query['_unset'] ?? null;
-        if (is_string($unset)) {
+        if (is_string($unset) === true) {
             $unset = array_map('trim', explode(',', $unset));
         }
 
         // **PERFORMANCE OPTIMIZATION**: Smart relationship loading with limits to prevent 30s+ load times.
-        if (!empty($extend) && !empty($objects)) {
+        if (empty($extend) === false && empty($objects) === false) {
             $startUltraPreload = microtime(true);
 
             // **CIRCUIT BREAKER**: Add limits to prevent massive relationship loading that causes 30s+ timeouts.
-            $maxObjects = min(count($objects), 50); // Limit to 50 objects max
-            $maxRelationships = 200; // Limit to 200 total relationships max
-            $maxExtends = min(count($extend), 5); // Limit to 5 extend properties max
+            // Limit to 50 objects max.
+            $maxObjects = min(count($objects), 50);
+            // Limit to 200 total relationships max.
+            $maxRelationships = 200;
+            // Limit to 5 extend properties max.
+            $maxExtends = min(count($extend), 5);
 
             $limitedObjects = array_slice($objects, 0, $maxObjects);
             $limitedExtends = array_slice($extend, 0, $maxExtends);
@@ -2285,7 +2337,7 @@ class ObjectService
             $allRelationshipIds = $this->extractAllRelationshipIds($limitedObjects, $limitedExtends);
             $allRelationshipIds = array_slice($allRelationshipIds, 0, $maxRelationships);
 
-            if (!empty($allRelationshipIds)) {
+            if (empty($allRelationshipIds) === false) {
                 $this->logger->info(message: '🚀 PERFORMANCE: Smart relationship loading with limits', context: [
                     'originalObjects' => count($objects),
                     'limitedObjects' => $maxObjects,
@@ -2321,7 +2373,7 @@ class ObjectService
             }
         } else {
             // **PERFORMANCE OPTIMIZATION**: Log that preloading was skipped for simple requests.
-            if (empty($extend)) {
+            if (empty($extend) === true) {
                 $this->logger->debug(message: 'Ultra preload skipped - no extend parameters', context: [
                     'objectCount' => count($objects),
                     'performanceImpact' => 'significant_improvement'
@@ -2364,7 +2416,8 @@ class ObjectService
 
             $objects[$key] = $this->renderHandler->renderEntity(
              entity: $object,
-             extend: $limitedExtends ?? $extend, // Use limited extends if available
+             // Use limited extends if available.
+             extend: $limitedExtends ?? $extend,
              filter: $filter,
              fields: $fields,
              unset: $unset,
@@ -2396,16 +2449,22 @@ class ObjectService
      * functionality but returns only the count of matching objects. It uses the new
      * countSearchObjects method which is optimized for counting operations.
      *
-     * @param array $query The search query array containing filters and options
-     *                     - @self: Metadata filters (register, schema, uuid, etc.)
-     *                     - Direct keys: Object field filters for JSON data
-     *                     - _includeDeleted: Include soft-deleted objects
-     *                     - _published: Only published objects
-     *                     - _search: Full-text search term
+     * @param array<string, mixed> $query The search query array containing filters and options
+     *                                    - @self: Metadata filters (register, schema, uuid, etc.)
+     *                                    - Direct keys: Object field filters for JSON data
+     *                                    - _includeDeleted: Include soft-deleted objects
+     *                                    - _published: Only published objects
+     *                                    - _search: Full-text search term
+     * @param bool                 $rbac  Whether to apply RBAC checks (default: true)
+     * @param bool                 $multi Whether to apply multitenancy filtering (default: true)
+     * @param array|null           $ids   Optional array of object IDs to filter by
+     * @param string|null          $uses  Optional uses parameter for filtering
      *
      * @phpstan-param array<string, mixed> $query
+     * @phpstan-return int
      *
      * @psalm-param array<string, mixed> $query
+     * @psalm-return int
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
@@ -2583,9 +2642,9 @@ class ObjectService
     private function loadRegistersAndSchemas(array $query): void
     {
         // Load register context if specified.
-        if (isset($query['@self']['register'])) {
+        if (isset($query['@self']['register']) === true) {
             $registerValue = $query['@self']['register'];
-            if (!is_array($registerValue) && $this->currentRegister === null) {
+            if (is_array($registerValue) === false && $this->currentRegister === null) {
                 try {
                     $this->setRegister($registerValue);
                 } catch (\Exception $e) {
@@ -2595,9 +2654,9 @@ class ObjectService
         }
 
         // Load schema context if specified.
-        if (isset($query['@self']['schema'])) {
+        if (isset($query['@self']['schema']) === true) {
             $schemaValue = $query['@self']['schema'];
-            if (!is_array($schemaValue) && $this->currentSchema === null) {
+            if (is_array($schemaValue) === false && $this->currentSchema === null) {
                 try {
                     $this->setSchema($schemaValue);
                 } catch (\Exception $e) {
@@ -2691,10 +2750,19 @@ class ObjectService
      *                     - _fields: Fields to include
      *                     - _filter/_unset: Fields to exclude
      *                     - _queries: Specific fields for legacy facets
+     * @param bool        $rbac     Whether to apply RBAC checks (default: true)
+     * @param bool        $multi    Whether to apply multitenancy filtering (default: true)
+     * @param bool        $published Whether to filter by published status (default: false)
+     * @param bool        $deleted  Whether to include deleted objects (default: false)
+     * @param array|null  $ids      Optional array of object IDs to filter by
+     * @param string|null $uses     Optional uses parameter for filtering
+     * @param array|null  $views    Optional array of view IDs to apply filters from
      *
      * @phpstan-param array<string, mixed> $query
+     * @phpstan-return array<string, mixed>
      *
      * @psalm-param array<string, mixed> $query
+     * @psalm-return array<string, mixed>
      *
      * @throws \OCP\DB\Exception If a database error occurs
      * @throws \Exception If Solr search fails and cannot be recovered
@@ -2711,31 +2779,46 @@ class ObjectService
      *                              - next: URL for next page (if available)
      *                              - prev: URL for previous page (if available)
      */
-    public function searchObjectsPaginated(array $query=[], bool $rbac=true, bool $multi=true, bool $published=false, bool $deleted=false, ?array $ids=null, ?string $uses=null, ?array $views=null): array
-    {
+    public function searchObjectsPaginated(
+        array $query=[],
+        bool $rbac=true,
+        bool $multi=true,
+        bool $published=false,
+        bool $deleted=false,
+        ?array $ids=null,
+        ?string $uses=null,
+        ?array $views=null
+    ): array {
         // Apply view filters if provided.
-        if ($views !== null && !empty($views)) {
+        if ($views !== null && empty($views) === false) {
             $query = $this->applyViewsToQuery($query, $views);
         }
 
-        // ids and uses are passed as proper parameters, not added to query.
+        // IDs and uses are passed as proper parameters, not added to query.
 
         $requestedSource = $query['_source'] ?? null;
 
         // Simple switch: Use SOLR if explicitly requested OR if SOLR is enabled in config.
         // BUT force database when ids or uses parameters are provided (relation-based searches).
+        $hasIds = isset($query['_ids']) === true;
+        $hasUses = isset($query['_uses']) === true;
+        $hasIdsParam = $ids !== null;
+        $hasUsesParam = $uses !== null;
+        $isSolrRequested = ($requestedSource === 'index' || $requestedSource === 'solr');
+        $isSolrEnabled = $this->isSolrAvailable() === true;
+        $isNotDatabase = $requestedSource !== 'database';
         if (
             (
-                ($requestedSource === 'index' || $requestedSource === 'solr') &&
-                $ids === null && $uses === null &&
-                !isset($query['_ids']) && !isset($query['_uses'])
+                $isSolrRequested === true &&
+                $hasIdsParam === false && $hasUsesParam === false &&
+                $hasIds === false && $hasUses === false
             ) ||
             (
                 $requestedSource === null &&
-                $this->isSolrAvailable() &&
-                $requestedSource !== 'database' &&
-                $ids === null && $uses === null &&
-                !isset($query['_ids']) && !isset($query['_uses'])
+                $isSolrEnabled === true &&
+                $isNotDatabase === true &&
+                $hasIdsParam === false && $hasUsesParam === false &&
+                $hasIds === false && $hasUses === false
             )
         ) {
 
@@ -2764,7 +2847,9 @@ class ObjectService
     }
 
     /**
-     * Check if Solr is available for use
+     * Check if Solr is available for use.
+     *
+     * @return bool True if Solr is enabled and available, false otherwise
      */
     private function isSolrAvailable(): bool
     {
@@ -2777,10 +2862,27 @@ class ObjectService
     }
 
     /**
-     * Original database search logic - extracted to avoid code duplication
+     * Original database search logic - extracted to avoid code duplication.
+     *
+     * @param array<string, mixed> $query     The search query array
+     * @param bool                 $rbac      Whether to apply RBAC checks (default: true)
+     * @param bool                 $multi     Whether to apply multitenancy filtering (default: true)
+     * @param bool                 $published Whether to filter by published status (default: false)
+     * @param bool                 $deleted   Whether to include deleted objects (default: false)
+     * @param array|null           $ids       Optional array of object IDs to filter by
+     * @param string|null          $uses      Optional uses parameter for filtering
+     *
+     * @return array<string, mixed> Search results with pagination
      */
-    private function searchObjectsPaginatedDatabase(array $query=[], bool $rbac=true, bool $multi=true, bool $published=false, bool $deleted=false, ?array $ids=null, ?string $uses=null): array
-    {
+    private function searchObjectsPaginatedDatabase(
+        array $query=[],
+        bool $rbac=true,
+        bool $multi=true,
+        bool $published=false,
+        bool $deleted=false,
+        ?array $ids=null,
+        ?string $uses=null
+    ): array {
         // **VALIDATION**: Database mode now supports facetable functionality.
         $facetable = $query['_facetable'] ?? false;
         $aggregations = $query['_aggregations'] ?? false;
@@ -2906,18 +3008,18 @@ class ObjectService
         $includeRelated = filter_var($query['_related'] ?? false, FILTER_VALIDATE_BOOLEAN);
         $includeRelatedNames = filter_var($query['_relatedNames'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
-        if ($includeRelated || $includeRelatedNames) {
+        if ($includeRelated === true || $includeRelatedNames === true) {
             $relatedData = $this->extractRelatedData($results, $includeRelated, $includeRelatedNames);
             $paginatedResults = array_merge($paginatedResults, $relatedData);
         }
 
         // **PERFORMANCE OPTIMIZATION**: Only add facets if explicitly requested.
-        if (isset($query['_facets']) && !empty($query['_facets'])) {
+        if (isset($query['_facets']) === true && empty($query['_facets']) === false) {
             $paginatedResults['facets'] = ['facets' => []];
         }
 
         // **DEBUG**: Add query to results for debugging purposes.
-        if (isset($query['_debug']) && $query['_debug']) {
+        if (isset($query['_debug']) === true && $query['_debug'] === true) {
             $paginatedResults['query'] = $query;
         }
 
@@ -3053,7 +3155,7 @@ class ObjectService
 
         // Extend usage recommendations.
         $extendCount = 0;
-        if (!empty($query['_extend'])) {
+        if (empty($query['_extend']) === false) {
             $extendCount = $this->calculateExtendCount($query['_extend']);
         }
         if ($extendCount > 3) {
@@ -3084,7 +3186,7 @@ class ObjectService
         }
 
         // Success case.
-        if ($totalTime <= 500 && empty($recommendations)) {
+        if ($totalTime <= 500 && empty($recommendations) === true) {
             $recommendations[] = [
                 'type' => 'success',
                 'issue' => 'Excellent performance',
@@ -3126,9 +3228,9 @@ class ObjectService
         }
 
         // **OPTIMIZATION 2**: Limit destructive extend operations.
-        if (!empty($query['_extend'])) {
+        if (empty($query['_extend']) === false) {
             // **BUGFIX**: Handle _extend as both string and array for count.
-            if (is_array($query['_extend'])) {
+            if (is_array($query['_extend']) === true) {
                 $originalExtendCount = count($query['_extend']);
             } else {
                 $originalExtendCount = count(array_filter(array_map('trim', explode(',', $query['_extend']))));
@@ -3136,7 +3238,7 @@ class ObjectService
 
             $query['_extend'] = $this->optimizeExtendQueries($query['_extend']);
 
-            if (is_array($query['_extend'])) {
+            if (is_array($query['_extend']) === true) {
                 $newExtendCount = count($query['_extend']);
             } else {
                 $newExtendCount = count(array_filter(array_map('trim', explode(',', $query['_extend']))));
@@ -3174,10 +3276,10 @@ class ObjectService
 
         // **BUGFIX**: Handle _extend as both string and array.
         $extendCount = 0;
-        if (!empty($query['_extend'])) {
-            if (is_array($query['_extend'])) {
+        if (empty($query['_extend']) === false) {
+            if (is_array($query['_extend']) === true) {
                 $extendCount = count($query['_extend']);
-            } elseif (is_string($query['_extend'])) {
+            } elseif (is_string($query['_extend']) === true) {
                 // Count comma-separated extend fields.
                 $extendCount = count(array_filter(array_map('trim', explode(',', $query['_extend']))));
             }
@@ -3189,7 +3291,9 @@ class ObjectService
         // Count filter criteria (excluding system parameters).
         $filterCount = 0;
         foreach ($query as $key => $value) {
-            if (!str_starts_with($key, '_') && !str_starts_with($key, '@')) {
+            $startsWithUnderscore = str_starts_with(haystack: $key, needle: '_') === true;
+            $startsWithAt = str_starts_with(haystack: $key, needle: '@') === true;
+            if ($startsWithUnderscore === false && $startsWithAt === false) {
                 $filterCount++;
             }
         }
@@ -3208,13 +3312,13 @@ class ObjectService
     private function optimizeExtendQueries($extend): array
     {
         // **BUGFIX**: Handle _extend as both string and array.
-        if (is_string($extend)) {
+        if (is_string($extend) === true) {
             if (trim($extend) === '') {
                 return [];
             }
             // Convert comma-separated string to array.
             $extend = array_filter(array_map('trim', explode(',', $extend)));
-        } elseif (!is_array($extend)) {
+        } elseif (is_array($extend) === false) {
             return [];
         }
 
@@ -3253,14 +3357,14 @@ class ObjectService
 
         try {
             // **CACHE WARMUP**: Preload register and schema if not already cached.
-            if (isset($query['@self']['register'])) {
+            if (isset($query['@self']['register']) === true) {
                 $registerValue = $query['@self']['register'];
                 // Handle both single values and arrays.
                 $registerIds = $this->normalizeToArray($registerValue);
                 $this->getCachedEntities('register', $registerIds, function($ids) {
                     $results = [];
                     foreach ($ids as $id) {
-                        if (is_string($id) || is_int($id)) {
+                        if (is_string($id) === true || is_int($id) === true) {
                             try {
                                 $results[] = $this->registerMapper->find($id);
                             } catch (\Exception $e) {
@@ -3273,14 +3377,14 @@ class ObjectService
                 });
             }
 
-            if (isset($query['@self']['schema'])) {
+            if (isset($query['@self']['schema']) === true) {
                 $schemaValue = $query['@self']['schema'];
                 // Handle both single values and arrays.
                 $schemaIds = $this->normalizeToArray($schemaValue);
                 $this->getCachedEntities('schema', $schemaIds, function($ids) {
                     $results = [];
                     foreach ($ids as $id) {
-                        if (is_string($id) || is_int($id)) {
+                        if (is_string($id) === true || is_int($id) === true) {
                             try {
                                 $results[] = $this->schemaMapper->find($id);
                             } catch (\Exception $e) {
@@ -3382,17 +3486,29 @@ class ObjectService
      * 3. **Facets** (~10ms) - Aggregation calculations
      * 4. **Count** (~5ms) - Total count for pagination
      *
-     * @param array $query The search query array (same structure as searchObjectsPaginated)
+     * @param array<string, mixed> $query     The search query array (same structure as searchObjectsPaginated)
+     * @param bool                 $rbac      Whether to apply RBAC checks (default: true)
+     * @param bool                 $multi     Whether to apply multitenancy filtering (default: true)
+     * @param bool                 $published Whether to filter by published status (default: false)
+     * @param bool                 $deleted   Whether to include deleted objects (default: false)
      *
      * @phpstan-param array<string, mixed> $query
+     * @phpstan-return PromiseInterface<array<string, mixed>>
      *
      * @psalm-param array<string, mixed> $query
+     * @psalm-return PromiseInterface<array<string, mixed>>
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
      * @return PromiseInterface<array<string, mixed>> Promise that resolves to the same structure as searchObjectsPaginated
      */
-    public function searchObjectsPaginatedAsync(array $query=[], bool $rbac=true, bool $multi=true, bool $published=false, bool $deleted=false): PromiseInterface
+    public function searchObjectsPaginatedAsync(
+        array $query=[],
+        bool $rbac=true,
+        bool $multi=true,
+        bool $published=false,
+        bool $deleted=false
+    ): PromiseInterface {
     {
         // Start timing execution.
         $startTime = microtime(true);

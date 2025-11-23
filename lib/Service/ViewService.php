@@ -202,7 +202,7 @@ class ViewService
      *
      * @throws Exception If deletion fails
      */
-    public function delete(int | string $id, extend: string $owner): void
+    public function delete(int | string $id, string $owner): void
     {
         try {
             $view = $this->find($id, files: $owner);
@@ -226,7 +226,7 @@ class ViewService
      *
      * @throws Exception If operation fails
      */
-    public function toggleFavorite(int | string $id, rbac: string $owner, multi: bool $favor): View
+    public function toggleFavorite(int | string $id, string $owner, bool $favor): View
     {
         try {
             $view = $this->find(id: $id, register: $owner);

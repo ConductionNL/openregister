@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 /**
  * SolrService - Apache SOLR Integration Service
  *
@@ -660,7 +663,7 @@ class SolrService
 
             // Create delete query with tenant isolation.
             $deleteQuery = sprintf(
-                format: 'id:%s AND tenant_id:%s',
+                'id:%s AND tenant_id:%s',
                 $this->escapeSolrValue($objectId),
                 $this->escapeSolrValue($this->tenantId)
             );
@@ -810,7 +813,7 @@ class SolrService
             $update = $this->client->createUpdate();
 
             // Delete all documents for this tenant.
-            $deleteQuery = sprintf(format: 'tenant_id:%s', $this->escapeSolrValue($this->tenantId));
+            $deleteQuery = sprintf('tenant_id:%s', $this->escapeSolrValue($this->tenantId));
             $update->addDeleteQuery($deleteQuery);
             $update->addCommit();
 
@@ -973,8 +976,10 @@ class SolrService
 
         try {
             $query = $this->client->createSelect();
-            $query->setQuery(sprintf(format: 'tenant_id:%s', $this->escapeSolrValue($this->tenantId)));
-            $query->setRows(0); // Only count, don't return documents
+            $tenantQuery = sprintf('tenant_id:%s', $this->escapeSolrValue($this->tenantId));
+            $query->setQuery($tenantQuery);
+            // Only count, don't return documents.
+            $query->setRows(0);
 
             $resultSet = $this->client->select($query);
             return $resultSet->getNumFound();
@@ -1065,7 +1070,8 @@ class SolrService
         }
 
         $connection = $this->testConnection();
-        if (($connection['success'] ?? false) === false) {
+        $connectionSuccess = $connection['success'] ?? false;
+        if ($connectionSuccess === false) {
             return 'critical';
         }
 
@@ -1221,7 +1227,8 @@ class SolrService
     {
         // Simple heuristic - optimize if we have many documents and haven't optimized recently.
         $docCount = $this->getDocumentCount();
-        return $docCount > 10000; // Suggest optimization for large indexes
+        // Suggest optimization for large indexes.
+        return $docCount > 10000;
     }
 
     /**
@@ -1235,7 +1242,8 @@ class SolrService
     {
         $units = ['B', 'KB', 'MB', 'GB', 'TB'];
 
-        for ($i = 0; $bytes > 1024 && $i < count($units) - 1; $i++) {
+        $unitsCount = count($units);
+        for ($i = 0; $bytes > 1024 && $i < ($unitsCount - 1); $i++) {
             $bytes /= 1024;
         }
 

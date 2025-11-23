@@ -1,6 +1,6 @@
 <?php
 declare(strict_types=1);
-/**
+/*
  * Migration to add checksum column to chunks table.
  *
  * @category Migration

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * OpenRegister Hyper-Performant Facet Handler
  *
@@ -82,8 +84,25 @@ class HyperFacetHandler
      *
      * @var IMemcache|null
      */
+    /**
+     * Facet result cache.
+     *
+     * @var IMemcache|null
+     */
     private ?IMemcache $facetCache = null;
+
+    /**
+     * Fragment cache for query fragments.
+     *
+     * @var IMemcache|null
+     */
     private ?IMemcache $fragmentCache = null;
+
+    /**
+     * Cardinality cache for field cardinality estimates.
+     *
+     * @var IMemcache|null
+     */
     private ?IMemcache $cardinalityCache = null;
 
     /**
@@ -97,9 +116,12 @@ class HyperFacetHandler
     /**
      * Thresholds for switching between exact and approximate calculations
      */
-    private const SMALL_DATASET_THRESHOLD = 1000;   // Use exact counts
-    private const MEDIUM_DATASET_THRESHOLD = 10000; // Use sampling
-    private const LARGE_DATASET_THRESHOLD = 50000;  // Use HyperLogLog estimation
+    // Use exact counts.
+    private const SMALL_DATASET_THRESHOLD = 1000;
+    // Use sampling.
+    private const MEDIUM_DATASET_THRESHOLD = 10000;
+    // Use HyperLogLog estimation.
+    private const LARGE_DATASET_THRESHOLD = 50000;
 
     /**
      * Sampling rates for different dataset sizes
@@ -368,12 +390,12 @@ class HyperFacetHandler
         }
 
         // **STRATEGY 2**: Smart sampling for medium datasets.
-        if ($size <= self::MEDIUM_DATASET_THRESHOLD && !$hasHeavyJson) {
+        if ($size <= self::MEDIUM_DATASET_THRESHOLD && $hasHeavyJson === false) {
             return 'smart_sampling';
         }
 
         // **STRATEGY 3**: HyperLogLog estimation for large datasets.
-        if ($size > self::LARGE_DATASET_THRESHOLD || $hasHeavyJson) {
+        if ($size > self::LARGE_DATASET_THRESHOLD || $hasHeavyJson === true) {
             return 'hyperloglog_estimation';
         }
 
@@ -412,12 +434,12 @@ class HyperFacetHandler
         $promises = [];
 
         // **PARALLEL EXECUTION**: Process metadata facets concurrently.
-        if (!empty($metadataFacets)) {
+        if (empty($metadataFacets) === false) {
             $promises['metadata'] = $this->processMetadataFacetsParallel($metadataFacets, $baseQuery);
         }
 
         // **PARALLEL EXECUTION**: Process JSON facets concurrently.
-        if (!empty($jsonFacets)) {
+        if (empty($jsonFacets) === false) {
             $promises['json'] = $this->processJsonFacetsParallel($jsonFacets, $baseQuery);
         }
 
@@ -426,10 +448,10 @@ class HyperFacetHandler
 
         // Combine results from different facet types.
         $combinedFacets = [];
-        if (isset($results['metadata'])) {
+        if (isset($results['metadata']) === true) {
             $combinedFacets = array_merge($combinedFacets, $results['metadata']);
         }
-        if (isset($results['json'])) {
+        if (isset($results['json']) === true) {
             $combinedFacets = array_merge($combinedFacets, $results['json']);
         }
 
@@ -463,7 +485,8 @@ class HyperFacetHandler
     {
         $totalSize = $datasetStats['estimated_size'];
         $sampleRate = $this->getSampleRate($totalSize);
-        $sampleSize = max(100, (int) ($totalSize * $sampleRate)); // Minimum 100 objects
+        // Minimum 100 objects.
+        $sampleSize = max(100, (int) ($totalSize * $sampleRate));
 
         $this->logger->debug('Using smart sampling strategy', [
             'totalSize' => $totalSize,
@@ -478,7 +501,7 @@ class HyperFacetHandler
         // Calculate facets on sample data.
         $sampleFacets = $this->calculateExactFacetsParallel($facetConfig, $sampleQuery, [
             'estimated_size' => $sampleSize,
-            'size_category' => 'small' // Treat sample as small dataset
+            'size_category' => 'small' // Treat sample as small dataset.
         ]);
 
         // **STATISTICAL EXTRAPOLATION**: Scale up sample results.
@@ -571,7 +594,7 @@ class HyperFacetHandler
 
                 // Process remaining non-batchable facets (date histograms, ranges).
                 foreach ($metadataFacets as $field => $config) {
-                    if (!in_array($field, $batchableFields)) {
+                    if (in_array($field, $batchableFields) === false) {
                         $results[$field] = $this->calculateSingleMetadataFacet($field, $config, $baseQuery);
                     }
                 }

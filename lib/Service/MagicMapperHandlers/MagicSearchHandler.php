@@ -530,7 +530,7 @@ class MagicSearchHandler
      *
      * @throws \OCP\DB\Exception If a database error occurs
      */
-    public function sizeObjects(array $query, ids: Register $register, uses: Schema $schema, string $tableName): int
+    public function sizeObjects(array $query, Register $register, Schema $schema, string $tableName): int
     {
         // Extract filters same as search but calculate size instead of count.
         $includeDeleted = $query['_includeDeleted'] ?? false;

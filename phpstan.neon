@@ -5,7 +5,7 @@ parameters:
     bootstrapFiles:
         - vendor/autoload.php
     excludePaths:
-        - lib/Migration/*
+        - vendor
     scanDirectories:
         - vendor/nextcloud/ocp
     reportUnmatchedIgnoredErrors: false

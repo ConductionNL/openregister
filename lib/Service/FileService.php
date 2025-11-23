@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 /**
  * OpenRegister FileService.
  *
@@ -960,7 +963,9 @@ class FileService
             }
         } catch (NotPermittedException $e) {
             // Permission denied - likely an ownership issue.
-            $this->logger->warning(message: "checkOwnership: Permission denied for file {$file->getName()} (ID: {$file->getId()}), attempting ownership fix");
+            $this->logger->warning(
+                message: "checkOwnership: Permission denied for file {$file->getName()} (ID: {$file->getId()}), attempting ownership fix"
+            );
 
             try {
                 $ownershipFixed = $this->ownFile($file);

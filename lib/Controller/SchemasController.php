@@ -172,10 +172,10 @@ class SchemasController extends Controller
      */
     public function show($id): JSONResponse
     {
-        $extend = $this->request->getParam(key: '_extend', statusCode: default: []);
-            if (is_string($extend)) {
-                $extend = [$extend];
-            }
+        $extend = $this->request->getParam(key: '_extend', default: []);
+        if (is_string($extend)) {
+            $extend = [$extend];
+        }
 
             $schema    = $this->schemaMapper->find($id, []);
             $schemaArr = $schema->jsonSerialize();
@@ -185,17 +185,18 @@ class SchemasController extends Controller
             $schemaArr['@self']['extendedBy'] = $this->schemaMapper->findExtendedBy($id);
 
             // If '@self.stats' is requested, attach statistics to the schema.
-            if (in_array('@self.stats', $extend, true)) {
-                // Get register counts for all schemas in one call.
-                $registerCounts     = $this->schemaMapper->getRegisterCountPerSchema();
-                $schemaArr['stats'] = [
-                    'objects'   => $this->objectEntityMapper->getStatistics(null, $schemaArr['id']),
-                    'logs'      => $this->auditTrailMapper->getStatistics(null, $schemaArr['id']),
-                    'files'     => [ 'total' => 0, 'size' => 0 ],
-                // Add the number of registers referencing this schema.
-                    'registers' => $registerCounts[$schemaArr['id']] ?? 0,
-                ];
-            }
+        if (in_array('@self.stats', $extend, true)) {
+            // Get register counts for all schemas in one call.
+            $registerCounts     = $this->schemaMapper->getRegisterCountPerSchema();
+            $schemaArr['stats'] = [
+                'objects'   => $this->objectEntityMapper->getStatistics(null, $schemaArr['id']),
+                'logs'      => $this->auditTrailMapper->getStatistics(null, $schemaArr['id']),
+                'files'     => [ 'total' => 0, 'size' => 0 ],
+            // Add the number of registers referencing this schema.
+                'registers' => $registerCounts[$schemaArr['id']] ?? 0,
+            ];
+        }
+
             return new JSONResponse(data: $schemaArr);
 
     }//end show()
@@ -219,7 +220,7 @@ class SchemasController extends Controller
 
         // Remove internal parameters (starting with '_').
         foreach ($data as $key => $value) {
-            if (str_starts_with($key, statusCode: '_') === true) {
+            if (str_starts_with($key, '_') === true) {
                 unset($data[$key]);
             }
         }
@@ -328,7 +329,7 @@ class SchemasController extends Controller
             return new JSONResponse(data: $updatedSchema);
         } catch (DBException $e) {
             // Handle database constraint violations with user-friendly messages.
-            $constraintException = DatabaseConstraintException::fromDatabaseException($e, statusCode: 'schema');
+            $constraintException = DatabaseConstraintException::fromDatabaseException($e, 'schema');
             return new JSONResponse(data: ['error' => $constraintException->getMessage()], statusCode: $constraintException->getHttpStatusCode());
         } catch (DatabaseConstraintException $e) {
             // Handle our custom database constraint exceptions.
@@ -522,7 +523,7 @@ class SchemasController extends Controller
             return new JSONResponse(data: $schema);
         } catch (DBException $e) {
             // Handle database constraint violations with user-friendly messages.
-            $constraintException = DatabaseConstraintException::fromDatabaseException($e, statusCode: 'schema');
+            $constraintException = DatabaseConstraintException::fromDatabaseException($e, 'schema');
             return new JSONResponse(data: ['error' => $constraintException->getMessage()], statusCode: $constraintException->getHttpStatusCode());
         } catch (DatabaseConstraintException $e) {
             // Handle our custom database constraint exceptions.
@@ -602,7 +603,7 @@ class SchemasController extends Controller
      * Get schemas that have properties referencing the given schema
      *
      * This method finds schemas that contain properties with $ref values pointing
-     * to the specified schema, statusCode: indicating a relationship between schemas.
+     * to the specified schema, indicating a relationship between schemas.
      *
      * @param int|string $id The ID, UUID, or slug of the schema to find relationships for
      *
@@ -640,7 +641,7 @@ class SchemasController extends Controller
 
             return new JSONResponse(
                     data: [
-                        'incoming' => $incomingSchemasArray, statusCode:
+                        'incoming' => $incomingSchemasArray,
             'outgoing' => $outgoingSchemasArray,
                         'total'    => count($incomingSchemasArray) + count($outgoingSchemasArray),
                     ]
@@ -778,7 +779,7 @@ class SchemasController extends Controller
 
             return new JSONResponse(
                     data: [
-                        'success' => true, statusCode:
+                        'success' => true,
             'schema'  => $updatedSchema->jsonSerialize(),
                         'message' => 'Schema updated successfully with '.count($propertyUpdates).' properties',
                     ]

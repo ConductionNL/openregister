@@ -15,9 +15,7 @@ declare(strict_types=1);
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
  */
- * * You should have received a copy of the GNU Affero General public License * along with this program.if not, see < http:
-// www.gnu.org/licenses/>.
- * / namespace OCA\OpenRegister\Setup;
+namespace OCA\OpenRegister\Setup;
 
 use Psr\Log\LoggerInterface;
 use GuzzleHttp\Client as GuzzleClient;
@@ -1090,10 +1088,10 @@ class SolrSetup
 
         // Use SolrCloud ConfigSets API for configSet creation with authentication.
         $url = $this->buildSolrUrl(
-                sprintf(format: (
-                '/admin/configs?action=CREATE&name=%s&baseConfigSet=%s&wt=json', urlencode($newConfigSetName),
-            urlencode($templateConfigSetName)
-        )
+                sprintf(
+                    '/admin/configs?action=CREATE&name=%s&baseConfigSet=%s&wt=json',
+                    urlencode($newConfigSetName),
+                    urlencode($templateConfigSetName)
                 );
 
         $this->logger->info(
@@ -1913,11 +1911,12 @@ class SolrSetup
     private function createCollection(string $collectionName, string $configSetName): bool
     {
         $url = $this->buildSolrUrl(
-                sprintf(format: (
-                '/admin/collections?action=CREATE&name=%s&collection.configName=%s&numShards=1&replicationFactor=1&wt=json', urlencode($collectionName),
-            urlencode($configSetName)
-        )
-                );
+                sprintf(
+                        '/admin/collections?action=CREATE&name=%s&collection.configName=%s&numShards=1&replicationFactor=1&wt=json',
+                        urlencode($collectionName),
+                        urlencode($configSetName)
+                )
+        );
 
         $this->logger->info(
                 'Attempting to create SOLR collection',
@@ -2113,10 +2112,11 @@ class SolrSetup
         }//end if
 
         $url = $this->buildSolrUrl(
-                sprintf(format: (
-                '/admin/configs?action=UPLOAD&name=%s&wt=json', urlencode($configSetName)
-        )
-                );
+                sprintf(
+                        '/admin/configs?action=UPLOAD&name=%s&wt=json',
+                        urlencode($configSetName)
+                )
+        );
 
         $this->logger->info(
                 'Uploading SOLR configSet from ZIP file',
@@ -2304,10 +2304,10 @@ class SolrSetup
     private function coreExists(string $coreName): bool
     {
         $url = $this->buildSolrUrl(
-                sprintf(format: (
-                '/admin/cores?action=STATUS&core=%s&wt=json', urlencode($coreName)
-        )
-                );
+                sprintf(
+                        '/admin/cores?action=STATUS&core=%s&wt=json',
+                        urlencode($coreName)
+                )
 
         try {
             $response = $this->httpClient->get($url, ['timeout' => 10]);
@@ -2340,10 +2340,11 @@ class SolrSetup
     private function createCore(string $coreName, string $configSetName): bool
     {
         $url = $this->buildSolrUrl(
-                sprintf(format: (
-                '/admin/cores?action=CREATE&name=%s&configSet=%s&wt=json', urlencode($coreName),
-            urlencode($configSetName)
-        )
+                sprintf(
+                        '/admin/cores?action=CREATE&name=%s&configSet=%s&wt=json',
+                        urlencode($coreName),
+                        urlencode($configSetName)
+                )
                 );
 
         try {
@@ -2652,9 +2653,12 @@ class SolrSetup
         string $collectionName,
         \Psr\Log\LoggerInterface $logger
     ): array {
-        $logger->info(message: 'Applying ObjectEntity schema fields to SOLR collection', context: [
+        $logger->info(
+                message: 'Applying ObjectEntity schema fields to SOLR collection',
+                context: [
                     'collection' => $collectionName,
-                ]);
+                ]
+                );
 
         $fieldDefinitions = self::getObjectEntityFieldDefinitions();
         $results          = [
@@ -2675,12 +2679,12 @@ class SolrSetup
 
             // Handle Kubernetes service names and port logic.
             if (strpos($host, '.svc.cluster.local') !== false) {
-                return sprintf(format: ('%s://%s%s%s', $scheme, $host, $basePath, $path);
+                return sprintf('%s://%s%s%s', $scheme, $host, $basePath, $path);
             } else {
                 if ($port !== null && $port > 0) {
-                    return sprintf(format: ('%s://%s:%d%s%s', $scheme, $host, $port, $basePath, $path);
+                    return sprintf('%s://%s:%d%s%s', $scheme, $host, $port, $basePath, $path);
                 } else {
-                    return sprintf(format: ('%s://%s%s%s', $scheme, $host, $basePath, $path);
+                    return sprintf('%s://%s%s%s', $scheme, $host, $basePath, $path);
                 }
             }
         };
@@ -2738,18 +2742,24 @@ class SolrSetup
                 // Both add and replace failed.
                 $results['fields_failed']++;
                 $results['errors'][] = "Failed to add/update field: {$fieldName}";
-                $logger->warning(message: 'Failed to add/update schema field', context: [
+                $logger->warning(
+                        message: 'Failed to add/update schema field',
+                        context: [
                             'field'         => $fieldName,
                             'last_response' => (string) $response->getBody(),
-                        ]);
+                        ]
+                        );
             } catch (\Exception $e) {
                 $results['fields_failed']++;
                 $results['errors'][] = "Exception for field {$fieldName}: ".$e->getMessage();
-                $logger->error(message: 'Exception applying schema field', context: [
+                $logger->error(
+                        message: 'Exception applying schema field',
+                        context: [
                             'field'          => $fieldName,
                             'error'          => $e->getMessage(),
                             'exception_type' => get_class($e),
-                        ]);
+                        ]
+                        );
             }//end try
         }//end foreach
 
@@ -3207,10 +3217,10 @@ class SolrSetup
     private function testCollectionQuery(string $collectionName): bool
     {
         $url = $this->buildSolrUrl(
-                sprintf(format: (
-                '/%s/select?q=*:*&rows=0&wt=json', urlencode($collectionName)
-        )
-                );
+                sprintf(
+                        '/%s/select?q=*:*&rows=0&wt=json',
+                        urlencode($collectionName)
+                )
 
         try {
             $response = $this->httpClient->get($url, ['timeout' => 10]);
@@ -3242,10 +3252,10 @@ class SolrSetup
     private function testCoreQuery(string $coreName): bool
     {
         $url = $this->buildSolrUrl(
-                sprintf(format: (
-                '/%s/select?q=*:*&rows=0&wt=json', urlencode($coreName)
-        )
-                );
+                sprintf(
+                        '/%s/select?q=*:*&rows=0&wt=json',
+                        urlencode($coreName)
+                )
 
         try {
             $response = $this->httpClient->get($url, ['timeout' => 10]);

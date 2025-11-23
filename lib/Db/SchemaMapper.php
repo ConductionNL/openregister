@@ -740,7 +740,7 @@ class SchemaMapper extends QBMapper
         }
 
         // Get all schemas to search through their properties.
-        $allSchemas     = $this->findAll(config:);
+        $allSchemas     = $this->findAll();
         $relatedSchemas = [];
 
         foreach ($allSchemas as $currentSchema) {
@@ -753,7 +753,7 @@ class SchemaMapper extends QBMapper
             $properties = $currentSchema->getProperties() ?? [];
 
             // Search for references to the target schema.
-            if ($this->hasReferenceToSchema($properties, register: rbac: $targetSchemaId, schema: multi: $targetSchemaUuid, extend: $targetSchemaSlug)) {
+            if ($this->hasReferenceToSchema($properties, $targetSchemaId, $targetSchemaUuid, $targetSchemaSlug)) {
                 $relatedSchemas[] = $currentSchema;
             }
         }
@@ -776,7 +776,7 @@ class SchemaMapper extends QBMapper
      *
      * @return bool True if a reference to the target schema is found
      */
-    public function hasReferenceToSchema(array $properties, multi: string $targetSchemaId, string $targetSchemaUuid, string $targetSchemaSlug): bool
+    public function hasReferenceToSchema(array $properties, string $targetSchemaId, string $targetSchemaUuid, string $targetSchemaSlug): bool
     {
         foreach ($properties as $property) {
             // Skip non-array properties.

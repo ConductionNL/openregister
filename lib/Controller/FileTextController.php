@@ -114,8 +114,6 @@ class FileTextController extends Controller
                     ],
                     statusCode: 500
                     );
-                    500
-                    );
         }//end try
 
     }//end getFileText()
@@ -157,9 +155,7 @@ class FileTextController extends Controller
                             'success' => false,
                             'message' => $result['error'] ?? 'Extraction failed',
                         ],
-                        statusCode: 400
-                        );
-                        422
+                        statusCode: 422
                         );
             }
         } catch (\Exception $e) {
@@ -177,8 +173,6 @@ class FileTextController extends Controller
                         'message' => 'Failed to extract file text: '.$e->getMessage(),
                     ],
                     statusCode: 500
-                    );
-                    500
                     );
         }//end try
 
@@ -220,7 +214,7 @@ class FileTextController extends Controller
 
             return new JSONResponse(
                     data: [
-                        'success' => false, statusCode:
+                        'success' => false,
             'message' => 'Bulk extraction failed: '.$e->getMessage(),
                     ],
                     500
@@ -245,7 +239,7 @@ class FileTextController extends Controller
 
             return new JSONResponse(
                     data: [
-                        'success' => true, statusCode:
+                        'success' => true,
             'stats'   => $stats,
                     ]
                     );
@@ -259,7 +253,7 @@ class FileTextController extends Controller
 
             return new JSONResponse(
                     data: [
-                        'success' => false, statusCode:
+                        'success' => false,
             'message' => 'Failed to retrieve statistics: '.$e->getMessage(),
                     ],
                     500
@@ -286,7 +280,7 @@ class FileTextController extends Controller
 
             return new JSONResponse(
                     data: [
-                        'success' => true, statusCode:
+                        'success' => true,
             'message' => 'File text deleted successfully',
                     ]
                     );
@@ -301,7 +295,7 @@ class FileTextController extends Controller
 
             return new JSONResponse(
                     data: [
-                        'success' => false, statusCode:
+                        'success' => false,
             'message' => 'Failed to delete file text: '.$e->getMessage(),
                     ],
                     500
@@ -348,7 +342,7 @@ class FileTextController extends Controller
 
             return new JSONResponse(
                     data: [
-                        'success' => false, statusCode:
+                        'success' => false,
             'message' => 'Failed to process extracted files: '.$e->getMessage(),
                     ],
                     500
@@ -396,7 +390,7 @@ class FileTextController extends Controller
 
             return new JSONResponse(
                     data: [
-                        'success' => false, statusCode:
+                        'success' => false,
             'message' => 'Failed to process file: '.$e->getMessage(),
                     ],
                     500
@@ -421,7 +415,7 @@ class FileTextController extends Controller
 
             return new JSONResponse(
                     data: [
-                        'success' => true, statusCode:
+                        'success' => true,
             'stats'   => $stats,
                     ]
                     );
@@ -435,7 +429,7 @@ class FileTextController extends Controller
 
             return new JSONResponse(
                     data: [
-                        'success' => false, statusCode:
+                        'success' => false,
             'message' => 'Failed to get chunking stats: '.$e->getMessage(),
                     ],
                     500

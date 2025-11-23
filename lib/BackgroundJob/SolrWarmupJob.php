@@ -115,13 +115,13 @@ class SolrWarmupJob extends QueuedJob
             }
 
             // Get all schemas for comprehensive warmup.
-            $schemas = $schemaMapper->findAll(config:);
+            $schemas = $schemaMapper->findAll();
 
             $logger->info(
                     message: 'Starting SOLR index warmup',
-                    rbac: context: [
-                        'schemas_found' => count($schemas), multi:
-            'max_objects'   => $maxObjects,
+                    context: [
+                        'schemas_found' => count($schemas),
+                        'max_objects'   => $maxObjects,
                         'mode'          => $mode,
                     ]
                     );

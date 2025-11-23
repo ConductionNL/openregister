@@ -100,11 +100,14 @@ class SolrNightlyWarmupJob extends TimedJob
 
         $logger = \OC::$server->get(LoggerInterface::class);
 
-        $logger->info(message: '🌙 SOLR Nightly Warmup Job Started', context: [
+        $logger->info(
+                message: '🌙 SOLR Nightly Warmup Job Started',
+                context: [
                     'job_id'         => $this->getId(),
                     'scheduled_time' => date('Y-m-d H:i:s'),
                     'timezone'       => date_default_timezone_get(),
-                ]);
+                ]
+                );
 
         try {
             /*
@@ -129,7 +132,7 @@ class SolrNightlyWarmupJob extends TimedJob
 
             // Check if SOLR is enabled and available.
             if ($this->isSolrEnabledAndAvailable($solrService, $settingsService, $logger) === false) {
-                $logger->info(message: ('SOLR Nightly Warmup Job skipped - SOLR not enabled or available');
+                $logger->info(message: 'SOLR Nightly Warmup Job skipped - SOLR not enabled or available');
                 return;
             }
 
@@ -137,14 +140,17 @@ class SolrNightlyWarmupJob extends TimedJob
             $config = $this->getWarmupConfiguration($settingsService, $logger);
 
             // Get all schemas for comprehensive warmup.
-            $schemas = $schemaMapper->findAll(config: );
+            $schemas = $schemaMapper->findAll();
 
             $logger->info(
-                    'Starting nightly SOLR index warmup', rbac: [
-                        'schemas_found'  => count($schemas), multi: 'max_objects'    => $config['maxObjects'],
+                    'Starting nightly SOLR index warmup',
+                    context: [
+                        'schemas_found'  => count($schemas),
+                        'max_objects'    => $config['maxObjects'],
                         'mode'           => $config['mode'],
                         'collect_errors' => $config['collectErrors'],
-                    ]);
+                    ]
+                    );
 
             // Execute the comprehensive nightly warmup.
             $result = $solrService->warmupIndex(
@@ -191,7 +197,9 @@ class SolrNightlyWarmupJob extends TimedJob
         } catch (\Exception $e) {
             $executionTime = microtime(true) - $startTime;
 
-            $logger->error(message: '🚨 SOLR Nightly Warmup Job Exception', context: [
+            $logger->error(
+                    message: '🚨 SOLR Nightly Warmup Job Exception',
+                    context: [
                         'job_id'                 => $this->getId(),
                         'execution_time_seconds' => round($executionTime, 2),
                         'exception'              => $e->getMessage(),
@@ -199,7 +207,8 @@ class SolrNightlyWarmupJob extends TimedJob
                         'line'                   => $e->getLine(),
                         'next_retry'             => date('Y-m-d H:i:s', time() + self::DEFAULT_INTERVAL),
                         'trace'                  => $e->getTraceAsString(),
-                    ]);
+                    ]
+                    );
 
             // Don't re-throw for recurring jobs - let them retry next time.
         }//end try
@@ -226,7 +235,7 @@ class SolrNightlyWarmupJob extends TimedJob
             $solrSettings = $settingsService->getSolrSettings();
 
             if (($solrSettings['enabled'] ?? false) === false) {
-                $logger->info(message: ('SOLR is disabled in settings, skipping nightly warmup');
+                $logger->info(message: 'SOLR is disabled in settings, skipping nightly warmup');
                 return false;
             }
 
@@ -237,15 +246,21 @@ class SolrNightlyWarmupJob extends TimedJob
                 return true;
             }
 
-            $logger->warning(message: 'SOLR connection test failed during nightly warmup job', context: [
+            $logger->warning(
+                    message: 'SOLR connection test failed during nightly warmup job',
+                    context: [
                         'test_result' => $connectionTest,
-                    ]);
+                    ]
+                    );
 
             return false;
         } catch (\Exception $e) {
-            $logger->warning(message: 'SOLR availability check failed during nightly warmup job', context: [
+            $logger->warning(
+                    message: 'SOLR availability check failed during nightly warmup job',
+                    context: [
                         'error' => $e->getMessage(),
-                    ]);
+                    ]
+                    );
 
             return false;
         }//end try
