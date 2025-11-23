@@ -279,7 +279,7 @@ class SchemaTool extends AbstractTool
                 $schemas
                 );
 
-        return $this->formatSuccess($schemaList, sprintf(format: ('Found %d schemas', count($schemaList)));
+        return $this->formatSuccess($schemaList, sprintf('Found %d schemas', count($schemaList)));
 
     }//end listSchemas()
 

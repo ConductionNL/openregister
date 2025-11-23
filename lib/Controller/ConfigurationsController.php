@@ -80,12 +80,15 @@ class ConfigurationsController extends Controller
         $filters          = $filters;
 
         // Return all configurations that match the search conditions.
-        return new JSONResponse(data: [
+        return new JSONResponse(
+                data: [
                     'results' => $this->configurationMapper->findAll(
-                limit: null, statusCode: offset: null,
+                limit: null,
+                offset: null,
                 filters: $filters,
                 searchConditions: $searchConditions,
-                searchParams: $searchParams),
+                searchParams: $searchParams
+                            ),
                 ]
                 );
 
@@ -156,7 +159,8 @@ class ConfigurationsController extends Controller
         }
 
         try {
-            return new JSONResponse(data: $this->configurationMapper->createFromArray($data)
+            return new JSONResponse(
+                    data: $this->configurationMapper->createFromArray($data)
             );
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => 'Failed to create configuration: '.$e->getMessage()], statusCode: 400);
@@ -202,7 +206,8 @@ class ConfigurationsController extends Controller
         }
 
         try {
-            return new JSONResponse(data: $this->configurationMapper->updateFromArray(id: $id, data: $data)
+            return new JSONResponse(
+                    data: $this->configurationMapper->updateFromArray(id: $id, data: $data)
             );
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => 'Failed to update configuration: '.$e->getMessage()], statusCode: 400);
@@ -278,8 +283,9 @@ class ConfigurationsController extends Controller
             }
 
             // Generate filename.
-            $filename = sprintf(format: (
-                'configuration_%s_%s.json', $configuration->getTitle(),
+            $filename = sprintf(
+                'configuration_%s_%s.json',
+                    $configuration->getTitle(),
                 (new \DateTime())->format('Y-m-d_His')
             );
 
@@ -331,9 +337,12 @@ class ConfigurationsController extends Controller
                 $force
             );
 
-            return new JSONResponse(data: [
-                        'message'  => 'Import successful', statusCode: 'imported' => $result,
-                    ]);
+            return new JSONResponse(
+                    data: [
+                        'message'  => 'Import successful',
+                        'imported' => $result,
+                    ]
+                    );
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => 'Failed to import configuration: '.$e->getMessage()], statusCode: 400);
         }//end try

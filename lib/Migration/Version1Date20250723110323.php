@@ -100,7 +100,7 @@ class Version1Date20250723110323 extends SimpleMigrationStep
                         'default' => false,
                     ]
                 );
-                $output->info(message: ('Added is_default column to organisations table');
+                $output->info(message: 'Added is_default column to organisations table');
             }
         }
 

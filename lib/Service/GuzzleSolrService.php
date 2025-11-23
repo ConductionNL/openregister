@@ -10356,16 +10356,19 @@ class GuzzleSolrService
             }
 
             $this->logger->debug(
-                    'SOLR JSON faceting response',
-                    [
+                'SOLR JSON faceting response',
+                array_merge(
+                    isset($data['facets']) ? [
                         'response_keys'     => array_keys($data),
                         'facets_key_exists' => isset($data['facets']),
                         'facet_keys'        => $this->getFacetKeys($data),
                         'object_facet_keys' => $this->getObjectFacetKeys($data),
-                        ) : [],
+                    ] : [],
+                    [
                         'response_sample'   => array_slice($data, 0, 3, true),
                     ]
-                    );
+                )
+            );
 
                     if (!isset($data['facets'])) {
                         // Log the full response for debugging.

@@ -713,7 +713,7 @@ class SearchTrailController extends Controller
             // Return export data.
             return new JSONResponse(
                     data: [
-                        'success' => true, statusCode:
+                        'success' => true,
             'data'    => [
                 'content'     => $content,
                 'filename'    => $filename,
@@ -725,9 +725,9 @@ class SearchTrailController extends Controller
         } catch (\Exception $e) {
             return new JSONResponse(
                     data: [
-                        'error' => 'Export failed: '.$e->getMessage(), statusCode:
+                        'error' => 'Export failed: '.$e->getMessage(),
                     ],
-                    500
+                    statusCode: 500
                     );
         }//end try
 
@@ -756,23 +756,23 @@ class SearchTrailController extends Controller
             // In a real implementation, you'd add a deleteSearchTrail method to the service.
             return new JSONResponse(
                     data: [
-                        'success' => true, statusCode:
+                        'success' => true,
             'message' => 'Search trail deletion not implemented yet',
                     ]
                     );
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             return new JSONResponse(
                     data: [
-                        'error' => 'Search trail not found', statusCode:
+                        'error' => 'Search trail not found',
                     ],
-                    404
+                    statusCode: 404
                     );
         } catch (\Exception $e) {
             return new JSONResponse(
                     data: [
-                        'error' => 'Deletion failed: '.$e->getMessage(), statusCode:
+                        'error' => 'Deletion failed: '.$e->getMessage(),
                     ],
-                    500
+                    statusCode: 500
                     );
         }//end try
 
@@ -809,7 +809,7 @@ class SearchTrailController extends Controller
 
             return new JSONResponse(
                     data: [
-                        'success' => true, statusCode:
+                        'success' => true,
             'results' => $result,
                         'message' => 'Multiple search trail deletion not implemented yet',
                     ]
@@ -817,9 +817,9 @@ class SearchTrailController extends Controller
         } catch (\Exception $e) {
             return new JSONResponse(
                     data: [
-                        'error' => 'Mass deletion failed: '.$e->getMessage(), statusCode:
+                        'error' => 'Mass deletion failed: '.$e->getMessage(),
                     ],
-                    500
+                    statusCode: 500
                     );
         }//end try
 
@@ -884,7 +884,7 @@ class SearchTrailController extends Controller
             if ($result === true) {
                 return new JSONResponse(
                         data: [
-                            'success' => true, statusCode:
+                            'success' => true,
                 'message' => 'All search trails cleared successfully',
                             'deleted' => 'All expired search trails have been deleted',
                         ]
@@ -892,7 +892,7 @@ class SearchTrailController extends Controller
             } else {
                 return new JSONResponse(
                         data: [
-                            'success' => true, statusCode:
+                            'success' => true,
                 'message' => 'No expired search trails found to clear',
                             'deleted' => 0,
                         ]
@@ -901,10 +901,10 @@ class SearchTrailController extends Controller
         } catch (\Exception $e) {
             return new JSONResponse(
                     data: [
-                        'success' => false, statusCode:
-            'error'   => 'Failed to clear search trails: '.$e->getMessage(),
+                        'success' => false,
+                        'error'   => 'Failed to clear search trails: '.$e->getMessage(),
                     ],
-                    500
+                    statusCode: 500
                     );
         }//end try
 

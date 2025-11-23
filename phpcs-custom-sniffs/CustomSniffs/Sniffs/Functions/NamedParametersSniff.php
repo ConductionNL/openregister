@@ -67,7 +67,29 @@ class NamedParametersSniff implements Sniff
         }
         
         // Find the closing parenthesis.
-        $closer = $tokens[$next]['parenthesis_closer'];
+        // Check if PHP_CodeSniffer has already parsed the parenthesis pair.
+        if (isset($tokens[$next]['parenthesis_closer'])) {
+            $closer = $tokens[$next]['parenthesis_closer'];
+        } else {
+            // Manually find the matching closing parenthesis.
+            $parenLevel = 1;
+            $closer = $next + 1;
+            while ($closer < $phpcsFile->numTokens && $parenLevel > 0) {
+                if ($tokens[$closer]['code'] === T_OPEN_PARENTHESIS) {
+                    $parenLevel++;
+                } elseif ($tokens[$closer]['code'] === T_CLOSE_PARENTHESIS) {
+                    $parenLevel--;
+                }
+                // Only increment if we haven't found the matching closing parenthesis yet.
+                if ($parenLevel > 0) {
+                    $closer++;
+                }
+            }
+            // If we couldn't find a matching closing parenthesis, skip this token.
+            if ($parenLevel !== 0 || $closer >= $phpcsFile->numTokens) {
+                return;
+            }
+        }
         
         // Check if there are parameters.
         $paramStart = $next + 1;
@@ -104,9 +126,10 @@ class NamedParametersSniff implements Sniff
         if ($parameterCount >= 1 && !$hasNamedParameters) {
             $functionName = $tokens[$stackPtr]['content'];
             
-            // Skip built-in functions that commonly don't benefit from named parameters.
+            // Skip built-in functions that don't support named parameters or don't benefit from them.
             $skipFunctions = [
                 // Basic output functions.
+                'echo', 'print', 'var_dump', 'print_r', 'var_export',
                 
                 // Type checking functions.
                 'empty', 'isset', 'is_null', 'is_array', 'is_string', 'is_int', 'is_bool',
@@ -127,6 +150,13 @@ class NamedParametersSniff implements Sniff
                 
                 // String manipulation that's usually obvious.
                 'implode', 'explode', 'str_repeat', 'str_pad', 'wordwrap',
+                
+                // Built-in functions that DON'T support named parameters (PHP built-ins).
+                // These use variadic arguments or have special calling conventions.
+                'sprintf', 'printf', 'fprintf', 'vprintf', 'vfprintf', 'vsprintf',
+                'unset', 'isset', 'empty',
+                'call_user_func', 'call_user_func_array',
+                'array_merge', 'array_merge_recursive',
                 
                 // Serialization.
                 'json_encode', 'json_decode', 'serialize', 'unserialize',

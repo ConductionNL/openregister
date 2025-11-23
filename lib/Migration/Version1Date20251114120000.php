@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 /**
  * OpenRegister Schema Composition Migration
  *

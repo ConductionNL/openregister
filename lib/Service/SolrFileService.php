@@ -421,7 +421,7 @@ class SolrFileService
         // Fallback to pdftotext command if available.
         if ($this->commandExists('pdftotext') === true) {
             $outputFile = tempnam(sys_get_temp_dir(), 'pdf_').'.txt';
-            $command    = sprintf(format: ('pdftotext %s %s 2>&1', escapeshellarg($filePath), escapeshellarg($outputFile));
+            $command    = sprintf('pdftotext %s %s 2>&1', escapeshellarg($filePath), escapeshellarg($outputFile));
             exec($command, $output, $returnCode);
 
             if ($returnCode === 0 && file_exists($outputFile) === true) {
@@ -585,7 +585,7 @@ class SolrFileService
         }
 
         $outputFile = tempnam(sys_get_temp_dir(), 'ocr_');
-        $command    = sprintf(format: ('tesseract %s %s 2>&1', escapeshellarg($filePath), escapeshellarg($outputFile));
+        $command    = sprintf('tesseract %s %s 2>&1', escapeshellarg($filePath), escapeshellarg($outputFile));
         exec($command, $output, $returnCode);
 
         $textFile = $outputFile.'.txt';
@@ -702,7 +702,7 @@ class SolrFileService
     private function commandExists(string $command): bool
     {
         // @psalm-suppress ForbiddenCode - shell_exec needed to check if command exists.
-        $result = shell_exec(sprintf(format: ('which %s 2>/dev/null', escapeshellarg($command)));
+        $result = shell_exec(sprintf('which %s 2>/dev/null', escapeshellarg($command)));
         return !empty($result);
 
     }//end commandExists()

@@ -1366,7 +1366,7 @@ class ValidateObject
 
         return new JSONResponse(
                 data: [
-                    'status'  => 'error', statusCode:
+                    'status'  => 'error',
         'message' => 'Validation failed',
                     'errors'  => $errors,
                 ],

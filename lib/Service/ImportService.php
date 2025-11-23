@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * OpenRegister Import Service
  *
@@ -604,7 +606,7 @@ class ImportService
         // Build column mapping from headers.
         $columnMapping = $this->buildColumnMapping($sheet);
 
-        if (empty($columnMapping)) {
+        if (empty($columnMapping) === true) {
             $summary['errors'][] = [
                 'sheet'  => $sheetTitle,
                 'row'    => 1,
@@ -634,8 +636,8 @@ class ImportService
             // NO ERROR SUPPRESSION: Let row processing errors bubble up immediately!
             $rowData = $this->extractRowData($sheet, $columnMapping, $row);
 
-            if (empty($rowData)) {
-                continue; // Skip empty rows
+            if (empty($rowData) === true) {
+                continue; // Skip empty rows.
             }
 
             // Transform row data to object format.
@@ -674,7 +676,7 @@ class ImportService
             }
 
             // Handle validation errors if validation was enabled.
-            if ($validation && !empty($saveResult['invalid'] ?? [])) {
+            if ($validation === true && empty($saveResult['invalid'] ?? []) === false) {
                 foreach (($saveResult['invalid'] ?? []) as $invalidItem) {
                     $summary['errors'][] = [
                         'sheet' => $sheetTitle,
@@ -728,7 +730,7 @@ class ImportService
         // Build column mapping from headers.
         $columnMapping = $this->buildColumnMapping($sheet);
 
-        if (empty($columnMapping)) {
+        if (empty($columnMapping) === true) {
             $summary['errors'][] = [
                 'row'   => 1,
                 'object' => [],
@@ -756,8 +758,8 @@ class ImportService
             // NO ERROR SUPPRESSION: Let CSV row processing errors bubble up immediately!
             $rowData = $this->extractRowData($sheet, $columnMapping, $row);
 
-            if (empty($rowData)) {
-                continue; // Skip empty rows
+            if (empty($rowData) === true) {
+                continue; // Skip empty rows.
             }
 
             // Transform row data to object format.
@@ -816,7 +818,7 @@ class ImportService
             }
 
             // Handle validation errors if validation was enabled.
-            if ($validation && !empty($saveResult['invalid'] ?? [])) {
+            if ($validation === true && empty($saveResult['invalid'] ?? []) === false) {
                 foreach (($saveResult['invalid'] ?? []) as $invalidItem) {
                     $summary['errors'][] = [
                         'object' => $invalidItem['object'] ?? $invalidItem,
@@ -927,7 +929,7 @@ class ImportService
                         ];
 
                         // Add validation errors if any.
-                        if ($validation && !empty($saveResult['invalid'] ?? [])) {
+                        if ($validation === true && empty($saveResult['invalid'] ?? []) === false) {
                             foreach ($saveResult['invalid'] as $invalidItem) {
                                 $result['errors'][] = [
                                     'rows'  => $chunk['start'] . '-' . $chunk['end'],

@@ -100,7 +100,7 @@ class Version1Date20250123120000 extends SimpleMigrationStep
                         'default' => true,
                     ]
                 );
-                $output->info(message: ('Added active column to organisations table');
+                $output->info(message: 'Added active column to organisations table');
             }
         }
 

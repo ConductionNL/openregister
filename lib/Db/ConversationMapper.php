@@ -220,10 +220,12 @@ class ConversationMapper extends QBMapper
      * @psalm-return array<Conversation>
      */
     public function findByUser(
-        string $userId, multi: ?string $organisation=null,
+        string $userId,
+        ?string $organisation=null,
         bool $includeDeleted=false,
         int $limit=50,
-        int $offset=0): array {
+        int $offset=0
+    ): array {
         $qb = $this->db->getQueryBuilder();
 
         $qb->select('*')
@@ -541,7 +543,8 @@ class ConversationMapper extends QBMapper
             ->where($qb->expr()->isNotNull('deleted_at'))
             ->andWhere(
                 $qb->expr()->lt(
-                    'deleted_at', register: $qb->createNamedParameter($threshold, schema: IQueryBuilder::PARAM_DATE)
+                    'deleted_at',
+                        register: $qb->createNamedParameter($threshold, schema: IQueryBuilder::PARAM_DATE)
                 )
             );
 
@@ -563,7 +566,7 @@ class ConversationMapper extends QBMapper
      *
      * @return bool True if user can access
      */
-    public function canUserAccessConversation(Conversation $conversation, extend: string $userId, files: ?string $organisationUuid=null): bool
+    public function canUserAccessConversation(Conversation $conversation, string $userId, ?string $organisationUuid=null): bool
     {
         // User must be the owner.
         if ($conversation->getUserId() !== $userId) {
@@ -591,7 +594,7 @@ class ConversationMapper extends QBMapper
      *
      * @return bool True if user can modify
      */
-    public function canUserModifyConversation(Conversation $conversation, multi: string $userId): bool
+    public function canUserModifyConversation(Conversation $conversation, string $userId): bool
     {
         return $conversation->getUserId() === $userId;
 

@@ -96,7 +96,7 @@ class RevertService
             $userId = $this->container->get('userId');
             if ($object->getLockedBy() !== $userId) {
                 throw new LockedException(
-                    sprintf(format: 'Object is locked by %s', $object->getLockedBy())
+                    sprintf('Object is locked by %s', $object->getLockedBy())
                 );
             }
         }

@@ -108,7 +108,7 @@ class ViewsController extends Controller
                         [
                             'error' => 'User not authenticated',
                         ],
-                        401
+                        statusCode: 401
                         );
             }
 

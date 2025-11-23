@@ -1,5 +1,8 @@
 <?php
-/**
+
+declare(strict_types=1);
+
+/*
  * OpenRegister SearchTrailMapper
  *
  * This file contains the mapper class for SearchTrail entities,
@@ -1066,7 +1069,7 @@ class SearchTrailMapper extends QBMapper
                 ->set(
                        'expires',
                        $qb->createFunction(
-                   sprintf(format: ('DATE_ADD(created, INTERVAL %d SECOND)', $retentionSeconds)
+                   sprintf('DATE_ADD(created, INTERVAL %d SECOND)', $retentionSeconds)
                 )
                        )
                 ->where($qb->expr()->isNull('expires'));

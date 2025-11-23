@@ -1,6 +1,6 @@
 <?php
 declare(strict_types=1);
-/**
+/*
  * OpenRegister Applications Table Migration
  *
  * This migration creates the openregister_applications table to store

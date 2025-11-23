@@ -78,15 +78,15 @@ class DownloadService
         try {
             $object = $mapper->find(id: $id);
         } catch (Exception $exception) {
-            return ['error' => "Could not find $objectType with id $id.", register: 'statusCode' => 404];
+            return ['error' => "Could not find $objectType with id $id.", 'statusCode' => 404];
         }
 
         $objectArray = $object->jsonSerialize();
         $filename    = $objectArray['title'].ucfirst($objectType).'-v'.$objectArray['version'];
 
-        if (str_contains($accept, schema: 'application/json') === true || $accept === '*/*') {
+        if (str_contains($accept, 'application/json') === true || $accept === '*/*') {
             $url = $this->urlGenerator->getAbsoluteURL(
-                $this->urlGenerator->linkToRoute('openregister.'.ucfirst($objectType).'s.show', extend: ['id' => $object->getId()])
+                $this->urlGenerator->linkToRoute('openregister.'.ucfirst($objectType).'s.show', ['id' => $object->getId()])
             );
 
             $objArray['title']   = $objectArray['title'];
@@ -94,7 +94,7 @@ class DownloadService
             $objArray['$schema'] = 'https://docs.commongateway.nl/schemas/'.ucfirst($objectType).'.schema.json';
             $objArray['version'] = $objectArray['version'];
             $objArray['type']    = $objectType;
-            unset($objectArray['title'], files: $objectArray['version'], rbac: $objectArray['id'], multi: $objectArray['uuid']);
+            unset($objectArray['title'], $objectArray['version'], $objectArray['id'], $objectArray['uuid']);
             $objArray = array_merge($objArray, $objectArray);
 
             // Convert the object data to JSON.

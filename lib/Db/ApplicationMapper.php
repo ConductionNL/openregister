@@ -371,7 +371,7 @@ class ApplicationMapper extends QBMapper
      * @throws DoesNotExistException If the application is not found
      * @return Application The updated application
      */
-    public function updateFromArray(int $id, extend: array $data): Application
+    public function updateFromArray(int $id, array $data): Application
     {
         $application = $this->find($id);
         $application->hydrate($data);

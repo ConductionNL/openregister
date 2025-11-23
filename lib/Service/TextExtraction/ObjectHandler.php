@@ -297,7 +297,11 @@ class ObjectHandler implements TextExtractionHandlerInterface
             } else if (is_numeric($value) === true) {
                 $textParts[] = "{$contextKey}: {$value}";
             } else if (is_bool($value) === true) {
-                $boolStr     = $value === true ? 'true' : 'false';
+                if ($value === true) {
+                    $boolStr = 'true';
+                } else {
+                    $boolStr = 'false';
+                }
                 $textParts[] = "{$contextKey}: {$boolStr}";
             } else if (is_array($value) === true && empty($value) === false) {
                 // Recursively process nested arrays.

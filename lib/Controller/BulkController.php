@@ -112,8 +112,8 @@ class BulkController extends Controller
 
             return new JSONResponse(
                     data: [
-                        'success'         => true, statusCode:
-            'message'         => 'Bulk delete operation completed successfully',
+                        'success'         => true,
+                        'message'         => 'Bulk delete operation completed successfully',
                         'deleted_count'   => count($deletedUuids),
                         'deleted_uuids'   => $deletedUuids,
                         'requested_count' => count($uuids),
@@ -161,8 +161,8 @@ class BulkController extends Controller
                     $datetime = new \DateTime(datetime: $datetime);
                 } catch (Exception $e) {
                     return new JSONResponse(
-                            data: ['error' => 'Invalid datetime format. Use ISO 8601 format (e.g., statusCode: "2024-01-01T12:00:00Z").'],
-                        Http::STATUS_BAD_REQUEST
+                            data: ['error' => 'Invalid datetime format. Use ISO 8601 format (e.g., "2024-01-01T12:00:00Z").'],
+                            statusCode: Http::STATUS_BAD_REQUEST
                     );
                 }
             }
@@ -176,8 +176,8 @@ class BulkController extends Controller
 
             return new JSONResponse(
                     data: [
-                        'success'         => true, statusCode:
-            'message'         => 'Bulk publish operation completed successfully',
+                        'success'         => true,
+                        'message'         => 'Bulk publish operation completed successfully',
                         'published_count' => count($publishedUuids),
                         'published_uuids' => $publishedUuids,
                         'requested_count' => count($uuids),
@@ -226,8 +226,8 @@ class BulkController extends Controller
                     $datetime = new \DateTime(datetime: $datetime);
                 } catch (Exception $e) {
                     return new JSONResponse(
-                            data: ['error' => 'Invalid datetime format. Use ISO 8601 format (e.g., statusCode: "2024-01-01T12:00:00Z").'],
-                        Http::STATUS_BAD_REQUEST
+                            data: ['error' => 'Invalid datetime format. Use ISO 8601 format (e.g., "2024-01-01T12:00:00Z").'],
+                            statusCode: Http::STATUS_BAD_REQUEST
                     );
                 }
             }
@@ -241,8 +241,8 @@ class BulkController extends Controller
 
             return new JSONResponse(
                     data: [
-                        'success'           => true, statusCode:
-            'message'           => 'Bulk depublish operation completed successfully',
+                        'success'           => true,
+                        'message'           => 'Bulk depublish operation completed successfully',
                         'depublished_count' => count($depublishedUuids),
                         'depublished_uuids' => $depublishedUuids,
                         'requested_count'   => count($uuids),
@@ -320,8 +320,8 @@ class BulkController extends Controller
 
             return new JSONResponse(
                     data: [
-                        'success'         => true, statusCode:
-            'message'         => 'Bulk save operation completed successfully',
+                        'success'         => true,
+                        'message'         => 'Bulk save operation completed successfully',
                         'saved_count'     => ($savedObjects['statistics']['saved'] ?? 0) + ($savedObjects['statistics']['updated'] ?? 0),
                         'saved_objects'   => $savedObjects,
                         'requested_count' => count($objects),
@@ -370,8 +370,8 @@ class BulkController extends Controller
 
             return new JSONResponse(
                     data: [
-                        'success'         => true, statusCode:
-            'message'         => 'Schema objects publishing completed successfully',
+                        'success'         => true,
+                        'message'         => 'Schema objects publishing completed successfully',
                         'published_count' => $result['published_count'],
                         'published_uuids' => $result['published_uuids'],
                         'schema_id'       => $result['schema_id'],
@@ -421,8 +421,8 @@ class BulkController extends Controller
 
             return new JSONResponse(
                     data: [
-                        'success'       => true, statusCode:
-            'message'       => 'Schema objects deletion completed successfully',
+                        'success'       => true,
+                        'message'       => 'Schema objects deletion completed successfully',
                         'deleted_count' => $result['deleted_count'],
                         'deleted_uuids' => $result['deleted_uuids'],
                         'schema_id'     => $result['schema_id'],
@@ -466,8 +466,8 @@ class BulkController extends Controller
 
             return new JSONResponse(
                     data: [
-                        'success'       => true, statusCode:
-            'message'       => 'Register objects deletion completed successfully',
+                        'success'       => true,
+                        'message'       => 'Register objects deletion completed successfully',
                         'deleted_count' => $result['deleted_count'],
                         'deleted_uuids' => $result['deleted_uuids'],
                         'register_id'   => $result['register_id'],

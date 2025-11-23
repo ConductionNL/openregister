@@ -62,13 +62,13 @@ class Version1Date20250904170000 extends SimpleMigrationStep
         if ($schema->hasTable('openregister_objects')) {
             $table = $schema->getTable('openregister_objects');
 
-            $output->info(message: ('🚀 Applying safe database performance optimizations...');
+            $output->info(message: '🚀 Applying safe database performance optimizations...');
 
             // **SAFE INDEX 1**: Basic schema index only (no composite indexes to avoid key length issues).
             if (!$table->hasIndex('idx_schema_only') && $table->hasColumn('schema')) {
                 try {
                     $table->addIndex(['schema'], 'idx_schema_only');
-                    $output->info(message: ('✅ Added basic schema index');
+                    $output->info(message: '✅ Added basic schema index');
                 } catch (\Exception $e) {
                     $output->info('⚠️  Could not create schema index: '.$e->getMessage());
                 }
@@ -78,21 +78,21 @@ class Version1Date20250904170000 extends SimpleMigrationStep
             if (!$table->hasIndex('idx_register_only') && $table->hasColumn('register')) {
                 try {
                     $table->addIndex(['register'], 'idx_register_only');
-                    $output->info(message: ('✅ Added basic register index');
+                    $output->info(message: '✅ Added basic register index');
                 } catch (\Exception $e) {
                     $output->info('⚠️  Could not create register index: '.$e->getMessage());
                 }
             }
 
-            $output->info(message: ('ℹ️  Composite indexes skipped due to MySQL key length limitations with UTF8MB4');
-            $output->info(message: ('ℹ️  Text column indexes skipped due to potential key length issues');
+            $output->info(message: 'ℹ️  Composite indexes skipped due to MySQL key length limitations with UTF8MB4');
+            $output->info(message: 'ℹ️  Text column indexes skipped due to potential key length issues');
         }//end if
 
         // **RELATIONSHIP TABLES OPTIMIZATION**: Disabled due to MySQL key length limitations.
         // Relationship table indexes are skipped to avoid key length issues with VARCHAR fields.
-        $output->info(message: ('ℹ️  Skipping relationship table optimizations (potential key length issues with text fields)');
+        $output->info(message: 'ℹ️  Skipping relationship table optimizations (potential key length issues with text fields)');
 
-        $output->info(message: ('🎯 Database performance optimization completed successfully');
+        $output->info(message: '🎯 Database performance optimization completed successfully');
         $output->info('📈 Expected performance improvement: 60-80% reduction in query time');
         $output->info('🎉 Target: Sub-500ms response times for most queries');
 
@@ -118,7 +118,7 @@ class Version1Date20250904170000 extends SimpleMigrationStep
             if (!$table->hasIndex('idx_source_target') && $table->hasColumn('source_id') && $table->hasColumn('target_id')) {
                 try {
                     $table->addIndex(['source_id', 'target_id'], 'idx_source_target');
-                    $output->info(message: ("✅ Optimized {$tableName} with source+target index");
+                    $output->info(message: "✅ Optimized {$tableName} with source+target index");
                 } catch (\Exception $e) {
                     $output->info("⚠️  Could not optimize {$tableName}: ".$e->getMessage());
                 }
@@ -130,7 +130,7 @@ class Version1Date20250904170000 extends SimpleMigrationStep
                 try {
                     // Skip name column in index due to potential key length issues with text fields.
                     $table->addIndex(['schema_id'], 'idx_schema_property');
-                    $output->info(message: ("✅ Optimized {$tableName} with schema index (name column skipped due to key length limits)");
+                    $output->info(message: "✅ Optimized {$tableName} with schema index (name column skipped due to key length limits)");
                 } catch (\Exception $e) {
                     $output->info("⚠️  Could not optimize {$tableName}: ".$e->getMessage());
                 }
@@ -141,7 +141,7 @@ class Version1Date20250904170000 extends SimpleMigrationStep
             if (!$table->hasIndex('idx_register_schema') && $table->hasColumn('register_id') && $table->hasColumn('schema_id')) {
                 try {
                     $table->addIndex(['register_id', 'schema_id'], 'idx_register_schema');
-                    $output->info(message: ("✅ Optimized {$tableName} with register+schema index");
+                    $output->info(message: "✅ Optimized {$tableName} with register+schema index");
                 } catch (\Exception $e) {
                     $output->info("⚠️  Could not optimize {$tableName}: ".$e->getMessage());
                 }

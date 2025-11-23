@@ -129,7 +129,7 @@ class ApplicationsController extends Controller
 
             // Remove special query params from filters.
             $filters = $params;
-            unset($filters['_limit'], renderAs: $filters['_offset'], $filters['_page'], $filters['_search'], $filters['_route']);
+            unset($filters['_limit'], $filters['_offset'], $filters['_page'], $filters['_search'], $filters['_route']);
 
             $applications = $this->applicationMapper->findAll(
                 $limit,

@@ -255,7 +255,7 @@ class RegistersController extends Controller
      */
     public function show($id): JSONResponse
     {
-        $extend = $this->request->getParam(key: '_extend', statusCode: default: []);
+        $extend = $this->request->getParam(key: '_extend', default: []);
         if (is_string($extend)) {
             $extend = [$extend];
         }
@@ -294,7 +294,7 @@ class RegistersController extends Controller
 
         // Remove internal parameters (starting with '_').
         foreach ($data as $key => $value) {
-            if (str_starts_with($key, statusCode: '_') === true) {
+            if (str_starts_with($key, '_') === true) {
                 unset($data[$key]);
             }
         }
@@ -450,7 +450,8 @@ class RegistersController extends Controller
             $schemasArray = array_map(fn($schema) => $schema->jsonSerialize(), $schemas);
 
             return new JSONResponse(data: [
-                        'results' => $schemasArray, statusCode: 'total'   => count($schemasArray),
+                        'results' => $schemasArray,
+                        'total'   => count($schemasArray),
                     ]
                     );
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
@@ -496,7 +497,7 @@ class RegistersController extends Controller
     /**
      * Export a register and its related data
      *
-     * This method exports a register, statusCode: its schemas, and optionally its objects
+     * This method exports a register, its schemas, and optionally its objects
      * in the specified format.
      *
      * @param int $id The ID of the register to export
@@ -518,7 +519,7 @@ class RegistersController extends Controller
                 case 'excel':
                     $spreadsheet = $this->exportService->exportToExcel($register, null, [], $this->userSession->getUser());
                     $writer      = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
-                    $filename    = sprintf(format: ('%s_%s.xlsx', $register->getSlug(), (new \DateTime())->format('Y-m-d_His'));
+                    $filename    = sprintf('%s_%s.xlsx', $register->getSlug(), (new \DateTime())->format('Y-m-d_His'));
                     ob_start();
                     $writer->save('php://output');
                     $content = ob_get_clean();
@@ -534,7 +535,7 @@ class RegistersController extends Controller
 
                     $schema   = $this->schemaMapper->find($schemaId);
                     $csv      = $this->exportService->exportToCsv($register, $schema, [], $this->userSession->getUser());
-                    $filename = sprintf(format: ('%s_%s_%s.csv', $register->getSlug(), $schema->getSlug(), (new \DateTime())->format('Y-m-d_His'));
+                    $filename = sprintf('%s_%s_%s.csv', $register->getSlug(), $schema->getSlug(), (new \DateTime())->format('Y-m-d_His'));
                     return new DataDownloadResponse($csv, $filename, 'text/csv');
                 case 'configuration':
                 default:
@@ -544,7 +545,7 @@ class RegistersController extends Controller
                         throw new Exception('Failed to encode register data to JSON');
                     }
 
-                    $filename = sprintf(format: ('%s_%s.json', $register->getSlug(), (new \DateTime())->format('Y-m-d_His'));
+                    $filename = sprintf('%s_%s.json', $register->getSlug(), (new \DateTime())->format('Y-m-d_His'));
                     return new DataDownloadResponse($jsonContent, $filename, 'application/json');
             }//end switch
         } catch (Exception $e) {
@@ -663,8 +664,10 @@ class RegistersController extends Controller
                 $message .= ". Note: GitHub Code Search may take a few minutes to index new files.";
             }
 
-            return new JSONResponse(data: [
-                        'success'        => true, statusCode: 'message'        => $message,
+            return new JSONResponse(
+                data: [
+                    'success'        => true,
+                    'message'        => $message,
                         'registerId'     => $register->getId(),
                         'commit_sha'     => $result['commit_sha'],
                         'commit_url'     => $result['commit_url'],
@@ -864,7 +867,8 @@ class RegistersController extends Controller
             }//end switch
 
             return new JSONResponse(data: [
-                        'message' => 'Import successful', statusCode: 'summary' => $summary,
+                        'message' => 'Import successful',
+                        'summary' => $summary,
                     ]);
         } catch (\Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);

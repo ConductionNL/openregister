@@ -298,7 +298,7 @@ class ObjectsTool extends AbstractTool
                 'objects' => $objectList,
                 'total'   => $result['total'] ?? count($objectList),
             ],
-            sprintf(format: ('Found %d objects', count($objectList))
+            sprintf('Found %d objects', count($objectList))
         );
 
     }//end searchObjects()

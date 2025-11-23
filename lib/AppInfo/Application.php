@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\ChunkMapper;
 use OCA\OpenRegister\Db\GdprEntityMapper;
 use OCA\OpenRegister\Db\EntityRelationMapper;
+use OCA\OpenRegister\Db\FileTextMapper;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OrganisationService;
@@ -241,7 +242,7 @@ class Application extends App implements IBootstrap
                     // AuthorizationExceptionService.
                     );
                 }
-        );
+                );
 
         /*
          * Register SolrService for advanced search capabilities (disabled due to performance issues).
@@ -860,7 +861,7 @@ class Application extends App implements IBootstrap
             }
         } catch (\Exception $e) {
             $logger->error(
-                    'OpenRegister boot: Failed to register event listeners and background jobs',
+                    message: 'OpenRegister boot: Failed to register event listeners and background jobs',
                     context: [
                         'exception' => $e->getMessage(),
                         'trace'     => $e->getTraceAsString(),

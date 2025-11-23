@@ -87,10 +87,13 @@ class SourcesController extends Controller
         unset($filters['_limit'], $filters['_offset'], $filters['_page'], $filters['_search'], $filters['_route']);
 
         // Return all sources that match the filters.
-        return new JSONResponse(data: [
+        return new JSONResponse(
+            data: [
                 'results' => $this->sourceMapper->findAll(
-                    limit: $limit, statusCode: offset: $offset,
-                    filters: $filters),
+                    limit: $limit,
+                    offset: $offset,
+                    filters: $filters
+                ),
             ]
         );
 
@@ -248,7 +251,7 @@ class SourcesController extends Controller
     /**
      * Get integer parameter from params array or return null
      *
-     * @param array<string, statusCode: mixed> $params Parameters array
+     * @param array<string, mixed> $params Parameters array
      * @param string               $key    Parameter key
      *
      * @return int|null Integer value or null

@@ -68,7 +68,7 @@ class Version1Date20251106120000 extends SimpleMigrationStep
         $schema  = $schemaClosure();
         $updated = false;
 
-        $output->info(message: ('🏢 Updating organisation columns for multi-tenancy support...');
+        $output->info(message: '🏢 Updating organisation columns for multi-tenancy support...');
 
         // ============================================================.
         // Update openregister_configurations: int → string UUID.
@@ -89,7 +89,7 @@ class Version1Date20251106120000 extends SimpleMigrationStep
                     $column->setDefault(null);
                     $column->setComment('Organisation UUID for multi-tenancy');
 
-                    $output->info(message: ('    ✅ configurations.organisation updated');
+                    $output->info(message: '    ✅ configurations.organisation updated');
                     $updated = true;
                 }
             }
@@ -114,7 +114,7 @@ class Version1Date20251106120000 extends SimpleMigrationStep
                     $column->setDefault(null);
                     $column->setComment('Organisation UUID for multi-tenancy');
 
-                    $output->info(message: ('    ✅ agents.organisation updated');
+                    $output->info(message: '    ✅ agents.organisation updated');
                     $updated = true;
                 }
             }
@@ -139,7 +139,7 @@ class Version1Date20251106120000 extends SimpleMigrationStep
                     $column->setDefault(null);
                     $column->setComment('Organisation UUID for multi-tenancy');
 
-                    $output->info(message: ('    ✅ applications.organisation updated');
+                    $output->info(message: '    ✅ applications.organisation updated');
                     $updated = true;
                 }
             }
@@ -152,7 +152,7 @@ class Version1Date20251106120000 extends SimpleMigrationStep
             $table = $schema->getTable('openregister_view');
 
             if (!$table->hasColumn('organisation')) {
-                $output->info(message: ('  📝 Adding view.organisation column');
+                $output->info(message: '  📝 Adding view.organisation column');
 
                 $table->addColumn(
                         'organisation',
@@ -168,7 +168,7 @@ class Version1Date20251106120000 extends SimpleMigrationStep
                 // Add index for faster filtering.
                 $table->addIndex(['organisation'], 'view_organisation_idx');
 
-                $output->info(message: ('    ✅ view.organisation added');
+                $output->info(message: '    ✅ view.organisation added');
                 $updated = true;
             }
         }//end if
@@ -180,7 +180,7 @@ class Version1Date20251106120000 extends SimpleMigrationStep
             $table = $schema->getTable('openregister_sources');
 
             if (!$table->hasColumn('organisation')) {
-                $output->info(message: ('  📝 Adding sources.organisation column');
+                $output->info(message: '  📝 Adding sources.organisation column');
 
                 $table->addColumn(
                         'organisation',
@@ -196,7 +196,7 @@ class Version1Date20251106120000 extends SimpleMigrationStep
                 // Add index for faster filtering.
                 $table->addIndex(['organisation'], 'sources_organisation_idx');
 
-                $output->info(message: ('    ✅ sources.organisation added');
+                $output->info(message: '    ✅ sources.organisation added');
                 $updated = true;
             }
         }//end if
@@ -208,7 +208,7 @@ class Version1Date20251106120000 extends SimpleMigrationStep
             $table = $schema->getTable('openregister_registers');
 
             if (!$table->hasColumn('organisation')) {
-                $output->info(message: ('  📝 Adding registers.organisation column');
+                $output->info(message: '  📝 Adding registers.organisation column');
 
                 $table->addColumn(
                         'organisation',
@@ -224,7 +224,7 @@ class Version1Date20251106120000 extends SimpleMigrationStep
                 // Add index for faster filtering.
                 $table->addIndex(['organisation'], 'registers_organisation_idx');
 
-                $output->info(message: ('    ✅ registers.organisation added');
+                $output->info(message: '    ✅ registers.organisation added');
                 $updated = true;
             }
         }//end if
@@ -238,10 +238,10 @@ class Version1Date20251106120000 extends SimpleMigrationStep
             if ($table->hasColumn('organisation')) {
                 $column = $table->getColumn('organisation');
                 if ($column->getType()->getName() === Types::STRING) {
-                    $output->info(message: ('  ✅ schemas.organisation already string UUID (no change needed)');
+                    $output->info(message: '  ✅ schemas.organisation already string UUID (no change needed)');
                 } else {
                     // If somehow it's not a string, fix it.
-                    $output->info(message: ('  📝 Updating schemas.organisation to string UUID');
+                    $output->info(message: '  📝 Updating schemas.organisation to string UUID');
 
                     $column->setType(\OCP\DB\Types::getType(Types::STRING));
                     $column->setLength(255);
@@ -249,15 +249,15 @@ class Version1Date20251106120000 extends SimpleMigrationStep
                     $column->setDefault(null);
                     $column->setComment('Organisation UUID for multi-tenancy');
 
-                    $output->info(message: ('    ✅ schemas.organisation updated');
+                    $output->info(message: '    ✅ schemas.organisation updated');
                     $updated = true;
                 }
             }
         }//end if
 
         if ($updated === true) {
-            $output->info(message: ('');
-            $output->info(message: ('🎉 Multi-tenancy organisation columns updated successfully!');
+            $output->info(message: '');
+            $output->info(message: '🎉 Multi-tenancy organisation columns updated successfully!');
             $output->info('📊 Summary:');
             $output->info('   • Configurations: organisation updated to string UUID');
             $output->info('   • Agents: organisation updated to string UUID');
@@ -266,11 +266,11 @@ class Version1Date20251106120000 extends SimpleMigrationStep
             $output->info('   • Sources: organisation column added (string UUID)');
             $output->info('   • Registers: organisation column added (string UUID)');
             $output->info('   • Schemas: organisation verified as string UUID');
-            $output->info(message: ('');
-            $output->info(message: ('✅ All entities now support multi-tenancy with organisation UUIDs');
+            $output->info(message: '');
+            $output->info(message: '✅ All entities now support multi-tenancy with organisation UUIDs');
         } else {
-            $output->info(message: ('');
-            $output->info(message: ('ℹ️  No changes needed - all organisation columns already configured correctly');
+            $output->info(message: '');
+            $output->info(message: 'ℹ️  No changes needed - all organisation columns already configured correctly');
         }
 
         return $updated === true ? $schema : null;

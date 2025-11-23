@@ -188,7 +188,7 @@ class NamesController extends Controller
 
             return new JSONResponse(
                     data: [
-                        'names'          => $names, statusCode:
+                        'names'          => $names,
             'total'          => count($names),
                         'cached'         => true,
                         'execution_time' => $executionTime.'ms',
@@ -206,10 +206,10 @@ class NamesController extends Controller
 
             return new JSONResponse(
                     data: [
-                        'error'   => 'Failed to retrieve object names', statusCode:
+                        'error'   => 'Failed to retrieve object names',
             'message' => $e->getMessage(),
                     ],
-                    500
+                    statusCode: 500
                     );
         }//end try
 
@@ -300,11 +300,11 @@ class NamesController extends Controller
             if ($requestedIds === null || is_array($requestedIds) === false) {
                 return new JSONResponse(
                         data: [
-                            'error'   => 'Invalid request: ids array is required in request body', statusCode:
+                            'error'   => 'Invalid request: ids array is required in request body',
                 'example' => ['ids' => ['uuid-1', 'uuid-2', 'uuid-3']],
                         ],
-                        400
-                        );
+                    statusCode: 400
+                    );
             }
 
             // Filter and validate IDs.
@@ -313,10 +313,10 @@ class NamesController extends Controller
             if (empty($requestedIds) === true) {
                 return new JSONResponse(
                         data: [
-                            'error' => 'No valid IDs provided in request', statusCode:
+                            'error' => 'No valid IDs provided in request',
                         ],
-                        400
-                        );
+                    statusCode: 400
+                    );
             }
 
             $names         = $this->objectCacheService->getMultipleObjectNames($requestedIds);
@@ -333,7 +333,7 @@ class NamesController extends Controller
 
             return new JSONResponse(
                     data: [
-                        'names'          => $names, statusCode:
+                        'names'          => $names,
             'total'          => count($names),
                         'requested'      => count($requestedIds),
                         'cached'         => true,
@@ -447,7 +447,7 @@ class NamesController extends Controller
 
             return new JSONResponse(
                     data: [
-                        'id'             => $id, statusCode:
+                        'id'             => $id,
             'name'           => $name,
                         'found'          => true,
                         'cached'         => true,
@@ -465,11 +465,11 @@ class NamesController extends Controller
 
             return new JSONResponse(
                     data: [
-                        'id'      => $id, statusCode:
+                        'id'      => $id,
             'error'   => 'Failed to retrieve object name',
                         'message' => $e->getMessage(),
                     ],
-                    500
+                    statusCode: 500
                     );
         }//end try
 
@@ -621,7 +621,7 @@ class NamesController extends Controller
 
             return new JSONResponse(
                     data: [
-                        'success'        => true, statusCode:
+                        'success'        => true,
             'loaded_names'   => $loadedCount,
                         'execution_time' => $executionTime.'ms',
                         'cache_stats'    => $this->objectCacheService->getStats(),

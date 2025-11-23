@@ -71,7 +71,7 @@ class Version1Date20251111000000 extends SimpleMigrationStep
         $schema  = $schemaClosure();
         $updated = false;
 
-        $output->info(message: ('🏗️  Adding embedding model tracking to vectors...');
+        $output->info(message: '🏗️  Adding embedding model tracking to vectors...');
 
         // ============================================================.
         // Add embedding_model to openregister_vectors.
@@ -80,7 +80,7 @@ class Version1Date20251111000000 extends SimpleMigrationStep
             $table = $schema->getTable('openregister_vectors');
 
             if ($table->hasColumn('embedding_model') === false) {
-                $output->info(message: ('  📝 Adding vectors.embedding_model column');
+                $output->info(message: '  📝 Adding vectors.embedding_model column');
 
                 $table->addColumn(
                         'embedding_model',
@@ -93,49 +93,49 @@ class Version1Date20251111000000 extends SimpleMigrationStep
                         ]
                         );
 
-                $output->info(message: ('    ✅ vectors.embedding_model column added');
+                $output->info(message: '    ✅ vectors.embedding_model column added');
                 $updated = true;
             } else {
-                $output->info(message: ('  ℹ️  vectors.embedding_model column already exists');
+                $output->info(message: '  ℹ️  vectors.embedding_model column already exists');
             }
 
             // Add index for filtering by model.
             if ($table->hasIndex('embedding_model_idx') === false) {
-                $output->info(message: ('  📝 Adding index on embedding_model column');
+                $output->info(message: '  📝 Adding index on embedding_model column');
 
                 $table->addIndex(['embedding_model'], 'embedding_model_idx');
 
-                $output->info(message: ('    ✅ Index on embedding_model column added');
+                $output->info(message: '    ✅ Index on embedding_model column added');
                 $updated = true;
             } else {
-                $output->info(message: ('  ℹ️  Index on embedding_model column already exists');
+                $output->info(message: '  ℹ️  Index on embedding_model column already exists');
             }
         } else {
-            $output->warning(message: ('  ⚠️  vectors table not found - skipping model tracking migration');
+            $output->warning(message: '  ⚠️  vectors table not found - skipping model tracking migration');
         }//end if
 
         if ($updated === true) {
-            $output->info(message: ('');
-            $output->info(message: ('🎉 Embedding model tracking added successfully!');
-            $output->info(message: ('');
+            $output->info(message: '');
+            $output->info(message: '🎉 Embedding model tracking added successfully!');
+            $output->info(message: '');
             $output->info('📊 Summary:');
-            $output->info(message: ('   • embedding_model column added to vectors table');
-            $output->info(message: ('   • Index created for efficient model filtering');
-            $output->info(message: ('');
+            $output->info(message: '   • embedding_model column added to vectors table');
+            $output->info(message: '   • Index created for efficient model filtering');
+            $output->info(message: '');
             $output->info('✨ Features enabled:');
-            $output->info(message: ('   • Track which model generated each vector');
-            $output->info(message: ('   • Detect when embedding model changes');
-            $output->info(message: ('   • Warn users to regenerate vectors after model change');
-            $output->info(message: ('   • Selectively delete vectors by model');
-            $output->info(message: ('');
+            $output->info(message: '   • Track which model generated each vector');
+            $output->info(message: '   • Detect when embedding model changes');
+            $output->info(message: '   • Warn users to regenerate vectors after model change');
+            $output->info(message: '   • Selectively delete vectors by model');
+            $output->info(message: '');
             $output->info('⚠️  IMPORTANT:');
-            $output->info(message: ('   • Existing vectors have NULL embedding_model');
-            $output->info(message: ('   • New vectors will track their model automatically');
-            $output->info(message: ('   • If you change embedding models, DELETE ALL VECTORS and re-vectorize');
-            $output->info(message: ('');
+            $output->info(message: '   • Existing vectors have NULL embedding_model');
+            $output->info(message: '   • New vectors will track their model automatically');
+            $output->info(message: '   • If you change embedding models, DELETE ALL VECTORS and re-vectorize');
+            $output->info(message: '');
         } else {
-            $output->info(message: ('');
-            $output->info(message: ('ℹ️  No changes needed - embedding model tracking already configured');
+            $output->info(message: '');
+            $output->info(message: 'ℹ️  No changes needed - embedding model tracking already configured');
         }//end if
 
         if ($updated === true) {
@@ -158,14 +158,14 @@ class Version1Date20251111000000 extends SimpleMigrationStep
      */
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
-        $output->info(message: ('');
+        $output->info(message: '');
         $output->info('📖 Migration Notes:');
-        $output->info(message: ('   • All new vectors will automatically track their embedding model');
-        $output->info(message: ('   • Existing vectors (NULL model) are assumed to use current config');
-        $output->info(message: ('   • System will warn if model changes and vectors exist');
+        $output->info(message: '   • All new vectors will automatically track their embedding model');
+        $output->info(message: '   • Existing vectors (NULL model) are assumed to use current config');
+        $output->info(message: '   • System will warn if model changes and vectors exist');
         $output->info('   • Use "Clear All Embeddings" action to remove vectors after model change');
-        $output->info(message: ('');
-        $output->info(message: ('✅ Migration completed successfully');
+        $output->info(message: '');
+        $output->info(message: '✅ Migration completed successfully');
 
     }//end postSchemaChange()
 

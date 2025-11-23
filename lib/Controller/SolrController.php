@@ -440,7 +440,7 @@ class SolrController extends Controller
                         'success' => false,
                         'error'   => $e->getMessage(),
                     ],
-                    500
+                    statusCode: 500
                     );
         }//end try
 

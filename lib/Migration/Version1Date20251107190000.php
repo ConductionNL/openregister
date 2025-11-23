@@ -62,13 +62,13 @@ class Version1Date20251107190000 extends SimpleMigrationStep
             // Remove is_default column if it exists.
             if ($table->hasColumn('is_default') === true) {
                 $table->dropColumn('is_default');
-                $output->info(message: ('✅ Removed is_default column from organisations table');
+                $output->info(message: '✅ Removed is_default column from organisations table');
                 $updated = true;
             } else {
-                $output->info(message: ('ℹ️  is_default column does not exist in organisations table');
+                $output->info(message: 'ℹ️  is_default column does not exist in organisations table');
             }
         } else {
-            $output->warning(message: ('⚠️  openregister_organisations table does not exist');
+            $output->warning(message: '⚠️  openregister_organisations table does not exist');
         }
 
         if ($updated === true) {
@@ -91,8 +91,8 @@ class Version1Date20251107190000 extends SimpleMigrationStep
      */
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
-        $output->info(message: ('✅ Migration complete - is_default column removed from organisations table');
-        $output->info(message: ('   Default organisation is now managed via configuration');
+        $output->info(message: '✅ Migration complete - is_default column removed from organisations table');
+        $output->info(message: '   Default organisation is now managed via configuration');
 
     }//end postSchemaChange()
 

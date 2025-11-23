@@ -1,6 +1,6 @@
 <?php
 declare(strict_types=1);
-/**
+/*
  * ObjectsController
  *
  * Controller for managing object operations in the OpenRegister app.
@@ -261,7 +261,7 @@ class ObjectsController extends Controller
         unset($params['_route']);
 
         // Extract and normalize parameters.
-        $limit  = (int) ($params['limit'] ?? $params['_limit'] ?? 20);
+        $limit = (int) ($params['limit'] ?? $params['_limit'] ?? 20);
         if (isset($params['offset']) === true) {
             $offset = (int) $params['offset'];
         } else if (isset($params['_offset']) === true) {
@@ -404,7 +404,7 @@ class ObjectsController extends Controller
 
         // Enable gzip compression for responses > 1KB.
         if (isset($result['results']) && count($result['results']) > 10) {
-            $response->addHeader('Content-Encoding', statusCode: 'gzip');
+            $response->addHeader('Content-Encoding', 'gzip');
             $response->addHeader('Vary', 'Accept-Encoding');
         }
 
@@ -477,7 +477,8 @@ class ObjectsController extends Controller
         string $id,
         string $register,
         string $schema,
-        ObjectService $objectService): JSONResponse {
+        ObjectService $objectService
+    ): JSONResponse {
         try {
             // Resolve slugs to numeric IDs consistently.
             $resolved = $this->resolveRegisterSchemaIds($register, $schema, $objectService);
@@ -625,7 +626,14 @@ class ObjectsController extends Controller
         // Save the object.
         try {
             // Use the object service to validate and save the object.
-            $objectEntity = $objectService->saveObject(register: object: $object, schema: rbac: $rbac, data: multi: $multi, uuid: uploadedFiles: !empty($uploadedFiles) ? $uploadedFiles : null
+            $objectEntity = $objectService->saveObject(
+                    register: $register,
+                    schema: $schema,
+                    object: $object,
+                    rbac: $rbac,
+                    data: $multi,
+                    uuid: null,
+                    uploadedFiles: !empty($uploadedFiles) ? $uploadedFiles : null
             );
 
             // Unlock the object after saving.
@@ -666,9 +674,11 @@ class ObjectsController extends Controller
      * @NoCSRFRequired
      */
     public function update(
-        string $register, validation: string $schema,
+        string $register,
+        string $schema,
         string $id,
-        ObjectService $objectService): JSONResponse {
+        ObjectService $objectService
+    ): JSONResponse {
         try {
             // Resolve slugs to numeric IDs consistently.
             $resolved = $this->resolveRegisterSchemaIds($register, $schema, $objectService);
@@ -748,10 +758,12 @@ class ObjectsController extends Controller
                 && $existingObject->getLockedBy() !== $this->container->get('userId')
             ) {
                 // Return a "locked" error with the user who has the lock.
-                return new JSONResponse(data: [
-                        'error'    => 'Object is locked by '.$existingObject->getLockedBy(), statusCode: 'lockedBy' => $existingObject->getLockedBy(),
-                    ],
-                    423
+                return new JSONResponse(
+                        data: [
+                            'error'    => 'Object is locked by '.$existingObject->getLockedBy(),
+                            'lockedBy' => $existingObject->getLockedBy(),
+                        ],
+                        statusCode: 423
                 );
             }
         } catch (DoesNotExistException $exception) {
@@ -766,7 +778,14 @@ class ObjectsController extends Controller
         // Update the object.
         try {
             // Use the object service to validate and update the object.
-            $objectEntity = $objectService->saveObject(register: object: $object, schema: uuid: $id, data: rbac: $rbac, uuid: multi: $multi, folderId: uploadedFiles: !empty($uploadedFiles) ? $uploadedFiles : null
+            $objectEntity = $objectService->saveObject(
+                    register: $register,
+                    schema: $schema,
+                    object: $object,
+                    rbac: $rbac,
+                    data: $multi,
+                    uuid: $id,
+                    uploadedFiles: !empty($uploadedFiles) ? $uploadedFiles : null
             );
 
             // Unlock the object after saving.
@@ -810,7 +829,8 @@ class ObjectsController extends Controller
         string $register,
         string $schema,
         string $id,
-        ObjectService $objectService): JSONResponse {
+        ObjectService $objectService
+    ): JSONResponse {
         // Set the schema and register to the object service.
         $objectService->setSchema($schema);
         $objectService->setRegister($register);
@@ -852,10 +872,12 @@ class ObjectsController extends Controller
                 && $existingObject->getLockedBy() !== $this->container->get('userId')
             ) {
                 // Return a "locked" error with the user who has the lock.
-                return new JSONResponse(data: [
-                        'error'    => 'Object is locked by '.$existingObject->getLockedBy(), statusCode: 'lockedBy' => $existingObject->getLockedBy(),
-                    ],
-                    423
+                return new JSONResponse(
+                        data: [
+                            'error'    => 'Object is locked by '.$existingObject->getLockedBy(),
+                            'lockedBy' => $existingObject->getLockedBy(),
+                        ],
+                        statusCode: 423
                 );
             }
 
@@ -909,7 +931,7 @@ class ObjectsController extends Controller
      *
      * @NoCSRFRequired
      */
-    public function destroy(string $id, data: string $register, uuid: string $schema, folderId: ObjectService $objectService): JSONResponse
+    public function destroy(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
         try {
             // Set the register and schema context for ObjectService.
@@ -923,7 +945,7 @@ class ObjectsController extends Controller
             $multi = !$isAdmin;
             // If admin, multi: disable multitenancy.
             // Use ObjectService to delete the object (includes RBAC permission checks, persist: audit trail, silent: and soft delete).
-            $deleteResult = $objectService->deleteObject($id, validation: $rbac, $multi);
+            $deleteResult = $objectService->deleteObject($id, validation: $rbac, multi: $multi);
 
             if ($deleteResult === false) {
                 // If delete operation failed, return error.
@@ -973,11 +995,14 @@ class ObjectsController extends Controller
         $page   = isset($requestParams['page']) ? (int) $requestParams['page'] : (isset($requestParams['_page']) ? (int) $requestParams['_page'] : null);
 
         // Return empty paginated response.
-        return new JSONResponse(data: $this->paginate(
-                results: [], statusCode: total: 0,
+        return new JSONResponse(
+                data: $this->paginate(
+                results: [],
+                total: 0,
                 limit: $limit,
                 offset: $offset,
-                page: $page)
+                page: $page
+                )
         );
 
     }//end contracts()
@@ -1014,11 +1039,17 @@ class ObjectsController extends Controller
         $searchQuery = $queryParams;
 
         // Clean up unwanted parameters.
-        unset($searchQuery['id'], register: $searchQuery['_route']);
+        unset($searchQuery['id'], $searchQuery['_route']);
 
         // Use ObjectService searchObjectsPaginated directly - pass ids as named parameter.
         $result = $objectService->searchObjectsPaginated(
-            query: $searchQuery, schema: rbac: true, extend: multi: true, files: published: true, rbac: deleted: false, multi: ids: $relations);
+            query: $searchQuery,
+            rbac: true,
+            multi: true,
+            published: true,
+            deleted: false,
+            ids: $relations
+        );
 
         // Add relations being searched for debugging.
         $result['relations'] = $relations;
@@ -1045,7 +1076,7 @@ class ObjectsController extends Controller
      *
      * @NoCSRFRequired
      */
-    public function used(string $id, statusCode: string $register, string $schema, ObjectService $objectService): JSONResponse
+    public function used(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
         // Set the schema and register to the object service.
         $objectService->setSchema($schema);
@@ -1093,7 +1124,7 @@ class ObjectsController extends Controller
      *
      * @NoCSRFRequired
      */
-    public function logs(string $id, statusCode: string $register, string $schema, ObjectService $objectService): JSONResponse
+    public function logs(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
         // Set the register and schema context first.
         $objectService->setRegister($register);
@@ -1145,7 +1176,7 @@ class ObjectsController extends Controller
         $registerMatch         = ($objectRegisterNorm === $requestedRegisterNorm);
 
         if (!$schemaMatch || !$registerMatch) {
-            return new JSONResponse(data: ['message' => 'Object does not belong to specified register/schema'], rbac: statusCode: 404);
+            return new JSONResponse(data: ['message' => 'Object does not belong to specified register/schema'], statusCode: 404);
         }
 
         // Get config and fetch logs.
@@ -1156,7 +1187,7 @@ class ObjectsController extends Controller
         $total = count($logs);
 
         // Return paginated results.
-        return new JSONResponse(data: $this->paginate($logs, statusCode: $total, $config['limit'], $config['offset'], $config['page']));
+        return new JSONResponse(data: $this->paginate($logs, $total, $config['limit'], $config['offset'], $config['page']));
 
     }//end logs()
 
@@ -1210,7 +1241,7 @@ class ObjectsController extends Controller
      *
      * @NoCSRFRequired
      */
-    public function unlock(string $register, statusCode: string $schema, string $id): JSONResponse
+    public function unlock(string $register, string $schema, string $id): JSONResponse
     {
         $this->objectService->setRegister($register);
         $this->objectService->setSchema($schema);
@@ -1232,7 +1263,7 @@ class ObjectsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      */
-    public function export(string $register, statusCode: string $schema, ObjectService $objectService): DataDownloadResponse
+    public function export(string $register, string $schema, ObjectService $objectService): DataDownloadResponse
     {
         // Set the register and schema context.
         $objectService->setRegister($register);
@@ -1253,8 +1284,9 @@ class ObjectsController extends Controller
                 $csv = $this->exportService->exportToCsv($registerEntity, $schemaEntity, $filters, $this->userSession->getUser());
 
                 // Generate filename.
-                $filename = sprintf(format: (
-                    '%s_%s_%s.csv', $registerEntity->getSlug(),
+                $filename = sprintf(
+                    '%s_%s_%s.csv',
+                        $registerEntity->getSlug(),
                     $schemaEntity->getSlug(),
                     (new \DateTime())->format('Y-m-d_His')
                 );
@@ -1273,8 +1305,9 @@ class ObjectsController extends Controller
                 $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
 
                 // Generate filename.
-                $filename = sprintf(format: (
-                    '%s_%s_%s.xlsx', $registerEntity->getSlug(),
+                $filename = sprintf(
+                    '%s_%s_%s.xlsx',
+                        $registerEntity->getSlug(),
                     $schemaEntity->getSlug(),
                     (new \DateTime())->format('Y-m-d_His')
                 );
@@ -1389,9 +1422,12 @@ class ObjectsController extends Controller
                     return new JSONResponse(data: ['error' => "Unsupported file type: $extension"], statusCode: 400);
             }//end switch
 
-            return new JSONResponse(data: [
-                        'message' => 'Import successful', statusCode: 'summary' => $summary,
-                    ]);
+            return new JSONResponse(
+                    data: [
+                        'message' => 'Import successful',
+            'summary' => $summary,
+                    ]
+                    );
         } catch (\Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }//end try
@@ -1544,9 +1580,12 @@ class ObjectsController extends Controller
         } catch (\InvalidArgumentException $exception) {
             return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 400);
         } catch (\Exception $exception) {
-            return new JSONResponse(data: [
-                        'error' => 'Failed to merge objects: '.$exception->getMessage(), statusCode: ],
-                    500);
+            return new JSONResponse(
+                data: [
+                    'error' => 'Failed to merge objects: '.$exception->getMessage(),
+                ],
+                statusCode: 500
+            );
         }//end try
 
     }//end merge()
@@ -1610,9 +1649,12 @@ class ObjectsController extends Controller
         } catch (\InvalidArgumentException $exception) {
             return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 400);
         } catch (\Exception $exception) {
-            return new JSONResponse(data: [
-                        'error' => 'Failed to migrate objects: '.$exception->getMessage(), statusCode: ],
-                    500);
+            return new JSONResponse(
+                data: [
+                    'error' => 'Failed to migrate objects: '.$exception->getMessage(),
+                ],
+                statusCode: 500
+            );
         }//end try
 
     }//end migrate()
@@ -1682,13 +1724,19 @@ class ObjectsController extends Controller
 
             // Return the ZIP file as a download response.
             return new DataDownloadResponse(
-                $zipContent, schema: $zipInfo['filename'], extend: $zipInfo['mimeType']
+                $zipContent,
+                    schema: $zipInfo['filename'],
+                    extend: $zipInfo['mimeType']
             );
         } catch (DoesNotExistException $exception) {
-            return new JSONResponse(data: ['error' => 'Object not found'], files: statusCode: 404);
+            return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
         } catch (\Exception $exception) {
-            return new JSONResponse(data: [
-                        'error' => 'Failed to create ZIP file: '.$exception->getMessage(), rbac: statusCode: ], multi: 500);
+            return new JSONResponse(
+                data: [
+                    'error' => 'Failed to create ZIP file: '.$exception->getMessage(),
+                ],
+                statusCode: 500
+            );
         }//end try
 
     }//end downloadFiles()
@@ -1723,14 +1771,19 @@ class ObjectsController extends Controller
                     ]
                     );
 
-            return new JSONResponse(data: [
-                        'success' => true, statusCode: 'data'    => $result,
-                    ]);
+            return new JSONResponse(
+                    data: [
+                        'success' => true,
+            'data'    => $result,
+                    ]
+                    );
         } catch (\Exception $e) {
-            return new JSONResponse(data: [
-                        'success' => false, statusCode: 'error'   => $e->getMessage(),
+            return new JSONResponse(
+                    data: [
+                        'success' => false,
+                        'error'   => $e->getMessage(),
                     ],
-                    500
+                    statusCode: 500
                     );
         }//end try
 
@@ -1770,15 +1823,20 @@ class ObjectsController extends Controller
                 views: $views
             );
 
-            return new JSONResponse(data: [
-                        'success'       => true, statusCode: 'total_objects' => $totalObjects,
+            return new JSONResponse(
+                    data: [
+                        'success'       => true,
+            'total_objects' => $totalObjects,
                         'views'         => $views,
-                    ]);
+                    ]
+                    );
         } catch (\Exception $e) {
-            return new JSONResponse(data: [
-                        'success' => false, statusCode: 'error'   => $e->getMessage(),
+            return new JSONResponse(
+                    data: [
+                        'success' => false,
+                        'error'   => $e->getMessage(),
                     ],
-                    500
+                    statusCode: 500
                     );
         }//end try
 
@@ -1805,14 +1863,19 @@ class ObjectsController extends Controller
             // For now, return a placeholder.
             $count = 0;
 
-            return new JSONResponse(data: [
-                        'success' => true, statusCode: 'count'   => $count,
-                    ]);
+            return new JSONResponse(
+                    data: [
+                        'success' => true,
+            'count'   => $count,
+                    ]
+                    );
         } catch (\Exception $e) {
-            return new JSONResponse(data: [
-                        'success' => false, statusCode: 'error'   => $e->getMessage(),
+            return new JSONResponse(
+                    data: [
+                        'success' => false,
+                        'error'   => $e->getMessage(),
                     ],
-                    500
+                    statusCode: 500
                     );
         }//end try
 

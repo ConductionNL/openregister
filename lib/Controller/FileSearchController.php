@@ -98,9 +98,7 @@ class FileSearchController extends Controller
                             'success' => false,
                             'message' => 'File collection not configured',
                         ],
-                        statusCode: 400
-                        );
-                        422
+                        statusCode: 422
                         );
             }
 
@@ -184,7 +182,7 @@ class FileSearchController extends Controller
 
             return new JSONResponse(
                     data: [
-                        'success' => false, statusCode:
+                        'success' => false,
             'message' => 'Search failed: '.$e->getMessage(),
                     ],
                     500
@@ -225,7 +223,7 @@ class FileSearchController extends Controller
             if (empty($query) === true) {
                 return new JSONResponse(
                         data: [
-                            'success' => false, statusCode:
+                            'success' => false,
                 'message' => 'Query parameter is required',
                         ],
                         400
@@ -241,7 +239,7 @@ class FileSearchController extends Controller
 
             return new JSONResponse(
                     data: [
-                        'success'     => true, statusCode:
+                        'success'     => true,
             'query'       => $query,
                         'total'       => count($results),
                         'results'     => $results,
@@ -258,7 +256,7 @@ class FileSearchController extends Controller
 
             return new JSONResponse(
                     data: [
-                        'success' => false, statusCode:
+                        'success' => false,
             'message' => 'Semantic search failed: '.$e->getMessage(),
                     ],
                     500
@@ -340,7 +338,7 @@ class FileSearchController extends Controller
 
             return new JSONResponse(
                     data: [
-                        'success' => false, statusCode:
+                        'success' => false,
             'message' => 'Hybrid search failed: '.$e->getMessage(),
                     ],
                     500

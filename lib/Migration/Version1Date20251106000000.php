@@ -68,7 +68,7 @@ class Version1Date20251106000000 extends SimpleMigrationStep
                 $column->setDefault(null);
                 $column->setComment('Organisation UUID for multi-tenancy');
 
-                $output->info(message: ('✅ Updated openregister_agents.organisation to VARCHAR(36)');
+                $output->info(message: '✅ Updated openregister_agents.organisation to VARCHAR(36)');
                 $updated = true;
             }
         }
@@ -86,7 +86,7 @@ class Version1Date20251106000000 extends SimpleMigrationStep
                 $column->setDefault(null);
                 $column->setComment('Organisation UUID for multi-tenancy');
 
-                $output->info(message: ('✅ Updated openregister_applications.organisation to VARCHAR(36)');
+                $output->info(message: '✅ Updated openregister_applications.organisation to VARCHAR(36)');
                 $updated = true;
             }
         }
@@ -105,7 +105,7 @@ class Version1Date20251106000000 extends SimpleMigrationStep
                     $column->setDefault(null);
                     $column->setComment('Organisation UUID for multi-tenancy');
 
-                    $output->info(message: ('✅ Updated openregister_views.organisation to VARCHAR(36)');
+                    $output->info(message: '✅ Updated openregister_views.organisation to VARCHAR(36)');
                     $updated = true;
                 }
             }
@@ -125,7 +125,7 @@ class Version1Date20251106000000 extends SimpleMigrationStep
                     $column->setDefault(null);
                     $column->setComment('Organisation UUID for multi-tenancy');
 
-                    $output->info(message: ('✅ Updated openregister_sources.organisation to VARCHAR(36)');
+                    $output->info(message: '✅ Updated openregister_sources.organisation to VARCHAR(36)');
                     $updated = true;
                 }
             }
@@ -148,7 +148,7 @@ class Version1Date20251106000000 extends SimpleMigrationStep
                         ]
                         );
 
-                $output->info(message: ('✅ Added openregister_configurations.organisation column (VARCHAR(36))');
+                $output->info(message: '✅ Added openregister_configurations.organisation column (VARCHAR(36))');
                 $updated = true;
             } else {
                 // Ensure existing column is VARCHAR(36) for UUID.
@@ -159,7 +159,7 @@ class Version1Date20251106000000 extends SimpleMigrationStep
                 $column->setDefault(null);
                 $column->setComment('Organisation UUID for multi-tenancy');
 
-                $output->info(message: ('✅ Updated openregister_configurations.organisation to VARCHAR(36)');
+                $output->info(message: '✅ Updated openregister_configurations.organisation to VARCHAR(36)');
                 $updated = true;
             }//end if
         }//end if

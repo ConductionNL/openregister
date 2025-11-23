@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 /**
  * Bulk Object Save Operations Handler
  *
@@ -133,7 +136,7 @@ class SaveObjects
     private function loadSchemaWithCache(int|string $schemaId): Schema
     {
         // Check static cache first.
-        if (isset(self::$schemaCache[$schemaId])) {
+        if (isset(self::$schemaCache[$schemaId]) === true) {
             return self::$schemaCache[$schemaId];
         }
 
@@ -157,7 +160,7 @@ class SaveObjects
         $schemaId = $schema->getId();
 
         // Check static cache first.
-        if (isset(self::$schemaAnalysisCache[$schemaId])) {
+        if (isset(self::$schemaAnalysisCache[$schemaId]) === true) {
             return self::$schemaAnalysisCache[$schemaId];
         }
 
@@ -180,7 +183,7 @@ class SaveObjects
     private function loadRegisterWithCache(int|string $registerId): Register
     {
         // Check static cache first.
-        if (isset(self::$registerCache[$registerId])) {
+        if (isset(self::$registerCache[$registerId]) === true) {
             return self::$registerCache[$registerId];
         }
 
@@ -252,10 +255,22 @@ class SaveObjects
 
         // PERFORMANCE OPTIMIZATION: Reduce logging overhead during bulk operations.
         // Only log for large operations or when debugging is needed.
-        if (count($objects) > 10000 || ($isMixedSchemaOperation && count($objects) > 1000)) {
-            $this->logger->info($isMixedSchemaOperation ? 'Starting mixed-schema bulk save operation' : 'Starting single-schema bulk save operation', [
+        if ($isMixedSchemaOperation === true) {
+            $logThreshold = 1000;
+        } else {
+            $logThreshold = 10000;
+        }
+        if (count($objects) > $logThreshold) {
+            if ($isMixedSchemaOperation === true) {
+                $logMessage = 'Starting mixed-schema bulk save operation';
+                $operationType = 'mixed-schema';
+            } else {
+                $logMessage = 'Starting single-schema bulk save operation';
+                $operationType = 'single-schema';
+            }
+            $this->logger->info($logMessage, [
                 'totalObjects' => count($objects),
-                'operation' => $isMixedSchemaOperation ? 'mixed-schema' : 'single-schema'
+                'operation' => $operationType
             ]);
         }
 
@@ -265,26 +280,26 @@ class SaveObjects
         // Bulk save operation starting.
 
         // Initialize result arrays for different outcomes.
-                // TODO: Replace 'skipped' with 'unchanged' throughout codebase - "unchanged" is more descriptive.
+        // TODO: Replace 'skipped' with 'unchanged' throughout codebase - "unchanged" is more descriptive.
         // and tells WHY an object was skipped (because content was unchanged).
         $result = [
             'saved'      => [],
             'updated'    => [],
-            'unchanged'  => [], // TODO: Rename from 'skipped' - more descriptive
+            'unchanged'  => [], // TODO: Rename from 'skipped' - more descriptive.
             'invalid'    => [],
             'errors'     => [],
             'statistics' => [
                 'totalProcessed' => $totalObjects,
                 'saved'          => 0,
                 'updated'        => 0,
-                'unchanged'      => 0, // TODO: Rename from 'skipped' - more descriptive
+                'unchanged'      => 0, // TODO: Rename from 'skipped' - more descriptive.
                 'invalid'        => 0,
                 'errors'         => 0,
                 'processingTimeMs' => 0,
             ],
         ];
 
-        if (empty($objects)) {
+        if (empty($objects) === true) {
             return $result;
         }
 
@@ -293,11 +308,14 @@ class SaveObjects
         $globalSchemaCache = [];
         $preparationInvalidObjects = [];
 
-        if (!$isMixedSchemaOperation && $schema !== null) {
-
+        if ($isMixedSchemaOperation === false && $schema !== null) {
             // FAST PATH: Single-schema operation - avoid complex mixed-schema logic.
             // NO ERROR SUPPRESSION: Let real preparation errors surface immediately.
-            [$processedObjects, $globalSchemaCache, $preparationInvalidObjects] = $this->prepareSingleSchemaObjectsOptimized($objects, $register, $schema);
+            [$processedObjects, $globalSchemaCache, $preparationInvalidObjects] = $this->prepareSingleSchemaObjectsOptimized(
+                $objects,
+                $register,
+                $schema
+            );
         } else {
 
             // STANDARD PATH: Mixed-schema operation - use full preparation logic.
@@ -313,7 +331,7 @@ class SaveObjects
         }
 
         // Check if we have any processed objects.
-        if (empty($processedObjects)) {
+        if (empty($processedObjects) === true) {
             $result['errors'][] = [
                 'error' => 'No objects were successfully prepared for bulk save',
                 'type'  => 'NoObjectsPreparedException',
@@ -426,7 +444,10 @@ class SaveObjects
             $current = $current[$key];
         }
 
-        return is_string($current) ? $current : (string) $current;
+        if (is_string($current) === true) {
+            return $current;
+        }
+        return (string) $current;
 
     }//end getValueFromPath()
 
@@ -573,16 +594,16 @@ class SaveObjects
      */
     private function extractUuidFromReference($referenceData): ?string
     {
-        // Handle object format: {"value": "uuid"}
-        if (is_array($referenceData) && isset($referenceData['value'])) {
+        // Handle object format: {"value": "uuid"}.
+        if (is_array($referenceData) === true && isset($referenceData['value']) === true) {
             $uuid = $referenceData['value'];
-            if (is_string($uuid) && !empty($uuid)) {
+            if (is_string($uuid) === true && empty($uuid) === false) {
                 return $uuid;
             }
         }
 
         // Handle direct UUID string.
-        if (is_string($referenceData) && !empty($referenceData)) {
+        if (is_string($referenceData) === true && empty($referenceData) === false) {
             return $referenceData;
         }
 
@@ -944,7 +965,11 @@ class SaveObjects
 
         // PERFORMANCE OPTIMIZATION: Pre-calculate metadata once.
         $currentUser = $this->userSession->getUser();
-        $defaultOwner = $currentUser ? $currentUser->getUID() : null;
+        if ($currentUser !== null) {
+            $defaultOwner = $currentUser->getUID();
+        } else {
+            $defaultOwner = null;
+        }
         $defaultOrganisation = null;
 
         // NO ERROR SUPPRESSION: Let organisation service errors bubble up immediately!
