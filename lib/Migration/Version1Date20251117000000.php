@@ -1,5 +1,5 @@
 <?php
-
+declare(strict_types=1);
 /**
  * Migration to add checksum column to chunks table.
  *
@@ -39,10 +39,6 @@ class Version1Date20251117000000 extends SimpleMigrationStep
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /*
-         * @var ISchemaWrapper $schema
-         */
-
         $schema = $schemaClosure();
 
         $this->addChecksumToChunks($output, $schema);
@@ -63,30 +59,30 @@ class Version1Date20251117000000 extends SimpleMigrationStep
     private function addChecksumToChunks(IOutput $output, ISchemaWrapper $schema): void
     {
         if ($schema->hasTable('openregister_chunks') === false) {
-            $output->info(message: ('ℹ️  Table openregister_chunks does not exist, skipping.');
+            $output->info(message: 'ℹ️  Table openregister_chunks does not exist, skipping.');
             return;
         }
 
         $table = $schema->getTable('openregister_chunks');
 
         if ($table->hasColumn('checksum') === true) {
-            $output->info(message: ('ℹ️  Column checksum already exists in openregister_chunks, skipping.');
+            $output->info(message: 'ℹ️  Column checksum already exists in openregister_chunks, skipping.');
             return;
         }
 
         $table->addColumn(
-                'checksum',
-                Types::STRING,
-                [
-                    'length'  => 64,
-                    'notnull' => false,
-                    'comment' => 'SHA256 checksum of the source text for change detection',
-                ]
-                );
+            'checksum',
+            Types::STRING,
+            [
+                'length'  => 64,
+                'notnull' => false,
+                'comment' => 'SHA256 checksum of the source text for change detection',
+            ]
+        );
 
         $table->addIndex(['checksum'], 'chunks_checksum_idx');
 
-        $output->info(message: ('✅ Added checksum column to openregister_chunks table.');
+        $output->info(message: '✅ Added checksum column to openregister_chunks table.');
 
     }//end addChecksumToChunks()
 

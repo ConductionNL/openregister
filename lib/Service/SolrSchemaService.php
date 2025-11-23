@@ -1665,11 +1665,11 @@ class SolrSchemaService
                             );
                     // DEBUG: Special logging for versie field.
                     if ($fieldName === 'versie') {
-                        $this->logger->debug('=== VERSIE FIELD CREATED ===');
-                        $this->logger->debug('Field: '.$fieldName);
-                        $this->logger->debug('Type: '.$fieldConfig['type']);
-                        $this->logger->debug('Config: '.json_encode($fieldConfig));
-                        $this->logger->debug('=== END VERSIE DEBUG ===');
+                        $this->logger->debug(message: '=== VERSIE FIELD CREATED ===');
+                        $this->logger->debug(message: 'Field: '.$fieldName);
+                        $this->logger->debug(message: 'Type: '.$fieldConfig['type']);
+                        $this->logger->debug(message: 'Config: '.json_encode($fieldConfig));
+                        $this->logger->debug(message: '=== END VERSIE DEBUG ===');
                     }
                 }
             } catch (\Exception $e) {

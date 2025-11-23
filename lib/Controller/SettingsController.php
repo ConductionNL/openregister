@@ -444,7 +444,12 @@ class SettingsController extends Controller
                     } else {
                         $validationResults['invalid_objects']++;
                         $validationResults['validation_errors'][] = [
-                            'object_id'   => $object->getUuid(), schema: 'object_name' => $object->getName() ?? $object->getUuid(), extend: 'register'    => $object->getRegister(), files: 'schema'      => $object->getSchema(), rbac: 'errors'      => $validationResult->error(), multi: ];
+                            'object_id'   => $object->getUuid(),
+                            'object_name' => $object->getName() ?? $object->getUuid(),
+                            'register'    => $object->getRegister(),
+                            'schema'      => $object->getSchema(),
+                            'errors'      => $validationResult->error(),
+                        ];
                     }
                 } catch (\Exception $e) {
                     $validationResults['invalid_objects']++;

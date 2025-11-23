@@ -653,7 +653,7 @@ class ImportService
         if (!empty($allObjects) && $register !== null && $schema !== null) {
             // Add publish date to all objects if publish is enabled.
             if ($publish === true) {
-                $publishDate = (new \DateTime())->format('c'); // ISO 8601 format.
+                $publishDate = (new \DateTime(datetime: 'now'))->format(format: 'c'); // ISO 8601 format.
                 $allObjects = $this->addPublishedDateToObjects($allObjects, $publishDate);
             }
 
@@ -774,15 +774,15 @@ class ImportService
         // This will reveal the real bulk save problem immediately.
         if (!empty($allObjects)) {
             // Log publish processing for debugging.
-            $this->logger->debug('CSV import processing objects', [
+            $this->logger->debug(message: 'CSV import processing objects', context: [
                 'objectCount' => count($allObjects),
                 'publish' => $publish
             ]);
 
             // Add publish date to all objects if publish is enabled.
             if ($publish === true) {
-                $publishDate = (new \DateTime())->format('c'); // ISO 8601 format.
-                $this->logger->debug('Adding publish date to CSV import objects', [
+                $publishDate = (new \DateTime(datetime: 'now'))->format(format: 'c'); // ISO 8601 format.
+                $this->logger->debug(message: 'Adding publish date to CSV import objects', context: [
                     'publishDate' => $publishDate,
                     'objectCount' => count($allObjects)
                 ]);
@@ -790,12 +790,12 @@ class ImportService
 
                 // Log first object structure for debugging.
                 if (!empty($allObjects[0]['@self'])) {
-                    $this->logger->debug('First object @self structure after adding publish date', [
+                    $this->logger->debug(message: 'First object @self structure after adding publish date', context: [
                         'selfData' => $allObjects[0]['@self']
                     ]);
                 }
             } else {
-                $this->logger->debug('Publish disabled for CSV import, not adding publish dates');
+                $this->logger->debug(message: 'Publish disabled for CSV import, not adding publish dates');
             }
 
 
@@ -1134,7 +1134,7 @@ class ImportService
         if (preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/', $value)) {
             try {
                 $dateTime = new \DateTime(datetime: $value);
-                return $dateTime->format('Y-m-d H:i:s');
+                return $dateTime->format(format: 'Y-m-d H:i:s');
             } catch (\Exception $e) {
                 // Fallback to original value if parsing fails.
                 return $value;
@@ -1145,7 +1145,7 @@ class ImportService
         if (preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/', $value)) {
             try {
                 $dateTime = new \DateTime(datetime: $value);
-                return $dateTime->format('Y-m-d H:i:s');
+                return $dateTime->format(format: 'Y-m-d H:i:s');
             } catch (\Exception $e) {
                 // Fallback to original value if parsing fails.
                 return $value;
@@ -1925,7 +1925,7 @@ class ImportService
             $totalImported = $this->calculateTotalImported($importSummary);
 
             if ($totalImported === 0) {
-                $this->logger->info('Skipping SOLR warmup - no objects were imported');
+                $this->logger->info(message: 'Skipping SOLR warmup - no objects were imported');
                 return false;
             }
 
@@ -1946,7 +1946,7 @@ class ImportService
             $executeAfter = time() + $delaySeconds;
             $this->jobList->add(SolrWarmupJob::class, $jobArguments, $executeAfter);
 
-            $this->logger->info('🔥 SOLR Warmup Job Scheduled', [
+            $this->logger->info(message: '🔥 SOLR Warmup Job Scheduled', context: [
                 'total_imported' => $totalImported,
                 'warmup_mode' => $mode,
                 'max_objects' => $maxObjects,
@@ -1958,7 +1958,7 @@ class ImportService
             return true;
 
         } catch (\Exception $e) {
-            $this->logger->error('Failed to schedule SOLR warmup job', [
+            $this->logger->error(message: 'Failed to schedule SOLR warmup job', context: [
                 'error' => $e->getMessage(),
                 'import_summary' => $importSummary
             ]);
@@ -2031,7 +2031,7 @@ class ImportService
         $maxObjects = min($totalImported * 2, 15000); // Index up to 2x imported objects, max 15k
         $delay = $immediate ? 0 : 30; // 30 second delay by default
 
-        $this->logger->info('Scheduling smart SOLR warmup', [
+        $this->logger->info(message: 'Scheduling smart SOLR warmup', context: [
             'total_imported' => $totalImported,
             'recommended_mode' => $mode,
             'max_objects' => $maxObjects,

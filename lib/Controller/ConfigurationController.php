@@ -144,7 +144,7 @@ class ConfigurationController extends Controller
 
             return new JSONResponse(data: $configurations, statusCode: 200);
         } catch (Exception $e) {
-            $this->logger->error('Failed to fetch configurations: '.$e->getMessage());
+            $this->logger->error(message: 'Failed to fetch configurations: '.$e->getMessage());
 
             return new JSONResponse(data: ['error' => 'Failed to fetch configurations'], statusCode: 500);
         }//end try
@@ -171,7 +171,7 @@ class ConfigurationController extends Controller
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             return new JSONResponse(data: ['error' => 'Configuration not found'], statusCode: 404);
         } catch (Exception $e) {
-            $this->logger->error("Failed to fetch configuration {$id}: ".$e->getMessage());
+            $this->logger->error(message: "Failed to fetch configuration {$id}: ".$e->getMessage());
 
             return new JSONResponse(data: ['error' => 'Failed to fetch configuration'], statusCode: 500);
         }//end try
@@ -199,13 +199,12 @@ class ConfigurationController extends Controller
 
             // Validate required parameters.
             if (empty($owner) === true || empty($repo) === true || empty($path) === true) {
-                return new JSONResponse(data: ['error' => 'Missing required parameters: owner, statusCode: repo, path'],
-                    400);
+                return new JSONResponse(data: ['error' => 'Missing required parameters: owner, repo, path'], statusCode: 400);
             }
 
             $this->logger->info(
-                    'Enriching configuration details',
-                    [
+                    message: 'Enriching configuration details',
+                    context: [
                         'source' => $source,
                         'owner'  => $owner,
                         'repo'   => $repo,
@@ -229,8 +228,8 @@ class ConfigurationController extends Controller
             return new JSONResponse(data: $details, statusCode: 200);
         } catch (Exception $e) {
             $this->logger->error(
-                    'Configuration enrichment failed: '.$e->getMessage(),
-                    [
+                    message: 'Configuration enrichment failed: '.$e->getMessage(),
+                    context: [
                         'exception' => get_class($e),
                         'trace'     => $e->getTraceAsString(),
                     ]
@@ -282,11 +281,11 @@ class ConfigurationController extends Controller
 
             $created = $this->configurationMapper->insert($configuration);
 
-            $this->logger->info("Created configuration: {$created->getTitle()} (ID: {$created->getId()})");
+            $this->logger->info(message: "Created configuration: {$created->getTitle()} (ID: {$created->getId()})");
 
             return new JSONResponse(data: $created, statusCode: 201);
         } catch (Exception $e) {
-            $this->logger->error('Failed to create configuration: '.$e->getMessage());
+            $this->logger->error(message: 'Failed to create configuration: '.$e->getMessage());
 
             return new JSONResponse(data: ['error' => 'Failed to create configuration: '.$e->getMessage()], statusCode: 500);
         }//end try
@@ -381,7 +380,7 @@ class ConfigurationController extends Controller
 
             $updated = $this->configurationMapper->update($configuration);
 
-            $this->logger->info("Updated configuration: {$updated->getTitle()} (ID: {$updated->getId()})");
+            $this->logger->info(message: "Updated configuration: {$updated->getTitle()} (ID: {$updated->getId()})");
 
             return new JSONResponse(data: $updated, statusCode: 200);
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {

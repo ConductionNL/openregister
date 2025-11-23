@@ -97,7 +97,7 @@ class FacetService
             } catch (\Exception $e) {
                 // No caching available - will skip cache operations.
                 $this->facetCache = null;
-                $this->logger->warning('Facet caching unavailable', ['error' => $e->getMessage()]);
+                $this->logger->warning(message: 'Facet caching unavailable', context: ['error' => $e->getMessage()]);
             }
         }
 
@@ -158,7 +158,7 @@ class FacetService
         // **CACHE RESULTS**: Store for future requests.
         $this->cacheFacetResponse($cacheKey, $result);
 
-        $this->logger->debug('FacetService completed facet calculation', [
+        $this->logger->debug(message: 'FacetService completed facet calculation', context: [
             'executionTime' => $executionTime . 'ms',
             'strategy' => $result['performance_metadata']['strategy'] ?? 'unknown',
             'cacheUsed' => false,
@@ -197,7 +197,7 @@ class FacetService
         // **INTELLIGENT FALLBACK**: If no facets and we have restrictive filters, try broader query.
         if ($totalFacetResults === 0 && $hasRestrictiveFilters) {
 
-            $this->logger->debug('Facets empty with restrictive filters, trying collection-wide fallback', [
+            $this->logger->debug(message: 'Facets empty with restrictive filters, trying collection-wide fallback', context: [
                 'originalQuery' => array_keys($facetQuery),
                 'totalResults' => $totalFacetResults
             ]);
@@ -219,7 +219,7 @@ class FacetService
                 $strategy = 'collection_fallback';
                 $fallbackUsed = true;
 
-                $this->logger->info('Smart faceting fallback successful', [
+                $this->logger->info(message: 'Smart faceting fallback successful', context: [
                     'fallbackResults' => $fallbackResults,
                     'originalResults' => $totalFacetResults,
                     'collectionQuery' => array_keys($collectionQuery)
@@ -263,7 +263,7 @@ class FacetService
 
         $executionTime = round((microtime(true) - $startTime) * 1000, 2);
 
-        $this->logger->debug('Facetable fields discovery completed', [
+        $this->logger->debug(message: 'Facetable fields discovery completed', context: [
             'executionTime' => $executionTime . 'ms',
             'schemaCount' => count($schemas),
             'facetableFieldCount' => count($facetableFields['@self'] ?? []) + count($facetableFields['object_fields'] ?? [])
@@ -324,7 +324,7 @@ class FacetService
         try {
             $cached = $this->facetCache->get($cacheKey);
             if ($cached !== null) {
-                $this->logger->debug('Facet response cache hit', ['cacheKey' => $cacheKey]);
+                $this->logger->debug(message: 'Facet response cache hit', context: ['cacheKey' => $cacheKey]);
                 // Add cache metadata.
                 $cached['performance_metadata']['cache_hit'] = true;
                 return $cached;
@@ -359,7 +359,7 @@ class FacetService
 
             $this->facetCache->set($cacheKey, $result, $ttl);
 
-            $this->logger->debug('Facet response cached', [
+            $this->logger->debug(message: 'Facet response cached', context: [
                 'cacheKey' => $cacheKey,
                 'ttl' => $ttl,
                 'strategy' => $result['performance_metadata']['strategy'] ?? 'unknown'
@@ -498,7 +498,7 @@ class FacetService
                     }
                 }
             } catch (\Exception $e) {
-                $this->logger->error('Failed to get facets from schema', [
+                $this->logger->error(message: 'Failed to get facets from schema', context: [
                     'error' => $e->getMessage(),
                     'schemaId' => method_exists($schema, 'getId') ? $schema->getId() : 'unknown'
                 ]);

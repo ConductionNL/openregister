@@ -117,7 +117,7 @@ class DashboardService
                 ],
             ];
         } catch (\Exception $e) {
-            $this->logger->error('Failed to get statistics: '.$e->getMessage());
+            $this->logger->error(message: 'Failed to get statistics: '.$e->getMessage());
             return [
                 'objects' => [
                     'total'     => 0,
@@ -208,7 +208,7 @@ class DashboardService
                 ],
             ];
         } catch (\Exception $e) {
-            $this->logger->error('Failed to get orphaned statistics: '.$e->getMessage());
+            $this->logger->error(message: 'Failed to get orphaned statistics: '.$e->getMessage());
             return [
                 'objects' => [
                     'total'     => 0,
@@ -338,7 +338,7 @@ class DashboardService
 
             return $result;
         } catch (\Exception $e) {
-            $this->logger->error('Failed to get registers with schemas: '.$e->getMessage());
+            $this->logger->error(message: 'Failed to get registers with schemas: '.$e->getMessage());
             throw new \Exception('Failed to get registers with schemas: '.$e->getMessage());
         }//end try
 
@@ -382,14 +382,14 @@ class DashboardService
                     $this->objectMapper->update($object);
                     $result['processed']++;
                 } catch (\Exception $e) {
-                    $this->logger->error('Failed to update object '.$object->getId().': '.$e->getMessage());
+                    $this->logger->error(message: 'Failed to update object '.$object->getId().': '.$e->getMessage());
                     $result['failed']++;
                 }
             }
 
             return $result;
         } catch (\Exception $e) {
-            $this->logger->error('Failed to recalculate sizes: '.$e->getMessage());
+            $this->logger->error(message: 'Failed to recalculate sizes: '.$e->getMessage());
             throw new \Exception('Failed to recalculate sizes: '.$e->getMessage());
         }//end try
 
@@ -433,14 +433,14 @@ class DashboardService
                     $this->auditTrailMapper->update($log);
                     $result['processed']++;
                 } catch (\Exception $e) {
-                    $this->logger->error('Failed to update log '.$log->getId().': '.$e->getMessage());
+                    $this->logger->error(message: 'Failed to update log '.$log->getId().': '.$e->getMessage());
                     $result['failed']++;
                 }
             }
 
             return $result;
         } catch (\Exception $e) {
-            $this->logger->error('Failed to recalculate log sizes: '.$e->getMessage());
+            $this->logger->error(message: 'Failed to recalculate log sizes: '.$e->getMessage());
             throw new \Exception('Failed to recalculate log sizes: '.$e->getMessage());
         }//end try
 
@@ -472,7 +472,7 @@ class DashboardService
                 ],
             ];
         } catch (\Exception $e) {
-            $this->logger->error('Failed to recalculate all sizes: '.$e->getMessage());
+            $this->logger->error(message: 'Failed to recalculate all sizes: '.$e->getMessage());
             throw new \Exception('Failed to recalculate all sizes: '.$e->getMessage());
         }
 
@@ -543,7 +543,7 @@ class DashboardService
 
             $response = [
                 'status'    => 'success',
-                'timestamp' => (new \DateTime())->format('c'),
+                'timestamp' => (new \DateTime(datetime: 'now'))->format(format: 'c'),
                 'scope'     => [
                     'register' => $registerScope,
                     'schema'   => $schemaScope,
@@ -558,7 +558,7 @@ class DashboardService
 
             return $response;
         } catch (\Exception $e) {
-            $this->logger->error('Size calculation failed: '.$e->getMessage());
+            $this->logger->error(message: 'Size calculation failed: '.$e->getMessage());
             throw new \Exception('Size calculation failed: '.$e->getMessage());
         }//end try
 
@@ -580,7 +580,7 @@ class DashboardService
         try {
             return $this->auditTrailMapper->getActionChartData($from, $till, $registerId, $schemaId);
         } catch (\Exception $e) {
-            $this->logger->error('Failed to get audit trail action chart data: '.$e->getMessage());
+            $this->logger->error(message: 'Failed to get audit trail action chart data: '.$e->getMessage());
             return [
                 'labels' => [],
                 'series' => [],
@@ -603,7 +603,7 @@ class DashboardService
         try {
             return $this->objectMapper->getRegisterChartData($registerId, $schemaId);
         } catch (\Exception $e) {
-            $this->logger->error('Failed to get objects by register chart data: '.$e->getMessage());
+            $this->logger->error(message: 'Failed to get objects by register chart data: '.$e->getMessage());
             return [
                 'labels' => [],
                 'series' => [],
@@ -626,7 +626,7 @@ class DashboardService
         try {
             return $this->objectMapper->getSchemaChartData($registerId, $schemaId);
         } catch (\Exception $e) {
-            $this->logger->error('Failed to get objects by schema chart data: '.$e->getMessage());
+            $this->logger->error(message: 'Failed to get objects by schema chart data: '.$e->getMessage());
             return [
                 'labels' => [],
                 'series' => [],
@@ -649,7 +649,7 @@ class DashboardService
         try {
             return $this->objectMapper->getSizeDistributionChartData($registerId, $schemaId);
         } catch (\Exception $e) {
-            $this->logger->error('Failed to get objects by size chart data: '.$e->getMessage());
+            $this->logger->error(message: 'Failed to get objects by size chart data: '.$e->getMessage());
             return [
                 'labels' => [],
                 'series' => [],
@@ -678,7 +678,7 @@ class DashboardService
         try {
             return $this->auditTrailMapper->getDetailedStatistics($registerId, $schemaId, $hours);
         } catch (\Exception $e) {
-            $this->logger->error('Failed to get audit trail statistics: '.$e->getMessage());
+            $this->logger->error(message: 'Failed to get audit trail statistics: '.$e->getMessage());
             return [
                 'total'   => 0,
                 'creates' => 0,
@@ -706,7 +706,7 @@ class DashboardService
         try {
             return $this->auditTrailMapper->getActionDistribution($registerId, $schemaId, $hours);
         } catch (\Exception $e) {
-            $this->logger->error('Failed to get audit trail action distribution: '.$e->getMessage());
+            $this->logger->error(message: 'Failed to get audit trail action distribution: '.$e->getMessage());
             return [
                 'actions' => [],
             ];
@@ -731,7 +731,7 @@ class DashboardService
         try {
             return $this->auditTrailMapper->getMostActiveObjects($registerId, $schemaId, $limit, $hours);
         } catch (\Exception $e) {
-            $this->logger->error('Failed to get most active objects: '.$e->getMessage());
+            $this->logger->error(message: 'Failed to get most active objects: '.$e->getMessage());
             return [
                 'objects' => [],
             ];

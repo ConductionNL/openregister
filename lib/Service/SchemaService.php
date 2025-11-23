@@ -110,7 +110,7 @@ class SchemaService
      */
     public function exploreSchemaProperties(int $schemaId): array
     {
-        $this->logger->info('Starting schema exploration for schema ID: '.$schemaId);
+        $this->logger->info(message: 'Starting schema exploration for schema ID: '.$schemaId);
 
         // Get the schema to validate it exists.
         try {
@@ -122,7 +122,7 @@ class SchemaService
         // Get all objects for this schema.
         $objects = $this->objectEntityMapper->findBySchema($schemaId);
 
-        $this->logger->info('Found '.count($objects).' objects to analyze');
+        $this->logger->info(message: 'Found '.count($objects).' objects to analyze');
 
         if (empty($objects) === true) {
             return [
@@ -132,7 +132,7 @@ class SchemaService
                 'discovered_properties' => [],
                 'existing_properties'   => $schema->getProperties(),
                 'suggestions'           => [],
-                'analysis_date'         => (new \DateTime())->format('c'),
+                'analysis_date'         => (new \DateTime(datetime: 'now'))->format(format: 'c'),
                 'message'               => 'No objects found for analysis',
             ];
         }
@@ -1358,7 +1358,7 @@ class SchemaService
      */
     public function updateSchemaFromExploration(int $schemaId, array $propertyUpdates): Schema
     {
-        $this->logger->info('Updating schema '.$schemaId.' with '.count($propertyUpdates).' property updates');
+        $this->logger->info(message: 'Updating schema '.$schemaId.' with '.count($propertyUpdates).' property updates');
 
         try {
             // Get existing schema.
@@ -1379,11 +1379,11 @@ class SchemaService
             // Save updated schema.
             $updatedSchema = $this->schemaMapper->update($schema);
 
-            $this->logger->info('Schema '.$schemaId.' successfully updated with exploration results');
+            $this->logger->info(message: 'Schema '.$schemaId.' successfully updated with exploration results');
 
             return $updatedSchema;
         } catch (\Exception $e) {
-            $this->logger->error('Failed to update schema '.$schemaId.': '.$e->getMessage());
+            $this->logger->error(message: 'Failed to update schema '.$schemaId.': '.$e->getMessage());
             throw new \Exception('Failed to update schema properties: '.$e->getMessage());
         }//end try
 

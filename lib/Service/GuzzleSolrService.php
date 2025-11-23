@@ -165,7 +165,7 @@ class GuzzleSolrService
         try {
             // Get service from Nextcloud container.
             $this->objectCacheService = \OC::$server->get(ObjectCacheService::class);
-            $this->logger->debug('✅ ObjectCacheService loaded successfully for facet UUID resolution');
+            $this->logger->debug(message: '✅ ObjectCacheService loaded successfully for facet UUID resolution');
         } catch (\Exception $e) {
             $this->logger->warning(
                     '⚠️ Failed to load ObjectCacheService from container',
@@ -192,7 +192,7 @@ class GuzzleSolrService
         try {
             $this->solrConfig = $this->settingsService->getSolrSettings();
         } catch (\Exception $e) {
-            $this->logger->warning('Failed to load SOLR settings', ['error' => $e->getMessage()]);
+            $this->logger->warning(message: 'Failed to load SOLR settings', context: ['error' => $e->getMessage()]);
             $this->solrConfig = ['enabled' => false];
         }
 
@@ -304,10 +304,12 @@ class GuzzleSolrService
                 $path = '/solr';
             }
 
-            return sprintf(format: (
-                '%s://%s%s', $scheme,
+            return sprintf(
+                '%s://%s%s',
+                $scheme,
                 $host,
-                $path);
+                $path
+            );
         } else {
             // Regular hostname - only append port if explicitly provided and not 0/null.
             if ($port !== null && $port > 0) {
@@ -323,11 +325,13 @@ class GuzzleSolrService
                     $path = '/solr';
                 }
 
-                return sprintf(format: (
-                    '%s://%s:%d%s', $scheme,
+                return sprintf(
+                    '%s://%s:%d%s',
+                    $scheme,
                     $host,
                     $port,
-                    $path);
+                    $path
+                );
             } else {
                 // No port provided or port is 0 - let the service handle it.
                 if (isset($this->solrConfig['scheme']) === true) {
@@ -342,10 +346,12 @@ class GuzzleSolrService
                     $path = '/solr';
                 }
 
-                return sprintf(format: (
-                    '%s://%s%s', $scheme,
+                return sprintf(
+                    '%s://%s%s',
+                    $scheme,
                     $host,
-                    $path);
+                    $path
+                );
             }//end if
         }//end if
 
@@ -367,7 +373,7 @@ class GuzzleSolrService
         }
 
         if ($enabled === false) {
-            $this->logger->debug('SOLR is not enabled in configuration');
+            $this->logger->debug(message: 'SOLR is not enabled in configuration');
             return false;
         }
 
@@ -375,7 +381,7 @@ class GuzzleSolrService
         $requiredConfig = ['host'];
         foreach ($requiredConfig as $key) {
             if (empty($this->solrConfig[$key]) === true) {
-                $this->logger->debug('SOLR configuration missing required key: '.$key);
+                $this->logger->debug(message: 'SOLR configuration missing required key: '.$key);
                 return false;
             }
         }
@@ -407,13 +413,13 @@ class GuzzleSolrService
     {
         // Check if SOLR is enabled in configuration.
         if (($this->solrConfig['enabled'] ?? false) === false) {
-            $this->logger->debug('SOLR is disabled in configuration');
+            $this->logger->debug(message: 'SOLR is disabled in configuration');
             return false;
         }
 
         // Check if basic configuration is present.
         if (empty($this->solrConfig['host']) === true) {
-            $this->logger->debug('SOLR host not configured');
+            $this->logger->debug(message: 'SOLR host not configured');
             return false;
         }
 
@@ -596,7 +602,7 @@ class GuzzleSolrService
     public function clearAvailabilityCache(): void
     {
         $this->clearCachedAvailability();
-        $this->logger->info('SOLR availability cache cleared manually');
+        $this->logger->info(message: 'SOLR availability cache cleared manually');
 
     }//end clearAvailabilityCache()
 
@@ -1133,14 +1139,14 @@ class GuzzleSolrService
 
             // Ensure tenant collection exists.
             if ($this->ensureTenantCollection() === false) {
-                $this->logger->warning('Cannot index object: tenant collection unavailable');
+                $this->logger->warning(message: 'Cannot index object: tenant collection unavailable');
                 return false;
             }
 
             // Get the active collection name - return false if no collection exists.
             $tenantCollectionName = $this->getActiveCollectionName();
             if ($tenantCollectionName === null) {
-                $this->logger->warning('Cannot index object: no active collection available');
+                $this->logger->warning(message: 'Cannot index object: no active collection available');
                 return false;
             }
 
@@ -1262,13 +1268,13 @@ class GuzzleSolrService
             // Get the active collection name - return false if no collection exists.
             $tenantCollectionName = $this->getActiveCollectionName();
             if ($tenantCollectionName === null) {
-                $this->logger->warning('Cannot delete object: no active collection available');
+                $this->logger->warning(message: 'Cannot delete object: no active collection available');
                 return false;
             }
 
             $deleteData = [
                 'delete' => [
-                    'query' => sprintf(format: ('id:%s', (string) $objectId),
+                    'query' => sprintf('id:%s', (string) $objectId),
                 ],
             ];
 
@@ -1332,7 +1338,7 @@ class GuzzleSolrService
             // Get the active collection name - return 0 if no collection exists.
             $tenantCollectionName = $this->getActiveCollectionName();
             if ($tenantCollectionName === null) {
-                $this->logger->warning('Cannot get document count: no active collection available');
+                $this->logger->warning(message: 'Cannot get document count: no active collection available');
                 return 0;
             }
 
@@ -1349,7 +1355,7 @@ class GuzzleSolrService
 
             return (int) ($data['response']['numFound'] ?? 0);
         } catch (\Exception $e) {
-            $this->logger->error('Failed to get document count', ['error' => $e->getMessage()]);
+            $this->logger->error(message: 'Failed to get document count', context: ['error' => $e->getMessage()]);
             return 0;
         }//end try
 
@@ -2437,7 +2443,7 @@ class GuzzleSolrService
         if ($rbac === true) {
             // Note: RBAC role filtering would be implemented here if we had role-based fields.
             // For now, we assume all authenticated users have basic access.
-            $this->logger->debug('[SOLR] RBAC filtering applied');
+            $this->logger->debug(message: '[SOLR] RBAC filtering applied');
         }
 
         // Published filtering (only if explicitly requested).
@@ -2479,7 +2485,7 @@ class GuzzleSolrService
         try {
             return $this->settingsService->isMultiTenancyEnabled();
         } catch (\Exception $e) {
-            $this->logger->warning('Failed to check multi-tenancy status', ['error' => $e->getMessage()]);
+            $this->logger->warning(message: 'Failed to check multi-tenancy status', context: ['error' => $e->getMessage()]);
             return false;
         }
 
@@ -2495,7 +2501,7 @@ class GuzzleSolrService
     {
         try {
             if ($this->organisationService === null) {
-                $this->logger->warning('OrganisationService not available for multi-tenancy filtering');
+                $this->logger->warning(message: 'OrganisationService not available for multi-tenancy filtering');
                 return null;
             }
 
@@ -2506,7 +2512,7 @@ class GuzzleSolrService
 
             return null;
         } catch (\Exception $e) {
-            $this->logger->warning('Failed to get active organisation', ['error' => $e->getMessage()]);
+            $this->logger->warning(message: 'Failed to get active organisation', context: ['error' => $e->getMessage()]);
             return null;
         }
 
@@ -3375,8 +3381,8 @@ class GuzzleSolrService
                 );
 
         // **DEBUG**: Log all documents being indexed.
-        $this->logger->debug('=== BULK INDEX DEBUG ===');
-        $this->logger->debug('Document count: '.count($documents));
+        $this->logger->debug(message: '=== BULK INDEX DEBUG ===');
+        $this->logger->debug(message: 'Document count: '.count($documents));
         foreach ($documents as $i => $doc) {
             if (is_array($doc) === true) {
                 if (isset($doc['self_object_id']) === true) {
@@ -3385,20 +3391,20 @@ class GuzzleSolrService
                     $hasSelfObjectId = 'NO';
                 }
 
-                $this->logger->debug('Doc '.$i.': ID='.($doc['id'] ?? 'missing').', has_self_object_id='.$hasSelfObjectId);
+                $this->logger->debug(message: 'Doc '.$i.': ID='.($doc['id'] ?? 'missing').', has_self_object_id='.$hasSelfObjectId);
             } else if ($doc instanceof ObjectEntity) {
                 $uuid = $doc->getUuid();
                 if ($uuid === null) {
                     $uuid = 'null';
                 }
 
-                $this->logger->debug('Doc '.$i.': ObjectEntity ID='.$doc->getId().', UUID='.$uuid);
+                $this->logger->debug(message: 'Doc '.$i.': ObjectEntity ID='.$doc->getId().', UUID='.$uuid);
             } else {
-                $this->logger->debug('Doc '.$i.': '.gettype($doc));
+                $this->logger->debug(message: 'Doc '.$i.': '.gettype($doc));
             }
         }
 
-        $this->logger->debug('=== END BULK INDEX DEBUG ===');
+        $this->logger->debug(message: '=== END BULK INDEX DEBUG ===');
 
         if ($this->isAvailable() === false || empty($documents) === true) {
             $this->logger->warning(
@@ -3417,14 +3423,14 @@ class GuzzleSolrService
 
             // Ensure tenant collection exists.
             if ($this->ensureTenantCollection() === false) {
-                $this->logger->warning('Cannot bulk index: tenant collection unavailable');
+                $this->logger->warning(message: 'Cannot bulk index: tenant collection unavailable');
                 return false;
             }
 
             // Get the active collection name - return false if no collection exists.
             $tenantCollectionName = $this->getActiveCollectionName();
             if ($tenantCollectionName === null) {
-                $this->logger->warning('Cannot bulk index: no active collection available');
+                $this->logger->warning(message: 'Cannot bulk index: no active collection available');
                 return false;
             }
 
@@ -3437,7 +3443,7 @@ class GuzzleSolrService
                     // Document is already a Solr document array - use as-is.
                     $solrDocs[] = $doc;
                 } else {
-                    $this->logger->warning('Invalid document type in bulk index', ['type' => gettype($doc)]);
+                    $this->logger->warning(message: 'Invalid document type in bulk index', context: ['type' => gettype($doc)]);
                     continue;
                 }
             }
@@ -3500,13 +3506,13 @@ class GuzzleSolrService
 
             // Bulk POST ready.
             // **DEBUG**: Log HTTP request details AND actual payload.
-            $this->logger->debug('=== HTTP POST TO SOLR DEBUG ===');
-            $this->logger->debug('URL: '.$url);
-            $this->logger->debug('Document count in payload: '.count($updateData['add'] ?? []));
-            $this->logger->debug('Payload size: '.strlen(json_encode($updateData)).' bytes');
-            $this->logger->debug('ACTUAL JSON PAYLOAD:');
-            $this->logger->debug(json_encode($updateData, JSON_PRETTY_PRINT));
-            $this->logger->debug('=== END HTTP POST DEBUG ===');
+            $this->logger->debug(message: '=== HTTP POST TO SOLR DEBUG ===');
+            $this->logger->debug(message: 'URL: '.$url);
+            $this->logger->debug(message: 'Document count in payload: '.count($updateData['add'] ?? []));
+            $this->logger->debug(message: 'Payload size: '.strlen(json_encode($updateData)).' bytes');
+            $this->logger->debug(message: 'ACTUAL JSON PAYLOAD:');
+            $this->logger->debug(message: json_encode($updateData, JSON_PRETTY_PRINT));
+            $this->logger->debug(message: '=== END HTTP POST DEBUG ===');
 
             try {
                 $response = $this->httpClient->post(
@@ -3657,7 +3663,7 @@ class GuzzleSolrService
             // Get the active collection name - return false if no collection exists.
             $tenantCollectionName = $this->getActiveCollectionName();
             if ($tenantCollectionName === null) {
-                $this->logger->warning('Cannot commit: no active collection available');
+                $this->logger->warning(message: 'Cannot commit: no active collection available');
                 return false;
             }
 
@@ -3686,7 +3692,7 @@ class GuzzleSolrService
 
             return $success;
         } catch (\Exception $e) {
-            $this->logger->error('Exception committing to SOLR', ['error' => $e->getMessage()]);
+            $this->logger->error(message: 'Exception committing to SOLR', context: ['error' => $e->getMessage()]);
             return false;
         }//end try
 
@@ -3719,7 +3725,7 @@ class GuzzleSolrService
             // Get the active collection name - return error if no collection exists.
             $tenantCollectionName = $this->getActiveCollectionName();
             if ($tenantCollectionName === null) {
-                $this->logger->warning('Cannot delete by query: no active collection available');
+                $this->logger->warning(message: 'Cannot delete by query: no active collection available');
                 if ($returnDetails === true) {
                     return [
                         'success'       => false,
@@ -3819,7 +3825,7 @@ class GuzzleSolrService
                     }
                 }
 
-                $this->logger->error('HTTP exception deleting by query from SOLR', $errorDetails);
+                $this->logger->error(message: 'HTTP exception deleting by query from SOLR', context: $errorDetails);
 
                 return [
                     'success'       => false,
@@ -5482,7 +5488,7 @@ class GuzzleSolrService
                 }
             }
 
-            $this->logger->error('HTTP exception inspecting SOLR index', $errorDetails);
+            $this->logger->error(message: 'HTTP exception inspecting SOLR index', context: $errorDetails);
 
             return [
                 'success'       => false,
@@ -5528,7 +5534,7 @@ class GuzzleSolrService
             // Get the active collection name - return false if no collection exists.
             $tenantCollectionName = $this->getActiveCollectionName();
             if ($tenantCollectionName === null) {
-                $this->logger->warning('Cannot optimize: no active collection available');
+                $this->logger->warning(message: 'Cannot optimize: no active collection available');
                 return false;
             }
 
@@ -5564,7 +5570,7 @@ class GuzzleSolrService
 
             return $success;
         } catch (\Exception $e) {
-            $this->logger->error('Exception optimizing SOLR', ['error' => $e->getMessage()]);
+            $this->logger->error(message: 'Exception optimizing SOLR', context: ['error' => $e->getMessage()]);
             return false;
         }//end try
 
@@ -5732,7 +5738,7 @@ class GuzzleSolrService
                 // Skip multitenancy for performance
                 );
             } catch (\Exception $e) {
-                $this->logger->warning('Failed to get object counts from database', ['error' => $e->getMessage()]);
+                $this->logger->warning(message: 'Failed to get object counts from database', context: ['error' => $e->getMessage()]);
             }//end try
 
             // Get index size (approximate) from primary collection.
@@ -5743,7 +5749,7 @@ class GuzzleSolrService
                     $sizeResponse = $this->httpClient->get($indexSizeUrl, ['timeout' => 10]);
                     $sizeData     = json_decode((string) $sizeResponse->getBody(), true);
                 } catch (\Exception $e) {
-                    $this->logger->warning('Failed to get index size', ['error' => $e->getMessage()]);
+                    $this->logger->warning(message: 'Failed to get index size', context: ['error' => $e->getMessage()]);
                 }
             }
 
@@ -5759,7 +5765,7 @@ class GuzzleSolrService
                 $memoryPrediction = $this->predictWarmupMemoryUsage(0);
                 // 0 = all published objects
             } catch (\Exception $e) {
-                $this->logger->warning('Failed to get memory prediction for dashboard stats', ['error' => $e->getMessage()]);
+                $this->logger->warning(message: 'Failed to get memory prediction for dashboard stats', context: ['error' => $e->getMessage()]);
                 $memoryPrediction = [
                     'error'           => 'Unable to predict memory usage',
                     'prediction_safe' => true,
@@ -5775,7 +5781,7 @@ class GuzzleSolrService
                 $fileMapper = \OC::$server->get(\OCA\OpenRegister\Db\FileMapper::class);
                 $totalFiles = $fileMapper->countAllFiles();
             } catch (\Exception $e) {
-                $this->logger->warning('Failed to get total file count from FileMapper', ['error' => $e->getMessage()]);
+                $this->logger->warning(message: 'Failed to get total file count from FileMapper', context: ['error' => $e->getMessage()]);
             }
 
             if ($objectCollection === null && $fileCollection === null) {
@@ -5845,7 +5851,7 @@ class GuzzleSolrService
                 ],
             ];
         } catch (\Exception $e) {
-            $this->logger->error('Exception getting dashboard stats', ['error' => $e->getMessage()]);
+            $this->logger->error(message: 'Exception getting dashboard stats', context: ['error' => $e->getMessage()]);
             return [
                 'available' => false,
                 'error'     => $e->getMessage(),
@@ -6039,7 +6045,7 @@ class GuzzleSolrService
 
             return $baseUrl.'/'.$collectionName;
         } catch (\Exception $e) {
-            $this->logger->warning('Failed to build endpoint URL', ['error' => $e->getMessage()]);
+            $this->logger->warning(message: 'Failed to build endpoint URL', context: ['error' => $e->getMessage()]);
             return 'N/A';
         }
 
@@ -6235,7 +6241,7 @@ class GuzzleSolrService
             $offset       = 0;
             $results      = ['skipped_non_searchable' => 0];
 
-            $this->logger->info('Starting sequential bulk index from database using ObjectEntityMapper directly');
+            $this->logger->info(message: 'Starting sequential bulk index from database using ObjectEntityMapper directly');
 
             // **IMPROVED**: Get count of only searchable objects for more accurate planning.
             $totalObjects = $this->countSearchableObjects($objectMapper, $schemaIds);
@@ -6409,7 +6415,7 @@ class GuzzleSolrService
                 'skipped_non_searchable' => $skippedNonSearchable,
             ];
         } catch (\Exception $e) {
-            $this->logger->error('Serial bulk indexing failed', ['error' => $e->getMessage()]);
+            $this->logger->error(message: 'Serial bulk indexing failed', context: ['error' => $e->getMessage()]);
             // **ERROR VISIBILITY**: Re-throw exception to expose errors.
             if (isset($totalIndexed) === true) {
                 $totalIndexedValue = $totalIndexed;
@@ -6569,7 +6575,7 @@ class GuzzleSolrService
                 'total_time_ms'    => $totalTime,
             ];
         } catch (\Exception $e) {
-            $this->logger->error('Parallel bulk indexing failed', ['error' => $e->getMessage()]);
+            $this->logger->error(message: 'Parallel bulk indexing failed', context: ['error' => $e->getMessage()]);
             // **ERROR VISIBILITY**: Re-throw exception to expose errors.
             if (isset($totalIndexed) === true) {
                 $totalIndexedValue = $totalIndexed;
@@ -6916,7 +6922,7 @@ class GuzzleSolrService
             );
 
             if (empty($objects) === true) {
-                $this->logger->info('No objects to index');
+                $this->logger->info(message: 'No objects to index');
                 return [
                     'success'    => true,
                     'indexed'    => 0,
@@ -6988,7 +6994,7 @@ class GuzzleSolrService
                 'total_time_ms' => $totalTime,
             ];
         } catch (\Exception $e) {
-            $this->logger->error('Hyper-fast bulk indexing failed', ['error' => $e->getMessage()]);
+            $this->logger->error(message: 'Hyper-fast bulk indexing failed', context: ['error' => $e->getMessage()]);
             // **ERROR VISIBILITY**: Re-throw exception to expose errors.
             if (isset($totalIndexed) === true) {
                 $totalIndexedValue = $totalIndexed;
@@ -7045,11 +7051,14 @@ class GuzzleSolrService
 
         try {
             // Get all schemas.
-            $schemas = $schemaMapper->findAll(config: );
+            $schemas = $schemaMapper->findAll();
 
             $this->logger->info(
-                    'Starting schema-aware mapping test', rbac: [
-                        'total_schemas' => count($schemas), multi: ]);
+                    'Starting schema-aware mapping test',
+                    [
+                        'total_schemas' => count($schemas),
+                    ]
+                    );
 
             foreach ($schemas as $schema) {
                 $schemaId      = $schema->getId();
@@ -7064,8 +7073,12 @@ class GuzzleSolrService
 
                 try {
                     // Get 5 objects for this schema.
-                    $objects = $objectMapper->searchObjects(query: [
-                                'schema'  => $schemaId, activeOrganisationUuid: '_limit'  => 5, rbac: '_offset' => 0, multi: ]
+                    $objects = $objectMapper->searchObjects(
+                            [
+                                'schema'  => $schemaId,
+                                '_limit'  => 5,
+                                '_offset' => 0,
+                            ]
                             );
 
                     $schemaDetails['objects_found'] = count($objects);
@@ -7087,7 +7100,7 @@ class GuzzleSolrService
                             }
 
                             // Index the document.
-                            if ($this->bulkIndex([$document], ids: true) === true) {
+                            if ($this->bulkIndex([$document], true) === true) {
                                 $schemaDetails['objects_indexed']++;
                                 $results['objects_indexed']++;
                             }
@@ -7099,7 +7112,8 @@ class GuzzleSolrService
                             }
 
                             $results['errors'][] = [
-                                'schema_id' => $schemaId, uses: 'object_id' => $objectId,
+                                'schema_id' => $schemaId,
+                                'object_id' => $objectId,
                                 'error'     => $e->getMessage(),
                             ];
                         }//end try
@@ -7168,7 +7182,7 @@ class GuzzleSolrService
         try {
             $tenantCollectionName = $this->getActiveCollectionName();
             if ($tenantCollectionName === null) {
-                $this->logger->warning('Cannot get SOLR field types: no active collection available');
+                $this->logger->warning(message: 'Cannot get SOLR field types: no active collection available');
                 return [];
             }
 
@@ -7431,7 +7445,7 @@ class GuzzleSolrService
                     }
                 } catch (\Exception $e) {
                     $operations["warmup_query_$i"] = false;
-                    $this->logger->warning("Warmup query $i failed", ['error' => $e->getMessage()]);
+                    $this->logger->warning(message: "Warmup query $i failed", context: ['error' => $e->getMessage()]);
                 }//end try
             }//end foreach
 
@@ -7657,7 +7671,7 @@ class GuzzleSolrService
     {
         $this->cachedSolrFieldTypes = null;
         $this->cachedSchemaData     = null;
-        $this->logger->debug('🧹 Cleared SOLR service caches');
+        $this->logger->debug(message: '🧹 Cleared SOLR service caches');
 
     }//end clearCache()
 
@@ -8215,7 +8229,7 @@ class GuzzleSolrService
                     );
 
             // Step 1: Clear the current index.
-            $this->logger->info('🗑️ Clearing current SOLR index');
+            $this->logger->info(message: '🗑️ Clearing current SOLR index');
             $clearResult = $this->clearIndex($targetCollection);
 
             if (isset($clearResult['success']) === false || $clearResult['success'] === false) {
@@ -8374,7 +8388,7 @@ class GuzzleSolrService
             }//end while
 
             // Final commit and optimize.
-            $this->logger->info('🔧 Finalizing reindex - committing and optimizing');
+            $this->logger->info(message: '🔧 Finalizing reindex - committing and optimizing');
             $this->commit();
 
             // Calculate final stats.
@@ -8459,17 +8473,18 @@ class GuzzleSolrService
                 $schemaMapper      = \OC::$server->get(\OCA\OpenRegister\Db\SchemaMapper::class);
 
                 // Get all schemas.
-                $schemas = $schemaMapper->findAll(config: );
+                $schemas = $schemaMapper->findAll();
 
                 // Use the existing analyzeAndResolveFieldConflicts method via reflection.
                 $reflection = new \ReflectionClass($solrSchemaService);
                 $method     = $reflection->getMethod('analyzeAndResolveFieldConflicts');
                 $method->setAccessible(true);
-                $expectedFields = $method->invoke($solrSchemaService, rbac: $schemas);
+                $expectedFields = $method->invoke($solrSchemaService, $schemas);
 
                 // Debug: Log the structure of expected fields.
                 $this->logger->debug(
-                        'Expected fields from schema analysis', multi: [
+                        'Expected fields from schema analysis',
+                        [
                             'field_count'       => count($expectedFields),
                             'sample_fields'     => array_slice($expectedFields, 0, 3, true),
                             'field_keys_sample' => array_slice(array_keys($expectedFields), 0, 5),
@@ -8519,7 +8534,7 @@ class GuzzleSolrService
                 // Only add truly missing fields.
                 if (isset($currentFields[$fieldName]) === false) {
                     $fieldsToProcess[$fieldName] = $fieldConfig;
-                    $this->logger->debug("Field '{$fieldName}' is missing and will be created");
+                    $this->logger->debug(message: "Field '{$fieldName}' is missing and will be created");
                 }
             }//end foreach
 
@@ -8620,8 +8635,9 @@ class GuzzleSolrService
 
             $result = [
                 'success'           => $success,
-                'message'           => sprintf(format: (
-                    'Field creation completed: %d created, %d errors', count($created),
+                'message'           => sprintf(
+                    'Field creation completed: %d created, %d errors',
+                    count($created),
                     count($errors)
                 ),
                 'created'           => $created,
@@ -9806,7 +9822,7 @@ class GuzzleSolrService
         // Extract facets from the current search results if they exist.
         // This is much faster than making additional SOLR calls.
         if (isset($searchResults['facets']) && !empty($searchResults['facets'])) {
-            $this->logger->debug('Using facets from current search results for contextual data');
+            $this->logger->debug(message: 'Using facets from current search results for contextual data');
             return $this->processContextualFacetsFromSearchResults($searchResults['facets']);
         }
 
@@ -11503,7 +11519,7 @@ class GuzzleSolrService
     public function listCollections(): array
     {
         try {
-            $this->logger->info('📋 Fetching SOLR collections list');
+            $this->logger->info(message: '📋 Fetching SOLR collections list');
 
             // NO availability check - Collection management is part of initial setup!
             // We only need basic SOLR connectivity, which is tested in Connection Settings.
@@ -11513,7 +11529,7 @@ class GuzzleSolrService
             $data       = json_decode((string) $response->getBody(), true);
 
             if (!isset($data['cluster']['collections'])) {
-                $this->logger->warning('No collections found in cluster status');
+                $this->logger->warning(message: 'No collections found in cluster status');
                 return [];
             }
 
@@ -11569,7 +11585,7 @@ class GuzzleSolrService
                 ];
             }//end foreach
 
-            $this->logger->info('✅ Successfully fetched collections', ['count' => count($collections)]);
+            $this->logger->info(message: '✅ Successfully fetched collections', context: ['count' => count($collections)]);
             return $collections;
         } catch (\Exception $e) {
             $this->logger->error(
@@ -11596,7 +11612,7 @@ class GuzzleSolrService
     public function listConfigSets(): array
     {
         try {
-            $this->logger->info('📋 Fetching SOLR ConfigSets list');
+            $this->logger->info(message: '📋 Fetching SOLR ConfigSets list');
 
             // NO availability check - ConfigSet management is part of initial setup!
             // We only need basic SOLR connectivity, which is tested in Connection Settings.
@@ -11606,7 +11622,7 @@ class GuzzleSolrService
             $data          = json_decode((string) $response->getBody(), true);
 
             if (!isset($data['configSets'])) {
-                $this->logger->warning('No ConfigSets found');
+                $this->logger->warning(message: 'No ConfigSets found');
                 return [];
             }
 
@@ -11628,7 +11644,7 @@ class GuzzleSolrService
                 ];
             }
 
-            $this->logger->info('✅ Successfully fetched ConfigSets', ['count' => count($configSets)]);
+            $this->logger->info(message: '✅ Successfully fetched ConfigSets', context: ['count' => count($configSets)]);
             return $configSets;
         } catch (\Exception $e) {
             $this->logger->error(
@@ -11696,7 +11712,7 @@ class GuzzleSolrService
                 throw new \Exception('Failed to create ConfigSet: '.json_encode($result['failure']));
             }
 
-            $this->logger->info('✅ Successfully created ConfigSet', ['name' => $name]);
+            $this->logger->info(message: '✅ Successfully created ConfigSet', context: ['name' => $name]);
             return [
                 'success'       => true,
                 'message'       => 'ConfigSet created successfully',
@@ -11728,7 +11744,7 @@ class GuzzleSolrService
     public function deleteConfigSet(string $name): array
     {
         try {
-            $this->logger->info('🗑️ Deleting SOLR ConfigSet', ['name' => $name]);
+            $this->logger->info(message: '🗑️ Deleting SOLR ConfigSet', context: ['name' => $name]);
 
             // Protect _default ConfigSet from deletion.
             if ($name === '_default') {
@@ -11765,7 +11781,7 @@ class GuzzleSolrService
                 throw new \Exception('Failed to delete ConfigSet: '.json_encode($result['failure']));
             }
 
-            $this->logger->info('✅ Successfully deleted ConfigSet', ['name' => $name]);
+            $this->logger->info(message: '✅ Successfully deleted ConfigSet', context: ['name' => $name]);
             return [
                 'success'   => true,
                 'message'   => 'ConfigSet deleted successfully',
@@ -11841,15 +11857,15 @@ class GuzzleSolrService
 
             // If copyData is true, copy documents from source to target.
             if ($copyData && $sourceInfo['documentCount'] > 0) {
-                $this->logger->info('📋 Copying data from source to target collection');
+                $this->logger->info(message: '📋 Copying data from source to target collection');
 
                 // Note: This is a placeholder for data copying.
                 // In production, you might want to use SOLR's backup/restore feature.
                 // or implement a more sophisticated data migration strategy.
-                $this->logger->warning('Data copying is not yet fully implemented - only schema/config was copied');
+                $this->logger->warning(message: 'Data copying is not yet fully implemented - only schema/config was copied');
             }
 
-            $this->logger->info('✅ Successfully copied collection');
+            $this->logger->info(message: '✅ Successfully copied collection');
             return [
                 'success'    => true,
                 'message'    => 'Collection copied successfully',
@@ -11892,7 +11908,7 @@ class GuzzleSolrService
             $settings       = $this->settingsService->getSettings();
             $fileCollection = $settings['solr']['fileCollection'] ?? null;
             if ($fileCollection === null || $fileCollection === '') {
-                $this->logger->warning('[GuzzleSolrService] No file collection configured');
+                $this->logger->warning(message: '[GuzzleSolrService] No file collection configured');
                 return false;
             }
 

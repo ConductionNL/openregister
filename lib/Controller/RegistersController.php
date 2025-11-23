@@ -217,7 +217,7 @@ class RegistersController extends Controller
                             $expandedSchemas[] = $schema->jsonSerialize();
                         } catch (DoesNotExistException $e) {
                             // Schema not found, skip it.
-                            $this->logger->warning('Schema not found for expansion', ['schemaId' => $schemaId]);
+                            $this->logger->warning(message: 'Schema not found for expansion', context: ['schemaId' => $schemaId]);
                         }
                     }
 
@@ -352,7 +352,7 @@ class RegistersController extends Controller
 
         try {
             // Update the register with the provided data.
-            return new JSONResponse(data: $this->registerService->updateFromArray((int) $id, statusCode: $data));
+            return new JSONResponse(data: $this->registerService->updateFromArray(id: (int) $id, data: $data));
         } catch (DBException $e) {
             // Handle database constraint violations with user-friendly messages.
             $constraintException = DatabaseConstraintException::fromDatabaseException($e, 'register');
@@ -487,7 +487,7 @@ class RegistersController extends Controller
                 'schema'   => $schema,
             ],
         ];
-        return new JSONResponse(data: $this->objectEntityMapper->searchObjects($query)
+        return new JSONResponse(data: $this->objectEntityMapper->searchObjects(query: $query)
         );
 
     }//end objects()

@@ -254,10 +254,10 @@ class ViewsController extends Controller
 
             if (empty($userId) === true) {
                 return new JSONResponse(
-                        [
+                        data: [
                             'error' => 'User not authenticated',
                         ],
-                        401
+                        statusCode: 401
                         );
             }
 
@@ -266,10 +266,10 @@ class ViewsController extends Controller
             // Validate required fields.
             if (isset($data['name']) === false || empty($data['name']) === true) {
                 return new JSONResponse(
-                        [
+                        data: [
                             'error' => 'View name is required',
                         ],
-                        400
+                        statusCode: 400
                         );
             }
 
@@ -291,10 +291,10 @@ class ViewsController extends Controller
                 $query = $data['query'];
             } else {
                 return new JSONResponse(
-                        [
+                        data: [
                             'error' => 'View query or configuration is required',
                         ],
-                        400
+                        statusCode: 400
                         );
             }//end if
 
@@ -308,24 +308,24 @@ class ViewsController extends Controller
             );
 
             return new JSONResponse(
-                    [
+                    data: [
                         'view' => $view->jsonSerialize(),
                     ],
-                    201
+                    statusCode: 201
                     );
         } catch (\Exception $e) {
             $this->logger->error(
-                    'Error creating view',
-                    [
+                    message: 'Error creating view',
+                    context: [
                         'exception' => $e->getMessage(),
                     ]
                     );
             return new JSONResponse(
-                    [
+                    data: [
                         'error'   => 'Failed to create view',
                         'message' => $e->getMessage(),
                     ],
-                    500
+                    statusCode: 500
                     );
         }//end try
 
@@ -353,10 +353,10 @@ class ViewsController extends Controller
 
             if (empty($userId) === true) {
                 return new JSONResponse(
-                        [
+                        data: [
                             'error' => 'User not authenticated',
                         ],
-                        401
+                        statusCode: 401
                         );
             }
 
@@ -365,10 +365,10 @@ class ViewsController extends Controller
             // Validate required fields.
             if (isset($data['name']) === false || empty($data['name']) === true) {
                 return new JSONResponse(
-                        [
+                        data: [
                             'error' => 'View name is required',
                         ],
-                        400
+                        statusCode: 400
                         );
             }
 
@@ -390,10 +390,10 @@ class ViewsController extends Controller
                 $query = $data['query'];
             } else {
                 return new JSONResponse(
-                        [
+                        data: [
                             'error' => 'View query or configuration is required',
                         ],
-                        400
+                        statusCode: 400
                         );
             }//end if
 
@@ -408,31 +408,31 @@ class ViewsController extends Controller
             );
 
             return new JSONResponse(
-                    [
+                    data: [
                         'view' => $view->jsonSerialize(),
                     ]
                     );
         } catch (DoesNotExistException $e) {
             return new JSONResponse(
-                    [
+                    data: [
                         'error' => 'View not found',
                     ],
-                    404
+                    statusCode: 404
                     );
         } catch (\Exception $e) {
             $this->logger->error(
-                    'Error updating view',
-                    [
+                    message: 'Error updating view',
+                    context: [
                         'id'        => $id,
                         'exception' => $e->getMessage(),
                     ]
                     );
             return new JSONResponse(
-                    [
+                    data: [
                         'error'   => 'Failed to update view',
                         'message' => $e->getMessage(),
                     ],
-                    500
+                    statusCode: 500
                     );
         }//end try
 
@@ -463,15 +463,15 @@ class ViewsController extends Controller
 
             if (empty($userId) === true) {
                 return new JSONResponse(
-                        [
+                        data: [
                             'error' => 'User not authenticated',
                         ],
-                        401
+                        statusCode: 401
                         );
             }
 
             // Get existing view.
-            $view = $this->viewService->find($id, $userId);
+            $view = $this->viewService->find(id: $id, userId: $userId);
 
             $data = $this->request->getParams();
 
@@ -519,31 +519,31 @@ class ViewsController extends Controller
             );
 
             return new JSONResponse(
-                    [
+                    data: [
                         'view' => $updatedView->jsonSerialize(),
                     ]
                     );
         } catch (DoesNotExistException $e) {
             return new JSONResponse(
-                    [
+                    data: [
                         'error' => 'View not found',
                     ],
-                    404
+                    statusCode: 404
                     );
         } catch (\Exception $e) {
             $this->logger->error(
-                    'Error patching view',
-                    [
+                    message: 'Error patching view',
+                    context: [
                         'id'        => $id,
                         'exception' => $e->getMessage(),
                     ]
                     );
             return new JSONResponse(
-                    [
+                    data: [
                         'error'   => 'Failed to patch view',
                         'message' => $e->getMessage(),
                     ],
-                    500
+                    statusCode: 500
                     );
         }//end try
 
@@ -571,42 +571,42 @@ class ViewsController extends Controller
 
             if (empty($userId) === true) {
                 return new JSONResponse(
-                        [
+                        data: [
                             'error' => 'User not authenticated',
                         ],
-                        401
+                        statusCode: 401
                         );
             }
 
-            $this->viewService->delete($id, $userId);
+            $this->viewService->delete(id: $id, extend: $userId);
 
             return new JSONResponse(
-                    [
+                    data: [
                         'message' => 'View deleted successfully',
                     ],
-                    204
+                    statusCode: 204
                     );
         } catch (DoesNotExistException $e) {
             return new JSONResponse(
-                    [
+                    data: [
                         'error' => 'View not found',
                     ],
-                    404
+                    statusCode: 404
                     );
         } catch (\Exception $e) {
             $this->logger->error(
-                    'Error deleting view',
-                    [
+                    message: 'Error deleting view',
+                    context: [
                         'id'        => $id,
                         'exception' => $e->getMessage(),
                     ]
                     );
             return new JSONResponse(
-                    [
+                    data: [
                         'error'   => 'Failed to delete view',
                         'message' => $e->getMessage(),
                     ],
-                    500
+                    statusCode: 500
                     );
         }//end try
 

@@ -57,7 +57,7 @@ class SolrController extends Controller
         private readonly ContainerInterface $container,
         private readonly LoggerInterface $logger
     ) {
-        parent::__construct(appName: $appName, request: $request);
+        parent::__construct($appName, $request);
 
     }//end __construct()
 
@@ -90,20 +90,20 @@ class SolrController extends Controller
             if (trim($query) === '') {
                 return new JSONResponse(
                         data: [
-                            'success' => false, statusCode:
-                'error'   => 'Query parameter is required and cannot be empty',
+                            'success' => false,
+                            'error'   => 'Query parameter is required and cannot be empty',
                         ],
-                        400
+                        statusCode: 400
                         );
             }
 
             if ($limit < 1 || $limit > 100) {
                 return new JSONResponse(
                         data: [
-                            'success' => false, statusCode:
-                'error'   => 'Limit must be between 1 and 100',
+                            'success' => false,
+                            'error'   => 'Limit must be between 1 and 100',
                         ],
-                        400
+                        statusCode: 400
                         );
             }
 
@@ -115,8 +115,8 @@ class SolrController extends Controller
 
             return new JSONResponse(
                     data: [
-                        'success'     => true, statusCode:
-            'query'       => $query,
+                        'success'     => true,
+                        'query'       => $query,
                         'results'     => $results,
                         'total'       => count($results),
                         'limit'       => $limit,
@@ -127,8 +127,8 @@ class SolrController extends Controller
                     );
         } catch (\Exception $e) {
             $this->logger->error(
-                    'Semantic search failed',
-                    [
+                    message: 'Semantic search failed',
+                    context: [
                         'error' => $e->getMessage(),
                         'query' => $query ?? null,
                     ]
@@ -136,11 +136,11 @@ class SolrController extends Controller
 
             return new JSONResponse(
                     data: [
-                        'success' => false, statusCode:
-            'error'   => $e->getMessage(),
+                        'success' => false,
+                        'error'   => $e->getMessage(),
                         'query'   => $query ?? null,
                     ],
-                    500
+                    statusCode: 500
                     );
         }//end try
 
@@ -177,20 +177,20 @@ class SolrController extends Controller
             if (trim($query) === '') {
                 return new JSONResponse(
                         data: [
-                            'success' => false, statusCode:
-                'error'   => 'Query parameter is required and cannot be empty',
+                            'success' => false,
+                            'error'   => 'Query parameter is required and cannot be empty',
                         ],
-                        400
+                        statusCode: 400
                         );
             }
 
             if ($limit < 1 || $limit > 200) {
                 return new JSONResponse(
                         data: [
-                            'success' => false, statusCode:
-                'error'   => 'Limit must be between 1 and 200',
+                            'success' => false,
+                            'error'   => 'Limit must be between 1 and 200',
                         ],
-                        400
+                        statusCode: 400
                         );
             }
 
@@ -201,10 +201,10 @@ class SolrController extends Controller
             if ($solrWeight < 0 || $solrWeight > 1 || $vectorWeight < 0 || $vectorWeight > 1) {
                 return new JSONResponse(
                         data: [
-                            'success' => false, statusCode:
-                'error'   => 'Weights must be between 0 and 1',
+                            'success' => false,
+                            'error'   => 'Weights must be between 0 and 1',
                         ],
-                        400
+                        statusCode: 400
                         );
             }
 
@@ -216,8 +216,8 @@ class SolrController extends Controller
 
             return new JSONResponse(
                     data: [
-                        'success'     => true, statusCode:
-            'query'       => $query,
+                        'success'     => true,
+                        'query'       => $query,
                         'search_type' => 'hybrid',
                         ...$result,
                         'timestamp'   => date('c'),
@@ -225,8 +225,8 @@ class SolrController extends Controller
                     );
         } catch (\Exception $e) {
             $this->logger->error(
-                    'Hybrid search failed',
-                    [
+                    message: 'Hybrid search failed',
+                    context: [
                         'error' => $e->getMessage(),
                         'query' => $query ?? null,
                     ]
@@ -234,11 +234,11 @@ class SolrController extends Controller
 
             return new JSONResponse(
                     data: [
-                        'success' => false, statusCode:
-            'error'   => $e->getMessage(),
+                        'success' => false,
+                        'error'   => $e->getMessage(),
                         'query'   => $query ?? null,
                     ],
-                    500
+                    statusCode: 500
                     );
         }//end try
 
@@ -270,25 +270,25 @@ class SolrController extends Controller
 
             return new JSONResponse(
                     data: [
-                        'success'   => true, statusCode:
-            'stats'     => $stats,
+                        'success'   => true,
+                        'stats'     => $stats,
                         'timestamp' => date('c'),
                     ]
                     );
         } catch (\Exception $e) {
             $this->logger->error(
-                    'Failed to get vector stats',
-                    [
+                    message: 'Failed to get vector stats',
+                    context: [
                         'error' => $e->getMessage(),
                     ]
                     );
 
             return new JSONResponse(
                     data: [
-                        'success' => false, statusCode:
-            'error'   => $e->getMessage(),
+                        'success' => false,
+                        'error'   => $e->getMessage(),
                     ],
-                    500
+                    statusCode: 500
                     );
         }//end try
 
@@ -320,20 +320,20 @@ class SolrController extends Controller
             if ($provider === null || $provider === '') {
                 return new JSONResponse(
                         data: [
-                            'success' => false, statusCode:
-                'error'   => 'Provider is required (openai, ollama, or fireworks)',
+                            'success' => false,
+                            'error'   => 'Provider is required (openai, ollama, or fireworks)',
                         ],
-                        400
+                        statusCode: 400
                         );
             }
 
             if (in_array($provider, ['openai', 'ollama', 'fireworks']) === false) {
                 return new JSONResponse(
                         data: [
-                            'success' => false, statusCode:
-                'error'   => 'Invalid provider. Must be one of: openai, ollama, fireworks',
+                            'success' => false,
+                            'error'   => 'Invalid provider. Must be one of: openai, ollama, fireworks',
                         ],
-                        400
+                        statusCode: 400
                         );
             }
 
@@ -351,10 +351,10 @@ class SolrController extends Controller
                     if (($config['apiKey'] ?? '') === '') {
                         return new JSONResponse(
                                 data: [
-                                    'success' => false, statusCode:
-                        'error'   => 'OpenAI API key is required in config.apiKey',
+                                    'success' => false,
+                                    'error'   => 'OpenAI API key is required in config.apiKey',
                                 ],
-                                400
+                                statusCode: 400
                                 );
                     }
 
@@ -371,10 +371,10 @@ class SolrController extends Controller
                     if (($config['apiKey'] ?? '') === '') {
                         return new JSONResponse(
                                 data: [
-                                    'success' => false, statusCode:
-                        'error'   => 'Fireworks AI API key is required in config.apiKey',
+                                    'success' => false,
+                                    'error'   => 'Fireworks AI API key is required in config.apiKey',
                                 ],
-                                400
+                                statusCode: 400
                                 );
                     }
 
@@ -386,8 +386,8 @@ class SolrController extends Controller
 
             // Log the test attempt.
             $this->logger->info(
-                    'Testing vector embedding generation',
-                    [
+                    message: 'Testing vector embedding generation',
+                    context: [
                         'provider'   => $provider,
                         'model'      => $embeddingConfig['model'] ?? 'default',
                         'textLength' => strlen($testText),
@@ -402,18 +402,18 @@ class SolrController extends Controller
             if ($embedding === null || $embedding === []) {
                 return new JSONResponse(
                         data: [
-                            'success' => false, statusCode:
-                'error'   => 'Failed to generate embedding. Check provider configuration and credentials.',
+                            'success' => false,
+                            'error'   => 'Failed to generate embedding. Check provider configuration and credentials.',
                         ],
-                        500
+                        statusCode: 500
                         );
             }
 
             // Return success with metadata.
             return new JSONResponse(
                     data: [
-                        'success'   => true, statusCode:
-            'message'   => 'Embedding generated successfully',
+                        'success'   => true,
+                        'message'   => 'Embedding generated successfully',
                         'metadata'  => [
                             'provider'    => $provider,
                             'model'       => $embeddingConfig['model'] ?? 'default',
@@ -436,9 +436,9 @@ class SolrController extends Controller
                     );
 
             return new JSONResponse(
-                    data: [
-                        'success' => false, statusCode:
-            'error'   => $e->getMessage(),
+                    [
+                        'success' => false,
+                        'error'   => $e->getMessage(),
                     ],
                     500
                     );
@@ -463,26 +463,26 @@ class SolrController extends Controller
 
             return new JSONResponse(
                     data: [
-                        'success'     => true, statusCode:
-            'collections' => $collections,
+                        'success'     => true,
+                        'collections' => $collections,
                         'total'       => count($collections),
                         'timestamp'   => date('c'),
                     ]
                     );
         } catch (\Exception $e) {
             $this->logger->error(
-                    'Failed to list collections',
-                    [
+                    message: 'Failed to list collections',
+                    context: [
                         'error' => $e->getMessage(),
                     ]
                     );
 
             return new JSONResponse(
                     data: [
-                        'success' => false, statusCode:
-            'error'   => $e->getMessage(),
+                        'success' => false,
+                        'error'   => $e->getMessage(),
                     ],
-                    500
+                    statusCode: 500
                     );
         }//end try
 
@@ -505,26 +505,26 @@ class SolrController extends Controller
 
             return new JSONResponse(
                     data: [
-                        'success'    => true, statusCode:
-            'configSets' => $configSets,
+                        'success'    => true,
+                        'configSets' => $configSets,
                         'total'      => count($configSets),
                         'timestamp'  => date('c'),
                     ]
                     );
         } catch (\Exception $e) {
             $this->logger->error(
-                    'Failed to list ConfigSets',
-                    [
+                    message: 'Failed to list ConfigSets',
+                    context: [
                         'error' => $e->getMessage(),
                     ]
                     );
 
             return new JSONResponse(
                     data: [
-                        'success' => false, statusCode:
-            'error'   => $e->getMessage(),
+                        'success' => false,
+                        'error'   => $e->getMessage(),
                     ],
-                    500
+                    statusCode: 500
                     );
         }//end try
 
@@ -565,8 +565,8 @@ class SolrController extends Controller
 
             return new JSONResponse(
                     data: [
-                        'success'    => true, statusCode:
-            'message'    => 'Collection created successfully',
+                        'success'    => true,
+                        'message'    => 'Collection created successfully',
                         'collection' => $collectionName,
                         'result'     => $result,
                         'timestamp'  => date('c'),
@@ -574,8 +574,8 @@ class SolrController extends Controller
                     );
         } catch (\Exception $e) {
             $this->logger->error(
-                    'Failed to create collection',
-                    [
+                    message: 'Failed to create collection',
+                    context: [
                         'error'      => $e->getMessage(),
                         'collection' => $collectionName ?? null,
                     ]
@@ -583,10 +583,10 @@ class SolrController extends Controller
 
             return new JSONResponse(
                     data: [
-                        'success' => false, statusCode:
-            'error'   => $e->getMessage(),
+                        'success' => false,
+                        'error'   => $e->getMessage(),
                     ],
-                    500
+                    statusCode: 500
                     );
         }//end try
 
@@ -613,8 +613,8 @@ class SolrController extends Controller
 
             return new JSONResponse(
                     data: [
-                        'success'   => true, statusCode:
-            'message'   => 'ConfigSet created successfully',
+                        'success'   => true,
+                        'message'   => 'ConfigSet created successfully',
                         'configSet' => $name,
                         'result'    => $result,
                         'timestamp' => date('c'),
@@ -622,8 +622,8 @@ class SolrController extends Controller
                     );
         } catch (\Exception $e) {
             $this->logger->error(
-                    'Failed to create ConfigSet',
-                    [
+                    message: 'Failed to create ConfigSet',
+                    context: [
                         'error'     => $e->getMessage(),
                         'configSet' => $name ?? null,
                     ]
@@ -631,10 +631,10 @@ class SolrController extends Controller
 
             return new JSONResponse(
                     data: [
-                        'success' => false, statusCode:
-            'error'   => $e->getMessage(),
+                        'success' => false,
+                        'error'   => $e->getMessage(),
                     ],
-                    500
+                    statusCode: 500
                     );
         }//end try
 
@@ -660,8 +660,8 @@ class SolrController extends Controller
 
             return new JSONResponse(
                     data: [
-                        'success'   => true, statusCode:
-            'message'   => 'ConfigSet deleted successfully',
+                        'success'   => true,
+                        'message'   => 'ConfigSet deleted successfully',
                         'configSet' => $name,
                         'result'    => $result,
                         'timestamp' => date('c'),
@@ -669,8 +669,8 @@ class SolrController extends Controller
                     );
         } catch (\Exception $e) {
             $this->logger->error(
-                    'Failed to delete ConfigSet',
-                    [
+                    message: 'Failed to delete ConfigSet',
+                    context: [
                         'error'     => $e->getMessage(),
                         'configSet' => $name ?? null,
                     ]
@@ -678,10 +678,10 @@ class SolrController extends Controller
 
             return new JSONResponse(
                     data: [
-                        'success' => false, statusCode:
-            'error'   => $e->getMessage(),
+                        'success' => false,
+                        'error'   => $e->getMessage(),
                     ],
-                    500
+                    statusCode: 500
                     );
         }//end try
 
@@ -708,8 +708,8 @@ class SolrController extends Controller
 
             return new JSONResponse(
                     data: [
-                        'success'   => true, statusCode:
-            'message'   => 'Collection copied successfully',
+                        'success'   => true,
+                        'message'   => 'Collection copied successfully',
                         'source'    => $sourceCollection,
                         'target'    => $targetCollection,
                         'result'    => $result,
@@ -718,8 +718,8 @@ class SolrController extends Controller
                     );
         } catch (\Exception $e) {
             $this->logger->error(
-                    'Failed to copy collection',
-                    [
+                    message: 'Failed to copy collection',
+                    context: [
                         'error'  => $e->getMessage(),
                         'source' => $sourceCollection ?? null,
                         'target' => $targetCollection ?? null,
@@ -728,10 +728,10 @@ class SolrController extends Controller
 
             return new JSONResponse(
                     data: [
-                        'success' => false, statusCode:
-            'error'   => $e->getMessage(),
+                        'success' => false,
+                        'error'   => $e->getMessage(),
                     ],
-                    500
+                    statusCode: 500
                     );
         }//end try
 
@@ -760,19 +760,23 @@ class SolrController extends Controller
             $solrObjectService = $this->container->get(SolrObjectService::class);
 
             // Fetch the object.
-            $object = $objectMapper->find(id: $objectId);
+            $object = $objectMapper->find($objectId);
 
             // Vectorize the object.
-            $result = $solrObjectService->vectorizeObject($object, register: $provider);
+            $result = $solrObjectService->vectorizeObject($object, $provider);
 
             return new JSONResponse(
                     data: [
-                        'success'   => true, schema: statusCode:
-            'message'   => 'Object vectorized successfully', extend: ...$result, files: 'timestamp' => date('c'), rbac: ]
+                        'success'   => true,
+                        'message'   => 'Object vectorized successfully',
+                        ...$result,
+                        'timestamp' => date('c'),
+                    ]
                     );
         } catch (\Exception $e) {
             $this->logger->error(
-                    'Failed to vectorize object', multi: [
+                    message: 'Failed to vectorize object',
+                    context: [
                         'error'     => $e->getMessage(),
                         'object_id' => $objectId ?? null,
                     ]
@@ -780,11 +784,11 @@ class SolrController extends Controller
 
             return new JSONResponse(
                     data: [
-                        'success'   => false, statusCode:
-            'error'     => $e->getMessage(),
+                        'success'   => false,
+                        'error'     => $e->getMessage(),
                         'object_id' => $objectId ?? null,
                     ],
-                    500
+                    statusCode: 500
                     );
         }//end try
 
@@ -820,20 +824,20 @@ class SolrController extends Controller
             if ($limit < 1 || $limit > 1000) {
                 return new JSONResponse(
                         data: [
-                            'success' => false, statusCode:
-                'error'   => 'Limit must be between 1 and 1000',
+                            'success' => false,
+                            'error'   => 'Limit must be between 1 and 1000',
                         ],
-                        400
+                        statusCode: 400
                         );
             }
 
             if ($offset < 0) {
                 return new JSONResponse(
                         data: [
-                            'success' => false, statusCode:
-                'error'   => 'Offset must be >= 0',
+                            'success' => false,
+                            'error'   => 'Offset must be >= 0',
                         ],
-                        400
+                        statusCode: 400
                         );
             }
 
@@ -853,13 +857,13 @@ class SolrController extends Controller
 
             // Fetch objects with conditions.
             // Note: This is a simplified example - adjust based on actual ObjectEntityMapper methods.
-            $objects = $objectMapper->findAll(config: $limit, rbac: $offset);
+            $objects = $objectMapper->findAll($limit, $offset);
 
             if (count($objects) === 0) {
                 return new JSONResponse(
                         data: [
-                            'success'    => true, multi: statusCode:
-                'message'    => 'No objects found to vectorize',
+                            'success'    => true,
+                            'message'    => 'No objects found to vectorize',
                             'total'      => 0,
                             'successful' => 0,
                             'failed'     => 0,
@@ -874,8 +878,8 @@ class SolrController extends Controller
 
             return new JSONResponse(
                     data: [
-                        'success'    => $result['success'], statusCode:
-            'message'    => "Processed {$result['successful']} of {$result['total']} objects",
+                        'success'    => $result['success'],
+                        'message'    => "Processed {$result['successful']} of {$result['total']} objects",
                         ...$result,
                         'pagination' => [
                             'limit'    => $limit,
@@ -891,8 +895,8 @@ class SolrController extends Controller
                     );
         } catch (\Exception $e) {
             $this->logger->error(
-                    'Failed to bulk vectorize objects',
-                    [
+                    message: 'Failed to bulk vectorize objects',
+                    context: [
                         'error'       => $e->getMessage(),
                         'schema_id'   => $schemaId ?? null,
                         'register_id' => $registerId ?? null,
@@ -903,10 +907,10 @@ class SolrController extends Controller
 
             return new JSONResponse(
                     data: [
-                        'success' => false, statusCode:
-            'error'   => $e->getMessage(),
+                        'success' => false,
+                        'error'   => $e->getMessage(),
                     ],
-                    500
+                    statusCode: 500
                     );
         }//end try
 
@@ -947,21 +951,21 @@ class SolrController extends Controller
 
             return new JSONResponse(
                     data: [
-                        'success'   => true, statusCode:
-            'stats'     => [
-                'total_objects'       => $totalObjects,
-                'vectorized_objects'  => $vectorizedObjects,
-                'progress_percentage' => $progress,
-                'remaining_objects'   => $totalObjects - $vectorizedObjects,
-                'vector_breakdown'    => $vectorStats,
-            ],
+                        'success'   => true,
+                        'stats'     => [
+                            'total_objects'       => $totalObjects,
+                            'vectorized_objects'  => $vectorizedObjects,
+                            'progress_percentage' => $progress,
+                            'remaining_objects'   => $totalObjects - $vectorizedObjects,
+                            'vector_breakdown'    => $vectorStats,
+                        ],
                         'timestamp' => date('c'),
                     ]
                     );
         } catch (\Exception $e) {
             $this->logger->error(
-                    'Failed to get vectorization stats',
-                    [
+                    message: 'Failed to get vectorization stats',
+                    context: [
                         'error' => $e->getMessage(),
                         'trace' => $e->getTraceAsString(),
                     ]
@@ -969,10 +973,10 @@ class SolrController extends Controller
 
             return new JSONResponse(
                     data: [
-                        'success' => false, statusCode:
-            'error'   => $e->getMessage(),
+                        'success' => false,
+                        'error'   => $e->getMessage(),
                     ],
-                    500
+                    statusCode: 500
                     );
         }//end try
 

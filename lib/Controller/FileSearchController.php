@@ -82,10 +82,10 @@ class FileSearchController extends Controller
             if (empty($query) === true) {
                 return new JSONResponse(
                         data: [
-                            'success' => false, statusCode:
-                'message' => 'Query parameter is required',
+                            'success' => false,
+                            'message' => 'Query parameter is required',
                         ],
-                        400
+                        statusCode: 400
                         );
             }
 
@@ -95,9 +95,11 @@ class FileSearchController extends Controller
             if ($fileCollection === null || $fileCollection === '') {
                 return new JSONResponse(
                         data: [
-                            'success' => false, statusCode:
-                'message' => 'File collection not configured',
+                            'success' => false,
+                            'message' => 'File collection not configured',
                         ],
+                        statusCode: 400
+                        );
                         422
                         );
             }
@@ -165,8 +167,8 @@ class FileSearchController extends Controller
 
             return new JSONResponse(
                     data: [
-                        'success'     => true, statusCode:
-            'query'       => $query,
+                        'success'     => true,
+                        'query'       => $query,
                         'total'       => $numFound,
                         'results'     => array_values($groupedResults),
                         'search_type' => 'keyword',
@@ -174,8 +176,8 @@ class FileSearchController extends Controller
                     );
         } catch (\Exception $e) {
             $this->logger->error(
-                    '[FileSearchController] Keyword search failed',
-                    [
+                    message: '[FileSearchController] Keyword search failed',
+                    context: [
                         'error' => $e->getMessage(),
                     ]
                     );
@@ -248,8 +250,8 @@ class FileSearchController extends Controller
                     );
         } catch (\Exception $e) {
             $this->logger->error(
-                    '[FileSearchController] Semantic search failed',
-                    [
+                    message: '[FileSearchController] Semantic search failed',
+                    context: [
                         'error' => $e->getMessage(),
                     ]
                     );
@@ -300,10 +302,10 @@ class FileSearchController extends Controller
             if (empty($query) === true) {
                 return new JSONResponse(
                         data: [
-                            'success' => false, statusCode:
-                'message' => 'Query parameter is required',
+                            'success' => false,
+                            'message' => 'Query parameter is required',
                         ],
-                        400
+                        statusCode: 400
                         );
             }
 
@@ -317,8 +319,8 @@ class FileSearchController extends Controller
 
             return new JSONResponse(
                     data: [
-                        'success'     => true, statusCode:
-            'query'       => $query,
+                        'success'     => true,
+                        'query'       => $query,
                         'total'       => count($results),
                         'results'     => $results,
                         'search_type' => 'hybrid',
@@ -330,8 +332,8 @@ class FileSearchController extends Controller
                     );
         } catch (\Exception $e) {
             $this->logger->error(
-                    '[FileSearchController] Hybrid search failed',
-                    [
+                    message: '[FileSearchController] Hybrid search failed',
+                    context: [
                         'error' => $e->getMessage(),
                     ]
                     );

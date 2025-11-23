@@ -925,7 +925,7 @@ class ConfigurationService
 
             // If we have a stored version, compare it with the current version.
             if ($storedVersion !== '' && version_compare($version, $storedVersion, '<=') === true) {
-                $this->logger->info("Skipping import for app {$appId} - current version {$version} is not newer than stored version {$storedVersion}");
+                $this->logger->info(message: "Skipping import for app {$appId} - current version {$version} is not newer than stored version {$storedVersion}");
 
                 // Return empty result to indicate no import was performed.
                 return [
@@ -944,7 +944,7 @@ class ConfigurationService
 
         // Log force import if enabled.
         if ($force === true && $appId !== null && $version !== null) {
-            $this->logger->info("Force import enabled for app {$appId} version {$version} - bypassing version check");
+            $this->logger->info(message: "Force import enabled for app {$appId} version {$version} - bypassing version check");
         }
 
         // Reset the maps for this import.
@@ -967,8 +967,8 @@ class ConfigurationService
         if (isset($data['components']['schemas']) === true && is_array($data['components']['schemas']) === true) {
             $slugsAndIdsMap = $this->schemaMapper->getSlugToIdMap();
             $this->logger->info(
-                    'Starting schema import process',
-                    [
+                    message: 'Starting schema import process',
+                    context: [
                         'totalSchemas' => count($data['components']['schemas']),
                         'schemaKeys'   => array_keys($data['components']['schemas']),
                     ]
@@ -1119,7 +1119,7 @@ class ConfigurationService
                     ],
                     '_limit' => 1,
                 ];
-                $this->logger->debug('Import object search filter', ['filter' => $search]);
+                $this->logger->debug(message: 'Import object search filter', context: ['filter' => $search]);
 
                 // Search for existing object.
                 $results        = $this->objectService->searchObjects($search, true, true);
@@ -1202,7 +1202,7 @@ class ConfigurationService
         // Store the version information if appId and version are available.
         if ($appId !== null && $version !== null) {
             $this->appConfig->setValueString('openregister', "imported_config_{$appId}_version", $version);
-            $this->logger->info("Stored version {$version} for app {$appId} after successful import");
+            $this->logger->info(message: "Stored version {$version} for app {$appId} after successful import");
         }
 
         return $result;
@@ -1294,7 +1294,7 @@ class ConfigurationService
                 $existingConfiguration->setObjects(array_unique(array_merge($existingObjectIds, $objectIds)));
 
                 $configuration = $this->configurationMapper->update($existingConfiguration);
-                $this->logger->info("Updated existing configuration for app {$appId} with version {$version}");
+                $this->logger->info(message: "Updated existing configuration for app {$appId} with version {$version}");
             } else {
                 // Create new configuration.
                 $configuration = new Configuration();
@@ -1363,12 +1363,12 @@ class ConfigurationService
                 }
 
                 $configuration = $this->configurationMapper->insert($configuration);
-                $this->logger->info("Created new configuration for app {$appId} with version {$version}");
+                $this->logger->info(message: "Created new configuration for app {$appId} with version {$version}");
             }//end if
 
             return $configuration;
         } catch (\Exception $e) {
-            $this->logger->error("Failed to create or update configuration for app {$appId}: ".$e->getMessage());
+            $this->logger->error(message: "Failed to create or update configuration for app {$appId}: ".$e->getMessage());
             throw new Exception("Failed to create or update configuration: ".$e->getMessage());
         }//end try
 
@@ -1403,7 +1403,7 @@ class ConfigurationService
             } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
                 // Register doesn't exist in current organisation context, we'll create a new one.
                 // This is expected behavior when importing from another instance.
-                $this->logger->info("Register '{$data['slug']}' not found in current organisation context, will create new one");
+                $this->logger->info(message: "Register '{$data['slug']}' not found in current organisation context, will create new one");
             } catch (\OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
                 // Multiple registers found with the same identifier.
                 $this->handleDuplicateRegisterError($data['slug'], $appId ?? 'unknown', $version ?? 'unknown');
@@ -1412,7 +1412,7 @@ class ConfigurationService
             if ($existingRegister !== null) {
                 // Compare versions using version_compare for proper semver comparison.
                 if ($force === false && version_compare($data['version'], $existingRegister->getVersion(), '<=') === true) {
-                    $this->logger->info('Skipping register import as existing version is newer or equal.');
+                    $this->logger->info(message: 'Skipping register import as existing version is newer or equal.');
                     // Even though we're skipping the update, we still need to add it to the map.
                     return $existingRegister;
                 }
@@ -1435,7 +1435,7 @@ class ConfigurationService
 
             return $register;
         } catch (Exception $e) {
-            $this->logger->error('Failed to import register: '.$e->getMessage());
+            $this->logger->error(message: 'Failed to import register: '.$e->getMessage());
             throw new Exception('Failed to import register: '.$e->getMessage());
         }//end try
 
@@ -1693,7 +1693,7 @@ class ConfigurationService
             } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
                 // Schema doesn't exist in current organisation context, we'll create a new one.
                 // This is expected behavior when importing from another instance.
-                $this->logger->info("Schema '{$data['slug']}' not found in current organisation context, will create new one");
+                $this->logger->info(message: "Schema '{$data['slug']}' not found in current organisation context, will create new one");
             } catch (\OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
                 // Multiple schemas found with the same identifier.
                 $this->handleDuplicateSchemaError($data['slug'], $appId ?? 'unknown', $version ?? 'unknown');
@@ -1702,7 +1702,7 @@ class ConfigurationService
             if ($existingSchema !== null) {
                 // Compare versions using version_compare for proper semver comparison.
                 if ($force === false && version_compare($data['version'], $existingSchema->getVersion(), '<=') === true) {
-                    $this->logger->info('Skipping schema import as existing version is newer or equal.');
+                    $this->logger->info(message: 'Skipping schema import as existing version is newer or equal.');
                     // Even though we're skipping the update, we still need to add it to the map.
                     return $existingSchema;
                 }
@@ -1725,7 +1725,7 @@ class ConfigurationService
 
             return $schema;
         } catch (Exception $e) {
-            $this->logger->error('Failed to import schema: '.$e->getMessage());
+            $this->logger->error(message: 'Failed to import schema: '.$e->getMessage());
             throw new Exception('Failed to import schema: '.$e->getMessage(), $e->getCode(), $e);
         }//end try
 
@@ -1753,7 +1753,7 @@ class ConfigurationService
 
             // Validate required @self metadata.
             if (!isset($data['@self']['register']) || !isset($data['@self']['schema']) || !isset($data['name'])) {
-                $this->logger->warning('Object data missing required @self metadata (register, schema) or name field');
+                $this->logger->warning(message: 'Object data missing required @self metadata (register, schema) or name field');
                 return null;
             }
 
@@ -1830,7 +1830,7 @@ class ConfigurationService
 
             return $object;
         } catch (Exception $e) {
-            $this->logger->error('Failed to import object: '.$e->getMessage());
+            $this->logger->error(message: 'Failed to import object: '.$e->getMessage());
             throw new Exception('Failed to import object: '.$e->getMessage());
         }//end try
 
@@ -1854,7 +1854,7 @@ class ConfigurationService
     {
         // Check if Open Connector is available.
         if ($this->getOpenConnector() === false) {
-            $this->logger->warning('Open Connector is not available for importing configuration');
+            $this->logger->warning(message: 'Open Connector is not available for importing configuration');
             return null;
         }
 
@@ -1863,7 +1863,7 @@ class ConfigurationService
             $exportedData = $this->openConnectorConfigurationService->exportRegister($registerId);
 
             if (empty($exportedData)) {
-                $this->logger->error('No data received from Open Connector export');
+                $this->logger->error(message: 'No data received from Open Connector export');
                 return null;
             }
 
@@ -1879,7 +1879,7 @@ class ConfigurationService
             // Save the configuration.
             return $this->configurationMapper->insert($configuration);
         } catch (Exception $e) {
-            $this->logger->error('Failed to import configuration from Open Connector: '.$e->getMessage());
+            $this->logger->error(message: 'Failed to import configuration from Open Connector: '.$e->getMessage());
             throw new Exception('Failed to import configuration from Open Connector: '.$e->getMessage());
         }//end try
 
@@ -2042,7 +2042,7 @@ class ConfigurationService
                     }
                 } catch (\Exception $e) {
                     // No existing configuration found, we'll create a new one.
-                    $this->logger->info("No existing configuration found for app {$appId}, will create new one");
+                    $this->logger->info(message: "No existing configuration found for app {$appId}, will create new one");
                 }
             }
 
@@ -2243,7 +2243,7 @@ class ConfigurationService
 
             return $result;
         } catch (\Exception $e) {
-            $this->logger->error("Failed to import configuration for app {$appId}: ".$e->getMessage());
+            $this->logger->error(message: "Failed to import configuration for app {$appId}: ".$e->getMessage());
             throw new Exception("Failed to import configuration for app {$appId}: ".$e->getMessage());
         }//end try
 
@@ -2269,7 +2269,7 @@ class ConfigurationService
 
             return $storedVersion !== '' ? $storedVersion : null;
         } catch (\Exception $e) {
-            $this->logger->error("Failed to get configured version for app {$appId}: ".$e->getMessage());
+            $this->logger->error(message: "Failed to get configured version for app {$appId}: ".$e->getMessage());
             return null;
         }
 
@@ -2301,7 +2301,7 @@ class ConfigurationService
             $duplicateInfo
         );
 
-        $this->logger->error($errorMessage);
+        $this->logger->error(message: $errorMessage);
         throw new \Exception($errorMessage);
 
     }//end handleDuplicateSchemaError()
@@ -2374,7 +2374,7 @@ class ConfigurationService
             $duplicateInfo
         );
 
-        $this->logger->error($errorMessage);
+        $this->logger->error(message: $errorMessage);
         throw new \Exception($errorMessage);
 
     }//end handleDuplicateRegisterError()
@@ -2437,13 +2437,13 @@ class ConfigurationService
     {
         // Only check remote sources.
         if ($configuration->isRemoteSource() === false) {
-            $this->logger->info('Configuration is not from a remote source, skipping version check');
+            $this->logger->info(message: 'Configuration is not from a remote source, skipping version check');
             return null;
         }
 
         $sourceUrl = $configuration->getSourceUrl();
         if (empty($sourceUrl) === true) {
-            $this->logger->warning('Configuration has no source URL, cannot check remote version');
+            $this->logger->warning(message: 'Configuration has no source URL, cannot check remote version');
             return null;
         }
 
@@ -2452,7 +2452,7 @@ class ConfigurationService
             $remoteData = $this->getJSONfromURL($sourceUrl);
 
             if ($remoteData instanceof JSONResponse) {
-                $this->logger->error('Failed to fetch remote configuration', ['error' => $remoteData->getData()]);
+                $this->logger->error(message: 'Failed to fetch remote configuration', context: ['error' => $remoteData->getData()]);
                 return null;
             }
 
@@ -2460,7 +2460,7 @@ class ConfigurationService
             $remoteVersion = $remoteData['version'] ?? $remoteData['info']['version'] ?? null;
 
             if ($remoteVersion === null) {
-                $this->logger->warning('Remote configuration does not contain a version field');
+                $this->logger->warning(message: 'Remote configuration does not contain a version field');
                 return null;
             }
 
@@ -2469,14 +2469,14 @@ class ConfigurationService
             $configuration->setLastChecked(new \DateTime());
             $this->configurationMapper->update($configuration);
 
-            $this->logger->info("Checked remote version for configuration {$configuration->getId()}: {$remoteVersion}");
+            $this->logger->info(message: "Checked remote version for configuration {$configuration->getId()}: {$remoteVersion}");
 
             return $remoteVersion;
         } catch (GuzzleException $e) {
-            $this->logger->error("Failed to check remote version for configuration {$configuration->getId()}: ".$e->getMessage());
+            $this->logger->error(message: "Failed to check remote version for configuration {$configuration->getId()}: ".$e->getMessage());
             throw $e;
         } catch (Exception $e) {
-            $this->logger->error("Unexpected error checking remote version: ".$e->getMessage());
+            $this->logger->error(message: "Unexpected error checking remote version: ".$e->getMessage());
             return null;
         }//end try
 
@@ -2573,7 +2573,7 @@ class ConfigurationService
         }
 
         try {
-            $this->logger->info("Fetching remote configuration from: {$sourceUrl}");
+            $this->logger->info(message: "Fetching remote configuration from: {$sourceUrl}");
 
             // Use existing method to fetch and parse the remote configuration.
             $remoteData = $this->getJSONfromURL($sourceUrl);
@@ -2588,7 +2588,7 @@ class ConfigurationService
 
             return $remoteData;
         } catch (GuzzleException $e) {
-            $this->logger->error("Failed to fetch remote configuration: ".$e->getMessage());
+            $this->logger->error(message: "Failed to fetch remote configuration: ".$e->getMessage());
             return new JSONResponse(
                 data: ['error' => 'Failed to fetch remote configuration: '.$e->getMessage()],
                 statusCode: 500
@@ -3033,7 +3033,7 @@ class ConfigurationService
      */
     public function importConfigurationWithSelection(Configuration $configuration, array $selection): array
     {
-        $this->logger->info("Starting selective import for configuration {$configuration->getId()}", ['selection' => $selection]);
+        $this->logger->info(message: "Starting selective import for configuration {$configuration->getId()}", context: ['selection' => $selection]);
 
         // Fetch the remote configuration.
         $remoteData = $this->fetchRemoteConfiguration($configuration);

@@ -263,8 +263,8 @@ class ChatService
         array $ragSettings=[]
     ): array {
         $this->logger->info(
-                '[ChatService] Processing message',
-                [
+                message: '[ChatService] Processing message',
+                context: [
                     'conversationId' => $conversationId,
                     'userId'         => $userId,
                     'messageLength'  => strlen($userMessage),
@@ -342,12 +342,12 @@ class ChatService
 
             if ($shouldGenerateTitle === true) {
                 $this->logger->info(
-                        '[ChatService] Generating title for conversation',
-                        [
-                            'conversationId' => $conversationId,
-                            'currentTitle'   => $currentTitle,
-                            'messageCount'   => $messageCount,
-                        ]
+                    message: '[ChatService] Generating title for conversation',
+                    context: [
+                        'conversationId' => $conversationId,
+                        'currentTitle'   => $currentTitle,
+                        'messageCount'   => $messageCount,
+                    ]
                         );
 
                 $title = $this->generateConversationTitle($userMessage);
@@ -366,11 +366,11 @@ class ChatService
                 $this->conversationMapper->update($conversation);
 
                 $this->logger->info(
-                        '[ChatService] Title generated',
-                        [
-                            'conversationId' => $conversationId,
-                            'newTitle'       => $uniqueTitle,
-                        ]
+                    message: '[ChatService] Title generated',
+                    context: [
+                        'conversationId' => $conversationId,
+                        'newTitle'       => $uniqueTitle,
+                    ]
                         );
             }//end if
 
@@ -380,8 +380,8 @@ class ChatService
 
             // Log overall performance.
             $this->logger->info(
-                    '[ChatService] Message processed - OVERALL PERFORMANCE',
-                    [
+                    message: '[ChatService] Message processed - OVERALL PERFORMANCE',
+                    context: [
                         'conversationId'  => $conversationId,
                         'timings'         => [
                             'contextRetrieval' => round($contextTime, 2).'s',
@@ -401,8 +401,8 @@ class ChatService
             ];
         } catch (\Exception $e) {
             $this->logger->error(
-                    '[ChatService] Failed to process message',
-                    [
+                    message: '[ChatService] Failed to process message',
+                    context: [
                         'error' => $e->getMessage(),
                         'trace' => $e->getTraceAsString(),
                     ]
@@ -426,8 +426,8 @@ class ChatService
     private function retrieveContext(string $query, ?Agent $agent, array $selectedViews=[], array $ragSettings=[]): array
     {
         $this->logger->info(
-                '[ChatService] Retrieving context',
-                [
+                message: '[ChatService] Retrieving context',
+                context: [
                     'query'       => substr($query, 0, 100),
                     'hasAgent'    => $agent !== null,
                     'ragSettings' => $ragSettings,
@@ -454,27 +454,29 @@ class ChatService
             if (!empty($selectedViews)) {
                 $viewFilters = array_intersect($agentViews, $selectedViews);
                 $this->logger->info(
-                        '[ChatService] Using filtered views',
-                        [
-                            'agentViews'    => count($agentViews),
-                            'selectedViews' => count($selectedViews),
-                            'filteredViews' => count($viewFilters),
-                        ]
+                    message: '[ChatService] Using filtered views',
+                    context: [
+                        'agentViews'    => count($agentViews),
+                        'selectedViews' => count($selectedViews),
+                        'filteredViews' => count($viewFilters),
+                    ]
                         );
             } else {
                 // Use all agent views.
                 $viewFilters = $agentViews;
                 $this->logger->info(
-                        '[ChatService] Using all agent views',
-                        [
-                            'views' => count($viewFilters),
-                        ]
+                    message: '[ChatService] Using all agent views',
+                    context: [
+                        'views' => count($viewFilters),
+                    ]
                         );
             }
         } else if (!empty($selectedViews)) {
             // User selected views but agent has no views configured - use selected ones.
             $viewFilters = $selectedViews;
             $this->logger->info(
+                    message:
+                message:
                     '[ChatService] Using user-selected views (agent has none)',
                     [
                         'views' => count($viewFilters),
@@ -532,12 +534,12 @@ class ChatService
             // Ensure results is an array.
             if (!is_array($results)) {
                 $this->logger->warning(
-                        '[ChatService] Search returned non-array result',
-                        [
-                            'searchMode'  => $searchMode,
-                            'resultType'  => gettype($results),
-                            'resultValue' => $results,
-                        ]
+                    message: '[ChatService] Search returned non-array result',
+                    context: [
+                        'searchMode'  => $searchMode,
+                        'resultType'  => gettype($results),
+                        'resultValue' => $results,
+                    ]
                         );
                 $results = [];
             }
@@ -550,6 +552,9 @@ class ChatService
                 // Skip if result is not an array.
                 if (!is_array($result)) {
                     $this->logger->warning(
+                    message:
+                        message:
+                            message:
                             '[ChatService] Skipping non-array result',
                             [
                                 'resultType'  => gettype($result),
@@ -630,6 +635,8 @@ class ChatService
             }//end foreach
 
             $this->logger->info(
+                    message:
+                message:
                     '[ChatService] Context retrieved',
                     [
                         'numSources'        => count($sources),
@@ -648,6 +655,9 @@ class ChatService
             // DEBUG: Log first source.
             if (!empty($sources)) {
                 $this->logger->info(
+                    message:
+                        message:
+                message:
                         '[ChatService] First source details',
                         [
                             'source' => $sources[0],
@@ -661,6 +671,7 @@ class ChatService
             ];
         } catch (\Exception $e) {
             $this->logger->error(
+                    message:
                     '[ChatService] Failed to retrieve context',
                     [
                         'error' => $e->getMessage(),
@@ -785,6 +796,7 @@ class ChatService
         );
 
         $this->logger->debug(
+                message:
                 '[ChatService] Building message history',
                 [
                     'conversationId' => $conversationId,
@@ -798,6 +810,8 @@ class ChatService
             $role    = $message->getRole();
 
             $this->logger->debug(
+                    message:
+                message:
                     '[ChatService] Adding message to history',
                     [
                         'role'          => $role,
@@ -818,6 +832,9 @@ class ChatService
                     $history[] = LLPhantMessage::system($content);
                 } else {
                     $this->logger->warning(
+                    message:
+                        message:
+                            message:
                             '[ChatService] Unknown message role',
                             [
                                 'role' => $role,
@@ -826,6 +843,8 @@ class ChatService
                 }
             } else {
                 $this->logger->warning(
+                    message:
+                        message:
                         '[ChatService] Skipping message with missing role or content',
                         [
                             'hasRole'    => !empty($role),
@@ -836,6 +855,7 @@ class ChatService
         }//end foreach
 
         $this->logger->info(
+                message:
                 '[ChatService] Message history built',
                 [
                     'historyCount' => count($history),
@@ -870,6 +890,7 @@ class ChatService
         $startTime = microtime(true);
 
         $this->logger->info(
+                message:
                 '[ChatService] Generating response',
                 [
                     'messageLength' => strlen($userMessage),
@@ -885,8 +906,8 @@ class ChatService
         $toolsTime      = microtime(true) - $toolsStartTime;
         if (!empty($tools)) {
             $this->logger->info(
-                    '[ChatService] Agent has tools enabled',
-                    [
+                    message: '[ChatService] Agent has tools enabled',
+                    context: [
                         'toolCount' => count($tools),
                         'tools'     => array_map(fn($tool) => $tool->getName(), $tools),
                     ]
@@ -904,6 +925,7 @@ class ChatService
         }
 
         $this->logger->info(
+                message:
                 '[ChatService] Using chat provider',
                 [
                     'provider'  => $chatProvider,
@@ -1046,6 +1068,8 @@ class ChatService
             $totalTime = microtime(true) - $startTime;
 
             $this->logger->info(
+                    message:
+                message:
                     '[ChatService] Response generated - PERFORMANCE',
                     [
                         'provider'       => $chatProvider,
@@ -1063,6 +1087,7 @@ class ChatService
             return $response;
         } catch (\Exception $e) {
             $this->logger->error(
+                    message:
                     '[ChatService] Failed to generate response',
                     [
                         'provider' => $chatProvider ?? 'unknown',
@@ -1084,7 +1109,9 @@ class ChatService
      */
     public function generateConversationTitle(string $firstMessage): string
     {
-        $this->logger->info('[ChatService] Generating conversation title');
+        $this->logger->info(
+                message:'[ChatService] Generating conversation title'
+                );
 
         try {
             // Get LLM configuration.
@@ -1177,6 +1204,7 @@ class ChatService
             return $title;
         } catch (\Exception $e) {
             $this->logger->warning(
+                    message:
                     '[ChatService] Failed to generate title, using fallback',
                     [
                         'error' => $e->getMessage(),
@@ -1231,6 +1259,7 @@ class ChatService
     public function ensureUniqueTitle(string $baseTitle, string $userId, int $agentId): string
     {
         $this->logger->info(
+                message:
                 '[ChatService] Ensuring unique title',
                 [
                     'baseTitle' => $baseTitle,
@@ -1272,6 +1301,7 @@ class ChatService
         $uniqueTitle = $baseTitle.' ('.($maxNumber + 1).')';
 
         $this->logger->info(
+                message:
                 '[ChatService] Generated unique title',
                 [
                     'baseTitle'   => $baseTitle,
@@ -1301,6 +1331,7 @@ class ChatService
     public function testChat(string $provider, array $config, string $testMessage='Hello! Please respond with a brief greeting.'): array
     {
         $this->logger->info(
+                message:
                 '[ChatService] Testing chat functionality',
                 [
                     'provider'          => $provider,
@@ -1385,6 +1416,8 @@ class ChatService
 
                 // Generate response.
                 $this->logger->debug(
+                    message:
+                message:
                         '[ChatService] Sending test message to Ollama',
                         [
                             'provider' => $provider,
@@ -1400,6 +1433,8 @@ class ChatService
 
                 // Generate response.
                 $this->logger->debug(
+                    message:
+                message:
                         '[ChatService] Sending test message to LLM',
                         [
                             'provider' => $provider,
@@ -1412,6 +1447,8 @@ class ChatService
             }//end if
 
             $this->logger->info(
+                    message:
+                message:
                     '[ChatService] Chat test successful',
                     [
                         'provider'       => $provider,
@@ -1447,6 +1484,7 @@ class ChatService
             }
 
             $this->logger->error(
+                    message:
                     '[ChatService] Chat test failed (OpenAI client error)',
                     [
                         'provider'     => $provider,
@@ -1467,6 +1505,7 @@ class ChatService
             ];
         } catch (\Exception $e) {
             $this->logger->error(
+                    message:
                     '[ChatService] Chat test failed',
                     [
                         'provider' => $provider,
@@ -1505,6 +1544,7 @@ class ChatService
         $url = rtrim($baseUrl, '/').'/chat/completions';
 
         $this->logger->debug(
+                message:
                 '[ChatService] Calling Fireworks chat API directly',
                 [
                     'url'   => $url,
@@ -1594,6 +1634,7 @@ class ChatService
         // Functions will be ignored for Fireworks provider.
         if (!empty($functions)) {
             $this->logger->warning(
+                    message:
                     '[ChatService] Function calling not yet supported for Fireworks AI. Tools will be ignored.',
                     [
                         'functionCount' => count($functions),
@@ -1602,8 +1643,8 @@ class ChatService
         }
 
         $this->logger->debug(
-                '[ChatService] Calling Fireworks chat API with history',
-                [
+                message: '[ChatService] Calling Fireworks chat API with history',
+                context: [
                     'url'          => $url,
                     'model'        => $model,
                     'historyCount' => count($messageHistory),
@@ -1626,6 +1667,7 @@ class ChatService
 
         // Log final message count.
         $this->logger->debug(
+                message:
                 '[ChatService] Prepared messages for API',
                 [
                     'messageCount' => count($messages),
@@ -1718,6 +1760,7 @@ class ChatService
         }
 
         $this->logger->info(
+                message:
                 '[ChatService] Triggering conversation summarization',
                 [
                     'conversationId' => $conversation->getId(),
@@ -1747,6 +1790,8 @@ class ChatService
             $this->conversationMapper->update($conversation);
 
             $this->logger->info(
+                    message:
+                message:
                     '[ChatService] Conversation summarized',
                     [
                         'conversationId' => $conversation->getId(),
@@ -1755,6 +1800,7 @@ class ChatService
                     );
         } catch (\Exception $e) {
             $this->logger->error(
+                    message:
                     '[ChatService] Failed to summarize conversation',
                     [
                         'error' => $e->getMessage(),
@@ -1923,6 +1969,8 @@ class ChatService
         if (!empty($selectedTools)) {
             $enabledToolIds = array_intersect($enabledToolIds, $selectedTools);
             $this->logger->info(
+                    message:
+                message:
                     '[ChatService] Filtering tools',
                     [
                         'agentTools'    => count($agent->getTools()),
@@ -1942,11 +1990,19 @@ class ChatService
             if ($tool !== null) {
                 $tool->setAgent($agent);
                 $tools[] = $tool;
-                $this->logger->debug('[ChatService] Loaded tool', ['id' => $fullToolId]);
+                $this->logger->debug(
+                    message:
+                message:'[ChatService] Loaded tool',
+                        ['id' => $fullToolId]
+                        );
             } else {
-                $this->logger->warning('[ChatService] Tool not found', ['id' => $fullToolId]);
+                $this->logger->warning(
+                    message:
+                        message:'[ChatService] Tool not found',
+                        ['id' => $fullToolId]
+                        );
             }
-        }
+        }//end foreach
 
         return $tools;
 
@@ -2073,6 +2129,7 @@ class ChatService
     private function handleFunctionCall(string $functionName, array $parameters, array $tools, ?string $userId=null): string
     {
         $this->logger->info(
+                message:
                 '[ChatService] Handling function call',
                 [
                     'function'   => $functionName,
@@ -2090,6 +2147,7 @@ class ChatService
                         return json_encode($result);
                     } catch (\Exception $e) {
                         $this->logger->error(
+                        message:
                                 '[ChatService] Function execution failed',
                                 [
                                     'function' => $functionName,
@@ -2103,7 +2161,7 @@ class ChatService
                                 ]
                                 );
                     }
-                }
+                }//end if
             }//end foreach
         }//end foreach
 

@@ -89,7 +89,7 @@ class NotificationService
      */
     public function notifyConfigurationUpdate(Configuration $configuration): int
     {
-        $this->logger->info("Sending configuration update notification for: {$configuration->getTitle()}");
+        $this->logger->info(message: "Sending configuration update notification for: {$configuration->getTitle()}");
 
         // Get notification groups from configuration.
         $notificationGroups = $configuration->getNotificationGroups() ?? [];
@@ -104,7 +104,7 @@ class NotificationService
         foreach ($notificationGroups as $groupId) {
             $group = $this->groupManager->get($groupId);
             if ($group === null) {
-                $this->logger->warning("Group {$groupId} not found, skipping");
+                $this->logger->warning(message: "Group {$groupId} not found, skipping");
                 continue;
             }
 
@@ -128,11 +128,11 @@ class NotificationService
                 );
                 $notificationCount++;
             } catch (\Exception $e) {
-                $this->logger->error("Failed to send notification to user {$userId}: ".$e->getMessage());
+                $this->logger->error(message: "Failed to send notification to user {$userId}: ".$e->getMessage());
             }
         }
 
-        $this->logger->info("Sent {$notificationCount} notifications for configuration update");
+        $this->logger->info(message: "Sent {$notificationCount} notifications for configuration update");
 
         return $notificationCount;
 
@@ -197,7 +197,7 @@ class NotificationService
         // This will remove all notifications for this configuration.
         $this->notificationManager->markProcessed($notification);
 
-        $this->logger->info("Marked configuration {$configuration->getTitle()} notifications as processed");
+        $this->logger->info(message: "Marked configuration {$configuration->getTitle()} notifications as processed");
 
     }//end markConfigurationUpdated()
 

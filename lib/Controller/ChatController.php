@@ -213,8 +213,8 @@ class ChatController extends Controller
             }
 
             $this->logger->info(
-                    '[ChatController] Received message with settings',
-                    [
+                    message: '[ChatController] Received message with settings',
+                    context: [
                         'views'       => count($selectedViews),
                         'tools'       => count($selectedTools),
                         'ragSettings' => $ragSettings,
@@ -263,8 +263,8 @@ class ChatController extends Controller
                 $conversation = $this->conversationMapper->insert($conversation);
 
                 $this->logger->info(
-                        '[ChatController] New conversation created',
-                        [
+                        message: '[ChatController] New conversation created',
+                        context: [
                             'uuid'    => $conversation->getUuid(),
                             'userId'  => $this->userId,
                             'agentId' => $agent->getId(),
@@ -273,9 +273,10 @@ class ChatController extends Controller
                         );
             } else {
                 return new JSONResponse(data: [
-                            'error'   => 'Missing conversation or agentUuid', statusCode: 'message' => 'Either conversation or agentUuid is required',
+                            'error'   => 'Missing conversation or agentUuid',
+                            'message' => 'Either conversation or agentUuid is required',
                         ],
-                        400);
+                        statusCode: 400);
             }//end if
 
             // Verify user has access.
@@ -302,8 +303,8 @@ class ChatController extends Controller
             return new JSONResponse(data: $result, statusCode: 200);
         } catch (\Exception $e) {
             $this->logger->error(
-                    '[ChatController] Failed to send message',
-                    [
+                    message: '[ChatController] Failed to send message',
+                    context: [
                         'error' => $e->getMessage(),
                         'trace' => $e->getTraceAsString(),
                     ]
@@ -423,17 +424,18 @@ class ChatController extends Controller
             $this->conversationMapper->softDelete($conversationId);
 
             $this->logger->info(
-                    '[ChatController] Conversation cleared (soft deleted)',
-                    [
+                    message: '[ChatController] Conversation cleared (soft deleted)',
+                    context: [
                         'conversationId' => $conversationId,
                         'userId'         => $this->userId,
                     ]
                     );
 
             return new JSONResponse(data: [
-                        'message'        => 'Conversation cleared successfully', statusCode: 'conversationId' => $conversationId,
+                        'message'        => 'Conversation cleared successfully',
+                        'conversationId' => $conversationId,
                     ],
-                    200);
+                    statusCode: 200);
         } catch (\Exception $e) {
             $this->logger->error(
                     '[ChatController] Failed to clear history',

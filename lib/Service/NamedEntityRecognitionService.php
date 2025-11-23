@@ -46,43 +46,44 @@ class NamedEntityRecognitionService
     /**
      * Entity type constants.
      */
-    public const ENTITY_TYPE_PERSON        = 'PERSON';
+    public const ENTITY_TYPE_PERSON       = 'PERSON';
     public const ENTITY_TYPE_ORGANIZATION = 'ORGANIZATION';
     public const ENTITY_TYPE_LOCATION     = 'LOCATION';
-    public const ENTITY_TYPE_EMAIL       = 'EMAIL';
-    public const ENTITY_TYPE_PHONE       = 'PHONE';
-    public const ENTITY_TYPE_ADDRESS     = 'ADDRESS';
-    public const ENTITY_TYPE_DATE        = 'DATE';
-    public const ENTITY_TYPE_IBAN        = 'IBAN';
-    public const ENTITY_TYPE_SSN         = 'SSN';
-    public const ENTITY_TYPE_IP_ADDRESS  = 'IP_ADDRESS';
+    public const ENTITY_TYPE_EMAIL        = 'EMAIL';
+    public const ENTITY_TYPE_PHONE        = 'PHONE';
+    public const ENTITY_TYPE_ADDRESS      = 'ADDRESS';
+    public const ENTITY_TYPE_DATE         = 'DATE';
+    public const ENTITY_TYPE_IBAN         = 'IBAN';
+    public const ENTITY_TYPE_SSN          = 'SSN';
+    public const ENTITY_TYPE_IP_ADDRESS   = 'IP_ADDRESS';
 
     /**
      * Detection method constants.
      */
     public const METHOD_REGEX    = 'regex';
     public const METHOD_PRESIDIO = 'presidio';
-    public const METHOD_LLM     = 'llm';
+    public const METHOD_LLM      = 'llm';
     public const METHOD_HYBRID   = 'hybrid';
     public const METHOD_MANUAL   = 'manual';
 
     /**
      * Category constants.
      */
-    public const CATEGORY_PERSONAL_DATA      = 'personal_data';
-    public const CATEGORY_SENSITIVE_PII      = 'sensitive_pii';
-    public const CATEGORY_BUSINESS_DATA      = 'business_data';
-    public const CATEGORY_CONTEXTUAL_DATA    = 'contextual_data';
-    public const CATEGORY_TEMPORAL_DATA      = 'temporal_data';
+    public const CATEGORY_PERSONAL_DATA   = 'personal_data';
+    public const CATEGORY_SENSITIVE_PII   = 'sensitive_pii';
+    public const CATEGORY_BUSINESS_DATA   = 'business_data';
+    public const CATEGORY_CONTEXTUAL_DATA = 'contextual_data';
+    public const CATEGORY_TEMPORAL_DATA   = 'temporal_data';
+
 
     /**
      * Constructor.
      *
-     * @param GdprEntityMapper      $entityMapper         Entity mapper.
-     * @param EntityRelationMapper  $entityRelationMapper Entity relation mapper.
-     * @param ChunkMapper           $chunkMapper          Chunk mapper.
-     * @param SettingsService       $settingsService      Settings service.
-     * @param LoggerInterface       $logger               Logger.
+     * @param GdprEntityMapper     $entityMapper         Entity mapper.
+     * @param EntityRelationMapper $entityRelationMapper Entity relation mapper.
+     * @param ChunkMapper          $chunkMapper          Chunk mapper.
+     * @param SettingsService      $settingsService      Settings service.
+     * @param LoggerInterface      $logger               Logger.
      */
     public function __construct(
         private readonly GdprEntityMapper $entityMapper,
@@ -98,7 +99,7 @@ class NamedEntityRecognitionService
     /**
      * Extract entities from a text chunk.
      *
-     * @param Chunk $chunk Chunk to process.
+     * @param Chunk $chunk   Chunk to process.
      * @param array $options Processing options:
      *                       - method: 'regex', 'presidio', 'llm', 'hybrid' (default: 'hybrid')
      *                       - entity_types: array of entity types to detect (default: all)
@@ -116,16 +117,17 @@ class NamedEntityRecognitionService
     public function extractFromChunk(Chunk $chunk, array $options=[]): array
     {
         $this->logger->info(
+                message:
                 '[NamedEntityRecognitionService] Extracting entities from chunk',
                 [
-                    'chunk_id'     => $chunk->getId(),
-                    'source_type'  => $chunk->getSourceType(),
-                    'source_id'    => $chunk->getSourceId(),
+                    'chunk_id'    => $chunk->getId(),
+                    'source_type' => $chunk->getSourceType(),
+                    'source_id'   => $chunk->getSourceId(),
                 ]
                 );
 
-        $method              = $options['method'] ?? 'hybrid';
-        $entityTypes         = $options['entity_types'] ?? null;
+        $method      = $options['method'] ?? 'hybrid';
+        $entityTypes = $options['entity_types'] ?? null;
         $confidenceThreshold = (float) ($options['confidence_threshold'] ?? 0.5);
         $contextWindow       = (int) ($options['context_window'] ?? 50);
 
@@ -193,6 +195,7 @@ class NamedEntityRecognitionService
                 ];
             } catch (Exception $e) {
                 $this->logger->error(
+                        message:
                         '[NamedEntityRecognitionService] Failed to store entity',
                         [
                             'chunk_id' => $chunk->getId(),
@@ -205,10 +208,11 @@ class NamedEntityRecognitionService
         }//end foreach
 
         $this->logger->info(
+                message:
                 '[NamedEntityRecognitionService] Entity extraction complete',
                 [
-                    'chunk_id'         => $chunk->getId(),
-                    'entities_found'   => $entitiesFound,
+                    'chunk_id'          => $chunk->getId(),
+                    'entities_found'    => $entitiesFound,
                     'relations_created' => $relationsCreated,
                 ]
                 );
@@ -240,6 +244,7 @@ class NamedEntityRecognitionService
     public function extractFromChunks(array $chunks, array $options=[]): array
     {
         $this->logger->info(
+                message:
                 '[NamedEntityRecognitionService] Batch extracting entities',
                 [
                     'chunk_count' => count($chunks),
@@ -264,6 +269,7 @@ class NamedEntityRecognitionService
                 $errors[$chunk->getId()] = $e->getMessage();
 
                 $this->logger->error(
+                        message:
                         '[NamedEntityRecognitionService] Failed to process chunk',
                         [
                             'chunk_id' => $chunk->getId(),
@@ -288,10 +294,10 @@ class NamedEntityRecognitionService
     /**
      * Detect entities in text using specified method.
      *
-     * @param string      $text               Text to analyze.
-     * @param string      $method             Detection method.
-     * @param array|null  $entityTypes        Entity types to detect (null = all).
-     * @param float       $confidenceThreshold Minimum confidence.
+     * @param string     $text                Text to analyze.
+     * @param string     $method              Detection method.
+     * @param array|null $entityTypes         Entity types to detect (null = all).
+     * @param float      $confidenceThreshold Minimum confidence.
      *
      * @return array<int, array{
      *     type: string,
@@ -318,8 +324,8 @@ class NamedEntityRecognitionService
     /**
      * Detect entities using regex patterns.
      *
-     * @param string     $text               Text to analyze.
-     * @param array|null $entityTypes        Entity types to detect.
+     * @param string     $text                Text to analyze.
+     * @param array|null $entityTypes         Entity types to detect.
      * @param float      $confidenceThreshold Minimum confidence.
      *
      * @return array<int, array{type: string, value: string, category: string, position_start: int, position_end: int, confidence: float}>
@@ -333,12 +339,12 @@ class NamedEntityRecognitionService
             if (preg_match_all('/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/', $text, $matches, PREG_OFFSET_CAPTURE) === true) {
                 foreach ($matches[0] as $match) {
                     $entities[] = [
-                        'type'          => self::ENTITY_TYPE_EMAIL,
-                        'value'         => $match[0],
-                        'category'      => self::CATEGORY_PERSONAL_DATA,
+                        'type'           => self::ENTITY_TYPE_EMAIL,
+                        'value'          => $match[0],
+                        'category'       => self::CATEGORY_PERSONAL_DATA,
                         'position_start' => $match[1],
                         'position_end'   => $match[1] + strlen($match[0]),
-                        'confidence'    => 0.9,
+                        'confidence'     => 0.9,
                     ];
                 }
             }
@@ -350,12 +356,12 @@ class NamedEntityRecognitionService
             if (preg_match_all($phonePattern, $text, $matches, PREG_OFFSET_CAPTURE) === true) {
                 foreach ($matches[0] as $match) {
                     $entities[] = [
-                        'type'          => self::ENTITY_TYPE_PHONE,
-                        'value'         => $match[0],
-                        'category'      => self::CATEGORY_PERSONAL_DATA,
+                        'type'           => self::ENTITY_TYPE_PHONE,
+                        'value'          => $match[0],
+                        'category'       => self::CATEGORY_PERSONAL_DATA,
                         'position_start' => $match[1],
                         'position_end'   => $match[1] + strlen($match[0]),
-                        'confidence'    => 0.7,
+                        'confidence'     => 0.7,
                     ];
                 }
             }
@@ -367,12 +373,12 @@ class NamedEntityRecognitionService
             if (preg_match_all($ibanPattern, $text, $matches, PREG_OFFSET_CAPTURE) === true) {
                 foreach ($matches[0] as $match) {
                     $entities[] = [
-                        'type'          => self::ENTITY_TYPE_IBAN,
-                        'value'         => $match[0],
-                        'category'      => self::CATEGORY_SENSITIVE_PII,
+                        'type'           => self::ENTITY_TYPE_IBAN,
+                        'value'          => $match[0],
+                        'category'       => self::CATEGORY_SENSITIVE_PII,
                         'position_start' => $match[1],
                         'position_end'   => $match[1] + strlen($match[0]),
-                        'confidence'    => 0.8,
+                        'confidence'     => 0.8,
                     ];
                 }
             }
@@ -390,8 +396,8 @@ class NamedEntityRecognitionService
     /**
      * Detect entities using Presidio service.
      *
-     * @param string     $text               Text to analyze.
-     * @param array|null $entityTypes        Entity types to detect.
+     * @param string     $text                Text to analyze.
+     * @param array|null $entityTypes         Entity types to detect.
      * @param float      $confidenceThreshold Minimum confidence.
      *
      * @return array<int, array{type: string, value: string, category: string, position_start: int, position_end: int, confidence: float}>
@@ -400,7 +406,7 @@ class NamedEntityRecognitionService
     {
         // TODO: Implement Presidio integration.
         // For now, fall back to regex.
-        $this->logger->debug('[NamedEntityRecognitionService] Presidio not yet implemented, using regex fallback');
+        $this->logger->debug(message: '[NamedEntityRecognitionService] Presidio not yet implemented, using regex fallback');
 
         return $this->detectWithRegex($text, $entityTypes, $confidenceThreshold);
 
@@ -410,8 +416,8 @@ class NamedEntityRecognitionService
     /**
      * Detect entities using LLM.
      *
-     * @param string     $text               Text to analyze.
-     * @param array|null $entityTypes        Entity types to detect.
+     * @param string     $text                Text to analyze.
+     * @param array|null $entityTypes         Entity types to detect.
      * @param float      $confidenceThreshold Minimum confidence.
      *
      * @return array<int, array{type: string, value: string, category: string, position_start: int, position_end: int, confidence: float}>
@@ -420,7 +426,7 @@ class NamedEntityRecognitionService
     {
         // TODO: Implement LLM-based entity extraction.
         // For now, fall back to regex.
-        $this->logger->debug('[NamedEntityRecognitionService] LLM extraction not yet implemented, using regex fallback');
+        $this->logger->debug(message: '[NamedEntityRecognitionService] LLM extraction not yet implemented, using regex fallback');
 
         return $this->detectWithRegex($text, $entityTypes, $confidenceThreshold);
 
@@ -430,8 +436,8 @@ class NamedEntityRecognitionService
     /**
      * Detect entities using hybrid approach (combines multiple methods).
      *
-     * @param string     $text               Text to analyze.
-     * @param array|null $entityTypes        Entity types to detect.
+     * @param string     $text                Text to analyze.
+     * @param array|null $entityTypes         Entity types to detect.
      * @param float      $confidenceThreshold Minimum confidence.
      *
      * @return array<int, array{type: string, value: string, category: string, position_start: int, position_end: int, confidence: float}>
@@ -443,7 +449,6 @@ class NamedEntityRecognitionService
 
         // TODO: Add Presidio validation for higher confidence.
         // TODO: Add LLM validation for ambiguous cases.
-
         return $regexEntities;
 
     }//end detectWithHybrid()
@@ -536,4 +541,3 @@ class NamedEntityRecognitionService
 
 
 }//end class
-
