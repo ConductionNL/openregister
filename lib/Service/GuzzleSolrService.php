@@ -10365,21 +10365,21 @@ class GuzzleSolrService
                         'object_facet_keys' => $this->getObjectFacetKeys($data),
                     ] : [],
                     [
-                        'response_sample' => array_slice($data, 0, 3, true),
+                        'response_sample'   => array_slice($data, 0, 3, true),
                     ]
                 )
             );
 
-            if (!isset($data['facets'])) {
-                // Log the full response for debugging.
-                $this->logger->error(
-                'SOLR response missing facets key',
-                [
-                    'response' => $data,
-                ]
-                        );
-                throw new \Exception('Invalid faceting response from SOLR - missing facets key');
-            }
+                    if (!isset($data['facets'])) {
+                        // Log the full response for debugging.
+                        $this->logger->error(
+                        'SOLR response missing facets key',
+                        [
+                            'response' => $data,
+                        ]
+                                );
+                        throw new \Exception('Invalid faceting response from SOLR - missing facets key');
+                    }
 
                     // Process and format the facet data.
                     return $this->processFacetResponse($data['facets'], $facetableFields);

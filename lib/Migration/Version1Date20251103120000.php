@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/*
+/**
  * Rename views table to view (singular)
  *
  * This migration renames the openregister_views table to openregister_view

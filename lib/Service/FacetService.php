@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/*
+/**
  * OpenRegister Facet Service
  *
  * **CENTRALIZED FACETING SYSTEM**: This service handles all faceting operations

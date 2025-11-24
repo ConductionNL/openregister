@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/*
+/**
  * OpenRegister Migration - Performance Indexes
  *
  * Migration to add performance-critical indexes for OpenRegister object searches.

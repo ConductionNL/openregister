@@ -329,7 +329,7 @@ class FileExtractionController extends Controller
             return new JSONResponse(
                     data: [
                         'success' => true,
-                        'message' => 'Batch extraction completed',
+            'message' => 'Batch extraction completed',
                         'data'    => $stats,
                     ]
                     );
@@ -377,7 +377,7 @@ class FileExtractionController extends Controller
             return new JSONResponse(
                     data: [
                         'success' => true,
-                        'message' => 'Retry completed',
+            'message' => 'Retry completed',
                         'data'    => $stats,
                     ]
                     );
@@ -423,7 +423,7 @@ class FileExtractionController extends Controller
             return new JSONResponse(
                     data: [
                         'success' => true,
-                        'data'    => $stats,
+            'data'    => $stats,
                     ]
                     );
         } catch (\Exception $e) {
@@ -474,7 +474,7 @@ class FileExtractionController extends Controller
             return new JSONResponse(
                     data: [
                         'success' => true,
-                        'message' => 'Cleanup completed',
+            'message' => 'Cleanup completed',
                         'data'    => $result,
                     ]
                     );
@@ -523,7 +523,7 @@ class FileExtractionController extends Controller
             return new JSONResponse(
                     data: [
                         'success' => true,
-                        'data'    => $types,
+            'data'    => $types,
                     ]
                     );
         } catch (\Exception $e) {
@@ -586,14 +586,14 @@ class FileExtractionController extends Controller
             return new JSONResponse(
                     data: [
                         'success' => true,
-                        'data'    => $result,
+            'data'    => $result,
                     ]
                     );
         } catch (\Exception $e) {
             return new JSONResponse(
                     data: [
                         'success' => false,
-                        'error'   => 'Vectorization failed',
+            'error'   => 'Vectorization failed',
                         'message' => $e->getMessage(),
                     ],
                     statusCode: 500
