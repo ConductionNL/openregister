@@ -351,6 +351,7 @@ class NamedParametersSniff implements Sniff
                 // String functions (simple ones).
                 'strlen', 'trim', 'ltrim', 'rtrim', 'strtolower', 'strtoupper', 'ucfirst',
                 'ucwords', 'lcfirst', 'ord', 'chr', 'md5', 'sha1', 'crc32',
+                'str_contains', 'str_starts_with', 'str_ends_with', 'strpos', 'stripos', 'strrpos', 'strripos',
                 
                 // Array functions (simple ones).
                 'count', 'sizeof', 'array_push', 'array_pop', 'array_shift', 'array_unshift',
@@ -358,6 +359,7 @@ class NamedParametersSniff implements Sniff
                 'array_product', 'min', 'max', 'end', 'reset', 'key', 'current', 'next', 'prev',
                 'array_fill', 'array_fill_keys', 'array_combine', 'array_flip',
                 'array_diff', 'array_diff_key', 'array_diff_assoc', 'array_intersect', 'array_intersect_key',
+                'array_slice', 'array_chunk',
                 
                 // Array functions that commonly use callbacks (might benefit from named params but often don't).
                 'array_filter', 'array_map', 'array_reduce', 'array_walk', 'usort', 'uksort',
@@ -394,6 +396,7 @@ class NamedParametersSniff implements Sniff
                 // File functions (simple ones).
                 'file_exists', 'is_file', 'is_dir', 'is_readable', 'is_writable',
                 'filesize', 'filemtime', 'filectime', 'fileatime', 'dirname', 'basename',
+                'fopen', 'fclose', 'fread', 'fwrite', 'fgets', 'fgetcsv', 'fputcsv', 'feof',
                 
                 // DateTime (simple constructors).
                 'time', 'microtime', 'date', 'gmdate', 'mktime', 'gmmktime',

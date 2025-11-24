@@ -156,7 +156,7 @@ class FileExtractionController extends Controller
     {
         try {
             // Get chunks for this file.
-            $chunks = $this->chunkMapper->findBySource('file', $id);
+            $chunks = $this->chunkMapper->findBySource(sourceType: 'file', sourceId: $id);
 
             if (empty($chunks)) {
                 return new JSONResponse(
@@ -219,7 +219,7 @@ class FileExtractionController extends Controller
     {
         try {
             // extractFile returns void, not an object.
-            $this->textExtractionService->extractFile($id, $forceReExtract);
+            $this->textExtractionService->extractFile(fileId: $id, forceReExtract: $forceReExtract);
 
             return new JSONResponse(
                     data: [
@@ -584,8 +584,8 @@ class FileExtractionController extends Controller
 
             // Use unified vectorization service with 'file' entity type.
             $result = $this->vectorizationService->vectorizeBatch(
-                    'file',
-                    [
+                    entityType: 'file',
+                    options: [
                         'mode'       => $mode,
                         'max_files'  => $maxFiles,
                         'batch_size' => $batchSize,
