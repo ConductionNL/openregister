@@ -159,8 +159,14 @@ trait MultiTenancyTrait
         string $columnName = 'organisation', 
         bool $allowNullOrg = false,
         string $tableAlias = '',
-        bool $enablePublished = false
+        bool $enablePublished = false,
+        bool $multiTenancyEnabled = true
     ): void {
+        // If multitenancy is disabled, skip all filtering
+        if ($multiTenancyEnabled === false) {
+            return;
+        }
+        
         // Check if multitenancy is enabled (if appConfig is available)
         if (isset($this->appConfig)) {
             $multitenancyConfig = $this->appConfig->getValueString('openregister', 'multitenancy', '');
@@ -187,7 +193,8 @@ trait MultiTenancyTrait
             if (isset($this->logger)) {
                 $this->logger->debug('[MultiTenancyTrait] Unauthenticated request, no automatic access');
             }
-            return;
+            // @todo this prevents non loged in access to published objects, we need to allow this so htofix this
+            //return $qb;
         }
 
         // Get active organisation UUIDs (active + all parents)
