@@ -533,7 +533,7 @@ class FilesController extends Controller
         $this->objectService->setObject($id);
 
         try {
-            $result = $this->fileService->unpublishFile($this->objectService->getObject(), $fileId);
+            $result = $this->fileService->unpublishFile(object: $this->objectService->getObject(), filePath: $fileId);
             return new JSONResponse(data: $this->fileService->formatFile($result));
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);

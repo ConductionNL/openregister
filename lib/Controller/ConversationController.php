@@ -172,34 +172,32 @@ class ConversationController extends Controller
             if ($showDeleted === true) {
                 // Fetch only deleted/archived conversations.
                 $conversations = $this->conversationMapper->findDeletedByUser(
-                    $this->userId,
-                    $organisationUuid,
-                    $limit,
-                    $offset
+                    userId: $this->userId,
+                    organisation: $organisationUuid,
+                    limit: $limit,
+                    offset: $offset
                 );
 
                 // Count total archived conversations.
                 $total = $this->conversationMapper->countDeletedByUser(
-                    $this->userId,
-                    $organisationUuid
+                    userId: $this->userId,
+                    organisation: $organisationUuid
                 );
             } else {
                 // Fetch only active (non-deleted) conversations.
                 $conversations = $this->conversationMapper->findByUser(
-                    $this->userId,
-                    $organisationUuid,
-                    false,
-                // IncludeDeleted = false.
-                    $limit,
-                    $offset
+                    userId: $this->userId,
+                    organisation: $organisationUuid,
+                    includeDeleted: false,
+                    limit: $limit,
+                    offset: $offset
                 );
 
                 // Count total active conversations.
                 $total = $this->conversationMapper->countByUser(
-                    $this->userId,
-                    $organisationUuid,
-                    false
-                // IncludeDeleted = false.
+                    userId: $this->userId,
+                    organisation: $organisationUuid,
+                    includeDeleted: false
                 );
             }//end if
 
@@ -256,7 +254,7 @@ class ConversationController extends Controller
             $organisationUuid = $organisation?->getUuid();
 
             // Validate Check access rights using method.
-            if ($this->conversationMapper->canUserAccessConversation($conversation, $this->userId, $organisationUuid) === false) {
+            if ($this->conversationMapper->canUserAccessConversation(conversation: $conversation, userId: $this->userId, organisationUuid: $organisationUuid) === false) {
                 return new JSONResponse(
                     data: [
                         'error'   => 'Access denied',
@@ -324,7 +322,7 @@ class ConversationController extends Controller
             $organisationUuid = $organisation?->getUuid();
 
             // Validate Check access rights using method.
-            if ($this->conversationMapper->canUserAccessConversation($conversation, $this->userId, $organisationUuid) === false) {
+            if ($this->conversationMapper->canUserAccessConversation(conversation: $conversation, userId: $this->userId, organisationUuid: $organisationUuid) === false) {
                 return new JSONResponse(
                     data: [
                         'error'   => 'Access denied',
@@ -341,9 +339,9 @@ class ConversationController extends Controller
 
             // Get messages with pagination.
             $messages = $this->messageMapper->findByConversation(
-                $conversation->getId(),
-                $limit,
-                $offset
+                conversationId: $conversation->getId(),
+                limit: $limit,
+                offset: $offset
             );
 
             // Get total count.
@@ -428,9 +426,9 @@ class ConversationController extends Controller
             $title = $data['title'] ?? null;
             if ($title === null && $agentId !== null) {
                 $title = $this->chatService->ensureUniqueTitle(
-                    'New Conversation',
-                    $this->userId,
-                    $agentId
+                    baseTitle: 'New Conversation',
+                    userId: $this->userId,
+                    agentId: $agentId
                 );
             }
 
@@ -497,7 +495,7 @@ class ConversationController extends Controller
             $conversation = $this->conversationMapper->findByUuid($uuid);
 
             // Check modify rights using mapper method.
-            if ($this->conversationMapper->canUserModifyConversation($conversation, $this->userId) === false) {
+            if ($this->conversationMapper->canUserModifyConversation(conversation: $conversation, userId: $this->userId) === false) {
                 return new JSONResponse(data: [
                             'error'   => 'Access denied',
                             'message' => 'You do not have permission to modify this conversation',
@@ -580,7 +578,7 @@ class ConversationController extends Controller
             $conversation = $this->conversationMapper->findByUuid($uuid);
 
             // Check modify rights using mapper method.
-            if ($this->conversationMapper->canUserModifyConversation($conversation, $this->userId) === false) {
+            if ($this->conversationMapper->canUserModifyConversation(conversation: $conversation, userId: $this->userId) === false) {
                 return new JSONResponse(
                     data: [
                         'error'   => 'Access denied',
@@ -691,7 +689,7 @@ class ConversationController extends Controller
             $conversation = $this->conversationMapper->findByUuid($uuid);
 
             // Check modify rights using mapper method.
-            if ($this->conversationMapper->canUserModifyConversation($conversation, $this->userId) === false) {
+            if ($this->conversationMapper->canUserModifyConversation(conversation: $conversation, userId: $this->userId) === false) {
                 return new JSONResponse(
                     data: [
                         'error'   => 'Access denied',
@@ -761,7 +759,7 @@ class ConversationController extends Controller
             $conversation = $this->conversationMapper->findByUuid($uuid);
 
             // Check modify rights using mapper method.
-            if ($this->conversationMapper->canUserModifyConversation($conversation, $this->userId) === false) {
+            if ($this->conversationMapper->canUserModifyConversation(conversation: $conversation, userId: $this->userId) === false) {
                 return new JSONResponse(
                     data: [
                         'error'   => 'Access denied',

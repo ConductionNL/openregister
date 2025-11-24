@@ -132,7 +132,7 @@ class FileTextController extends Controller
 
         try {
             // Force re-extraction.
-            $this->textExtractionService->extractFile($fileId, true);
+            $this->textExtractionService->extractFile(fileId: $fileId, forceReExtract: true);
 
             return new JSONResponse(
                     data: [
@@ -312,7 +312,7 @@ class FileTextController extends Controller
                 $options['chunk_overlap'] = $chunkOverlap;
             }
 
-            $result = $this->solrFileService->processExtractedFiles($limit, $options);
+            $result = $this->solrFileService->processExtractedFiles(limit: $limit, options: $options);
 
             return new JSONResponse(data: $result);
         } catch (\Exception $e) {
@@ -359,7 +359,7 @@ class FileTextController extends Controller
                 $options['chunk_overlap'] = $chunkOverlap;
             }
 
-            $result = $this->solrFileService->processExtractedFile($fileId, $options);
+            $result = $this->solrFileService->processExtractedFile(fileId: $fileId, options: $options);
 
             return new JSONResponse(data: $result);
         } catch (\Exception $e) {

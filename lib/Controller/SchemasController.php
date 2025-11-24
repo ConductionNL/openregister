@@ -145,8 +145,8 @@ class SchemasController extends Controller
             $registerCounts = $this->schemaMapper->getRegisterCountPerSchema();
             foreach ($schemasArr as &$schema) {
                 $schema['stats'] = [
-                    'objects'   => $this->objectEntityMapper->getStatistics(null, $schema['id']),
-                    'logs'      => $this->auditTrailMapper->getStatistics(null, $schema['id']),
+                    'objects'   => $this->objectEntityMapper->getStatistics(registerId: null, schemaId: $schema['id']),
+                    'logs'      => $this->auditTrailMapper->getStatistics(registerId: null, schemaId: $schema['id']),
                     'files'     => [ 'total' => 0, 'size' => 0 ],
                     // Add the number of registers referencing this schema.
                     'registers' => $registerCounts[$schema['id']] ?? 0,
@@ -189,8 +189,8 @@ class SchemasController extends Controller
             // Get register counts for all schemas in one call.
             $registerCounts     = $this->schemaMapper->getRegisterCountPerSchema();
             $schemaArr['stats'] = [
-                'objects'   => $this->objectEntityMapper->getStatistics(null, $schemaArr['id']),
-                'logs'      => $this->auditTrailMapper->getStatistics(null, $schemaArr['id']),
+                'objects'   => $this->objectEntityMapper->getStatistics(registerId: null, schemaId: $schemaArr['id']),
+                'logs'      => $this->auditTrailMapper->getStatistics(registerId: null, schemaId: $schemaArr['id']),
                 'files'     => [ 'total' => 0, 'size' => 0 ],
             // Add the number of registers referencing this schema.
                 'registers' => $registerCounts[$schemaArr['id']] ?? 0,
@@ -244,7 +244,7 @@ class SchemasController extends Controller
             return new JSONResponse(data: $schema, statusCode: 201);
         } catch (DBException $e) {
             // Handle database constraint violations with user-friendly messages.
-            $constraintException = DatabaseConstraintException::fromDatabaseException($e, 'schema');
+            $constraintException = DatabaseConstraintException::fromDatabaseException(dbException: $e, entityType: 'schema');
             return new JSONResponse(data: ['error' => $constraintException->getMessage()], statusCode: $constraintException->getHttpStatusCode());
         } catch (DatabaseConstraintException $e) {
             // Handle our custom database constraint exceptions.
@@ -323,13 +323,13 @@ class SchemasController extends Controller
             $updatedSchema = $this->schemaMapper->updateFromArray(id: $id, object: $data);
 
             // **CACHE INVALIDATION**: Clear all schema-related caches when schema is updated.
-            $this->schemaCacheService->invalidateForSchemaChange($updatedSchema->getId(), 'update');
-            $this->schemaFacetCacheService->invalidateForSchemaChange($updatedSchema->getId(), 'update');
+            $this->schemaCacheService->invalidateForSchemaChange(schemaId: $updatedSchema->getId(), operation: 'update');
+            $this->schemaFacetCacheService->invalidateForSchemaChange(schemaId: $updatedSchema->getId(), operation: 'update');
 
             return new JSONResponse(data: $updatedSchema);
         } catch (DBException $e) {
             // Handle database constraint violations with user-friendly messages.
-            $constraintException = DatabaseConstraintException::fromDatabaseException($e, 'schema');
+            $constraintException = DatabaseConstraintException::fromDatabaseException(dbException: $e, entityType: 'schema');
             return new JSONResponse(data: ['error' => $constraintException->getMessage()], statusCode: $constraintException->getHttpStatusCode());
         } catch (DatabaseConstraintException $e) {
             // Handle our custom database constraint exceptions.
@@ -413,8 +413,8 @@ class SchemasController extends Controller
             $this->schemaMapper->delete($schemaToDelete);
 
             // **CACHE INVALIDATION**: Clear all schema-related caches when schema is deleted.
-            $this->schemaCacheService->invalidateForSchemaChange($schemaToDelete->getId(), 'delete');
-            $this->schemaFacetCacheService->invalidateForSchemaChange($schemaToDelete->getId(), 'delete');
+            $this->schemaCacheService->invalidateForSchemaChange(schemaId: $schemaToDelete->getId(), operation: 'delete');
+            $this->schemaFacetCacheService->invalidateForSchemaChange(schemaId: $schemaToDelete->getId(), operation: 'delete');
 
             // Return an empty response.
             return new JSONResponse(data: []);
@@ -509,21 +509,21 @@ class SchemasController extends Controller
                 }
 
                 // **CACHE INVALIDATION**: Clear all schema-related caches when schema is created.
-                $this->schemaCacheService->invalidateForSchemaChange($schema->getId(), 'create');
-                $this->schemaFacetCacheService->invalidateForSchemaChange($schema->getId(), 'create');
+                $this->schemaCacheService->invalidateForSchemaChange(schemaId: $schema->getId(), operation: 'create');
+                $this->schemaFacetCacheService->invalidateForSchemaChange(schemaId: $schema->getId(), operation: 'create');
             } else {
                 // Update the existing schema.
                 $schema = $this->schemaMapper->update($schema);
 
                 // **CACHE INVALIDATION**: Clear all schema-related caches when schema is updated.
-                $this->schemaCacheService->invalidateForSchemaChange($schema->getId(), 'update');
-                $this->schemaFacetCacheService->invalidateForSchemaChange($schema->getId(), 'update');
+                $this->schemaCacheService->invalidateForSchemaChange(schemaId: $schema->getId(), operation: 'update');
+                $this->schemaFacetCacheService->invalidateForSchemaChange(schemaId: $schema->getId(), operation: 'update');
             }//end if
 
             return new JSONResponse(data: $schema);
         } catch (DBException $e) {
             // Handle database constraint violations with user-friendly messages.
-            $constraintException = DatabaseConstraintException::fromDatabaseException($e, 'schema');
+            $constraintException = DatabaseConstraintException::fromDatabaseException(dbException: $e, entityType: 'schema');
             return new JSONResponse(data: ['error' => $constraintException->getMessage()], statusCode: $constraintException->getHttpStatusCode());
         } catch (DatabaseConstraintException $e) {
             // Handle our custom database constraint exceptions.
@@ -680,7 +680,7 @@ class SchemasController extends Controller
             }
 
             // Get detailed object statistics for this schema using the existing method.
-            $objectStats = $this->objectEntityMapper->getStatistics(null, $id);
+            $objectStats = $this->objectEntityMapper->getStatistics(registerId: null, schemaId: $id);
 
             // Calculate comprehensive statistics for this schema.
             $stats = [
@@ -696,7 +696,7 @@ class SchemasController extends Controller
                     'locked'    => $objectStats['locked'],
                     'size'      => $objectStats['size'],
                 ],
-                'logs'          => $this->auditTrailMapper->getStatistics(null, $id),
+                'logs'          => $this->auditTrailMapper->getStatistics(registerId: null, schemaId: $id),
                 'files'         => ['total' => 0, 'size' => 0],
                 // Placeholder for future file statistics.
                 'registers'     => $this->schemaMapper->getRegisterCountPerSchema()[$id] ?? 0,
@@ -770,7 +770,7 @@ class SchemasController extends Controller
 
             $this->logger->info('Updating schema '.$id.' with '.count($propertyUpdates).' property updates');
 
-            $updatedSchema = $this->schemaService->updateSchemaFromExploration($id, $propertyUpdates);
+            $updatedSchema = $this->schemaService->updateSchemaFromExploration(schemaId: $id, propertyUpdates: $propertyUpdates);
 
             // Clear schema cache to ensure fresh data.
             $this->schemaCacheService->clearSchemaCache($id);

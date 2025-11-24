@@ -12380,5 +12380,227 @@ class GuzzleSolrService
 
     }//end getSolrTypeFromArray()
 
+    /**
+     * Get self relations type from document.
+     *
+     * @param array<string, mixed> $document Document array.
+     *
+     * @return string Type of self_relations field.
+     */
+    private function getSelfRelationsType(array $document): string
+    {
+        if (isset($document['self_relations']) === false) {
+            return 'NOT_SET';
+        }
+        $selfRelations = $document['self_relations'];
+        if (is_array($selfRelations) === true) {
+            return 'array';
+        }
+        if (is_string($selfRelations) === true) {
+            return 'string';
+        }
+        return gettype($selfRelations);
+    }//end getSelfRelationsType()
+
+    /**
+     * Get self relations count from document.
+     *
+     * @param array<string, mixed> $document Document array.
+     *
+     * @return int Count of self_relations.
+     */
+    private function getSelfRelationsCount(array $document): int
+    {
+        if (isset($document['self_relations']) === false) {
+            return 0;
+        }
+        $selfRelations = $document['self_relations'];
+        if (is_array($selfRelations) === true) {
+            return count($selfRelations);
+        }
+        return 1;
+    }//end getSelfRelationsCount()
+
+    /**
+     * Get self object JSON representation.
+     *
+     * @param ObjectEntity $object Object entity.
+     *
+     * @return string JSON-encoded object.
+     */
+    private function getSelfObjectJson(ObjectEntity $object): string
+    {
+        $json = json_encode($object->jsonSerialize());
+        if ($json === false) {
+            return '{}';
+        }
+        return $json;
+    }//end getSelfObjectJson()
+
+    /**
+     * Get config status for a specific key.
+     *
+     * @param string $key Config key.
+     *
+     * @return string Config value or 'NOT_SET'.
+     */
+    private function getConfigStatus(string $key): string
+    {
+        return (string) ($this->solrConfig[$key] ?? 'NOT_SET');
+    }//end getConfigStatus()
+
+    /**
+     * Get port status.
+     *
+     * @return string Port number or 'NOT_SET'.
+     */
+    private function getPortStatus(): string
+    {
+        return (string) ($this->solrConfig['port'] ?? 'NOT_SET');
+    }//end getPortStatus()
+
+    /**
+     * Get core status.
+     *
+     * @return string Core name or 'NOT_SET'.
+     */
+    private function getCoreStatus(): string
+    {
+        return (string) ($this->solrConfig['core'] ?? 'NOT_SET');
+    }//end getCoreStatus()
+
+    /**
+     * Calculate prediction accuracy percentage.
+     *
+     * @param float|int $estimated Estimated value.
+     * @param float|int $actual    Actual value.
+     *
+     * @return float Accuracy percentage difference.
+     */
+    private function calculatePredictionAccuracy($estimated, $actual): float
+    {
+        if ($estimated === 0.0) {
+            return 100.0;
+        }
+        $difference = abs($estimated - $actual);
+        return round(($difference / $estimated) * 100, 2);
+    }//end calculatePredictionAccuracy()
+
+    /**
+     * Get numeric type for SOLR.
+     *
+     * @param mixed $value Numeric value.
+     *
+     * @return string SOLR numeric type ('pint', 'pfloat', 'pdouble', 'plong').
+     */
+    private function getNumericType($value): string
+    {
+        if (is_int($value) === true) {
+            if ($value >= -2147483648 && $value <= 2147483647) {
+                return 'pint';
+            }
+            return 'plong';
+        }
+        if (is_float($value) === true) {
+            return 'pdouble';
+        }
+        return 'pfloat';
+    }//end getNumericType()
+
+    /**
+     * Get field name from facet key.
+     *
+     * @param string $facetKey Facet key (may have 'object_' prefix).
+     *
+     * @return string Field name without prefix.
+     */
+    private function getFieldNameFromFacetKey(string $facetKey): string
+    {
+        if (strpos($facetKey, 'object_') === 0) {
+            return substr($facetKey, 7);
+        }
+        return $facetKey;
+    }//end getFieldNameFromFacetKey()
+
+    /**
+     * Get facet config key.
+     *
+     * @param bool   $isMetadataField Whether field is metadata.
+     * @param string $facetKey        Facet key.
+     * @param string $fieldName       Field name.
+     *
+     * @return string Config key.
+     */
+    private function getFacetConfigKey(bool $isMetadataField, string $facetKey, string $fieldName): string
+    {
+        if ($isMetadataField === true) {
+            return $facetKey;
+        }
+        return $fieldName;
+    }//end getFacetConfigKey()
+
+    /**
+     * Get facet keys from data array.
+     *
+     * @param array<string, mixed> $data Data array.
+     *
+     * @return array<string> Array of facet keys.
+     */
+    private function getFacetKeys(array $data): array
+    {
+        if (isset($data['facets']) === false || is_array($data['facets']) === false) {
+            return [];
+        }
+        return array_keys($data['facets']);
+    }//end getFacetKeys()
+
+    /**
+     * Get object facet keys from data array.
+     *
+     * @param array<string, mixed> $data Data array.
+     *
+     * @return array<string> Array of object facet keys (starting with 'object_').
+     */
+    private function getObjectFacetKeys(array $data): array
+    {
+        $facetKeys = $this->getFacetKeys($data);
+        return array_filter(
+            $facetKeys,
+            function ($key) {
+                return strpos($key, 'object_') === 0;
+            }
+        );
+    }//end getObjectFacetKeys()
+
+    /**
+     * Get collection health status.
+     *
+     * @param array<string, mixed> $allActive All active collections data.
+     *
+     * @return string Health status ('healthy', 'degraded', 'unhealthy').
+     */
+    private function getCollectionHealth(array $allActive): string
+    {
+        if (empty($allActive) === true) {
+            return 'unhealthy';
+        }
+        // Simple health check - can be enhanced.
+        return 'healthy';
+    }//end getCollectionHealth()
+
+    /**
+     * Get collection status.
+     *
+     * @param array<string, mixed> $allActive All active collections data.
+     *
+     * @return string Status ('active', 'inactive', 'unknown').
+     */
+    private function getCollectionStatus(array $allActive): string
+    {
+        if (empty($allActive) === true) {
+            return 'inactive';
+        }
+        return 'active';
+    }//end getCollectionStatus()
 
 }//end class

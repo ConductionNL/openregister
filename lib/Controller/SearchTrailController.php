@@ -308,7 +308,7 @@ class SearchTrailController extends Controller
             $page    = $serviceResult['page'] ?? 1;
 
             // Use the paginate method to ensure consistent format with ObjectsController.
-            $paginatedResult = $this->paginate($results, $total, $limit, $offset, $page);
+            $paginatedResult = $this->paginate(results: $results, total: $total, limit: $limit, offset: $offset, page: $page);
 
             return new JSONResponse(data: $paginatedResult);
         } catch (\Exception $e) {
@@ -415,7 +415,7 @@ class SearchTrailController extends Controller
             // Use pagination format for the terms array.
             $page           = $params['page'] ?? 1;
             $offset         = $params['offset'] ?? 0;
-            $paginatedTerms = $this->paginate($terms, $totalUniqueTerms, $limit, $offset, $page);
+            $paginatedTerms = $this->paginate(results: $terms, total: $totalUniqueTerms, limit: $limit, offset: $offset, page: $page);
 
             // Add the additional metadata from the service.
             $paginatedTerms['total_searches'] = $totalSearches;
@@ -495,7 +495,7 @@ class SearchTrailController extends Controller
             $limit          = $this->request->getParam('_limit', $defaultLimit);
             $page           = $params['page'] ?? 1;
             $offset         = $params['offset'] ?? 0;
-            $paginatedStats = $this->paginate($statistics, $totalCombinations, $limit, $offset, $page);
+            $paginatedStats = $this->paginate(results: $statistics, total: $totalCombinations, limit: $limit, offset: $offset, page: $page);
 
             // Add the additional metadata from the service.
             $paginatedStats['total_searches'] = $totalSearches;
@@ -549,7 +549,7 @@ class SearchTrailController extends Controller
                 // Use pagination format for the user agents array.
                 $page   = $params['page'] ?? 1;
                 $offset = $params['offset'] ?? 0;
-                $paginatedUserAgents = $this->paginate($userAgents, $totalUniqueAgents, $limit, $offset, $page);
+                $paginatedUserAgents = $this->paginate(results: $userAgents, total: $totalUniqueAgents, limit: $limit, offset: $offset, page: $page);
 
                 // Add the additional metadata from the service.
                 $paginatedUserAgents['total_searches'] = $totalSearches;
@@ -571,7 +571,7 @@ class SearchTrailController extends Controller
                 // Use pagination format for the user agents array.
                 $page   = $params['page'] ?? 1;
                 $offset = $params['offset'] ?? 0;
-                $paginatedUserAgents = $this->paginate($userAgents, $totalUniqueAgents, $limit, $offset, $page);
+                $paginatedUserAgents = $this->paginate(results: $userAgents, total: $totalUniqueAgents, limit: $limit, offset: $offset, page: $page);
 
                 return new JSONResponse(data: $paginatedUserAgents);
             }//end if
@@ -650,7 +650,7 @@ class SearchTrailController extends Controller
 
             // Export search trails using service.
             $searchTrails = $this->searchTrailService->getSearchTrails(
-                    [
+                    config: [
                         'filters' => $params['filters'],
                         'search'  => $params['search'],
                         'from'    => $params['from'],
@@ -658,7 +658,7 @@ class SearchTrailController extends Controller
                         'limit'   => null,
                         'offset'  => null,
                     ]
-                    );
+            );
 
             // Format export data.
             $exportData = [];
