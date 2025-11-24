@@ -474,7 +474,6 @@ class SettingsController extends Controller
             if ($validationResults['total_objects'] > 0) {
                 $validationSuccessRate = round(($validationResults['valid_objects'] / $validationResults['total_objects']) * 100, 2);
             }
-
             $validationResults['summary'] = [
                 'validation_success_rate' => $validationSuccessRate,
                 'has_errors'              => $validationResults['invalid_objects'] > 0,
@@ -645,13 +644,12 @@ class SettingsController extends Controller
             $endMemory       = memory_get_usage(true);
             $finalPeakMemory = memory_get_peak_usage(true);
 
-            $results['stats']['duration_seconds'] = round($endTime - $startTime, 2);
+            $results['stats']['duration_seconds']   = round($endTime - $startTime, 2);
             // Calculate objects per second.
             $objectsPerSecond = 0;
             if ($results['stats']['duration_seconds'] > 0) {
                 $objectsPerSecond = round($results['stats']['processed_objects'] / $results['stats']['duration_seconds'], 2);
             }
-
             $results['stats']['objects_per_second'] = $objectsPerSecond;
 
             // Add memory usage information.
@@ -950,7 +948,7 @@ class SettingsController extends Controller
                 }//end try
             }//end foreach
 
-            $batchDuration = microtime(true) - $batchStartTime;
+            $batchDuration    = microtime(true) - $batchStartTime;
             // Calculate objects per second.
             $objectsPerSecond = 0;
             if ($batchDuration > 0) {
@@ -1200,7 +1198,6 @@ class SettingsController extends Controller
             if ($maxObjects > 0) {
                 $estimatedObjectCount = $maxObjects;
             }
-
             // Estimate memory usage (rough calculation).
             // Assume each object uses approximately 50KB in memory during processing.
             $estimatedMemoryPerObject = 50 * 1024;
@@ -1431,7 +1428,6 @@ class SettingsController extends Controller
                     if ($lastError !== null && isset($lastError['message']) === true) {
                         $lastSystemError = $lastError['message'];
                     }
-
                     // Get port value or default.
                     $portValue = 'default';
                     if ($solrSettings['port'] !== null && $solrSettings['port'] !== '') {
@@ -3442,7 +3438,6 @@ class SettingsController extends Controller
             if ($result['success'] === true) {
                 $statusCode = 200;
             }
-
             return new JSONResponse(data: $result, statusCode: $statusCode);
         } catch (\Exception $e) {
             return new JSONResponse(
@@ -3511,7 +3506,6 @@ class SettingsController extends Controller
             if ($result['success'] === true) {
                 $statusCode = 200;
             }
-
             return new JSONResponse(data: $result, statusCode: $statusCode);
         } catch (\Exception $e) {
             return new JSONResponse(
@@ -3695,13 +3689,12 @@ class SettingsController extends Controller
             // Format models for frontend dropdown.
             $models = array_map(
                     function ($model) {
-                        $name = $model['name'] ?? 'unknown';
+                        $name   = $model['name'] ?? 'unknown';
                         // Format size if available.
                         $size = '';
                         if (isset($model['size']) === true) {
                             $size = $this->formatBytes($model['size']);
                         }
-
                         $family = $model['details']['family'] ?? '';
 
                         // Build description.
@@ -3711,7 +3704,6 @@ class SettingsController extends Controller
                             if ($description !== null && $description !== '') {
                                 $description .= ' • ';
                             }
-
                             $description .= $size;
                         }
 
@@ -5240,7 +5232,6 @@ class SettingsController extends Controller
             if ($githubToken !== null && $githubToken !== '') {
                 $maskedGithubToken = $this->maskToken($githubToken);
             }
-
             $maskedGitlabToken = '';
             if ($gitlabToken !== null && $gitlabToken !== '') {
                 $maskedGitlabToken = $this->maskToken($gitlabToken);

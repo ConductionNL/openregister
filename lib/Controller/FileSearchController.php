@@ -183,7 +183,7 @@ class FileSearchController extends Controller
             return new JSONResponse(
                     data: [
                         'success' => false,
-                        'message' => 'Search failed: '.$e->getMessage(),
+            'message' => 'Search failed: '.$e->getMessage(),
                     ],
                     500
                     );
@@ -240,7 +240,7 @@ class FileSearchController extends Controller
             return new JSONResponse(
                     data: [
                         'success'     => true,
-                        'query'       => $query,
+            'query'       => $query,
                         'total'       => count($results),
                         'results'     => $results,
                         'search_type' => 'semantic',

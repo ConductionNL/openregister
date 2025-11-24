@@ -290,8 +290,7 @@ class ConversationController extends Controller
                     ]
                     );
 
-            return new JSONResponse(
-                    data: [
+            return new JSONResponse(data: [
                         'error'   => 'Failed to fetch conversation',
                         'message' => $e->getMessage(),
                     ],
@@ -377,8 +376,7 @@ class ConversationController extends Controller
                     ]
                     );
 
-            return new JSONResponse(
-                    data: [
+            return new JSONResponse(data: [
                         'error'   => 'Failed to fetch messages',
                         'message' => $e->getMessage(),
                     ],
@@ -469,8 +467,7 @@ class ConversationController extends Controller
                     ]
                     );
 
-            return new JSONResponse(
-                    data: [
+            return new JSONResponse(data: [
                         'error'   => 'Failed to create conversation',
                         'message' => $e->getMessage(),
                     ],
@@ -501,13 +498,11 @@ class ConversationController extends Controller
 
             // Check modify rights using mapper method.
             if ($this->conversationMapper->canUserModifyConversation($conversation, $this->userId) === false) {
-                return new JSONResponse(
-                        data: [
+                return new JSONResponse(data: [
                             'error'   => 'Access denied',
                             'message' => 'You do not have permission to modify this conversation',
                         ],
-                        statusCode: 403
-                        );
+                        statusCode: 403);
             }
 
             // Get request data.
@@ -639,8 +634,7 @@ class ConversationController extends Controller
                         ]
                         );
 
-                return new JSONResponse(
-                        data: [
+                return new JSONResponse(data: [
                             'message'  => 'Conversation archived successfully',
                             'uuid'     => $uuid,
                             'archived' => true,

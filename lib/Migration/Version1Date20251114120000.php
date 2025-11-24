@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/*
+/**
  * OpenRegister Schema Composition Migration
  *
  * This migration adds 'allOf', 'oneOf', and 'anyOf' columns to the schemas table
