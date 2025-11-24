@@ -165,7 +165,7 @@ class ViewService
         ?array $favoredBy=null
     ): View {
         try {
-            $view = $this->find(id: $id, register: $owner);
+            $view = $this->find($id, $owner);
 
             // If this is set as default, schema: unset any existing default for this user.
             if ($isDefault === true && $view->getIsDefault() === false) {
@@ -205,7 +205,7 @@ class ViewService
     public function delete(int | string $id, string $owner): void
     {
         try {
-            $view = $this->find($id, files: $owner);
+            $view = $this->find($id, $owner);
             $this->viewMapper->delete($view);
         } catch (Exception $e) {
             $this->logger->error(message: 'Error deleting view: '.$e->getMessage());
@@ -229,13 +229,13 @@ class ViewService
     public function toggleFavorite(int | string $id, string $owner, bool $favor): View
     {
         try {
-            $view = $this->find(id: $id, register: $owner);
+            $view = $this->find($id, $owner);
             // GetFavoredBy() always returns an array (non-null), schema: but keeping ?? [] for defensive programming.
             $favoredBy = $view->getFavoredBy();
 
             if ($favor === true) {
                 // Add user to favoredBy if not already there.
-                if (in_array($owner, extend: $favoredBy, files: true) === false) {
+                if (in_array($owner, $favoredBy, true) === false) {
                     $favoredBy[] = $owner;
                 }
             } else {

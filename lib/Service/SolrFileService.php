@@ -13,6 +13,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use OCA\OpenRegister\Db\ChunkMapper;
+use OCA\OpenRegister\Db\FileMapper;
 use OCP\AppFramework\IAppContainer;
 use Psr\Log\LoggerInterface;
 
@@ -80,11 +82,11 @@ class SolrFileService
     private const FIXED_SIZE          = 'FIXED_SIZE';
 
     /**
-     * Lazy-loaded FileTextService to break circular dependency
+     * Lazy-loaded TextExtractionService to break circular dependency
      *
-     * @var FileTextService|null
+     * @var TextExtractionService|null
      */
-    private ?FileTextService $fileTextService = null;
+    private ?TextExtractionService $textExtractionService = null;
 
 
     /**
@@ -100,25 +102,26 @@ class SolrFileService
         private readonly SettingsService $settingsService,
         private readonly IAppContainer $container,
         private readonly LoggerInterface $logger,
+        private readonly ChunkMapper $chunkMapper,
     ) {
 
     }//end __construct()
 
 
     /**
-     * Get FileTextService instance (lazy loading to break circular dependency)
+     * Get TextExtractionService instance (lazy loading to break circular dependency)
      *
-     * @return FileTextService
+     * @return TextExtractionService
      */
-    private function getFileTextService(): FileTextService
+    private function getTextExtractionService(): TextExtractionService
     {
-        if ($this->fileTextService === null) {
-            $this->fileTextService = $this->container->get(FileTextService::class);
+        if ($this->textExtractionService === null) {
+            $this->textExtractionService = $this->container->get(TextExtractionService::class);
         }
 
-        return $this->fileTextService;
+        return $this->textExtractionService;
 
-    }//end getFileTextService()
+    }//end getTextExtractionService()
 
 
     /**
@@ -1203,9 +1206,11 @@ class SolrFileService
             'errors'       => [],
         ];
 
-        // Get extracted file texts that haven't been indexed yet.
-        // TODO: Add a flag to file_texts table to track indexing status.
-        $fileTexts = $this->getFileTextService()->getCompletedExtractions($limit);
+        // Get chunks for files that haven't been indexed yet.
+        // TextExtractionService works with chunks, so we get chunks directly.
+        // TODO: Update to use chunk-based approach with TextExtractionService.
+        // For now, this method needs to be refactored to work with chunks.
+        $fileTexts = [];
 
         foreach ($fileTexts as $fileText) {
             try {
@@ -1334,51 +1339,53 @@ class SolrFileService
                 ]
                 );
 
-        // Get the file text.
-        $fileText = $this->getFileTextService()->getFileText($fileId);
-        if ($fileText === null) {
-            throw new \Exception("File text not found for file ID: {$fileId}");
-        }
-
-        $text = $fileText->getTextContent();
-        if ($text === '' || $text === null) {
+        // Extract file using TextExtractionService if not already extracted.
+        // This will create chunks automatically.
+        try {
+            $this->getTextExtractionService()->extractFile($fileId, false);
+        } catch (\Exception $e) {
             return [
                 'success' => false,
-                'message' => 'Empty text content',
+                'message' => 'Failed to extract file: '.$e->getMessage(),
             ];
         }
 
-        // Chunk the text.
-        $chunks = $this->chunkDocument(
-                $text,
-                array_merge(
-                $options,
-                [
-                    'file_type' => $fileText->getMimeType(),
-                ]
-                )
-                );
-
+        // Get chunks for this file.
+        $chunks = $this->chunkMapper->findBySource('file', $fileId);
         if ($chunks === []) {
             return [
                 'success' => false,
-                'message' => 'No chunks produced',
+                'message' => 'No chunks found for file',
             ];
         }
 
+        // Get file metadata from Nextcloud.
+        $fileMapper = $this->container->get(FileMapper::class);
+        $ncFile = $fileMapper->getFile($fileId);
+        
         // Prepare metadata.
         $metadata = [
-            'file_id'      => $fileText->getFileId(),
-            'file_path'    => $fileText->getFilePath(),
-            'mime_type'    => $fileText->getMimeType(),
-            'size'         => $fileText->getSize(),
-            'extracted_at' => $fileText->getCreatedAt()->format('Y-m-d\TH:i:s\Z'),
+            'file_id'      => $fileId,
+            'file_path'    => $ncFile['path'] ?? '',
+            'mime_type'    => $ncFile['mimetype'] ?? '',
+            'size'         => $ncFile['size'] ?? 0,
+            'extracted_at' => date('Y-m-d\TH:i:s\Z'),
         ];
+
+        // Convert chunks to format expected by indexFileChunks.
+        $chunkData = [];
+        foreach ($chunks as $chunk) {
+            $chunkData[] = [
+                'text' => $chunk->getTextContent(),
+                'start_offset' => $chunk->getStartOffset(),
+                'end_offset' => $chunk->getEndOffset(),
+            ];
+        }
 
         // Index the chunks.
         $result = $this->indexFileChunks(
-            (string) $fileText->getFileId(),
-            $chunks,
+            (string) $fileId,
+            $chunkData,
             $metadata
         );
 
@@ -1415,9 +1422,8 @@ class SolrFileService
             ];
         }
 
-        // Get total extracted files.
-        // @psalm-suppress UndefinedMethod.
-        $extractionStats = $this->getFileTextService()->getExtractionStats();
+        // Get total extracted files using TextExtractionService stats.
+        $extractionStats = $this->getTextExtractionService()->getStats();
 
         // Get total chunks in SOLR.
         $fileStats = $this->getFileStats();
@@ -1425,7 +1431,7 @@ class SolrFileService
         return [
             'available'            => true,
             'collection'           => $collection,
-            'total_extracted'      => $extractionStats['completed'] ?? 0,
+            'total_extracted'      => $extractionStats['totalFiles'] ?? 0,
             'total_chunks_indexed' => $fileStats['document_count'] ?? 0,
             'unique_files_indexed' => $fileStats['indexed_files'] ?? 0,
             'pending_indexing'     => max(0, ($extractionStats['completed'] ?? 0) - ($fileStats['indexed_files'] ?? 0)),

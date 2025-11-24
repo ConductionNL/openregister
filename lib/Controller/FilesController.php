@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use Exception;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Controller;
@@ -303,46 +304,53 @@ class FilesController extends Controller
             $uploadedFiles = [];
 
             // Check if multiple files have been uploaded.
+            /** @var array<string, array<int, string>|string|int>|null $files */
             $files = $_FILES['files'] ?? null;
 
             // Lets see if we have files in the request.
-            if (empty($files) === true) {
+            if (empty($files) === true || !is_array($files)) {
                 throw new Exception('No files uploaded');
             }
 
             // Normalize single file upload to array structure.
-            if (isset($files['name']) === true && is_array($files['name']) === false) {
-                $tags = $data['tags'] ?? '';
-                if (is_array($tags) === false) {
-                    $tags = explode(',', $tags);
-                }
-
-                $uploadedFiles[] = [
-                    'name'     => $files['name'],
-                    'type'     => $files['type'],
-                    'tmp_name' => $files['tmp_name'],
-                    'error'    => $files['error'],
-                    'size'     => $files['size'],
-                    'share'    => $data['share'] === 'true',
-                    'tags'     => $tags,
-                ];
-            } else if (isset($files['name']) === true && is_array($files['name']) === true) {
-                // Loop through each file using the count of 'name'.
-                for ($i = 0; $i < count($files['name']); $i++) {
-                    $tags = $data['tags'][$i] ?? '';
+            // $_FILES can have 'name' as string (single file) or array (multiple files).
+            if (isset($files['name']) === true) {
+                if (is_array($files['name']) === false) {
+                    // Single file upload.
+                    $tags = $data['tags'] ?? '';
                     if (is_array($tags) === false) {
                         $tags = explode(',', $tags);
                     }
 
                     $uploadedFiles[] = [
-                        'name'     => $files['name'][$i],
-                        'type'     => $files['type'][$i],
-                        'tmp_name' => $files['tmp_name'][$i],
-                        'error'    => $files['error'][$i],
-                        'size'     => $files['size'][$i],
+                        'name'     => (string) $files['name'],
+                        'type'     => (string) ($files['type'] ?? ''),
+                        'tmp_name' => (string) ($files['tmp_name'] ?? ''),
+                        'error'    => (int) ($files['error'] ?? UPLOAD_ERR_NO_FILE),
+                        'size'     => (int) ($files['size'] ?? 0),
                         'share'    => $data['share'] === 'true',
                         'tags'     => $tags,
                     ];
+                } else {
+                    // Multiple file upload.
+                    // Loop through each file using the count of 'name'.
+                    $nameArray = $files['name'];
+                    for ($i = 0; $i < count($nameArray); $i++) {
+                        $tags = $data['tags'][$i] ?? '';
+                        if (is_array($tags) === false) {
+                            $tags = explode(',', $tags);
+                        }
+
+                        $uploadedFiles[] = [
+                            'name'     => (string) ($nameArray[$i] ?? ''),
+                            'type'     => (string) ((is_array($files['type'] ?? null) && isset($files['type'][$i])) ? $files['type'][$i] : ''),
+                            'tmp_name' => (string) ((is_array($files['tmp_name'] ?? null) && isset($files['tmp_name'][$i])) ? $files['tmp_name'][$i] : ''),
+                            'error'    => (int) ((is_array($files['error'] ?? null) && isset($files['error'][$i])) ? $files['error'][$i] : UPLOAD_ERR_NO_FILE),
+                            'size'     => (int) ((is_array($files['size'] ?? null) && isset($files['size'][$i])) ? $files['size'][$i] : 0),
+                            'share'    => $data['share'] === 'true',
+                            'tags'     => $tags,
+                        ];
+                    }
                 }
             }//end if
 

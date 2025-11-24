@@ -30,6 +30,7 @@ use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\GuzzleSolrService;
 use OCA\OpenRegister\Service\SolrSchemaService;
 use OCA\OpenRegister\Service\VectorEmbeddingService;
+use Psr\Log\LoggerInterface;
 
 /**
  * Controller for handling settings-related operations in the OpenRegister.
@@ -146,6 +147,7 @@ class SettingsController extends Controller
         private readonly IAppManager $appManager,
         private readonly SettingsService $settingsService,
         private readonly VectorEmbeddingService $vectorEmbeddingService,
+        private readonly LoggerInterface $logger,
     ) {
         parent::__construct(appName: $appName, request: $request);
 
@@ -746,7 +748,7 @@ class SettingsController extends Controller
      * @param  bool  $collectErrors Whether to collect all errors or stop on first
      * @return void
      */
-    private function processBatchSerial(array $batch, $objectService, array &$results, bool $collectErrors): void
+    private function processBatchSerial(array $batch, $objectService, array &$results, bool $collectErrors, $logger=null): void
     {
         foreach ($batch as $object) {
             try {
@@ -788,8 +790,8 @@ class SettingsController extends Controller
                     'batch_mode'  => 'serial',
                 ];
 
-                // Log the error for debugging.
-                $this->logger->error('Mass validation failed for object '.$object->getUuid().': '.$e->getMessage());
+                // Log the error for debugging (logger is passed as parameter).
+                $logger->error('Mass validation failed for object '.$object->getUuid().': '.$e->getMessage());
 
                 // If not collecting errors, stop processing this batch.
                 if ($collectErrors === false) {
@@ -808,9 +810,11 @@ class SettingsController extends Controller
      * @param  mixed $objectService The object service instance
      * @param  array &$results      Results array to update
      * @param  bool  $collectErrors Whether to collect all errors or stop on first
+     * @param  int   $parallelBatches Number of parallel batches (unused in current implementation)
+     * @param  mixed $logger        Optional logger instance
      * @return void
      */
-    private function processBatchParallel(array $batch, $objectService, array &$results, bool $collectErrors): void
+    private function processBatchParallel(array $batch, $objectService, array &$results, bool $collectErrors, int $parallelBatches=1, $logger=null): void
     {
             // Note: True parallel processing would require process forking or threading.
         // For now, we simulate parallel processing with optimized serial processing.
@@ -856,8 +860,8 @@ class SettingsController extends Controller
                     'batch_mode'  => 'parallel',
                 ];
 
-                // Log the error for debugging.
-                $this->logger->error('Mass validation failed for object '.$object->getUuid().': '.$e->getMessage());
+                // Log the error for debugging (logger is passed as parameter).
+                $logger->error('Mass validation failed for object '.$object->getUuid().': '.$e->getMessage());
 
                 // If not collecting errors, stop processing this batch.
                 if ($collectErrors === false) {
@@ -1153,7 +1157,9 @@ class SettingsController extends Controller
             $bytes /= 1024;
         }
 
-        return round($bytes, $precision).' '.$units[$i];
+        // Ensure $i is within bounds of $units array.
+        $unitIndex = min($i, count($units) - 1);
+        return round($bytes, $precision).' '.$units[$unitIndex];
 
     }//end formatBytes()
 
@@ -1227,7 +1233,7 @@ class SettingsController extends Controller
                     'memory_per_object' => $this->formatBytes($estimatedMemoryPerObject),
                 ],
                 // Get recommendation message based on prediction safety.
-                'recommendation'           => $this->getRecommendationMessage($predictionSafe),
+                'recommendation'           => $predictionSafe ? 'Safe to process' : 'Warning: Memory usage may exceed available memory',
                 'note'                     => 'Fast prediction mode - actual object count will be determined during processing',
             ];
 
@@ -2238,7 +2244,7 @@ class SettingsController extends Controller
                     data: [
                         'success'    => $result,
                         'collection' => 'files',
-                        'message'    => $this->getFileFieldsMessage($result),
+                        'message'    => $result === true ? 'File metadata fields ensured successfully' : 'Failed to ensure file metadata fields',
                     ]
                     );
         } catch (\Exception $e) {
@@ -4876,8 +4882,7 @@ class SettingsController extends Controller
                     ]
                     );
 
-            // Get FileTextService and GuzzleSolrService.
-            $fileTextService   = $this->container->get(\OCA\OpenRegister\Service\FileTextService::class);
+            // Get GuzzleSolrService and FileTextMapper.
             $guzzleSolrService = $this->container->get(\OCA\OpenRegister\Service\GuzzleSolrService::class);
             $fileTextMapper    = $this->container->get(\OCA\OpenRegister\Db\FileTextMapper::class);
 

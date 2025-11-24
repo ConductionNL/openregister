@@ -59,7 +59,7 @@ class SolrWarmupJob extends QueuedJob
     /**
      * Execute the SOLR warmup job.
      *
-     * @param array $arguments Job arguments containing warmup parameters
+     * @param array $argument Job arguments containing warmup parameters
      *                         - maxObjects: Maximum number of objects to index (default: 5000)
      *                         - mode: Warmup mode - 'serial', 'parallel', or 'hyper' (default: 'serial')
      *                         - collectErrors: Whether to collect detailed errors (default: false)
@@ -67,15 +67,15 @@ class SolrWarmupJob extends QueuedJob
      *
      * @return void
      */
-    protected function run($arguments): void
+    protected function run($argument): void
     {
         $startTime = microtime(true);
 
         // Parse job arguments with defaults.
-        $maxObjects    = $arguments['maxObjects'] ?? self::DEFAULT_MAX_OBJECTS;
-        $mode          = $arguments['mode'] ?? self::DEFAULT_MODE;
-        $collectErrors = $arguments['collectErrors'] ?? false;
-        $triggeredBy   = $arguments['triggeredBy'] ?? 'unknown';
+        $maxObjects    = $argument['maxObjects'] ?? self::DEFAULT_MAX_OBJECTS;
+        $mode          = $argument['mode'] ?? self::DEFAULT_MODE;
+        $collectErrors = $argument['collectErrors'] ?? false;
+        $triggeredBy   = $argument['triggeredBy'] ?? 'unknown';
 
         // @var LoggerInterface $logger
         $logger = \OC::$server->get(LoggerInterface::class);

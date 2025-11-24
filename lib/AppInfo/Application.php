@@ -60,7 +60,7 @@ use OCA\OpenRegister\Service\Vectorization\FileVectorizationStrategy;
 use OCA\OpenRegister\Service\Vectorization\ObjectVectorizationStrategy;
 use OCA\OpenRegister\Service\NamedEntityRecognitionService;
 use OCA\OpenRegister\Service\ChatService;
-use OCA\OpenRegister\Service\FileTextService;
+use OCA\OpenRegister\Service\TextExtractionService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\SolrSchemaService;
 use OCA\OpenRegister\Setup\SolrSetup;
@@ -579,7 +579,8 @@ class Application extends App implements IBootstrap
                     $container->get(GuzzleSolrService::class),
                     $container->get(SettingsService::class),
                     $container,
-                    $container->get('Psr\Log\LoggerInterface')
+                    $container->get('Psr\Log\LoggerInterface'),
+                    $container->get(ChunkMapper::class)
                     );
                 }
                 );
@@ -672,15 +673,17 @@ class Application extends App implements IBootstrap
                 }
                 );
 
-        // Register FileTextService for file text extraction and storage.
+        // Register TextExtractionService for file text extraction and storage.
         $context->registerService(
-                FileTextService::class,
+                TextExtractionService::class,
                 function ($container) {
-                    return new FileTextService(
-                    $container->get(FileTextMapper::class),
+                    return new TextExtractionService(
                     $container->get(id: 'OCA\OpenRegister\Db\FileMapper'),
-                    $container->get(SolrFileService::class),
+                    $container->get(ChunkMapper::class),
+                    $container->get(GdprEntityMapper::class),
+                    $container->get(EntityRelationMapper::class),
                     $container->get(id: 'OCP\Files\IRootFolder'),
+                    $container->get(id: 'OCP\IDBConnection'),
                     $container->get(id: 'Psr\Log\LoggerInterface')
                     );
                 }
@@ -691,7 +694,7 @@ class Application extends App implements IBootstrap
                 FileChangeListener::class,
                 function ($container) {
                     return new FileChangeListener(
-                    $container->get(FileTextService::class),
+                    $container->get(TextExtractionService::class),
                     $container->get(id: 'OCP\BackgroundJob\IJobList'),
                     $container->get(id: 'Psr\Log\LoggerInterface')
                     );

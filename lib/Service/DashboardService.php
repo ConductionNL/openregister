@@ -543,7 +543,7 @@ class DashboardService
 
             $response = [
                 'status'    => 'success',
-                'timestamp' => (new \DateTime(datetime: 'now'))->format(format: 'c'),
+                'timestamp' => (new \DateTime('now'))->format(format: 'c'),
                 'scope'     => [
                     'register' => $registerScope,
                     'schema'   => $schemaScope,

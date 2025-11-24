@@ -537,25 +537,14 @@ class SearchTrailController extends Controller
             // Check if service result is a structured array with nested data.
             if (isset($serviceResult['user_agents']) === true) {
                 // Extract the user agents array and metadata from structured response.
-                /*
-                 * @psalm-suppress RedundantCondition
-                 */
-                $userAgentsArray = $serviceResult['user_agents'] ?? [];
+                // getUserAgentStatistics returns: user_agents, browser_distribution, total_user_agents, period
+                $userAgentsArray = $serviceResult['user_agents'];
                 // Ensure we have a proper indexed array for pagination.
                 $userAgents = is_array($userAgentsArray) ? array_values($userAgentsArray) : [];
-                /*
-                 * @psalm-suppress InvalidArrayOffset
-                 */
-                $totalUniqueAgents = $serviceResult['total_unique_agents'] ?? 0;
-                /*
-                 * @psalm-suppress InvalidArrayOffset
-                 */
-                $totalSearches = $serviceResult['total_searches'] ?? 0;
+                $totalUniqueAgents = $serviceResult['total_user_agents'] ?? 0;
+                $totalSearches = 0; // Not returned by getUserAgentStatistics
                 $period        = $serviceResult['period'] ?? null;
-                /*
-                 * @psalm-suppress InvalidArrayOffset
-                 */
-                $browserStats = $serviceResult['browser_breakdown'] ?? null;
+                $browserStats = $serviceResult['browser_distribution'] ?? null;
 
                 // Use pagination format for the user agents array.
                 $page   = $params['page'] ?? 1;

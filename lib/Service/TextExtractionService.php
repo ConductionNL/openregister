@@ -322,7 +322,6 @@ class TextExtractionService
             'language'            => $language,
             'language_level'      => null,
             'language_confidence' => $confidence,
-            // @psalm-suppress UndefinedMethod.
             'detection_method'    => $this->getDetectionMethod($language),
         ];
 
@@ -1083,8 +1082,7 @@ class TextExtractionService
             // Clean up.
             fclose($tempFile);
 
-            // @psalm-suppress TypeDoesNotContainNull
-            if ($text === '' || $text === null) {
+            if ($text === '') {
                 $this->logger->warning(
                         '[TextExtractionService] PDF extraction returned empty text',
                         [
@@ -1383,7 +1381,6 @@ class TextExtractionService
                 [
                     'chunk_count'      => count($chunks),
                     'chunking_time_ms' => $chunkingTime,
-                    // @psalm-suppress UndefinedMethod.
                     'avg_chunk_size'   => $this->calculateAvgChunkSize($chunks),
                 ]
                 );
@@ -1684,6 +1681,46 @@ class TextExtractionService
         return in_array($mimeType, $spreadsheetTypes, true) === true;
 
     }//end isSpreadsheet()
+
+
+    /**
+     * Get detection method name based on language
+     *
+     * @param string|null $language Detected language code
+     *
+     * @return string Detection method name
+     */
+    private function getDetectionMethod(?string $language): string
+    {
+        if ($language === null) {
+            return 'none';
+        }
+
+        return 'heuristic';
+    }//end getDetectionMethod()
+
+
+    /**
+     * Calculate average chunk size from chunks array
+     *
+     * @param array $chunks Array of chunk arrays with 'text' key
+     *
+     * @return float Average chunk size in characters
+     */
+    private function calculateAvgChunkSize(array $chunks): float
+    {
+        if ($chunks === []) {
+            return 0.0;
+        }
+
+        $totalSize = 0;
+        foreach ($chunks as $chunk) {
+            $text = is_array($chunk) && isset($chunk['text']) ? $chunk['text'] : (is_string($chunk) ? $chunk : '');
+            $totalSize += strlen($text);
+        }
+
+        return round($totalSize / count($chunks), 2);
+    }//end calculateAvgChunkSize()
 
 
 }//end class

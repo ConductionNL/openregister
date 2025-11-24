@@ -1058,7 +1058,7 @@ class OrganisationService
         if (isset($cachedData['created']) === true && $cachedData['created'] !== null) {
             // Convert string back to DateTime if needed.
             if (is_string($cachedData['created']) === true) {
-                $organisation->setCreated(new \DateTime(datetime: $cachedData['created']));
+                $organisation->setCreated(new \DateTime($cachedData['created']));
             } else if ($cachedData['created'] instanceof \DateTime) {
                 $organisation->setCreated($cachedData['created']);
             }
@@ -1067,7 +1067,7 @@ class OrganisationService
         if (isset($cachedData['updated']) === true && $cachedData['updated'] !== null) {
             // Convert string back to DateTime if needed.
             if (is_string($cachedData['updated']) === true) {
-                $organisation->setUpdated(new \DateTime(datetime: $cachedData['updated']));
+                $organisation->setUpdated(new \DateTime($cachedData['updated']));
             } else if ($cachedData['updated'] instanceof \DateTime) {
                 $organisation->setUpdated($cachedData['updated']);
             }

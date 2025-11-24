@@ -549,10 +549,7 @@ class SchemaFacetCacheService
             foreach ($properties as $propertyName => $property) {
                 if ($this->isPropertyFacetable($property) === true) {
                     $fieldConfig = $this->generateFieldConfigFromProperty($propertyName, $property);
-                    // @psalm-suppress RedundantCondition
-                    if ($fieldConfig !== null) {
-                        $facetableFields['object_fields'][$propertyName] = $fieldConfig;
-                    }
+                    $facetableFields['object_fields'][$propertyName] = $fieldConfig;
                 }
             }
         }
@@ -827,7 +824,7 @@ class SchemaFacetCacheService
 
         // Check if expired.
         if ($result['expires'] !== null) {
-            $expires = new \DateTime(datetime: $result['expires']);
+            $expires = new \DateTime($result['expires']);
             if ($expires <= new \DateTime()) {
                 // Cache expired, remove it.
                 $this->removeCachedFacetData($schemaId, $cacheKey);
