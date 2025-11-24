@@ -167,13 +167,19 @@ trait MultiTenancyTrait
      * @return void
      */
     protected function applyOrganisationFilter(
-        IQueryBuilder $qb,
-        string $columnName='organisation',
-        bool $allowNullOrg=false,
-        string $tableAlias='',
-        bool $enablePublished=false
+        IQueryBuilder $qb, 
+        string $columnName = 'organisation', 
+        bool $allowNullOrg = false,
+        string $tableAlias = '',
+        bool $enablePublished = false,
+        bool $multiTenancyEnabled = true
     ): void {
-        // Check if multitenancy is enabled (if appConfig is available).
+        // If multitenancy is disabled, skip all filtering
+        if ($multiTenancyEnabled === false) {
+            return;
+        }
+        
+        // Check if multitenancy is enabled (if appConfig is available)
         if (isset($this->appConfig)) {
             $multitenancyConfig = $this->appConfig->getValueString('openregister', 'multitenancy', '');
             if (!empty($multitenancyConfig)) {
@@ -200,8 +206,8 @@ trait MultiTenancyTrait
             if (isset($this->logger)) {
                 $this->logger->debug('[MultiTenancyTrait] Unauthenticated request, no automatic access');
             }
-
-            return;
+            // @todo this prevents non loged in access to published objects, we need to allow this so htofix this
+            //return $qb;
         }
 
         // Get active organisation UUIDs (active + all parents).

@@ -746,7 +746,8 @@ class ObjectEntityMapper extends QBMapper
         if ($multi === false || $this->isMultiTenancyEnabled() === false) {
             return;
         }
-        // Get current user to check if they're admin.
+
+        // Get current user to check if they're admin
         $user = $this->userSession->getUser();
         $userId = null;
         if ($user !== null) {
@@ -1676,7 +1677,8 @@ class ObjectEntityMapper extends QBMapper
                 columnName: 'organisation',
                 allowNullOrg: true,      // Admins can see legacy NULL org objects
                 tableAlias: 'o',
-                enablePublished: true    // Enable published object bypass for objects table
+                enablePublished: true,    // Enable published object bypass for objects table
+                multiTenancyEnabled: $multi
             );
             $perfTimings['org_filtering'] = round((microtime(true) - $orgStart) * 1000, 2);
 
@@ -1911,7 +1913,8 @@ class ObjectEntityMapper extends QBMapper
             columnName: 'organisation',
             allowNullOrg: true,
             tableAlias: 'o',
-            enablePublished: true
+            enablePublished: true,
+            multiTenancyEnabled: $multi
         );
 
         // Handle filtering by IDs/UUIDs if provided (same as searchObjects).
@@ -2017,7 +2020,8 @@ class ObjectEntityMapper extends QBMapper
                 columnName: 'organisation',
                 allowNullOrg: true,
                 tableAlias: '',          // No table alias in this query
-                enablePublished: true
+                enablePublished: true,
+                multiTenancyEnabled: $multi
             );
 
             $result = $queryBuilder->executeQuery();
@@ -2050,7 +2054,8 @@ class ObjectEntityMapper extends QBMapper
             columnName: 'organisation',
             allowNullOrg: true,
             tableAlias: 'o',
-            enablePublished: true
+            enablePublished: true,
+            multiTenancyEnabled: $multi
         );
 
         // Handle filtering by IDs/UUIDs if provided.

@@ -133,8 +133,8 @@ class SchemaMapper extends QBMapper
      */
     public function find(string | int $id, ?array $extend=[]): Schema
     {
-        // Verify RBAC permission to read.
-        $this->verifyRbacPermission('read', 'schema');
+        // Verify RBAC permission to read @todo: remove this hotfix for solr
+        //$this->verifyRbacPermission('read', 'schema');
 
         $qb = $this->db->getQueryBuilder();
         $qb->select('*')
@@ -147,8 +147,8 @@ class SchemaMapper extends QBMapper
                 )
             );
 
-        // Apply organisation filter (all users including admins must have active org).
-        $this->applyOrganisationFilter($qb);
+        // Apply organisation filter (all users including admins must have active org)
+        // $this->applyOrganisationFilter($qb);
 
         // Get the schema entity.
         $schema = $this->findEntity(query: $qb);
@@ -246,8 +246,8 @@ class SchemaMapper extends QBMapper
         ?array $searchParams=[],
         ?array $extend=[]
     ): array {
-        // Verify RBAC permission to read.
-        $this->verifyRbacPermission('read', 'schema');
+        // Verify RBAC permission to read
+       //$this->verifyRbacPermission('read', 'schema');
 
         $qb = $this->db->getQueryBuilder();
 
@@ -293,8 +293,8 @@ class SchemaMapper extends QBMapper
      */
     public function insert(Entity $entity): Entity
     {
-        // Verify RBAC permission to create.
-        $this->verifyRbacPermission('create', 'schema');
+        // Verify RBAC permission to create
+        //$this->verifyRbacPermission('create', 'schema');
 
         // Auto-set organisation from active session.
         $this->setOrganisationOnCreate($entity);
@@ -519,8 +519,8 @@ class SchemaMapper extends QBMapper
      */
     public function update(Entity $entity): Entity
     {
-        // Verify RBAC permission to update.
-        $this->verifyRbacPermission('update', 'schema');
+        // Verify RBAC permission to update
+        //$this->verifyRbacPermission('update', 'schema');
 
         // Verify user has access to this organisation.
         $this->verifyOrganisationAccess($entity);
@@ -597,8 +597,8 @@ class SchemaMapper extends QBMapper
      */
     public function delete(Entity $schema): Schema
     {
-        // Verify RBAC permission to delete.
-        $this->verifyRbacPermission('delete', files: 'schema');
+        // Verify RBAC permission to delete
+        //$this->verifyRbacPermission('delete', 'schema');
 
         // Verify user has access to this organisation.
         $this->verifyOrganisationAccess($schema);

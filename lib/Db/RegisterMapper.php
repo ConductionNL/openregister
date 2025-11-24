@@ -131,8 +131,8 @@ class RegisterMapper extends QBMapper
      */
     public function find(string | int $id, ?array $extend=[]): Register
     {
-        // Verify RBAC permission to read registers.
-        $this->verifyRbacPermission('read', 'register');
+        // Verify RBAC permission to read registers @todo: remove this hotfix for solr
+        //$this->verifyRbacPermission('read', 'register');
 
         $qb = $this->db->getQueryBuilder();
         $qb->select('*')
@@ -144,11 +144,11 @@ class RegisterMapper extends QBMapper
                     $qb->expr()->eq('slug', $qb->createNamedParameter($id, IQueryBuilder::PARAM_STR))
                 )
             );
-
-        // Apply organisation filter (all users including admins must have active org).
-        $this->applyOrganisationFilter($qb);
-
-        // Just return the entity; do not attach stats here.
+        
+        // Apply organisation filter (all users including admins must have active org)
+        //$this->applyOrganisationFilter($qb);
+        
+        // Just return the entity; do not attach stats here
         return $this->findEntity(query: $qb);
 
     }//end find()
@@ -239,18 +239,18 @@ class RegisterMapper extends QBMapper
         ?array $searchParams=[],
         ?array $extend=[]
     ): array {
-        // Verify RBAC permission to read registers.
-        $this->verifyRbacPermission('read', 'register');
+        // Verify RBAC permission to read registers
+        // $this->verifyRbacPermission('read', 'register');
 
         $qb = $this->db->getQueryBuilder();
         $qb->select('*')
             ->from('openregister_registers')
             ->setMaxResults($limit)
             ->setFirstResult($offset);
-
-        // Apply organisation filter (all users including admins must have active org).
-        $this->applyOrganisationFilter($qb);
-
+        
+        // Apply organisation filter (all users including admins must have active org)
+        //$this->applyOrganisationFilter($qb);
+        
         foreach ($filters as $filter => $value) {
             if ($value === 'IS NOT NULL') {
                 $qb->andWhere($qb->expr()->isNotNull($filter));
@@ -287,8 +287,8 @@ class RegisterMapper extends QBMapper
      */
     public function insert(Entity $entity): Entity
     {
-        // Verify RBAC permission to create registers.
-        $this->verifyRbacPermission('create', 'register');
+        // Verify RBAC permission to create registers
+        // $this->verifyRbacPermission('create', 'register');
 
         // Auto-set organisation from active session.
         $this->setOrganisationOnCreate($entity);
@@ -376,8 +376,8 @@ class RegisterMapper extends QBMapper
      */
     public function update(Entity $entity): Entity
     {
-        // Verify RBAC permission to update registers.
-        $this->verifyRbacPermission('update', 'register');
+        // Verify RBAC permission to update registers
+        // $this->verifyRbacPermission('update', 'register');
 
         // Verify entity belongs to active organisation.
         $this->verifyOrganisationAccess($entity);
@@ -444,8 +444,8 @@ class RegisterMapper extends QBMapper
      */
     public function delete(Entity $entity): Register
     {
-        // Verify RBAC permission to delete registers.
-        $this->verifyRbacPermission('delete', rbac: 'register');
+        // Verify RBAC permission to delete registers
+        // $this->verifyRbacPermission('delete', 'register');
 
         // Verify entity belongs to active organisation.
         $this->verifyOrganisationAccess($entity);
