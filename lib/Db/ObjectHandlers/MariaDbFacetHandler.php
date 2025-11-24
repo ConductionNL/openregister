@@ -77,25 +77,53 @@ class MariaDbFacetHandler
         // For non-array fields, use the standard approach
         $queryBuilder = $this->db->getQueryBuilder();
 
-        // Build aggregation query for JSON field
+        // SELECT JSON value + COUNT
         $queryBuilder->selectAlias(
-                $queryBuilder->createFunction("JSON_UNQUOTE(JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath)."))"),
-                'field_value'
-            )
+            $queryBuilder->createFunction("JSON_UNQUOTE(JSON_EXTRACT(object, '$jsonPath'))"),
+            'field_value'
+        )
             ->selectAlias($queryBuilder->createFunction('COUNT(*)'), 'doc_count')
-            ->from('openregister_objects')
-            ->where(
-                    $queryBuilder->expr()->isNotNull(
-                $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
-            )
-                    )
-            ->groupBy('field_value')
-            ->orderBy('doc_count', 'DESC');
-        // Note: Still using doc_count in ORDER BY as it's the SQL alias
-        // Apply base filters
-        $this->applyBaseFilters($queryBuilder, $baseQuery);
+            ->from('openregister_objects');
 
-        $result  = $queryBuilder->executeQuery();
+        // JSON field must exist
+        $queryBuilder->andWhere("JSON_EXTRACT(object, '$jsonPath') IS NOT NULL");
+
+        // Deleted filter
+        if (empty($baseQuery['_includeDeleted'])) {
+            $queryBuilder->andWhere('deleted IS NULL');
+        }
+
+        // Published filter
+        if (empty($baseQuery['_published']) === false && $baseQuery['_published'] === true) {
+            $now = (new \DateTime())->format('Y-m-d H:i:s');
+            $queryBuilder->andWhere(
+                $queryBuilder->expr()->andX(
+                    $queryBuilder->expr()->isNotNull('published'),
+                    $queryBuilder->expr()->lte('published', $queryBuilder->createNamedParameter($now)),
+                    $queryBuilder->expr()->orX(
+                        $queryBuilder->expr()->isNull('depublished'),
+                        $queryBuilder->expr()->gt('depublished', $queryBuilder->createNamedParameter($now))
+                    )
+                )
+            );
+        }
+
+        // Schema filter (support multiple via @self['schema']['or'])
+        if (empty($baseQuery['@self']['schema']['or']) === false) {
+            $schemas = array_map('intval', explode(',', $baseQuery['@self']['schema']['or']));
+            $queryBuilder->andWhere('schema IN (' . implode(',', $schemas) . ')');
+        }
+
+        // Register filter (support multiple via @self['register']['or'])
+        if (empty($baseQuery['@self']['register']['or']) === false) {
+            $registers = array_map('intval', explode(',', $baseQuery['@self']['register']['or']));
+            $queryBuilder->andWhere('register IN (' . implode(',', $registers) . ')');
+        }
+
+        $queryBuilder->groupBy('field_value')
+                    ->orderBy('doc_count', 'DESC');
+
+        $result = $queryBuilder->executeQuery();
         $buckets = [];
 
         while ($row = $result->fetch()) {
