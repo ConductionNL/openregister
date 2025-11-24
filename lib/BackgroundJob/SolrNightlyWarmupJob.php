@@ -86,11 +86,11 @@ class SolrNightlyWarmupJob extends TimedJob
     /**
      * Execute the nightly SOLR warmup job
      *
-     * @param array $arguments Job arguments (unused for recurring jobs)
+     * @param array $argument Job arguments (unused for recurring jobs)
      *
      * @return void
      */
-    protected function run($arguments): void
+    protected function run($argument): void
     {
         $startTime = microtime(true);
 

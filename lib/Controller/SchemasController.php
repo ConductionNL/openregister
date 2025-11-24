@@ -478,7 +478,7 @@ class SchemasController extends Controller
         } else {
             // Otherwise, create a new schema.
             $schema = new Schema();
-            $schema->setUuid(Uuid::v4());
+            $schema->setUuid(Uuid::v4()->toRfc4122());
         }
 
         // Get the uploaded JSON data.

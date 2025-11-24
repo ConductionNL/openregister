@@ -236,7 +236,7 @@ class MariaDbSearchHandler
                         if (in_array($field, ['created', 'updated', 'published', 'depublished'])) {
                             try {
                                 // Convert to database format: Y-m-d H:i:s (2025-06-25 21:46:59).
-                                $dateTime        = new \DateTime(datetime: $operatorValue);
+                                $dateTime        = new \DateTime($operatorValue);
                                 $normalizedValue = $dateTime->format('Y-m-d H:i:s');
                             } catch (\Exception $e) {
                                 // Fall back to original value if date parsing fails.

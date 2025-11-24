@@ -1110,7 +1110,7 @@ class SettingsService
             $results = [
                 'type'         => $type,
                 'userId'       => $userId,
-                'timestamp'    => (new \DateTime(datetime: 'now'))->format(format: 'c'),
+                'timestamp'    => (new \DateTime('now'))->format(format: 'c'),
                 'results'      => [],
                 'errors'       => [],
                 'totalCleared' => 0,
@@ -1621,20 +1621,20 @@ class SettingsService
             $data = json_decode($response, true);
 
             // Validate admin response - be flexible about response format.
-            if ($testType === 'admin_ping') {
-                // Check for successful response - different endpoints have different formats.
-                $isValidResponse = false;
+            // Check for successful response - different endpoints have different formats.
+            // Note: $testType is always 'admin_ping' in current implementation.
+            $isValidResponse = false;
 
-                if (isset($data['status']) && $data['status'] === 'OK') {
-                    // Standard ping response.
-                    $isValidResponse = true;
-                } else if (isset($data['responseHeader']['status']) && $data['responseHeader']['status'] === 0) {
-                    // System info response.
-                    $isValidResponse = true;
-                } else if (is_array($data) && !empty($data)) {
-                    // Any valid JSON response indicates SOLR is responding.
-                    $isValidResponse = true;
-                }
+            if (isset($data['status']) && $data['status'] === 'OK') {
+                // Standard ping response.
+                $isValidResponse = true;
+            } else if (isset($data['responseHeader']['status']) && $data['responseHeader']['status'] === 0) {
+                // System info response.
+                $isValidResponse = true;
+            } else if (is_array($data) && !empty($data)) {
+                // Any valid JSON response indicates SOLR is responding.
+                $isValidResponse = true;
+            }
 
                 if ($isValidResponse === false) {
                     return [

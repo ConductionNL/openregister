@@ -2055,7 +2055,7 @@ class SolrService
      *
      * @param UpdateQuery  $update Update query instance
      * @param ObjectEntity $object Object to convert
-     * @param Schema|null  $schema Optional schema for schema-aware mapping
+     * @param \OCA\OpenRegister\Db\Schema|null  $schema Optional schema for schema-aware mapping
      *
      * @return \Solarium\QueryType\Update\Query\Document Document instance
      */

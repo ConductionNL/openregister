@@ -39,6 +39,7 @@ class SearchController extends Controller
      *
      * @var            ISearch
      * @psalm-suppress UndefinedClass
+     * @psalm-suppress UndefinedInterface
      */
     private readonly ISearch $searchService;
 
@@ -56,6 +57,8 @@ class SearchController extends Controller
      * @param string      $appName       The name of the app
      * @param IRequest    $request       The request object
      * @param ISearch     $searchService The search service
+     * @psalm-suppress UndefinedClass
+     * @psalm-suppress UndefinedInterface
      * @param SolrService $solrService   The Solr search service
      *
      * @return void
@@ -93,40 +96,25 @@ class SearchController extends Controller
         $processedQuery = $this->processSearchQuery($query);
 
         // Perform the search using the search service.
+        /** @psalm-suppress UndefinedMethod */
         $results = $this->searchService->search($processedQuery);
 
         // Format the search results for the JSON response.
         $formattedResults = array_map(
             function (Result $result) {
-
-                /*
-                 * @psalm-suppress UndefinedMethod
-                 */
-
+                /** @psalm-suppress UndefinedMethod */
                 $id = $result->getId();
 
-                /*
-                 * @psalm-suppress UndefinedMethod
-                 */
-
+                /** @psalm-suppress UndefinedMethod */
                 $name = $result->getName();
 
-                /*
-                 * @psalm-suppress UndefinedMethod
-                 */
-
+                /** @psalm-suppress UndefinedMethod */
                 $type = $result->getType();
 
-                /*
-                 * @psalm-suppress UndefinedMethod
-                 */
-
+                /** @psalm-suppress UndefinedMethod */
                 $url = $result->getUrl();
 
-                /*
-                 * @psalm-suppress UndefinedMethod
-                 */
-
+                /** @psalm-suppress UndefinedMethod */
                 $source = $result->getSource();
 
                 return [

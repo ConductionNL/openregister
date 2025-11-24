@@ -372,7 +372,7 @@ class AuditTrailMapper extends QBMapper
         $auditTrail->setSize(max($serializedSize, 14));
 
         // Set default expiration date (30 days from now).
-        $auditTrail->setExpires(new \DateTime(datetime: '+30 days'));
+        $auditTrail->setExpires(new \DateTime('+30 days'));
 
         // Insert the new AuditTrail into the database and return it.
         return $this->insert(entity: $auditTrail);

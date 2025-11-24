@@ -459,7 +459,7 @@ class ExportService
                 ) {
                     // Convert ISO 8601 to our preferred format.
                     try {
-                        $date = new \DateTime(datetime: $value);
+                        $date = new \DateTime($value);
                         return $date->format('Y-m-d H:i:s');
                     } catch (\Exception $e) {
                         // Return as-is if parsing fails.
@@ -503,7 +503,7 @@ class ExportService
                 ) {
                     // Convert ISO 8601 to our preferred format.
                     try {
-                        $date = new \DateTime(datetime: $value);
+                        $date = new \DateTime($value);
                         return $date->format('Y-m-d H:i:s');
                     } catch (\Exception $e) {
                         // Return as-is if parsing fails.

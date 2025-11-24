@@ -1550,7 +1550,8 @@ class SolrSetup
                         );
 
                 // Direct attempt to create collection.
-                $success = $this->solrService->createCollection($collectionName, $configSetName);
+                $result = $this->solrService->createCollection($collectionName, $configSetName);
+                $success = isset($result['success']) && $result['success'] === true;
 
                 if ($success === true) {
                     $totalElapsed = time() - $startTime;

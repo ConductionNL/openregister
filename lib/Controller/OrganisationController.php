@@ -250,7 +250,7 @@ class OrganisationController extends Controller
             $requestData = $this->request->getParams();
             $uuid        = $requestData['uuid'] ?? '';
 
-            $organisation = $this->organisationService->createOrganisation(name: $name, description: $description, active: true, uuid: $uuid);
+            $organisation = $this->organisationService->createOrganisation($name, $description, true, $uuid);
 
             return new JSONResponse(
                     data: [
@@ -297,7 +297,7 @@ class OrganisationController extends Controller
             $userId      = $requestData['userId'] ?? null;
 
             // Join organisation with optional userId parameter.
-            $success = $this->organisationService->joinOrganisation(uuid: $uuid, userId: $userId);
+            $success = $this->organisationService->joinOrganisation($uuid, $userId);
 
             if ($success === true) {
                 return new JSONResponse(
@@ -352,7 +352,7 @@ class OrganisationController extends Controller
             $data   = $this->request->getParams();
             $userId = $data['userId'] ?? null;
 
-            $success = $this->organisationService->leaveOrganisation(uuid: $uuid, userId: $userId);
+            $success = $this->organisationService->leaveOrganisation($uuid, $userId);
 
             if ($success === true) {
                 $message = "Successfully left organisation";

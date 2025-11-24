@@ -535,7 +535,8 @@ class SolrManagementCommand extends Command
         $output->writeln('');
 
         try {
-            if ($this->solrService->clearIndex() === true) {
+            $result = $this->solrService->clearIndex();
+            if (isset($result['success']) && $result['success'] === true) {
                 $output->writeln('✅ Index cleared successfully');
                 $output->writeln('<comment>   All documents have been removed from the index</comment>');
                 return self::SUCCESS;

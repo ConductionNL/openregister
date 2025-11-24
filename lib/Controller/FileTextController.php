@@ -21,7 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OC\AppFramework\Http;
-use OCA\OpenRegister\Service\FileTextService;
+use OCA\OpenRegister\Service\TextExtractionService;
 use OCA\OpenRegister\Service\SolrFileService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -48,7 +48,7 @@ class FileTextController extends Controller
      *
      * @param string          $appName         App name
      * @param IRequest        $request         Request object
-     * @param FileTextService $fileTextService File text service
+     * @param TextExtractionService $textExtractionService Text extraction service
      * @param SolrFileService $solrFileService SOLR file service
      * @param LoggerInterface $logger          Logger
      * @param IAppConfig      $config          Application configuration
@@ -56,7 +56,7 @@ class FileTextController extends Controller
     public function __construct(
         string $appName,
         IRequest $request,
-        private readonly FileTextService $fileTextService,
+        private readonly TextExtractionService $textExtractionService,
         private readonly SolrFileService $solrFileService,
         private readonly LoggerInterface $logger,
         private readonly IAppConfig $config
@@ -79,24 +79,16 @@ class FileTextController extends Controller
     public function getFileText(int $fileId): JSONResponse
     {
         try {
-            $fileText = $this->fileTextService->getFileText($fileId);
-
-            if ($fileText === null) {
-                return new JSONResponse(
-                        data: [
-                            'success' => false,
-                            'message' => 'No text found for this file',
-                            'file_id' => $fileId,
-                        ],
-                        statusCode: 404
-                        );
-            }
-
+            // TextExtractionService works with chunks, not FileText entities.
+            // For now, return a message indicating this endpoint needs to be updated.
+            // TODO: Implement chunk retrieval for file text display.
             return new JSONResponse(
                     data: [
-                        'success'   => true,
-                        'file_text' => $fileText->jsonSerialize(),
-                    ]
+                        'success' => false,
+                        'message' => 'This endpoint is deprecated. Use chunk-based endpoints instead.',
+                        'file_id' => $fileId,
+                    ],
+                    statusCode: 404
                     );
         } catch (\Exception $e) {
             $this->logger->error(
@@ -139,25 +131,15 @@ class FileTextController extends Controller
         }
 
         try {
-            $result = $this->fileTextService->extractAndStoreFileText($fileId);
+            // Force re-extraction.
+            $this->textExtractionService->extractFile($fileId, true);
 
-            if ($result['success'] === true) {
-                return new JSONResponse(
-                        data: [
-                            'success'   => true,
-                            'message'   => 'Text extracted successfully',
-                            'file_text' => $result['fileText']->jsonSerialize(),
-                        ]
-                        );
-            } else {
-                return new JSONResponse(
-                        data: [
-                            'success' => false,
-                            'message' => $result['error'] ?? 'Extraction failed',
-                        ],
-                        statusCode: 422
-                        );
-            }
+            return new JSONResponse(
+                    data: [
+                        'success' => true,
+                        'message' => 'Text extracted successfully',
+                    ]
+                    );
         } catch (\Exception $e) {
             $this->logger->error(
                     message: '[FileTextController] Failed to extract file text',
@@ -193,15 +175,14 @@ class FileTextController extends Controller
             $limit = (int) $this->request->getParam('limit', 100);
             $limit = min($limit, 500);
             // Max 500 files at once.
-            $result = $this->fileTextService->processPendingFiles($limit);
+            $result = $this->textExtractionService->extractPendingFiles($limit);
 
             return new JSONResponse(
                     data: [
                         'success'   => true,
                         'processed' => $result['processed'],
-                        'succeeded' => $result['succeeded'],
                         'failed'    => $result['failed'],
-                        'errors'    => $result['errors'],
+                        'total'     => $result['total'],
                     ]
                     );
         } catch (\Exception $e) {
@@ -235,7 +216,7 @@ class FileTextController extends Controller
     public function getStats(): JSONResponse
     {
         try {
-            $stats = $this->fileTextService->getStats();
+            $stats = $this->textExtractionService->getStats();
 
             return new JSONResponse(
                     data: [
@@ -276,13 +257,15 @@ class FileTextController extends Controller
     public function deleteFileText(int $fileId): JSONResponse
     {
         try {
-            $this->fileTextService->deleteFileText($fileId);
-
+            // TextExtractionService works with chunks.
+            // TODO: Implement chunk deletion for file.
+            // For now, return a message indicating this needs implementation.
             return new JSONResponse(
                     data: [
-                        'success' => true,
-            'message' => 'File text deleted successfully',
-                    ]
+                        'success' => false,
+                        'message' => 'Chunk deletion not yet implemented. Use chunk-based endpoints.',
+                    ],
+                    statusCode: 501
                     );
         } catch (\Exception $e) {
             $this->logger->error(

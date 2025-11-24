@@ -894,7 +894,7 @@ class ObjectsController extends Controller
         // Update the object with merged data.
         try {
             // Use the object service to validate and update the object.
-            $objectEntity = $objectService->saveObject(register: $existingObject);
+            $objectEntity = $objectService->saveObject($existingObject);
 
             // Unlock the object after saving.
             try {
@@ -921,7 +921,7 @@ class ObjectsController extends Controller
      *
      * This method deletes an object based on its ID.
      *
-     * @param  int           $id            The ID of the object to delete
+     * @param  string        $id            The ID/UUID of the object to delete
      * @param  ObjectService $objectService The object service
      * @throws Exception
      *
@@ -945,7 +945,7 @@ class ObjectsController extends Controller
             $multi = !$isAdmin;
             // If admin, multi: disable multitenancy.
             // Use ObjectService to delete the object (includes RBAC permission checks, persist: audit trail, silent: and soft delete).
-            $deleteResult = $objectService->deleteObject($id, validation: $rbac, multi: $multi);
+            $deleteResult = $objectService->deleteObject($id, $rbac, $multi);
 
             if ($deleteResult === false) {
                 // If delete operation failed, return error.
@@ -967,7 +967,7 @@ class ObjectsController extends Controller
      *
      * This method returns all the call logs associated with a object based on its ID.
      *
-     * @param int           $id            The ID of the object to retrieve logs for
+     * @param string        $id            The ID/UUID of the object to retrieve logs for
      * @param string        $register      The register slug or identifier
      * @param string        $schema        The schema slug or identifier
      * @param ObjectService $objectService The object service
@@ -1160,9 +1160,10 @@ class ObjectsController extends Controller
         }
 
         // Normalize requested schema.
-        $requestedSchemaNorm  = strtolower((string) $requestedSchema);
+        $requestedSchemaNorm  = strtolower($requestedSchema);
         $objectSchemaIdNorm   = strtolower((string) $objectSchemaId);
-        $objectSchemaSlugNorm = $objectSchemaSlug ? strtolower($objectSchemaSlug) : null;
+        // $objectSchemaSlug is already lowercase from lines 1154/1157.
+        $objectSchemaSlugNorm = $objectSchemaSlug;
 
         // Check schema match (by id or slug).
         $schemaMatch = (
@@ -1172,7 +1173,7 @@ class ObjectsController extends Controller
 
         // Register normalization (string compare).
         $objectRegisterNorm    = strtolower((string) $objectRegister);
-        $requestedRegisterNorm = strtolower((string) $requestedRegister);
+        $requestedRegisterNorm = strtolower($requestedRegister);
         $registerMatch         = ($objectRegisterNorm === $requestedRegisterNorm);
 
         if (!$schemaMatch || !$registerMatch) {
@@ -1180,7 +1181,7 @@ class ObjectsController extends Controller
         }
 
         // Get config and fetch logs.
-        $config = $this->getConfig($register, multi: $schema);
+        $config = $this->getConfig($register, $schema);
         $logs   = $objectService->getLogs($id, $config['filters']);
 
         // Get total count of logs.
@@ -1195,7 +1196,7 @@ class ObjectsController extends Controller
     /**
      * Lock an object
      *
-     * @param int $id The ID of the object to lock
+     * @param string $id The ID/UUID of the object to lock
      *
      * @return JSONResponse A JSON response containing the locked object
      *
@@ -1245,7 +1246,7 @@ class ObjectsController extends Controller
     {
         $this->objectService->setRegister($register);
         $this->objectService->setSchema($schema);
-        $this->objectService->unlock($id);
+        $this->objectService->unlockObject($id);
         return new JSONResponse(data: ['message' => 'Object unlocked successfully']);
 
     }//end unlock()
@@ -1393,7 +1394,8 @@ class ObjectsController extends Controller
                             return new JSONResponse(data: ['error' => 'No schema found for register'], statusCode: 400);
                         }
 
-                        $schemaId = is_array($schemas) ? reset($schemas) : $schemas;
+                        // $schemas is always an array from getSchemas(), but handle both cases for type safety.
+                        $schemaId = reset($schemas);
                     }
 
                     $schema = $this->schemaMapper->find($schemaId);
@@ -1725,8 +1727,8 @@ class ObjectsController extends Controller
             // Return the ZIP file as a download response.
             return new DataDownloadResponse(
                 $zipContent,
-                    schema: $zipInfo['filename'],
-                    extend: $zipInfo['mimeType']
+                $zipInfo['filename'],
+                $zipInfo['mimeType']
             );
         } catch (DoesNotExistException $exception) {
             return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);

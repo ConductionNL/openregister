@@ -132,7 +132,7 @@ class SchemaService
                 'discovered_properties' => [],
                 'existing_properties'   => $schema->getProperties(),
                 'suggestions'           => [],
-                'analysis_date'         => (new \DateTime(datetime: 'now'))->format(format: 'c'),
+                'analysis_date'         => (new \DateTime('now'))->format(format: 'c'),
                 'message'               => 'No objects found for analysis',
             ];
         }
@@ -305,17 +305,19 @@ class SchemaService
                     break;
                 }
 
-                // Analyze array structure.
-                $analysis['array_structure'] = $this->analyzezArrayStructure($value);
+                // Check if this is an associative array (object-like).
+                if (array_is_list($value) === false) {
+                    // Treat associative arrays as objects.
+                    $analysis['object_structure'] = $this->analyzeObjectStructure($value);
+                } else {
+                    // Analyze array structure for list arrays.
+                    $analysis['array_structure'] = $this->analyzezArrayStructure($value);
+                }
                 break;
 
             case 'object':
-            case 'array':
-                if (is_object($value) === true
-                    || (is_array($value) === true && empty($value) === false && array_is_list($value) === false)
-                ) {
-                    $analysis['object_structure'] = $this->analyzeObjectStructure($value);
-                }
+                // Analyze object structure.
+                $analysis['object_structure'] = $this->analyzeObjectStructure($value);
                 break;
         }//end switch
 
@@ -335,7 +337,7 @@ class SchemaService
     {
         // Date formats.
         if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) === 1) {
-            $parsed = DateTime::createFromFormat('Y-m-d', $value);
+            $parsed = \DateTime::createFromFormat('Y-m-d', $value);
             if ($parsed !== false && $parsed->format('Y-m-d') === $value) {
                 return 'date';
             }

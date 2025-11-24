@@ -22,7 +22,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\BackgroundJob\FileTextExtractionJob;
-use OCA\OpenRegister\Service\FileTextService;
+use OCA\OpenRegister\Service\TextExtractionService;
 use OCP\BackgroundJob\IJobList;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -52,12 +52,12 @@ class FileChangeListener implements IEventListener
     /**
      * Constructor
      *
-     * @param FileTextService $fileTextService File text service for checking extraction needs
+     * @param TextExtractionService $textExtractionService Text extraction service
      * @param IJobList        $jobList         Job list for queuing background jobs
      * @param LoggerInterface $logger          Logger
      */
     public function __construct(
-        private readonly FileTextService $fileTextService,
+        private readonly TextExtractionService $textExtractionService,
         private readonly IJobList $jobList,
         private readonly LoggerInterface $logger
     ) {
@@ -119,34 +119,25 @@ class FileChangeListener implements IEventListener
 
         // Queue background job for text extraction (non-blocking).
         try {
-            // Check if extraction is needed (to avoid unnecessary background jobs).
-            if ($this->fileTextService->needsExtraction($fileId) === true) {
-                $this->logger->info(
-                        '[FileChangeListener] Queueing text extraction job',
-                        [
-                            'file_id'   => $fileId,
-                            'file_name' => $fileName,
-                        ]
-                        );
+            $this->logger->info(
+                    '[FileChangeListener] Queueing text extraction job',
+                    [
+                        'file_id'   => $fileId,
+                        'file_name' => $fileName,
+                    ]
+                    );
 
-                // Queue the background job with file_id as argument.
-                // The job will run asynchronously without blocking this request.
-                $this->jobList->add(FileTextExtractionJob::class, ['file_id' => $fileId]);
+            // Queue the background job with file_id as argument.
+            // The job will run asynchronously without blocking this request.
+            // TextExtractionService will check internally if extraction is needed.
+            $this->jobList->add(FileTextExtractionJob::class, ['file_id' => $fileId]);
 
-                $this->logger->debug(
-                        '[FileChangeListener] Text extraction job queued successfully',
-                        [
-                            'file_id' => $fileId,
-                        ]
-                        );
-            } else {
-                $this->logger->debug(
-                        '[FileChangeListener] Extraction not needed, skipping job queue',
-                        [
-                            'file_id' => $fileId,
-                        ]
-                        );
-            }//end if
+            $this->logger->debug(
+                    '[FileChangeListener] Text extraction job queued successfully',
+                    [
+                        'file_id' => $fileId,
+                    ]
+                    );
         } catch (\Exception $e) {
             $this->logger->error(
                     '[FileChangeListener] Failed to queue text extraction job',

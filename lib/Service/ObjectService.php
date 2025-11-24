@@ -3046,6 +3046,12 @@ class ObjectService
         // **PERFORMANCE MONITORING**: Include performance metrics if requested.
         if ($includePerformance === true) {
             $totalTime = round((microtime(true) - $perfStart) * 1000, 2);
+            
+            // Extract extend configuration from query if present.
+            $extend = $query['_extend'] ?? [];
+            if (is_string($extend) === true) {
+                $extend = array_map('trim', explode(',', $extend));
+            }
 
             $paginatedResults['_performance'] = [
                 'totalTime' => $totalTime,
@@ -3238,11 +3244,8 @@ class ObjectService
 
             $query['_extend'] = $this->optimizeExtendQueries($query['_extend']);
 
-            if (is_array($query['_extend']) === true) {
-                $newExtendCount = count($query['_extend']);
-            } else {
-                $newExtendCount = count(array_filter(array_map('trim', explode(',', $query['_extend']))));
-            }
+            // optimizeExtendQueries always returns an array, so no need to check.
+            $newExtendCount = count($query['_extend']);
 
             if ($newExtendCount < $originalExtendCount) {
                 $this->logger->info(message: '⚡ EXTEND OPTIMIZATION: Reduced extend complexity', context: [
@@ -4958,7 +4961,7 @@ class ObjectService
         );
 
         // Check if we have any inversedBy properties to process.
-        if (empty($inversedByProperties) === true) {
+        if (count($inversedByProperties) === 0) {
             return [$object, $uuid];
         }
 
@@ -5667,7 +5670,7 @@ class ObjectService
      * If false is provided, it unsets the published timestamp.
      *
      * @param array         $uuids    Array of object UUIDs to publish
-     * @param DateTime|bool $datetime Optional datetime for publishing (false to unset)
+     * @param \DateTime|bool $datetime Optional datetime for publishing (false to unset)
      * @param bool          $rbac     Whether to apply RBAC filtering
      * @param bool          $multi    Whether to apply multi-organization filtering
      *
@@ -5734,7 +5737,7 @@ class ObjectService
      * If false is provided, it unsets the depublished timestamp.
      *
      * @param array         $uuids    Array of object UUIDs to depublish
-     * @param DateTime|bool $datetime Optional datetime for depublishing (false to unset)
+     * @param \DateTime|bool $datetime Optional datetime for depublishing (false to unset)
      * @param bool          $rbac     Whether to apply RBAC filtering
      * @param bool          $multi    Whether to apply multi-organization filtering
      *
@@ -6068,8 +6071,8 @@ class ObjectService
      *
      * @phpstan-param  array<int, string> $uuids
      * @psalm-param    array<int, string> $uuids
-     * @phpstan-return array<int, string>
-     * @psalm-return   array<int, string>
+     * @phpstan-return list<string>
+     * @psalm-return   list<string>
      */
     private function filterUuidsForPermissions(array $uuids, bool $rbac, bool $multi): array
     {
@@ -6119,10 +6122,12 @@ class ObjectService
                 }
             }
 
-            $filteredUuids[] = $objectUuid;
+            if ($objectUuid !== null) {
+                $filteredUuids[] = $objectUuid;
+            }
         }//end foreach
 
-        return $filteredUuids;
+        return array_values(array_filter($filteredUuids, fn($uuid) => $uuid !== null));
 
     }//end filterUuidsForPermissions()
 

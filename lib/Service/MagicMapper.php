@@ -1499,7 +1499,7 @@ class MagicMapper
                 } else if (is_string($value)) {
                     // Validate and convert datetime strings.
                     try {
-                        $dateTime = new \DateTime(datetime: $value);
+                        $dateTime = new \DateTime($value);
                         $value    = $dateTime->format('Y-m-d H:i:s');
                     } catch (Exception $e) {
                         $value = null;
