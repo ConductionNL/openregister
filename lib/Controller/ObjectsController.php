@@ -49,6 +49,9 @@ use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\ImportService;
 use OCP\AppFramework\Http\DataDownloadResponse;
 
+/**
+ * @psalm-suppress UnusedClass - This controller is registered via routes.php and used by Nextcloud's routing system
+ */
 class ObjectsController extends Controller
 {
 
@@ -379,8 +382,8 @@ class ObjectsController extends Controller
     public function index(string $register, string $schema, ObjectService $objectService): JSONResponse
     {
         try {
-            // Resolve slugs to numeric IDs consistently.
-            $resolved = $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
+            // Resolve slugs to numeric IDs consistently (validation only).
+            $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
         } catch (\OCA\OpenRegister\Exception\RegisterNotFoundException | \OCA\OpenRegister\Exception\SchemaNotFoundException $e) {
             // Return 404 with clear error message if register or schema not found.
             return new JSONResponse(data: ['message' => $e->getMessage()], statusCode: 404);
@@ -480,8 +483,8 @@ class ObjectsController extends Controller
         ObjectService $objectService
     ): JSONResponse {
         try {
-            // Resolve slugs to numeric IDs consistently.
-            $resolved = $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
+            // Resolve slugs to numeric IDs consistently (validation only).
+            $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
         } catch (\OCA\OpenRegister\Exception\RegisterNotFoundException | \OCA\OpenRegister\Exception\SchemaNotFoundException $e) {
             // Return 404 with clear error message if register or schema not found.
             return new JSONResponse(data: ['message' => $e->getMessage()], statusCode: 404);
@@ -568,8 +571,8 @@ class ObjectsController extends Controller
         ObjectService $objectService
     ): JSONResponse {
         try {
-            // Resolve slugs to numeric IDs consistently.
-            $resolved = $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
+            // Resolve slugs to numeric IDs consistently (validation only).
+            $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
         } catch (\OCA\OpenRegister\Exception\RegisterNotFoundException | \OCA\OpenRegister\Exception\SchemaNotFoundException $e) {
             // Return 404 with clear error message if register or schema not found.
             return new JSONResponse(data: ['message' => $e->getMessage()], statusCode: 404);
@@ -622,8 +625,7 @@ class ObjectsController extends Controller
         $isAdmin = $this->isCurrentUserAdmin();
         $rbac    = !$isAdmin;
         // If admin, disable RBAC.
-        $multi = !$isAdmin;
-        // If admin, disable multitenancy.
+        // Note: multitenancy is disabled for admins via $rbac flag
         // Save the object.
         try {
             // Use the object service to validate and save the object.
@@ -682,8 +684,8 @@ class ObjectsController extends Controller
         ObjectService $objectService
     ): JSONResponse {
         try {
-            // Resolve slugs to numeric IDs consistently.
-            $resolved = $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
+            // Resolve slugs to numeric IDs consistently (validation only).
+            $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
         } catch (\OCA\OpenRegister\Exception\RegisterNotFoundException | \OCA\OpenRegister\Exception\SchemaNotFoundException $e) {
             // Return 404 with clear error message if register or schema not found.
             return new JSONResponse(data: ['message' => $e->getMessage()], statusCode: 404);
@@ -1150,7 +1152,6 @@ class ObjectsController extends Controller
         $requestedSchema   = $schema;
 
         // If objectSchema is an array/object, files: get slug and id.
-        $objectSchemaId   = null;
         $objectSchemaSlug = null;
         if (is_array($objectSchema) && isset($objectSchema['id'])) {
             $objectSchemaId   = (string) $objectSchema['id'];
@@ -1854,12 +1855,12 @@ class ObjectsController extends Controller
     public function getObjectVectorizationCount(): JSONResponse
     {
         try {
-            $schemas = $this->request->getParam('schemas');
-            if (is_string($schemas)) {
-                $schemas = explode(',', $schemas);
-            }
+            // TODO: Implement proper counting logic with schemas parameter.
+            // $schemas = $this->request->getParam('schemas');
+            // if (is_string($schemas)) {
+            //     $schemas = explode(',', $schemas);
+            // }
 
-                // TODO: Implement proper counting logic.
             // For now, return a placeholder.
             $count = 0;
 

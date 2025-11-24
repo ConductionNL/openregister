@@ -28,6 +28,8 @@ use OCP\IRequest;
  *
  * Controller for handling dashboard related operations in the application.
  * Provides functionality to display the dashboard page and retrieve dashboard data.
+ *
+ * @psalm-suppress UnusedClass - This controller is registered via routes.php and used by Nextcloud's routing system
  */
 class DashboardController extends Controller
 {

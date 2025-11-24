@@ -29,6 +29,8 @@ use OCP\IRequest;
 /**
  * Class SearchTrailController
  * Handles all search trail related operations and analytics
+ *
+ * @psalm-suppress UnusedClass - This controller is registered via routes.php and used by Nextcloud's routing system
  */
 class SearchTrailController extends Controller
 {
@@ -739,7 +741,8 @@ class SearchTrailController extends Controller
     public function destroy(int $id): JSONResponse
     {
         try {
-            $searchTrail = $this->searchTrailService->getSearchTrail($id);
+            // Validate that search trail exists (validation only).
+            $this->searchTrailService->getSearchTrail($id);
 
             // For now, we'll just return a success message since we don't have a delete method in the service.
             // In a real implementation, you'd add a deleteSearchTrail method to the service.
@@ -781,9 +784,6 @@ class SearchTrailController extends Controller
      */
     public function destroyMultiple(): JSONResponse
     {
-        // Extract request parameters.
-        $params = $this->extractRequestParameters();
-
         // Get specific parameters for mass deletion.
         $ids = $this->request->getParam(key: 'ids', default: null);
 

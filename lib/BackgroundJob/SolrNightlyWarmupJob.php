@@ -43,6 +43,8 @@ use Psr\Log\LoggerInterface;
  * - Detailed logging and monitoring
  * - Configurable via OpenRegister settings
  * - Automatic error handling and recovery
+ *
+ * @psalm-suppress UnusedClass - This background job is registered and instantiated by Nextcloud's job system
  */
 class SolrNightlyWarmupJob extends TimedJob
 {
@@ -68,6 +70,8 @@ class SolrNightlyWarmupJob extends TimedJob
      * @param ITimeFactory $time Time factory for job scheduling
      *
      * @return void
+     *
+     * @psalm-suppress PossiblyUnusedMethod - Constructor is called by Nextcloud's job system via dependency injection
      */
     public function __construct(ITimeFactory $time)
     {
@@ -89,6 +93,8 @@ class SolrNightlyWarmupJob extends TimedJob
      * @param array $argument Job arguments (unused for recurring jobs)
      *
      * @return void
+     *
+     * @psalm-suppress PossiblyUnusedMethod - This method is called by Nextcloud's job system when the job executes
      */
     protected function run($argument): void
     {

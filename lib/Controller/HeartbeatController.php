@@ -25,6 +25,8 @@ use OCP\IRequest;
 
 /**
  * Controller for handling heartbeat requests to prevent connection timeouts.
+ *
+ * @psalm-suppress UnusedClass - This controller is registered via routes.php and used by Nextcloud's routing system
  */
 class HeartbeatController extends Controller
 {

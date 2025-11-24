@@ -35,6 +35,8 @@ use Psr\Log\LoggerInterface;
  * @package  OCA\OpenRegister\Controller
  * @author   OpenRegister Team
  * @license  AGPL-3.0-or-later
+ *
+ * @psalm-suppress UnusedClass - This controller is registered via routes.php and used by Nextcloud's routing system
  */
 class FileSearchController extends Controller
 {

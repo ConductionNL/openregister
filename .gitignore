@@ -11,6 +11,7 @@
 
 /node_modules/
 /website/node_modules/
+/website/.docusaurus/
 /js/
 /custom_apps/
 /config/

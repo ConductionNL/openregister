@@ -1782,7 +1782,7 @@ class ImportService
         $startRow = 2; // Skip header
 
         for ($row = $startRow; $row < $startRow + $sampleSize; $row++) {
-            foreach ($columnMapping as $columnLetter => $columnName) {
+            foreach (array_keys($columnMapping) as $columnLetter) {
                 $cellValue = $sheet->getCell($columnLetter . $row)->getValue();
                 if ($cellValue !== null) {
                     $totalLength += strlen((string) $cellValue);
@@ -1861,7 +1861,7 @@ class ImportService
         // Check for invalid properties (common mistakes).
         $invalidProperties = ['data', 'content', 'body', 'payload'];
 
-        foreach ($objectData as $key => $value) {
+        foreach (array_keys($objectData) as $key) {
             // Skip @self as it's handled separately.
             if ($key === '@self') {
                 continue;

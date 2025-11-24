@@ -1504,7 +1504,7 @@ class ObjectService
                 $ids = array_intersect(array1: $ids, array2: $foundIds);
             }
 
-            foreach ($value as $k => $v) {
+            foreach (array_keys($value) as $k) {
                 unset($filters[$key.'_'.$k]);
             }
         }//end foreach
@@ -3295,7 +3295,7 @@ class ObjectService
 
         // Count filter criteria (excluding system parameters).
         $filterCount = 0;
-        foreach ($query as $key => $value) {
+        foreach (array_keys($query) as $key) {
             $startsWithUnderscore = str_starts_with(haystack: $key, needle: '_') === true;
             $startsWithAt = str_starts_with(haystack: $key, needle: '@') === true;
             if ($startsWithUnderscore === false && $startsWithAt === false) {

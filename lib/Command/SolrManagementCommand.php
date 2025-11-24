@@ -59,18 +59,12 @@ class SolrManagementCommand extends Command
     /**
      * Constructor
      *
-     * @param SettingsService   $settingsService Settings service for configuration
      * @param LoggerInterface   $logger          Logger for debugging and monitoring
      * @param GuzzleSolrService $solrService     SOLR service for operations
-     * @param SolrSchemaService $schemaService   Schema mirroring service
-     * @param IConfig           $config          Nextcloud configuration
      */
     public function __construct(
-        private readonly SettingsService $settingsService,
         private readonly LoggerInterface $logger,
-        private readonly GuzzleSolrService $solrService,
-        private readonly SolrSchemaService $schemaService,
-        private readonly IConfig $config
+        private readonly GuzzleSolrService $solrService
     ) {
         parent::__construct();
 
@@ -221,9 +215,6 @@ class SolrManagementCommand extends Command
             $output->writeln('   • Clean field names (no suffixes) with explicit types');
             $output->writeln('   • Single-valued tenant_id field');
             $output->writeln('');
-
-            // Get SOLR configuration.
-            $solrConfig = $this->settingsService->getSolrSettings();
 
             // Use the injected solrService instead of creating a new one.
             // Initialize SolrSetup with proper configuration.

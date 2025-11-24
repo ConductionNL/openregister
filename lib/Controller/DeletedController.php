@@ -33,6 +33,8 @@ use OCP\IUserSession;
  * Class DeletedController
  *
  * Controller for managing soft deleted objects
+ *
+ * @psalm-suppress UnusedClass - This controller is registered via routes.php and used by Nextcloud's routing system
  */
 class DeletedController extends Controller
 {

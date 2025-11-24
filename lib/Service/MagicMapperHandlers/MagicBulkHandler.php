@@ -375,7 +375,7 @@ class MagicBulkHandler
             $preparedObject['_uri']          = $selfData['uri'] ?? null;
 
             // Map schema properties to columns.
-            foreach ($properties as $propertyName => $propertyConfig) {
+            foreach (array_keys($properties) as $propertyName) {
                 $columnName = $this->sanitizeColumnName($propertyName);
                 $value      = $object[$propertyName] ?? null;
 

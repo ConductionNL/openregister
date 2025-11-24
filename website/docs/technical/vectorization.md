@@ -292,12 +292,12 @@ Vectors stored directly in existing Solr collections:
 - Returns top N matches
 
 **Performance**:
-- Suitable for small datasets (<500 vectors)
+- Suitable for small datasets (&lt;500 vectors)
 - Current optimization: Limited to 500 most recent vectors
 - Scales linearly: O(n) complexity
 
 **Use When**:
-- Small dataset (<500 vectors)
+- Small dataset (&lt;500 vectors)
 - No PostgreSQL or Solr available
 - Testing/development environment
 
@@ -519,7 +519,7 @@ The system automatically detects available backends:
 
 | Dataset Size | Recommended Backend | Reason |
 |--------------|---------------------|--------|
-| < 500 vectors | PHP | Simple, no setup |
+| &lt; 500 vectors | PHP | Simple, no setup |
 | 500 - 10,000 | PostgreSQL + pgvector | Fast, integrated |
 | 10,000+ | Solr 9+ | Best performance, scalability |
 

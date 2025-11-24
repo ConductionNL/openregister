@@ -42,6 +42,8 @@ use Psr\Log\LoggerInterface;
  * - Comprehensive logging and error handling
  * - Performance metrics tracking
  * - Automatic cleanup after execution
+ *
+ * @psalm-suppress UnusedClass - This background job is instantiated dynamically by ImportService when scheduling SOLR warmup after imports
  */
 class SolrWarmupJob extends QueuedJob
 {
@@ -66,6 +68,8 @@ class SolrWarmupJob extends QueuedJob
      *                         - triggeredBy: What triggered this warmup (default: 'unknown')
      *
      * @return void
+     *
+     * @psalm-suppress PossiblyUnusedMethod - This method is called by Nextcloud's job system when the job executes
      */
     protected function run($argument): void
     {

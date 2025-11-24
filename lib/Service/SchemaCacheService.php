@@ -199,7 +199,7 @@ class SchemaCacheService
     public function clearSchemaCache(int $schemaId): void
     {
         // Clear from in-memory cache.
-        foreach (self::$memoryCache as $key => $value) {
+        foreach (array_keys(self::$memoryCache) as $key) {
             if (strpos($key, 'schema_'.$schemaId) !== false) {
                 unset(self::$memoryCache[$key]);
             }

@@ -38,6 +38,8 @@ use Psr\Log\LoggerInterface;
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-12
  * @version   GIT: <git_id>
  * @link      https://www.OpenRegister.app
+ *
+ * @psalm-suppress UnusedClass - This controller is registered via routes.php and used by Nextcloud's routing system
  */
 class SolrController extends Controller
 {
@@ -57,7 +59,7 @@ class SolrController extends Controller
         private readonly ContainerInterface $container,
         private readonly LoggerInterface $logger
     ) {
-        parent::__construct($appName, $request);
+        parent::__construct(appName: $appName, request: $request);
 
     }//end __construct()
 
@@ -111,7 +113,7 @@ class SolrController extends Controller
             $vectorService = $this->container->get(VectorEmbeddingService::class);
 
             // Perform semantic search.
-            $results = $vectorService->semanticSearch($query, $limit, $filters, $provider);
+            $results = $vectorService->semanticSearch(query: $query, limit: $limit, filters: $filters, provider: $provider);
 
             return new JSONResponse(
                     data: [
@@ -212,7 +214,7 @@ class SolrController extends Controller
             $vectorService = $this->container->get(VectorEmbeddingService::class);
 
             // Perform hybrid search.
-            $result = $vectorService->hybridSearch($query, $solrFilters, $limit, $weights, $provider);
+            $result = $vectorService->hybridSearch(query: $query, solrFilters: $solrFilters, limit: $limit, weights: $weights, provider: $provider);
 
             // Ensure result is an array for spread operator.
             $resultArray = is_array($result) ? $result : [];
@@ -399,7 +401,7 @@ class SolrController extends Controller
 
             // Generate test embedding with custom config.
             $startTime = microtime(true);
-            $embedding = $vectorService->generateEmbeddingWithCustomConfig($testText, $embeddingConfig);
+            $embedding = $vectorService->generateEmbeddingWithCustomConfig(text: $testText, config: $embeddingConfig);
             $duration  = round((microtime(true) - $startTime) * 1000, 2);
 
             if ($embedding === null || $embedding === []) {
@@ -559,11 +561,11 @@ class SolrController extends Controller
             $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
 
             $result = $guzzleSolrService->createCollection(
-                $collectionName,
-                $configName,
-                $numShards,
-                $replicationFactor,
-                $maxShardsPerNode
+                collectionName: $collectionName,
+                configSetName: $configName,
+                numShards: $numShards,
+                replicationFactor: $replicationFactor,
+                maxShardsPerNode: $maxShardsPerNode
             );
 
             return new JSONResponse(
@@ -612,7 +614,7 @@ class SolrController extends Controller
         try {
             $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
 
-            $result = $guzzleSolrService->createConfigSet($name, $baseConfigSet);
+            $result = $guzzleSolrService->createConfigSet(name: $name, baseConfigSet: $baseConfigSet);
 
             return new JSONResponse(
                     data: [
@@ -707,7 +709,7 @@ class SolrController extends Controller
         try {
             $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
 
-            $result = $guzzleSolrService->copyCollection($sourceCollection, $targetCollection);
+            $result = $guzzleSolrService->copyCollection(sourceCollection: $sourceCollection, targetCollection: $targetCollection);
 
             return new JSONResponse(
                     data: [
@@ -766,7 +768,7 @@ class SolrController extends Controller
             $object = $objectMapper->find($objectId);
 
             // Vectorize the object.
-            $result = $solrObjectService->vectorizeObject($object, $provider);
+            $result = $solrObjectService->vectorizeObject(object: $object, provider: $provider);
 
             // Ensure result is an array for spread operator.
             $resultArray = is_array($result) ? $result : [];
@@ -863,7 +865,7 @@ class SolrController extends Controller
 
             // Fetch objects with conditions.
             // Note: This is a simplified example - adjust based on actual ObjectEntityMapper methods.
-            $objects = $objectMapper->findAll($limit, $offset);
+            $objects = $objectMapper->findAll(limit: $limit, offset: $offset);
 
             if (count($objects) === 0) {
                 return new JSONResponse(
@@ -880,7 +882,7 @@ class SolrController extends Controller
             }
 
             // Vectorize the objects.
-            $result = $solrObjectService->vectorizeObjects($objects, $provider);
+            $result = $solrObjectService->vectorizeObjects(objects: $objects, provider: $provider);
 
             // Ensure result is an array for spread operator.
             $resultArray = is_array($result) ? $result : [];

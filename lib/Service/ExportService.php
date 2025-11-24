@@ -376,7 +376,7 @@ class ExportService
             $properties = $schema->getProperties();
 
             // Sort properties by their order in the schema.
-            foreach ($properties as $fieldName => $fieldDefinition) {
+            foreach (array_keys($properties) as $fieldName) {
                 // Skip fields that are already in the default headers.
                 if (in_array($fieldName, ['id', 'uuid', 'uri', 'register', 'schema', 'created', 'updated']) === true) {
                     continue;

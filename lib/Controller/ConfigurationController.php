@@ -38,6 +38,8 @@ use Psr\Log\LoggerInterface;
  * Controller for managing configurations (CRUD and management operations).
  *
  * @package OCA\OpenRegister\Controller
+ *
+ * @psalm-suppress UnusedClass - This controller is registered via routes.php and used by Nextcloud's routing system
  */
 class ConfigurationController extends Controller
 {
@@ -215,7 +217,7 @@ class ConfigurationController extends Controller
             // Call appropriate service.
             $details = null;
             if ($source === 'github') {
-                $details = $this->githubService->enrichConfigurationDetails($owner, $repo, $path, $branch);
+                $details = $this->githubService->enrichConfigurationDetails(owner: $owner, repo: $repo, path: $path, branch: $branch);
             } else if ($source === 'gitlab') {
                 // GitLab enrichment can be added later if needed.
                 $this->logger->warning('GitLab enrichment not yet implemented');
@@ -516,8 +518,8 @@ class ConfigurationController extends Controller
             $selection     = $data['selection'] ?? [];
 
             $result = $this->configurationService->importConfigurationWithSelection(
-                $configuration,
-                $selection
+                configuration: $configuration,
+                selection: $selection
             );
 
             // Mark notifications as processed.
@@ -568,13 +570,12 @@ class ConfigurationController extends Controller
         try {
             $configuration  = $this->configurationMapper->find($id);
             $data           = $this->request->getParams();
-            $format         = $data['format'] ?? 'json';
             $includeObjects = ($data['includeObjects'] ?? false) === true;
 
             // Export the configuration.
             $exportData = $this->configurationService->exportConfig(
-                $configuration,
-                $includeObjects
+                input: $configuration,
+                includeObjects: $includeObjects
             );
 
             // Return the export data directly for download.
@@ -625,11 +626,11 @@ class ConfigurationController extends Controller
             // Call appropriate service.
             if ($source === 'github') {
                 $this->logger->info('About to call GitHub search service');
-                $results = $this->githubService->searchConfigurations($search, $page);
+                $results = $this->githubService->searchConfigurations(query: $search, page: $page);
                 $this->logger->info('GitHub search completed', ['result_count' => count($results['results'] ?? [])]);
             } else {
                 $this->logger->info('About to call GitLab search service');
-                $results = $this->gitlabService->searchConfigurations($search, $page);
+                $results = $this->gitlabService->searchConfigurations(query: $search, page: $page);
                 $this->logger->info('GitLab search completed', ['result_count' => count($results['results'] ?? [])]);
             }
 
@@ -679,7 +680,7 @@ class ConfigurationController extends Controller
                     ]
                     );
 
-            $branches = $this->githubService->getBranches($owner, $repo);
+            $branches = $this->githubService->getBranches(owner: $owner, repo: $repo);
 
             return new JSONResponse(data: ['branches' => $branches], statusCode: 200);
         } catch (Exception $e) {
@@ -723,7 +724,7 @@ class ConfigurationController extends Controller
                     ]
                     );
 
-            $repositories = $this->githubService->getRepositories($page, $perPage);
+            $repositories = $this->githubService->getRepositories(page: $page, perPage: $perPage);
 
             return new JSONResponse(data: ['repositories' => $repositories], statusCode: 200);
         } catch (Exception $e) {
@@ -766,7 +767,7 @@ class ConfigurationController extends Controller
                     ]
                     );
 
-            $files = $this->githubService->listConfigurationFiles($owner, $repo, $branch);
+            $files = $this->githubService->listConfigurationFiles(owner: $owner, repo: $repo, branch: $branch);
 
             return new JSONResponse(data: ['files' => $files], statusCode: 200);
         } catch (Exception $e) {
@@ -800,7 +801,7 @@ class ConfigurationController extends Controller
             }
 
             // Get project ID from namespace/project path.
-            $projectData = $this->gitlabService->getProjectByPath($namespace, $project);
+            $projectData = $this->gitlabService->getProjectByPath(namespace: $namespace, project: $project);
             $projectId   = $projectData['id'];
 
             $this->logger->info(
@@ -847,7 +848,7 @@ class ConfigurationController extends Controller
             }
 
             // Get project ID from namespace/project path.
-            $projectData = $this->gitlabService->getProjectByPath($namespace, $project);
+            $projectData = $this->gitlabService->getProjectByPath(namespace: $namespace, project: $project);
             $projectId   = $projectData['id'];
 
             $this->logger->info(
@@ -860,7 +861,7 @@ class ConfigurationController extends Controller
                     ]
                     );
 
-            $files = $this->gitlabService->listConfigurationFiles($projectId, $ref);
+            $files = $this->gitlabService->listConfigurationFiles(projectId: $projectId, ref: $ref);
 
             return new JSONResponse(data: ['files' => $files], statusCode: 200);
         } catch (Exception $e) {
@@ -913,7 +914,7 @@ class ConfigurationController extends Controller
                     );
 
             // Step 1: Get file content from GitHub.
-            $configData = $this->githubService->getFileContent($owner, $repo, $path, $branch);
+            $configData = $this->githubService->getFileContent(owner: $owner, repo: $repo, path: $path, branch: $branch);
 
             // Extract metadata from config.
             $info          = $configData['info'] ?? [];
@@ -1035,7 +1036,7 @@ class ConfigurationController extends Controller
             }
 
             // Get project ID from namespace/project path.
-            $projectData = $this->gitlabService->getProjectByPath($namespace, $project);
+            $projectData = $this->gitlabService->getProjectByPath(namespace: $namespace, project: $project);
             $projectId   = $projectData['id'];
 
             $this->logger->info(
@@ -1050,7 +1051,7 @@ class ConfigurationController extends Controller
                     );
 
             // Step 1: Get file content from GitLab.
-            $configData = $this->gitlabService->getFileContent($projectId, $path, $ref);
+            $configData = $this->gitlabService->getFileContent(projectId: $projectId, path: $path, ref: $ref);
 
             // Build GitLab URL for sourceUrl.
             $gitlabBase = $this->gitlabService->getApiBase();
@@ -1333,7 +1334,7 @@ class ConfigurationController extends Controller
                     );
 
             // Export configuration to JSON.
-            $configData = $this->configurationService->exportConfig($configuration, false);
+            $configData = $this->configurationService->exportConfig(input: $configuration, includeObjects: false);
 
             // Update x-openregister section with GitHub publishing information.
             // When publishing online, we don't set sourceType or sourceUrl.
@@ -1364,7 +1365,7 @@ class ConfigurationController extends Controller
             // Check if file already exists (for updates).
             $fileSha = null;
             try {
-                $fileSha = $this->githubService->getFileSha($owner, $repo, $path, $branch);
+                $fileSha = $this->githubService->getFileSha(owner: $owner, repo: $repo, path: $path, branch: $branch);
             } catch (\Exception $e) {
                 // File doesn't exist, which is fine for new files.
                 $this->logger->debug('File does not exist, will create new file', ['path' => $path]);
@@ -1372,13 +1373,13 @@ class ConfigurationController extends Controller
 
             // Publish to GitHub.
             $result = $this->githubService->publishConfiguration(
-                $owner,
-                $repo,
-                $path,
-                $branch,
-                $jsonContent,
-                $commitMessage,
-                $fileSha
+                owner: $owner,
+                repo: $repo,
+                path: $path,
+                branch: $branch,
+                content: $jsonContent,
+                commitMessage: $commitMessage,
+                fileSha: $fileSha
             );
 
             // Update configuration with GitHub source information.
@@ -1404,7 +1405,7 @@ class ConfigurationController extends Controller
             // Check if published to default branch (required for Code Search indexing).
             $defaultBranch = null;
             try {
-                $repoInfo      = $this->githubService->getRepositoryInfo($owner, $repo);
+                $repoInfo      = $this->githubService->getRepositoryInfo(owner: $owner, repo: $repo);
                 $defaultBranch = $repoInfo['default_branch'] ?? 'main';
             } catch (\Exception $e) {
                 $this->logger->warning(
@@ -1436,7 +1437,7 @@ class ConfigurationController extends Controller
                     'file_url'        => $result['file_url'],
                     'branch'          => $branch,
                     'default_branch'  => $defaultBranch,
-                    'indexing_note'   => $this->getIndexingNote($defaultBranch, $branch),
+                    'indexing_note'   => $this->getIndexingNote(defaultBranch: $defaultBranch, branch: $branch),
                 ],
                 statusCode: 200
             );

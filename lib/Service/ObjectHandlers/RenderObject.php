@@ -746,7 +746,7 @@ class RenderObject
                 $imageField = $config['objectImageField'];
 
                 // Get the value from the configured field.
-                $value = $this->getValueFromPath($objectData, $imageField);
+                $value = $this->getValueFromPath(data: $objectData, path: $imageField);
 
                 // Check if the value is a file object (has downloadUrl or accessUrl).
                 if (is_array($value) && (isset($value['downloadUrl']) || isset($value['accessUrl']))) {
@@ -886,7 +886,7 @@ class RenderObject
         bool $multi=true
     ): ObjectEntity {
         if ($entity->getUuid() !== null && in_array($entity->getUuid(), $visitedIds, true)) {
-            return $entity->setObject(['@circular' => true, 'id' => $entity->getUuid()]);
+            return $entity->setObject(object: ['@circular' => true, 'id' => $entity->getUuid()]);
         }
 
         if ($entity->getUuid() !== null) {
@@ -965,15 +965,15 @@ class RenderObject
         // Handle inversed properties if depth limit not reached.
         if ($depth < 10) {
             $objectData = $this->handleInversedProperties(
-                $entity,
-                $objectData,
-                $depth,
-                $filter,
-                $fields,
-                $unset,
-                $registers,
-                $schemas,
-                $objects
+                entity: $entity,
+                objectData: $objectData,
+                depth: $depth,
+                filter: $filter,
+                fields: $fields,
+                unset: $unset,
+                registers: $registers,
+                schemas: $schemas,
+                objects: $objects
             );
         }
 
@@ -997,7 +997,7 @@ class RenderObject
 
         // Handle extensions if depth limit not reached.
         if (empty($extend) === false && $depth < 10) {
-            $objectData = $this->extendObject($entity, $extend, $objectData, $depth, $filter, $fields, $unset, $visitedIds);
+            $objectData = $this->extendObject(entity: $entity, extend: $extend, objectData: $objectData, depth: $depth, filter: $filter, fields: $fields, unset: $unset, visitedIds: $visitedIds);
         }
 
         $entity->setObject($objectData);
@@ -1053,7 +1053,7 @@ class RenderObject
 
             foreach ($data as $key => $datum) {
                 $tmpExtends = $extends;
-                $data[$key] = $this->handleExtendDot($datum, $tmpExtends, $depth);
+                $data[$key] = $this->handleExtendDot(data: $datum, extend: $tmpExtends, depth: $depth);
             }
 
             $objectData->set($root, $data);

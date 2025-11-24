@@ -410,7 +410,7 @@ class ObjectServiceFacetExample
                 'results'        => $legacyResults,
             ],
             // @psalm-suppress UndefinedMethod.
-            'performance_improvement' => $this->calculatePerformanceImprovement($legacyTime, $newTime),
+            'performance_improvement' => $this->calculatePerformanceImprovement(legacyTime: $legacyTime, newTime: $newTime),
         ];
 
     }//end performanceComparison()

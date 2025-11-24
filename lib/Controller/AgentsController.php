@@ -38,6 +38,8 @@ use Exception;
  * REST API controller for managing AI agents.
  *
  * @package OCA\OpenRegister\Controller
+ *
+ * @psalm-suppress UnusedClass - This controller is registered via routes.php and used by Nextcloud's routing system
  */
 class AgentsController extends Controller
 {

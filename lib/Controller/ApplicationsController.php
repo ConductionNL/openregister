@@ -34,6 +34,8 @@ use Exception;
  * REST API controller for managing applications.
  *
  * @package OCA\OpenRegister\Controller
+ *
+ * @psalm-suppress UnusedClass - This controller is registered via routes.php and used by Nextcloud's routing system
  */
 class ApplicationsController extends Controller
 {
@@ -120,7 +122,6 @@ class ApplicationsController extends Controller
             $limit  = $this->extractLimit($params);
             $offset = $this->extractOffset($params);
             $page   = $this->extractPage($params);
-            $search = $params['_search'] ?? '';
 
             // Convert page to offset if provided.
             if ($page !== null && $limit !== null) {

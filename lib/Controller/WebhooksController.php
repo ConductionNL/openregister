@@ -40,6 +40,8 @@ use Psr\Log\LoggerInterface;
  * @author   Conduction <info@conduction.nl>
  * @license  AGPL-3.0-or-later
  * @link     https://github.com/ConductionNL/openregister
+ *
+ * @psalm-suppress UnusedClass - This controller is registered via routes.php and used by Nextcloud's routing system
  */
 class WebhooksController extends Controller
 {

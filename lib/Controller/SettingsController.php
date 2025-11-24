@@ -115,6 +115,8 @@ use Psr\Log\LoggerInterface;
  *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
+ *
+ * @psalm-suppress UnusedClass - This controller is registered via routes.php and used by Nextcloud's routing system
  */
 class SettingsController extends Controller
 {
@@ -570,7 +572,7 @@ class SettingsController extends Controller
 
             // Use optimized approach like SOLR warmup - get count first, then process in chunks.
             $objectMapper = \OC::$server->get(\OCA\OpenRegister\Db\ObjectEntityMapper::class);
-            $totalObjects = $objectMapper->countSearchObjects([], null, false, false);
+            $totalObjects = $objectMapper->countSearchObjects(query: [], activeOrganisationUuid: null, rbac: false, multi: false);
 
             // Apply maxObjects limit if specified.
             if ($maxObjects > 0 && $maxObjects < $totalObjects) {
@@ -637,7 +639,7 @@ class SettingsController extends Controller
 
             // Process batches based on mode.
             if ($mode === 'parallel') {
-                $this->processJobsParallel($batchJobs, $objectMapper, $objectService, $results, $collectErrors, 4, $logger);
+                $this->processJobsParallel(batchJobs: $batchJobs, objectMapper: $objectMapper, objectService: $objectService, results: $results, collectErrors: $collectErrors, parallelBatches: 4, logger: $logger);
             } else {
                 $this->processJobsSerial($batchJobs, $objectMapper, $objectService, $results, $collectErrors, $logger);
             }
@@ -1029,7 +1031,7 @@ class SettingsController extends Controller
             // In a real implementation, this would use actual parallel processing.
             $chunkResults = [];
             foreach ($chunk as $job) {
-                $result         = $this->processBatchDirectly($objectMapper, $objectService, $job, $collectErrors);
+                $result         = $this->processBatchDirectly(objectMapper: $objectMapper, objectService: $objectService, job: $job, collectErrors: $collectErrors);
                 $chunkResults[] = $result;
             }
 
@@ -1326,7 +1328,7 @@ class SettingsController extends Controller
 
             // Create SolrSetup using GuzzleSolrService for authenticated HTTP client.
             $guzzleSolrService = $this->container->get(\OCA\OpenRegister\Service\GuzzleSolrService::class);
-            $setup = new \OCA\OpenRegister\Setup\SolrSetup($guzzleSolrService, $logger);
+            $setup = new \OCA\OpenRegister\Setup\SolrSetup(solrService: $guzzleSolrService, logger: $logger);
 
             // **IMPROVED LOGGING**: Log setup initialization.
             $logger->info(message: '🏗️ SolrSetup instance created, starting setup process');
@@ -1557,7 +1559,7 @@ class SettingsController extends Controller
             // Create SolrSetup using GuzzleSolrService for authenticated HTTP client.
             $logger            = \OC::$server->get(\Psr\Log\LoggerInterface::class);
             $guzzleSolrService = $this->container->get(\OCA\OpenRegister\Service\GuzzleSolrService::class);
-            $setup = new \OCA\OpenRegister\Setup\SolrSetup($guzzleSolrService, $logger);
+            $setup = new \OCA\OpenRegister\Setup\SolrSetup(solrService: $guzzleSolrService, logger: $logger);
 
             // Run setup.
             $result = $setup->setupSolr();
@@ -1784,7 +1786,7 @@ class SettingsController extends Controller
             }
 
             // Reindex the specified collection.
-            $result = $guzzleSolrService->reindexAll($maxObjects, $batchSize, $name);
+            $result = $guzzleSolrService->reindexAll(maxObjects: $maxObjects, batchSize: $batchSize, collectionName: $name);
 
             if ($result['success']) {
                 return new JSONResponse(
@@ -2007,9 +2009,9 @@ class SettingsController extends Controller
                 $objectStatus = $solrSchemaService->getObjectCollectionFieldStatus();
                 if (!empty($objectStatus['missing'])) {
                     $objectResult       = $solrSchemaService->createMissingFields(
-                        'objects',
-                        $objectStatus['missing'],
-                        $dryRun
+                        collectionType: 'objects',
+                        missingFields: $objectStatus['missing'],
+                        dryRun: $dryRun
                     );
                     $results['objects'] = $objectResult;
                     if (isset($objectResult['created_count'])) {
@@ -2033,9 +2035,9 @@ class SettingsController extends Controller
                 $fileStatus = $solrSchemaService->getFileCollectionFieldStatus();
                 if (!empty($fileStatus['missing'])) {
                     $fileResult       = $solrSchemaService->createMissingFields(
-                        'files',
-                        $fileStatus['missing'],
-                        $dryRun
+                        collectionType: 'files',
+                        missingFields: $fileStatus['missing'],
+                        dryRun: $dryRun
                     );
                     $results['files'] = $fileResult;
                     if (isset($fileResult['created_count'])) {

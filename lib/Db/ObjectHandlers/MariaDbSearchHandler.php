@@ -664,7 +664,7 @@ class MariaDbSearchHandler
                 'o.description' => 'description',
             ];
 
-            foreach ($indexedFields as $columnName => $fieldName) {
+            foreach (array_keys($indexedFields) as $columnName) {
                 $termConditions->add(
                     $queryBuilder->expr()->like(
                         $queryBuilder->createFunction('LOWER('.$columnName.')'),

@@ -28,6 +28,8 @@ use OCA\OpenRegister\Service\SolrService;
  *
  * Controller for handling search operations in the application.
  * Provides functionality to search across the application using the Nextcloud search service.
+ *
+ * @psalm-suppress UnusedClass - This controller is registered via routes.php and used by Nextcloud's routing system
  */
 class SearchController extends Controller
 {

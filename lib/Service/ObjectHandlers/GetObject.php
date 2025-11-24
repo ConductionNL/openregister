@@ -100,12 +100,12 @@ class GetObject
         $object = $this->objectEntityMapper->find($id, $register, $schema, false, $rbac, $multi);
 
         if ($files === true) {
-            $object = $this->hydrateFiles($object, $this->fileService->getFiles($object));
+            $object = $this->hydrateFiles(object: $object, files: $this->fileService->getFiles($object));
         }
 
         // Create an audit trail for the 'read' action if audit trails are enabled.
         if ($this->isAuditTrailsEnabled() === true) {
-            $log = $this->auditTrailMapper->createAuditTrail(null, $object, 'read');
+            $log = $this->auditTrailMapper->createAuditTrail(old: null, new: $object, action: 'read');
             $object->setLastLog($log->jsonSerialize());
         }
 
@@ -144,7 +144,7 @@ class GetObject
         $object = $this->objectEntityMapper->find($id, $register, $schema, false, $rbac, $multi);
 
         if ($files === true) {
-            $object = $this->hydrateFiles($object, $this->fileService->getFiles($object));
+            $object = $this->hydrateFiles(object: $object, files: $this->fileService->getFiles($object));
         }
 
         // No audit trail creation - this is a silent read.
@@ -210,7 +210,7 @@ class GetObject
         // If files are to be included, hydrate each object with its file information.
         if ($files === true) {
             foreach ($objects as &$object) {
-                $object = $this->hydrateFiles($object, $this->fileService->getFiles($object));
+                $object = $this->hydrateFiles(object: $object, files: $this->fileService->getFiles($object));
             }
         }
 

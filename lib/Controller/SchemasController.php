@@ -43,6 +43,8 @@ use Psr\Log\LoggerInterface;
 
 /**
  * Class SchemasController
+ *
+ * @psalm-suppress UnusedClass - This controller is registered via routes.php and used by Nextcloud's routing system
  */
 class SchemasController extends Controller
 {
@@ -107,7 +109,7 @@ class SchemasController extends Controller
         $limit  = isset($params['_limit']) ? (int) $params['_limit'] : null;
         $offset = isset($params['_offset']) ? (int) $params['_offset'] : null;
         $page   = isset($params['_page']) ? (int) $params['_page'] : null;
-        $search = $params['_search'] ?? '';
+        // Note: search parameter not currently used in this endpoint
         $extend = $params['_extend'] ?? [];
         if (is_string($extend)) {
             $extend = [$extend];
@@ -219,7 +221,7 @@ class SchemasController extends Controller
         $data = $this->request->getParams();
 
         // Remove internal parameters (starting with '_').
-        foreach ($data as $key => $value) {
+        foreach (array_keys($data) as $key) {
             if (str_starts_with($key, '_') === true) {
                 unset($data[$key]);
             }
@@ -306,7 +308,7 @@ class SchemasController extends Controller
         $data = $this->request->getParams();
 
         // Remove internal parameters (starting with '_').
-        foreach ($data as $key => $value) {
+        foreach (array_keys($data) as $key) {
             if (str_starts_with($key, '_') === true) {
                 unset($data[$key]);
             }
@@ -582,9 +584,7 @@ class SchemasController extends Controller
      */
     public function download(int $id): JSONResponse
     {
-        // Get the Accept header to determine the response format.
-        $accept = $this->request->getHeader('Accept');
-
+        // Note: Accept header not currently used - always returns JSON
         try {
             // Find the schema by ID.
             $schema = $this->schemaMapper->find($id);
@@ -632,7 +632,7 @@ class SchemasController extends Controller
                 }
 
                 // Use the same reference logic as getRelated, but reversed.
-                if ($this->schemaMapper->hasReferenceToSchema($properties, (string) $schema->getId(), $schema->getUuid(), $schema->getSlug())) {
+                if ($this->schemaMapper->hasReferenceToSchema(properties: $properties, targetSchemaId: (string) $schema->getId(), targetSchemaUuid: $schema->getUuid(), targetSchemaSlug: $schema->getSlug())) {
                     $outgoingSchemas[$schema->getId()] = $schema;
                 }
             }
@@ -720,7 +720,7 @@ class SchemasController extends Controller
      * identifying properties that were added during imports or when validation
      * was disabled.
      *
-     * @param int $schemaId The ID of the schema to explore
+     * @param int $id The ID of the schema to explore
      *
      * @return JSONResponse Analysis results with discovered properties and suggestions
      *
@@ -751,7 +751,7 @@ class SchemasController extends Controller
      * Applies user-confirmed property updates to a schema based on exploration
      * results. This allows schemas to be updated with newly discovered properties.
      *
-     * @param int $schemaId The ID of the schema to update
+     * @param string $id The ID of the schema to update
      *
      * @return JSONResponse Success confirmation with updated schema
      *
