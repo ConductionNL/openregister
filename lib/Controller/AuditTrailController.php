@@ -276,11 +276,11 @@ class AuditTrailController extends Controller
         try {
             // Get logs from service.
             $logs = $this->logService->getLogs(
-                    $register,
-                    $schema,
-                    $id,
-                    $params
-                    );
+                    register: $register,
+                    schema: $schema,
+                    id: $id,
+                    config: $params
+            );
 
             // Get total count for pagination.
             $total = $this->logService->count($register, $schema, $id);
@@ -349,7 +349,7 @@ class AuditTrailController extends Controller
             ];
 
             // Export logs using service.
-            $exportResult = $this->logService->exportLogs($format, $exportConfig);
+            $exportResult = $this->logService->exportLogs(format: $format, config: $exportConfig);
 
             // Return export data.
             return new JSONResponse(

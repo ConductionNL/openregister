@@ -250,7 +250,7 @@ class OrganisationController extends Controller
             $requestData = $this->request->getParams();
             $uuid        = $requestData['uuid'] ?? '';
 
-            $organisation = $this->organisationService->createOrganisation($name, $description, true, $uuid);
+            $organisation = $this->organisationService->createOrganisation(name: $name, description: $description, isPublic: true, uuid: $uuid);
 
             return new JSONResponse(
                     data: [
@@ -297,7 +297,7 @@ class OrganisationController extends Controller
             $userId      = $requestData['userId'] ?? null;
 
             // Join organisation with optional userId parameter.
-            $success = $this->organisationService->joinOrganisation($uuid, $userId);
+            $success = $this->organisationService->joinOrganisation(organisationUuid: $uuid, targetUserId: $userId);
 
             if ($success === true) {
                 return new JSONResponse(
@@ -352,7 +352,7 @@ class OrganisationController extends Controller
             $data   = $this->request->getParams();
             $userId = $data['userId'] ?? null;
 
-            $success = $this->organisationService->leaveOrganisation($uuid, $userId);
+            $success = $this->organisationService->leaveOrganisation(organisationUuid: $uuid, targetUserId: $userId);
 
             if ($success === true) {
                 $message = "Successfully left organisation";
@@ -539,7 +539,7 @@ class OrganisationController extends Controller
 
                 // Validate parent assignment to prevent circular references.
                 try {
-                    $this->organisationMapper->validateParentAssignment($uuid, $newParent);
+                    $this->organisationMapper->validateParentAssignment(organisationUuid: $uuid, parentUuid: $newParent);
                     $organisation->setParent($newParent);
                 } catch (Exception $e) {
                     $this->logger->warning(

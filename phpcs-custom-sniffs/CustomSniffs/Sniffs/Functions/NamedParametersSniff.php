@@ -357,6 +357,7 @@ class NamedParametersSniff implements Sniff
                 'array_keys', 'array_values', 'array_reverse', 'array_unique', 'array_sum',
                 'array_product', 'min', 'max', 'end', 'reset', 'key', 'current', 'next', 'prev',
                 'array_fill', 'array_fill_keys', 'array_combine', 'array_flip',
+                'array_diff', 'array_diff_key', 'array_diff_assoc', 'array_intersect', 'array_intersect_key',
                 
                 // Array functions that commonly use callbacks (might benefit from named params but often don't).
                 'array_filter', 'array_map', 'array_reduce', 'array_walk', 'usort', 'uksort',

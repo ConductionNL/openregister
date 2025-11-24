@@ -3572,6 +3572,115 @@ class FileService
         return $objectFolder->getId();
     }//end createObjectFolderWithoutUpdate()
 
+    /**
+     * Get node type from folder (file or folder).
+     *
+     * @param Node $node The node to check.
+     *
+     * @return string Node type ('file' or 'folder').
+     */
+    private function getNodeTypeFromFolder(Node $node): string
+    {
+        if ($node instanceof Folder) {
+            return 'folder';
+        }
+        if ($node instanceof File) {
+            return 'file';
+        }
+        return 'unknown';
+    }//end getNodeTypeFromFolder()
+
+    /**
+     * Get access URL from shares array.
+     *
+     * @param array $shares Array of IShare objects.
+     *
+     * @return string|null Access URL or null if not found.
+     */
+    private function getAccessUrlFromShares(array $shares): ?string
+    {
+        foreach ($shares as $share) {
+            if ($share instanceof IShare) {
+                $url = $this->getShareLink($share);
+                if ($url !== null && $url !== '') {
+                    return $url;
+                }
+            }
+        }
+        return null;
+    }//end getAccessUrlFromShares()
+
+    /**
+     * Get download URL from shares array.
+     *
+     * @param array $shares Array of IShare objects.
+     *
+     * @return string|null Download URL or null if not found.
+     */
+    private function getDownloadUrlFromShares(array $shares): ?string
+    {
+        foreach ($shares as $share) {
+            if ($share instanceof IShare) {
+                $url = $this->getShareLink($share);
+                if ($url !== null && $url !== '') {
+                    return $url . '/download';
+                }
+            }
+        }
+        return null;
+    }//end getDownloadUrlFromShares()
+
+    /**
+     * Get published time from shares array.
+     *
+     * @param array $shares Array of IShare objects.
+     *
+     * @return string|null Published time as ISO8601 string or null if not found.
+     */
+    private function getPublishedTimeFromShares(array $shares): ?string
+    {
+        foreach ($shares as $share) {
+            if ($share instanceof IShare) {
+                $stime = $share->getShareTime();
+                if ($stime !== null) {
+                    return (new DateTime())->setTimestamp($stime)->format('c');
+                }
+            }
+        }
+        return null;
+    }//end getPublishedTimeFromShares()
+
+    /**
+     * Get object ID from ObjectEntity.
+     *
+     * @param ObjectEntity|null $object The object entity.
+     *
+     * @return string|null Object ID (UUID) or null if not available.
+     */
+    private function getObjectId(?ObjectEntity $object): ?string
+    {
+        if ($object === null) {
+            return null;
+        }
+        return $object->getUuid() ?? (string) $object->getId();
+    }//end getObjectId()
+
+    /**
+     * Get file in object folder message.
+     *
+     * @param bool   $fileInObjectFolder Whether file is in object folder.
+     * @param int    $fileId             File ID.
+     *
+     * @return string Message describing the result.
+     */
+    private function getFileInObjectFolderMessage(bool $fileInObjectFolder, int $fileId): string
+    {
+        if ($fileInObjectFolder === true) {
+            return "File $fileId is correctly located in object folder";
+        }
+        return "File $fileId is not in object folder";
+    }//end getFileInObjectFolderMessage()
+
 }//end class
 
 

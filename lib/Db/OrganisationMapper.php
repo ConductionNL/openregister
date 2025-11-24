@@ -115,7 +115,8 @@ class OrganisationMapper extends QBMapper
     public function update(Entity $entity): Entity
     {
         // Get old state before update.
-        $oldEntity = $this->find($entity->getId());
+        /** @var Organisation $oldEntity */
+        $oldEntity = parent::find($entity->getId());
 
         if ($entity instanceof Organisation) {
             $entity->setUpdated(new \DateTime());

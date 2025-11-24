@@ -132,9 +132,9 @@ class ApplicationsController extends Controller
             unset($filters['_limit'], $filters['_offset'], $filters['_page'], $filters['_search'], $filters['_route']);
 
             $applications = $this->applicationMapper->findAll(
-                $limit,
-                $offset,
-                $filters
+                limit: $limit,
+                offset: $offset,
+                filters: $filters
             );
 
             return new JSONResponse(data: ['results' => $applications], statusCode: Http::STATUS_OK);
