@@ -32,6 +32,7 @@ use OCP\IGroupManager;
 use OCP\IUserSession;
 use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Service\FileService;
 
 /**
  * The RegisterMapper class
@@ -59,6 +60,20 @@ class RegisterMapper extends QBMapper
      * @var SchemaMapper
      */
     private $schemaMapper;
+
+    /**
+     * User session for multi-tenancy (from trait)
+     *
+     * @var IUserSession
+     */
+    protected IUserSession $userSession;
+
+    /**
+     * Group manager for RBAC (from trait)
+     *
+     * @var IGroupManager
+     */
+    protected IGroupManager $groupManager;
 
     /**
      * The event dispatcher instance

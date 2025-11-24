@@ -89,7 +89,7 @@ class MagicSearchHandler
      *
      * @psalm-return int|list<ObjectEntity>
      */
-    public function searchObjects(array $query, Register $register, Schema $schema, string $tableName): array|int|int
+    public function searchObjects(array $query, Register $register, Schema $schema, string $tableName): array|int
     {
         // Extract options from query (prefixed with _).
         $limit          = $query['_limit'] ?? null;

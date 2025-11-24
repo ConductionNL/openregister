@@ -33,6 +33,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Migration;
 
 use Closure;
+use Doctrine\DBAL\Types\Type;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\Types;
 use OCP\Migration\IOutput;
@@ -83,7 +84,8 @@ class Version1Date20251106120000 extends SimpleMigrationStep
                     $output->info('  📝 Updating configurations.organisation: int → string UUID');
 
                     // Change column type to string UUID.
-                    $column->setType(\Doctrine\DBAL\Types\Type::getType(Types::STRING));
+                    /** @psalm-suppress UndefinedClass */
+                    $column->setType(Type::getType(Types::STRING));
                     $column->setLength(36);
                     $column->setNotnull(false);
                     $column->setDefault(null);

@@ -3027,6 +3027,7 @@ class SolrService
             return $field . ' asc';
         }
 
+        /** @psalm-suppress RedundantCondition - PHPCS requires explicit comparison (Squiz.Operators.ComparisonOperatorUsage) */
         if (is_array($order) === true) {
             $sortParts = [];
             foreach ($order as $field => $direction) {

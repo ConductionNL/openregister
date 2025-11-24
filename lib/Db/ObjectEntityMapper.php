@@ -24,8 +24,9 @@ namespace OCA\OpenRegister\Db;
 
 use Adbar\Dot;
 use DateTime;
-use Doctrine\DBAL\Platforms\MySQLPlatform;
+use Doctrine\DBAL\ParameterType;
 use Doctrine\DBAL\Platforms\AbstractPlatform;
+use Doctrine\DBAL\Platforms\MySQLPlatform;
 use OC\DB\QueryBuilder\QueryBuilder;
 use OCA\OpenRegister\Db\ObjectHandlers\MariaDbSearchHandler;
 use OCA\OpenRegister\Db\ObjectHandlers\MetaDataFacetHandler;
@@ -210,6 +211,7 @@ class ObjectEntityMapper extends QBMapper
 
         /** @var \Doctrine\DBAL\Platforms\AbstractPlatform $platform */
         $platform = $db->getDatabasePlatform();
+        /** @psalm-suppress UndefinedClass */
         if ($platform instanceof MySQLPlatform === true) {
             $this->databaseJsonService = $mySQLJsonService;
             $this->searchHandler = new MariaDbSearchHandler();
@@ -776,7 +778,7 @@ class ObjectEntityMapper extends QBMapper
 
             // Only admin users can see objects with NULL organization (legacy data).
             if ($isAdmin === true) {
-                $orgConditions->add($qb->expr()->isNull($organizationColumn));
+                $orgConditions->add($qb->expr()->isNull("{$objectTableAlias}.organisation"));
             }
 
             // Only include published objects if bypass is enabled.
@@ -842,9 +844,7 @@ class ObjectEntityMapper extends QBMapper
         }
 
         $organizationColumn = 'organisation';
-        // @psalm-suppress RedundantCondition
-        // @psalm-suppress RedundantCondition
-        if ($objectTableAlias !== null && $objectTableAlias !== '') {
+        if ($objectTableAlias !== '') {
             $organizationColumn = $objectTableAlias . '.organisation';
         }
 
@@ -937,6 +937,7 @@ class ObjectEntityMapper extends QBMapper
     private function createJsonContainsCondition(IQueryBuilder $qb, string $column, string $path, string $value): string
     {
         // For MySQL/MariaDB, use JSON_CONTAINS to check if array contains value.
+        /** @psalm-suppress UndefinedClass */
         if ($this->db->getDatabasePlatform() instanceof MySQLPlatform) {
             return "JSON_CONTAINS({$column}, " . $qb->createNamedParameter(json_encode($value)) . ", '{$path}')";
         }
@@ -959,6 +960,7 @@ class ObjectEntityMapper extends QBMapper
     private function createJsonContainsKeyCondition(IQueryBuilder $qb, string $column, string $path): string
     {
         // For MySQL/MariaDB, use JSON_EXTRACT to check if path exists.
+        /** @psalm-suppress UndefinedClass */
         if ($this->db->getDatabasePlatform() instanceof MySQLPlatform) {
             return "JSON_EXTRACT({$column}, '{$path}') IS NOT NULL";
         }
@@ -1610,8 +1612,8 @@ class ObjectEntityMapper extends QBMapper
                 ->from('openregister_objects', 'o');
 
             // **PERFORMANCE OPTIMIZATION**: Only join schema table if RBAC is needed (15-20% improvement).
+            /** @psalm-suppress RedundantCondition - PHPCS requires explicit comparison (Squiz.Operators.ComparisonOperatorUsage) */
             $needsSchemaJoin = $rbac && !$performanceBypass && !$smartBypass;
-            // @psalm-suppress RedundantCondition
             if ($needsSchemaJoin === true) {
                 $queryBuilder->leftJoin('o', 'openregister_schemas', 's', 'o.schema = s.id');
                 $this->logger->debug('📊 COUNT: Including schema join for RBAC');
@@ -1638,8 +1640,8 @@ class ObjectEntityMapper extends QBMapper
                 ->setFirstResult($offset);
 
             // **PERFORMANCE OPTIMIZATION**: Only join schema table if RBAC is needed (15-20% improvement).
+            /** @psalm-suppress RedundantCondition - PHPCS requires explicit comparison (Squiz.Operators.ComparisonOperatorUsage) */
             $needsSchemaJoin = $rbac && !$performanceBypass && !$smartBypass;
-            // @psalm-suppress RedundantCondition
             if ($needsSchemaJoin === true) {
                 $queryBuilder->leftJoin('o', 'openregister_schemas', 's', 'o.schema = s.id');
                 $this->logger->debug('📊 SEARCH: Including schema join for RBAC');
@@ -1980,7 +1982,7 @@ class ObjectEntityMapper extends QBMapper
      *
      * @return int Total size of matching objects in bytes
      */
-    public function sizeSearchObjects(array $query = [], ?string $activeOrganisationUuid = null, bool $rbac = true, bool $multi = true): int
+    public function sizeSearchObjects(array $query = [], ?string $activeOrganisationUuid = null, bool $rbac = true, bool $multi = true, ?array $ids = null): int
     {
         // Extract options from query (prefixed with _) - same as countSearchObjects.
         $search = $this->processSearchParameter($query['_search'] ?? null);
@@ -2140,7 +2142,7 @@ class ObjectEntityMapper extends QBMapper
     ): void {
         // By default, only include objects where 'deleted' is NULL unless $includeDeleted is true.
         $deletedColumn = 'deleted';
-        if ($tableAlias !== null && $tableAlias !== '') {
+        if ($tableAlias !== '') {
             $deletedColumn = $tableAlias . '.deleted';
         }
         if ($includeDeleted === false) {
@@ -2154,7 +2156,7 @@ class ObjectEntityMapper extends QBMapper
             $now = (new \DateTime())->format('Y-m-d H:i:s');
             $publishedColumn = 'published';
             $depublishedColumn = 'depublished';
-            if ($tableAlias !== null && $tableAlias !== '') {
+            if ($tableAlias !== '') {
                 $publishedColumn = $tableAlias . '.published';
                 $depublishedColumn = $tableAlias . '.depublished';
             }
@@ -2173,7 +2175,7 @@ class ObjectEntityMapper extends QBMapper
         // Add register filter if provided.
         if ($register !== null) {
             $registerColumn = 'register';
-            if ($tableAlias !== null && $tableAlias !== '') {
+            if ($tableAlias !== '') {
                 $registerColumn = $tableAlias . '.register';
             }
             if (is_array($register) === true) {
@@ -2863,7 +2865,7 @@ class ObjectEntityMapper extends QBMapper
         $qb->select('o.*')
             ->from('openregister_objects', 'o')
             ->leftJoin('o', 'openregister_schemas', 's', 'o.schema = s.id')
-            ->where($qb->expr()->eq('o.schema', $qb->createNamedParameter($schemaId, \Doctrine\DBAL\ParameterType::INTEGER)))
+            ->where($qb->expr()->eq('o.schema', $qb->createNamedParameter($schemaId, /** @psalm-suppress UndefinedClass */ ParameterType::INTEGER)))
             ->andWhere($qb->expr()->isNull('o.deleted')); // Exclude deleted objects
 
         return $this->findEntities($qb);
@@ -3119,9 +3121,7 @@ class ObjectEntityMapper extends QBMapper
                     ->from($this->getTableName());
 
                 // Add size range conditions.
-                if ($range['min'] !== null) {
-                    $qb->andWhere($qb->expr()->gte('size', $qb->createNamedParameter($range['min'], IQueryBuilder::PARAM_INT)));
-                }
+                $qb->andWhere($qb->expr()->gte('size', $qb->createNamedParameter($range['min'], IQueryBuilder::PARAM_INT)));
                 if ($range['max'] !== null) {
                     $qb->andWhere($qb->expr()->lt('size', $qb->createNamedParameter($range['max'], IQueryBuilder::PARAM_INT)));
                 }
@@ -5359,9 +5359,9 @@ class ObjectEntityMapper extends QBMapper
 
                 // Execute single insert.
                 $stmt = $this->db->prepare($sql);
-                $result = $stmt->execute($parameters);
+                $stmt->execute($parameters);
 
-                if ($result && isset($objectData['uuid'])) {
+                if (isset($objectData['uuid'])) {
                     $processedIds[] = $objectData['uuid'];
                 }
 
