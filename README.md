@@ -256,7 +256,7 @@ If you are looking to contribute, please setup your own development environment 
 
 The codebase is analyzed using [Psalm](https://psalm.dev/) for static type checking and error detection.
 
-**Current Status:** 629 errors remaining (as of latest scan)
+**Current Status:** 602 errors remaining (as of latest scan)
 
 **Error Breakdown by Type:**
 
@@ -269,7 +269,7 @@ The codebase is analyzed using [Psalm](https://psalm.dev/) for static type check
 | InvalidReturnStatement | 36 | Return values don't match declared return types |
 | TypeDoesNotContainType | 30 | Type comparisons that can never be true |
 | InvalidArgument | 28 | Wrong argument types passed to functions |
-| RedundantCondition | 24 | Unnecessary type checks that are always true/false |
+| RedundantCondition | 22 | Unnecessary type checks that are always true/false |
 | InvalidReturnType | 23 | Declared return types don't match actual returns |
 | InvalidNamedArgument | 21 | Named arguments that don't exist on function |
 | UndefinedDocblockClass | 18 | Classes referenced in docblocks that don't exist |

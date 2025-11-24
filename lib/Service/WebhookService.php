@@ -118,7 +118,7 @@ class WebhookService
                 );
 
         foreach ($webhooks as $webhook) {
-            $this->deliverWebhook($webhook, $eventName, $payload);
+            $this->deliverWebhook(webhook: $webhook, eventName: $eventName, payload: $payload);
         }
 
     }//end dispatchEvent()
@@ -148,7 +148,7 @@ class WebhookService
         }
 
         // Apply filters if configured.
-        if ($this->passesFilters($webhook, $payload) === false) {
+        if ($this->passesFilters(webhook: $webhook, payload: $payload) === false) {
             $this->logger->debug(
                     message: 'Webhook filters did not match, skipping delivery',
                     context: [
@@ -159,10 +159,10 @@ class WebhookService
             return false;
         }
 
-        $webhookPayload = $this->buildPayload($webhook, $eventName, $payload, $attempt);
+        $webhookPayload = $this->buildPayload(webhook: $webhook, eventName: $eventName, payload: $payload, attempt: $attempt);
 
         try {
-            $response = $this->sendRequest($webhook, $webhookPayload);
+            $response = $this->sendRequest(webhook: $webhook, payload: $webhookPayload);
 
             $this->logger->info(
                     message: 'Webhook delivered successfully',
@@ -175,7 +175,7 @@ class WebhookService
                     ]
                     );
 
-            $this->webhookMapper->updateStatistics($webhook, true);
+            $this->webhookMapper->updateStatistics(webhook: $webhook, success: true);
 
             return true;
         } catch (RequestException $e) {
@@ -191,11 +191,11 @@ class WebhookService
                     ]
                     );
 
-            $this->webhookMapper->updateStatistics($webhook, false);
+            $this->webhookMapper->updateStatistics(webhook: $webhook, success: false);
 
             // Schedule retry if within retry limit.
             if ($attempt < $webhook->getMaxRetries()) {
-                $this->scheduleRetry($webhook, $eventName, $payload, $attempt + 1);
+                $this->scheduleRetry(webhook: $webhook, eventName: $eventName, payload: $payload, attempt: $attempt + 1);
             }
 
             return false;
@@ -222,7 +222,7 @@ class WebhookService
 
         foreach ($filters as $key => $value) {
             // Support dot notation for nested keys.
-            $actualValue = $this->getNestedValue($payload, $key);
+            $actualValue = $this->getNestedValue(array: $payload, key: $key);
 
             // If filter value is array, check if actual value is in array.
             if (is_array($value) === true) {
@@ -311,7 +311,7 @@ class WebhookService
 
         // Add signature if secret is configured.
         if ($webhook->getSecret() !== null) {
-            $signature = $this->generateSignature($payload, $webhook->getSecret());
+            $signature = $this->generateSignature(payload: $payload, secret: $webhook->getSecret());
             $headers['X-Webhook-Signature'] = $signature;
         }
 
@@ -322,9 +322,9 @@ class WebhookService
         ];
 
         $response = $this->client->request(
-            $webhook->getMethod(),
-            $webhook->getUrl(),
-            $options
+            method: $webhook->getMethod(),
+            uri: $webhook->getUrl(),
+            options: $options
         );
 
         return [
@@ -362,7 +362,7 @@ class WebhookService
      */
     private function scheduleRetry(Webhook $webhook, string $eventName, array $payload, int $attempt): void
     {
-        $delay = $this->calculateRetryDelay($webhook, $attempt);
+        $delay = $this->calculateRetryDelay(webhook: $webhook, attempt: $attempt);
 
         $this->logger->info(
                 message: 'Scheduling webhook retry',

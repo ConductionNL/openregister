@@ -481,7 +481,7 @@ class NamedEntityRecognitionService
         } catch (DoesNotExistException $e) {
             // Entity doesn't exist, create new one.
             $entity = new GdprEntity();
-            $entity->setUuid(Uuid::v4()->toString());
+            $entity->setUuid((string) Uuid::v4());
             $entity->setType($type);
             $entity->setValue($value);
             $entity->setCategory($category);

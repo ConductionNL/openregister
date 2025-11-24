@@ -102,7 +102,7 @@ class Version1Date20251106000000 extends SimpleMigrationStep
 
                 // Ensure it's VARCHAR(36) for UUID.
                 if ($column->getLength() !== 36) {
-                    $column->setType(\Doctrine\DBAL\Types\Type::getType(Types::STRING));
+                    $column->setType(Type::getType(Types::STRING));
                     $column->setLength(36);
                     $column->setNotnull(false);
                     $column->setDefault(null);
@@ -122,7 +122,7 @@ class Version1Date20251106000000 extends SimpleMigrationStep
 
                 // Ensure it's VARCHAR(36) for UUID.
                 if ($column->getLength() !== 36) {
-                    $column->setType(\Doctrine\DBAL\Types\Type::getType(Types::STRING));
+                    $column->setType(Type::getType(Types::STRING));
                     $column->setLength(36);
                     $column->setNotnull(false);
                     $column->setDefault(null);

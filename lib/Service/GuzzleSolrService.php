@@ -933,6 +933,22 @@ class GuzzleSolrService
                 ]
                 );
 
+        // Check if SOLR is configured before attempting to connect.
+        // This prevents DNS resolution errors when Solr host is not configured.
+        if ($this->isSolrConfigured() === false) {
+            $configStatus = [
+                'enabled' => $this->solrConfig['enabled'] ?? false,
+                'host'    => $this->solrConfig['host'] ?? 'not set',
+            ];
+            $this->logger->warning(
+                message: 'Cannot create collection: SOLR is not configured',
+                context: ['config_status' => $configStatus, 'collection' => $collectionName]
+            );
+            throw new \Exception(
+                'SOLR is not configured. Please configure SOLR settings in the OpenRegister admin panel before creating collections.'
+            );
+        }
+
         $url = $this->buildSolrBaseUrl().'/admin/collections?'.http_build_query(
                 [
                     'action'                => 'CREATE',
@@ -11527,9 +11543,23 @@ class GuzzleSolrService
         try {
             $this->logger->info(message: '📋 Fetching SOLR collections list');
 
-            // NO availability check - Collection management is part of initial setup!
-            // We only need basic SOLR connectivity, which is tested in Connection Settings.
+            // Check if SOLR is configured before attempting to connect.
+            // This prevents DNS resolution errors when Solr host is not configured.
+            // For configuration endpoints, returning empty arrays when not configured is valid behavior.
+            if ($this->isSolrConfigured() === false) {
+                $configStatus = [
+                    'enabled' => $this->solrConfig['enabled'] ?? false,
+                    'host'    => $this->solrConfig['host'] ?? 'not set',
+                ];
+                $this->logger->info(
+                    message: 'SOLR is not configured - returning empty collections list',
+                    context: ['config_status' => $configStatus]
+                );
+                return [];
+            }
+
             // Get cluster status with all collections.
+            // Collection management is part of initial setup, but we still need basic configuration.
             $clusterUrl = $this->buildSolrBaseUrl().'/admin/collections?action=CLUSTERSTATUS&wt=json';
             $response   = $this->httpClient->get($clusterUrl, ['timeout' => 30]);
             $data       = json_decode((string) $response->getBody(), true);
@@ -11620,9 +11650,23 @@ class GuzzleSolrService
         try {
             $this->logger->info(message: '📋 Fetching SOLR ConfigSets list');
 
-            // NO availability check - ConfigSet management is part of initial setup!
-            // We only need basic SOLR connectivity, which is tested in Connection Settings.
+            // Check if SOLR is configured before attempting to connect.
+            // This prevents DNS resolution errors when Solr host is not configured.
+            // For configuration endpoints, returning empty arrays when not configured is valid behavior.
+            if ($this->isSolrConfigured() === false) {
+                $configStatus = [
+                    'enabled' => $this->solrConfig['enabled'] ?? false,
+                    'host'    => $this->solrConfig['host'] ?? 'not set',
+                ];
+                $this->logger->info(
+                    message: 'SOLR is not configured - returning empty ConfigSets list',
+                    context: ['config_status' => $configStatus]
+                );
+                return [];
+            }
+
             // Get list of ConfigSets.
+            // ConfigSet management is part of initial setup, but we still need basic configuration.
             $configSetsUrl = $this->buildSolrBaseUrl().'/admin/configs?action=LIST&wt=json';
             $response      = $this->httpClient->get($configSetsUrl, ['timeout' => 10]);
             $data          = json_decode((string) $response->getBody(), true);

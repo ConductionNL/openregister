@@ -218,7 +218,7 @@ trait MultiTenancyTrait
 
         // Check if published objects should bypass multi-tenancy (objects table only).
         $publishedBypassEnabled = false;
-        if ($enablePublished) {
+        if ($enablePublished && isset($this->appConfig)) {
             $multitenancyConfig = $this->appConfig->getValueString('openregister', 'multitenancy', '');
             if (!empty($multitenancyConfig)) {
                 $multitenancyData       = json_decode($multitenancyConfig, true);
@@ -297,7 +297,7 @@ trait MultiTenancyTrait
         $isAdmin    = in_array('admin', $userGroups);
 
         $adminOverrideEnabled = false;
-        if ($isAdmin) {
+        if ($isAdmin && isset($this->appConfig)) {
             $multitenancyConfig = $this->appConfig->getValueString('openregister', 'multitenancy', '');
             if (!empty($multitenancyConfig)) {
                 $multitenancyData     = json_decode($multitenancyConfig, true);

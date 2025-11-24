@@ -1228,6 +1228,7 @@ class MagicMapper
      */
     private function createTable(string $tableName, array $columns): void
     {
+        /** @var DoctrineSchema $schema */
         $schema = $this->db->createSchema();
         $table  = $schema->createTable($tableName);
 
@@ -2062,6 +2063,7 @@ class MagicMapper
      */
     private function updateTableStructure(string $tableName, array $currentColumns, array $requiredColumns): void
     {
+        /** @var DoctrineSchema $schema */
         $schema = $this->db->createSchema();
         $table  = $schema->getTable($tableName);
 
