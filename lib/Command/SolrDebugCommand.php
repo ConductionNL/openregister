@@ -24,6 +24,7 @@ use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\GuzzleSolrService;
 use OCA\OpenRegister\Setup\SolrSetup;
 use OCP\IConfig;
+use OCP\Http\Client\IClientService;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -53,7 +54,8 @@ class SolrDebugCommand extends Command
     public function __construct(
         private readonly SettingsService $settingsService,
         private readonly LoggerInterface $logger,
-        private readonly IConfig $config
+        private readonly IConfig $config,
+        private readonly IClientService $clientService
     ) {
         parent::__construct();
 
@@ -218,8 +220,15 @@ class SolrDebugCommand extends Command
             $output->writeln("    Core: <comment>{$solrSettings['core']}</comment>");
             $output->writeln("    Scheme: <comment>{$solrSettings['scheme']}</comment>");
 
+            // Create GuzzleSolrService from settings.
+            $solrService = new GuzzleSolrService(
+                $this->settingsService,
+                $this->logger,
+                $this->clientService,
+                $this->config
+            );
             // Test setup.
-            $setup  = new SolrSetup($solrSettings, $this->logger);
+            $setup  = new SolrSetup($solrService, $this->logger);
             $result = $setup->setupSolr();
 
             if ($result === true) {

@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Service;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCP\IConfig;
+use OCP\Http\Client\IClientService;
 use Psr\Log\LoggerInterface;
 use Solarium\Client;
 use Solarium\Core\Client\Adapter\Curl;
@@ -35,6 +36,7 @@ use Solarium\QueryType\Select\Query\Query as SelectQuery;
 use Solarium\QueryType\Update\Query\Query as UpdateQuery;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use OCA\OpenRegister\Setup\SolrSetup;
+use OCA\OpenRegister\Service\GuzzleSolrService;
 
 /**
  * SOLR service for advanced search and indexing capabilities
@@ -120,7 +122,8 @@ class SolrService
         private readonly SettingsService $settingsService,
         private readonly LoggerInterface $logger,
         private readonly ObjectEntityMapper $objectMapper,
-        private readonly IConfig $config
+        private readonly IConfig $config,
+        private readonly IClientService $clientService
     ) {
         $this->tenantId = $this->generateTenantId();
         // Lazy initialization - only initialize when actually used.
@@ -275,7 +278,13 @@ class SolrService
             }
 
             // Pass the loaded settings to setup.
-            $setup = new SolrSetup($solrSettings, $this->logger);
+            $solrService = new GuzzleSolrService(
+                $this->settingsService,
+                $this->logger,
+                $this->clientService,
+                $this->config
+            );
+            $setup = new SolrSetup($solrService, $this->logger);
             return $setup->setupSolr();
         } catch (\Exception $e) {
             $this->logger->error(message: 'Failed to run SOLR setup', context: [

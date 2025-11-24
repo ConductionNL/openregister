@@ -286,7 +286,7 @@ class BulkController extends Controller
 
             // FLEXIBLE SCHEMA HANDLING: Support both single-schema and mixed-schema operations.
             // Use schema=0 to indicate mixed-schema operations where objects specify their own schemas.
-            $isMixedSchemaOperation = ($schema === '0' || $schema === 0);
+            $isMixedSchemaOperation = ($schema === '0' || (is_numeric($schema) && (int) $schema === 0));
 
             if ($isMixedSchemaOperation === true) {
                 // Mixed-schema operation - don't set a specific schema context.

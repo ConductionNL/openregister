@@ -19,6 +19,7 @@
 
 namespace OCA\OpenRegister\Service;
 
+use DateTime;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
@@ -568,8 +569,8 @@ class DashboardService
     /**
      * Get chart data for audit trail actions over time
      *
-     * @param \DateTime|null $from       Start date for the chart data
-     * @param \DateTime|null $till       End date for the chart data
+     * @param DateTime|null $from       Start date for the chart data
+     * @param DateTime|null $till       End date for the chart data
      * @param int|null       $registerId Optional register ID to filter by
      * @param int|null       $schemaId   Optional schema ID to filter by
      *

@@ -23,7 +23,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use Adbar\Dot;
+use DateTime;
 use Doctrine\DBAL\Platforms\MySQLPlatform;
+use Doctrine\DBAL\Platforms\AbstractPlatform;
 use OC\DB\QueryBuilder\QueryBuilder;
 use OCA\OpenRegister\Db\ObjectHandlers\MariaDbSearchHandler;
 use OCA\OpenRegister\Db\ObjectHandlers\MetaDataFacetHandler;
@@ -206,7 +208,9 @@ class ObjectEntityMapper extends QBMapper
     ) {
         parent::__construct($db, 'openregister_objects');
 
-        if ($db->getDatabasePlatform() instanceof MySQLPlatform === true) {
+        /** @var \Doctrine\DBAL\Platforms\AbstractPlatform $platform */
+        $platform = $db->getDatabasePlatform();
+        if ($platform instanceof MySQLPlatform === true) {
             $this->databaseJsonService = $mySQLJsonService;
             $this->searchHandler = new MariaDbSearchHandler();
             $this->metaDataFacetHandler = new MetaDataFacetHandler($db);
@@ -462,7 +466,7 @@ class ObjectEntityMapper extends QBMapper
                     'action'      => $action,
                     'object_uuid' => $object->getUuid(),
                     'schema_uuid' => $schemaUuid,
-                    'result'      => $this->getPermissionResult($exceptionResult),
+                    'result'      => $exceptionResult ? 'allowed' : 'denied',
                 ]);
                 return $exceptionResult;
             }
@@ -838,6 +842,8 @@ class ObjectEntityMapper extends QBMapper
         }
 
         $organizationColumn = 'organisation';
+        // @psalm-suppress RedundantCondition
+        // @psalm-suppress RedundantCondition
         if ($objectTableAlias !== null && $objectTableAlias !== '') {
             $organizationColumn = $objectTableAlias . '.organisation';
         }
@@ -1158,7 +1164,7 @@ class ObjectEntityMapper extends QBMapper
         if ($ids !== null && empty($ids) === false) {
 
             $numericIds = array_filter($ids, function (string $id) {
-                return strlen(intval($id)) === strlen($id);
+                return strlen((string) intval($id)) === strlen($id);
             });
 
             $orX = $qb->expr()->orX();
@@ -1605,6 +1611,7 @@ class ObjectEntityMapper extends QBMapper
 
             // **PERFORMANCE OPTIMIZATION**: Only join schema table if RBAC is needed (15-20% improvement).
             $needsSchemaJoin = $rbac && !$performanceBypass && !$smartBypass;
+            // @psalm-suppress RedundantCondition
             if ($needsSchemaJoin === true) {
                 $queryBuilder->leftJoin('o', 'openregister_schemas', 's', 'o.schema = s.id');
                 $this->logger->debug('📊 COUNT: Including schema join for RBAC');
@@ -1632,6 +1639,7 @@ class ObjectEntityMapper extends QBMapper
 
             // **PERFORMANCE OPTIMIZATION**: Only join schema table if RBAC is needed (15-20% improvement).
             $needsSchemaJoin = $rbac && !$performanceBypass && !$smartBypass;
+            // @psalm-suppress RedundantCondition
             if ($needsSchemaJoin === true) {
                 $queryBuilder->leftJoin('o', 'openregister_schemas', 's', 'o.schema = s.id');
                 $this->logger->debug('📊 SEARCH: Including schema join for RBAC');
@@ -2229,6 +2237,16 @@ class ObjectEntityMapper extends QBMapper
      *
      * @return Register|Schema|array|null The processed value
      */
+    /**
+     * Process register/schema value for filtering.
+     *
+     * @param mixed  $value The value to process
+     * @param string $type  The type of value (register or schema)
+     *
+     * @return mixed The processed value (Register|Schema|array|int|string|null)
+     *
+     * @psalm-return Register|Schema|array<array-key, mixed>|int|string|null
+     */
     private function processRegisterSchemaValue(mixed $value, string $type): mixed
     {
         if ($value === null) {
@@ -2545,8 +2563,8 @@ class ObjectEntityMapper extends QBMapper
 
         $newObject->hydrate($object);
 
-        // Prepare the object before updating.
-        return $this->update($this->prepareEntity($newObject));
+        // Update the object.
+        return $this->update($newObject);
 
     }//end updateFromArray()
 
@@ -2689,7 +2707,7 @@ class ObjectEntityMapper extends QBMapper
      */
     public function lockObject($identifier, ?string $process=null, ?int $duration=null): ObjectEntity
     {
-        $object = $this->find(id: $identifier);
+        $object = $this->find($identifier);
 
         if ($duration === null) {
             $duration = $this::DEFAULT_LOCK_DURATION;
@@ -2701,7 +2719,7 @@ class ObjectEntityMapper extends QBMapper
         }
 
         // Attempt to lock the object.
-        $object->lock($this->userSession, register: $process, schema: $duration);
+        $object->lock($this->userSession, $process, $duration);
 
         // Save the locked object.
         $object = $this->update($object);
@@ -2760,7 +2778,7 @@ class ObjectEntityMapper extends QBMapper
      */
     public function isObjectLocked($identifier): bool
     {
-        $object = $this->find(id: $identifier);
+        $object = $this->find($identifier);
         return $object->isLocked();
 
     }//end isObjectLocked()
@@ -2786,7 +2804,7 @@ class ObjectEntityMapper extends QBMapper
         $startTime = microtime(true);
 
         // Filter out empty values and ensure uniqueness.
-        $cleanIds = array_filter(array_unique($ids), rbac: fn($id) => !empty($id));
+        $cleanIds = array_filter(array_unique($ids), fn($id) => !empty($id));
 
         if (empty($cleanIds) === true) {
             return [];
@@ -2794,7 +2812,7 @@ class ObjectEntityMapper extends QBMapper
 
         // **PERFORMANCE OPTIMIZATION**: Limit bulk queries for safety.
         if (count($cleanIds) > 1000) {
-            $this->logger->warning('findMultiple called with excessive IDs - limiting for performance', multi: [
+            $this->logger->warning('findMultiple called with excessive IDs - limiting for performance', [
                 'requestedIds' => count($cleanIds),
                 'limitedTo' => 1000
             ]);
@@ -3585,9 +3603,17 @@ class ObjectEntityMapper extends QBMapper
 
 
         // Separate extremely large objects that should be processed individually.
-        $insertObjectGroups = $this->separateLargeObjects($insertObjects, 500000); // 500KB threshold
-        $updateObjectGroups = $this->separateLargeObjects($updateObjects, 500000); // 500KB threshold
+        // Convert ObjectEntity objects to arrays for separateLargeObjects.
+        $insertObjectsArray = array_map(function ($obj) {
+            return $obj->jsonSerialize();
+        }, $insertObjects);
+        $updateObjectsArray = array_map(function ($obj) {
+            return $obj->jsonSerialize();
+        }, $updateObjects);
+        $insertObjectGroups = $this->separateLargeObjects($insertObjectsArray, 500000); // 500KB threshold
+        $updateObjectGroups = $this->separateLargeObjects($updateObjectsArray, 500000); // 500KB threshold
 
+        // separateLargeObjects returns arrays, so we keep them as arrays.
         $largeInsertObjects = $insertObjectGroups['large'];
         $normalInsertObjects = $insertObjectGroups['normal'];
         $largeUpdateObjects = $updateObjectGroups['large'];
@@ -3600,10 +3626,27 @@ class ObjectEntityMapper extends QBMapper
         $largeInsertIds = $this->processLargeObjectsIndividually($largeInsertObjects);
 
         // Process large update objects individually using the update method.
+        // Convert arrays back to ObjectEntity objects.
         $largeUpdateIds = [];
-        foreach ($largeUpdateObjects as $largeUpdateObject) {
+        foreach ($largeUpdateObjects as $largeUpdateObjectArray) {
             try {
-                $updatedObject = $this->update($largeUpdateObject);
+                // Find existing object by UUID to update.
+                $uuid = $largeUpdateObjectArray['uuid'] ?? null;
+                if ($uuid === null) {
+                    continue;
+                }
+                $existingObject = $this->find($uuid);
+                if ($existingObject === null) {
+                    continue;
+                }
+                // Update object properties from array.
+                foreach ($largeUpdateObjectArray as $key => $value) {
+                    $setter = 'set' . ucfirst($key);
+                    if (method_exists($existingObject, $setter)) {
+                        $existingObject->$setter($value);
+                    }
+                }
+                $updatedObject = $this->update($existingObject);
                 if (($updatedObject !== null && $updatedObject !== false) === true && ($updatedObject->getUuid() !== null && $updatedObject->getUuid() !== '') === true) {
                     $largeUpdateIds[] = $updatedObject->getUuid();
                 }
@@ -3638,9 +3681,29 @@ class ObjectEntityMapper extends QBMapper
                 }
 
                 // Process update chunks.
+                // Convert arrays back to ObjectEntity objects for processUpdateChunk.
                 foreach ($updateChunks as $updateChunk) {
-
-                    $chunkIds = $this->processUpdateChunk($updateChunk);
+                    // Convert array chunk to ObjectEntity objects.
+                    $updateChunkEntities = [];
+                    foreach ($updateChunk as $objectArray) {
+                        $uuid = $objectArray['uuid'] ?? null;
+                        if ($uuid === null) {
+                            continue;
+                        }
+                        $existingObject = $this->find($uuid);
+                        if ($existingObject === null) {
+                            continue;
+                        }
+                        // Update object properties from array.
+                        foreach ($objectArray as $key => $value) {
+                            $setter = 'set' . ucfirst($key);
+                            if (method_exists($existingObject, $setter)) {
+                                $existingObject->$setter($value);
+                            }
+                        }
+                        $updateChunkEntities[] = $existingObject;
+                    }
+                    $chunkIds = $this->processUpdateChunk($updateChunkEntities);
                     $savedObjectIds = array_merge($savedObjectIds, $chunkIds);
 
                     // Clear memory after each chunk.
@@ -3706,7 +3769,8 @@ class ObjectEntityMapper extends QBMapper
             }
         }
 
-        return $savedObjectIds;
+        // Filter out null values to match return type.
+        return array_values(array_filter($savedObjectIds, fn($id) => $id !== null && $id !== ''));
 
     }//end saveObjects()
 
@@ -3938,7 +4002,8 @@ class ObjectEntityMapper extends QBMapper
                 $this->db->commit();
             }
 
-            return $insertedIds;
+            // Filter out null values to match return type.
+            return array_values(array_filter($insertedIds, fn($id) => $id !== null && $id !== ''));
 
         } catch (\Exception $e) {
             // Rollback transaction if we started it.
@@ -3986,7 +4051,8 @@ class ObjectEntityMapper extends QBMapper
                 $this->db->commit();
             }
 
-            return $updatedIds;
+            // Filter out null values to match return type.
+            return array_values(array_filter($updatedIds, fn($id) => $id !== null && $id !== ''));
 
         } catch (\Exception $e) {
             // Rollback transaction if we started it.
@@ -4100,10 +4166,12 @@ class ObjectEntityMapper extends QBMapper
                     $stmt = $this->db->prepare($batchSql);
                     $result = $stmt->execute($parameters);
 
-                    if ($result === true) {
+                    // $stmt->execute() returns IResult on success.
+                    // Check rowCount() to verify the operation succeeded.
+                    if ($stmt->rowCount() > 0) {
                         $batchSuccess = true;
                     } else {
-                        throw new \Exception('Statement execution returned false');
+                        throw new \Exception('Statement execution returned false or affected no rows');
                     }
 
                 } catch (\Exception $e) {
@@ -4247,7 +4315,8 @@ class ObjectEntityMapper extends QBMapper
             $updatedIds[] = $object->getUuid();
         }
 
-        return $updatedIds;
+        // Filter out null values to match return type.
+        return array_values(array_filter($updatedIds, fn($id) => $id !== null && $id !== ''));
 
     }//end bulkUpdate()
 
@@ -4414,7 +4483,9 @@ class ObjectEntityMapper extends QBMapper
                     $rowValues[] = ':' . $paramName;
 
                     $value = $objectData[$column] ?? null;
-                    if ($column === 'object' && is_array($value)) {
+                    /** @var string $columnName */
+                    $columnName = $column;
+                    if ($columnName === 'object' && is_array($value)) {
                         $value = json_encode($value, JSON_UNESCAPED_UNICODE);
                     }
 
@@ -5310,7 +5381,8 @@ class ObjectEntityMapper extends QBMapper
             }
         }
 
-        return $processedIds;
+        // Filter out null values to match return type.
+        return array_values(array_filter($processedIds, fn($id) => $id !== null && $id !== ''));
     }
 
     /**

@@ -451,7 +451,7 @@ class RegisterMapper extends QBMapper
         $this->verifyOrganisationAccess($entity);
 
         // Check for attached objects before deleting.
-        if (method_exists($entity, multi: 'getId') === true) {
+        if (method_exists($entity, 'getId') === true) {
             $registerId = $entity->getId();
         } else {
             $registerId = $entity->id;

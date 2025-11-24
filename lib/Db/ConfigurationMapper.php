@@ -337,7 +337,7 @@ class ConfigurationMapper extends QBMapper
      *
      * @param int       $id       Configuration ID
      * @param string    $status   Sync status: 'success', 'failed', 'pending'
-     * @param \DateTime $syncDate Synchronization timestamp
+     * @param DateTime $syncDate Synchronization timestamp
      * @param string    $message  Optional message about the sync result
      *
      * @return Configuration The updated configuration
@@ -512,9 +512,9 @@ class ConfigurationMapper extends QBMapper
 
         // Set or update the version.
         if (isset($data['version']) === false) {
-            $version    = explode('.', register: $object->getVersion());
+            $version    = explode('.', $object->getVersion());
             $version[2] = ((int) $version[2] + 1);
-            $object->setVersion(implode('.', schema: $version));
+            $object->setVersion(implode('.', $version));
         }
 
         $object->hydrate(object: $data);
@@ -537,7 +537,7 @@ class ConfigurationMapper extends QBMapper
 
         $qb->select($qb->createFunction('COUNT(*)'))
             ->from($this->tableName)
-            ->where($qb->expr()->eq('type', extend: $qb->createNamedParameter($type, files: IQueryBuilder::PARAM_STR)));
+            ->where($qb->expr()->eq('type', $qb->createNamedParameter($type, IQueryBuilder::PARAM_STR)));
 
         $result = $qb->executeQuery();
         $count  = $result->fetchOne();

@@ -177,7 +177,7 @@ class SourcesController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200, statusCode: Source, array<never, never>>
+     * @psalm-return JSONResponse<200, Source, array<never, never>>
      */
     public function update(int $id): JSONResponse
     {
@@ -198,7 +198,8 @@ class SourcesController extends Controller
         unset($data['created']);
 
         // Update the source with the provided data.
-        return new JSONResponse(data: $this->sourceMapper->updateFromArray(id: $id, object: $data));
+        $source = $this->sourceMapper->updateFromArray($id, $data);
+        return new JSONResponse(data: $source);
 
     }//end update()
 

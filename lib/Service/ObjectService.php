@@ -25,6 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use Adbar\Dot;
+use DateTime;
 use Exception;
 use JsonSerializable;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -3882,7 +3883,7 @@ class ObjectService
      * Publish an object, setting its publication date to now or a specified date.
      *
      * @param string|null    $uuid  The UUID of the object to publish. If null, uses the current object.
-     * @param \DateTime|null $date  Optional publication date. If null, uses current date/time.
+     * @param DateTime|null $date  Optional publication date. If null, uses current date/time.
      * @param bool           $rbac  Whether to apply RBAC checks (default: true).
      * @param bool           $multi Whether to apply multitenancy filtering (default: true).
      *
@@ -3908,7 +3909,7 @@ class ObjectService
      * Depublish an object, setting its depublication date to now or a specified date.
      *
      * @param string|null    $uuid  The UUID of the object to depublish. If null, uses the current object.
-     * @param \DateTime|null $date  Optional depublication date. If null, uses current date/time.
+     * @param DateTime|null $date  Optional depublication date. If null, uses current date/time.
      * @param bool           $rbac  Whether to apply RBAC checks (default: true).
      * @param bool           $multi Whether to apply multitenancy filtering (default: true).
      *
@@ -5670,7 +5671,7 @@ class ObjectService
      * If false is provided, it unsets the published timestamp.
      *
      * @param array         $uuids    Array of object UUIDs to publish
-     * @param \DateTime|bool $datetime Optional datetime for publishing (false to unset)
+     * @param DateTime|bool $datetime Optional datetime for publishing (false to unset)
      * @param bool          $rbac     Whether to apply RBAC filtering
      * @param bool          $multi    Whether to apply multi-organization filtering
      *
@@ -5737,7 +5738,7 @@ class ObjectService
      * If false is provided, it unsets the depublished timestamp.
      *
      * @param array         $uuids    Array of object UUIDs to depublish
-     * @param \DateTime|bool $datetime Optional datetime for depublishing (false to unset)
+     * @param DateTime|bool $datetime Optional datetime for depublishing (false to unset)
      * @param bool          $rbac     Whether to apply RBAC filtering
      * @param bool          $multi    Whether to apply multi-organization filtering
      *

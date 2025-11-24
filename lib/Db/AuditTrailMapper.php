@@ -22,7 +22,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use DateTime;
 use OCP\AppFramework\Db\Entity;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -244,7 +246,7 @@ class AuditTrailMapper extends QBMapper
             $object            = $this->objectEntityMapper->find(identifier: $identifier);
             $objectId          = $object->getId();
             $filters['object'] = $objectId;
-            return $this->findAll(config: $limit, rbac: $offset, multi: $filters);
+            return $this->findAll($limit, $offset, $filters);
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             // Object not found.
             return [];
@@ -645,8 +647,8 @@ class AuditTrailMapper extends QBMapper
     /**
      * Get chart data for audit trail actions over time
      *
-     * @param \DateTime|null $from       Start date for the chart data
-     * @param \DateTime|null $till       End date for the chart data
+     * @param DateTime|null $from       Start date for the chart data
+     * @param DateTime|null $till       End date for the chart data
      * @param int|null       $registerId Optional register ID to filter by
      * @param int|null       $schemaId   Optional schema ID to filter by
      *

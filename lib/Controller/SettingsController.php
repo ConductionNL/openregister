@@ -30,6 +30,7 @@ use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\GuzzleSolrService;
 use OCA\OpenRegister\Service\SolrSchemaService;
 use OCA\OpenRegister\Service\VectorEmbeddingService;
+use Doctrine\DBAL\Platforms\AbstractPlatform;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -244,7 +245,7 @@ class SettingsController extends Controller
     public function load(): JSONResponse
     {
         try {
-            $result = $this->settingsService->loadSettings();
+            $result = $this->settingsService->getSettings();
             return new JSONResponse(data: $result);
         } catch (\Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
@@ -2903,7 +2904,7 @@ class SettingsController extends Controller
                                 'success'   => $success,
                                 'operation' => 'commit',
                                 // Get commit message based on success.
-                                'message'   => $this->getCommitMessageText($success),
+                                'message'   => $success ? 'Index committed successfully' : 'Failed to commit index',
                                 'timestamp' => date('c'),
                             ]
                             );
@@ -2914,7 +2915,7 @@ class SettingsController extends Controller
                             data: [
                                 'success'   => $success,
                                 'operation' => 'optimize',
-                                'message'   => $this->getOptimizeMessage($success),
+                                'message'   => $success ? 'Index optimized successfully' : 'Failed to optimize index',
                                 'timestamp' => date('c'),
                             ]
                             );
@@ -2927,7 +2928,7 @@ class SettingsController extends Controller
                                 'operation'     => 'clear',
                                 'error'         => $result['error'] ?? null,
                                 'error_details' => $result['error_details'] ?? null,
-                                'message'       => $this->getClearMessage($result),
+                                'message'       => $result['success'] === true ? 'Index cleared successfully' : 'Failed to clear index: '.($result['error'] ?? 'Unknown error'),
                                 'timestamp'     => date('c'),
                             ]
                             );
@@ -3204,7 +3205,9 @@ class SettingsController extends Controller
     {
         try {
             // Get database platform information.
-            $platform     = $this->db->getDatabasePlatform();
+            /** @var AbstractPlatform $platform */
+            $platform = $this->db->getDatabasePlatform();
+            /** @var string $platformName */
             $platformName = $platform->getName();
 
             // Determine database type and version.
@@ -3591,7 +3594,7 @@ class SettingsController extends Controller
             $curlError = curl_error($ch);
             curl_close($ch);
 
-            if ($curlError !== null && $curlError !== '') {
+            if ($curlError !== '') {
                 return new JSONResponse(
                         data: [
                             'success' => false,
@@ -3661,7 +3664,7 @@ class SettingsController extends Controller
             $curlError = curl_error($ch);
             curl_close($ch);
 
-            if ($curlError !== null && $curlError !== '') {
+            if ($curlError !== '') {
                 return new JSONResponse(
                         data: [
                             'success' => false,
@@ -3698,14 +3701,14 @@ class SettingsController extends Controller
                         $name   = $model['name'] ?? 'unknown';
                         // Format size if available.
                         $size = '';
-                        if (isset($model['size']) === true) {
-                            $size = $this->formatBytes($model['size']);
+                        if (isset($model['size']) === true && is_numeric($model['size'])) {
+                            $size = $this->formatBytes((int) $model['size']);
                         }
                         $family = $model['details']['family'] ?? '';
 
                         // Build description.
                         $description = $family;
-                        if ($size !== null && $size !== '') {
+                        if ($size !== '') {
                             // Add size separator if description exists.
                             if ($description !== null && $description !== '') {
                                 $description .= ' • ';
@@ -4012,7 +4015,8 @@ class SettingsController extends Controller
     public function testSchemaMapping(): JSONResponse
     {
         try {
-            $solrService = $this->solrServiceFactory->createService();
+            // Get SolrService from container.
+            $solrService = $this->container->get(\OCA\OpenRegister\Service\SolrService::class);
 
             // Get required dependencies from container.
             $objectMapper = $this->container->get(\OCA\OpenRegister\Db\ObjectEntityMapper::class);
@@ -4210,7 +4214,7 @@ class SettingsController extends Controller
                             'success' => false,
                             'message' => "Cannot delete protected system field: {$fieldName}",
                         ],
-                        403
+                        statusCode: 403
                         );
             }
 
@@ -4790,11 +4794,14 @@ class SettingsController extends Controller
             // Perform hybrid search.
             $result = $vectorService->hybridSearch($query, $solrFilters, $limit, $weights, $provider);
 
+            // Ensure result is an array for spread operator.
+            $resultArray = is_array($result) ? $result : [];
+
             return new JSONResponse(
                     data: [
                         'success'   => true,
                         'query'     => $query,
-                        ...$result,
+                        ...$resultArray,
                         'timestamp' => date('c'),
                     ]
                     );
@@ -4882,25 +4889,21 @@ class SettingsController extends Controller
                     ]
                     );
 
-            // Get GuzzleSolrService and FileTextMapper.
+            // Get GuzzleSolrService and TextExtractionService.
             $guzzleSolrService = $this->container->get(\OCA\OpenRegister\Service\GuzzleSolrService::class);
-            $fileTextMapper    = $this->container->get(\OCA\OpenRegister\Db\FileTextMapper::class);
+            $textExtractionService = $this->container->get(\OCA\OpenRegister\Service\TextExtractionService::class);
 
             // Get files that need processing.
             $filesToProcess = [];
             if ($skipIndexed === true) {
-                $notIndexed = $fileTextMapper->findNotIndexedInSolr($maxFiles);
-                foreach ($notIndexed as $fileText) {
-                    if (empty($fileTypes) || in_array($fileText->getMimeType(), $fileTypes)) {
-                        $filesToProcess[] = $fileText->getFileId();
-                    }
+                $notIndexed = $textExtractionService->findNotIndexedInSolr('file', $maxFiles);
+                foreach ($notIndexed as $fileId) {
+                    $filesToProcess[] = $fileId;
                 }
             } else {
-                $completed = $fileTextMapper->findByStatus('completed', $maxFiles, 0);
-                foreach ($completed as $fileText) {
-                    if (empty($fileTypes) || in_array($fileText->getMimeType(), $fileTypes)) {
-                        $filesToProcess[] = $fileText->getFileId();
-                    }
+                $completed = $textExtractionService->findByStatus('file', 'completed', $maxFiles, 0);
+                foreach ($completed as $fileId) {
+                    $filesToProcess[] = $fileId;
                 }
             }
 
@@ -5030,15 +5033,14 @@ class SettingsController extends Controller
     {
         try {
             // Get all completed file texts.
-            $fileTextMapper    = $this->container->get(\OCA\OpenRegister\Db\FileTextMapper::class);
+            $textExtractionService = $this->container->get(\OCA\OpenRegister\Service\TextExtractionService::class);
             $guzzleSolrService = $this->container->get(\OCA\OpenRegister\Service\GuzzleSolrService::class);
 
             $maxFiles  = (int) $this->request->getParam('max_files', 1000);
             $batchSize = (int) $this->request->getParam('batch_size', 100);
 
             // Get all completed extractions.
-            $allFiles = $fileTextMapper->findByStatus('completed', $maxFiles, 0);
-            $fileIds  = array_map(fn($ft) => $ft->getFileId(), $allFiles);
+            $fileIds = $textExtractionService->findByStatus('file', 'completed', $maxFiles, 0);
 
             if (empty($fileIds)) {
                 return new JSONResponse(
@@ -5111,7 +5113,7 @@ class SettingsController extends Controller
         } catch (\Exception $e) {
             $this->logger->error(
                     '[SettingsController] Failed to get file index stats',
-                    statusCode: [
+                    [
                         'error' => $e->getMessage(),
                     ]
                     );
@@ -5158,8 +5160,8 @@ class SettingsController extends Controller
             $totalFilesSize        = $fileMapper->getTotalFilesSize();
 
             // Get extraction statistics from our file_texts table.
-            $fileTextMapper = $this->container->get(\OCA\OpenRegister\Db\FileTextMapper::class);
-            $dbStats        = $fileTextMapper->getStats();
+            $textExtractionService = $this->container->get(\OCA\OpenRegister\Service\TextExtractionService::class);
+            $dbStats = $textExtractionService->getExtractionStats('file');
 
             // Get SOLR statistics.
             $guzzleSolrService = $this->container->get(\OCA\OpenRegister\Service\GuzzleSolrService::class);
@@ -5234,11 +5236,11 @@ class SettingsController extends Controller
 
             // Mask tokens for security (only show first/last few characters).
             $maskedGithubToken = '';
-            if ($githubToken !== null && $githubToken !== '') {
+            if ($githubToken !== '') {
                 $maskedGithubToken = $this->maskToken($githubToken);
             }
             $maskedGitlabToken = '';
-            if ($gitlabToken !== null && $gitlabToken !== '') {
+            if ($gitlabToken !== '') {
                 $maskedGitlabToken = $this->maskToken($gitlabToken);
             }
 

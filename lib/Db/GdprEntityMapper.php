@@ -72,7 +72,7 @@ class GdprEntityMapper extends QBMapper
 
         if ($search !== null && $search !== '') {
             $qb->andWhere(
-                $qb->expr()->like('value', $qb->createNamedParameter('%'.$qb->escapeLikeParameter($search).'%'))
+                $qb->expr()->like('value', $qb->createNamedParameter('%'.addcslashes($search, '%_\\').'%'))
             );
         }
 

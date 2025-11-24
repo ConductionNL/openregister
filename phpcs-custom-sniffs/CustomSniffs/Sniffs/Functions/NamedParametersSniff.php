@@ -49,6 +49,15 @@ class NamedParametersSniff implements Sniff
             return;
         }
         
+        // Check if this is a method call (preceded by -> or ::).
+        $isMethodCall = false;
+        $prevToken = $phpcsFile->findPrevious([T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], ($stackPtr - 1), null, true);
+        if ($prevToken !== false && 
+            ($tokens[$prevToken]['code'] === T_OBJECT_OPERATOR || 
+             $tokens[$prevToken]['code'] === T_DOUBLE_COLON)) {
+            $isMethodCall = true;
+        }
+        
         // Skip function definitions - look for 'function' keyword before this token.
         // We need to check if this T_STRING is part of a function declaration.
         $prev = $stackPtr - 1;
@@ -64,6 +73,15 @@ class NamedParametersSniff implements Sniff
                 break;
             }
             $prev--;
+        }
+        
+        // Skip parent class methods that don't support named parameters.
+        // QBMapper::find() and similar parent class methods.
+        $functionName = $tokens[$stackPtr]['content'];
+        $parentClassMethods = ['find', 'findEntity', 'findAll', 'findEntities', 'insert', 'update', 'delete', 'insertOrUpdate'];
+        if ($isMethodCall && in_array(strtolower($functionName), $parentClassMethods)) {
+            // This is likely a parent class method call, skip named parameter checking.
+            return;
         }
         
         // Find the closing parenthesis.
@@ -97,6 +115,43 @@ class NamedParametersSniff implements Sniff
         
         if ($paramStart >= $paramEnd) {
             return; // No parameters
+        }
+        
+        // Check for positional arguments after named arguments (PHP 8+ fatal error).
+        // This is a critical error that must be caught.
+        $hasNamedParam = false;
+        $parenLevel = 1;
+        $lastCommaPos = null;
+        
+        for ($i = $paramStart; $i <= $paramEnd && $parenLevel > 0; $i++) {
+            if ($tokens[$i]['code'] === T_OPEN_PARENTHESIS) {
+                $parenLevel++;
+            } elseif ($tokens[$i]['code'] === T_CLOSE_PARENTHESIS) {
+                $parenLevel--;
+            } elseif ($tokens[$i]['code'] === T_COMMA && $parenLevel === 1) {
+                $lastCommaPos = $i;
+            } elseif ($tokens[$i]['code'] === T_GOTO_LABEL && $parenLevel === 1) {
+                // Found a named parameter (label followed by colon).
+                $hasNamedParam = true;
+            } elseif ($hasNamedParam && $lastCommaPos !== null && $i > $lastCommaPos && $parenLevel === 1) {
+                // We have a named parameter and we're past a comma.
+                // Check if this is a positional argument (not a named one).
+                if ($tokens[$i]['code'] !== T_WHITESPACE && 
+                    $tokens[$i]['code'] !== T_GOTO_LABEL &&
+                    $tokens[$i]['code'] !== T_COLON) {
+                    // Check if next non-whitespace token is NOT a colon (which would indicate named param).
+                    $nextNonWhitespace = $phpcsFile->findNext(T_WHITESPACE, $i + 1, $paramEnd + 1, true);
+                    if ($nextNonWhitespace === false || 
+                        ($tokens[$nextNonWhitespace]['code'] !== T_COLON && 
+                         $tokens[$nextNonWhitespace]['code'] !== T_GOTO_LABEL)) {
+                        // This looks like a positional argument after a named one!
+                        $error = 'Cannot use positional argument after named argument (PHP 8+ fatal error). ' .
+                                 'All arguments after the first named argument must also be named.';
+                        $phpcsFile->addError($error, $stackPtr, 'PositionalAfterNamedArgument');
+                        return; // Don't continue with warnings if we found this critical error.
+                    }
+                }
+            }
         }
         
         // Count parameters by counting commas + 1 (if there are any non-whitespace tokens).

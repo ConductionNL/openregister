@@ -20,6 +20,7 @@
 
 namespace OCA\OpenRegister\Db;
 
+use DateTime;
 use OCA\OpenRegister\Event\OrganisationCreatedEvent;
 use OCA\OpenRegister\Event\OrganisationDeletedEvent;
 use OCA\OpenRegister\Event\OrganisationUpdatedEvent;
@@ -114,7 +115,7 @@ class OrganisationMapper extends QBMapper
     public function update(Entity $entity): Entity
     {
         // Get old state before update.
-        $oldEntity = $this->find(id: $entity->getId());
+        $oldEntity = $this->find($entity->getId());
 
         if ($entity instanceof Organisation) {
             $entity->setUpdated(new \DateTime());
@@ -123,7 +124,7 @@ class OrganisationMapper extends QBMapper
         $entity = parent::update($entity);
 
         // Dispatch update event.
-        $this->eventDispatcher->dispatchTyped(new OrganisationUpdatedEvent($entity, register: $oldEntity));
+        $this->eventDispatcher->dispatchTyped(new OrganisationUpdatedEvent($entity, $oldEntity));
 
         return $entity;
 
@@ -165,7 +166,7 @@ class OrganisationMapper extends QBMapper
 
         $qb->select('*')
             ->from($this->getTableName())
-            ->where($qb->expr()->eq('uuid', schema: $qb->createNamedParameter($uuid)));
+            ->where($qb->expr()->eq('uuid', $qb->createNamedParameter($uuid)));
 
         return $this->findEntity($qb);
 
@@ -191,7 +192,7 @@ class OrganisationMapper extends QBMapper
         $qb->select('*')
             ->from('openregister_organisations')
             ->where(
-                $qb->expr()->in('uuid', files: $qb->createNamedParameter($uuids, rbac: IQueryBuilder::PARAM_STR_ARRAY))
+                $qb->expr()->in('uuid', $qb->createNamedParameter($uuids, IQueryBuilder::PARAM_STR_ARRAY))
             );
 
         $result        = $qb->execute();
@@ -222,7 +223,7 @@ class OrganisationMapper extends QBMapper
 
         $qb->select('*')
             ->from($this->getTableName())
-            ->where($qb->expr()->like('users', multi: $qb->createNamedParameter('%"'.$userId.'"%')));
+            ->where($qb->expr()->like('users', $qb->createNamedParameter('%"'.$userId.'"%')));
 
         return $this->findEntities($qb);
 
@@ -676,7 +677,7 @@ class OrganisationMapper extends QBMapper
     /**
      * Find organisations updated after a specific datetime
      *
-     * @param \DateTime $cutoffTime The cutoff time to search after
+     * @param DateTime $cutoffTime The cutoff time to search after
      *
      * @return array Array of Organisation entities updated after the cutoff time
      */

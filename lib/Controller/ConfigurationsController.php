@@ -331,6 +331,7 @@ class ConfigurationsController extends Controller
             // Import the data.
             $result = $this->configurationService->importFromJson(
                 $jsonData,
+                null,
                 $this->request->getParam('owner'),
                 $this->request->getParam('appId'),
                 $this->request->getParam('version'),

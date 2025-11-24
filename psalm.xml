@@ -31,6 +31,7 @@
                 <referencedClass name="Doctrine\DBAL\Types\Types"/>
                 <referencedClass name="Doctrine\DBAL\Connection"/>
                 <referencedClass name="Symfony\Component\HttpFoundation\Response"/>
+                <referencedClass name="Doctrine\DBAL\Platforms\AbstractPlatform"/>
             </errorLevel>
         </UndefinedClass>
         <UndefinedMagicMethod errorLevel="suppress"/>

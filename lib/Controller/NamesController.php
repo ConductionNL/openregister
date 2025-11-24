@@ -207,9 +207,9 @@ class NamesController extends Controller
             return new JSONResponse(
                     data: [
                         'error'   => 'Failed to retrieve object names',
-            'message' => $e->getMessage(),
+                        'message' => $e->getMessage(),
                     ],
-                    500
+                    statusCode: 500
                     );
         }//end try
 
@@ -301,9 +301,9 @@ class NamesController extends Controller
                 return new JSONResponse(
                         data: [
                             'error'   => 'Invalid request: ids array is required in request body',
-                'example' => ['ids' => ['uuid-1', 'uuid-2', 'uuid-3']],
+                            'example' => ['ids' => ['uuid-1', 'uuid-2', 'uuid-3']],
                         ],
-                        400
+                        statusCode: 400
                         );
             }
 
@@ -315,7 +315,7 @@ class NamesController extends Controller
                         data: [
                             'error' => 'No valid IDs provided in request',
                         ],
-                        400
+                        statusCode: 400
                         );
             }
 
@@ -466,10 +466,10 @@ class NamesController extends Controller
             return new JSONResponse(
                     data: [
                         'id'      => $id,
-            'error'   => 'Failed to retrieve object name',
+                        'error'   => 'Failed to retrieve object name',
                         'message' => $e->getMessage(),
                     ],
-                    500
+                    statusCode: 500
                     );
         }//end try
 

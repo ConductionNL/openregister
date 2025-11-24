@@ -102,6 +102,7 @@ PHP CodeSniffer checks code against defined coding standards (PSR-12, Nextcloud 
 - Location: `openregister/phpcs.xml`
 - Standards: PSR-12, Nextcloud coding standards
 - Enforces: Naming conventions, formatting, documentation
+- **Custom Sniff**: Detects positional arguments after named arguments (PHP 8+ fatal error)
 
 **Common phpcs Requirements:**
 - Add docblocks to all classes, methods, and properties
@@ -110,6 +111,72 @@ PHP CodeSniffer checks code against defined coding standards (PSR-12, Nextcloud 
 - Use proper indentation and spacing
 - Follow PSR-12 naming conventions
 - Add inline comments ending with proper punctuation (full-stop, exclamation, question mark)
+
+**Named Arguments Check:**
+The custom PHPCS sniff automatically detects PHP 8+ fatal errors where positional arguments are used after named arguments:
+
+```php
+// ❌ ERROR: Positional argument after named argument
+return new JSONResponse(
+    data: ['success' => true],
+    200  // This will cause a PHP 8+ fatal error
+);
+
+// ✅ CORRECT: All arguments after named ones must also be named
+return new JSONResponse(
+    data: ['success' => true],
+    statusCode: 200
+);
+```
+
+#### Named Arguments Checker
+**Custom script to detect PHP 8+ named argument errors**
+
+A dedicated script checks for positional arguments after named arguments, which causes fatal errors in PHP 8+.
+
+**Running the checker:**
+```bash
+# Check all files in lib/
+composer check:named-args
+
+# Or directly
+php scripts/check-named-arguments.php --path=lib
+
+# Check specific directory
+php scripts/check-named-arguments.php --path=lib/Controller
+```
+
+**What it checks:**
+- Detects positional arguments used after named arguments
+- Reports exact line numbers and function calls
+- Provides clear error messages explaining the issue
+
+**Example output:**
+```
+Checking for positional arguments after named arguments in: lib
+======================================================================
+
+lib/Controller/SettingsController.php:
+  Line 4216: Positional argument after named argument (PHP 8+ fatal error). 
+             First named parameter found at line 4212, positional argument at line 4216. 
+             All arguments after the first named argument must also be named.
+
+✗ Found 1 error(s).
+```
+
+**Integration:**
+This check is automatically included in:
+- `composer check` - Standard quality checks
+- `composer check:full` - Full quality checks
+- `composer check:strict` - Strict quality checks
+
+**Why this matters:**
+In PHP 8+, mixing positional and named arguments causes a fatal error at runtime:
+```
+PHP Fatal error: Cannot use positional argument after named argument
+```
+
+This check catches these errors before deployment, preventing 500 errors in production.
 
 ### Integration Testing
 

@@ -387,6 +387,8 @@ return [
 		['name' => 'ui#deleted', 'url' => '/deleted', 'verb' => 'GET'],
 		['name' => 'ui#auditTrail', 'url' => '/audit-trails', 'verb' => 'GET'],
 		['name' => 'ui#searchTrail', 'url' => '/search-trails', 'verb' => 'GET'],
+		['name' => 'ui#webhooks', 'url' => '/webhooks', 'verb' => 'GET'],
+		['name' => 'ui#entities', 'url' => '/entities', 'verb' => 'GET'],
 	['name' => 'files#page', 'url' => '/files', 'verb' => 'GET'],
 
 		// Webhooks.

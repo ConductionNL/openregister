@@ -218,8 +218,11 @@ trait MultiTenancyTrait
 
         // Check if published objects should bypass multi-tenancy (objects table only).
         $publishedBypassEnabled = false;
-        if ($enablePublished && isset($this->appConfig)) {
-            $multitenancyConfig = $this->appConfig->getValueString('openregister', 'multitenancy', '');
+        if ($enablePublished) {
+            // @psalm-suppress RedundantCondition
+            if (isset($this->appConfig)) {
+                $multitenancyConfig = $this->appConfig->getValueString('openregister', 'multitenancy', '');
+            }
             if (!empty($multitenancyConfig)) {
                 $multitenancyData       = json_decode($multitenancyConfig, true);
                 $publishedBypassEnabled = $multitenancyData['publishedObjectsBypassMultiTenancy'] ?? false;
@@ -297,8 +300,11 @@ trait MultiTenancyTrait
         $isAdmin    = in_array('admin', $userGroups);
 
         $adminOverrideEnabled = false;
-        if ($isAdmin && isset($this->appConfig)) {
-            $multitenancyConfig = $this->appConfig->getValueString('openregister', 'multitenancy', '');
+        if ($isAdmin) {
+            // @psalm-suppress RedundantCondition
+            if (isset($this->appConfig)) {
+                $multitenancyConfig = $this->appConfig->getValueString('openregister', 'multitenancy', '');
+            }
             if (!empty($multitenancyConfig)) {
                 $multitenancyData     = json_decode($multitenancyConfig, true);
                 $adminOverrideEnabled = $multitenancyData['adminOverride'] ?? false;
@@ -377,6 +383,7 @@ trait MultiTenancyTrait
         if ($allowNullOrg && $isSystemDefaultOrg && $isAdmin) {
             $orgConditions->add($qb->expr()->isNull($organisationColumn));
 
+            // @psalm-suppress RedundantCondition
             if (isset($this->logger)) {
                 $this->logger->debug('[MultiTenancyTrait] Added NULL org access for admin with default org');
             }

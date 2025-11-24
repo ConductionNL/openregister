@@ -211,9 +211,9 @@
         <severity>0</severity>
     </rule>
 
-    <!-- Custom rule to encourage named parameters -->  
+    <!-- Custom rule to enforce named parameters -->  
     <rule ref="./phpcs-custom-sniffs/CustomSniffs/Sniffs/Functions/NamedParametersSniff.php">
-        <type>warning</type>
+        <type>error</type>
     </rule>
 
 </ruleset>

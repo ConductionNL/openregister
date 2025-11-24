@@ -591,10 +591,11 @@ class ObjectsController extends Controller
 
         // Extract uploaded files from multipart/form-data.
         $uploadedFiles = [];
-        foreach ($_FILES ?? [] as $fieldName => $fileData) {
+        foreach ($_FILES as $fieldName => $fileData) {
             // Check if this is an array upload (multiple files with same field name).
             // PHP converts field names like "images[]" to "images" and structures data as arrays.
-            if (is_array($fileData['name'] ?? null)) {
+            /** @var array{name: array<int, string>|string, type: array<int, string>|string, tmp_name: array<int, string>|string, error: array<int, int>|int, size: array<int, int>|int} $fileData */
+            if (is_array($fileData['name'])) {
                 // Handle array uploads: images[] becomes images with array values.
                 // We need to preserve all files, so use indexed keys: images[0], images[1], etc.
                 $fileCount = count($fileData['name']);
@@ -626,12 +627,13 @@ class ObjectsController extends Controller
         // Save the object.
         try {
             // Use the object service to validate and save the object.
+            $objectToSave = $object;
             $objectEntity = $objectService->saveObject(
+                    object: $objectToSave,
                     register: $register,
                     schema: $schema,
-                    object: $object,
                     rbac: $rbac,
-                    data: $multi,
+                    multi: true,
                     uuid: null,
                     uploadedFiles: !empty($uploadedFiles) ? $uploadedFiles : null
             );
@@ -703,10 +705,11 @@ class ObjectsController extends Controller
 
         // Extract uploaded files from multipart/form-data.
         $uploadedFiles = [];
-        foreach ($_FILES ?? [] as $fieldName => $fileData) {
+        foreach ($_FILES as $fieldName => $fileData) {
             // Check if this is an array upload (multiple files with same field name).
             // PHP converts field names like "images[]" to "images" and structures data as arrays.
-            if (is_array($fileData['name'] ?? null)) {
+            /** @var array{name: array<int, string>|string, type: array<int, string>|string, tmp_name: array<int, string>|string, error: array<int, int>|int, size: array<int, int>|int} $fileData */
+            if (is_array($fileData['name'])) {
                 // Handle array uploads: images[] becomes images with array values.
                 // We need to preserve all files, so use indexed keys: images[0], images[1], etc.
                 $fileCount = count($fileData['name']);
@@ -747,8 +750,8 @@ class ObjectsController extends Controller
             $resolvedSchemaId = $objectService->getSchema();
             // Returns the current schema ID.
             // Verify that the object belongs to the specified register and schema.
-            if ((int) $existingObject->getRegister() !== (int) $resolvedRegisterId
-                || (int) $existingObject->getSchema() !== (int) $resolvedSchemaId
+            if ((int) $existingObject->getRegister() !== $resolvedRegisterId
+                || (int) $existingObject->getSchema() !== $resolvedSchemaId
             ) {
                 return new JSONResponse(data: ['error' => 'Object not found in specified register/schema'], statusCode: 404);
             }
@@ -783,7 +786,7 @@ class ObjectsController extends Controller
                     schema: $schema,
                     object: $object,
                     rbac: $rbac,
-                    data: $multi,
+                    multi: $multi,
                     uuid: $id,
                     uploadedFiles: !empty($uploadedFiles) ? $uploadedFiles : null
             );
@@ -861,8 +864,8 @@ class ObjectsController extends Controller
             $resolvedSchemaId = $objectService->getSchema();
             // Returns the current schema ID.
             // Verify that the object belongs to the specified register and schema.
-            if ((int) $existingObject->getRegister() !== (int) $resolvedRegisterId
-                || (int) $existingObject->getSchema() !== (int) $resolvedSchemaId
+            if ((int) $existingObject->getRegister() !== $resolvedRegisterId
+                || (int) $existingObject->getSchema() !== $resolvedSchemaId
             ) {
                 return new JSONResponse(data: ['error' => 'Object not found in specified register/schema'], statusCode: 404);
             }
