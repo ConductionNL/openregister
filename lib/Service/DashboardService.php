@@ -535,12 +535,17 @@ class DashboardService
             $results = $this->recalculateAllSizes($registerId, $schemaId);
 
             // Build the response.
-            // @psalm-suppress UndefinedMethod.
-            $registerScope = $this->buildRegisterScope($register);
-            // @psalm-suppress UndefinedMethod.
-            $schemaScope = $this->buildSchemaScope($schema);
-            // @psalm-suppress UndefinedMethod.
-            $successRate = $this->calculateSuccessRate($results);
+            $registerScope = $register !== null ? [
+                'id' => $register->getId(),
+                'title' => $register->getTitle(),
+            ] : null;
+            $schemaScope = $schema !== null ? [
+                'id' => $schema->getId(),
+                'title' => $schema->getTitle(),
+            ] : null;
+            $successRate = $results['total']['processed'] > 0
+                ? round(($results['total']['processed'] - $results['total']['failed']) / $results['total']['processed'] * 100, 2)
+                : 0.0;
 
             $response = [
                 'status'    => 'success',

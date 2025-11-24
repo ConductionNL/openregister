@@ -110,7 +110,7 @@ class Version1Date20251106120000 extends SimpleMigrationStep
                     $output->info('  📝 Updating agents.organisation: int → string UUID');
 
                     // Change column type to string UUID.
-                    $column->setType(\OCP\DB\Types::getType(Types::STRING));
+                    $column->setType(Type::getType(Types::STRING));
                     $column->setLength(255);
                     $column->setNotnull(false);
                     $column->setDefault(null);
@@ -135,7 +135,7 @@ class Version1Date20251106120000 extends SimpleMigrationStep
                     $output->info('  📝 Updating applications.organisation: int → string UUID');
 
                     // Change column type to string UUID.
-                    $column->setType(\OCP\DB\Types::getType(Types::STRING));
+                    $column->setType(Type::getType(Types::STRING));
                     $column->setLength(255);
                     $column->setNotnull(false);
                     $column->setDefault(null);
@@ -245,7 +245,7 @@ class Version1Date20251106120000 extends SimpleMigrationStep
                     // If somehow it's not a string, fix it.
                     $output->info(message: '  📝 Updating schemas.organisation to string UUID');
 
-                    $column->setType(\OCP\DB\Types::getType(Types::STRING));
+                    $column->setType(Type::getType(Types::STRING));
                     $column->setLength(255);
                     $column->setNotnull(false);
                     $column->setDefault(null);

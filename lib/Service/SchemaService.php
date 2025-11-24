@@ -19,6 +19,7 @@
 
 namespace OCA\OpenRegister\Service;
 
+use DateTime;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\ObjectEntity;

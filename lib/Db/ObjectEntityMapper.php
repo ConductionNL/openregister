@@ -209,7 +209,7 @@ class ObjectEntityMapper extends QBMapper
     ) {
         parent::__construct($db, 'openregister_objects');
 
-        /** @var \Doctrine\DBAL\Platforms\AbstractPlatform $platform */
+        /** @var AbstractPlatform $platform */
         $platform = $db->getDatabasePlatform();
         /** @psalm-suppress UndefinedClass */
         if ($platform instanceof MySQLPlatform === true) {
@@ -2199,6 +2199,7 @@ class ObjectEntityMapper extends QBMapper
         // Add schema filter if provided.
         if ($schema !== null) {
             $schemaColumn = 'schema';
+            /** @psalm-suppress RedundantCondition - PHPCS requires explicit comparison (Squiz.Operators.ComparisonOperatorUsage) */
             if ($tableAlias !== null && $tableAlias !== '') {
                 $schemaColumn = $tableAlias . '.schema';
             }
@@ -2865,7 +2866,7 @@ class ObjectEntityMapper extends QBMapper
         $qb->select('o.*')
             ->from('openregister_objects', 'o')
             ->leftJoin('o', 'openregister_schemas', 's', 'o.schema = s.id')
-            ->where($qb->expr()->eq('o.schema', $qb->createNamedParameter($schemaId, /** @psalm-suppress UndefinedClass */ ParameterType::INTEGER)))
+            ->where($qb->expr()->eq('o.schema', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)))
             ->andWhere($qb->expr()->isNull('o.deleted')); // Exclude deleted objects
 
         return $this->findEntities($qb);
@@ -3813,7 +3814,9 @@ class ObjectEntityMapper extends QBMapper
             $objectCount++;
         }
 
-        if ($objectCount === 0) {
+        // $objectCount is guaranteed to be > 0 here since we checked empty($sampleObjects) above.
+        /** @psalm-suppress TypeDoesNotContainType - Defensive check kept for clarity */
+        if ($objectCount <= 0) {
             return $baseChunkSize;
         }
 
@@ -3935,7 +3938,9 @@ class ObjectEntityMapper extends QBMapper
             $objectCount++;
         }
 
-        if ($objectCount === 0) {
+        // $objectCount is guaranteed to be > 0 here since we checked empty($sampleObjects) above.
+        /** @psalm-suppress TypeDoesNotContainType - Defensive check kept for clarity */
+        if ($objectCount <= 0) {
             return $baseBatchSize;
         }
 

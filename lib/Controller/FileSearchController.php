@@ -135,7 +135,7 @@ class FileSearchController extends Controller
             // @var \OCP\Http\Client\IClientService $clientService
             $clientService = \OC::$server->get(\OCP\Http\Client\IClientService::class);
             $httpClient    = $clientService->newClient();
-            $response      = $httpClient->get($queryUrl, $requestOptions);
+            $response      = $httpClient->get(uri: $queryUrl, options: $requestOptions);
             $result        = json_decode($response->getBody()->getContents(), true);
 
             $results  = $result['response']['docs'] ?? [];

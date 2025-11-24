@@ -51,11 +51,17 @@ class NamedParametersSniff implements Sniff
         
         // Check if this is a method call (preceded by -> or ::).
         $isMethodCall = false;
+        $isConstructor = false;
         $prevToken = $phpcsFile->findPrevious([T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], ($stackPtr - 1), null, true);
         if ($prevToken !== false && 
             ($tokens[$prevToken]['code'] === T_OBJECT_OPERATOR || 
              $tokens[$prevToken]['code'] === T_DOUBLE_COLON)) {
             $isMethodCall = true;
+        }
+        
+        // Check if this is a constructor call (preceded by 'new' keyword).
+        if ($prevToken !== false && $tokens[$prevToken]['code'] === T_NEW) {
+            $isConstructor = true;
         }
         
         // Skip function definitions - look for 'function' keyword before this token.
@@ -94,6 +100,8 @@ class NamedParametersSniff implements Sniff
             'createpositionalparameter', 'createfunction', 'executequery', 'executestatement',
             'getsql', 'getparameters', 'getparameter', 'getparametertypes',
             'set', 'update', 'insert', 'delete',
+            // QueryBuilder join methods.
+            'leftjoin', 'rightjoin', 'innerjoin', 'join',
             // QueryBuilder expression methods.
             'expr', 'eq', 'neq', 'lt', 'lte', 'gt', 'gte', 'like', 'notlike',
             'in', 'notin', 'isnull', 'isnotnull', 'between', 'notbetween',
@@ -110,11 +118,29 @@ class NamedParametersSniff implements Sniff
             'emergency', 'alert', 'critical', 'error', 'warning', 'notice', 'info', 'debug', 'log',
             // PHP Reflection methods.
             'setvalue', 'getvalue', 'setaccessible', 'getaccessible', 'invoke', 'invokeargs',
-            'newinstance', 'newinstanceargs'
+            'newinstance', 'newinstanceargs',
+            // Nextcloud Response methods.
+            'addheader', 'setheader', 'setstatus', 'setcontenttype',
+            // Nextcloud IRequest methods.
+            'getparam', 'getparams', 'getuploadedfile', 'getuploadedfiles',
+            // Nextcloud IURLGenerator methods.
+            'linktoroute', 'getabsoluteurl'
         ];
         if ($isMethodCall && in_array(strtolower($functionName), $queryBuilderMethods)) {
             // This is a Nextcloud/Doctrine method that doesn't support named parameters well.
             return;
+        }
+        
+        // Skip Nextcloud framework constructor calls (DataDownloadResponse, JSONResponse, etc.).
+        if ($isConstructor) {
+            $nextcloudConstructors = [
+                'datadownloadresponse', 'jsonresponse', 'templateresponse', 'streamresponse',
+                'fileresponse', 'redirectresponse', 'downloadresponse'
+            ];
+            if (in_array(strtolower($functionName), $nextcloudConstructors)) {
+                // This is a Nextcloud framework constructor, skip named parameter checking.
+                return;
+            }
         }
         
         // Find the closing parenthesis.
@@ -357,6 +383,9 @@ class NamedParametersSniff implements Sniff
                 // Serialization.
                 'json_encode', 'json_decode', 'serialize', 'unserialize',
                 
+                // Hash functions.
+                'hash_hmac', 'hash', 'md5', 'sha1', 'sha256', 'sha512',
+                
                 // Math functions.
                 'abs', 'ceil', 'floor', 'round', 'sqrt', 'pow', 'log', 'sin', 'cos', 'tan',
                 'rand', 'mt_rand', 'srand', 'mt_srand',
@@ -366,7 +395,18 @@ class NamedParametersSniff implements Sniff
                 'filesize', 'filemtime', 'filectime', 'fileatime', 'dirname', 'basename',
                 
                 // DateTime (simple constructors).
-                'time', 'microtime', 'date', 'gmdate', 'mktime', 'gmmktime'
+                'time', 'microtime', 'date', 'gmdate', 'mktime', 'gmmktime',
+                
+                // URL and validation functions.
+                'filter_var', 'parse_url', 'urlencode', 'urldecode', 'htmlspecialchars', 'htmlentities',
+                
+                // PHP debug functions.
+                'debug_backtrace', 'var_dump', 'print_r',
+                
+                // PHP file/path functions.
+                'pathinfo', 'dirname', 'basename', 'realpath',
+                'file_put_contents', 'file_get_contents', 'readfile', 'filesize',
+                'unlink', 'sys_get_temp_dir'
             ];
             
             if (!in_array(strtolower($functionName), $skipFunctions)) {
