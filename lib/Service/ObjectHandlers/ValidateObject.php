@@ -30,7 +30,6 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\File;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Exception\CustomValidationException;
@@ -1090,7 +1089,19 @@ class ValidateObject
         if ($this->urlGenerator->getBaseUrl() === $uri->scheme().'://'.$uri->host()
             && str_contains($uri->path(), '/api/files/schema') === true
         ) {
-            return File::getSchema($this->urlGenerator);
+            // Return a basic file schema object.
+            // TODO: Implement proper file schema resolution.
+            $fileSchema = (object)[
+                'type' => 'object',
+                'properties' => (object)[
+                    'id' => (object)['type' => 'integer'],
+                    'name' => (object)['type' => 'string'],
+                    'path' => (object)['type' => 'string'],
+                    'mimetype' => (object)['type' => 'string'],
+                    'size' => (object)['type' => 'integer'],
+                ],
+            ];
+            return json_encode($fileSchema);
         }
 
         // External schema resolution.

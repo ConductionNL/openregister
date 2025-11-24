@@ -22,6 +22,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Migration;
 
 use Closure;
+use Doctrine\DBAL\Types\Type;
 use Doctrine\DBAL\Types\Types;
 use OCP\DB\ISchemaWrapper;
 use OCP\Migration\IOutput;
@@ -62,7 +63,8 @@ class Version1Date20251106000000 extends SimpleMigrationStep
                 $column = $table->getColumn('organisation');
 
                 // Change from BIGINT to VARCHAR(36) for UUID.
-                $column->setType(\Doctrine\DBAL\Types\Type::getType(Types::STRING));
+                /** @psalm-suppress UndefinedClass */
+                $column->setType(Type::getType(Types::STRING));
                 $column->setLength(36);
                 $column->setNotnull(false);
                 $column->setDefault(null);
@@ -80,7 +82,8 @@ class Version1Date20251106000000 extends SimpleMigrationStep
                 $column = $table->getColumn('organisation');
 
                 // Change from BIGINT to VARCHAR(36) for UUID.
-                $column->setType(\Doctrine\DBAL\Types\Type::getType(Types::STRING));
+                /** @psalm-suppress UndefinedClass */
+                $column->setType(Type::getType(Types::STRING));
                 $column->setLength(36);
                 $column->setNotnull(false);
                 $column->setDefault(null);

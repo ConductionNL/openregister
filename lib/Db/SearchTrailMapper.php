@@ -982,7 +982,10 @@ class SearchTrailMapper extends QBMapper
             $searchTrail->setUserName($user->getDisplayName());
         }
 
-        $sessionId = $this->request->getHeader('X-Session-ID') ?? session_id();
+        $sessionId = $this->request->getHeader('X-Session-ID');
+        if ($sessionId === '') {
+            $sessionId = session_id();
+        }
         $searchTrail->setSession($sessionId);
 
     }//end setUserInformation()

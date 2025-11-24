@@ -886,9 +886,8 @@ class SchemaMapper extends QBMapper
         }
 
         // Store the facet configuration in the schema.
-        if (!empty($facetConfig)) {
-            $schema->setFacets($facetConfig);
-        }
+        // $facetConfig always contains at least '@self', so it's never empty.
+        $schema->setFacets($facetConfig);
 
     }//end generateFacetConfiguration()
 
@@ -1036,17 +1035,17 @@ class SchemaMapper extends QBMapper
         $anyOf = $schema->getAnyOf();
 
         // If schema has allOf, resolve it (most common for extension/inheritance).
-        if ($allOf !== null && is_array($allOf) && count($allOf) > 0) {
+        if ($allOf !== null && count($allOf) > 0) {
             return $this->resolveAllOf($schema, $allOf, $visited);
         }
 
         // If schema has oneOf, resolve it.
-        if ($oneOf !== null && is_array($oneOf) && count($oneOf) > 0) {
+        if ($oneOf !== null && count($oneOf) > 0) {
             return $this->resolveOneOf($schema, $oneOf, $visited);
         }
 
         // If schema has anyOf, resolve it.
-        if ($anyOf !== null && is_array($anyOf) && count($anyOf) > 0) {
+        if ($anyOf !== null && count($anyOf) > 0) {
             return $this->resolveAnyOf($schema, $anyOf, $visited);
         }
 
@@ -1681,14 +1680,14 @@ class SchemaMapper extends QBMapper
         $anyOf = $schema->getAnyOf();
 
         // For oneOf and anyOf, no delta extraction (properties not merged).
-        if (($oneOf !== null && is_array($oneOf) && count($oneOf) > 0)
-            || ($anyOf !== null && is_array($anyOf) && count($anyOf) > 0)
+        if (($oneOf !== null && count($oneOf) > 0)
+            || ($anyOf !== null && count($anyOf) > 0)
         ) {
             return $schema;
         }
 
         // For allOf, extract delta against all parents.
-        if ($allOf !== null && is_array($allOf) && count($allOf) > 0) {
+        if ($allOf !== null && count($allOf) > 0) {
             return $this->extractAllOfDelta($schema, $allOf);
         }
 
@@ -1895,7 +1894,7 @@ class SchemaMapper extends QBMapper
         $orConditions = [];
 
         // Check in allOf field (JSON array).
-        if ($targetId !== null && $targetId !== '') {
+        if ($targetId !== '') {
             $orConditions[] = $qb->expr()->like('all_of', schema: $qb->createNamedParameter('%"'.$targetId.'"%'));
         }
 
@@ -1908,7 +1907,7 @@ class SchemaMapper extends QBMapper
         }
 
         // Check in oneOf field (JSON array).
-        if ($targetId !== null && $targetId !== '') {
+        if ($targetId !== '') {
             $orConditions[] = $qb->expr()->like('one_of', rbac: $qb->createNamedParameter('%"'.$targetId.'"%'));
         }
 
@@ -1921,7 +1920,8 @@ class SchemaMapper extends QBMapper
         }
 
         // Check in anyOf field (JSON array).
-        if ($targetId !== null && $targetId !== '') {
+        // Note: $targetId is cast to (string), so it can never be null, only empty string.
+        if ($targetId !== '') {
             $orConditions[] = $qb->expr()->like('any_of', $qb->createNamedParameter('%"'.$targetId.'"%'));
         }
 

@@ -46,7 +46,6 @@ namespace OCA\OpenRegister\Service;
 
 use DateTime;
 use Exception;
-use OCA\Files_Versions\Versions\VersionManager;
 use OCA\OpenRegister\Db\FileMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
@@ -136,7 +135,6 @@ class FileService
      * @param ISystemTagManager     $systemTagManager   System tag manager
      * @param ISystemTagObjectMapper $systemTagMapper    System tag object mapper
      * @param ObjectEntityMapper    $objectEntityMapper Object entity mapper
-     * @param VersionManager        $versionManager     Version manager service
      * @param FileMapper            $fileMapper         File mapper for direct database operations
      */
     public function __construct(
@@ -153,7 +151,6 @@ class FileService
         private readonly ISystemTagManager $systemTagManager,
         private readonly ISystemTagObjectMapper $systemTagMapper,
         private readonly ObjectEntityMapper $objectEntityMapper,
-        private readonly VersionManager $versionManager,
         private readonly FileMapper $fileMapper
     ) {
         // Dependency injection confirmed working - debug logging removed.
@@ -207,7 +204,13 @@ class FileService
         // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues.
         $this->checkOwnership($file);
 
-        $this->versionManager->createVersion(user: $this->userManager->get(self::APP_USER), file: $file);
+        // VersionManager is optional (requires files_versions app).
+        /** @psalm-suppress UndefinedClass */
+        if (class_exists(\OCA\Files_Versions\Versions\VersionManager::class) === true) {
+            /** @var \OCA\Files_Versions\Versions\VersionManager $versionManager */
+            $versionManager = \OC::$server->get(\OCA\Files_Versions\Versions\VersionManager::class);
+            $versionManager->createVersion(user: $this->userManager->get(self::APP_USER), file: $file);
+        }
 
         if ($filename !== null) {
             $file->move(targetPath: $file->getParent()->getPath().'/'.$filename);
@@ -233,7 +236,15 @@ class FileService
         // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues.
         $this->checkOwnership($file);
 
-        return $this->versionManager->getVersionFile($this->userManager->get(self::APP_USER), $file, $version);
+        // VersionManager is optional (requires files_versions app).
+        /** @psalm-suppress UndefinedClass */
+        if (class_exists(\OCA\Files_Versions\Versions\VersionManager::class) === true) {
+            /** @var \OCA\Files_Versions\Versions\VersionManager $versionManager */
+            $versionManager = \OC::$server->get(\OCA\Files_Versions\Versions\VersionManager::class);
+            return $versionManager->getVersionFile($this->userManager->get(self::APP_USER), $file, $version);
+        }
+
+        return null;
     }//end getVersion()
 
     /**
@@ -2394,9 +2405,8 @@ class FileService
             $allTags = array_merge([$objectTag], $tags);
 
             // Add tags to the file (including the automatic object tag).
-            if (empty($allTags) === false) {
-                $this->attachTagsToFile(fileId: $file->getId(), tags: $allTags);
-            }
+            // $allTags always contains at least $objectTag, so it's never empty.
+            $this->attachTagsToFile(fileId: $file->getId(), tags: $allTags);
 
             // @TODO: This sets the file array of an object, but we should check why this array is not added elsewhere.
 //                $objectFiles = $objectEntity->getFiles();

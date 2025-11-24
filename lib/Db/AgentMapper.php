@@ -480,10 +480,7 @@ class AgentMapper extends QBMapper
         // Get old state before update.
         $oldEntity = $this->find(id: $entity->getId());
 
-        // @psalm-suppress RedundantCondition
-        if ($entity instanceof Agent) {
-            $entity->setUpdated(new DateTime());
-        }
+        $entity->setUpdated(new DateTime());
 
         $entity = parent::update($entity);
 

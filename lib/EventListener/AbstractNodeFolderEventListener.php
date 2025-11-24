@@ -21,6 +21,7 @@
 namespace OCA\OpenRegister\EventListener;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;

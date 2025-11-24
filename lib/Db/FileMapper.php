@@ -513,7 +513,7 @@ class FileMapper extends QBMapper
         $shareId = $qb->getLastInsertId();
 
         return [
-            'id'          => (int) $shareId,
+            'id'          => $shareId,
             'token'       => $token,
             'accessUrl'   => $this->generateShareUrl($token),
             'downloadUrl' => $this->generateShareUrl($token).'/download',
@@ -658,7 +658,7 @@ class FileMapper extends QBMapper
     public function getTotalFilesSize(): int
     {
         $qb = $this->db->getQueryBuilder();
-        $qb->select($qb->func()->sum('fc.size', 'total_size'))
+        $qb->selectAlias($qb->func()->sum('fc.size'), 'total_size')
             ->from('filecache', 'fc')
             ->leftJoin('fc', 'mimetypes', 'mt', $qb->expr()->eq('fc.mimetype', 'mt.id'))
             ->where($qb->expr()->neq('mt.mimetype', $qb->createNamedParameter('httpd/unix-directory', IQueryBuilder::PARAM_STR)));

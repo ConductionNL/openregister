@@ -884,13 +884,8 @@ class Schema extends Entity implements JsonSerializable
             return null;
         }
 
-        // If it's already an array, return it.
-        if (is_array($this->configuration) === true) {
-            return $this->configuration;
-        }
-
         // If it's a JSON string, decode it.
-        if (is_string($this->configuration) === true) {
+        if (is_string($this->configuration)) {
             $decoded = json_decode($this->configuration, true);
             if (json_last_error() === JSON_ERROR_NONE) {
                 return $decoded;
@@ -1111,20 +1106,17 @@ class Schema extends Entity implements JsonSerializable
             return null;
         }
 
-        // If it's already an array, return it.
-        if (is_array($this->facets) === true) {
-            return $this->facets;
-        }
-
         // If it's a JSON string, decode it.
-        if (is_string($this->facets) === true) {
+        if (is_string($this->facets)) {
             $decoded = json_decode($this->facets, true);
             if (json_last_error() === JSON_ERROR_NONE) {
                 return $decoded;
             }
+            return null;
         }
 
-        return null;
+        // Otherwise, it's already an array.
+        return $this->facets;
 
     }//end getFacets()
 

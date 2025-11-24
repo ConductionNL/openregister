@@ -65,7 +65,7 @@ class AuditTrailMapper extends QBMapper
      */
     public function __construct(IDBConnection $db, ObjectEntityMapper $objectEntityMapper)
     {
-        parent::__construct($db, 'openregister_audit_trails', AuditTrail::class);
+        parent::__construct(db: $db, tableName: 'openregister_audit_trails', entityClass: AuditTrail::class);
         $this->objectEntityMapper = $objectEntityMapper;
 
     }//end __construct()
@@ -246,7 +246,7 @@ class AuditTrailMapper extends QBMapper
             $object            = $this->objectEntityMapper->find(identifier: $identifier);
             $objectId          = $object->getId();
             $filters['object'] = $objectId;
-            return $this->findAll($limit, $offset, $filters);
+            return $this->findAll(limit: $limit, offset: $offset, filters: $filters);
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             // Object not found.
             return [];
@@ -269,7 +269,7 @@ class AuditTrailMapper extends QBMapper
 
         // Set uuid if not provided.
         if ($auditTrail->getUuid() === null) {
-            $auditTrail->setUuid(Uuid::v4());
+            $auditTrail->setUuid((string) Uuid::v4());
         }
 
         // Set default expiration date if not provided (30 days from now).
@@ -481,9 +481,9 @@ class AuditTrailMapper extends QBMapper
 
         // Get audit trail entries until the specified point.
         $auditTrails = $this->findByObjectUntil(
-            $object->getId(),
-            $object->getUuid(),
-            $until
+            objectId: $object->getId(),
+            objectUuid: $object->getUuid(),
+            until: $until
         );
 
         if (empty($auditTrails) === true && $until !== null) {
@@ -495,7 +495,7 @@ class AuditTrailMapper extends QBMapper
 
         // Apply changes in reverse.
         foreach ($auditTrails as $audit) {
-            $this->revertChanges($revertedObject, $audit);
+            $this->revertChanges(object: $revertedObject, audit: $audit);
         }
 
         // Handle versioning.
@@ -759,7 +759,7 @@ class AuditTrailMapper extends QBMapper
     {
         try {
             // Get total count.
-            $totalStats = $this->getStatistics($registerId, $schemaId);
+            $totalStats = $this->getStatistics(registerId: $registerId, schemaId: $schemaId);
             $total      = $totalStats['total'];
 
             // Get recent action counts.

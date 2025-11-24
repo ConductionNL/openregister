@@ -58,6 +58,7 @@ use OCP\IUserManager;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
+use Doctrine\DBAL\Schema\Schema as DoctrineSchema;
 
 /**
  * Dynamic Schema-Based Table Management Service

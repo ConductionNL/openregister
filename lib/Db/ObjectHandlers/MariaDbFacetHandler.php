@@ -1228,9 +1228,7 @@ class MariaDbFacetHandler
                 if (!empty($value) && is_array($value[0])) {
                     $fieldAnalysis[$fieldPath]['is_nested'] = true;
                     // Recursively analyze nested objects.
-                    if (is_array($value[0])) {
-                        $this->analyzeObjectFields($value[0], $fieldAnalysis, $fieldPath, $depth + 1);
-                    }
+                    $this->analyzeObjectFields($value[0], $fieldAnalysis, $fieldPath, $depth + 1);
                 } else {
                     // Array of simple values - not nested.
                     foreach ($value as $item) {

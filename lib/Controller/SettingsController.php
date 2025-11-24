@@ -3205,7 +3205,7 @@ class SettingsController extends Controller
     {
         try {
             // Get database platform information.
-            /** @var AbstractPlatform $platform */
+            /** @var \Doctrine\DBAL\Platforms\AbstractPlatform $platform */
             $platform = $this->db->getDatabasePlatform();
             /** @var string $platformName */
             $platformName = $platform->getName();

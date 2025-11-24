@@ -316,7 +316,7 @@ class ObjectService
             $user = $this->userSession->getUser();
             if ($user === null) {
                 // For unauthenticated requests, check if 'public' group has permission.
-                return $schema->hasPermission('public', $action, null, null, $objectOwner);
+                return $schema->hasPermission(groupId: 'public', action: $action, userId: null, userGroup: null, objectOwner: $objectOwner);
             }
 
             $userId = $user->getUID();
@@ -326,7 +326,7 @@ class ObjectService
         $userObj = $this->userManager->get($userId);
         if ($userObj === null) {
             // User doesn't exist, treat as public.
-            return $schema->hasPermission('public', $action, null, null, $objectOwner);
+            return $schema->hasPermission(groupId: 'public', action: $action, userId: null, userGroup: null, objectOwner: $objectOwner);
         }
 
         $userGroups = $this->groupManager->getUserGroupIds($userObj);
@@ -345,7 +345,7 @@ class ObjectService
                 $adminGroup = 'admin';
             }
 
-            if ($schema->hasPermission($groupId, $action, $userId, $adminGroup, $objectOwner) === true) {
+            if ($schema->hasPermission(groupId: $groupId, action: $action, userId: $userId, userGroup: $adminGroup, objectOwner: $objectOwner) === true) {
                 return true;
             }
         }
@@ -370,7 +370,7 @@ class ObjectService
      */
     private function checkPermission(Schema $schema, string $action, ?string $userId=null, ?string $objectOwner=null, bool $rbac=true): void
     {
-        if ($this->hasPermission($schema, $action, $userId, $objectOwner, $rbac) === false) {
+        if ($this->hasPermission(schema: $schema, action: $action, userId: $userId, objectOwner: $objectOwner, rbac: $rbac) === false) {
             $user = $this->userSession->getUser();
             $userName = 'Anonymous';
             if ($user !== null) {
@@ -446,7 +446,7 @@ class ObjectService
     {
         if (is_string($register) === true || is_int($register) === true) {
             // **PERFORMANCE OPTIMIZATION**: Use cached entity lookup.
-            $registers = $this->getCachedEntities('register', [$register], function($ids) {
+            $registers = $this->getCachedEntities(entityType: 'register', ids: [$register], fallbackFunc: function($ids) {
                 return [$this->registerMapper->find($ids[0])];
             });
             $registerExists = isset($registers[0]) === true;
@@ -476,7 +476,7 @@ class ObjectService
     {
         if (is_string($schema) === true || is_int($schema) === true) {
             // **PERFORMANCE OPTIMIZATION**: Use cached entity lookup.
-            $schemas = $this->getCachedEntities('schema', [$schema], function($ids) {
+            $schemas = $this->getCachedEntities(entityType: 'schema', ids: [$schema], fallbackFunc: function($ids) {
                 return [$this->schemaMapper->find($ids[0])];
             });
             $schemaExists = isset($schemas[0]) === true;
@@ -721,7 +721,7 @@ class ObjectService
 
         // Check user has permission to create objects in this schema.
         if ($this->currentSchema !== null) {
-            $this->checkPermission($this->currentSchema, 'create', null, null, $rbac);
+            $this->checkPermission(schema: $this->currentSchema, action: 'create', userId: null, objectOwner: null, rbac: $rbac);
         }
 
         // Skip validation here - let saveObject handle the proper order of pre-validation cascading then validation.
@@ -849,7 +849,7 @@ class ObjectService
         }
 
         // Check user has permission to update this specific object.
-        $this->checkPermission($this->currentSchema, 'update', null, $existingObject->getOwner(), $rbac);
+        $this->checkPermission(schema: $this->currentSchema, action: 'update', userId: null, objectOwner: $existingObject->getOwner(), rbac: $rbac);
 
         // If patch is true, merge the existing object with the new data.
         if ($patch === true) {
@@ -997,13 +997,13 @@ class ObjectService
         // Check if '@self.schema' or '@self.register' is in extend but not in filters.
         if (isset($config['extend']) === true && in_array('@self.schema', (array) $config['extend'], true) === true && $schemas === null) {
             $schemaIds = array_unique(array_filter(array_map(fn($object) => $object->getSchema() ?? null, $objects)));
-            $schemas   = $this->getCachedEntities('schema', $schemaIds, [$this->schemaMapper, 'findMultiple']);
+            $schemas   = $this->getCachedEntities(entityType: 'schema', ids: $schemaIds, fallbackFunc: [$this->schemaMapper, 'findMultiple']);
             $schemas   = array_combine(array_map(fn($schema) => $schema->getId(), $schemas), $schemas);
         }
 
         if (isset($config['extend']) === true && in_array('@self.register', (array) $config['extend'], true) === true && $registers === null) {
             $registerIds = array_unique(array_filter(array_map(fn($object) => $object->getRegister() ?? null, $objects)));
-            $registers   = $this->getCachedEntities('register', $registerIds, [$this->registerMapper, 'findMultiple']);
+            $registers   = $this->getCachedEntities(entityType: 'register', ids: $registerIds, fallbackFunc: [$this->registerMapper, 'findMultiple']);
             $registers   = array_combine(array_map(fn($register) => $register->getId(), $registers), $registers);
         }
 
@@ -1085,7 +1085,7 @@ class ObjectService
     public function findByRelations(string $search, bool $partialMatch=true): array
     {
         // Use the findByRelation method from the ObjectEntityMapper to find objects by their relations.
-        return $this->objectEntityMapper->findByRelation($search, $partialMatch);
+        return $this->objectEntityMapper->findByRelation(search: $search, partialMatch: $partialMatch);
 
     }//end findByRelations()
 
@@ -1222,18 +1222,18 @@ class ObjectService
                 $isUpdate       = true;
                 // This is an UPDATE operation.
                 if ($this->currentSchema !== null) {
-                    $this->checkPermission($this->currentSchema, 'update', null, $existingObject->getOwner(), $rbac);
+                    $this->checkPermission(schema: $this->currentSchema, action: 'update', userId: null, objectOwner: $existingObject->getOwner(), rbac: $rbac);
                 }
             } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
                 // Object not found, this is a CREATE operation with specific UUID.
                 if ($this->currentSchema !== null) {
-                    $this->checkPermission($this->currentSchema, 'create', null, null, $rbac);
+                    $this->checkPermission(schema: $this->currentSchema, action: 'create', userId: null, objectOwner: null, rbac: $rbac);
                 }
             }
         } else {
             // No UUID provided, this is a CREATE operation.
             if ($this->currentSchema !== null) {
-                $this->checkPermission($this->currentSchema, 'create', null, null, $rbac);
+                $this->checkPermission(schema: $this->currentSchema, action: 'create', userId: null, objectOwner: null, rbac: $rbac);
             }
         }
 
@@ -1245,7 +1245,7 @@ class ObjectService
         // Pre-validation cascading: Handle inversedBy properties BEFORE validation.
         // This creates related objects and replaces them with UUIDs so validation sees UUIDs, not objects.
         // TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property.
-        [$object, $uuid] = $this->handlePreValidationCascading($object, $parentSchema, $uuid);
+        [$object, $uuid] = $this->handlePreValidationCascading(object: $object, schema: $parentSchema, uuid: $uuid);
 
         // Restore the parent object's register and schema context after cascading.
         $this->currentRegister = $parentRegister;
@@ -1253,9 +1253,9 @@ class ObjectService
 
         // Validate the object against the current schema only if hard validation is enabled.
         if ($this->currentSchema->getHardValidation() === true) {
-            $result = $this->validateHandler->validateObject($object, $this->currentSchema);
+            $result = $this->validateHandler->validateObject(object: $object, schema: $this->currentSchema);
             if ($result->isValid() === false) {
-                $meaningfulMessage = $this->validateHandler->generateErrorMessage($result);
+                $meaningfulMessage = $this->validateHandler->generateErrorMessage(result: $result);
                 throw new ValidationException($meaningfulMessage, errors: $result->error());
             }
         } else {
@@ -1289,17 +1289,17 @@ class ObjectService
         // Let SaveObject handle the UUID logic completely.
 
         $savedObject = $this->saveHandler->saveObject(
-            $this->currentRegister,
-            $this->currentSchema,
-            $object,
-            $uuid,
-            $folderId,
-            $rbac,
-            $multi,
-            true, // Persist.
-            $silent, // Silent.
-            true, // Validation.
-            $uploadedFiles // Uploaded files from multipart/form-data.
+            register: $this->currentRegister,
+            schema: $this->currentSchema,
+            data: $object,
+            uuid: $uuid,
+            folderId: $folderId,
+            rbac: $rbac,
+            multi: $multi,
+            persist: true,
+            silent: $silent,
+            validation: true,
+            uploadedFiles: $uploadedFiles
         );
 
         // Determine if register and schema should be passed to renderEntity.
@@ -1351,21 +1351,21 @@ class ObjectService
             }
 
             // Check user has permission to delete this specific object.
-            $this->checkPermission($this->currentSchema, 'delete', null, $objectToDelete->getOwner(), $rbac);
+            $this->checkPermission(schema: $this->currentSchema, action: 'delete', userId: null, objectOwner: $objectToDelete->getOwner(), rbac: $rbac);
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             // Object doesn't exist, no permission check needed but let the deleteHandler handle this.
             if ($this->currentSchema !== null) {
-                $this->checkPermission($this->currentSchema, 'delete', null, null, $rbac);
+                $this->checkPermission(schema: $this->currentSchema, action: 'delete', userId: null, objectOwner: null, rbac: $rbac);
             }
         }
 
         return $this->deleteHandler->deleteObject(
-            $this->currentRegister,
-            $this->currentSchema,
-            $uuid,
-            null,
-            $rbac,
-            $multi
+            register: $this->currentRegister,
+            schema: $this->currentSchema,
+            uuid: $uuid,
+            folderId: null,
+            rbac: $rbac,
+            multi: $multi
         );
 
     }//end deleteObject()
@@ -1381,7 +1381,7 @@ class ObjectService
     public function getRegisters(): array
     {
         // Get all registers.
-        $registers = $this->getCachedEntities('register', 'all', function($ids) {
+        $registers = $this->getCachedEntities(entityType: 'register', ids: 'all', fallbackFunc: function($ids) {
             // **TYPE SAFETY**: Convert 'all' to proper null limit for RegisterMapper::findAll().
             // Null = no limit (get all).
             return $this->registerMapper->findAll(null);
@@ -1594,7 +1594,7 @@ class ObjectService
         }
         if ($ids !== null && $returnEmpty === false) {
             $objects = $this->findAll(
-                [
+                config: [
                     "limit"     => $limit,
                     "offset"    => $offset,
                     "filters"   => $filters,
@@ -1614,7 +1614,7 @@ class ObjectService
             );
         } elseif ($returnEmpty === false) {
             $objects = $this->findAll(
-                [
+                config: [
                     "limit"     => $limit,
                     "offset"    => $offset,
                     "filters"   => $filters,
@@ -6839,9 +6839,9 @@ class ObjectService
             )
         )
         ->from('openregister_objects', 'o')
-        ->where($qb->expr()->in('o.id', $qb->createNamedParameter($relationshipIds, \OCP\DB\IQueryBuilder::PARAM_STR_ARRAY)))
-        ->orWhere($qb->expr()->in('o.uuid', $qb->createNamedParameter($relationshipIds, \OCP\DB\IQueryBuilder::PARAM_STR_ARRAY)))
-        ->orWhere($qb->expr()->in('o.slug', $qb->createNamedParameter($relationshipIds, \OCP\DB\IQueryBuilder::PARAM_STR_ARRAY)));
+        ->where($qb->expr()->in('o.id', $qb->createNamedParameter($relationshipIds, IQueryBuilder::PARAM_STR_ARRAY)))
+        ->orWhere($qb->expr()->in('o.uuid', $qb->createNamedParameter($relationshipIds, IQueryBuilder::PARAM_STR_ARRAY)))
+        ->orWhere($qb->expr()->in('o.slug', $qb->createNamedParameter($relationshipIds, IQueryBuilder::PARAM_STR_ARRAY)));
 
         $results = [];
         $stmt = $qb->execute();

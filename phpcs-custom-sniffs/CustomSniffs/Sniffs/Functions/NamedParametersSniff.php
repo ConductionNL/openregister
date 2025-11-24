@@ -84,6 +84,39 @@ class NamedParametersSniff implements Sniff
             return;
         }
         
+        // Skip Nextcloud/Doctrine QueryBuilder methods that don't support named parameters well.
+        // These are fluent interface methods where named parameters don't make sense or aren't supported.
+        $queryBuilderMethods = [
+            // QueryBuilder fluent interface methods.
+            'select', 'from', 'where', 'andwhere', 'orwhere', 'orderby', 'groupby',
+            'having', 'andhaving', 'orhaving', 'setmaxresults', 'setfirstresult',
+            'setparameter', 'setparameters', 'createnamedparameter', 'createparameter',
+            'createpositionalparameter', 'createfunction', 'executequery', 'executestatement',
+            'getsql', 'getparameters', 'getparameter', 'getparametertypes',
+            'set', 'update', 'insert', 'delete',
+            // QueryBuilder expression methods.
+            'expr', 'eq', 'neq', 'lt', 'lte', 'gt', 'gte', 'like', 'notlike',
+            'in', 'notin', 'isnull', 'isnotnull', 'between', 'notbetween',
+            'orx', 'andx', 'add', 'addgroupby', 'addorderby',
+            // Result set methods.
+            'fetch', 'fetchall', 'fetchone', 'fetchassociative', 'fetchnumeric',
+            'fetchcolumn', 'fetchfirstcolumn', 'rowcount', 'closecursor',
+            // Database connection methods.
+            'getquerybuilder', 'getconnection', 'getentitymanager', 'getrepository',
+            'begintransaction', 'commit', 'rollback', 'prepare', 'execute',
+            // Other Nextcloud/Doctrine methods.
+            'getdb', 'gettable', 'gettableName',
+            // PSR Logger methods.
+            'emergency', 'alert', 'critical', 'error', 'warning', 'notice', 'info', 'debug', 'log',
+            // PHP Reflection methods.
+            'setvalue', 'getvalue', 'setaccessible', 'getaccessible', 'invoke', 'invokeargs',
+            'newinstance', 'newinstanceargs'
+        ];
+        if ($isMethodCall && in_array(strtolower($functionName), $queryBuilderMethods)) {
+            // This is a Nextcloud/Doctrine method that doesn't support named parameters well.
+            return;
+        }
+        
         // Find the closing parenthesis.
         // Check if PHP_CodeSniffer has already parsed the parenthesis pair.
         if (isset($tokens[$next]['parenthesis_closer'])) {
@@ -130,8 +163,20 @@ class NamedParametersSniff implements Sniff
                 $parenLevel--;
             } elseif ($tokens[$i]['code'] === T_COMMA && $parenLevel === 1) {
                 $lastCommaPos = $i;
+            } elseif ($tokens[$i]['code'] === T_STRING && $parenLevel === 1) {
+                // Check if this is a named parameter: T_STRING followed by T_COLON.
+                // Make sure it's not part of a class name (like ClassName::class).
+                $prevNonWhitespace = $phpcsFile->findPrevious([T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], $i - 1, $paramStart, true);
+                $nextNonWhitespace = $phpcsFile->findNext(T_WHITESPACE, $i + 1, $paramEnd + 1, true);
+                // Named parameter: T_STRING followed by T_COLON, and not preceded by T_DOUBLE_COLON.
+                if ($nextNonWhitespace !== false 
+                    && $tokens[$nextNonWhitespace]['code'] === T_COLON
+                    && ($prevNonWhitespace === false || $tokens[$prevNonWhitespace]['code'] !== T_DOUBLE_COLON)) {
+                    // Found a named parameter (parameter name followed by colon).
+                    $hasNamedParam = true;
+                }
             } elseif ($tokens[$i]['code'] === T_GOTO_LABEL && $parenLevel === 1) {
-                // Found a named parameter (label followed by colon).
+                // Also check for goto label syntax (though less common for named params).
                 $hasNamedParam = true;
             } elseif ($hasNamedParam && $lastCommaPos !== null && $i > $lastCommaPos && $parenLevel === 1) {
                 // We have a named parameter and we're past a comma.
@@ -159,6 +204,95 @@ class NamedParametersSniff implements Sniff
         $hasNamedParameters = false;
         $hasContent = false;
         
+        // Quick heuristic check: if we detected named params in the first loop, use that.
+        if ($hasNamedParam === true) {
+            $hasNamedParameters = true;
+        }
+        
+        // Also do a quick string-based check for named parameter pattern.
+        // Build parameter content string for regex matching.
+        $paramContent = '';
+        for ($contentIdx = $paramStart; $contentIdx <= $paramEnd; $contentIdx++) {
+            if (isset($tokens[$contentIdx]['content'])) {
+                $paramContent .= $tokens[$contentIdx]['content'];
+            }
+        }
+        // Check for named parameter pattern: word followed by colon and value.
+        // Pattern: identifier : $variable or identifier : 'string' or identifier : 123
+        // But exclude :: (double colon) patterns.
+        if (preg_match('/\b[a-zA-Z_][a-zA-Z0-9_]*\s*:\s*(?:\$[a-zA-Z0-9_]|[0-9]+|["\']|null|true|false|array\s*\(|\[)/', $paramContent) === 1) {
+            // Found named parameter pattern. Verify it's not just :: patterns.
+            // Remove all :: patterns and check again.
+            $withoutDoubleColon = preg_replace('/::/', '', $paramContent);
+            if (preg_match('/\b[a-zA-Z_][a-zA-Z0-9_]*\s*:\s*(?:\$[a-zA-Z0-9_]|[0-9]+|["\']|null|true|false|array\s*\(|\[)/', $withoutDoubleColon) === 1) {
+                $hasNamedParameters = true;
+            }
+        }
+        
+        // First, check if there are any named parameters by looking for T_COLON in the parameter list.
+        // A named parameter has the format: parameterName: value
+        // We look for T_COLON that's preceded by T_STRING (not part of ::) and followed by a value.
+        // Note: We're already inside the function call's parentheses, so start at level 1.
+        $checkParenLevel = 1;
+        $checkBracketLevel = 0;
+        $checkBraceLevel = 0;
+        for ($checkIdx = $paramStart; $checkIdx <= $paramEnd; $checkIdx++) {
+            if ($tokens[$checkIdx]['code'] === T_OPEN_PARENTHESIS) {
+                $checkParenLevel++;
+            } elseif ($tokens[$checkIdx]['code'] === T_CLOSE_PARENTHESIS) {
+                $checkParenLevel--;
+            } elseif ($tokens[$checkIdx]['code'] === T_OPEN_SQUARE_BRACKET || $tokens[$checkIdx]['code'] === T_OPEN_SHORT_ARRAY) {
+                $checkBracketLevel++;
+            } elseif ($tokens[$checkIdx]['code'] === T_CLOSE_SQUARE_BRACKET) {
+                $checkBracketLevel--;
+            } elseif ($tokens[$checkIdx]['code'] === T_OPEN_CURLY_BRACKET) {
+                $checkBraceLevel++;
+            } elseif ($tokens[$checkIdx]['code'] === T_CLOSE_CURLY_BRACKET) {
+                $checkBraceLevel--;
+            } elseif ($tokens[$checkIdx]['code'] === T_COLON 
+                      && $checkParenLevel === 1 
+                      && $checkBracketLevel === 0 
+                      && $checkBraceLevel === 0) {
+                // Found a colon at parameter level. Check if it's part of a named parameter.
+                // A named parameter colon should be preceded by T_STRING (parameter name).
+                $prevToken = $phpcsFile->findPrevious([T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], $checkIdx - 1, $paramStart - 1, true);
+                if ($prevToken !== false 
+                    && $prevToken >= $paramStart
+                    && isset($tokens[$prevToken])
+                    && $tokens[$prevToken]['code'] === T_STRING) {
+                    // Found T_STRING before colon - check it's not part of :: (double colon).
+                    $isNamedParam = true;
+                    // Check token immediately before prevToken (skip whitespace).
+                    if ($prevToken > $paramStart) {
+                        $immediatePrev = $prevToken - 1;
+                        while ($immediatePrev >= $paramStart && in_array($tokens[$immediatePrev]['code'], [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], true)) {
+                            $immediatePrev--;
+                        }
+                        if ($immediatePrev >= $paramStart && isset($tokens[$immediatePrev]) && $tokens[$immediatePrev]['code'] === T_DOUBLE_COLON) {
+                            // This is part of :: (like ClassName::class), not a named parameter.
+                            $isNamedParam = false;
+                        }
+                    }
+                    // Check if next token after colon is a valid value.
+                    if ($isNamedParam === true) {
+                        $valueToken = $phpcsFile->findNext([T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], $checkIdx + 1, $paramEnd + 1, true);
+                        if ($valueToken !== false && $valueToken <= $paramEnd) {
+                            // Valid value tokens for named parameters.
+                            $validValueTokens = [
+                                T_VARIABLE, T_CONSTANT_ENCAPSED_STRING, T_LNUMBER, T_DNUMBER,
+                                T_STRING, T_ARRAY, T_OPEN_SHORT_ARRAY, T_NULL, T_TRUE, T_FALSE,
+                                T_OPEN_PARENTHESIS, T_STATIC, T_NEW
+                            ];
+                            if (in_array($tokens[$valueToken]['code'], $validValueTokens, true)) {
+                                $hasNamedParameters = true;
+                                break; // Found at least one named parameter, no need to continue.
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
         $parenLevel = 1;
         for ($i = $paramStart; $i <= $paramEnd && $parenLevel > 0; $i++) {
             if ($tokens[$i]['code'] === T_OPEN_PARENTHESIS) {
@@ -170,8 +304,6 @@ class NamedParametersSniff implements Sniff
                 }
             } elseif ($tokens[$i]['code'] === T_COMMA && $parenLevel === 1) {
                 $parameterCount++;
-            } elseif ($tokens[$i]['code'] === T_GOTO_LABEL && $parenLevel === 1) {
-                $hasNamedParameters = true;
             } elseif ($tokens[$i]['code'] !== T_WHITESPACE) {
                 $hasContent = true;
             }
@@ -198,6 +330,7 @@ class NamedParametersSniff implements Sniff
                 'count', 'sizeof', 'array_push', 'array_pop', 'array_shift', 'array_unshift',
                 'array_keys', 'array_values', 'array_reverse', 'array_unique', 'array_sum',
                 'array_product', 'min', 'max', 'end', 'reset', 'key', 'current', 'next', 'prev',
+                'array_fill', 'array_fill_keys', 'array_combine', 'array_flip',
                 
                 // Array functions that commonly use callbacks (might benefit from named params but often don't).
                 'array_filter', 'array_map', 'array_reduce', 'array_walk', 'usort', 'uksort',
@@ -205,6 +338,14 @@ class NamedParametersSniff implements Sniff
                 
                 // String manipulation that's usually obvious.
                 'implode', 'explode', 'str_repeat', 'str_pad', 'wordwrap',
+                'strpos', 'stripos', 'strrpos', 'strripos', 'strstr', 'stristr',
+                'str_replace', 'str_ireplace', 'substr', 'substr_replace',
+                'str_split', 'chunk_split', 'str_shuffle', 'strrev',
+                'str_starts_with', 'str_ends_with', 'str_contains', 'str_equals',
+                
+                // Regular expression functions (usually obvious from context).
+                'preg_match', 'preg_match_all', 'preg_replace', 'preg_replace_callback',
+                'preg_split', 'preg_filter', 'preg_grep', 'preg_quote',
                 
                 // Built-in functions that DON'T support named parameters (PHP built-ins).
                 // These use variadic arguments or have special calling conventions.

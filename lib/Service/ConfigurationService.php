@@ -1155,9 +1155,7 @@ class ConfigurationService
                             schema: $schemaObject,
                             uuid: $uuid
                         );
-                        if ($object !== null) {
-                            $result['objects'][] = $object;
-                        }
+                        $result['objects'][] = $object;
                     } else {
                         $this->logger->info(
                                 'Skipped object update: imported version not higher',
@@ -1180,9 +1178,7 @@ class ConfigurationService
                         register: $registerObject,
                         schema: $schemaObject
                     );
-                    if ($object !== null) {
-                        $result['objects'][] = $object;
-                    }
+                    $result['objects'][] = $object;
                 }//end if
             }//end foreach
         }//end if

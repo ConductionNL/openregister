@@ -630,7 +630,8 @@ class GuzzleSolrService
                 }
             } else {
                 // Clear all SOLR availability cache entries.
-                if (function_exists('apcu_delete') === true) {
+                if (function_exists('apcu_delete') === true && class_exists('\APCUIterator') === true) {
+                    /** @psalm-suppress UndefinedClass */
                     $iterator = new \APCUIterator('/^solr_availability_/');
                     apcu_delete($iterator);
                 }
@@ -2844,6 +2845,8 @@ class GuzzleSolrService
             return $field.' asc';
         }
 
+        /** @psalm-suppress RedundantCondition - PHPCS requires explicit comparison */
+        /** @psalm-suppress RedundantCondition - PHPCS requires explicit comparison (Squiz.Operators.ComparisonOperatorUsage) */
         if (is_array($order) === true) {
             $sortParts = [];
             foreach ($order as $field => $direction) {
@@ -3469,19 +3472,18 @@ class GuzzleSolrService
                     );
 
             // Debug: Log first document structure with tenant_id details.
-            if (empty($solrDocs) === false) {
-                $firstDoc = $solrDocs[0];
-                $this->logger->debug(
-                        'First SOLR document prepared',
-                        [
-                            'document_keys'  => array_keys($firstDoc),
-                            'id'             => $firstDoc['id'] ?? 'missing',
-                            'tenant_id'      => $firstDoc['tenant_id'] ?? 'missing',
-                            'tenant_id_type' => gettype($firstDoc['tenant_id'] ?? null),
-                            'total_fields'   => count($firstDoc),
-                        ]
-                        );
-            }
+            // $solrDocs is guaranteed to be non-empty here (we return early if empty).
+            $firstDoc = $solrDocs[0];
+            $this->logger->debug(
+                    'First SOLR document prepared',
+                    [
+                        'document_keys'  => array_keys($firstDoc),
+                        'id'             => $firstDoc['id'] ?? 'missing',
+                        'tenant_id'      => $firstDoc['tenant_id'] ?? 'missing',
+                        'tenant_id_type' => gettype($firstDoc['tenant_id'] ?? null),
+                        'total_fields'   => count($firstDoc),
+                    ]
+                    );
 
             // **FIX**: SOLR bulk update format - single "add" with array of docs (no extra "doc" wrapper).
             $updateData = [
@@ -9250,7 +9252,7 @@ class GuzzleSolrService
         }
 
         // Base64 data URLs (common pattern).
-        if (is_string($fieldName) === true && str_contains(strtolower($fieldName), 'base64') === true) {
+        if (str_contains(strtolower($fieldName), 'base64')) {
             return true;
         }
 

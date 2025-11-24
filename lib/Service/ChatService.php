@@ -1391,7 +1391,7 @@ class ChatService
                     context: [
                         'provider' => $provider,
                         'model'    => $llphantConfig->model,
-                        'url'      => $llphantConfig->url ?? 'default',
+                        'url'      => $llphantConfig->url,
                     ]
                         );
 
@@ -1543,7 +1543,7 @@ class ChatService
         $curlError = curl_error($ch);
         curl_close($ch);
 
-        if ($curlError !== null && $curlError !== '') {
+        if ($curlError !== '') {
             throw new \Exception("Fireworks API request failed: {$curlError}");
         }
 
@@ -1658,7 +1658,7 @@ class ChatService
         $curlError = curl_error($ch);
         curl_close($ch);
 
-        if ($curlError !== null && $curlError !== '') {
+        if ($curlError !== '') {
             throw new \Exception("Fireworks API request failed: {$curlError}");
         }
 

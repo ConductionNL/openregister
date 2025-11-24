@@ -51,6 +51,21 @@ composer psalm
 - Use dependency injection instead of static service locators
 - Add null checks for nullable properties
 
+**PHPCS vs Psalm Conflicts:**
+PHPCS requires explicit boolean comparisons (`=== true` / `=== false`) via the `Squiz.Operators.ComparisonOperatorUsage` rule, but Psalm flags these as redundant when functions already return booleans. We suppress these specific cases with inline annotations:
+
+```php
+/** @psalm-suppress RedundantCondition - PHPCS requires explicit comparison (Squiz.Operators.ComparisonOperatorUsage) */
+if (is_array($order) === true) {
+    // PHPCS requires === true, Psalm flags as redundant
+}
+```
+
+This approach:
+- Maintains PHPCS compliance (explicit comparisons)
+- Keeps Psalm checking other redundant conditions
+- Documents the conflict clearly in code
+
 #### PHPStan
 **PHP Static Analysis Tool**
 
