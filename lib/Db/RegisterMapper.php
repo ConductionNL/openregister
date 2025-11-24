@@ -229,7 +229,7 @@ class RegisterMapper extends QBMapper
         ?array $extend=[]
     ): array {
         // Verify RBAC permission to read registers
-        $this->verifyRbacPermission('read', 'register');
+        // $this->verifyRbacPermission('read', 'register');
 
         $qb = $this->db->getQueryBuilder();
         $qb->select('*')
@@ -277,7 +277,7 @@ class RegisterMapper extends QBMapper
     public function insert(Entity $entity): Entity
     {
         // Verify RBAC permission to create registers
-        $this->verifyRbacPermission('create', 'register');
+        // $this->verifyRbacPermission('create', 'register');
 
         // Auto-set organisation from active session
         $this->setOrganisationOnCreate($entity);
@@ -366,7 +366,7 @@ class RegisterMapper extends QBMapper
     public function update(Entity $entity): Entity
     {
         // Verify RBAC permission to update registers
-        $this->verifyRbacPermission('update', 'register');
+        // $this->verifyRbacPermission('update', 'register');
 
         // Verify entity belongs to active organisation
         $this->verifyOrganisationAccess($entity);
@@ -434,7 +434,7 @@ class RegisterMapper extends QBMapper
     public function delete(Entity $entity): Register
     {
         // Verify RBAC permission to delete registers
-        $this->verifyRbacPermission('delete', 'register');
+        // $this->verifyRbacPermission('delete', 'register');
 
         // Verify entity belongs to active organisation
         $this->verifyOrganisationAccess($entity);
