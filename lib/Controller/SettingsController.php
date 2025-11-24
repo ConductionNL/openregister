@@ -479,6 +479,7 @@ class SettingsController extends Controller
             if ($validationResults['total_objects'] > 0) {
                 $validationSuccessRate = round(($validationResults['valid_objects'] / $validationResults['total_objects']) * 100, 2);
             }
+
             $validationResults['summary'] = [
                 'validation_success_rate' => $validationSuccessRate,
                 'has_errors'              => $validationResults['invalid_objects'] > 0,
@@ -649,12 +650,13 @@ class SettingsController extends Controller
             $endMemory       = memory_get_usage(true);
             $finalPeakMemory = memory_get_peak_usage(true);
 
-            $results['stats']['duration_seconds']   = round($endTime - $startTime, 2);
+            $results['stats']['duration_seconds'] = round($endTime - $startTime, 2);
             // Calculate objects per second.
             $objectsPerSecond = 0;
             if ($results['stats']['duration_seconds'] > 0) {
                 $objectsPerSecond = round($results['stats']['processed_objects'] / $results['stats']['duration_seconds'], 2);
             }
+
             $results['stats']['objects_per_second'] = $objectsPerSecond;
 
             // Add memory usage information.
@@ -809,12 +811,12 @@ class SettingsController extends Controller
     /**
      * Process a batch of objects in parallel mode (simulated)
      *
-     * @param  array $batch         Array of objects to process
-     * @param  mixed $objectService The object service instance
-     * @param  array &$results      Results array to update
-     * @param  bool  $collectErrors Whether to collect all errors or stop on first
+     * @param  array $batch           Array of objects to process
+     * @param  mixed $objectService   The object service instance
+     * @param  array &$results        Results array to update
+     * @param  bool  $collectErrors   Whether to collect all errors or stop on first
      * @param  int   $parallelBatches Number of parallel batches (unused in current implementation)
-     * @param  mixed $logger        Optional logger instance
+     * @param  mixed $logger          Optional logger instance
      * @return void
      */
     private function processBatchParallel(array $batch, $objectService, array &$results, bool $collectErrors, int $parallelBatches=1, $logger=null): void
@@ -893,7 +895,7 @@ class SettingsController extends Controller
      */
     private function processJobsSerial(array $batchJobs, $objectMapper, $objectService, array &$results, bool $collectErrors, $logger): void
     {
-        foreach ($batchJobs as $batchIndex => $job) {
+        foreach ($batchJobs as $job) {
             $batchStartTime = microtime(true);
 
             // Get objects for this batch using offset/limit like SOLR warmup.
@@ -955,7 +957,7 @@ class SettingsController extends Controller
                 }//end try
             }//end foreach
 
-            $batchDuration    = microtime(true) - $batchStartTime;
+            $batchDuration = microtime(true) - $batchStartTime;
             // Calculate objects per second.
             $objectsPerSecond = 0;
             if ($batchDuration > 0) {
@@ -1207,6 +1209,7 @@ class SettingsController extends Controller
             if ($maxObjects > 0) {
                 $estimatedObjectCount = $maxObjects;
             }
+
             // Estimate memory usage (rough calculation).
             // Assume each object uses approximately 50KB in memory during processing.
             $estimatedMemoryPerObject = 50 * 1024;
@@ -1437,6 +1440,7 @@ class SettingsController extends Controller
                     if ($lastError !== null && isset($lastError['message']) === true) {
                         $lastSystemError = $lastError['message'];
                     }
+
                     // Get port value or default.
                     $portValue = 'default';
                     if ($solrSettings['port'] !== null && $solrSettings['port'] !== '') {
@@ -2166,7 +2170,6 @@ class SettingsController extends Controller
     {
         try {
             $solrSchemaService = $this->container->get(SolrSchemaService::class);
-            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
 
             // Switch to object collection.
             $objectCollection = $this->settingsService->getSolrSettingsOnly()['objectCollection'] ?? null;
@@ -3120,10 +3123,8 @@ class SettingsController extends Controller
                 $solrAvailable     = $guzzleSolrService->isAvailable();
 
                 if ($solrAvailable === true) {
-                    // Get Solr system info.
-                    $stats = $guzzleSolrService->getDashboardStats();
-
                     // Try to detect version from Solr admin API.
+                    // Note: Dashboard stats not currently used but available via $guzzleSolrService->getDashboardStats()
                     // For now, assume if it's available, it could support vectors.
                     // TODO: Add actual version detection from Solr admin API.
                     $solrVersion   = '9.x (detection pending)';
@@ -3207,9 +3208,13 @@ class SettingsController extends Controller
     {
         try {
             // Get database platform information.
-            /** @var \Doctrine\DBAL\Platforms\AbstractPlatform $platform */
+            /*
+             * @var \Doctrine\DBAL\Platforms\AbstractPlatform $platform
+             */
             $platform = $this->db->getDatabasePlatform();
-            /** @var string $platformName */
+            /*
+             * @var string $platformName
+             */
             $platformName = $platform->getName();
 
             // Determine database type and version.
@@ -3449,6 +3454,7 @@ class SettingsController extends Controller
             if ($result['success'] === true) {
                 $statusCode = 200;
             }
+
             return new JSONResponse(data: $result, statusCode: $statusCode);
         } catch (\Exception $e) {
             return new JSONResponse(
@@ -3517,6 +3523,7 @@ class SettingsController extends Controller
             if ($result['success'] === true) {
                 $statusCode = 200;
             }
+
             return new JSONResponse(data: $result, statusCode: $statusCode);
         } catch (\Exception $e) {
             return new JSONResponse(
@@ -3700,12 +3707,13 @@ class SettingsController extends Controller
             // Format models for frontend dropdown.
             $models = array_map(
                     function ($model) {
-                        $name   = $model['name'] ?? 'unknown';
+                        $name = $model['name'] ?? 'unknown';
                         // Format size if available.
                         $size = '';
                         if (isset($model['size']) === true && is_numeric($model['size'])) {
                             $size = $this->formatBytes((int) $model['size']);
                         }
+
                         $family = $model['details']['family'] ?? '';
 
                         // Build description.
@@ -3715,6 +3723,7 @@ class SettingsController extends Controller
                             if ($description !== null && $description !== '') {
                                 $description .= ' • ';
                             }
+
                             $description .= $size;
                         }
 
@@ -4036,7 +4045,7 @@ class SettingsController extends Controller
                     ],
                     statusCode: 422
                 );
-        }
+        }//end try
 
     }//end testSchemaMapping()
 
@@ -4873,7 +4882,7 @@ class SettingsController extends Controller
             // Get request parameters.
             $maxFiles    = (int) $this->request->getParam('max_files', 100);
             $batchSize   = (int) $this->request->getParam('batch_size', 50);
-            $fileTypes   = $this->request->getParam('file_types', []);
+            // Note: file_types parameter not currently used
             $skipIndexed = $this->request->getParam('skip_indexed', true);
             $mode        = $this->request->getParam('mode', 'parallel');
 
@@ -4892,7 +4901,7 @@ class SettingsController extends Controller
                     );
 
             // Get GuzzleSolrService and TextExtractionService.
-            $guzzleSolrService = $this->container->get(\OCA\OpenRegister\Service\GuzzleSolrService::class);
+            $guzzleSolrService     = $this->container->get(\OCA\OpenRegister\Service\GuzzleSolrService::class);
             $textExtractionService = $this->container->get(\OCA\OpenRegister\Service\TextExtractionService::class);
 
             // Get files that need processing.
@@ -5036,7 +5045,7 @@ class SettingsController extends Controller
         try {
             // Get all completed file texts.
             $textExtractionService = $this->container->get(\OCA\OpenRegister\Service\TextExtractionService::class);
-            $guzzleSolrService = $this->container->get(\OCA\OpenRegister\Service\GuzzleSolrService::class);
+            $guzzleSolrService     = $this->container->get(\OCA\OpenRegister\Service\GuzzleSolrService::class);
 
             $maxFiles  = (int) $this->request->getParam('max_files', 1000);
             $batchSize = (int) $this->request->getParam('batch_size', 100);
@@ -5241,6 +5250,7 @@ class SettingsController extends Controller
             if ($githubToken !== '') {
                 $maskedGithubToken = $this->maskToken($githubToken);
             }
+
             $maskedGitlabToken = '';
             if ($gitlabToken !== '') {
                 $maskedGitlabToken = $this->maskToken($gitlabToken);

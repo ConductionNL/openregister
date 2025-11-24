@@ -23,6 +23,7 @@ namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\BackgroundJob\FileTextExtractionJob;
 use OCA\OpenRegister\Service\TextExtractionService;
+use OCA\OpenRegister\Service\SettingsService;
 use OCP\BackgroundJob\IJobList;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -53,11 +54,15 @@ class FileChangeListener implements IEventListener
      * Constructor
      *
      * @param TextExtractionService $textExtractionService Text extraction service
-     * @param IJobList        $jobList         Job list for queuing background jobs
-     * @param LoggerInterface $logger          Logger
+     * @param SettingsService       $settingsService       Settings service
+     * @param IJobList              $jobList               Job list for queuing background jobs
+     * @param LoggerInterface       $logger                Logger
+     *
+     * @psalm-suppress UnusedProperty - Properties are used in handle() method
      */
     public function __construct(
         private readonly TextExtractionService $textExtractionService,
+        private readonly SettingsService $settingsService,
         private readonly IJobList $jobList,
         private readonly LoggerInterface $logger
     ) {
@@ -117,30 +122,106 @@ class FileChangeListener implements IEventListener
                 ]
                 );
 
-        // Queue background job for text extraction (non-blocking).
+        // Get extraction mode from settings to determine processing strategy.
         try {
-            $this->logger->info(
-                    '[FileChangeListener] Queueing text extraction job',
-                    [
-                        'file_id'   => $fileId,
-                        'file_name' => $fileName,
-                    ]
-                    );
+            $fileSettings = $this->settingsService->getFileSettingsOnly();
+            $extractionMode = $fileSettings['extractionMode'] ?? 'background';
+            $extractionScope = $fileSettings['extractionScope'] ?? 'objects';
 
-            // Queue the background job with file_id as argument.
-            // The job will run asynchronously without blocking this request.
-            // TextExtractionService will check internally if extraction is needed.
-            $this->jobList->add(FileTextExtractionJob::class, ['file_id' => $fileId]);
+            // Check extraction scope - skip if not matching.
+            if ($extractionScope === 'none') {
+                $this->logger->debug(
+                        '[FileChangeListener] Text extraction disabled, skipping',
+                        ['file_id' => $fileId]
+                        );
+                return;
+            }
 
-            $this->logger->debug(
-                    '[FileChangeListener] Text extraction job queued successfully',
-                    [
-                        'file_id' => $fileId,
-                    ]
-                    );
+            // Handle different extraction modes.
+            switch ($extractionMode) {
+                case 'immediate':
+                    // Process synchronously during upload - direct link between file upload and parsing.
+                    $this->logger->info(
+                            '[FileChangeListener] Immediate mode - processing synchronously',
+                            [
+                                'file_id'   => $fileId,
+                                'file_name' => $fileName,
+                            ]
+                            );
+                    try {
+                        $this->textExtractionService->extractFile(fileId: $fileId, forceReExtract: false);
+                        $this->logger->info(
+                                '[FileChangeListener] Immediate extraction completed',
+                                ['file_id' => $fileId]
+                                );
+                    } catch (\Exception $e) {
+                        $this->logger->error(
+                                '[FileChangeListener] Immediate extraction failed',
+                                [
+                                    'file_id' => $fileId,
+                                    'error'   => $e->getMessage(),
+                                ]
+                                );
+                    }
+                    break;
+
+                case 'background':
+                    // Queue background job for delayed extraction on job stack.
+                    $this->logger->info(
+                            '[FileChangeListener] Background mode - queueing extraction job',
+                            [
+                                'file_id'   => $fileId,
+                                'file_name' => $fileName,
+                            ]
+                            );
+                    try {
+                        $this->jobList->add(FileTextExtractionJob::class, ['file_id' => $fileId]);
+                        $this->logger->debug(
+                                '[FileChangeListener] Background extraction job queued',
+                                ['file_id' => $fileId]
+                                );
+                    } catch (\Exception $e) {
+                        $this->logger->error(
+                                '[FileChangeListener] Failed to queue background job',
+                                [
+                                    'file_id' => $fileId,
+                                    'error'   => $e->getMessage(),
+                                ]
+                                );
+                    }
+                    break;
+
+                case 'cron':
+                    // Skip - cron job will handle periodic batch processing.
+                    $this->logger->debug(
+                            '[FileChangeListener] Cron mode - skipping, will be processed by scheduled job',
+                            ['file_id' => $fileId]
+                            );
+                    break;
+
+                case 'manual':
+                    // Skip - only manual triggers will process.
+                    $this->logger->debug(
+                            '[FileChangeListener] Manual mode - skipping, requires manual trigger',
+                            ['file_id' => $fileId]
+                            );
+                    break;
+
+                default:
+                    // Fallback to background mode for unknown modes.
+                    $this->logger->warning(
+                            '[FileChangeListener] Unknown extraction mode, defaulting to background',
+                            [
+                                'file_id'        => $fileId,
+                                'extraction_mode' => $extractionMode,
+                            ]
+                            );
+                    $this->jobList->add(FileTextExtractionJob::class, ['file_id' => $fileId]);
+                    break;
+            }//end switch
         } catch (\Exception $e) {
             $this->logger->error(
-                    '[FileChangeListener] Failed to queue text extraction job',
+                    '[FileChangeListener] Error determining extraction mode',
                     [
                         'file_id' => $fileId,
                         'error'   => $e->getMessage(),

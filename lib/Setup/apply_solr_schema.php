@@ -289,7 +289,7 @@ function applySchemaField($collectionName, $solrBaseUrl, $fieldName, $fieldConfi
         'add-field' => array_merge(['name' => $fieldName], $fieldConfig),
     ];
 
-    $result = makeHttpRequest($url, $addPayload);
+    $result = makeHttpRequest(url: $url, payload: $addPayload);
 
     if ($result['success'] === true) {
         echo "✅ Added field: {$fieldName}\n";
@@ -301,7 +301,7 @@ function applySchemaField($collectionName, $solrBaseUrl, $fieldName, $fieldConfi
         'replace-field' => array_merge(['name' => $fieldName], $fieldConfig),
     ];
 
-    $result = makeHttpRequest($url, $replacePayload);
+    $result = makeHttpRequest(url: $url, payload: $replacePayload);
 
     if ($result['success'] === true) {
         echo "✅ Updated field: {$fieldName}\n";
@@ -374,7 +374,7 @@ foreach ($fieldDefinitions as $fieldName => $fieldConfig) {
     // Remove description from field config (not a SOLR field property).
     unset($fieldConfig['description']);
 
-    if (applySchemaField($collectionName, $solrBaseUrl, $fieldName, $fieldConfig) === true) {
+    if (applySchemaField(collectionName: $collectionName, solrBaseUrl: $solrBaseUrl, fieldName: $fieldName, fieldConfig: $fieldConfig) === true) {
         $successCount++;
     }
 }

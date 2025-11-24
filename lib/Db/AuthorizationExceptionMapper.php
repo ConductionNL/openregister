@@ -58,23 +58,16 @@ class AuthorizationExceptionMapper extends QBMapper
 {
 
     /**
-     * Logger instance
-     *
-     * @var LoggerInterface
-     */
-    private LoggerInterface $logger;
-
-
-    /**
      * Constructor for the AuthorizationExceptionMapper
      *
      * @param IDBConnection   $db     The database connection
-     * @param LoggerInterface $logger The logger instance
+     * @param LoggerInterface $logger The logger instance (unused but kept for future use)
+     *
+     * @psalm-suppress UnusedParam - Logger kept for future use
      */
     public function __construct(IDBConnection $db, LoggerInterface $logger)
     {
         parent::__construct($db, 'openregister_authorization_exceptions');
-        $this->logger = $logger;
 
     }//end __construct()
 

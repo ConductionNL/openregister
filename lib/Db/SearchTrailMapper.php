@@ -986,6 +986,7 @@ class SearchTrailMapper extends QBMapper
         if ($sessionId === '') {
             $sessionId = session_id();
         }
+
         $searchTrail->setSession($sessionId);
 
     }//end setUserInformation()

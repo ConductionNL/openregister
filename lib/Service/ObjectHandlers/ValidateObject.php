@@ -1091,14 +1091,14 @@ class ValidateObject
         ) {
             // Return a basic file schema object.
             // TODO: Implement proper file schema resolution.
-            $fileSchema = (object)[
-                'type' => 'object',
-                'properties' => (object)[
-                    'id' => (object)['type' => 'integer'],
-                    'name' => (object)['type' => 'string'],
-                    'path' => (object)['type' => 'string'],
-                    'mimetype' => (object)['type' => 'string'],
-                    'size' => (object)['type' => 'integer'],
+            $fileSchema = (object) [
+                'type'       => 'object',
+                'properties' => (object) [
+                    'id'       => (object) ['type' => 'integer'],
+                    'name'     => (object) ['type' => 'string'],
+                    'path'     => (object) ['type' => 'string'],
+                    'mimetype' => (object) ['type' => 'string'],
+                    'size'     => (object) ['type' => 'integer'],
                 ],
             ];
             return json_encode($fileSchema);
@@ -1378,7 +1378,7 @@ class ValidateObject
         return new JSONResponse(
                 data: [
                     'status'  => 'error',
-        'message' => 'Validation failed',
+                    'message' => 'Validation failed',
                     'errors'  => $errors,
                 ],
                 statusCode: 400

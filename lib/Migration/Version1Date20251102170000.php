@@ -47,7 +47,8 @@ class Version1Date20251102170000 extends SimpleMigrationStep
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        $schema = $schemaClosure();
+        // Get schema wrapper instance from closure (validation only).
+        $schemaClosure();
 
         $output->info(message: '⚠️  Schema extension (extend column) is deprecated - skipping migration');
         $output->info(message: '   Schema inheritance now uses allOf, oneOf, and anyOf fields instead');

@@ -3104,8 +3104,6 @@ class ObjectEntityMapper extends QBMapper
     public function getSizeDistributionChartData(?int $registerId=null, ?int $schemaId=null): array
     {
         try {
-            $qb = $this->db->getQueryBuilder();
-
             // Define size ranges in bytes.
             $ranges = [
                 ['min' => 0, 'max' => 1024, 'label' => '0-1 KB'],
@@ -3600,7 +3598,6 @@ class ObjectEntityMapper extends QBMapper
 
         // Calculate optimal chunk sizes based on data size to prevent max_allowed_packet errors.
         $maxChunkSize = $this->calculateOptimalChunkSize($insertObjects, $updateObjects);
-        $totalObjects = count($insertObjects) + count($updateObjects);
 
 
         // Separate extremely large objects that should be processed individually.
@@ -3664,10 +3661,6 @@ class ObjectEntityMapper extends QBMapper
                 $insertChunks = array_chunk($normalInsertObjects, $maxChunkSize);
                 $updateChunks = array_chunk($normalUpdateObjects, $maxChunkSize);
 
-                $chunkNumber = 1;
-                $totalChunks = count($insertChunks) + count($updateChunks);
-
-
                 // Process insert chunks.
                 foreach ($insertChunks as $insertChunk) {
 
@@ -3677,8 +3670,6 @@ class ObjectEntityMapper extends QBMapper
                     // Clear memory after each chunk.
                     unset($insertChunk, $chunkIds);
                     gc_collect_cycles();
-
-                    $chunkNumber++;
                 }
 
                 // Process update chunks.
@@ -3710,8 +3701,6 @@ class ObjectEntityMapper extends QBMapper
                     // Clear memory after each chunk.
                     unset($updateChunk, $chunkIds);
                     gc_collect_cycles();
-
-                    $chunkNumber++;
                 }
 
                 break;
@@ -3741,9 +3730,7 @@ class ObjectEntityMapper extends QBMapper
                     // Reduce chunk size more aggressively and retry with smaller batches.
                     $maxChunkSize = max(1, intval($maxChunkSize * 0.3)); // Reduce by 70%, minimum 1
 
-                    // Rechunk the data with smaller size.
-                    $insertChunks = array_chunk($insertObjects, $maxChunkSize);
-                    $updateChunks = array_chunk($updateObjects, $maxChunkSize);
+                    // Rechunk the data with smaller size (variables reassigned in loop).
                     continue;
                 }
 
@@ -4122,7 +4109,6 @@ class ObjectEntityMapper extends QBMapper
         for ($i = 0; $i < count($insertObjects); $i += $batchSize) {
             $batch = array_slice($insertObjects, $i, $batchSize);
             $batchNumber = ($i / $batchSize) + 1;
-            $totalBatches = ceil(count($insertObjects) / $batchSize);
 
 
             // Check database connection health before processing batch.
@@ -4169,7 +4155,7 @@ class ObjectEntityMapper extends QBMapper
             while ($batchRetryCount <= $maxBatchRetries && !$batchSuccess) {
                 try {
                     $stmt = $this->db->prepare($batchSql);
-                    $result = $stmt->execute($parameters);
+                    $stmt->execute($parameters);
 
                     // $stmt->execute() returns IResult on success.
                     // Check rowCount() to verify the operation succeeded.
@@ -4672,12 +4658,8 @@ class ObjectEntityMapper extends QBMapper
         // Process deletes in smaller chunks to prevent connection issues.
         $chunkSize = 500;
         $chunks = array_chunk($uuids, $chunkSize);
-        $totalChunks = count($chunks);
 
-
-        foreach ($chunks as $chunkIndex => $uuidChunk) {
-            $chunkNumber = $chunkIndex + 1;
-
+        foreach ($chunks as $uuidChunk) {
             // Check database connection health before processing chunk.
             try {
                 $this->db->executeQuery('SELECT 1');
@@ -4787,13 +4769,9 @@ class ObjectEntityMapper extends QBMapper
         // Process publishes in smaller chunks to prevent connection issues.
         $chunkSize = 500;
         $chunks = array_chunk($uuids, $chunkSize);
-        $totalChunks = count($chunks);
         $publishedIds = [];
 
-
-        foreach ($chunks as $chunkIndex => $uuidChunk) {
-            $chunkNumber = $chunkIndex + 1;
-
+        foreach ($chunks as $uuidChunk) {
             // Check database connection health before processing chunk.
             try {
                 $this->db->executeQuery('SELECT 1');
@@ -4883,13 +4861,9 @@ class ObjectEntityMapper extends QBMapper
         // Process depublishes in smaller chunks to prevent connection issues.
         $chunkSize = 500;
         $chunks = array_chunk($uuids, $chunkSize);
-        $totalChunks = count($chunks);
         $depublishedIds = [];
 
-
-        foreach ($chunks as $chunkIndex => $uuidChunk) {
-            $chunkNumber = $chunkIndex + 1;
-
+        foreach ($chunks as $uuidChunk) {
             // Check database connection health before processing chunk.
             try {
                 $this->db->executeQuery('SELECT 1');
@@ -5294,7 +5268,7 @@ class ObjectEntityMapper extends QBMapper
         $largeObjects = [];
         $normalObjects = [];
 
-        foreach ($objects as $index => $object) {
+        foreach ($objects as $object) {
             $objectSize = $this->estimateObjectSize($object);
 
             if ($objectSize > $maxSafeSize) {
@@ -5424,6 +5398,7 @@ class ObjectEntityMapper extends QBMapper
 
         try {
             $offset = 0;
+            /** @psalm-suppress UnusedVariable - Variable is used in while loop condition */
             $hasMoreRecords = true;
 
             while ($hasMoreRecords) {

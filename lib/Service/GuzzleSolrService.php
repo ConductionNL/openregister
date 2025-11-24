@@ -3342,24 +3342,6 @@ class GuzzleSolrService
 
 
     /**
-     * Get self relations count from document
-     *
-     * @param array $document SOLR document
-     *
-     * @return int|string Count or 'NOT_ARRAY'
-     */
-    private function getSelfRelationsCount(array $document)
-    {
-        if (isset($document['self_relations']) === true && is_array($document['self_relations']) === true) {
-            return count($document['self_relations']);
-        }
-
-        return 'NOT_ARRAY';
-
-    }//end getSelfRelationsCount()
-
-
-    /**
      * Bulk index multiple objects (alias for bulkIndex)
      *
      * @param array $objects Array of ObjectEntity objects
@@ -7689,7 +7671,6 @@ class GuzzleSolrService
     public function clearCache(): void
     {
         $this->cachedSolrFieldTypes = null;
-        $this->cachedSchemaData     = null;
         $this->logger->debug(message: '🧹 Cleared SOLR service caches');
 
     }//end clearCache()

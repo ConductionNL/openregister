@@ -47,7 +47,7 @@ class ObjectRevertedEvent extends Event
     /**
      * Constructor for ObjectRevertedEvent
      *
-     * @param ObjectEntity          $object The reverted object
+     * @param ObjectEntity         $object The reverted object
      * @param DateTime|string|null $until  The point in time or audit ID reverted to
      *
      * @return void

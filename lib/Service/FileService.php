@@ -146,7 +146,6 @@ class FileService
         private readonly IURLGenerator $urlGenerator,
         private readonly IConfig $config,
         private readonly RegisterMapper $registerMapper,
-        private readonly SchemaMapper $schemaMapper,
         private readonly IGroupManager $groupManager,
         private readonly ISystemTagManager $systemTagManager,
         private readonly ISystemTagObjectMapper $systemTagMapper,
@@ -633,6 +632,7 @@ class FileService
      */
     public function getFilesForEntity(Register | ObjectEntity $entity, ?bool $sharedFilesOnly = false): array
     {
+        /** @psalm-suppress UnusedVariable - Variable is used in getDirectoryListing() call */
         $folder = null;
 
         if ($entity instanceof Register) {
@@ -1136,22 +1136,12 @@ class FileService
         // Extract pagination parameters.
         $limit = $requestParams['limit'] ?? $requestParams['_limit'] ?? 20;
         $offset = $requestParams['offset'] ?? $requestParams['_offset'] ?? 0;
-        $order = $requestParams['order'] ?? $requestParams['_order'] ?? [];
-        $extend = $requestParams['extend'] ?? $requestParams['_extend'] ?? null;
+        // Note: order, extend, and search parameters not currently used in this method
         $page = $requestParams['page'] ?? $requestParams['_page'] ?? null;
-        $search = $requestParams['_search'] ?? null;
 
         if ($page !== null && isset($limit) === true) {
             $page = (int) $page;
             $offset = $limit * ($page - 1);
-        }
-
-        // Ensure order and extend are arrays.
-        if (is_string($order) === true) {
-            $order = array_map('trim', explode(',', $order));
-        }
-        if (is_string($extend) === true) {
-            $extend = array_map('trim', explode(',', $extend));
         }
 
         // Extract filter parameters.
@@ -1778,10 +1768,9 @@ class FileService
             }
         }
 
-        $userId = $this->getUser()->getUID();
-
         try {
-            $userFolder = $this->getOpenRegisterUserFolder();
+            // Note: userId and userFolder not currently used - file retrieved from rootFolder
+            $this->getOpenRegisterUserFolder();
         } catch (Exception) {
             $this->logger->error(message: "Can't create share link for $path because OpenRegister user folder couldn't be found.");
             return "OpenRegister user folder couldn't be found.";
@@ -1789,7 +1778,6 @@ class FileService
 
         try {
             $file = $this->rootFolder->get($path);
-            // $file = $userFolder->get(path: $path);
         } catch (NotFoundException $e) {
             $this->logger->error(message: "Can't create share link for $path because file doesn't exist.");
             return 'File not found at '.$path;
@@ -2616,7 +2604,6 @@ class FileService
         }
 
         // Clean file path and extract filename using utility method.
-        $originalFile = $file;
         $pathInfo = $this->extractFileNameFromPath((string)$file);
         $filePath = $pathInfo['cleanPath'];
         $fileName = $pathInfo['fileName'];

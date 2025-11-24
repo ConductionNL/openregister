@@ -235,10 +235,10 @@ class MagicBulkHandler
     /**
      * Bulk publish objects in a dynamic table
      *
-     * @param array          $uuids     Array of UUIDs to publish
-     * @param Register       $register  Register context
-     * @param Schema         $schema    Schema context
-     * @param string         $tableName Target dynamic table name
+     * @param array         $uuids     Array of UUIDs to publish
+     * @param Register      $register  Register context
+     * @param Schema        $schema    Schema context
+     * @param string        $tableName Target dynamic table name
      * @param DateTime|bool $datetime  Publication datetime (true for now, false to unpublish)
      *
      * @return array Array of published UUIDs
@@ -286,10 +286,10 @@ class MagicBulkHandler
     /**
      * Bulk depublish objects in a dynamic table
      *
-     * @param array          $uuids     Array of UUIDs to depublish
-     * @param Register       $register  Register context
-     * @param Schema         $schema    Schema context
-     * @param string         $tableName Target dynamic table name
+     * @param array         $uuids     Array of UUIDs to depublish
+     * @param Register      $register  Register context
+     * @param Schema        $schema    Schema context
+     * @param string        $tableName Target dynamic table name
      * @param DateTime|bool $datetime  Depublication datetime (true for now, false to remove depublication)
      *
      * @return array Array of depublished UUIDs

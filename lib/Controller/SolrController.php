@@ -853,18 +853,9 @@ class SolrController extends Controller
             $objectMapper      = $this->container->get(ObjectEntityMapper::class);
             $solrObjectService = $this->container->get(SolrObjectService::class);
 
-            // Build query conditions.
-            $conditions = [];
-            if ($schemaId !== null) {
-                $conditions['schema'] = $schemaId;
-            }
-
-            if ($registerId !== null) {
-                $conditions['register'] = $registerId;
-            }
-
-            // Fetch objects with conditions.
+            // Fetch objects.
             // Note: This is a simplified example - adjust based on actual ObjectEntityMapper methods.
+            // TODO: Apply schema/register filters when ObjectEntityMapper supports them.
             $objects = $objectMapper->findAll(limit: $limit, offset: $offset);
 
             if (count($objects) === 0) {

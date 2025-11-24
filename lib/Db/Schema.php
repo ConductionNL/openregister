@@ -1112,6 +1112,7 @@ class Schema extends Entity implements JsonSerializable
             if (json_last_error() === JSON_ERROR_NONE) {
                 return $decoded;
             }
+
             return null;
         }
 

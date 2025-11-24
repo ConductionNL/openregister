@@ -335,10 +335,10 @@ class ConfigurationMapper extends QBMapper
     /**
      * Update synchronization status for a configuration
      *
-     * @param int       $id       Configuration ID
-     * @param string    $status   Sync status: 'success', 'failed', 'pending'
+     * @param int      $id       Configuration ID
+     * @param string   $status   Sync status: 'success', 'failed', 'pending'
      * @param DateTime $syncDate Synchronization timestamp
-     * @param string    $message  Optional message about the sync result
+     * @param string   $message  Optional message about the sync result
      *
      * @return Configuration The updated configuration
      * @throws \Exception If configuration not found or user doesn't have permission

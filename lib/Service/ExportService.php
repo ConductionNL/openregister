@@ -47,25 +47,11 @@ class ExportService
 {
 
     /**
-     * Object entity mapper instance
-     *
-     * @var ObjectEntityMapper
-     */
-    private readonly ObjectEntityMapper $objectEntityMapper;
-
-    /**
      * Register mapper instance
      *
      * @var RegisterMapper
      */
     private readonly RegisterMapper $registerMapper;
-
-    /**
-     * User manager for checking user context
-     *
-     * @var IUserManager
-     */
-    private readonly IUserManager $userManager;
 
     /**
      * Group manager for checking admin group membership
@@ -100,7 +86,6 @@ class ExportService
     ) {
         $this->objectEntityMapper = $objectEntityMapper;
         $this->registerMapper     = $registerMapper;
-        $this->userManager        = $userManager;
         $this->groupManager       = $groupManager;
         $this->objectService      = $objectService;
 

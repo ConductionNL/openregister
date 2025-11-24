@@ -71,6 +71,7 @@ use OCA\OpenRegister\Service\SchemaFacetCacheService;
 use OCA\OpenRegister\Search\ObjectsProvider;
 use OCA\OpenRegister\BackgroundJob\SolrWarmupJob;
 use OCA\OpenRegister\BackgroundJob\SolrNightlyWarmupJob;
+use OCA\OpenRegister\BackgroundJob\CronFileTextExtractionJob;
 use OCP\AppFramework\App;
 use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Bootstrap\IBootstrap;
@@ -79,6 +80,7 @@ use OCP\EventDispatcher\IEventDispatcher;
 
 use OCA\OpenRegister\EventListener\SolrEventListener;
 use OCA\OpenRegister\Listener\FileChangeListener;
+use OCA\OpenRegister\Listener\ObjectChangeListener;
 use OCA\OpenRegister\Listener\ToolRegistrationListener;
 use OCA\OpenRegister\Listener\WebhookEventListener;
 use OCP\Files\Events\Node\NodeCreatedEvent;
@@ -674,7 +676,7 @@ class Application extends App implements IBootstrap
                 }
                 );
 
-        // Register TextExtractionService for file text extraction and storage.
+        // Register TextExtractionService for file and object text extraction and storage.
         $context->registerService(
                 TextExtractionService::class,
                 function ($container) {
@@ -685,7 +687,10 @@ class Application extends App implements IBootstrap
                     $container->get(EntityRelationMapper::class),
                     $container->get(id: 'OCP\Files\IRootFolder'),
                     $container->get(id: 'OCP\IDBConnection'),
-                    $container->get(id: 'Psr\Log\LoggerInterface')
+                    $container->get(id: 'Psr\Log\LoggerInterface'),
+                    $container->get(ObjectEntityMapper::class),
+                    $container->get(SchemaMapper::class),
+                    $container->get(RegisterMapper::class)
                     );
                 }
                 );
@@ -696,6 +701,20 @@ class Application extends App implements IBootstrap
                 function ($container) {
                     return new FileChangeListener(
                     $container->get(TextExtractionService::class),
+                    $container->get(SettingsService::class),
+                    $container->get(id: 'OCP\BackgroundJob\IJobList'),
+                    $container->get(id: 'Psr\Log\LoggerInterface')
+                    );
+                }
+                );
+
+        // Register ObjectChangeListener for automatic object text extraction (async via background jobs).
+        $context->registerService(
+                ObjectChangeListener::class,
+                function ($container) {
+                    return new ObjectChangeListener(
+                    $container->get(TextExtractionService::class),
+                    $container->get(SettingsService::class),
                     $container->get(id: 'OCP\BackgroundJob\IJobList'),
                     $container->get(id: 'Psr\Log\LoggerInterface')
                     );
@@ -780,6 +799,10 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(NodeCreatedEvent::class, FileChangeListener::class);
         $context->registerEventListener(NodeWrittenEvent::class, FileChangeListener::class);
 
+        // Register ObjectChangeListener for automatic object text extraction.
+        $context->registerEventListener(ObjectCreatedEvent::class, ObjectChangeListener::class);
+        $context->registerEventListener(ObjectUpdatedEvent::class, ObjectChangeListener::class);
+
         // Register ToolRegistrationListener for agent function tools.
         $context->registerEventListener(ToolRegistrationEvent::class, ToolRegistrationListener::class);
 
@@ -862,6 +885,20 @@ class Application extends App implements IBootstrap
                         );
             } else {
                 $logger->debug(message: 'SOLR Nightly Warmup Job already registered');
+            }
+
+            // Register recurring cron file text extraction job.
+            if ($jobList->has(CronFileTextExtractionJob::class, null) === false) {
+                $jobList->add(CronFileTextExtractionJob::class);
+                $logger->info(
+                        message: '🔄 Cron File Text Extraction Job registered successfully',
+                        context: [
+                            'job_class' => CronFileTextExtractionJob::class,
+                            'interval'  => '15 minutes',
+                        ]
+                        );
+            } else {
+                $logger->debug(message: 'Cron File Text Extraction Job already registered');
             }
         } catch (\Exception $e) {
             $logger->error(

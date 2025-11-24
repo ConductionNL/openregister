@@ -110,6 +110,7 @@ return [
         ['name' => 'settings#getFileExtractionStats', 'url' => '/api/settings/files/stats', 'verb' => 'GET'],
         ['name' => 'settings#testDolphinConnection', 'url' => '/api/settings/files/test-dolphin', 'verb' => 'POST'],
         ['name' => 'settings#getObjectSettings', 'url' => '/api/settings/objects/vectorize', 'verb' => 'GET'],
+        ['name' => 'settings#getObjectSettings', 'url' => '/api/settings/objects', 'verb' => 'GET'],
         ['name' => 'settings#updateObjectSettings', 'url' => '/api/settings/objects/vectorize', 'verb' => 'POST'],
         ['name' => 'settings#patchObjectSettings', 'url' => '/api/settings/objects/vectorize', 'verb' => 'PATCH'],
         ['name' => 'settings#updateObjectSettings', 'url' => '/api/settings/objects/vectorize', 'verb' => 'PUT'],

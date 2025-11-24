@@ -82,7 +82,6 @@ class FacetService
     public function __construct(
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly SchemaMapper $schemaMapper,
-        private readonly RegisterMapper $registerMapper,
         private readonly ICacheFactory $cacheFactory,
         private readonly IUserSession $userSession,
         private readonly LoggerInterface $logger

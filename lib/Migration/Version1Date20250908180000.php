@@ -49,8 +49,8 @@ class Version1Date20250908180000 extends SimpleMigrationStep
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        // Get schema wrapper instance from closure.
-        $schema = $schemaClosure();
+        // Get schema wrapper instance from closure (validation only).
+        $schemaClosure();
 
         // This migration requires raw SQL as Nextcloud's schema wrapper doesn't.
         // support the ON UPDATE CURRENT_TIMESTAMP syntax directly.

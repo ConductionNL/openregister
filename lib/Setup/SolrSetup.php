@@ -1550,7 +1550,7 @@ class SolrSetup
                         );
 
                 // Direct attempt to create collection.
-                $result = $this->solrService->createCollection($collectionName, $configSetName);
+                $result  = $this->solrService->createCollection($collectionName, $configSetName);
                 $success = isset($result['success']) && $result['success'] === true;
 
                 if ($success === true) {

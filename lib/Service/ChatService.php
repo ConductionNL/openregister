@@ -109,12 +109,6 @@ class ChatService
      */
     private const RECENT_MESSAGES_COUNT = 10;
 
-    /**
-     * Database connection
-     *
-     * @var IDBConnection
-     */
-    private IDBConnection $db;
 
     /**
      * Conversation mapper
@@ -165,26 +159,6 @@ class ChatService
      */
     private LoggerInterface $logger;
 
-    /**
-     * Register tool
-     *
-     * @var RegisterTool
-     */
-    private RegisterTool $registerTool;
-
-    /**
-     * Schema tool
-     *
-     * @var SchemaTool
-     */
-    private SchemaTool $schemaTool;
-
-    /**
-     * Objects tool
-     *
-     * @var ObjectsTool
-     */
-    private ObjectsTool $objectsTool;
 
     /**
      * Tool registry
@@ -224,7 +198,6 @@ class ChatService
         ObjectsTool $objectsTool,
         ToolRegistry $toolRegistry
     ) {
-        $this->db = $db;
         $this->conversationMapper = $conversationMapper;
         $this->messageMapper      = $messageMapper;
         $this->agentMapper        = $agentMapper;
@@ -232,9 +205,6 @@ class ChatService
         $this->solrService        = $solrService;
         $this->settingsService    = $settingsService;
         $this->logger       = $logger;
-        $this->registerTool = $registerTool;
-        $this->schemaTool   = $schemaTool;
-        $this->objectsTool  = $objectsTool;
         $this->toolRegistry = $toolRegistry;
 
     }//end __construct()
@@ -289,8 +259,8 @@ class ChatService
                 $agent = $this->agentMapper->find($conversation->getAgentId());
             }
 
-            // Store user message.
-            $userMsgEntity = $this->storeMessage(
+            // Store user message (validation only - return value not used).
+            $this->storeMessage(
                 $conversationId,
                 Message::ROLE_USER,
                 $userMessage
@@ -446,6 +416,7 @@ class ChatService
         $totalSources = max($numSourcesFiles, $numSourcesObjects);
 
         // Get view filters if agent has views configured.
+        /** @psalm-suppress UnusedVariable - Variable is used in logger calls */
         $viewFilters = [];
         if ($agent !== null && $agent->getViews() !== null && !empty($agent->getViews())) {
             $agentViews = $agent->getViews();
@@ -830,7 +801,7 @@ class ChatService
                     context: [
                         'hasRole'    => !empty($role),
                         'hasContent' => !empty($content),
-                        ]
+                    ]
                         );
             }//end if
         }//end foreach
@@ -1406,8 +1377,8 @@ class ChatService
                     context: [
                         'provider' => $provider,
                         'model'    => $llphantConfig->model,
-                            'url'      => $llphantConfig->url ?? 'default',
-                        ]
+                        'url'      => $llphantConfig->url ?? 'default',
+                    ]
                         );
 
                 $response = $chat->generateText($testMessage);

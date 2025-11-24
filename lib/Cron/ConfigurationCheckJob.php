@@ -100,7 +100,7 @@ class ConfigurationCheckJob extends TimedJob
         $this->logger = $logger;
 
         // Set interval based on app configuration (default 3600 seconds = 1 hour).
-        $interval = (int) $this->appConfig->getValueString('openregister', 'configuration_check_interval', '3600');
+        $interval = (int) $this->appConfig->getValueString(appId: 'openregister', key: 'configuration_check_interval', default: '3600');
 
         // If interval is 0, disable the job by setting a very long interval.
         if ($interval === 0) {
@@ -130,7 +130,7 @@ class ConfigurationCheckJob extends TimedJob
         $this->logger->info('Starting configuration check job');
 
         // Check if the job is disabled.
-        $interval = (int) $this->appConfig->getValueString('openregister', 'configuration_check_interval', '3600');
+        $interval = (int) $this->appConfig->getValueString(appId: 'openregister', key: 'configuration_check_interval', default: '3600');
         if ($interval === 0) {
             $this->logger->info('Configuration check job is disabled, skipping');
             return;
@@ -155,7 +155,7 @@ class ConfigurationCheckJob extends TimedJob
                     $this->logger->info("Checking configuration: {$configuration->getTitle()} (ID: {$configuration->getId()})");
 
                     // Check remote version.
-                    $remoteVersion = $this->configurationService->checkRemoteVersion($configuration);
+                    $remoteVersion = $this->configurationService->checkRemoteVersion(configuration: $configuration);
                     $checked++;
 
                     if ($remoteVersion === null) {
@@ -178,8 +178,8 @@ class ConfigurationCheckJob extends TimedJob
                         try {
                             // Import all changes (no selection, import everything).
                             $this->configurationService->importConfigurationWithSelection(
-                                $configuration,
-                                []
+                                configuration: $configuration,
+                                selection: []
                             // Empty selection means import all.
                             );
 
@@ -194,7 +194,7 @@ class ConfigurationCheckJob extends TimedJob
 
                         try {
                             // Send notification to configured groups.
-                            $notificationCount = $this->notificationService->notifyConfigurationUpdate($configuration);
+                            $notificationCount = $this->notificationService->notifyConfigurationUpdate(configuration: $configuration);
                             $this->logger->info("Sent {$notificationCount} notifications for configuration {$configuration->getTitle()}");
                         } catch (Exception $e) {
                             $this->logger->error("Failed to send notifications for configuration {$configuration->getTitle()}: ".$e->getMessage());
