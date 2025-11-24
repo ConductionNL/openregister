@@ -211,9 +211,6 @@ class ObjectsProvider implements IFilteringProvider
      */
     public function search(IUser $user, ISearchQuery $query): SearchResult
     {
-        // Retrieve filters.
-        $filters = [];
-
         /*
          * @var string|null $register
          */
@@ -253,7 +250,7 @@ class ObjectsProvider implements IFilteringProvider
         // @todo: implement pagination.
         $limit  = null;
         $offset = null;
-        $order  = null;
+        // Note: order parameter not currently used in search
 
         // Build search query for searchObjectsPaginated.
         $searchQuery = [];

@@ -784,10 +784,9 @@ class SearchTrailController extends Controller
      */
     public function destroyMultiple(): JSONResponse
     {
-        // Get specific parameters for mass deletion.
-        $ids = $this->request->getParam(key: 'ids', default: null);
-
         try {
+            // TODO: Implement multiple search trail deletion.
+            // $ids = $this->request->getParam(key: 'ids', default: null);
             // For now, we'll just return a success message since we don't have a delete method in the service.
             // In a real implementation, you'd add a deleteMultipleSearchTrails method to the service.
             $result = [

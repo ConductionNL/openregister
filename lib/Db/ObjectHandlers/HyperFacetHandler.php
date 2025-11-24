@@ -1080,7 +1080,7 @@ class HyperFacetHandler
 
     private function extrapolateFacetResults(array $sampleFacets, float $factor, int $sampleSize, int $totalSize): array
     {
-        foreach ($sampleFacets as $facetName => &$facetData) {
+        foreach ($sampleFacets as &$facetData) {
             if (isset($facetData['buckets'])) {
                 foreach ($facetData['buckets'] as &$bucket) {
                     $bucket['results'] = (int) round($bucket['results'] * $factor);

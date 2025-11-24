@@ -274,12 +274,12 @@ class ImportService
 
         // If we have a register but no schema, process each sheet as a different schema.
         if ($register !== null && $schema === null) {
-            return $this->processMultiSchemaSpreadsheetAsync($spreadsheet, $register, $chunkSize, $validation, $events, $rbac, $multi, $publish, $currentUser);
+            return $this->processMultiSchemaSpreadsheetAsync(spreadsheet: $spreadsheet, register: $register, chunkSize: $chunkSize, validation: $validation, events: $events, rbac: $rbac, multi: $multi, publish: $publish, currentUser: $currentUser);
         }
 
         // Single schema processing - use batch processing for better performance.
         $sheetTitle = $spreadsheet->getActiveSheet()->getTitle();
-        $sheetSummary = $this->processSpreadsheetBatch($spreadsheet, $register, $schema, $chunkSize, $validation, $events, $rbac, $multi, $publish, $currentUser);
+        $sheetSummary = $this->processSpreadsheetBatch(spreadsheet: $spreadsheet, register: $register, schema: $schema, chunkSize: $chunkSize, validation: $validation, events: $events, rbac: $rbac, multi: $multi, publish: $publish, currentUser: $currentUser);
 
         // Add schema information to the summary (consistent with multi-sheet Excel import).
         if ($schema !== null) {
@@ -319,7 +319,7 @@ class ImportService
         return new Promise(
             function (callable $resolve, callable $reject) use ($filePath, $register, $schema, $chunkSize) {
                 // NO ERROR SUPPRESSION: Let CSV import errors bubble up immediately!
-                $result = $this->importFromCsv($filePath, $register, $schema, $chunkSize);
+                $result = $this->importFromCsv(filePath: $filePath, register: $register, schema: $schema, chunkSize: $chunkSize);
                 $resolve($result);
             }
         );
@@ -375,16 +375,16 @@ class ImportService
         // Get the sheet title for CSV (usually just 'Worksheet' or similar).
         $sheetTitle   = $spreadsheet->getActiveSheet()->getTitle();
         $sheetSummary = $this->processCsvSheet(
-            $spreadsheet->getActiveSheet(),
-            $register,
-            $schema,
-            $chunkSize,
-            $validation,
-            $events,
-            $rbac,
-            $multi,
-            $publish,
-            $currentUser
+            sheet: $spreadsheet->getActiveSheet(),
+            register: $register,
+            schema: $schema,
+            chunkSize: $chunkSize,
+            validation: $validation,
+            events: $events,
+            rbac: $rbac,
+            multi: $multi,
+            publish: $publish,
+            currentUser: $currentUser
         );
 
         // Add schema information to the summary (consistent with Excel import).
@@ -470,7 +470,7 @@ class ImportService
 
             // Set the worksheet as active and process using batch saving for better performance.
             $spreadsheet->setActiveSheetIndex($spreadsheet->getIndex($worksheet));
-            $sheetSummary = $this->processSpreadsheetBatch($spreadsheet, $register, $schema, $chunkSize, $validation, $events, $rbac, $multi, $publish, $currentUser);
+            $sheetSummary = $this->processSpreadsheetBatch(spreadsheet: $spreadsheet, register: $register, schema: $schema, chunkSize: $chunkSize, validation: $validation, events: $events, rbac: $rbac, multi: $multi, publish: $publish, currentUser: $currentUser);
 
             // Merge the sheet summary with the existing summary (preserve debug info).
             $summary[$schemaSlug] = array_merge($summary[$schemaSlug], $sheetSummary);
@@ -528,7 +528,7 @@ class ImportService
         // Process rows in chunks.
         for ($startRow = 2; $startRow <= $highestRow; $startRow += $chunkSize) {
             $endRow       = min($startRow + $chunkSize - 1, $highestRow);
-            $chunkSummary = $this->processChunk($sheet, $columnMapping, $startRow, $endRow, $register, $schema, $schemaProperties);
+            $chunkSummary = $this->processChunk(sheet: $sheet, columnMapping: $columnMapping, startRow: $startRow, endRow: $endRow, register: $register, schema: $schema, schemaProperties: $schemaProperties);
 
             // Merge chunk results into main summary.
             $summary['found']    += $chunkSummary['found'];
@@ -634,14 +634,14 @@ class ImportService
 
         for ($row = 2; $row <= $highestRow; $row++) {
             // NO ERROR SUPPRESSION: Let row processing errors bubble up immediately!
-            $rowData = $this->extractRowData($sheet, $columnMapping, $row);
+            $rowData = $this->extractRowData(sheet: $sheet, columnMapping: $columnMapping, row: $row);
 
             if (empty($rowData) === true) {
                 continue; // Skip empty rows.
             }
 
             // Transform row data to object format.
-            $object = $this->transformExcelRowToObject($rowData, $register, $schema, $row, $currentUser);
+            $object = $this->transformExcelRowToObject(rowData: $rowData, register: $register, schema: $schema, rowIndex: $row, currentUser: $currentUser);
 
             if ($object !== null) {
                 $allObjects[] = $object;
@@ -656,10 +656,10 @@ class ImportService
             // Add publish date to all objects if publish is enabled.
             if ($publish === true) {
                 $publishDate = (new \DateTime('now'))->format('c'); // ISO 8601 format.
-                $allObjects = $this->addPublishedDateToObjects($allObjects, $publishDate);
+                $allObjects = $this->addPublishedDateToObjects(objects: $allObjects, publishDate: $publishDate);
             }
 
-            $saveResult = $this->objectService->saveObjects($allObjects, $register, $schema, $rbac, $multi, $validation, $events);
+            $saveResult = $this->objectService->saveObjects(objects: $allObjects, register: $register, schema: $schema, rbac: $rbac, multi: $multi, validation: $validation, events: $events);
 
             // Use the structured return from saveObjects with smart deduplication.
             // saveObjects returns ObjectEntity->jsonSerialize() arrays where UUID is in @self.id.
@@ -756,14 +756,14 @@ class ImportService
 
         for ($row = 2; $row <= $highestRow; $row++) {
             // NO ERROR SUPPRESSION: Let CSV row processing errors bubble up immediately!
-            $rowData = $this->extractRowData($sheet, $columnMapping, $row);
+            $rowData = $this->extractRowData(sheet: $sheet, columnMapping: $columnMapping, row: $row);
 
             if (empty($rowData) === true) {
                 continue; // Skip empty rows.
             }
 
             // Transform row data to object format.
-            $object = $this->transformCsvRowToObject($rowData, $register, $schema, $row, $currentUser);
+            $object = $this->transformCsvRowToObject(rowData: $rowData, register: $register, schema: $schema, rowIndex: $row, currentUser: $currentUser);
 
             if ($object !== null) {
                 $allObjects[] = $object;
@@ -788,7 +788,7 @@ class ImportService
                     'publishDate' => $publishDate,
                     'objectCount' => count($allObjects)
                 ]);
-                $allObjects = $this->addPublishedDateToObjects($allObjects, $publishDate);
+                $allObjects = $this->addPublishedDateToObjects(objects: $allObjects, publishDate: $publishDate);
 
                 // Log first object structure for debugging.
                 if (!empty($allObjects[0]['@self'])) {
@@ -801,7 +801,7 @@ class ImportService
             }
 
 
-            $saveResult = $this->objectService->saveObjects($allObjects, $register, $schema, $rbac, $multi, $validation, $events);
+            $saveResult = $this->objectService->saveObjects(objects: $allObjects, register: $register, schema: $schema, rbac: $rbac, multi: $multi, validation: $validation, events: $events);
 
             // Use the structured return from saveObjects with smart deduplication.
             // saveObjects returns ObjectEntity->jsonSerialize() arrays where UUID is in @self.id.
@@ -907,18 +907,18 @@ class ImportService
                 $promises[] = new Promise(function (callable $resolve, callable $reject) use ($sheet, $columnMapping, $chunk, $register, $schema, $validation, $events) {
                     // NO ERROR SUPPRESSION: Let Excel chunk processing errors bubble up immediately!
                     // Process chunk.
-                    $chunkResult = $this->processExcelChunk($sheet, $columnMapping, $chunk['start'], $chunk['end'], $register, $schema);
+                    $chunkResult = $this->processExcelChunk(sheet: $sheet, columnMapping: $columnMapping, startRow: $chunk['start'], endRow: $chunk['end'], register: $register, schema: $schema);
 
                     if (!empty($chunkResult['objects'])) {
                         // Save objects for this chunk.
                         $saveResult = $this->objectService->saveObjects(
-                            $chunkResult['objects'],
-                            $register,
-                            $schema,
-                            true,
-                            true,
-                            $validation,
-                            $events
+                            objects: $chunkResult['objects'],
+                            register: $register,
+                            schema: $schema,
+                            rbac: true,
+                            multi: true,
+                            validation: $validation,
+                            events: $events
                         );
 
                         $result = [
@@ -1001,7 +1001,7 @@ class ImportService
 
         for ($row = $startRow; $row <= $endRow; $row++) {
             // NO ERROR SUPPRESSION: Let CSV chunk processing errors bubble up immediately!
-            $rowData = $this->extractRowData($sheet, $columnMapping, $row);
+            $rowData = $this->extractRowData(sheet: $sheet, columnMapping: $columnMapping, row: $row);
 
             if (empty($rowData)) {
                 // Skip empty rows.
@@ -1009,7 +1009,7 @@ class ImportService
             }
 
             // Transform row data to object format.
-            $object = $this->transformCsvRowToObject($rowData, $register, $schema, $row);
+            $object = $this->transformCsvRowToObject(rowData: $rowData, register: $register, schema: $schema, rowIndex: $row);
 
             if ($object !== null) {
                 $objects[] = $object;
@@ -1094,13 +1094,13 @@ class ImportService
                     $selfPropertyName = substr($key, 6);
 
                     // Transform special @self properties.
-                    $selfData[$selfPropertyName] = $this->transformSelfProperty($selfPropertyName, $value);
+                    $selfData[$selfPropertyName] = $this->transformSelfProperty(propertyName: $selfPropertyName, value: $value);
                 }
                 // Note: Other @ columns that don't start with @self. are ignored
             } else {
                 // Regular properties - transform based on schema if needed.
                 if (isset($schemaProperties[$key])) {
-                    $objectData[$key] = $this->transformValueByType($value, $schemaProperties[$key]);
+                    $objectData[$key] = $this->transformValueByType(value: $value, propertyDef: $schemaProperties[$key]);
                 } else {
                     $objectData[$key] = $value;
                 }
@@ -1116,7 +1116,7 @@ class ImportService
         $objectData['@self'] = $selfData;
 
         // Validate that we're not accidentally creating invalid properties.
-        $this->validateObjectProperties($objectData, $schemaId);
+        $this->validateObjectProperties(objectData: $objectData, schemaId: $schemaId);
 
         return $objectData;
 
@@ -1220,7 +1220,7 @@ class ImportService
 
         for ($row = $startRow; $row <= $endRow; $row++) {
             // NO ERROR SUPPRESSION: Let Excel chunk processing errors bubble up immediately!
-            $rowData = $this->extractRowData($sheet, $columnMapping, $row);
+            $rowData = $this->extractRowData(sheet: $sheet, columnMapping: $columnMapping, row: $row);
 
             if (empty($rowData)) {
                 // Skip empty rows.
@@ -1228,7 +1228,7 @@ class ImportService
             }
 
             // Transform row data to object format.
-            $object = $this->transformExcelRowToObject($rowData, $register, $schema, $row);
+            $object = $this->transformExcelRowToObject(rowData: $rowData, register: $register, schema: $schema, rowIndex: $row);
 
             if ($object !== null) {
                 $objects[] = $object;
@@ -1281,7 +1281,7 @@ class ImportService
                     $selfPropertyName = substr($key, 6);
 
                     // Transform special @self properties.
-                    $selfData[$selfPropertyName] = $this->transformSelfProperty($selfPropertyName, $value);
+                    $selfData[$selfPropertyName] = $this->transformSelfProperty(propertyName: $selfPropertyName, value: $value);
                 }
                 // Note: Other @ columns that don't start with @self. are ignored
             } else {
@@ -1310,7 +1310,7 @@ class ImportService
 
         // Transform object data based on schema property types if schema is available.
         if ($schema !== null) {
-            $transformedData = $this->transformObjectBySchema($objectData, $schema);
+            $transformedData = $this->transformObjectBySchema(objectData: $objectData, schema: $schema);
         } else {
             $transformedData = $objectData;
         }
@@ -1388,7 +1388,7 @@ class ImportService
         // Extract row data for this chunk.
         $processedRows = [];
         for ($row = $startRow; $row <= $endRow; $row++) {
-            $rowData = $this->extractRowData($sheet, $columnMapping, $row);
+            $rowData = $this->extractRowData(sheet: $sheet, columnMapping: $columnMapping, row: $row);
             if (empty($rowData) === false) {
                 $processedRows[] = $rowData;
             }
@@ -1404,7 +1404,7 @@ class ImportService
                 $promises[] = new Promise(
                         function (callable $resolve, callable $reject) use ($rowData, $index, $register, $schema, $startRow) {
                             // NO ERROR SUPPRESSION: Let processRow errors bubble up immediately!
-                            $result = $this->processRow($rowData, $register, $schema, $startRow + $index);
+                            $result = $this->processRow(rowData: $rowData, register: $register, schema: $schema, rowIndex: $startRow + $index);
                             $resolve($result);
                         }
                         );
@@ -1531,11 +1531,11 @@ class ImportService
 
         // Save the object (ObjectService handles create vs update logic).
         $savedObject = $this->objectService->saveObject(
-            $objectData,
-            null,
-            $register,
-            $schema,
-            $objectId
+            object: $objectData,
+            extend: null,
+            register: $register,
+            schema: $schema,
+            uuid: $objectId
         );
 
         return [

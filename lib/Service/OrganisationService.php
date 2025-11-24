@@ -243,7 +243,7 @@ class OrganisationService
                             ]
                             );
                     // UUID in settings doesn't exist, create new default.
-                    $defaultOrg = $this->createOrganisation('Default Organisation', 'Auto-generated default organisation', false);
+                    $defaultOrg = $this->createOrganisation(name: 'Default Organisation', description: 'Auto-generated default organisation', addCurrentUser: false);
 
                     // Update settings with new UUID.
                     if ($this->settingsService !== null) {
@@ -255,7 +255,7 @@ class OrganisationService
             } else {
                 // No UUID in settings, create a new default organisation.
                 $this->logger->info(message: 'No default organisation found in settings, creating new one');
-                $defaultOrg = $this->createOrganisation('Default Organisation', 'Auto-generated default organisation', false);
+                $defaultOrg = $this->createOrganisation(name: 'Default Organisation', description: 'Auto-generated default organisation', addCurrentUser: false);
 
                 // Store in settings.
                 if ($this->settingsService !== null) {
@@ -277,11 +277,11 @@ class OrganisationService
             }
 
             // Ensure admin group has full RBAC permissions.
-            $authorization = $defaultOrg->getAuthorization();
+            $authorization    = $defaultOrg->getAuthorization();
             $adminGroupInAuth = $this->hasAdminGroupInAuthorization($authorization);
             if ($adminGroupInAuth === false) {
                 $defaultOrg = $this->addAdminGroupToAuthorization($defaultOrg);
-                $updated = true;
+                $updated    = true;
             }
 
             if ($updated === true) {
@@ -289,7 +289,7 @@ class OrganisationService
                 $this->logger->info(
                         'Added admin users and RBAC permissions to existing default organisation',
                         [
-                            'adminUsersAdded' => $adminUsers,
+                            'adminUsersAdded'  => $adminUsers,
                             'adminGroupInAuth' => $adminGroupInAuth,
                         ]
                         );
@@ -426,7 +426,7 @@ class OrganisationService
 
         // Cache the result if we have an organisation.
         if ($organisation !== null) {
-            $this->cacheActiveOrganisation($organisation, $userId);
+            $this->cacheActiveOrganisation(organisation: $organisation, userId: $userId);
         }
 
         return $organisation;
@@ -465,10 +465,10 @@ class OrganisationService
 
         // Set in user configuration (persistent across sessions).
         $this->config->setUserValue(
-            $userId,
-            self::APP_NAME,
-            self::CONFIG_ACTIVE_ORGANISATION,
-            $organisationUuid
+            userId: $userId,
+            appName: self::APP_NAME,
+            key: self::CONFIG_ACTIVE_ORGANISATION,
+            value: $organisationUuid
         );
 
         // Clear cached organisations and active organisation to force refresh.
@@ -477,7 +477,7 @@ class OrganisationService
         $this->clearActiveOrganisationCache($userId);
 
         // Cache the new active organisation immediately.
-        $this->cacheActiveOrganisation($organisation, $userId);
+        $this->cacheActiveOrganisation(organisation: $organisation, userId: $userId);
 
         $this->logger->info(
                 'Set active organisation in user config',
@@ -526,7 +526,7 @@ class OrganisationService
             }
 
             // Add user to organisation.
-            $this->organisationMapper->addUserToOrganisation($organisationUuid, $userId);
+            $this->organisationMapper->addUserToOrganisation(organisationUuid: $organisationUuid, userId: $userId);
 
             // Clear cached organisations to force refresh for the affected user.
             $cacheKey = self::SESSION_USER_ORGANISATIONS.'_'.$userId;
@@ -572,7 +572,7 @@ class OrganisationService
         }
 
         try {
-            $organisation = $this->organisationMapper->removeUserFromOrganisation($organisationUuid, $userId);
+            $organisation = $this->organisationMapper->removeUserFromOrganisation(organisationUuid: $organisationUuid, userId: $userId);
 
             // If this was the active organisation, clear cache and reset.
             $activeOrg = $this->getActiveOrganisation();
@@ -716,7 +716,7 @@ class OrganisationService
      */
     public function createOrganisationWithUuid(string $name, string $description, string $uuid, bool $addCurrentUser=true): Organisation
     {
-        return $this->createOrganisation($name, $description, $addCurrentUser, $uuid);
+        return $this->createOrganisation(name: $name, description: $description, addCurrentUser: $addCurrentUser, uuid: $uuid);
 
     }//end createOrganisationWithUuid()
 
@@ -912,7 +912,7 @@ class OrganisationService
     private function addAdminGroupToAuthorization(Organisation $organisation): Organisation
     {
         $authorization = $organisation->getAuthorization();
-        $adminGroupId = 'admin';
+        $adminGroupId  = 'admin';
 
         // Add admin group to all CRUD permissions for all entity types.
         $entityTypes = ['register', 'schema', 'object', 'view', 'agent', 'configuration', 'application'];

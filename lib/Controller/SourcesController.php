@@ -77,7 +77,7 @@ class SourcesController extends Controller
         $limit  = $this->getIntParam(params: $params, key: '_limit');
         $offset = $this->getIntParam(params: $params, key: '_offset');
         $page   = $this->getIntParam(params: $params, key: '_page');
-        $search = $params['_search'] ?? '';
+        // Note: search parameter not currently used in this endpoint
 
         // Convert page to offset if provided.
         if ($page !== null && $limit !== null) {

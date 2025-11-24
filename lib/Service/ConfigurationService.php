@@ -154,40 +154,6 @@ class ConfigurationService
      */
     private ObjectService $objectService;
 
-    /**
-     * View handler instance for view import/export operations.
-     *
-     * @var ViewHandler The view handler instance.
-     */
-    private ViewHandler $viewHandler;
-
-    /**
-     * Agent handler instance for agent import/export operations.
-     *
-     * @var AgentHandler The agent handler instance.
-     */
-    private AgentHandler $agentHandler;
-
-    /**
-     * Organisation handler instance for organisation import/export operations.
-     *
-     * @var OrganisationHandler The organisation handler instance.
-     */
-    private OrganisationHandler $organisationHandler;
-
-    /**
-     * Application handler instance for application import/export operations.
-     *
-     * @var ApplicationHandler The application handler instance.
-     */
-    private ApplicationHandler $applicationHandler;
-
-    /**
-     * Source handler instance for source import/export operations.
-     *
-     * @var SourceHandler The source handler instance.
-     */
-    private SourceHandler $sourceHandler;
 
 
     /**
@@ -232,18 +198,12 @@ class ConfigurationService
         $this->registerMapper      = $registerMapper;
         $this->objectEntityMapper  = $objectEntityMapper;
         $this->configurationMapper = $configurationMapper;
-        $this->validator           = $validator;
         $this->logger        = $logger;
         $this->appManager    = $appManager;
         $this->container     = $container;
         $this->appConfig     = $appConfig;
         $this->client        = $client;
         $this->objectService = $objectService;
-        $this->viewHandler   = $viewHandler;
-        $this->agentHandler  = $agentHandler;
-        $this->organisationHandler = $organisationHandler;
-        $this->applicationHandler  = $applicationHandler;
-        $this->sourceHandler       = $sourceHandler;
 
     }//end __construct()
 

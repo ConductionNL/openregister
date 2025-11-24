@@ -6526,7 +6526,7 @@ class ObjectService
                             ]);
                         }
 
-                    } elseif (is_string($value) && !empty($value)) {
+                    } elseif (is_string($value) === true && empty($value) === false) {
                         // Handle single relationship ID.
                         $allIds[] = $value;
                         $extractedCount++;
@@ -6572,7 +6572,7 @@ class ObjectService
      */
     private function bulkLoadRelationshipsBatched(array $relationshipIds): array
     {
-        if (empty($relationshipIds)) {
+        if (count($relationshipIds) === 0) {
             return [];
         }
 

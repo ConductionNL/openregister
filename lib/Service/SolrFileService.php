@@ -1361,8 +1361,8 @@ class SolrFileService
 
         // Get file metadata from Nextcloud.
         $fileMapper = $this->container->get(FileMapper::class);
-        $ncFile = $fileMapper->getFile($fileId);
-        
+        $ncFile     = $fileMapper->getFile($fileId);
+
         // Prepare metadata.
         $metadata = [
             'file_id'      => $fileId,
@@ -1376,9 +1376,9 @@ class SolrFileService
         $chunkData = [];
         foreach ($chunks as $chunk) {
             $chunkData[] = [
-                'text' => $chunk->getTextContent(),
+                'text'         => $chunk->getTextContent(),
                 'start_offset' => $chunk->getStartOffset(),
-                'end_offset' => $chunk->getEndOffset(),
+                'end_offset'   => $chunk->getEndOffset(),
             ];
         }
 

@@ -164,8 +164,8 @@ class SolrDebugCommand extends Command
         $output->writeln('<info>📋 Tenant Information</info>');
 
         // Generate tenant ID the same way as SolrService.
-        $instanceId    = $this->config->getSystemValue('instanceid', 'default');
-        $overwriteHost = $this->config->getSystemValue('overwrite.cli.url', '');
+        $instanceId    = $this->config->getSystemValue(key: 'instanceid', default: 'default');
+        $overwriteHost = $this->config->getSystemValue(key: 'overwrite.cli.url', default: '');
 
         if (empty($overwriteHost) === false) {
             $tenantId = 'nc_'.hash('crc32', $overwriteHost);
@@ -222,10 +222,10 @@ class SolrDebugCommand extends Command
 
             // Create GuzzleSolrService from settings.
             $solrService = new GuzzleSolrService(
-                $this->settingsService,
-                $this->logger,
-                $this->clientService,
-                $this->config
+                settingsService: $this->settingsService,
+                logger: $this->logger,
+                clientService: $this->clientService,
+                config: $this->config
             );
             // Test setup.
             $setup  = new SolrSetup($solrService, $this->logger);
@@ -322,7 +322,7 @@ class SolrDebugCommand extends Command
             }
 
             // Test direct SOLR admin API calls.
-            $this->testSolrAdminAPI($output, $solrSettings);
+            $this->testSolrAdminAPI(output: $output, solrSettings: $solrSettings);
         } catch (\Exception $e) {
             $output->writeln("<error>❌ Core check failed: {$e->getMessage()}</error>");
         }

@@ -839,6 +839,45 @@ export const useSettingsStore = defineStore('settings', {
 		},
 
 		/**
+		 * Get object text extraction settings
+		 */
+		async getObjectSettings() {
+			try {
+				const response = await axios.get(generateUrl('/apps/openregister/api/settings/objects'))
+				if (response.data) {
+					return response.data
+				}
+				return {}
+			} catch (error) {
+				console.error('Failed to load object settings:', error)
+				return {}
+			}
+		},
+
+		/**
+		 * Save object text extraction settings
+		 * @param {object} objectData - The object settings to save
+		 */
+		async saveObjectSettings(objectData) {
+			try {
+				const response = await axios.put(
+					generateUrl('/apps/openregister/api/settings/objects'),
+					objectData,
+				)
+
+				if (response.data) {
+					showSuccess('Object settings saved successfully')
+				}
+
+				return response.data
+			} catch (error) {
+				console.error('Failed to save object settings:', error)
+				showError('Failed to save object settings: ' + error.message)
+				throw error
+			}
+		},
+
+		/**
 		 * Get file extraction statistics
 		 */
 		async getExtractionStats() {

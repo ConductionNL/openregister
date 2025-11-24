@@ -597,7 +597,9 @@ class ObjectsController extends Controller
         foreach ($_FILES as $fieldName => $fileData) {
             // Check if this is an array upload (multiple files with same field name).
             // PHP converts field names like "images[]" to "images" and structures data as arrays.
-            /** @var array{name: array<int, string>|string, type: array<int, string>|string, tmp_name: array<int, string>|string, error: array<int, int>|int, size: array<int, int>|int} $fileData */
+            /*
+             * @var array{name: array<int, string>|string, type: array<int, string>|string, tmp_name: array<int, string>|string, error: array<int, int>|int, size: array<int, int>|int} $fileData
+             */
             if (is_array($fileData['name'])) {
                 // Handle array uploads: images[] becomes images with array values.
                 // We need to preserve all files, so use indexed keys: images[0], images[1], etc.
@@ -710,7 +712,9 @@ class ObjectsController extends Controller
         foreach ($_FILES as $fieldName => $fileData) {
             // Check if this is an array upload (multiple files with same field name).
             // PHP converts field names like "images[]" to "images" and structures data as arrays.
-            /** @var array{name: array<int, string>|string, type: array<int, string>|string, tmp_name: array<int, string>|string, error: array<int, int>|int, size: array<int, int>|int} $fileData */
+            /*
+             * @var array{name: array<int, string>|string, type: array<int, string>|string, tmp_name: array<int, string>|string, error: array<int, int>|int, size: array<int, int>|int} $fileData
+             */
             if (is_array($fileData['name'])) {
                 // Handle array uploads: images[] becomes images with array values.
                 // We need to preserve all files, so use indexed keys: images[0], images[1], etc.
@@ -1164,8 +1168,8 @@ class ObjectsController extends Controller
         }
 
         // Normalize requested schema.
-        $requestedSchemaNorm  = strtolower($requestedSchema);
-        $objectSchemaIdNorm   = strtolower((string) $objectSchemaId);
+        $requestedSchemaNorm = strtolower($requestedSchema);
+        $objectSchemaIdNorm  = strtolower((string) $objectSchemaId);
         // $objectSchemaSlug is already lowercase from lines 1154/1157.
         $objectSchemaSlugNorm = $objectSchemaSlug;
 
@@ -1426,7 +1430,7 @@ class ObjectsController extends Controller
             return new JSONResponse(
                     data: [
                         'message' => 'Import successful',
-            'summary' => $summary,
+                        'summary' => $summary,
                     ]
                     );
         } catch (\Exception $e) {
@@ -1775,7 +1779,7 @@ class ObjectsController extends Controller
             return new JSONResponse(
                     data: [
                         'success' => true,
-            'data'    => $result,
+                        'data'    => $result,
                     ]
                     );
         } catch (\Exception $e) {
@@ -1827,7 +1831,7 @@ class ObjectsController extends Controller
             return new JSONResponse(
                     data: [
                         'success'       => true,
-            'total_objects' => $totalObjects,
+                        'total_objects' => $totalObjects,
                         'views'         => $views,
                     ]
                     );
@@ -1858,16 +1862,15 @@ class ObjectsController extends Controller
             // TODO: Implement proper counting logic with schemas parameter.
             // $schemas = $this->request->getParam('schemas');
             // if (is_string($schemas)) {
-            //     $schemas = explode(',', $schemas);
+            // $schemas = explode(',', $schemas);
             // }
-
             // For now, return a placeholder.
             $count = 0;
 
             return new JSONResponse(
                     data: [
                         'success' => true,
-            'count'   => $count,
+                        'count'   => $count,
                     ]
                     );
         } catch (\Exception $e) {

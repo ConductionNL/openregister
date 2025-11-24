@@ -29,6 +29,10 @@ use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Db\FileMapper;
 use OCA\OpenRegister\Db\GdprEntity;
 use OCA\OpenRegister\Db\GdprEntityMapper;
+use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\TextExtraction\ObjectHandler;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\Files\IRootFolder;
 use OCP\Files\NotFoundException;
@@ -109,6 +113,9 @@ class TextExtractionService
      * @param IRootFolder          $rootFolder           Nextcloud root folder
      * @param IDBConnection        $db                   Database connection
      * @param LoggerInterface      $logger               Logger
+     * @param ObjectEntityMapper   $objectEntityMapper   Mapper for object entities
+     * @param SchemaMapper         $schemaMapper         Mapper for schemas
+     * @param RegisterMapper       $registerMapper       Mapper for registers
      */
     public function __construct(
         private readonly FileMapper $fileMapper,
@@ -117,7 +124,10 @@ class TextExtractionService
         private readonly EntityRelationMapper $entityRelationMapper,
         private readonly IRootFolder $rootFolder,
         private readonly IDBConnection $db,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly ObjectEntityMapper $objectEntityMapper,
+        private readonly SchemaMapper $schemaMapper,
+        private readonly RegisterMapper $registerMapper
     ) {
 
     }//end __construct()
@@ -188,6 +198,104 @@ class TextExtractionService
                 );
 
     }//end extractFile()
+
+
+    /**
+     * Extract text from an object by object ID
+     *
+     * This method:
+     * 1. Looks up object in the database
+     * 2. Checks if re-extraction is needed (object modified since last extraction)
+     * 3. Performs extraction if needed using ObjectHandler
+     *
+     * @param int  $objectId        Object ID
+     * @param bool $forceReExtract  Force re-extraction even if object hasn't changed
+     *
+     * @return void
+     *
+     * @throws DoesNotExistException If object doesn't exist
+     * @throws Exception If extraction fails
+     */
+    public function extractObject(int $objectId, bool $forceReExtract=false): void
+    {
+        $this->logger->info('[TextExtractionService] Starting object extraction', ['objectId' => $objectId]);
+
+        // Get object to check timestamp.
+        $object = $this->objectEntityMapper->find($objectId);
+        $sourceTimestamp = $object->getUpdated()?->getTimestamp() ?? time();
+
+        // Check if chunks are up-to-date.
+        if ($forceReExtract === false && $this->isSourceUpToDate($objectId, 'object', $sourceTimestamp, $forceReExtract) === true) {
+            // Object is up-to-date and all chunks are still valid.
+            $this->logger->info('[TextExtractionService] Object already processed and up-to-date', ['objectId' => $objectId]);
+            return;
+        }
+
+        // Create ObjectHandler and extract text.
+        $objectHandler = new ObjectHandler(
+            $this->objectEntityMapper,
+            $this->chunkMapper,
+            $this->schemaMapper,
+            $this->registerMapper,
+            $this->logger
+        );
+
+        // Get object metadata.
+        $sourceMeta = $objectHandler->getSourceMetadata($objectId);
+
+        // Extract text using ObjectHandler.
+        $extractedData = $objectHandler->extractText($objectId, $sourceMeta, $forceReExtract);
+        $cleanText = $this->sanitizeText($extractedData['text']);
+
+        if ($cleanText === '') {
+            throw new Exception('Text extraction resulted in an empty payload for object.');
+        }
+
+        // Collect lightweight language metadata to enrich chunk storage.
+        $languageSignals = $this->detectLanguageSignals($cleanText);
+
+        $payload = [
+            'source_type'         => 'object',
+            'source_id'           => $objectId,
+            'text'                => $cleanText,
+            'length'              => strlen($cleanText),
+            'checksum'            => hash('sha256', $cleanText),
+            'method'              => 'object_extraction',
+            'owner'               => $extractedData['owner'] ?? null,
+            'organisation'        => $extractedData['organisation'] ?? null,
+            'language'            => $languageSignals['language'],
+            'language_level'      => $languageSignals['language_level'],
+            'language_confidence' => $languageSignals['language_confidence'],
+            'detection_method'    => $languageSignals['detection_method'],
+            'metadata'            => $extractedData['metadata'] ?? [],
+        ];
+
+        $chunks = $this->textToChunks(
+            $payload['text'],
+            $payload['source_type'],
+            $payload['source_id']
+        );
+
+        // Persist chunks to database.
+        $this->persistChunksForSource(
+            'object',
+            $objectId,
+            $chunks,
+            $payload['owner'],
+            $payload['organisation'],
+            $sourceTimestamp,
+            $payload
+        );
+
+        $this->logger->info(
+                '[TextExtractionService] Object extraction completed',
+                [
+                    'objectId'   => $objectId,
+                    'chunkCount' => count($chunks) + 1,
+                ]
+                );
+
+    }//end extractObject()
 
 
     /**
@@ -1697,6 +1805,7 @@ class TextExtractionService
         }
 
         return 'heuristic';
+
     }//end getDetectionMethod()
 
 
@@ -1715,11 +1824,12 @@ class TextExtractionService
 
         $totalSize = 0;
         foreach ($chunks as $chunk) {
-            $text = is_array($chunk) && isset($chunk['text']) ? $chunk['text'] : (is_string($chunk) ? $chunk : '');
+            $text       = is_array($chunk) && isset($chunk['text']) ? $chunk['text'] : (is_string($chunk) ? $chunk : '');
             $totalSize += strlen($text);
         }
 
         return round($totalSize / count($chunks), 2);
+
     }//end calculateAvgChunkSize()
 
 

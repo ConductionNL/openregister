@@ -282,6 +282,34 @@
 			</div>
 		</SettingsCard>
 
+		<!-- Object Text Extraction Settings -->
+		<SettingsCard
+			title="Object Text Extraction"
+			icon="📦"
+			:collapsible="true"
+			:default-collapsed="true">
+			<div class="settings-group compact">
+				<div class="setting-item">
+					<label for="object-extraction-mode">Extraction Mode</label>
+					<NcSelect v-model="objectSettings.extractionMode"
+						input-id="object-extraction-mode"
+						input-label="Object Extraction Mode"
+						:options="extractionModes"
+						@input="saveObjectSettings">
+						<template #option="{ label, description }">
+							<div class="option-item">
+								<span class="option-label">{{ label }}</span>
+								<span class="option-description">{{ description }}</span>
+							</div>
+						</template>
+					</NcSelect>
+					<p class="setting-description">
+						Control when text extraction happens for OpenRegister objects. Objects contain structured data that is converted to searchable text chunks.
+					</p>
+				</div>
+			</div>
+		</SettingsCard>
+
 		<!-- Supported File Types -->
 		<SettingsCard
 			title="Supported File Types"
@@ -477,6 +505,9 @@ export default {
 				dolphinApiEndpoint: '',
 				dolphinApiKey: '',
 			},
+			objectSettings: {
+				extractionMode: { id: 'background', label: 'Background Job' },
+			},
 			fileTypes: [
 				// Text formats (LLPhant supported)
 				{ extension: 'txt', label: 'Text Files', icon: '📝', enabled: true, llphantSupport: 'yes', dolphinOcr: false },
@@ -543,19 +574,24 @@ export default {
 			],
 			extractionModes: [
 				{
-					id: 'background',
-					label: 'Background Job',
-					description: 'Process files asynchronously (recommended)',
-				},
-				{
 					id: 'immediate',
 					label: 'Immediate',
-					description: 'Process during upload (may be slower)',
+					description: 'Process during upload - direct link between file upload and parsing logic',
+				},
+				{
+					id: 'background',
+					label: 'Background Job',
+					description: 'Delayed extraction action on the job stack - process files asynchronously after upload',
+				},
+				{
+					id: 'cron',
+					label: 'Cron Job',
+					description: 'Repeating action handling files - periodic batch processing via scheduled jobs',
 				},
 				{
 					id: 'manual',
 					label: 'Manual Only',
-					description: 'Only extract when manually triggered',
+					description: 'Only extract when manually triggered via Actions menu',
 				},
 			],
 			extractionStats: {
@@ -644,8 +680,29 @@ export default {
 						})
 					}
 				}
+
+				// Load object settings
+				await this.loadObjectSettings()
 			} catch (error) {
 				console.error('Failed to load file settings:', error)
+			}
+		},
+
+		/**
+		 * Load object text extraction settings
+		 */
+		async loadObjectSettings() {
+			try {
+				const settings = await this.settingsStore.getObjectSettings()
+				if (settings && settings.objectExtractionMode) {
+					const modeId = typeof settings.objectExtractionMode === 'string'
+						? settings.objectExtractionMode
+						: settings.objectExtractionMode.id
+					this.objectSettings.extractionMode = this.extractionModes.find(m => m.id === modeId)
+						|| this.extractionModes[1] // default to 'background'
+				}
+			} catch (error) {
+				console.error('Failed to load object settings:', error)
 			}
 		},
 
@@ -675,6 +732,22 @@ export default {
 			} catch (error) {
 				console.error('Failed to save file settings:', error)
 				this.showSaveMessage('Failed to save settings', 'error')
+			}
+		},
+
+		/**
+		 * Save object text extraction settings
+		 */
+		async saveObjectSettings() {
+			try {
+				await this.settingsStore.saveObjectSettings({
+					objectExtractionMode: this.objectSettings.extractionMode?.id || 'background',
+				})
+
+				// Settings saved silently - no success message
+			} catch (error) {
+				console.error('Failed to save object settings:', error)
+				this.showSaveMessage('Failed to save object settings', 'error')
 			}
 		},
 

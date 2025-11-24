@@ -48,12 +48,12 @@ class FileTextController extends Controller
     /**
      * Constructor
      *
-     * @param string          $appName         App name
-     * @param IRequest        $request         Request object
+     * @param string                $appName               App name
+     * @param IRequest              $request               Request object
      * @param TextExtractionService $textExtractionService Text extraction service
-     * @param SolrFileService $solrFileService SOLR file service
-     * @param LoggerInterface $logger          Logger
-     * @param IAppConfig      $config          Application configuration
+     * @param SolrFileService       $solrFileService       SOLR file service
+     * @param LoggerInterface       $logger                Logger
+     * @param IAppConfig            $config                Application configuration
      */
     public function __construct(
         string $appName,
@@ -223,7 +223,7 @@ class FileTextController extends Controller
             return new JSONResponse(
                     data: [
                         'success' => true,
-            'stats'   => $stats,
+                        'stats'   => $stats,
                     ]
                     );
         } catch (\Exception $e) {
@@ -370,7 +370,7 @@ class FileTextController extends Controller
                 [
                     'file_id' => $fileId,
                     'error'   => $e->getMessage(),
-                    ]
+                ]
                     );
 
             return new JSONResponse(
@@ -401,7 +401,7 @@ class FileTextController extends Controller
             return new JSONResponse(
                     data: [
                         'success' => true,
-            'stats'   => $stats,
+                        'stats'   => $stats,
                     ]
                     );
         } catch (\Exception $e) {

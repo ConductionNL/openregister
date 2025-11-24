@@ -64,25 +64,6 @@ class NamedParametersSniff implements Sniff
             $isConstructor = true;
         }
         
-        // Skip parent::__construct calls - they're calling parent class constructors we don't control.
-        if ($isMethodCall && strtolower($functionName) === '__construct') {
-            // Check if this is a parent:: call by looking backwards for 'parent' keyword.
-            $checkToken = $prevToken;
-            while ($checkToken !== false && $checkToken >= 0) {
-                if ($tokens[$checkToken]['code'] === T_DOUBLE_COLON) {
-                    $prevPrevToken = $phpcsFile->findPrevious([T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], ($checkToken - 1), null, true);
-                    if ($prevPrevToken !== false && strtolower($tokens[$prevPrevToken]['content']) === 'parent') {
-                        return; // Skip parent::__construct calls.
-                    }
-                    break;
-                }
-                if ($tokens[$checkToken]['code'] !== T_WHITESPACE && $tokens[$checkToken]['code'] !== T_COMMENT && $tokens[$checkToken]['code'] !== T_DOC_COMMENT) {
-                    break;
-                }
-                $checkToken--;
-            }
-        }
-        
         // Skip function definitions - look for 'function' keyword before this token.
         // We need to check if this T_STRING is part of a function declaration.
         $prev = $stackPtr - 1;
@@ -103,6 +84,26 @@ class NamedParametersSniff implements Sniff
         // Skip parent class methods that don't support named parameters.
         // QBMapper::find() and similar parent class methods.
         $functionName = $tokens[$stackPtr]['content'];
+        
+        // Skip parent::__construct calls - they're calling parent class constructors we don't control.
+        if ($isMethodCall && strtolower($functionName) === '__construct') {
+            // Check if this is a parent:: call by looking backwards for 'parent' keyword.
+            $checkToken = $prevToken;
+            while ($checkToken !== false && $checkToken >= 0) {
+                if ($tokens[$checkToken]['code'] === T_DOUBLE_COLON) {
+                    $prevPrevToken = $phpcsFile->findPrevious([T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], ($checkToken - 1), null, true);
+                    if ($prevPrevToken !== false && strtolower($tokens[$prevPrevToken]['content']) === 'parent') {
+                        return; // Skip parent::__construct calls.
+                    }
+                    break;
+                }
+                if ($tokens[$checkToken]['code'] !== T_WHITESPACE && $tokens[$checkToken]['code'] !== T_COMMENT && $tokens[$checkToken]['code'] !== T_DOC_COMMENT) {
+                    break;
+                }
+                $checkToken--;
+            }
+        }
+        
         $parentClassMethods = ['find', 'findEntity', 'findAll', 'findEntities', 'insert', 'update', 'delete', 'insertOrUpdate'];
         if ($isMethodCall && in_array(strtolower($functionName), $parentClassMethods)) {
             // This is likely a parent class method call, skip named parameter checking.
@@ -148,6 +149,8 @@ class NamedParametersSniff implements Sniff
             'getparam', 'getparams', 'getuploadedfile', 'getuploadedfiles',
             // Nextcloud IAppConfig methods.
             'getvaluebool', 'getvalueint', 'getvaluestring', 'getvaluearray',
+            // Nextcloud IConfig methods.
+            'getappvalue', 'setappvalue', 'getuservalue', 'setuservalue', 'deleteuservalue', 'getsystemvalue',
             // Nextcloud IURLGenerator methods.
             'linktoroute', 'getabsoluteurl',
             // GuzzleHttp Client methods.
@@ -155,7 +158,15 @@ class NamedParametersSniff implements Sniff
             // Opis JsonSchema library methods.
             'register', 'registerprotocol', 'validate', 'format', 'getproperty', 'geterrors',
             // GuzzleHttp Psr7 Uri static methods.
-            'fromparts'
+            'fromparts',
+            // ReactPHP Promise constructor.
+            'promise',
+            // Doctrine Schema Builder methods (used in migrations).
+            'addcolumn', 'addindex', 'adduniqueindex', 'addtype', 'addoption',
+            'dropcolumn', 'dropindex', 'dropuniqueindex', 'droptype', 'dropoption',
+            'modifycolumn', 'changecolumn', 'renamecolumn', 'renameindex',
+            'setprimarykey', 'dropprimarykey', 'addforeignkey', 'dropforeignkey',
+            'setcomment', 'setcharset', 'setcollation'
         ];
         if ($isMethodCall && in_array(strtolower($functionName), $queryBuilderMethods)) {
             // This is a Nextcloud/Doctrine method that doesn't support named parameters well.

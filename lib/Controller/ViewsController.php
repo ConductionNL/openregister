@@ -132,8 +132,7 @@ class ViewsController extends Controller
                 $page = (int) $params['_page'];
             }
 
-            $search = $params['_search'] ?? '';
-
+            // Note: search parameter not currently used in this endpoint
             $views = $this->viewService->findAll($userId);
 
             // Apply client-side pagination if parameters are provided.
@@ -276,6 +275,7 @@ class ViewsController extends Controller
             }
 
             // Extract query parameters from configuration or query.
+            /** @psalm-suppress UnusedVariable - Variable is used in viewService->create() call */
             $query = [];
             if (isset($data['configuration']) === true && is_array($data['configuration']) === true) {
                 // Frontend still sends 'configuration', extract only query params.
@@ -375,6 +375,7 @@ class ViewsController extends Controller
             }
 
             // Extract query parameters from configuration or query.
+            /** @psalm-suppress UnusedVariable - Variable is used in viewService->update() call */
             $query = [];
             if (isset($data['configuration']) === true && is_array($data['configuration']) === true) {
                 // Frontend still sends 'configuration', extract only query params.

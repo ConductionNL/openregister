@@ -3021,7 +3021,7 @@ class SettingsService
                     'textExtractor'        => 'llphant',
                 // llphant, dolphin.
                     'extractionMode'       => 'background',
-                // background, immediate, manual.
+                // immediate, background, cron, manual.
                     'maxFileSize'          => 100,
                     'batchSize'            => 10,
                     'dolphinApiEndpoint'   => '',
@@ -3062,7 +3062,7 @@ class SettingsService
                 'textExtractor'        => $fileData['textExtractor'] ?? 'llphant',
             // llphant, dolphin.
                 'extractionMode'       => $fileData['extractionMode'] ?? 'background',
-            // background, immediate, manual.
+            // immediate, background, cron, manual.
                 'maxFileSize'          => $fileData['maxFileSize'] ?? 100,
                 'batchSize'            => $fileData['batchSize'] ?? 10,
                 'dolphinApiEndpoint'   => $fileData['dolphinApiEndpoint'] ?? '',
@@ -3110,6 +3110,8 @@ class SettingsService
                     'maxNestingDepth'      => 10,
                     'batchSize'            => 25,
                     'autoRetry'            => true,
+                    'objectExtractionMode' => 'background',
+                    // immediate, background, cron, manual.
                 ];
             }
 
@@ -3125,6 +3127,8 @@ class SettingsService
                 'maxNestingDepth'      => $objectData['maxNestingDepth'] ?? 10,
                 'batchSize'            => $objectData['batchSize'] ?? 25,
                 'autoRetry'            => $objectData['autoRetry'] ?? true,
+                'objectExtractionMode' => $objectData['objectExtractionMode'] ?? 'background',
+                // immediate, background, cron, manual.
             ];
         } catch (Exception $e) {
             throw new \RuntimeException('Failed to get Object Management settings: '.$e->getMessage());
@@ -3147,6 +3151,8 @@ class SettingsService
                 'maxNestingDepth'      => $objectData['maxNestingDepth'] ?? 10,
                 'batchSize'            => $objectData['batchSize'] ?? 25,
                 'autoRetry'            => $objectData['autoRetry'] ?? true,
+                'objectExtractionMode' => $objectData['objectExtractionMode'] ?? 'background',
+                // immediate, background, cron, manual.
             ];
 
             $this->config->setValueString($this->appName, 'objectManagement', json_encode($objectConfig));

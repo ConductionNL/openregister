@@ -649,8 +649,8 @@ class AuditTrailMapper extends QBMapper
      *
      * @param DateTime|null $from       Start date for the chart data
      * @param DateTime|null $till       End date for the chart data
-     * @param int|null       $registerId Optional register ID to filter by
-     * @param int|null       $schemaId   Optional schema ID to filter by
+     * @param int|null      $registerId Optional register ID to filter by
+     * @param int|null      $schemaId   Optional schema ID to filter by
      *
      * @return array Array containing chart data:
      *               - labels: Array of dates

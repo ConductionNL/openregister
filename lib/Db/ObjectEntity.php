@@ -736,7 +736,6 @@ class ObjectEntity extends Entity implements JsonSerializable
             }
 
             // If same user, extend the lock.
-            $expirationDate = new \DateTime($lock['expiration']);
             $newExpiration  = clone $now;
             $newExpiration->add(new \DateInterval('PT'.$duration.'S'));
 

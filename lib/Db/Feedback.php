@@ -43,10 +43,10 @@ use OCP\AppFramework\Db\Entity;
  * @method void setType(string $type)
  * @method string|null getComment()
  * @method void setComment(?string $comment)
-     * @method DateTime|null getCreated()
-     * @method void setCreated(?DateTime $created)
-     * @method DateTime|null getUpdated()
-     * @method void setUpdated(?DateTime $updated)
+ * @method DateTime|null getCreated()
+ * @method void setCreated(?DateTime $created)
+ * @method DateTime|null getUpdated()
+ * @method void setUpdated(?DateTime $updated)
  */
 class Feedback extends Entity implements JsonSerializable
 {

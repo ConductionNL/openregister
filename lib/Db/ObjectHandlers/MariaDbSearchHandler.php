@@ -649,9 +649,6 @@ class MariaDbSearchHandler
                 continue;
             }
 
-            // Create a parameter for the search term to avoid SQL injection.
-            $searchParam = $queryBuilder->createNamedParameter('%'.$cleanTerm.'%');
-
             // Create OR conditions for each searchable field.
             // PERFORMANCE OPTIMIZATION: Search indexed metadata columns first for best performance.
             $termConditions = $queryBuilder->expr()->orX();

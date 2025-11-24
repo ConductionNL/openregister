@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * OpenRegister Migration - Add expires column to objects
  *
  * This migration adds an expires column to the openregister_objects table

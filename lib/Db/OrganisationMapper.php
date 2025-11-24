@@ -886,9 +886,9 @@ class OrganisationMapper extends QBMapper
             throw new \Exception('Organisation cannot be its own parent.');
         }
 
-        // Check if new parent exists.
+        // Check if new parent exists (validation only).
         try {
-            $parentOrg = $this->findByUuid($newParentUuid);
+            $this->findByUuid($newParentUuid);
         } catch (\Exception $e) {
             throw new \Exception('Parent organisation not found.');
         }

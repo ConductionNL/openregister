@@ -54,8 +54,6 @@ class Version1Date20250902130000 extends SimpleMigrationStep
             return null;
         }
 
-        $table = $schema->getTable('openregister_objects');
-
         // Skip name index creation for now to avoid MySQL key length issues.
         // TODO: Add name index after app is enabled with proper length prefix.
         $output->info(message: 'Skipping name index creation to avoid MySQL key length issues');

@@ -1,10 +1,10 @@
 <?php
 
 /**
- * File Text Extraction Background Job
+ * Object Text Extraction Background Job
  *
- * One-time background job that extracts text from uploaded files asynchronously.
- * This job is queued automatically when files are created or modified to avoid
+ * One-time background job that extracts text from OpenRegister objects asynchronously.
+ * This job is queued automatically when objects are created or modified to avoid
  * blocking user requests with potentially slow text extraction operations.
  *
  * @category  BackgroundJob
@@ -27,33 +27,33 @@ use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
 
 /**
- * One-time background job for file text extraction
+ * One-time background job for object text extraction
  *
- * This job is automatically queued when files are created or modified to
+ * This job is automatically queued when objects are created or modified to
  * extract text content asynchronously without blocking the user's request.
  *
  * Features:
- * - Runs once per file in the background
- * - Non-blocking: doesn't slow down file uploads
+ * - Runs once per object in the background
+ * - Non-blocking: doesn't slow down object saves
  * - Automatic retry for failed extractions
  * - Comprehensive logging and error handling
- * - Supports all file formats (PDF, DOCX, images, etc.)
+ * - Extracts text from object properties, metadata, and relationships
  *
  * @package OCA\OpenRegister\BackgroundJob
  *
  * @psalm-suppress UnusedClass - This background job is registered and instantiated by Nextcloud's job system
  */
-class FileTextExtractionJob extends QueuedJob
+class ObjectTextExtractionJob extends QueuedJob
 {
 
 
     /**
      * Constructor
      *
-     * @param ITimeFactory          $timeFactory           Time factory for job scheduling
+     * @param ITimeFactory         $timeFactory          Time factory for job scheduling
      * @param TextExtractionService $textExtractionService Text extraction service
-     * @param LoggerInterface       $logger                Logger instance
-     * @param IAppConfig            $config                Application configuration
+     * @param LoggerInterface      $logger               Logger instance
+     * @param IAppConfig           $config               Application configuration
      *
      * @psalm-suppress PossiblyUnusedMethod - Constructor is called by Nextcloud's job system via dependency injection
      */
@@ -71,10 +71,10 @@ class FileTextExtractionJob extends QueuedJob
     /**
      * Run the background job
      *
-     * Extracts text from the specified file and stores it in the database.
-     * The job expects an argument array with 'file_id' key.
+     * Extracts text from the specified object and stores it in the database.
+     * The job expects an argument array with 'object_id' key.
      *
-     * @param array $argument Job arguments containing file_id
+     * @param array $argument Job arguments containing object_id
      *
      * @return void
      *
@@ -82,17 +82,17 @@ class FileTextExtractionJob extends QueuedJob
      */
     protected function run($argument): void
     {
-        if ($this->config->hasKey(app: 'openregister', key: 'fileManagement') === false
-            || json_decode($this->config->getValueString(app: 'openregister', key: 'fileManagement'), true)['extractionScope'] === 'none'
-        ) {
-            $this->logger->info('[FileTextExtractionJob] File extraction is disabled. Not extracting text from files.');
+        // Check if object extraction is enabled.
+        $objectSettings = json_decode($this->config->getValueString(app: 'openregister', key: 'objectManagement', default: '{}'), true);
+        if (($objectSettings['objectExtractionMode'] ?? 'background') === 'none') {
+            $this->logger->info('[ObjectTextExtractionJob] Object extraction is disabled. Not extracting text from objects.');
             return;
         }
 
         // Validate argument.
-        if (isset($argument['file_id']) === false) {
+        if (isset($argument['object_id']) === false) {
             $this->logger->error(
-                    '[FileTextExtractionJob] Missing file_id in job arguments',
+                    '[ObjectTextExtractionJob] Missing object_id in job arguments',
                     [
                         'argument' => $argument,
                     ]
@@ -100,13 +100,13 @@ class FileTextExtractionJob extends QueuedJob
             return;
         }
 
-        $fileId = (int) $argument['file_id'];
+        $objectId = (int) $argument['object_id'];
 
         $this->logger->info(
-                '[FileTextExtractionJob] Starting text extraction',
+                '[ObjectTextExtractionJob] Starting text extraction',
                 [
-                    'file_id' => $fileId,
-                    'job_id'  => $this->getId(),
+                    'object_id' => $objectId,
+                    'job_id'    => $this->getId(),
                 ]
                 );
 
@@ -114,27 +114,27 @@ class FileTextExtractionJob extends QueuedJob
 
         try {
             // Extract text using TextExtractionService.
-            $this->textExtractionService->extractFile($fileId, false);
+            $this->textExtractionService->extractObject($objectId, false);
 
             $processingTime = round((microtime(true) - $startTime) * 1000, 2);
 
             $this->logger->info(
-                    '[FileTextExtractionJob] Text extraction completed successfully',
+                    '[ObjectTextExtractionJob] Text extraction completed successfully',
                     [
-                        'file_id'            => $fileId,
-                        'processing_time_ms' => $processingTime,
+                        'object_id'            => $objectId,
+                        'processing_time_ms'   => $processingTime,
                     ]
                     );
         } catch (\Exception $e) {
             $processingTime = round((microtime(true) - $startTime) * 1000, 2);
 
             $this->logger->error(
-                    '[FileTextExtractionJob] Exception during text extraction',
+                    '[ObjectTextExtractionJob] Exception during text extraction',
                     [
-                        'file_id'            => $fileId,
-                        'error'              => $e->getMessage(),
-                        'trace'              => $e->getTraceAsString(),
-                        'processing_time_ms' => $processingTime,
+                        'object_id'            => $objectId,
+                        'error'                => $e->getMessage(),
+                        'trace'                => $e->getTraceAsString(),
+                        'processing_time_ms'   => $processingTime,
                     ]
                     );
         }//end try
@@ -143,3 +143,4 @@ class FileTextExtractionJob extends QueuedJob
 
 
 }//end class
+
