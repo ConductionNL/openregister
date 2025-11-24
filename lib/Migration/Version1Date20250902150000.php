@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * OpenRegister Migration - Facets Column
  *
  * Migration to add facets column to openregister_schemas table.

@@ -272,7 +272,7 @@ class AuditTrailMapper extends QBMapper
 
         // Set default expiration date if not provided (30 days from now).
         if ($auditTrail->getExpires() === null) {
-            $auditTrail->setExpires(new \DateTime(datetime: '+30 days'));
+            $auditTrail->setExpires(new \DateTime('+30 days'));
         }
 
         // Set the size to the byte size of the serialized object, with a minimum default of 14 bytes.

@@ -655,7 +655,7 @@ class ImportService
         if (!empty($allObjects) && $register !== null && $schema !== null) {
             // Add publish date to all objects if publish is enabled.
             if ($publish === true) {
-                $publishDate = (new \DateTime(datetime: 'now'))->format(format: 'c'); // ISO 8601 format.
+                $publishDate = (new \DateTime('now'))->format('c'); // ISO 8601 format.
                 $allObjects = $this->addPublishedDateToObjects($allObjects, $publishDate);
             }
 
@@ -783,7 +783,7 @@ class ImportService
 
             // Add publish date to all objects if publish is enabled.
             if ($publish === true) {
-                $publishDate = (new \DateTime(datetime: 'now'))->format(format: 'c'); // ISO 8601 format.
+                $publishDate = (new \DateTime('now'))->format('c'); // ISO 8601 format.
                 $this->logger->debug(message: 'Adding publish date to CSV import objects', context: [
                     'publishDate' => $publishDate,
                     'objectCount' => count($allObjects)
@@ -1135,7 +1135,7 @@ class ImportService
         // Handle ISO 8601 format with timezone (e.g., "2025-01-01T00:00:00+00:00").
         if (preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/', $value)) {
             try {
-                $dateTime = new \DateTime(datetime: $value);
+                $dateTime = new \DateTime($value);
                 return $dateTime->format(format: 'Y-m-d H:i:s');
             } catch (\Exception $e) {
                 // Fallback to original value if parsing fails.
@@ -1146,7 +1146,7 @@ class ImportService
         // Handle ISO 8601 format without timezone (e.g., "2025-01-01T00:00:00").
         if (preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/', $value)) {
             try {
-                $dateTime = new \DateTime(datetime: $value);
+                $dateTime = new \DateTime($value);
                 return $dateTime->format(format: 'Y-m-d H:i:s');
             } catch (\Exception $e) {
                 // Fallback to original value if parsing fails.

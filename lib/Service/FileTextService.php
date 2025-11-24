@@ -478,9 +478,9 @@ class FileTextService
     public function deleteFileText(int $fileId): void
     {
         $this->logger->info(
-                message:'[FileTextService] Deleting file text',
-                ['file_id' => $fileId]
-                );
+            message: '[FileTextService] Deleting file text',
+            context: ['file_id' => $fileId]
+        );
         $this->fileTextMapper->deleteByFileId($fileId);
 
     }//end deleteFileText()

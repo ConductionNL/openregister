@@ -158,7 +158,7 @@ class BulkController extends Controller
             // Parse datetime if provided.
             if ($datetime !== true && $datetime !== false && $datetime !== null) {
                 try {
-                    $datetime = new \DateTime(datetime: $datetime);
+                    $datetime = new \DateTime($datetime);
                 } catch (Exception $e) {
                     return new JSONResponse(
                             data: ['error' => 'Invalid datetime format. Use ISO 8601 format (e.g., "2024-01-01T12:00:00Z").'],
@@ -223,7 +223,7 @@ class BulkController extends Controller
             // Parse datetime if provided.
             if ($datetime !== true && $datetime !== false && $datetime !== null) {
                 try {
-                    $datetime = new \DateTime(datetime: $datetime);
+                    $datetime = new \DateTime($datetime);
                 } catch (Exception $e) {
                     return new JSONResponse(
                             data: ['error' => 'Invalid datetime format. Use ISO 8601 format (e.g., "2024-01-01T12:00:00Z").'],

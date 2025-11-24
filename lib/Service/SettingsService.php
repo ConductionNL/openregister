@@ -655,7 +655,7 @@ class SettingsService
     public function rebaseObjectsAndLogs(): array
     {
         try {
-            $startTime = new \DateTime(datetime: 'now');
+            $startTime = new \DateTime('now');
             $results   = [
                 'startTime'        => $startTime,
                 'ownershipResults' => null,
@@ -710,7 +710,7 @@ class SettingsService
                 $results['errors'][] = $error;
             }//end try
 
-            $results['endTime']  = new \DateTime(datetime: 'now');
+            $results['endTime']  = new \DateTime('now');
             $results['duration'] = $results['endTime']->diff($startTime)->format('%H:%I:%S');
             $results['success']  = empty($results['errors']);
 
@@ -781,7 +781,7 @@ class SettingsService
                     'expiredSearchTrailsSize' => 0,
                     'expiredObjectsSize'      => 0,
                 ],
-                'lastUpdated' => (new \DateTime(datetime: 'now'))->format(format: 'c'),
+                'lastUpdated' => (new \DateTime('now'))->format('c'),
             ];
 
             // Get database connection for optimized queries.
@@ -948,7 +948,7 @@ class SettingsService
                 ],
                 'distributed' => $distributedStats,
                 'performance' => $performanceStats,
-                'lastUpdated' => (new \DateTime(datetime: 'now'))->format(format: 'c'),
+                'lastUpdated' => (new \DateTime('now'))->format('c'),
             ];
 
             return $stats;
@@ -977,7 +977,7 @@ class SettingsService
                 ],
                 'distributed' => ['type' => 'none', 'backend' => 'Unknown', 'available' => false],
                 'performance' => ['averageHitTime' => 0, 'averageMissTime' => 0, 'performanceGain' => 0, 'optimalHitRate' => 85.0],
-                'lastUpdated' => (new \DateTime(datetime: 'now'))->format(format: 'c'),
+                'lastUpdated' => (new \DateTime('now'))->format('c'),
                 'error'       => 'Cache statistics unavailable: '.$e->getMessage(),
             ];
         }//end try

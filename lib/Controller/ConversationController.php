@@ -273,11 +273,13 @@ class ConversationController extends Controller
 
             return new JSONResponse(data: $response, statusCode: 200);
         } catch (DoesNotExistException $e) {
-            return new JSONResponse(data: [
-                        'error'   => 'Conversation not found',
-                        'message' => 'The requested conversation does not exist',
-                    ],
-                    404);
+            return new JSONResponse(
+                data: [
+                    'error'   => 'Conversation not found',
+                    'message' => 'The requested conversation does not exist',
+                ],
+                statusCode: 404
+            );
         } catch (\Exception $e) {
             $this->logger->error(
                     message: '[ConversationController] Failed to get conversation',
@@ -288,7 +290,8 @@ class ConversationController extends Controller
                     ]
                     );
 
-            return new JSONResponse(data: [
+            return new JSONResponse(
+                    data: [
                         'error'   => 'Failed to fetch conversation',
                         'message' => $e->getMessage(),
                     ],
@@ -357,11 +360,13 @@ class ConversationController extends Controller
                 statusCode: 200
             );
         } catch (DoesNotExistException $e) {
-            return new JSONResponse(data: [
-                        'error'   => 'Conversation not found',
-                        'message' => 'The requested conversation does not exist',
-                    ],
-                    404);
+            return new JSONResponse(
+                data: [
+                    'error'   => 'Conversation not found',
+                    'message' => 'The requested conversation does not exist',
+                ],
+                statusCode: 404
+            );
         } catch (\Exception $e) {
             $this->logger->error(
                     message: '[ConversationController] Failed to get messages',
@@ -372,7 +377,8 @@ class ConversationController extends Controller
                     ]
                     );
 
-            return new JSONResponse(data: [
+            return new JSONResponse(
+                    data: [
                         'error'   => 'Failed to fetch messages',
                         'message' => $e->getMessage(),
                     ],
@@ -463,7 +469,8 @@ class ConversationController extends Controller
                     ]
                     );
 
-            return new JSONResponse(data: [
+            return new JSONResponse(
+                    data: [
                         'error'   => 'Failed to create conversation',
                         'message' => $e->getMessage(),
                     ],
@@ -494,11 +501,13 @@ class ConversationController extends Controller
 
             // Check modify rights using mapper method.
             if ($this->conversationMapper->canUserModifyConversation($conversation, $this->userId) === false) {
-                return new JSONResponse(data: [
+                return new JSONResponse(
+                        data: [
                             'error'   => 'Access denied',
                             'message' => 'You do not have permission to modify this conversation',
                         ],
-                        statusCode: 403);
+                        statusCode: 403
+                        );
             }
 
             // Get request data.
@@ -528,11 +537,13 @@ class ConversationController extends Controller
 
             return new JSONResponse(data: $conversation->jsonSerialize(), statusCode: 200);
         } catch (DoesNotExistException $e) {
-            return new JSONResponse(data: [
-                        'error'   => 'Conversation not found',
-                        'message' => 'The requested conversation does not exist',
-                    ],
-                    404);
+            return new JSONResponse(
+                data: [
+                    'error'   => 'Conversation not found',
+                    'message' => 'The requested conversation does not exist',
+                ],
+                statusCode: 404
+            );
         } catch (\Exception $e) {
             $this->logger->error(
                     '[ConversationController] Failed to update conversation',
@@ -575,11 +586,13 @@ class ConversationController extends Controller
 
             // Check modify rights using mapper method.
             if ($this->conversationMapper->canUserModifyConversation($conversation, $this->userId) === false) {
-                return new JSONResponse(data: [
-                            'error'   => 'Access denied',
-                            'message' => 'You do not have permission to delete this conversation',
-                        ],
-                        403);
+                return new JSONResponse(
+                    data: [
+                        'error'   => 'Access denied',
+                        'message' => 'You do not have permission to delete this conversation',
+                    ],
+                    statusCode: 403
+                );
             }
 
             // Check if already soft-deleted (archived).
@@ -608,11 +621,13 @@ class ConversationController extends Controller
                         ]
                         );
 
-                return new JSONResponse(data: [
-                            'message' => 'Conversation permanently deleted',
-                            'uuid'    => $uuid,
-                        ],
-                        200);
+                return new JSONResponse(
+                    data: [
+                        'message' => 'Conversation permanently deleted',
+                        'uuid'    => $uuid,
+                    ],
+                    statusCode: 200
+                );
             } else {
                 // First delete - perform soft delete (archive).
                 $conversation = $this->conversationMapper->softDelete($conversation->getId());
@@ -624,19 +639,23 @@ class ConversationController extends Controller
                         ]
                         );
 
-                return new JSONResponse(data: [
+                return new JSONResponse(
+                        data: [
                             'message'  => 'Conversation archived successfully',
                             'uuid'     => $uuid,
                             'archived' => true,
                         ],
-                        200);
+                        statusCode: 200
+                    );
             }//end if
         } catch (DoesNotExistException $e) {
-            return new JSONResponse(data: [
-                        'error'   => 'Conversation not found',
-                        'message' => 'The requested conversation does not exist',
-                    ],
-                    404);
+            return new JSONResponse(
+                data: [
+                    'error'   => 'Conversation not found',
+                    'message' => 'The requested conversation does not exist',
+                ],
+                statusCode: 404
+            );
         } catch (\Exception $e) {
             $this->logger->error(
                     '[ConversationController] Failed to delete conversation',
@@ -679,11 +698,13 @@ class ConversationController extends Controller
 
             // Check modify rights using mapper method.
             if ($this->conversationMapper->canUserModifyConversation($conversation, $this->userId) === false) {
-                return new JSONResponse(data: [
-                            'error'   => 'Access denied',
-                            'message' => 'You do not have permission to restore this conversation',
-                        ],
-                        403);
+                return new JSONResponse(
+                    data: [
+                        'error'   => 'Access denied',
+                        'message' => 'You do not have permission to restore this conversation',
+                    ],
+                    statusCode: 403
+                );
             }
 
             // Restore.
@@ -698,11 +719,13 @@ class ConversationController extends Controller
 
             return new JSONResponse(data: $conversation->jsonSerialize(), statusCode: 200);
         } catch (DoesNotExistException $e) {
-            return new JSONResponse(data: [
-                        'error'   => 'Conversation not found',
-                        'message' => 'The requested conversation does not exist',
-                    ],
-                    404);
+            return new JSONResponse(
+                data: [
+                    'error'   => 'Conversation not found',
+                    'message' => 'The requested conversation does not exist',
+                ],
+                statusCode: 404
+            );
         } catch (\Exception $e) {
             $this->logger->error(
                     '[ConversationController] Failed to restore conversation',
@@ -745,11 +768,13 @@ class ConversationController extends Controller
 
             // Check modify rights using mapper method.
             if ($this->conversationMapper->canUserModifyConversation($conversation, $this->userId) === false) {
-                return new JSONResponse(data: [
-                            'error'   => 'Access denied',
-                            'message' => 'You do not have permission to delete this conversation',
-                        ],
-                        403);
+                return new JSONResponse(
+                    data: [
+                        'error'   => 'Access denied',
+                        'message' => 'You do not have permission to delete this conversation',
+                    ],
+                    statusCode: 403
+                );
             }
 
             // Delete messages first.
@@ -765,17 +790,21 @@ class ConversationController extends Controller
                     ]
                     );
 
-            return new JSONResponse(data: [
-                        'message' => 'Conversation permanently deleted',
-                        'uuid'    => $uuid,
-                    ],
-                    200);
+            return new JSONResponse(
+                data: [
+                    'message' => 'Conversation permanently deleted',
+                    'uuid'    => $uuid,
+                ],
+                statusCode: 200
+            );
         } catch (DoesNotExistException $e) {
-            return new JSONResponse(data: [
-                        'error'   => 'Conversation not found',
-                        'message' => 'The requested conversation does not exist',
-                    ],
-                    404);
+            return new JSONResponse(
+                data: [
+                    'error'   => 'Conversation not found',
+                    'message' => 'The requested conversation does not exist',
+                ],
+                statusCode: 404
+            );
         } catch (\Exception $e) {
             $this->logger->error(
                     '[ConversationController] Failed to permanently delete conversation',

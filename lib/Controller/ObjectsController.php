@@ -1470,7 +1470,7 @@ class ObjectsController extends Controller
             // Get the publication date from request if provided.
             $date = null;
             if ($this->request->getParam(key: 'date') !== null) {
-                $date = new \DateTime(datetime: $this->request->getParam(key: 'date'));
+                $date = new \DateTime($this->request->getParam(key: 'date'));
             }
 
             // Publish the object.
@@ -1519,7 +1519,7 @@ class ObjectsController extends Controller
             // Get the depublication date from request if provided.
             $date = null;
             if ($this->request->getParam(key: 'date') !== null) {
-                $date = new \DateTime(datetime: $this->request->getParam(key: 'date'));
+                $date = new \DateTime($this->request->getParam(key: 'date'));
             }
 
             // Depublish the object.

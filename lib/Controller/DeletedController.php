@@ -261,7 +261,7 @@ class DeletedController extends Controller
             return new JSONResponse(
                     data: [
                         'totalDeleted'    => $totalDeleted,
-            'deletedToday'    => $deletedToday,
+                        'deletedToday'    => $deletedToday,
                         'deletedThisWeek' => $deletedThisWeek,
                         'oldestDays'      => $oldestDays,
                     ]

@@ -183,7 +183,7 @@ class FileSearchController extends Controller
             return new JSONResponse(
                     data: [
                         'success' => false,
-            'message' => 'Search failed: '.$e->getMessage(),
+                        'message' => 'Search failed: '.$e->getMessage(),
                     ],
                     500
                     );
@@ -224,10 +224,10 @@ class FileSearchController extends Controller
                 return new JSONResponse(
                         data: [
                             'success' => false,
-                'message' => 'Query parameter is required',
+                            'message' => 'Query parameter is required',
                         ],
-                        400
-                        );
+                        statusCode: 400
+                    );
             }
 
             // Use existing semanticSearch method from VectorEmbeddingService.
@@ -240,7 +240,7 @@ class FileSearchController extends Controller
             return new JSONResponse(
                     data: [
                         'success'     => true,
-            'query'       => $query,
+                        'query'       => $query,
                         'total'       => count($results),
                         'results'     => $results,
                         'search_type' => 'semantic',
@@ -257,10 +257,10 @@ class FileSearchController extends Controller
             return new JSONResponse(
                     data: [
                         'success' => false,
-            'message' => 'Semantic search failed: '.$e->getMessage(),
+                        'message' => 'Semantic search failed: '.$e->getMessage(),
                     ],
-                    500
-                    );
+                    statusCode: 500
+                );
         }//end try
 
     }//end semanticSearch()
@@ -339,10 +339,10 @@ class FileSearchController extends Controller
             return new JSONResponse(
                     data: [
                         'success' => false,
-            'message' => 'Hybrid search failed: '.$e->getMessage(),
+                        'message' => 'Hybrid search failed: '.$e->getMessage(),
                     ],
-                    500
-                    );
+                    statusCode: 500
+                );
         }//end try
 
     }//end hybridSearch()

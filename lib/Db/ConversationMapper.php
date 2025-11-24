@@ -535,7 +535,7 @@ class ConversationMapper extends QBMapper
      */
     public function cleanupOldDeleted(int $daysOld=30): int|\OCP\DB\IResult
     {
-        $threshold = new \DateTime(datetime: "-{$daysOld} days");
+        $threshold = new \DateTime("-{$daysOld} days");
 
         $qb = $this->db->getQueryBuilder();
 

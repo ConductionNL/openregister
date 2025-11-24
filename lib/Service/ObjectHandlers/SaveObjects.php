@@ -810,14 +810,14 @@ class SaveObjects
                 // Convert published/depublished strings to DateTime objects.
                 if (isset($selfDataForHydration['published']) && is_string($selfDataForHydration['published'])) {
                     try {
-                        $selfDataForHydration['published'] = new \DateTime(datetime: $selfDataForHydration['published']);
+                        $selfDataForHydration['published'] = new \DateTime($selfDataForHydration['published']);
                     } catch (\Exception $e) {
                         // Keep as string if conversion fails.
                     }
                 }
                 if (isset($selfDataForHydration['depublished']) && is_string($selfDataForHydration['depublished'])) {
                     try {
-                        $selfDataForHydration['depublished'] = new \DateTime(datetime: $selfDataForHydration['depublished']);
+                        $selfDataForHydration['depublished'] = new \DateTime($selfDataForHydration['depublished']);
                     } catch (\Exception $e) {
                         // Keep as string if conversion fails.
                     }
@@ -1020,7 +1020,7 @@ class SaveObjects
                     // Convert published/depublished strings to DateTime objects.
                     if (isset($selfDataForHydration['published']) && is_string($selfDataForHydration['published'])) {
                         try {
-                            $selfDataForHydration['published'] = new \DateTime(datetime: $selfDataForHydration['published']);
+                            $selfDataForHydration['published'] = new \DateTime($selfDataForHydration['published']);
                         } catch (\Exception $e) {
                             // Keep as string if conversion fails.
                             $this->logger->warning('Failed to convert published date to DateTime', [
@@ -1031,7 +1031,7 @@ class SaveObjects
                     }
                     if (isset($selfDataForHydration['depublished']) && is_string($selfDataForHydration['depublished'])) {
                         try {
-                            $selfDataForHydration['depublished'] = new \DateTime(datetime: $selfDataForHydration['depublished']);
+                            $selfDataForHydration['depublished'] = new \DateTime($selfDataForHydration['depublished']);
                         } catch (\Exception $e) {
                             // Keep as string if conversion fails.
                         }
@@ -2292,7 +2292,7 @@ class SaveObjects
                     if (isset($incomingData['object']) && is_array($incomingData['object']) && !empty($incomingData['object'])) {
                         $existingObject->setObject($incomingData['object']);
                         if (isset($incomingData['updated'])) {
-                            $existingObject->setUpdated(new \DateTime(datetime: $incomingData['updated']));
+                            $existingObject->setUpdated(new \DateTime($incomingData['updated']));
                         }
                         if (isset($incomingData['owner'])) {
                             $existingObject->setOwner($incomingData['owner']);
@@ -2301,7 +2301,7 @@ class SaveObjects
                             $existingObject->setOrganisation($incomingData['organisation']);
                         }
                         if (isset($incomingData['published'])) {
-                            $existingObject->setPublished(new \DateTime(datetime: $incomingData['published']));
+                            $existingObject->setPublished(new \DateTime($incomingData['published']));
                         }
 
                         // CRITICAL FIX: Update register and schema to support object migration between registers/schemas.
