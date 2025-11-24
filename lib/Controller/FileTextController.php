@@ -215,10 +215,10 @@ class FileTextController extends Controller
             return new JSONResponse(
                     data: [
                         'success' => false,
-            'message' => 'Bulk extraction failed: '.$e->getMessage(),
+                        'message' => 'Bulk extraction failed: '.$e->getMessage(),
                     ],
-                    500
-                    );
+                    statusCode: 500
+                );
         }//end try
 
     }//end bulkExtract()
@@ -254,10 +254,10 @@ class FileTextController extends Controller
             return new JSONResponse(
                     data: [
                         'success' => false,
-            'message' => 'Failed to retrieve statistics: '.$e->getMessage(),
+                        'message' => 'Failed to retrieve statistics: '.$e->getMessage(),
                     ],
-                    500
-                    );
+                    statusCode: 500
+                );
         }//end try
 
     }//end getStats()
@@ -296,10 +296,10 @@ class FileTextController extends Controller
             return new JSONResponse(
                     data: [
                         'success' => false,
-            'message' => 'Failed to delete file text: '.$e->getMessage(),
+                        'message' => 'Failed to delete file text: '.$e->getMessage(),
                     ],
-                    500
-                    );
+                    statusCode: 500
+                );
         }//end try
 
     }//end deleteFileText()
@@ -334,19 +334,19 @@ class FileTextController extends Controller
             return new JSONResponse(data: $result);
         } catch (\Exception $e) {
             $this->logger->error(
-                    '[FileTextController] Failed to process extracted files',
-                    statusCode: [
-                        'error' => $e->getMessage(),
-                    ]
+                '[FileTextController] Failed to process extracted files',
+                [
+                    'error' => $e->getMessage(),
+                ]
                     );
 
             return new JSONResponse(
                     data: [
                         'success' => false,
-            'message' => 'Failed to process extracted files: '.$e->getMessage(),
+                        'message' => 'Failed to process extracted files: '.$e->getMessage(),
                     ],
-                    500
-                    );
+                    statusCode: 500
+                );
         }//end try
 
     }//end processAndIndexExtracted()
@@ -381,20 +381,20 @@ class FileTextController extends Controller
             return new JSONResponse(data: $result);
         } catch (\Exception $e) {
             $this->logger->error(
-                    '[FileTextController] Failed to process file',
-                    statusCode: [
-                        'file_id' => $fileId,
-                        'error'   => $e->getMessage(),
+                '[FileTextController] Failed to process file',
+                [
+                    'file_id' => $fileId,
+                    'error'   => $e->getMessage(),
                     ]
                     );
 
             return new JSONResponse(
                     data: [
                         'success' => false,
-            'message' => 'Failed to process file: '.$e->getMessage(),
+                        'message' => 'Failed to process file: '.$e->getMessage(),
                     ],
-                    500
-                    );
+                    statusCode: 500
+                );
         }//end try
 
     }//end processAndIndexFile()
@@ -430,10 +430,10 @@ class FileTextController extends Controller
             return new JSONResponse(
                     data: [
                         'success' => false,
-            'message' => 'Failed to get chunking stats: '.$e->getMessage(),
+                        'message' => 'Failed to get chunking stats: '.$e->getMessage(),
                     ],
-                    500
-                    );
+                    statusCode: 500
+                );
         }//end try
 
     }//end getChunkingStats()

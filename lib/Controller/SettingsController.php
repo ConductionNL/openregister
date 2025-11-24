@@ -474,6 +474,7 @@ class SettingsController extends Controller
             if ($validationResults['total_objects'] > 0) {
                 $validationSuccessRate = round(($validationResults['valid_objects'] / $validationResults['total_objects']) * 100, 2);
             }
+
             $validationResults['summary'] = [
                 'validation_success_rate' => $validationSuccessRate,
                 'has_errors'              => $validationResults['invalid_objects'] > 0,
@@ -644,12 +645,13 @@ class SettingsController extends Controller
             $endMemory       = memory_get_usage(true);
             $finalPeakMemory = memory_get_peak_usage(true);
 
-            $results['stats']['duration_seconds']   = round($endTime - $startTime, 2);
+            $results['stats']['duration_seconds'] = round($endTime - $startTime, 2);
             // Calculate objects per second.
             $objectsPerSecond = 0;
             if ($results['stats']['duration_seconds'] > 0) {
                 $objectsPerSecond = round($results['stats']['processed_objects'] / $results['stats']['duration_seconds'], 2);
             }
+
             $results['stats']['objects_per_second'] = $objectsPerSecond;
 
             // Add memory usage information.
@@ -948,7 +950,7 @@ class SettingsController extends Controller
                 }//end try
             }//end foreach
 
-            $batchDuration    = microtime(true) - $batchStartTime;
+            $batchDuration = microtime(true) - $batchStartTime;
             // Calculate objects per second.
             $objectsPerSecond = 0;
             if ($batchDuration > 0) {
@@ -1198,6 +1200,7 @@ class SettingsController extends Controller
             if ($maxObjects > 0) {
                 $estimatedObjectCount = $maxObjects;
             }
+
             // Estimate memory usage (rough calculation).
             // Assume each object uses approximately 50KB in memory during processing.
             $estimatedMemoryPerObject = 50 * 1024;
@@ -1428,6 +1431,7 @@ class SettingsController extends Controller
                     if ($lastError !== null && isset($lastError['message']) === true) {
                         $lastSystemError = $lastError['message'];
                     }
+
                     // Get port value or default.
                     $portValue = 'default';
                     if ($solrSettings['port'] !== null && $solrSettings['port'] !== '') {
@@ -1806,8 +1810,8 @@ class SettingsController extends Controller
                         'message'    => 'Reindex failed: '.$e->getMessage(),
                         'collection' => $name,
                     ],
-                    422
-                    );
+                    statusCode: 422
+                );
         }//end try
 
     }//end reindexSpecificCollection()
@@ -1837,8 +1841,8 @@ class SettingsController extends Controller
                         'message' => 'Connection test failed: '.$e->getMessage(),
                         'details' => ['exception' => $e->getMessage()],
                     ],
-                    422
-                    );
+                    statusCode: 422
+                );
         }
 
     }//end testSolrConnection()
@@ -1949,8 +1953,8 @@ class SettingsController extends Controller
                         'message' => 'Failed to retrieve SOLR field configuration: '.$e->getMessage(),
                         'details' => ['error' => $e->getMessage()],
                     ],
-                    422
-                    );
+                    statusCode: 422
+                );
         }//end try
 
     }//end getSolrFields()
@@ -2070,8 +2074,8 @@ class SettingsController extends Controller
                         'message' => 'Failed to create missing SOLR fields: '.$e->getMessage(),
                         'details' => ['error' => $e->getMessage()],
                     ],
-                    422
-                    );
+                    statusCode: 422
+                );
         }//end try
 
     }//end createMissingSolrFields()
@@ -2104,8 +2108,8 @@ class SettingsController extends Controller
                         'success' => false,
                         'message' => 'Failed to get object collection field status: '.$e->getMessage(),
                     ],
-                    500
-                    );
+                    statusCode: 500
+                );
         }
 
     }//end getObjectCollectionFields()
@@ -2138,8 +2142,8 @@ class SettingsController extends Controller
                         'success' => false,
                         'message' => 'Failed to get file collection field status: '.$e->getMessage(),
                     ],
-                    500
-                    );
+                    statusCode: 500
+                );
         }
 
     }//end getFileCollectionFields()
@@ -2167,8 +2171,8 @@ class SettingsController extends Controller
                             'success' => false,
                             'message' => 'Object collection not configured',
                         ],
-                        400
-                        );
+                        statusCode: 400
+                    );
             }
 
             // Create missing fields.
@@ -2188,8 +2192,8 @@ class SettingsController extends Controller
                         'success' => false,
                         'message' => 'Failed to create missing object fields: '.$e->getMessage(),
                     ],
-                    500
-                    );
+                    statusCode: 500
+                );
         }//end try
 
     }//end createMissingObjectFields()
@@ -2217,8 +2221,8 @@ class SettingsController extends Controller
                             'success' => false,
                             'message' => 'File collection not configured',
                         ],
-                        400
-                        );
+                        statusCode: 400
+                    );
             }
 
             // Set active collection to file collection temporarily.
@@ -2247,8 +2251,8 @@ class SettingsController extends Controller
                         'success' => false,
                         'message' => 'Failed to create missing file fields: '.$e->getMessage(),
                     ],
-                    500
-                    );
+                    statusCode: 500
+                );
         }//end try
 
     }//end createMissingFileFields()
@@ -2335,8 +2339,8 @@ class SettingsController extends Controller
                         'message' => 'Failed to fix mismatched SOLR fields: '.$e->getMessage(),
                         'details' => ['error' => $e->getMessage()],
                     ],
-                    422
-                    );
+                    statusCode: 422
+                );
         }//end try
 
     }//end fixMismatchedSolrFields()
@@ -2607,8 +2611,8 @@ class SettingsController extends Controller
                         'message' => 'Failed to discover facets: '.$e->getMessage(),
                         'facets'  => [],
                     ],
-                    422
-                    );
+                    statusCode: 422
+                );
         }//end try
 
     }//end discoverSolrFacets()
@@ -2724,8 +2728,8 @@ class SettingsController extends Controller
                         'message' => 'Failed to get facet configuration: '.$e->getMessage(),
                         'error'   => $e->getMessage(),
                     ],
-                    500
-                    );
+                    statusCode: 500
+                );
         }//end try
 
     }//end getSolrFacetConfigWithDiscovery()
@@ -2759,8 +2763,8 @@ class SettingsController extends Controller
                         'message' => 'Failed to update facet configuration: '.$e->getMessage(),
                         'error'   => $e->getMessage(),
                     ],
-                    500
-                    );
+                    statusCode: 500
+                );
         }//end try
 
     }//end updateSolrFacetConfigWithDiscovery()
@@ -2812,8 +2816,8 @@ class SettingsController extends Controller
                         data: [
                             'error' => 'Invalid mode parameter. Must be "serial", "parallel", or "hyper"',
                         ],
-                        400
-                        );
+                        statusCode: 400
+                    );
             }
 
             // Debug logging for schema IDs.
@@ -2844,8 +2848,8 @@ class SettingsController extends Controller
                         'line'            => $e->getLine(),
                         'trace'           => $e->getTraceAsString(),
                     ],
-                    500
-                    );
+                    statusCode: 500
+                );
         }//end try
 
     }//end warmupSolrIndex()
@@ -2932,8 +2936,8 @@ class SettingsController extends Controller
                                 'success' => false,
                                 'message' => 'Unknown operation: '.$operation,
                             ],
-                            400
-                            );
+                            statusCode: 400
+                        );
             }//end switch
         } catch (\Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
@@ -3176,8 +3180,8 @@ class SettingsController extends Controller
                         'success' => false,
                         'error'   => 'Failed to get Solr information: '.$e->getMessage(),
                     ],
-                    500
-                    );
+                    statusCode: 500
+                );
         }//end try
 
     }//end getSolrInfo()
@@ -3300,8 +3304,8 @@ class SettingsController extends Controller
                         'success' => false,
                         'error'   => 'Failed to get database information: '.$e->getMessage(),
                     ],
-                    500
-                    );
+                    statusCode: 500
+                );
         }//end try
 
     }//end getDatabaseInfo()
@@ -3359,8 +3363,8 @@ class SettingsController extends Controller
                         'success' => false,
                         'error'   => $e->getMessage(),
                     ],
-                    500
-                    );
+                    statusCode: 500
+                );
         }//end try
 
     }//end updateLLMSettings()
@@ -3414,8 +3418,8 @@ class SettingsController extends Controller
                             'error'   => 'Missing provider',
                             'message' => 'Provider is required for testing',
                         ],
-                        400
-                        );
+                        statusCode: 400
+                    );
             }
 
             if (empty($config) === true || is_array($config) === false) {
@@ -3425,8 +3429,8 @@ class SettingsController extends Controller
                             'error'   => 'Invalid config',
                             'message' => 'Config must be provided as an object',
                         ],
-                        400
-                        );
+                        statusCode: 400
+                    );
             }
 
             // Delegate to VectorEmbeddingService for testing.
@@ -3438,6 +3442,7 @@ class SettingsController extends Controller
             if ($result['success'] === true) {
                 $statusCode = 200;
             }
+
             return new JSONResponse(data: $result, statusCode: $statusCode);
         } catch (\Exception $e) {
             return new JSONResponse(
@@ -3446,8 +3451,8 @@ class SettingsController extends Controller
                         'error'   => $e->getMessage(),
                         'message' => 'Failed to generate embedding: '.$e->getMessage(),
                     ],
-                    400
-                    );
+                    statusCode: 400
+                );
         }//end try
 
     }//end testEmbedding()
@@ -3482,8 +3487,8 @@ class SettingsController extends Controller
                             'error'   => 'Missing provider',
                             'message' => 'Provider is required for testing',
                         ],
-                        400
-                        );
+                        statusCode: 400
+                    );
             }
 
             if (empty($config) === true || is_array($config) === false) {
@@ -3493,8 +3498,8 @@ class SettingsController extends Controller
                             'error'   => 'Invalid config',
                             'message' => 'Config must be provided as an object',
                         ],
-                        400
-                        );
+                        statusCode: 400
+                    );
             }
 
             // Delegate to ChatService for testing.
@@ -3506,6 +3511,7 @@ class SettingsController extends Controller
             if ($result['success'] === true) {
                 $statusCode = 200;
             }
+
             return new JSONResponse(data: $result, statusCode: $statusCode);
         } catch (\Exception $e) {
             return new JSONResponse(
@@ -3514,8 +3520,8 @@ class SettingsController extends Controller
                         'error'   => $e->getMessage(),
                         'message' => 'Failed to test chat: '.$e->getMessage(),
                     ],
-                    400
-                    );
+                    statusCode: 400
+                );
         }//end try
 
     }//end testChat()
@@ -3561,8 +3567,8 @@ class SettingsController extends Controller
                             'success' => false,
                             'error'   => 'API endpoint and API key are required',
                         ],
-                        400
-                        );
+                        statusCode: 400
+                    );
             }
 
             // Test the connection by making a simple request.
@@ -3615,8 +3621,8 @@ class SettingsController extends Controller
                         'success' => false,
                         'error'   => $e->getMessage(),
                     ],
-                    500
-                    );
+                    statusCode: 500
+                );
         }//end try
 
     }//end testDolphinConnection()
@@ -3689,12 +3695,13 @@ class SettingsController extends Controller
             // Format models for frontend dropdown.
             $models = array_map(
                     function ($model) {
-                        $name   = $model['name'] ?? 'unknown';
+                        $name = $model['name'] ?? 'unknown';
                         // Format size if available.
                         $size = '';
                         if (isset($model['size']) === true) {
                             $size = $this->formatBytes($model['size']);
                         }
+
                         $family = $model['details']['family'] ?? '';
 
                         // Build description.
@@ -3704,6 +3711,7 @@ class SettingsController extends Controller
                             if ($description !== null && $description !== '') {
                                 $description .= ' • ';
                             }
+
                             $description .= $size;
                         }
 
@@ -3740,8 +3748,8 @@ class SettingsController extends Controller
                         'error'   => $e->getMessage(),
                         'models'  => [],
                     ],
-                    500
-                    );
+                    statusCode: 500
+                );
         }//end try
 
     }//end getOllamaModels()
@@ -3799,8 +3807,8 @@ class SettingsController extends Controller
                         'success' => false,
                         'error'   => $e->getMessage(),
                     ],
-                    500
-                    );
+                    statusCode: 500
+                );
         }
 
     }//end clearAllEmbeddings()
@@ -3842,8 +3850,8 @@ class SettingsController extends Controller
                         'success' => false,
                         'error'   => $e->getMessage(),
                     ],
-                    500
-                    );
+                    statusCode: 500
+                );
         }//end try
 
     }//end updateFileSettings()
@@ -3873,8 +3881,8 @@ class SettingsController extends Controller
                         'success' => false,
                         'error'   => $e->getMessage(),
                     ],
-                    500
-                    );
+                    statusCode: 500
+                );
         }
 
     }//end getObjectSettings()
@@ -3912,8 +3920,8 @@ class SettingsController extends Controller
                         'success' => false,
                         'error'   => $e->getMessage(),
                     ],
-                    500
-                    );
+                    statusCode: 500
+                );
         }//end try
 
     }//end updateObjectSettings()
@@ -4022,8 +4030,8 @@ class SettingsController extends Controller
                         'success' => false,
                         'error'   => $e->getMessage(),
                     ],
-                    422
-                    );
+                    statusCode: 422
+                );
         }
 
     }//end testSchemaMapping()
@@ -4096,8 +4104,8 @@ class SettingsController extends Controller
                             'trace'          => $e->getTraceAsString(),
                         ],
                     ],
-                    500
-                    );
+                    statusCode: 500
+                );
         }//end try
 
     }//end inspectSolrIndex()
@@ -4157,8 +4165,8 @@ class SettingsController extends Controller
                             'prediction_safe' => false,
                         ],
                     ],
-                    422
-                    );
+                    statusCode: 422
+                );
         }//end try
 
     }//end getSolrMemoryPrediction()
@@ -4192,8 +4200,8 @@ class SettingsController extends Controller
                             'success' => false,
                             'message' => 'Invalid field name provided',
                         ],
-                        400
-                        );
+                        statusCode: 400
+                    );
             }
 
             // Prevent deletion of critical system fields.
@@ -4265,8 +4273,8 @@ class SettingsController extends Controller
                         'message' => 'Failed to delete SOLR field: '.$e->getMessage(),
                         'error'   => $e->getMessage(),
                     ],
-                    500
-                    );
+                    statusCode: 500
+                );
         }//end try
 
     }//end deleteSolrField()
@@ -4454,8 +4462,8 @@ class SettingsController extends Controller
                         'error'   => $e->getMessage(),
                         'trace'   => $e->getTraceAsString(),
                     ],
-                    500
-                    );
+                    statusCode: 500
+                );
         }//end try
 
     }//end listSolrCollections()
@@ -4490,8 +4498,8 @@ class SettingsController extends Controller
                         'error'   => $e->getMessage(),
                         'trace'   => $e->getTraceAsString(),
                     ],
-                    500
-                    );
+                    statusCode: 500
+                );
         }//end try
 
     }//end listSolrConfigSets()
@@ -4521,8 +4529,8 @@ class SettingsController extends Controller
                         'success' => false,
                         'error'   => $e->getMessage(),
                     ],
-                    400
-                    );
+                    statusCode: 400
+                );
         }
 
     }//end createSolrConfigSet()
@@ -4551,8 +4559,8 @@ class SettingsController extends Controller
                         'success' => false,
                         'error'   => $e->getMessage(),
                     ],
-                    400
-                    );
+                    statusCode: 400
+                );
         }
 
     }//end deleteSolrConfigSet()
@@ -4597,8 +4605,8 @@ class SettingsController extends Controller
                         'error'   => $e->getMessage(),
                         'trace'   => $e->getTraceAsString(),
                     ],
-                    500
-                    );
+                    statusCode: 500
+                );
         }//end try
 
     }//end createSolrCollection()
@@ -4630,8 +4638,8 @@ class SettingsController extends Controller
                         'error'   => $e->getMessage(),
                         'trace'   => $e->getTraceAsString(),
                     ],
-                    500
-                    );
+                    statusCode: 500
+                );
         }
 
     }//end copySolrCollection()
@@ -4682,8 +4690,8 @@ class SettingsController extends Controller
                         'error'   => $e->getMessage(),
                         'trace'   => $e->getTraceAsString(),
                     ],
-                    500
-                    );
+                    statusCode: 500
+                );
         }//end try
 
     }//end updateSolrCollectionAssignments()
@@ -4711,8 +4719,8 @@ class SettingsController extends Controller
                             'success' => false,
                             'error'   => 'Query parameter is required',
                         ],
-                        400
-                        );
+                        statusCode: 400
+                    );
             }
 
             // Get VectorEmbeddingService from container.
@@ -4739,8 +4747,8 @@ class SettingsController extends Controller
                         'error'   => $e->getMessage(),
                         'trace'   => $e->getTraceAsString(),
                     ],
-                    500
-                    );
+                    statusCode: 500
+                );
         }//end try
 
     }//end semanticSearch()
@@ -4774,8 +4782,8 @@ class SettingsController extends Controller
                             'success' => false,
                             'error'   => 'Query parameter is required',
                         ],
-                        400
-                        );
+                        statusCode: 400
+                    );
             }
 
             // Get VectorEmbeddingService from container.
@@ -4799,8 +4807,8 @@ class SettingsController extends Controller
                         'error'   => $e->getMessage(),
                         'trace'   => $e->getTraceAsString(),
                     ],
-                    500
-                    );
+                    statusCode: 500
+                );
         }//end try
 
     }//end hybridSearch()
@@ -4837,8 +4845,8 @@ class SettingsController extends Controller
                         'error'   => $e->getMessage(),
                         'trace'   => $e->getTraceAsString(),
                     ],
-                    500
-                    );
+                    statusCode: 500
+                );
         }//end try
 
     }//end getVectorStats()
@@ -4950,8 +4958,8 @@ class SettingsController extends Controller
                         'success' => false,
                         'message' => 'File warmup failed: '.$e->getMessage(),
                     ],
-                    500
-                    );
+                    statusCode: 500
+                );
         }//end try
 
     }//end warmupFiles()
@@ -5006,8 +5014,8 @@ class SettingsController extends Controller
                         'success' => false,
                         'message' => 'Failed to index file: '.$e->getMessage(),
                     ],
-                    500
-                    );
+                    statusCode: 500
+                );
         }//end try
 
     }//end indexFile()
@@ -5081,8 +5089,8 @@ class SettingsController extends Controller
                         'success' => false,
                         'message' => 'Reindex failed: '.$e->getMessage(),
                     ],
-                    500
-                    );
+                    statusCode: 500
+                );
         }//end try
 
     }//end reindexFiles()
@@ -5116,8 +5124,8 @@ class SettingsController extends Controller
                         'success' => false,
                         'message' => 'Failed to get statistics: '.$e->getMessage(),
                     ],
-                    500
-                    );
+                    statusCode: 500
+                );
         }//end try
 
     }//end getFileIndexStats()
@@ -5232,6 +5240,7 @@ class SettingsController extends Controller
             if ($githubToken !== null && $githubToken !== '') {
                 $maskedGithubToken = $this->maskToken($githubToken);
             }
+
             $maskedGitlabToken = '';
             if ($gitlabToken !== null && $gitlabToken !== '') {
                 $maskedGitlabToken = $this->maskToken($gitlabToken);
@@ -5325,8 +5334,8 @@ class SettingsController extends Controller
                             'success' => false,
                             'message' => 'No GitHub token provided',
                         ],
-                        400
-                        );
+                        statusCode: 400
+                    );
             }
 
             // Test the token by making a simple API call.
@@ -5358,8 +5367,8 @@ class SettingsController extends Controller
                         'success' => false,
                         'message' => 'GitHub token test failed: '.$e->getMessage(),
                     ],
-                    400
-                    );
+                    statusCode: 400
+                );
         }//end try
 
     }//end testGitHubToken()
@@ -5386,8 +5395,8 @@ class SettingsController extends Controller
                             'success' => false,
                             'message' => 'No GitLab token provided',
                         ],
-                        400
-                        );
+                        statusCode: 400
+                    );
             }
 
             // Ensure API URL doesn't end with slash.
@@ -5425,8 +5434,8 @@ class SettingsController extends Controller
                         'success' => false,
                         'message' => 'GitLab token test failed: '.$e->getMessage(),
                     ],
-                    400
-                    );
+                    statusCode: 400
+                );
         }//end try
 
     }//end testGitLabToken()

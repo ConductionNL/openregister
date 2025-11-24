@@ -449,7 +449,8 @@ class RegistersController extends Controller
             // Convert schemas to array format for JSON response.
             $schemasArray = array_map(fn($schema) => $schema->jsonSerialize(), $schemas);
 
-            return new JSONResponse(data: [
+            return new JSONResponse(
+                    data: [
                         'results' => $schemasArray,
                         'total'   => count($schemasArray),
                     ]
@@ -488,7 +489,8 @@ class RegistersController extends Controller
                 'schema'   => $schema,
             ],
         ];
-        return new JSONResponse(data: $this->objectEntityMapper->searchObjects(query: $query)
+        return new JSONResponse(
+                data: $this->objectEntityMapper->searchObjects(query: $query)
         );
 
     }//end objects()
@@ -668,16 +670,16 @@ class RegistersController extends Controller
                 data: [
                     'success'        => true,
                     'message'        => $message,
-                        'registerId'     => $register->getId(),
-                        'commit_sha'     => $result['commit_sha'],
-                        'commit_url'     => $result['commit_url'],
-                        'file_url'       => $result['file_url'],
-                        'branch'         => $branch,
-                        'default_branch' => $defaultBranch,
-                        'indexing_note'  => $defaultBranch && $branch !== $defaultBranch ? "Published to non-default branch. For discovery, publish to '{$defaultBranch}' branch." : "File published successfully. GitHub Code Search indexing may take a few minutes.",
-                    ],
-                    200
-                    );
+                    'registerId'     => $register->getId(),
+                    'commit_sha'     => $result['commit_sha'],
+                    'commit_url'     => $result['commit_url'],
+                    'file_url'       => $result['file_url'],
+                    'branch'         => $branch,
+                    'default_branch' => $defaultBranch,
+                    'indexing_note'  => $defaultBranch && $branch !== $defaultBranch ? "Published to non-default branch. For discovery, publish to '{$defaultBranch}' branch." : "File published successfully. GitHub Code Search indexing may take a few minutes.",
+                ],
+                    statusCode: 200
+                );
         } catch (DoesNotExistException $e) {
             $this->logger->error('Register not found for publishing', ['register_id' => $id]);
             return new JSONResponse(data: ['error' => 'Register not found'], statusCode: 404);
@@ -866,10 +868,12 @@ class RegistersController extends Controller
                     break;
             }//end switch
 
-            return new JSONResponse(data: [
+            return new JSONResponse(
+                    data: [
                         'message' => 'Import successful',
                         'summary' => $summary,
-                    ]);
+                    ]
+                    );
         } catch (\Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
         }//end try

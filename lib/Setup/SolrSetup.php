@@ -1092,7 +1092,8 @@ class SolrSetup
                     '/admin/configs?action=CREATE&name=%s&baseConfigSet=%s&wt=json',
                     urlencode($newConfigSetName),
                     urlencode($templateConfigSetName)
-                );
+                )
+        );
 
         $this->logger->info(
                 'Attempting to create SOLR configSet',
@@ -2308,6 +2309,7 @@ class SolrSetup
                         '/admin/cores?action=STATUS&core=%s&wt=json',
                         urlencode($coreName)
                 )
+        );
 
         try {
             $response = $this->httpClient->get($url, ['timeout' => 10]);
@@ -3221,6 +3223,7 @@ class SolrSetup
                         '/%s/select?q=*:*&rows=0&wt=json',
                         urlencode($collectionName)
                 )
+        );
 
         try {
             $response = $this->httpClient->get($url, ['timeout' => 10]);
@@ -3256,6 +3259,7 @@ class SolrSetup
                         '/%s/select?q=*:*&rows=0&wt=json',
                         urlencode($coreName)
                 )
+        );
 
         try {
             $response = $this->httpClient->get($url, ['timeout' => 10]);

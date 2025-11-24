@@ -111,7 +111,7 @@ class SearchTrailController extends Controller
         $to   = null;
         if (isset($params['from']) === true) {
             try {
-                $from = new \DateTime(datetime: $params['from']);
+                $from = new \DateTime($params['from']);
             } catch (\Exception $e) {
                 // Invalid date format, ignore.
             }
@@ -119,7 +119,7 @@ class SearchTrailController extends Controller
 
         if (isset($params['to']) === true) {
             try {
-                $to = new \DateTime(datetime: $params['to']);
+                $to = new \DateTime($params['to']);
             } catch (\Exception $e) {
                 // Invalid date format, ignore.
             }
@@ -612,7 +612,7 @@ class SearchTrailController extends Controller
 
         if ($before !== null) {
             try {
-                $beforeDate = new \DateTime(datetime: $before);
+                $beforeDate = new \DateTime($before);
             } catch (\Exception $e) {
                 return new JSONResponse(data: ['error' => 'Invalid date format for before parameter'], statusCode: 400);
             }

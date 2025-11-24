@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * SolrSchemaService - Multi-Tenant, Multi-App Schema Mirroring
  *
  * This service handles automatic mirroring of OpenRegister schemas to SOLR

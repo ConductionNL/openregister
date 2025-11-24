@@ -978,14 +978,14 @@ class VectorEmbeddingService
         array $metadata=[]
     ): int {
         $this->logger->debug(
-                message: '[VectorEmbeddingService] Storing vector in database',
-                [
-                    'entity_type' => $entityType,
-                    'entity_id'   => $entityId,
-                    'chunk_index' => $chunkIndex,
-                    'dimensions'  => $dimensions,
-                ]
-                );
+            message: '[VectorEmbeddingService] Storing vector in database',
+            context: [
+                'entity_type' => $entityType,
+                'entity_id'   => $entityId,
+                'chunk_index' => $chunkIndex,
+                'dimensions'  => $dimensions,
+            ]
+        );
 
         try {
             // Serialize embedding to binary format.
@@ -1107,17 +1107,17 @@ class VectorEmbeddingService
 
                 if ($vectors === []) {
                     $this->logger->warning(
-                    message:'No vectors found in database',
-                            ['filters' => $filters]
-                            );
+                        message: 'No vectors found in database',
+                        context: ['filters' => $filters]
+                    );
                     return [];
                 }
 
                 // Step 3: Calculate cosine similarity for each vector.
                 $this->logger->debug(
-                message:'Step 3: Calculating similarities',
-                        ['vector_count' => count($vectors)]
-                        );
+                    message: 'Step 3: Calculating similarities',
+                    context: ['vector_count' => count($vectors)]
+                );
                 $results = [];
 
                 foreach ($vectors as $vector) {
@@ -1126,9 +1126,9 @@ class VectorEmbeddingService
 
                         if (is_array($storedEmbedding) === false) {
                             $this->logger->warning(
-                            message:'Invalid embedding format',
-                                    ['vector_id' => $vector['id']]
-                                    );
+                                message: 'Invalid embedding format',
+                                context: ['vector_id' => $vector['id']]
+                            );
                             continue;
                         }
 

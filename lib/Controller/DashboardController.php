@@ -151,7 +151,7 @@ class DashboardController extends Controller
                 data: [
                     'status'    => 'error',
                     'message'   => $e->getMessage(),
-                    'timestamp' => (new \DateTime(datetime: 'now'))->format('c'),
+                    'timestamp' => (new \DateTime('now'))->format('c'),
                 ],
                 statusCode: 500
             );
@@ -177,13 +177,13 @@ class DashboardController extends Controller
     {
         try {
             if ($from !== null) {
-                $fromDate = new \DateTime(datetime: $from);
+                $fromDate = new \DateTime($from);
             } else {
                 $fromDate = null;
             }
 
             if ($till !== null) {
-                $tillDate = new \DateTime(datetime: $till);
+                $tillDate = new \DateTime($till);
             } else {
                 $tillDate = null;
             }

@@ -443,20 +443,20 @@ class MagicSearchHandler
             }
 
             if (isset($metadataData['created']) === true) {
-                $objectEntity->setCreated(new \DateTime(datetime: $metadataData['created']));
+                $objectEntity->setCreated(new \DateTime($metadataData['created']));
             }
 
             if (isset($metadataData['updated']) === true) {
-                $objectEntity->setUpdated(new \DateTime(datetime: $metadataData['updated']));
+                $objectEntity->setUpdated(new \DateTime($metadataData['updated']));
             }
 
             if (isset($metadataData['published']) === true) {
-                $objectEntity->setPublished(new \DateTime(datetime: $metadataData['published']));
+                $objectEntity->setPublished(new \DateTime($metadataData['published']));
             }
 
             if (isset($metadataData['deleted']) === true) {
                 // Convert deleted timestamp to array format expected by setDeleted.
-                $deletedDateTime = new \DateTime(datetime: $metadataData['deleted']);
+                $deletedDateTime = new \DateTime($metadataData['deleted']);
                 $objectEntity->setDeleted(
                         [
                             'deleted'   => $deletedDateTime->format('c'),
@@ -466,7 +466,7 @@ class MagicSearchHandler
             }
 
             if (isset($metadataData['depublished']) === true) {
-                $objectEntity->setDepublished(new \DateTime(datetime: $metadataData['depublished']));
+                $objectEntity->setDepublished(new \DateTime($metadataData['depublished']));
             }
 
             // Set register and schema.
