@@ -185,7 +185,7 @@ class FileSearchController extends Controller
                         'success' => false,
             'message' => 'Search failed: '.$e->getMessage(),
                     ],
-                    500
+                    statusCode: 500
                     );
         }//end try
 

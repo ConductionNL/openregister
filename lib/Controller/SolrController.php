@@ -214,12 +214,15 @@ class SolrController extends Controller
             // Perform hybrid search.
             $result = $vectorService->hybridSearch($query, $solrFilters, $limit, $weights, $provider);
 
+            // Ensure result is an array for spread operator.
+            $resultArray = is_array($result) ? $result : [];
+
             return new JSONResponse(
                     data: [
                         'success'     => true,
                         'query'       => $query,
                         'search_type' => 'hybrid',
-                        ...$result,
+                        ...$resultArray,
                         'timestamp'   => date('c'),
                     ]
                     );
@@ -765,11 +768,14 @@ class SolrController extends Controller
             // Vectorize the object.
             $result = $solrObjectService->vectorizeObject($object, $provider);
 
+            // Ensure result is an array for spread operator.
+            $resultArray = is_array($result) ? $result : [];
+
             return new JSONResponse(
                     data: [
                         'success'   => true,
                         'message'   => 'Object vectorized successfully',
-                        ...$result,
+                        ...$resultArray,
                         'timestamp' => date('c'),
                     ]
                     );
@@ -876,11 +882,14 @@ class SolrController extends Controller
             // Vectorize the objects.
             $result = $solrObjectService->vectorizeObjects($objects, $provider);
 
+            // Ensure result is an array for spread operator.
+            $resultArray = is_array($result) ? $result : [];
+
             return new JSONResponse(
                     data: [
                         'success'    => $result['success'],
                         'message'    => "Processed {$result['successful']} of {$result['total']} objects",
-                        ...$result,
+                        ...$resultArray,
                         'pagination' => [
                             'limit'    => $limit,
                             'offset'   => $offset,

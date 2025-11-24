@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use DateTime;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -12228,7 +12229,7 @@ class GuzzleSolrService
     /**
      * Format DateTime field.
      *
-     * @param \DateTime|null $dateTime DateTime object.
+     * @param DateTime|null $dateTime DateTime object.
      *
      * @return string|null Formatted date string or null.
      */

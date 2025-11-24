@@ -310,7 +310,7 @@ class ApplicationMapper extends QBMapper
         $entity = parent::update($entity);
 
         // Dispatch update event.
-        $this->eventDispatcher->dispatchTyped(new ApplicationUpdatedEvent($entity, register: $oldEntity));
+        $this->eventDispatcher->dispatchTyped(new ApplicationUpdatedEvent($entity, $oldEntity));
 
         return $entity;
 
@@ -330,7 +330,7 @@ class ApplicationMapper extends QBMapper
     public function delete(Entity $entity): Entity
     {
         // Verify RBAC permission to delete.
-        $this->verifyRbacPermission('delete', schema: 'application');
+        $this->verifyRbacPermission('delete', 'application');
 
         // Verify user has access to this organisation.
         $this->verifyOrganisationAccess($entity);
@@ -392,13 +392,13 @@ class ApplicationMapper extends QBMapper
     public function countByOrganisation(string $organisationUuid): int
     {
         // Verify RBAC permission to read.
-        $this->verifyRbacPermission('read', files: 'application');
+        $this->verifyRbacPermission('read', 'application');
 
         $qb = $this->db->getQueryBuilder();
 
         $qb->select($qb->createFunction('COUNT(*)'))
             ->from($this->tableName)
-            ->where($qb->expr()->eq('organisation', rbac: $qb->createNamedParameter($organisationUuid, multi: IQueryBuilder::PARAM_STR)));
+            ->where($qb->expr()->eq('organisation', $qb->createNamedParameter($organisationUuid, IQueryBuilder::PARAM_STR)));
 
         $result = $qb->executeQuery();
         $count  = $result->fetchOne();

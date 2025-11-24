@@ -134,7 +134,7 @@ class ConversationMapper extends QBMapper
         $entity = parent::update($entity);
 
         // Dispatch update event.
-        $this->eventDispatcher->dispatchTyped(new ConversationUpdatedEvent($entity, register: $oldEntity));
+        $this->eventDispatcher->dispatchTyped(new ConversationUpdatedEvent($entity, $oldEntity));
 
         return $entity;
 
@@ -176,7 +176,7 @@ class ConversationMapper extends QBMapper
 
         $qb->select('*')
             ->from($this->tableName)
-            ->where($qb->expr()->eq('id', schema: $qb->createNamedParameter($id, extend: IQueryBuilder::PARAM_INT)));
+            ->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
 
         return $this->findEntity($qb);
 
@@ -199,7 +199,7 @@ class ConversationMapper extends QBMapper
 
         $qb->select('*')
             ->from($this->tableName)
-            ->where($qb->expr()->eq('uuid', files: $qb->createNamedParameter($uuid, rbac: IQueryBuilder::PARAM_STR)));
+            ->where($qb->expr()->eq('uuid', $qb->createNamedParameter($uuid, IQueryBuilder::PARAM_STR)));
 
         return $this->findEntity($qb);
 
@@ -544,7 +544,7 @@ class ConversationMapper extends QBMapper
             ->andWhere(
                 $qb->expr()->lt(
                     'deleted_at',
-                        register: $qb->createNamedParameter($threshold, schema: IQueryBuilder::PARAM_DATE)
+                    $qb->createNamedParameter($threshold, IQueryBuilder::PARAM_DATE)
                 )
             );
 

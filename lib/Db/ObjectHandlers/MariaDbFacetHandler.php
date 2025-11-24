@@ -1241,8 +1241,12 @@ class MariaDbFacetHandler
             } else if (is_object($value)) {
                 $fieldAnalysis[$fieldPath]['is_nested'] = true;
                 // Recursively analyze nested object.
-                if (is_array($value)) {
-                    $this->analyzeObjectFields($value, $fieldAnalysis, $fieldPath, $depth + 1);
+                // Note: is_object($value) and is_array($value) are mutually exclusive.
+                // This code path handles objects that are not arrays.
+                // For array-like objects, convert to array first.
+                if (method_exists($value, '__toArray')) {
+                    $valueArray = (array) $value->__toArray();
+                    $this->analyzeObjectFields($valueArray, $fieldAnalysis, $fieldPath, $depth + 1);
                 }
             } else {
                 // Simple value.

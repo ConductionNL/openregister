@@ -608,7 +608,7 @@ class SchemaMapper extends QBMapper
 
         // Count objects that reference this schema (excluding soft-deleted objects).
         $qb = $this->db->getQueryBuilder();
-        $qb->select($qb->func()->count('*', multi: 'count'))
+        $qb->select($qb->func()->count('*'))
             ->from('openregister_objects')
             ->where($qb->expr()->eq('schema', $qb->createNamedParameter($schemaId, \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_INT)))
             ->andWhere($qb->expr()->isNull('deleted'));
@@ -1913,7 +1913,7 @@ class SchemaMapper extends QBMapper
         }
 
         if ($targetUuid !== null && $targetUuid !== '') {
-            $orConditions[] = $qb->expr()->like('one_of', multi: $qb->createNamedParameter('%"'.$targetUuid.'"%'));
+            $orConditions[] = $qb->expr()->like('one_of', $qb->createNamedParameter('%"'.$targetUuid.'"%'));
         }
 
         if ($targetSlug !== null && $targetSlug !== '') {

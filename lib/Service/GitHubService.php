@@ -738,6 +738,13 @@ class GitHubService
      */
     public function getRepositories(int $page=1, int $perPage=100): array
     {
+        // Check if GitHub API token is configured.
+        $token = $this->config->getAppValue('openregister', 'github_api_token', '');
+        if (empty($token)) {
+            $this->logger->info(message: 'GitHub API token not configured - returning empty repositories list');
+            return [];
+        }
+
         try {
             $this->logger->info(
                     'Fetching repositories from GitHub',
@@ -785,10 +792,28 @@ class GitHubService
                     $repos
                     );
         } catch (GuzzleException $e) {
+            $statusCode = null;
+            if ($e->hasResponse()) {
+                $statusCode = $e->getResponse()->getStatusCode();
+            }
+
+            // If authentication failed (401) or token not configured, return empty array instead of error.
+            if ($statusCode === 401 || empty($token)) {
+                $this->logger->info(
+                        'GitHub API authentication failed or not configured - returning empty repositories list',
+                        [
+                            'status_code' => $statusCode,
+                            'has_token'   => !empty($token),
+                        ]
+                        );
+                return [];
+            }
+
             $this->logger->error(
                     'GitHub API get repositories failed',
                     [
-                        'error' => $e->getMessage(),
+                        'error'       => $e->getMessage(),
+                        'status_code' => $statusCode,
                     ]
                     );
             throw new \Exception('Failed to fetch repositories: '.$e->getMessage());

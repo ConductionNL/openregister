@@ -1636,58 +1636,32 @@ class SettingsService
                 $isValidResponse = true;
             }
 
-                if ($isValidResponse === false) {
-                    return [
-                        'success' => false,
-                        'message' => 'SOLR admin endpoint returned invalid response',
-                        'details' => [
-                            'url'              => $testUrl,
-                            'test_type'        => $testType,
-                            'response'         => $data,
-                            'response_time_ms' => round($responseTime, 2),
-                        ],
-                    ];
-                }
-
+            if ($isValidResponse === false) {
                 return [
-                    'success' => true,
-                    'message' => 'SOLR server responding correctly',
+                    'success' => false,
+                    'message' => 'SOLR admin endpoint returned invalid response',
                     'details' => [
                         'url'              => $testUrl,
                         'test_type'        => $testType,
+                        'response'         => $data,
                         'response_time_ms' => round($responseTime, 2),
-                        'solr_status'      => $data['status'] ?? 'OK',
-                        'use_cloud'        => $solrSettings['useCloud'] ?? false,
-                        'server_info'      => $data['responseHeader'] ?? [],
-                        'working_endpoint' => str_replace($baseUrl, '', $testUrl),
                     ],
                 ];
-            } else {
-                // For standalone admin ping test.
-                if (!isset($data['status']) || $data['status'] !== 'OK') {
-                    return [
-                        'success' => false,
-                        'message' => 'SOLR admin ping failed',
-                        'details' => [
-                            'url'              => $testUrl,
-                            'test_type'        => $testType,
-                            'response'         => $data,
-                            'response_time_ms' => round($responseTime, 2),
-                        ],
-                    ];
-                }
+            }
 
-                return [
-                    'success' => true,
-                    'message' => 'SOLR standalone server responding correctly',
-                    'details' => [
-                        'url'              => $testUrl,
-                        'test_type'        => $testType,
-                        'response_time_ms' => round($responseTime, 2),
-                        'solr_version'     => $data['lucene']['solr-spec-version'] ?? 'unknown',
-                    ],
-                ];
-            }//end if
+            return [
+                'success' => true,
+                'message' => 'SOLR server responding correctly',
+                'details' => [
+                    'url'              => $testUrl,
+                    'test_type'        => $testType,
+                    'response_time_ms' => round($responseTime, 2),
+                    'solr_status'      => $data['status'] ?? 'OK',
+                    'use_cloud'        => $solrSettings['useCloud'] ?? false,
+                    'server_info'      => $data['responseHeader'] ?? [],
+                    'working_endpoint' => str_replace($baseUrl, '', $testUrl),
+                ],
+            ];
         } catch (Exception $e) {
             return [
                 'success' => false,

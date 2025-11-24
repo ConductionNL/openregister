@@ -1,46 +1,15 @@
 
-[0;31mERROR[0m: InvalidReturnType - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Controller/FileExtractionController.php#L83\lib/Controller/[1;31mFileExtractionController.php:83:22[0m]8;;\ - The declared return type 'OCP\AppFramework\Http\JSONResponse<200|500, array{count?: int<0, max>, data?: array<array-key, array<array-key, mixed>>, error?: string, success: bool}, array<never, never>>' for OCA\OpenRegister\Controller\FileExtractionController::index is incorrect, got 'OCP\AppFramework\Http\JSONResponse<200|500, array{data?: array<never, never>, error?: string, message?: 'This endpoint needs to be updated for chunk-based architecture', success: bool}, array<never, never>>' (see https://psalm.dev/011)
-     * @psalm-return [97;41mJSONResponse<
-     *     200|500,
-     *     array{
-     *         success: bool,
-     *         error?: string,
-     *         data?: array<array>,
-     *         count?: int<0, max>
-     *     },
-     *     array<never, never>
-     * >[0m
-
-
-[0;31mERROR[0m: InvalidReturnStatement - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Controller/FileExtractionController.php#L113\lib/Controller/[1;31mFileExtractionController.php:113:20[0m]8;;\ - The inferred type 'OCP\AppFramework\Http\JSONResponse<200, array{data: array<never, never>, message: 'This endpoint needs to be updated for chunk-based architecture', success: true}, array<never, never>>' does not match the declared return type 'OCP\AppFramework\Http\JSONResponse<200|500, array{count?: int<0, max>, data?: array<array-key, array<array-key, mixed>>, error?: string, success: bool}, array<never, never>>' for OCA\OpenRegister\Controller\FileExtractionController::index (see https://psalm.dev/128)
-            return [97;41mnew JSONResponse(
-                    data: [
-                        'success' => true,
-                        'data'    => [],
-                        'message' => 'This endpoint needs to be updated for chunk-based architecture',
-                    ]
-                    )[0m;
-
-
-[0;31mERROR[0m: TypeDoesNotContainType - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Controller/FilesController.php#L311\lib/Controller/[1;31mFilesController.php:311:43[0m]8;;\ - Type non-empty-array<string, array<int, string>|int|string> for $files is always !array<array-key, mixed> (see https://psalm.dev/056)
-            if (empty($files) === true || [97;41m!is_array($files)[0m) {
-
-
-[0;31mERROR[0m: UndefinedDocblockClass - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Controller/SettingsController.php#L3208\lib/Controller/[1;31mSettingsController.php:3208:13[0m]8;;\ - Docblock-defined class, interface or enum named Doctrine\DBAL\Platforms\AbstractPlatform does not exist (see https://psalm.dev/200)
-            /** @var \Doctrine\DBAL\Platforms\AbstractPlatform $platform */
+[0;31mERROR[0m: UndefinedDocblockClass - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Controller/SettingsController.php#L3209\lib/Controller/[1;31mSettingsController.php:3209:13[0m]8;;\ - Docblock-defined class, interface or enum named Doctrine\DBAL\Platforms\AbstractPlatform does not exist (see https://psalm.dev/200)
+            /** @var AbstractPlatform $platform */
             [97;41m$platform[0m = $this->db->getDatabasePlatform();
 
 
-[0;31mERROR[0m: UndefinedDocblockClass - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Controller/SettingsController.php#L3208\lib/Controller/[1;31mSettingsController.php:3208:25[0m]8;;\ - Docblock-defined class, interface or enum named Doctrine\DBAL\Platforms\AbstractPlatform does not exist (see https://psalm.dev/200)
+[0;31mERROR[0m: UndefinedDocblockClass - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Controller/SettingsController.php#L3209\lib/Controller/[1;31mSettingsController.php:3209:25[0m]8;;\ - Docblock-defined class, interface or enum named Doctrine\DBAL\Platforms\AbstractPlatform does not exist (see https://psalm.dev/200)
             $platform = [97;41m$this->db->getDatabasePlatform()[0m;
 
 
-[0;31mERROR[0m: UndefinedDocblockClass - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Controller/SettingsController.php#L3210\lib/Controller/[1;31mSettingsController.php:3210:29[0m]8;;\ - Docblock-defined class, interface or enum named Doctrine\DBAL\Platforms\AbstractPlatform does not exist (see https://psalm.dev/200)
+[0;31mERROR[0m: UndefinedDocblockClass - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Controller/SettingsController.php#L3211\lib/Controller/[1;31mSettingsController.php:3211:29[0m]8;;\ - Docblock-defined class, interface or enum named Doctrine\DBAL\Platforms\AbstractPlatform does not exist (see https://psalm.dev/200)
             $platformName = [97;41m$platform[0m->getName();
-
-
-[0;31mERROR[0m: InvalidNamedArgument - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Controller/UiController.php#L73\lib/Controller/[1;31mUiController.php:73:21[0m]8;;\ - Parameter $statusCode does not exist on function OCP\AppFramework\Http\TemplateResponse::__construct (see https://psalm.dev/238)
-                    [97;41mstatusCode[0m: '500'
 
 
 [0;31mERROR[0m: LessSpecificImplementedReturnType - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/AgentMapper.php#L56\lib/Db/[1;31mAgentMapper.php:56:12[0m]8;;\ - The inherited return type 'list<OCA\OpenRegister\Db\Agent>' for OCP\AppFramework\Db\QBMapper::findEntities is more specific than the implemented return type for OCP\AppFramework\Db\QBMapper::findentities 'array<array-key, OCA\OpenRegister\Db\Agent>' (see https://psalm.dev/166)
@@ -67,11 +36,11 @@
 class AgentMapper extends QBMapper
 
 
-[0;31mERROR[0m: RedundantCondition - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/AgentMapper.php#L483\lib/Db/[1;31mAgentMapper.php:483:13[0m]8;;\ - Type OCA\OpenRegister\Db\Agent for $entity is always OCA\OpenRegister\Db\Agent (see https://psalm.dev/122)
+[0;31mERROR[0m: RedundantCondition - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/AgentMapper.php#L484\lib/Db/[1;31mAgentMapper.php:484:13[0m]8;;\ - Type OCA\OpenRegister\Db\Agent for $entity is always OCA\OpenRegister\Db\Agent (see https://psalm.dev/122)
         if ([97;41m$entity instanceof Agent[0m) {
 
 
-[0;31mERROR[0m: LessSpecificImplementedReturnType - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/AuditTrailMapper.php#L44\lib/Db/[1;31mAuditTrailMapper.php:44:12[0m]8;;\ - The inherited return type 'list<OCP\AppFramework\Db\Entity>' for OCP\AppFramework\Db\QBMapper::findEntities is more specific than the implemented return type for OCP\AppFramework\Db\QBMapper::findentities 'array<array-key, OCA\OpenRegister\Db\AuditTrail>' (see https://psalm.dev/166)
+[0;31mERROR[0m: LessSpecificImplementedReturnType - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/AuditTrailMapper.php#L45\lib/Db/[1;31mAuditTrailMapper.php:45:12[0m]8;;\ - The inherited return type 'list<OCP\AppFramework\Db\Entity>' for OCP\AppFramework\Db\QBMapper::findEntities is more specific than the implemented return type for OCP\AppFramework\Db\QBMapper::findentities 'array<array-key, OCA\OpenRegister\Db\AuditTrail>' (see https://psalm.dev/166)
 /**
  * The AuditTrailMapper class handles audit trail operations and object reversions
  *
@@ -89,16 +58,12 @@ class AgentMapper extends QBMapper
 class AuditTrailMapper extends QBMapper
 
 
-[0;31mERROR[0m: MissingTemplateParam - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/AuditTrailMapper.php#L46\lib/Db/[1;31mAuditTrailMapper.php:46:7[0m]8;;\ - OCA\OpenRegister\Db\AuditTrailMapper has missing template params when extending OCP\AppFramework\Db\QBMapper, expecting 1 (see https://psalm.dev/182)
+[0;31mERROR[0m: MissingTemplateParam - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/AuditTrailMapper.php#L47\lib/Db/[1;31mAuditTrailMapper.php:47:7[0m]8;;\ - OCA\OpenRegister\Db\AuditTrailMapper has missing template params when extending OCP\AppFramework\Db\QBMapper, expecting 1 (see https://psalm.dev/182)
 class [97;41mAuditTrailMapper[0m extends QBMapper
 
 
-[0;31mERROR[0m: ImplicitToStringCast - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/AuditTrailMapper.php#L271\lib/Db/[1;31mAuditTrailMapper.php:271:34[0m]8;;\ - Argument 1 of setUuid expects null|string, but Symfony\Component\Uid\UuidV4 provided with a __toString method (see https://psalm.dev/060)
+[0;31mERROR[0m: ImplicitToStringCast - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/AuditTrailMapper.php#L272\lib/Db/[1;31mAuditTrailMapper.php:272:34[0m]8;;\ - Argument 1 of setUuid expects null|string, but Symfony\Component\Uid\UuidV4 provided with a __toString method (see https://psalm.dev/060)
             $auditTrail->setUuid([97;41mUuid::v4()[0m);
-
-
-[0;31mERROR[0m: UndefinedDocblockClass - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/AuditTrailMapper.php#L471\lib/Db/[1;31mAuditTrailMapper.php:471:16[0m]8;;\ - Docblock-defined class, interface or enum named OCA\OpenRegister\Db\DoesNotExistException does not exist (see https://psalm.dev/200)
-     * @throws [97;41mDoesNotExistException[0m If object not found
 
 
 [0;31mERROR[0m: RedundantCondition - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/ConfigurationMapper.php#L435\lib/Db/[1;31mConfigurationMapper.php:435:13[0m]8;;\ - Type OCA\OpenRegister\Db\Configuration for $entity is always OCA\OpenRegister\Db\Configuration (see https://psalm.dev/122)
@@ -467,71 +432,71 @@ class [97;41mFileMapper[0m extends QBMapper
             if ([97;41misset($this->logger)[0m) {
 
 
-[0;31mERROR[0m: RedundantCondition - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/MultiTenancyTrait.php#L221\lib/Db/[1;31mMultiTenancyTrait.php:221:13[0m]8;;\ - Type OCP\IAppConfig for $this->appConfig is always isset (see https://psalm.dev/122)
-        if ([97;41m$enablePublished && isset($this->appConfig)[0m) {
+[0;31mERROR[0m: RedundantCondition - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/MultiTenancyTrait.php#L223\lib/Db/[1;31mMultiTenancyTrait.php:223:17[0m]8;;\ - Type OCP\IAppConfig for $this->appConfig is always isset (see https://psalm.dev/122)
+            if ([97;41misset($this->appConfig)[0m) {
 
 
-[0;31mERROR[0m: RedundantPropertyInitializationCheck - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/MultiTenancyTrait.php#L231\lib/Db/[1;31mMultiTenancyTrait.php:231:17[0m]8;;\ - Property $this->logger with type Psr\Log\LoggerInterface should already be set in the constructor (see https://psalm.dev/261)
+[0;31mERROR[0m: RedundantPropertyInitializationCheck - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/MultiTenancyTrait.php#L234\lib/Db/[1;31mMultiTenancyTrait.php:234:17[0m]8;;\ - Property $this->logger with type Psr\Log\LoggerInterface should already be set in the constructor (see https://psalm.dev/261)
             if ([97;41misset($this->logger)[0m) {
 
 
-[0;31mERROR[0m: UndefinedThisPropertyFetch - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/MultiTenancyTrait.php#L244\lib/Db/[1;31mMultiTenancyTrait.php:244:27[0m]8;;\ - Instance property OCA\OpenRegister\Db\RegisterMapper::$groupManager is not defined (see https://psalm.dev/041)
+[0;31mERROR[0m: UndefinedThisPropertyFetch - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/MultiTenancyTrait.php#L247\lib/Db/[1;31mMultiTenancyTrait.php:247:27[0m]8;;\ - Instance property OCA\OpenRegister\Db\RegisterMapper::$groupManager is not defined (see https://psalm.dev/041)
             $userGroups = [97;41m$this->groupManager[0m->getUserGroupIds($user);
 
 
-[0;31mERROR[0m: RedundantPropertyInitializationCheck - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/MultiTenancyTrait.php#L287\lib/Db/[1;31mMultiTenancyTrait.php:287:13[0m]8;;\ - Property $this->organisationService with type OCA\OpenRegister\Service\OrganisationService should already be set in the constructor (see https://psalm.dev/261)
+[0;31mERROR[0m: RedundantPropertyInitializationCheck - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/MultiTenancyTrait.php#L290\lib/Db/[1;31mMultiTenancyTrait.php:290:13[0m]8;;\ - Property $this->organisationService with type OCA\OpenRegister\Service\OrganisationService should already be set in the constructor (see https://psalm.dev/261)
         if ([97;41misset($this->organisationService)[0m) {
 
 
-[0;31mERROR[0m: UndefinedThisPropertyFetch - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/MultiTenancyTrait.php#L296\lib/Db/[1;31mMultiTenancyTrait.php:296:23[0m]8;;\ - Instance property OCA\OpenRegister\Db\RegisterMapper::$groupManager is not defined (see https://psalm.dev/041)
+[0;31mERROR[0m: UndefinedThisPropertyFetch - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/MultiTenancyTrait.php#L299\lib/Db/[1;31mMultiTenancyTrait.php:299:23[0m]8;;\ - Instance property OCA\OpenRegister\Db\RegisterMapper::$groupManager is not defined (see https://psalm.dev/041)
         $userGroups = [97;41m$this->groupManager[0m->getUserGroupIds($user);
 
 
-[0;31mERROR[0m: RedundantCondition - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/MultiTenancyTrait.php#L300\lib/Db/[1;31mMultiTenancyTrait.php:300:13[0m]8;;\ - Type OCP\IAppConfig for $this->appConfig is always isset (see https://psalm.dev/122)
-        if ([97;41m$isAdmin && isset($this->appConfig)[0m) {
+[0;31mERROR[0m: RedundantCondition - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/MultiTenancyTrait.php#L305\lib/Db/[1;31mMultiTenancyTrait.php:305:17[0m]8;;\ - Type OCP\IAppConfig for $this->appConfig is always isset (see https://psalm.dev/122)
+            if ([97;41misset($this->appConfig)[0m) {
 
 
-[0;31mERROR[0m: RedundantPropertyInitializationCheck - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/MultiTenancyTrait.php#L311\lib/Db/[1;31mMultiTenancyTrait.php:311:17[0m]8;;\ - Property $this->logger with type Psr\Log\LoggerInterface should already be set in the constructor (see https://psalm.dev/261)
+[0;31mERROR[0m: RedundantPropertyInitializationCheck - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/MultiTenancyTrait.php#L317\lib/Db/[1;31mMultiTenancyTrait.php:317:17[0m]8;;\ - Property $this->logger with type Psr\Log\LoggerInterface should already be set in the constructor (see https://psalm.dev/261)
             if ([97;41misset($this->logger)[0m) {
 
 
-[0;31mERROR[0m: RedundantPropertyInitializationCheck - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/MultiTenancyTrait.php#L320\lib/Db/[1;31mMultiTenancyTrait.php:320:17[0m]8;;\ - Property $this->logger with type Psr\Log\LoggerInterface should already be set in the constructor (see https://psalm.dev/261)
+[0;31mERROR[0m: RedundantPropertyInitializationCheck - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/MultiTenancyTrait.php#L326\lib/Db/[1;31mMultiTenancyTrait.php:326:17[0m]8;;\ - Property $this->logger with type Psr\Log\LoggerInterface should already be set in the constructor (see https://psalm.dev/261)
             if ([97;41misset($this->logger)[0m) {
 
 
-[0;31mERROR[0m: RedundantPropertyInitializationCheck - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/MultiTenancyTrait.php#L335\lib/Db/[1;31mMultiTenancyTrait.php:335:13[0m]8;;\ - Property $this->logger with type Psr\Log\LoggerInterface should already be set in the constructor (see https://psalm.dev/261)
+[0;31mERROR[0m: RedundantPropertyInitializationCheck - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/MultiTenancyTrait.php#L341\lib/Db/[1;31mMultiTenancyTrait.php:341:13[0m]8;;\ - Property $this->logger with type Psr\Log\LoggerInterface should already be set in the constructor (see https://psalm.dev/261)
         if ([97;41misset($this->logger)[0m) {
 
 
-[0;31mERROR[0m: RedundantCondition - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/MultiTenancyTrait.php#L363\lib/Db/[1;31mMultiTenancyTrait.php:363:17[0m]8;;\ - Type Psr\Log\LoggerInterface for $this->logger is always isset (see https://psalm.dev/122)
+[0;31mERROR[0m: RedundantCondition - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/MultiTenancyTrait.php#L369\lib/Db/[1;31mMultiTenancyTrait.php:369:17[0m]8;;\ - Type Psr\Log\LoggerInterface for $this->logger is always isset (see https://psalm.dev/122)
             if ([97;41misset($this->logger)[0m) {
 
 
-[0;31mERROR[0m: ParadoxicalCondition - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/MultiTenancyTrait.php#L377\lib/Db/[1;31mMultiTenancyTrait.php:377:13[0m]8;;\ - Condition (($allowNullOrg) && ($isAdmin) && ($isSystemDefaultOrg)) contradicts a previously-established condition ((!$isAdmin) || (!$isSystemDefaultOrg)) (see https://psalm.dev/089)
+[0;31mERROR[0m: ParadoxicalCondition - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/MultiTenancyTrait.php#L383\lib/Db/[1;31mMultiTenancyTrait.php:383:13[0m]8;;\ - Condition (($allowNullOrg) && ($isAdmin) && ($isSystemDefaultOrg)) contradicts a previously-established condition ((!$isAdmin) || (!$isSystemDefaultOrg)) (see https://psalm.dev/089)
         if ([97;41m$allowNullOrg && $isSystemDefaultOrg && $isAdmin[0m) {
 
 
-[0;31mERROR[0m: TypeDoesNotContainType - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/MultiTenancyTrait.php#L377\lib/Db/[1;31mMultiTenancyTrait.php:377:53[0m]8;;\ - Operand of type false is always falsy (see https://psalm.dev/056)
+[0;31mERROR[0m: TypeDoesNotContainType - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/MultiTenancyTrait.php#L383\lib/Db/[1;31mMultiTenancyTrait.php:383:53[0m]8;;\ - Operand of type false is always falsy (see https://psalm.dev/056)
         if ($allowNullOrg && $isSystemDefaultOrg && [97;41m$isAdmin[0m) {
 
 
-[0;31mERROR[0m: RedundantCondition - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/MultiTenancyTrait.php#L380\lib/Db/[1;31mMultiTenancyTrait.php:380:17[0m]8;;\ - Type Psr\Log\LoggerInterface for $this->logger is always isset (see https://psalm.dev/122)
+[0;31mERROR[0m: RedundantCondition - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/MultiTenancyTrait.php#L387\lib/Db/[1;31mMultiTenancyTrait.php:387:17[0m]8;;\ - Type Psr\Log\LoggerInterface for $this->logger is always isset (see https://psalm.dev/122)
             if ([97;41misset($this->logger)[0m) {
 
 
-[0;31mERROR[0m: RedundantPropertyInitializationCheck - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/MultiTenancyTrait.php#L496\lib/Db/[1;31mMultiTenancyTrait.php:496:14[0m]8;;\ - Property $this->organisationService with type OCA\OpenRegister\Service\OrganisationService should already be set in the constructor (see https://psalm.dev/261)
+[0;31mERROR[0m: RedundantPropertyInitializationCheck - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/MultiTenancyTrait.php#L503\lib/Db/[1;31mMultiTenancyTrait.php:503:14[0m]8;;\ - Property $this->organisationService with type OCA\OpenRegister\Service\OrganisationService should already be set in the constructor (see https://psalm.dev/261)
         if (![97;41misset($this->organisationService)[0m) {
 
 
-[0;31mERROR[0m: RedundantCondition - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/MultiTenancyTrait.php#L512\lib/Db/[1;31mMultiTenancyTrait.php:512:13[0m]8;;\ - Type array<array-key, mixed> for $orgUsers is always array<array-key, mixed> (see https://psalm.dev/122)
+[0;31mERROR[0m: RedundantCondition - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/MultiTenancyTrait.php#L519\lib/Db/[1;31mMultiTenancyTrait.php:519:13[0m]8;;\ - Type array<array-key, mixed> for $orgUsers is always array<array-key, mixed> (see https://psalm.dev/122)
         if ([97;41mis_array($orgUsers)[0m && in_array($userId, $orgUsers)) {
 
 
-[0;31mERROR[0m: RedundantPropertyInitializationCheck - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/MultiTenancyTrait.php#L523\lib/Db/[1;31mMultiTenancyTrait.php:523:14[0m]8;;\ - Property $this->groupManager with type OCP\IGroupManager should already be set in the constructor (see https://psalm.dev/261)
+[0;31mERROR[0m: RedundantPropertyInitializationCheck - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/MultiTenancyTrait.php#L530\lib/Db/[1;31mMultiTenancyTrait.php:530:14[0m]8;;\ - Property $this->groupManager with type OCP\IGroupManager should already be set in the constructor (see https://psalm.dev/261)
         if (![97;41misset($this->groupManager)[0m) {
 
 
-[0;31mERROR[0m: UndefinedThisPropertyFetch - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/MultiTenancyTrait.php#L528\lib/Db/[1;31mMultiTenancyTrait.php:528:17[0m]8;;\ - Instance property OCA\OpenRegister\Db\RegisterMapper::$userSession is not defined (see https://psalm.dev/041)
+[0;31mERROR[0m: UndefinedThisPropertyFetch - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/MultiTenancyTrait.php#L535\lib/Db/[1;31mMultiTenancyTrait.php:535:17[0m]8;;\ - Instance property OCA\OpenRegister\Db\RegisterMapper::$userSession is not defined (see https://psalm.dev/041)
         $user = [97;41m$this->userSession[0m->getUser();
 
 
@@ -570,83 +535,63 @@ class [97;41mObjectEntityMapper[0m extends QBMapper
                 $orgConditions->add($qb->expr()->isNull([97;41m$organizationColumn[0m));
 
 
-[0;31mERROR[0m: RedundantCondition - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/ObjectEntityMapper.php#L845\lib/Db/[1;31mObjectEntityMapper.php:845:13[0m]8;;\ - string can never contain null (see https://psalm.dev/122)
+[0;31mERROR[0m: RedundantCondition - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/ObjectEntityMapper.php#L847\lib/Db/[1;31mObjectEntityMapper.php:847:13[0m]8;;\ - string can never contain null (see https://psalm.dev/122)
         if ([97;41m$objectTableAlias !== null[0m && $objectTableAlias !== '') {
 
 
-[0;31mERROR[0m: UndefinedClass - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/ObjectEntityMapper.php#L938\lib/Db/[1;31mObjectEntityMapper.php:938:57[0m]8;;\ - Class, interface or enum named Doctrine\DBAL\Platforms\MySQLPlatform does not exist (see https://psalm.dev/019)
+[0;31mERROR[0m: UndefinedClass - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/ObjectEntityMapper.php#L940\lib/Db/[1;31mObjectEntityMapper.php:940:57[0m]8;;\ - Class, interface or enum named Doctrine\DBAL\Platforms\MySQLPlatform does not exist (see https://psalm.dev/019)
         if ($this->db->getDatabasePlatform() instanceof [97;41mMySQLPlatform[0m) {
 
 
-[0;31mERROR[0m: UndefinedClass - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/ObjectEntityMapper.php#L960\lib/Db/[1;31mObjectEntityMapper.php:960:57[0m]8;;\ - Class, interface or enum named Doctrine\DBAL\Platforms\MySQLPlatform does not exist (see https://psalm.dev/019)
+[0;31mERROR[0m: UndefinedClass - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/ObjectEntityMapper.php#L962\lib/Db/[1;31mObjectEntityMapper.php:962:57[0m]8;;\ - Class, interface or enum named Doctrine\DBAL\Platforms\MySQLPlatform does not exist (see https://psalm.dev/019)
         if ($this->db->getDatabasePlatform() instanceof [97;41mMySQLPlatform[0m) {
 
 
-[0;31mERROR[0m: RedundantCondition - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/ObjectEntityMapper.php#L1611\lib/Db/[1;31mObjectEntityMapper.php:1611:64[0m]8;;\ - Operand of type true is always truthy (see https://psalm.dev/122)
+[0;31mERROR[0m: RedundantCondition - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/ObjectEntityMapper.php#L1613\lib/Db/[1;31mObjectEntityMapper.php:1613:64[0m]8;;\ - Operand of type true is always truthy (see https://psalm.dev/122)
             $needsSchemaJoin = $rbac && !$performanceBypass && [97;41m!$smartBypass[0m;
 
 
-[0;31mERROR[0m: RedundantCondition - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/ObjectEntityMapper.php#L1638\lib/Db/[1;31mObjectEntityMapper.php:1638:64[0m]8;;\ - Operand of type true is always truthy (see https://psalm.dev/122)
+[0;31mERROR[0m: RedundantCondition - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/ObjectEntityMapper.php#L1641\lib/Db/[1;31mObjectEntityMapper.php:1641:64[0m]8;;\ - Operand of type true is always truthy (see https://psalm.dev/122)
             $needsSchemaJoin = $rbac && !$performanceBypass && [97;41m!$smartBypass[0m;
 
 
-[0;31mERROR[0m: UndefinedVariable - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/ObjectEntityMapper.php#L2066\lib/Db/[1;31mObjectEntityMapper.php:2066:13[0m]8;;\ - Cannot find referenced variable $ids (see https://psalm.dev/024)
+[0;31mERROR[0m: UndefinedVariable - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/ObjectEntityMapper.php#L2070\lib/Db/[1;31mObjectEntityMapper.php:2070:13[0m]8;;\ - Cannot find referenced variable $ids (see https://psalm.dev/024)
         if ([97;41m$ids[0m !== null && empty($ids) === false) {
 
 
-[0;31mERROR[0m: RedundantCondition - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/ObjectEntityMapper.php#L2139\lib/Db/[1;31mObjectEntityMapper.php:2139:13[0m]8;;\ - string can never contain null (see https://psalm.dev/122)
+[0;31mERROR[0m: RedundantCondition - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/ObjectEntityMapper.php#L2143\lib/Db/[1;31mObjectEntityMapper.php:2143:13[0m]8;;\ - string can never contain null (see https://psalm.dev/122)
         if ([97;41m$tableAlias !== null[0m && $tableAlias !== '') {
 
 
-[0;31mERROR[0m: ParamNameMismatch - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/ObjectEntityMapper.php#L2577\lib/Db/[1;31mObjectEntityMapper.php:2577:35[0m]8;;\ - Argument 1 of OCA\OpenRegister\Db\ObjectEntityMapper::delete has wrong name $object, expecting $entity as defined by OCP\AppFramework\Db\QBMapper::delete (see https://psalm.dev/230)
+[0;31mERROR[0m: ParamNameMismatch - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/ObjectEntityMapper.php#L2581\lib/Db/[1;31mObjectEntityMapper.php:2581:35[0m]8;;\ - Argument 1 of OCA\OpenRegister\Db\ObjectEntityMapper::delete has wrong name $object, expecting $entity as defined by OCP\AppFramework\Db\QBMapper::delete (see https://psalm.dev/230)
     public function delete(Entity [97;41m$object[0m): ObjectEntity
 
 
-[0;31mERROR[0m: MoreSpecificImplementedParamType - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/ObjectEntityMapper.php#L2577\lib/Db/[1;31mObjectEntityMapper.php:2577:35[0m]8;;\ - Argument 1 of OCA\OpenRegister\Db\ObjectEntityMapper::delete has the more specific type 'OCA\OpenRegister\Db\ObjectEntity', expecting 'OCP\AppFramework\Db\Entity' as defined by OCP\AppFramework\Db\QBMapper::delete (see https://psalm.dev/140)
+[0;31mERROR[0m: MoreSpecificImplementedParamType - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/ObjectEntityMapper.php#L2581\lib/Db/[1;31mObjectEntityMapper.php:2581:35[0m]8;;\ - Argument 1 of OCA\OpenRegister\Db\ObjectEntityMapper::delete has the more specific type 'OCA\OpenRegister\Db\ObjectEntity', expecting 'OCP\AppFramework\Db\Entity' as defined by OCP\AppFramework\Db\QBMapper::delete (see https://psalm.dev/140)
     public function delete(Entity [97;41m$object[0m): ObjectEntity
 
 
-[0;31mERROR[0m: UndefinedClass - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/ObjectEntityMapper.php#L2862\lib/Db/[1;31mObjectEntityMapper.php:2862:86[0m]8;;\ - Class, interface or enum named Doctrine\DBAL\ParameterType does not exist (see https://psalm.dev/019)
+[0;31mERROR[0m: UndefinedClass - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/ObjectEntityMapper.php#L2866\lib/Db/[1;31mObjectEntityMapper.php:2866:86[0m]8;;\ - Class, interface or enum named Doctrine\DBAL\ParameterType does not exist (see https://psalm.dev/019)
             ->where($qb->expr()->eq('o.schema', $qb->createNamedParameter($schemaId, [97;41m\Doctrine\DBAL\ParameterType[0m::INTEGER)))
 
 
-[0;31mERROR[0m: RedundantCondition - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/ObjectEntityMapper.php#L3118\lib/Db/[1;31mObjectEntityMapper.php:3118:21[0m]8;;\ - int can never contain null (see https://psalm.dev/122)
+[0;31mERROR[0m: RedundantCondition - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/ObjectEntityMapper.php#L3122\lib/Db/[1;31mObjectEntityMapper.php:3122:21[0m]8;;\ - int can never contain null (see https://psalm.dev/122)
                 if ([97;41m$range['min'] !== null[0m) {
 
 
-[0;31mERROR[0m: InvalidArgument - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/ObjectEntityMapper.php#L3603\lib/Db/[1;31mObjectEntityMapper.php:3603:59[0m]8;;\ - Argument 1 of OCA\OpenRegister\Db\ObjectEntityMapper::separateLargeObjects expects array<int, array<string, mixed>>, but array<int, OCA\OpenRegister\Db\ObjectEntity> provided (see https://psalm.dev/004)
-        $updateObjectGroups = $this->separateLargeObjects([97;41m$updateObjects[0m, 500000); // 500KB threshold
+[0;31mERROR[0m: InvalidMethodCall - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/ObjectEntityMapper.php#L3608\lib/Db/[1;31mObjectEntityMapper.php:3608:26[0m]8;;\ - Cannot call method on array<string, mixed> variable $obj (see https://psalm.dev/091)
+            return $obj->[97;41mjsonSerialize[0m();
 
 
-[0;31mERROR[0m: InvalidArgument - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/ObjectEntityMapper.php#L3620\lib/Db/[1;31mObjectEntityMapper.php:3620:48[0m]8;;\ - Argument 1 of OCA\OpenRegister\Db\ObjectEntityMapper::update expects OCP\AppFramework\Db\Entity, but array<string, mixed> provided (see https://psalm.dev/004)
-                $updatedObject = $this->update([97;41m$largeUpdateObject[0m);
+[0;31mERROR[0m: TypeDoesNotContainType - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/ObjectEntityMapper.php#L3816\lib/Db/[1;31mObjectEntityMapper.php:3816:13[0m]8;;\ - 0 cannot be identical to int<1, max> (see https://psalm.dev/056)
+        if ([97;41m$objectCount === 0[0m) {
 
 
-[0;31mERROR[0m: InvalidArgument - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/ObjectEntityMapper.php#L3657\lib/Db/[1;31mObjectEntityMapper.php:3657:59[0m]8;;\ - Argument 1 of OCA\OpenRegister\Db\ObjectEntityMapper::processUpdateChunk expects array<int, OCA\OpenRegister\Db\ObjectEntity>, but non-empty-list<array<string, mixed>> provided (see https://psalm.dev/004)
-                    $chunkIds = $this->processUpdateChunk([97;41m$updateChunk[0m);
+[0;31mERROR[0m: TypeDoesNotContainType - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/ObjectEntityMapper.php#L3938\lib/Db/[1;31mObjectEntityMapper.php:3938:13[0m]8;;\ - 0 cannot be identical to int<1, max> (see https://psalm.dev/056)
+        if ([97;41m$objectCount === 0[0m) {
 
 
-[0;31mERROR[0m: TypeDoesNotContainType - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/ObjectEntityMapper.php#L3767\lib/Db/[1;31mObjectEntityMapper.php:3767:13[0m]8;;\ - Type int<1, max> for $objectCount is always !>0 (see https://psalm.dev/056)
-        if ([97;41m$objectCount <= 0[0m) {
-
-
-[0;31mERROR[0m: TypeDoesNotContainType - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/ObjectEntityMapper.php#L3889\lib/Db/[1;31mObjectEntityMapper.php:3889:13[0m]8;;\ - Type int<1, max> for $objectCount is always !>0 (see https://psalm.dev/056)
-        if ([97;41m$objectCount <= 0[0m) {
-
-
-[0;31mERROR[0m: TypeDoesNotContainType - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/ObjectEntityMapper.php#L4122\lib/Db/[1;31mObjectEntityMapper.php:4122:25[0m]8;;\ - OCP\DB\IResult does not contain true (see https://psalm.dev/056)
-                    if ([97;41m$result === true[0m && $stmt->rowCount() > 0) {
-
-
-[0;31mERROR[0m: TypeDoesNotContainType - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/ObjectEntityMapper.php#L4437\lib/Db/[1;31mObjectEntityMapper.php:4437:25[0m]8;;\ - 'object' cannot be identical to key-of<array<array-key, mixed>> (see https://psalm.dev/056)
-                    if ([97;41m$column === 'object'[0m && is_array($value)) {
-
-
-[0;31mERROR[0m: TypeDoesNotContainType - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/ObjectEntityMapper.php#L4437\lib/Db/[1;31mObjectEntityMapper.php:4437:25[0m]8;;\ - Type key-of<array<array-key, mixed>> for $column is never =string(object) (see https://psalm.dev/056)
-                    if ([97;41m$column === 'object'[0m && is_array($value)) {
-
-
-[0;31mERROR[0m: RedundantCondition - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/ObjectEntityMapper.php#L5313\lib/Db/[1;31mObjectEntityMapper.php:5313:21[0m]8;;\ - Operand of type OCP\DB\IResult is always truthy (see https://psalm.dev/122)
+[0;31mERROR[0m: RedundantCondition - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/ObjectEntityMapper.php#L5364\lib/Db/[1;31mObjectEntityMapper.php:5364:21[0m]8;;\ - Operand of type OCP\DB\IResult is always truthy (see https://psalm.dev/122)
                 if ([97;41m$result[0m && isset($objectData['uuid'])) {
 
 
@@ -664,26 +609,6 @@ class [97;41mObjectEntityMapper[0m extends QBMapper
 
 [0;31mERROR[0m: RedundantCondition - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/ObjectHandlers/MariaDbFacetHandler.php#L1231\lib/Db/ObjectHandlers/[1;31mMariaDbFacetHandler.php:1231:25[0m]8;;\ - Type array<array-key, mixed> for $value[0] is always array<array-key, mixed> (see https://psalm.dev/122)
                     if ([97;41mis_array($value[0])[0m) {
-
-
-[0;31mERROR[0m: TypeDoesNotContainType - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/ObjectHandlers/MariaDbFacetHandler.php#L1247\lib/Db/ObjectHandlers/[1;31mMariaDbFacetHandler.php:1247:21[0m]8;;\ - Type object for $value is never array<array-key, mixed> (see https://psalm.dev/056)
-                if ([97;41mis_array($value)[0m || (is_object($value) && method_exists($value, '__toArray'))) {
-
-
-[0;31mERROR[0m: TypeDoesNotContainType - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/ObjectHandlers/MariaDbFacetHandler.php#L1247\lib/Db/ObjectHandlers/[1;31mMariaDbFacetHandler.php:1247:21[0m]8;;\ - Type object for $value is never !array<array-key, mixed> (see https://psalm.dev/056)
-                if ([97;41mis_array($value)[0m || (is_object($value) && method_exists($value, '__toArray'))) {
-
-
-[0;31mERROR[0m: RedundantCondition - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/ObjectHandlers/MariaDbFacetHandler.php#L1247\lib/Db/ObjectHandlers/[1;31mMariaDbFacetHandler.php:1247:42[0m]8;;\ - Type object for $value is always object (see https://psalm.dev/122)
-                if (is_array($value) || ([97;41mis_object($value)[0m && method_exists($value, '__toArray'))) {
-
-
-[0;31mERROR[0m: TypeDoesNotContainType - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/ObjectHandlers/MariaDbFacetHandler.php#L1248\lib/Db/ObjectHandlers/[1;31mMariaDbFacetHandler.php:1248:35[0m]8;;\ - Type object{__toarray()} for $value is never array<array-key, mixed> (see https://psalm.dev/056)
-                    $valueArray = [97;41mis_array($value)[0m ? $value : (array) $value;
-
-
-[0;31mERROR[0m: RedundantCondition - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/ObjectHandlers/MariaDbFacetHandler.php#L1248\lib/Db/ObjectHandlers/[1;31mMariaDbFacetHandler.php:1248:63[0m]8;;\ - Type object{__toarray()} for $value is never array<array-key, mixed> (see https://psalm.dev/122)
-                    $valueArray = is_array($value) ? $value : [97;41m(array) $value[0m;
 
 
 [0;31mERROR[0m: NoValue - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/ObjectHandlers/MariaDbFacetHandler.php#L1531\lib/Db/ObjectHandlers/[1;31mMariaDbFacetHandler.php:1531:44[0m]8;;\ - All possible types for this assignment were invalidated - This may be dead code (see https://psalm.dev/179)
@@ -752,31 +677,7 @@ class [97;41mOrganisationMapper[0m extends QBMapper
 
 
 [0;31mERROR[0m: UndefinedMethod - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/OrganisationMapper.php#L118\lib/Db/[1;31mOrganisationMapper.php:118:29[0m]8;;\ - Method OCA\OpenRegister\Db\OrganisationMapper::find does not exist (see https://psalm.dev/022)
-        $oldEntity = $this->[97;41mfind[0m(id: $entity->getId());
-
-
-[0;31mERROR[0m: InvalidNamedArgument - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/OrganisationMapper.php#L127\lib/Db/[1;31mOrganisationMapper.php:127:85[0m]8;;\ - Parameter $register does not exist on function OCA\OpenRegister\Event\OrganisationUpdatedEvent::__construct (see https://psalm.dev/238)
-        $this->eventDispatcher->dispatchTyped(new OrganisationUpdatedEvent($entity, [97;41mregister[0m: $oldEntity));
-
-
-[0;31mERROR[0m: TooFewArguments - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/OrganisationMapper.php#L195\lib/Db/[1;31mOrganisationMapper.php:195:30[0m]8;;\ - Too few arguments for OCP\DB\QueryBuilder\IExpressionBuilder::in - expecting y to be passed (see https://psalm.dev/025)
-                $qb->expr()->[97;41min[0m('uuid', files: $qb->createNamedParameter($uuids, rbac: IQueryBuilder::PARAM_STR_ARRAY))
-
-
-[0;31mERROR[0m: InvalidNamedArgument - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/OrganisationMapper.php#L195\lib/Db/[1;31mOrganisationMapper.php:195:41[0m]8;;\ - Parameter $files does not exist on function OCP\DB\QueryBuilder\IExpressionBuilder::in (see https://psalm.dev/238)
-                $qb->expr()->in('uuid', [97;41mfiles[0m: $qb->createNamedParameter($uuids, rbac: IQueryBuilder::PARAM_STR_ARRAY))
-
-
-[0;31mERROR[0m: InvalidNamedArgument - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/OrganisationMapper.php#L195\lib/Db/[1;31mOrganisationMapper.php:195:82[0m]8;;\ - Parameter $rbac does not exist on function OCP\DB\QueryBuilder\IQueryBuilder::createNamedParameter (see https://psalm.dev/238)
-                $qb->expr()->in('uuid', files: $qb->createNamedParameter($uuids, [97;41mrbac[0m: IQueryBuilder::PARAM_STR_ARRAY))
-
-
-[0;31mERROR[0m: TooFewArguments - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/OrganisationMapper.php#L226\lib/Db/[1;31mOrganisationMapper.php:226:34[0m]8;;\ - Too few arguments for OCP\DB\QueryBuilder\IExpressionBuilder::like - expecting y to be passed (see https://psalm.dev/025)
-            ->where($qb->expr()->[97;41mlike[0m('users', multi: $qb->createNamedParameter('%"'.$userId.'"%')));
-
-
-[0;31mERROR[0m: InvalidNamedArgument - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/OrganisationMapper.php#L226\lib/Db/[1;31mOrganisationMapper.php:226:48[0m]8;;\ - Parameter $multi does not exist on function OCP\DB\QueryBuilder\IExpressionBuilder::like (see https://psalm.dev/238)
-            ->where($qb->expr()->like('users', [97;41mmulti[0m: $qb->createNamedParameter('%"'.$userId.'"%')));
+        $oldEntity = $this->[97;41mfind[0m($entity->getId());
 
 
 [0;31mERROR[0m: UndefinedPropertyAssignment - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/OrganisationMapper.php#L250\lib/Db/[1;31mOrganisationMapper.php:250:13[0m]8;;\ - Instance property OCA\OpenRegister\Db\Organisation::$userCount is not defined (see https://psalm.dev/038)
@@ -861,10 +762,6 @@ class [97;41mRegisterMapper[0m extends QBMapper
 
 [0;31mERROR[0m: MoreSpecificImplementedParamType - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/RegisterMapper.php#L445\lib/Db/[1;31mRegisterMapper.php:445:35[0m]8;;\ - Argument 1 of OCA\OpenRegister\Db\RegisterMapper::delete has the more specific type 'OCA\OpenRegister\Db\Register', expecting 'OCP\AppFramework\Db\Entity' as defined by OCP\AppFramework\Db\QBMapper::delete (see https://psalm.dev/140)
     public function delete(Entity [97;41m$entity[0m): Register
-
-
-[0;31mERROR[0m: InvalidNamedArgument - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/RegisterMapper.php#L454\lib/Db/[1;31mRegisterMapper.php:454:36[0m]8;;\ - Parameter $multi does not exist on function method_exists (see https://psalm.dev/238)
-        if (method_exists($entity, [97;41mmulti[0m: 'getId') === true) {
 
 
 [0;31mERROR[0m: TooFewArguments - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/RegisterMapper.php#L524\lib/Db/[1;31mRegisterMapper.php:524:15[0m]8;;\ - Too few arguments for OCP\DB\QueryBuilder\IQueryBuilder::setParameter - expecting value to be passed (see https://psalm.dev/025)
@@ -991,10 +888,6 @@ class [97;41mSchemaMapper[0m extends QBMapper
         $schemaId = method_exists($schema, [97;41mrbac[0m: 'getId') ? $schema->getId() : $schema->id;
 
 
-[0;31mERROR[0m: InvalidNamedArgument - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/SchemaMapper.php#L611\lib/Db/[1;31mSchemaMapper.php:611:45[0m]8;;\ - Parameter $multi does not exist on function OCP\DB\QueryBuilder\IFunctionBuilder::count (see https://psalm.dev/238)
-        $qb->select($qb->func()->count('*', [97;41mmulti[0m: 'count'))
-
-
 [0;31mERROR[0m: RedundantCondition - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/SchemaMapper.php#L889\lib/Db/[1;31mSchemaMapper.php:889:13[0m]8;;\ - Operand of type true is always truthy (see https://psalm.dev/122)
         if ([97;41m!empty($facetConfig)[0m) {
 
@@ -1097,14 +990,6 @@ class [97;41mSchemaMapper[0m extends QBMapper
 
 [0;31mERROR[0m: InvalidNamedArgument - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/SchemaMapper.php#L1912\lib/Db/[1;31mSchemaMapper.php:1912:59[0m]8;;\ - Parameter $rbac does not exist on function OCP\DB\QueryBuilder\IExpressionBuilder::like (see https://psalm.dev/238)
             $orConditions[] = $qb->expr()->like('one_of', [97;41mrbac[0m: $qb->createNamedParameter('%"'.$targetId.'"%'));
-
-
-[0;31mERROR[0m: TooFewArguments - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/SchemaMapper.php#L1916\lib/Db/[1;31mSchemaMapper.php:1916:44[0m]8;;\ - Too few arguments for OCP\DB\QueryBuilder\IExpressionBuilder::like - expecting y to be passed (see https://psalm.dev/025)
-            $orConditions[] = $qb->expr()->[97;41mlike[0m('one_of', multi: $qb->createNamedParameter('%"'.$targetUuid.'"%'));
-
-
-[0;31mERROR[0m: InvalidNamedArgument - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/SchemaMapper.php#L1916\lib/Db/[1;31mSchemaMapper.php:1916:59[0m]8;;\ - Parameter $multi does not exist on function OCP\DB\QueryBuilder\IExpressionBuilder::like (see https://psalm.dev/238)
-            $orConditions[] = $qb->expr()->like('one_of', [97;41mmulti[0m: $qb->createNamedParameter('%"'.$targetUuid.'"%'));
 
 
 [0;31mERROR[0m: LessSpecificImplementedReturnType - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Db/SearchTrailMapper.php#L52\lib/Db/[1;31mSearchTrailMapper.php:52:12[0m]8;;\ - The inherited return type 'list<OCP\AppFramework\Db\Entity>' for OCP\AppFramework\Db\QBMapper::findEntities is more specific than the implemented return type for OCP\AppFramework\Db\QBMapper::findentities 'array<array-key, OCA\OpenRegister\Db\SearchTrail>' (see https://psalm.dev/166)
@@ -1659,23 +1544,31 @@ class [97;41mSearchTrailMapper[0m extends QBMapper
                 $statusCode = $e->[97;41mgetResponse[0m()->getStatusCode();
 
 
-[0;31mERROR[0m: UndefinedInterfaceMethod - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Service/GitHubService.php#L950\lib/Service/[1;31mGitHubService.php:950:21[0m]8;;\ - Method GuzzleHttp\Exception\GuzzleException::hasResponse does not exist (see https://psalm.dev/181)
+[0;31mERROR[0m: UndefinedInterfaceMethod - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Service/GitHubService.php#L796\lib/Service/[1;31mGitHubService.php:796:21[0m]8;;\ - Method GuzzleHttp\Exception\GuzzleException::hasResponse does not exist (see https://psalm.dev/181)
             if ($e->[97;41mhasResponse[0m()) {
 
 
-[0;31mERROR[0m: UndefinedInterfaceMethod - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Service/GitHubService.php#L951\lib/Service/[1;31mGitHubService.php:951:37[0m]8;;\ - Method GuzzleHttp\Exception\GuzzleException::getResponse does not exist (see https://psalm.dev/181)
+[0;31mERROR[0m: UndefinedInterfaceMethod - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Service/GitHubService.php#L797\lib/Service/[1;31mGitHubService.php:797:35[0m]8;;\ - Method GuzzleHttp\Exception\GuzzleException::getResponse does not exist (see https://psalm.dev/181)
+                $statusCode = $e->[97;41mgetResponse[0m()->getStatusCode();
+
+
+[0;31mERROR[0m: UndefinedInterfaceMethod - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Service/GitHubService.php#L975\lib/Service/[1;31mGitHubService.php:975:21[0m]8;;\ - Method GuzzleHttp\Exception\GuzzleException::hasResponse does not exist (see https://psalm.dev/181)
+            if ($e->[97;41mhasResponse[0m()) {
+
+
+[0;31mERROR[0m: UndefinedInterfaceMethod - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Service/GitHubService.php#L976\lib/Service/[1;31mGitHubService.php:976:37[0m]8;;\ - Method GuzzleHttp\Exception\GuzzleException::getResponse does not exist (see https://psalm.dev/181)
                 $statusCode   = $e->[97;41mgetResponse[0m()->getStatusCode();
 
 
-[0;31mERROR[0m: UndefinedInterfaceMethod - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Service/GitHubService.php#L952\lib/Service/[1;31mGitHubService.php:952:37[0m]8;;\ - Method GuzzleHttp\Exception\GuzzleException::getResponse does not exist (see https://psalm.dev/181)
+[0;31mERROR[0m: UndefinedInterfaceMethod - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Service/GitHubService.php#L977\lib/Service/[1;31mGitHubService.php:977:37[0m]8;;\ - Method GuzzleHttp\Exception\GuzzleException::getResponse does not exist (see https://psalm.dev/181)
                 $responseBody = $e->[97;41mgetResponse[0m()->getBody()->getContents();
 
 
-[0;31mERROR[0m: UndefinedInterfaceMethod - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Service/GitHubService.php#L1021\lib/Service/[1;31mGitHubService.php:1021:21[0m]8;;\ - Method GuzzleHttp\Exception\GuzzleException::hasResponse does not exist (see https://psalm.dev/181)
+[0;31mERROR[0m: UndefinedInterfaceMethod - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Service/GitHubService.php#L1046\lib/Service/[1;31mGitHubService.php:1046:21[0m]8;;\ - Method GuzzleHttp\Exception\GuzzleException::hasResponse does not exist (see https://psalm.dev/181)
             if ($e->[97;41mhasResponse[0m() && $e->getResponse()->getStatusCode() === 404) {
 
 
-[0;31mERROR[0m: UndefinedInterfaceMethod - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Service/GitHubService.php#L1021\lib/Service/[1;31mGitHubService.php:1021:42[0m]8;;\ - Method GuzzleHttp\Exception\GuzzleException::getResponse does not exist (see https://psalm.dev/181)
+[0;31mERROR[0m: UndefinedInterfaceMethod - ]8;;file:///home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Service/GitHubService.php#L1046\lib/Service/[1;31mGitHubService.php:1046:42[0m]8;;\ - Method GuzzleHttp\Exception\GuzzleException::getResponse does not exist (see https://psalm.dev/181)
             if ($e->hasResponse() && $e->[97;41mgetResponse[0m()->getStatusCode() === 404) {
 
 
@@ -3462,17 +3355,17 @@ class [97;41mSearchTrailMapper[0m extends QBMapper
 
 
 ------------------------------
-[0;31m681 errors[0m found
+[0;31m658 errors[0m found
 ------------------------------
-1284 other issues found.
+1288 other issues found.
 You can display them with [30;48;5;195m--show-info=true[0m
 ------------------------------
-Psalm can automatically fix 41 of these issues.
+Psalm can automatically fix 40 of these issues.
 Run Psalm again with 
-[30;48;5;195m--alter --issues=InvalidReturnType,LessSpecificReturnType,InvalidNullableReturnType,MismatchingDocblockReturnType,MismatchingDocblockParamType --dry-run[0m
+[30;48;5;195m--alter --issues=LessSpecificReturnType,InvalidReturnType,InvalidNullableReturnType,MismatchingDocblockReturnType,MismatchingDocblockParamType --dry-run[0m
 to see what it can fix.
 ------------------------------
 
-Checks took 30.27 seconds and used 345.362MB of memory
-Psalm was able to infer types for 87.8616% of the codebase
+Checks took 38.64 seconds and used 345.399MB of memory
+Psalm was able to infer types for 87.8617% of the codebase
 Psalm not installed, skipping...

@@ -304,11 +304,11 @@ class FilesController extends Controller
             $uploadedFiles = [];
 
             // Check if multiple files have been uploaded.
-            /** @var array<string, array<int, string>|string|int>|null $files */
-            $files = $_FILES['files'] ?? null;
+            /** @var array<string, array<int, string>|string|int> $files */
+            $files = $_FILES['files'] ?? [];
 
             // Lets see if we have files in the request.
-            if (empty($files) === true || !is_array($files)) {
+            if (empty($files) === true) {
                 throw new Exception('No files uploaded');
             }
 

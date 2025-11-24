@@ -21,8 +21,6 @@ namespace OCA\OpenRegister\Controller;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
-use OCP\Search\ISearch;
-use OCP\Search\Result;
 use OCA\OpenRegister\Service\SolrService;
 
 /**
@@ -35,15 +33,6 @@ class SearchController extends Controller
 {
 
     /**
-     * The Nextcloud search service
-     *
-     * @var            ISearch
-     * @psalm-suppress UndefinedClass
-     * @psalm-suppress UndefinedInterface
-     */
-    private readonly ISearch $searchService;
-
-    /**
      * The SOLR search service
      *
      * @var SolrService
@@ -54,24 +43,19 @@ class SearchController extends Controller
     /**
      * Constructor for the SearchController
      *
-     * @param string      $appName       The name of the app
-     * @param IRequest    $request       The request object
-     * @param ISearch     $searchService The search service
-     * @psalm-suppress UndefinedClass
-     * @psalm-suppress UndefinedInterface
-     * @param SolrService $solrService   The Solr search service
+     * @param string      $appName     The name of the app
+     * @param IRequest    $request     The request object
+     * @param SolrService $solrService The Solr search service
      *
      * @return void
      */
     public function __construct(
         string $appName,
         IRequest $request,
-        ISearch $searchService,
         SolrService $solrService
     ) {
         parent::__construct(appName: $appName, request: $request);
-        $this->searchService = $searchService;
-        $this->solrService   = $solrService;
+        $this->solrService = $solrService;
 
     }//end __construct()
 
@@ -95,40 +79,39 @@ class SearchController extends Controller
         // Process the search query to handle multiple search words.
         $processedQuery = $this->processSearchQuery($query);
 
-        // Perform the search using the search service.
-        /** @psalm-suppress UndefinedMethod */
-        $results = $this->searchService->search($processedQuery);
+        // Perform the search using SolrService.
+        // Note: This is a simplified search endpoint. For full Nextcloud search integration,
+        // use the ObjectsProvider which implements IFilteringProvider.
+        $searchParams = [
+            'q' => $processedQuery,
+            'start' => (int) ($this->request->getParam('offset', 0)),
+            'rows' => (int) ($this->request->getParam('limit', 25)),
+        ];
+
+        $results = $this->solrService->searchObjects($searchParams);
 
         // Format the search results for the JSON response.
+        // SolrService returns: ['objects' => [], 'facets' => [], 'total' => int, 'execution_time_ms' => float]
         $formattedResults = array_map(
-            function (Result $result) {
-                /** @psalm-suppress UndefinedMethod */
-                $id = $result->getId();
-
-                /** @psalm-suppress UndefinedMethod */
-                $name = $result->getName();
-
-                /** @psalm-suppress UndefinedMethod */
-                $type = $result->getType();
-
-                /** @psalm-suppress UndefinedMethod */
-                $url = $result->getUrl();
-
-                /** @psalm-suppress UndefinedMethod */
-                $source = $result->getSource();
-
+            function ($object) {
                 return [
-                    'id'     => $id,
-                    'name'   => $name,
-                    'type'   => $type,
-                    'url'    => $url,
-                    'source' => $source,
+                    'id'     => $object['uuid'] ?? $object['id'] ?? null,
+                    'name'   => $object['name'] ?? $object['@self']['name'] ?? 'Unknown',
+                    'type'   => 'object',
+                    'url'    => $object['url'] ?? null,
+                    'source' => 'openregister',
                 ];
             },
-            $results
+            $results['objects'] ?? []
         );
 
-        return new JSONResponse(data: $formattedResults);
+        return new JSONResponse(
+            data: [
+                'results' => $formattedResults,
+                'total' => $results['total'] ?? 0,
+                'facets' => $results['facets'] ?? [],
+            ]
+        );
 
     }//end search()
 

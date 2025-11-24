@@ -528,7 +528,8 @@ class Application extends App implements IBootstrap
                     return new SolrDebugCommand(
                     $container->get(SettingsService::class),
                     $container->get('Psr\Log\LoggerInterface'),
-                    $container->get('OCP\IConfig')
+                    $container->get('OCP\IConfig'),
+                    $container->get('OCP\Http\Client\IClientService')
                     );
                 }
                 );

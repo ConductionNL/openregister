@@ -20,7 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OC\AppFramework\Http;
+use OCP\AppFramework\Http;
 use OCA\OpenRegister\Service\TextExtractionService;
 use OCA\OpenRegister\Service\SolrFileService;
 use OCP\AppFramework\Controller;

@@ -83,8 +83,8 @@ class DashboardController extends Controller
             );
 
             $csp = new ContentSecurityPolicy();
-            $csp->addAllowedConnectDomain(domain: '*');
-            $response->setContentSecurityPolicy(policy: $csp);
+            $csp->addAllowedConnectDomain('*');
+            $response->setContentSecurityPolicy($csp);
 
             return $response;
         } catch (\Exception $e) {

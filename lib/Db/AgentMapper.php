@@ -480,6 +480,7 @@ class AgentMapper extends QBMapper
         // Get old state before update.
         $oldEntity = $this->find(id: $entity->getId());
 
+        // @psalm-suppress RedundantCondition
         if ($entity instanceof Agent) {
             $entity->setUpdated(new DateTime());
         }
@@ -487,7 +488,7 @@ class AgentMapper extends QBMapper
         $entity = parent::update($entity);
 
         // Dispatch update event.
-        $this->eventDispatcher->dispatchTyped(new AgentUpdatedEvent($entity, register: $oldEntity));
+        $this->eventDispatcher->dispatchTyped(new AgentUpdatedEvent($entity, $oldEntity));
 
         return $entity;
 
@@ -505,7 +506,7 @@ class AgentMapper extends QBMapper
     public function delete(Entity $entity): Entity
     {
         // Verify RBAC permission to delete.
-        $this->verifyRbacPermission('delete', schema: 'agent');
+        $this->verifyRbacPermission('delete', 'agent');
 
         // Verify user has access to this organisation.
         $this->verifyOrganisationAccess($entity);
@@ -548,7 +549,7 @@ class AgentMapper extends QBMapper
     public function count(?array $filters=[]): int
     {
         // Verify RBAC permission to read.
-        $this->verifyRbacPermission('read', extend: 'agent');
+        $this->verifyRbacPermission('read', 'agent');
 
         $qb = $this->db->getQueryBuilder();
 
@@ -560,9 +561,9 @@ class AgentMapper extends QBMapper
             foreach ($filters as $field => $value) {
                 if ($value !== null && $field !== '_route') {
                     if ($field === 'active') {
-                        $qb->andWhere($qb->expr()->eq($field, files: $qb->createNamedParameter((bool) $value, rbac: IQueryBuilder::PARAM_BOOL)));
+                        $qb->andWhere($qb->expr()->eq($field, $qb->createNamedParameter((bool) $value, IQueryBuilder::PARAM_BOOL)));
                     } else if (is_array($value) === true) {
-                        $qb->andWhere($qb->expr()->in($field, multi: $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY)));
+                        $qb->andWhere($qb->expr()->in($field, $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY)));
                     } else {
                         $qb->andWhere($qb->expr()->eq($field, $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR)));
                     }

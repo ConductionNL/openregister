@@ -201,7 +201,7 @@ class ViewsController extends Controller
                         );
             }
 
-            $view = $this->viewService->find(id: $id, userId: $userId);
+            $view = $this->viewService->find($id, $userId);
 
             return new JSONResponse(
                     data: [
@@ -471,7 +471,7 @@ class ViewsController extends Controller
             }
 
             // Get existing view.
-            $view = $this->viewService->find(id: $id, userId: $userId);
+            $view = $this->viewService->find($id, $userId);
 
             $data = $this->request->getParams();
 
@@ -578,7 +578,17 @@ class ViewsController extends Controller
                         );
             }
 
-            $this->viewService->delete(id: $id, extend: $userId);
+            $user = $this->userSession->getUser();
+            if ($user === null) {
+                return new JSONResponse(
+                        data: [
+                            'success' => false,
+                            'error' => 'User not authenticated',
+                        ],
+                        statusCode: 401
+                        );
+            }
+            $this->viewService->delete($id, $user->getUID());
 
             return new JSONResponse(
                     data: [

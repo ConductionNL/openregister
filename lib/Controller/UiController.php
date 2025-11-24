@@ -61,17 +61,18 @@ class UiController extends Controller
             );
 
             $csp = new ContentSecurityPolicy();
-            $csp->addAllowedConnectDomain(domain: '*');
-            $response->setContentSecurityPolicy(policy: $csp);
+            $csp->addAllowedConnectDomain('*');
+            $response->setContentSecurityPolicy($csp);
 
             return $response;
         } catch (\Exception $e) {
-            return new TemplateResponse(
+            $response = new TemplateResponse(
                     appName: $this->appName,
                     templateName: 'error',
-                    params: ['error' => $e->getMessage()],
-                    responseCode: '500'
+                    params: ['error' => $e->getMessage()]
             );
+            $response->setStatus(500);
+            return $response;
         }
 
     }//end makeSpaResponse()
@@ -309,6 +310,42 @@ class UiController extends Controller
         return $this->makeSpaResponse();
 
     }//end searchTrail()
+
+
+    /**
+     * Returns the webhooks page template.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return TemplateResponse The template response.
+     *
+     * @phpstan-return TemplateResponse
+     * @psalm-return   TemplateResponse
+     */
+    public function webhooks(): TemplateResponse
+    {
+        return $this->makeSpaResponse();
+
+    }//end webhooks()
+
+
+    /**
+     * Returns the entities page template.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return TemplateResponse The template response.
+     *
+     * @phpstan-return TemplateResponse
+     * @psalm-return   TemplateResponse
+     */
+    public function entities(): TemplateResponse
+    {
+        return $this->makeSpaResponse();
+
+    }//end entities()
 
 
 }//end class
