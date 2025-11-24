@@ -100,6 +100,33 @@ services:
       retries: 3
       start_period: 30s
 
+  # Docusaurus documentation server with hot-reload (Development)
+  documentation:
+    image: node:20-alpine
+    container_name: openregister-docs-dev
+    restart: always
+    working_dir: /app
+    ports:
+      - "3001:3000"
+    volumes:
+      - ./website:/app:rw
+    command: >
+      sh -c "
+        echo 'Installing dependencies...' &&
+        npm install --legacy-peer-deps &&
+        echo 'Starting Docusaurus development server...' &&
+        npm start -- --host 0.0.0.0
+      "
+    environment:
+      - NODE_ENV=development
+      - BROWSER=none  # Prevent auto-opening browser in container
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:3000', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
   nextcloud:
     user: root
     container_name: nextcloud-dev

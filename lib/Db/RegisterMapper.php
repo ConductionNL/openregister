@@ -410,7 +410,7 @@ class RegisterMapper extends QBMapper
         $entity = parent::update($entity);
 
         // Dispatch update event.
-        $this->eventDispatcher->dispatchTyped(new RegisterUpdatedEvent($entity, $oldSchema));
+        $this->eventDispatcher->dispatchTyped(new RegisterUpdatedEvent(newRegister: $entity, oldRegister: $oldSchema));
 
         return $entity;
 
@@ -436,7 +436,7 @@ class RegisterMapper extends QBMapper
             $register->setVersion(implode('.', schema: $version));
         }
 
-        $register->hydrate($object);
+        $register->hydrate(object: $object);
 
         // Clean the register object to ensure UUID, extend: slug, files: and version are set.
         $this->cleanObject($register);
@@ -472,7 +472,7 @@ class RegisterMapper extends QBMapper
             $registerId = $entity->id;
         }
 
-        $stats = $this->objectEntityMapper->getStatistics($registerId, null);
+        $stats = $this->objectEntityMapper->getStatistics(registerId: $registerId, schemaId: null);
         if (($stats['total'] ?? 0) > 0) {
             throw new \OCA\OpenRegister\Exception\ValidationException('Cannot delete register: objects are still attached.');
         }

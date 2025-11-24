@@ -29,6 +29,8 @@ use OCP\IRequest;
 /**
  * Class AuditTrailController
  * Handles all audit trail related operations
+ *
+ * @psalm-suppress UnusedClass - This controller is registered via routes.php and used by Nextcloud's routing system
  */
 class AuditTrailController extends Controller
 {

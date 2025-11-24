@@ -5781,7 +5781,7 @@ class ObjectEntityMapper extends QBMapper
      */
     private function hasJsonFilters(array $filters): bool
     {
-        foreach ($filters as $key => $value) {
+        foreach (array_keys($filters) as $key) {
             // Check for dot-notation in filter keys (indicates JSON path queries).
             if (strpos($key, '.') !== false && $key !== 'schema.id') {
                 return true;

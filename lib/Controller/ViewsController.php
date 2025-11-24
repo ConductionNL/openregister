@@ -33,6 +33,8 @@ use OCP\AppFramework\Db\DoesNotExistException;
  *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
+ *
+ * @psalm-suppress UnusedClass - This controller is registered via routes.php and used by Nextcloud's routing system
  */
 class ViewsController extends Controller
 {

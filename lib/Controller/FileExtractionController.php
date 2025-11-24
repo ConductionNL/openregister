@@ -40,6 +40,8 @@ use OCP\IRequest;
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @psalm-suppress UnusedClass - This controller is registered via routes.php and used by Nextcloud's routing system
  */
 class FileExtractionController extends Controller
 {
@@ -50,9 +52,9 @@ class FileExtractionController extends Controller
      *
      * @param string                $appName              Application name
      * @param IRequest              $request              HTTP request
-     * @param TextExtractionService $extractionService    Text extraction service
      * @param TextExtractionService $textExtractionService Text extraction service
      * @param VectorizationService  $vectorizationService Unified vectorization service
+     * @param ChunkMapper           $chunkMapper          Chunk mapper for text chunks
      */
     public function __construct(
         string $appName,
@@ -96,19 +98,7 @@ class FileExtractionController extends Controller
         try {
             // TextExtractionService doesn't have findByStatus, use discoverUntrackedFiles or extractPendingFiles instead.
             // For now, return empty array as this endpoint needs to be redesigned for chunk-based architecture.
-            $files = [];
-
-            // Apply search filter if provided (post-query filtering for simplicity).
-            if ($search !== null && trim($search) !== '') {
-                $searchLower = strtolower(trim($search));
-                $files       = array_filter(
-                        $files,
-                        function ($file) use ($searchLower) {
-                            // This code path is not reachable with current implementation.
-                            return false;
-                        }
-                        );
-            }
+            // Note: Search filtering removed as it's not applicable to empty array
 
             return new JSONResponse(
                     data: [
@@ -475,8 +465,6 @@ class FileExtractionController extends Controller
     {
         try {
             // Note: cleanupInvalidEntries not available in TextExtractionService
-            $result = ['cleaned' => 0, 'message' => 'Cleanup not available in TextExtractionService'];
-
             return new JSONResponse(
                     data: [
                         'success' => true,

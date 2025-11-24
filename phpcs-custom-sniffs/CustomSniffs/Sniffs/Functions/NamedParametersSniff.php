@@ -64,6 +64,25 @@ class NamedParametersSniff implements Sniff
             $isConstructor = true;
         }
         
+        // Skip parent::__construct calls - they're calling parent class constructors we don't control.
+        if ($isMethodCall && strtolower($functionName) === '__construct') {
+            // Check if this is a parent:: call by looking backwards for 'parent' keyword.
+            $checkToken = $prevToken;
+            while ($checkToken !== false && $checkToken >= 0) {
+                if ($tokens[$checkToken]['code'] === T_DOUBLE_COLON) {
+                    $prevPrevToken = $phpcsFile->findPrevious([T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], ($checkToken - 1), null, true);
+                    if ($prevPrevToken !== false && strtolower($tokens[$prevPrevToken]['content']) === 'parent') {
+                        return; // Skip parent::__construct calls.
+                    }
+                    break;
+                }
+                if ($tokens[$checkToken]['code'] !== T_WHITESPACE && $tokens[$checkToken]['code'] !== T_COMMENT && $tokens[$checkToken]['code'] !== T_DOC_COMMENT) {
+                    break;
+                }
+                $checkToken--;
+            }
+        }
+        
         // Skip function definitions - look for 'function' keyword before this token.
         // We need to check if this T_STRING is part of a function declaration.
         $prev = $stackPtr - 1;
@@ -112,6 +131,8 @@ class NamedParametersSniff implements Sniff
             // Database connection methods.
             'getquerybuilder', 'getconnection', 'getentitymanager', 'getrepository',
             'begintransaction', 'commit', 'rollback', 'prepare', 'execute',
+            // PDO methods.
+            'bindvalue', 'bindparam', 'execute', 'fetch', 'fetchall', 'fetchcolumn',
             // Other Nextcloud/Doctrine methods.
             'getdb', 'gettable', 'gettableName',
             // PSR Logger methods.
@@ -119,12 +140,22 @@ class NamedParametersSniff implements Sniff
             // PHP Reflection methods.
             'setvalue', 'getvalue', 'setaccessible', 'getaccessible', 'invoke', 'invokeargs',
             'newinstance', 'newinstanceargs',
+            // Getter methods (typically don't need named parameters).
+            'getproperty', 'getmessage', 'getcode', 'getfile', 'getline', 'gettrace', 'getprevious',
             // Nextcloud Response methods.
             'addheader', 'setheader', 'setstatus', 'setcontenttype',
             // Nextcloud IRequest methods.
             'getparam', 'getparams', 'getuploadedfile', 'getuploadedfiles',
+            // Nextcloud IAppConfig methods.
+            'getvaluebool', 'getvalueint', 'getvaluestring', 'getvaluearray',
             // Nextcloud IURLGenerator methods.
-            'linktoroute', 'getabsoluteurl'
+            'linktoroute', 'getabsoluteurl',
+            // GuzzleHttp Client methods.
+            'request', 'get', 'post', 'put', 'delete', 'patch', 'head', 'options',
+            // Opis JsonSchema library methods.
+            'register', 'registerprotocol', 'validate', 'format', 'getproperty', 'geterrors',
+            // GuzzleHttp Psr7 Uri static methods.
+            'fromparts'
         ];
         if ($isMethodCall && in_array(strtolower($functionName), $queryBuilderMethods)) {
             // This is a Nextcloud/Doctrine method that doesn't support named parameters well.
@@ -135,7 +166,24 @@ class NamedParametersSniff implements Sniff
         if ($isConstructor) {
             $nextcloudConstructors = [
                 'datadownloadresponse', 'jsonresponse', 'templateresponse', 'streamresponse',
-                'fileresponse', 'redirectresponse', 'downloadresponse'
+                'fileresponse', 'redirectresponse', 'downloadresponse',
+                // OpenRegister setup classes.
+                'solrsetup',
+                // Third-party library constructors (Opis JsonSchema).
+                'validationresult', 'errorformatter', 'validator',
+                // QBMapper parent class constructor.
+                'qbmapper',
+                // Event classes (extend OCP\EventDispatcher\Event).
+                'registerupdatedevent', 'organisationupdatedevent', 'registercreatedevent', 'registerdeletedevent',
+                'schemaupdatedevent', 'schemacreatedevent', 'schemadeletedevent',
+                'objectupdatedevent', 'objectcreatedevent', 'objectdeletedevent', 'objectrevertedevent', 'objectdeletingevent',
+                'viewupdatedevent', 'viewcreatedevent', 'viewdeletedevent',
+                'sourceupdatedevent', 'sourcecreatedevent', 'sourcedeletedevent',
+                'agentupdatedevent', 'agentcreatedevent', 'agentdeletedevent',
+                'applicationupdatedevent', 'applicationcreatedevent', 'applicationdeletedevent',
+                'conversationupdatedevent', 'conversationcreatedevent', 'conversationdeletedevent',
+                'configurationupdatedevent', 'configurationcreatedevent', 'configurationdeletedevent',
+                'toolregistrationevent'
             ];
             if (in_array(strtolower($functionName), $nextcloudConstructors)) {
                 // This is a Nextcloud framework constructor, skip named parameter checking.
@@ -367,7 +415,7 @@ class NamedParametersSniff implements Sniff
                 
                 // String manipulation that's usually obvious.
                 'implode', 'explode', 'str_repeat', 'str_pad', 'wordwrap',
-                'strpos', 'stripos', 'strrpos', 'strripos', 'strstr', 'stristr',
+                'strpos', 'stripos', 'strrpos', 'strripos', 'strstr', 'stristr', 'strcasecmp',
                 'str_replace', 'str_ireplace', 'substr', 'substr_replace',
                 'str_split', 'chunk_split', 'str_shuffle', 'strrev',
                 'str_starts_with', 'str_ends_with', 'str_contains', 'str_equals',
@@ -391,21 +439,27 @@ class NamedParametersSniff implements Sniff
                 
                 // Math functions.
                 'abs', 'ceil', 'floor', 'round', 'sqrt', 'pow', 'log', 'sin', 'cos', 'tan',
-                'rand', 'mt_rand', 'srand', 'mt_srand',
+                'rand', 'mt_rand', 'srand', 'mt_srand', 'range',
+                // Encoding/decoding functions.
+                'base64_encode', 'base64_decode',
                 
                 // File functions (simple ones).
                 'file_exists', 'is_file', 'is_dir', 'is_readable', 'is_writable',
                 'filesize', 'filemtime', 'filectime', 'fileatime', 'dirname', 'basename',
                 'fopen', 'fclose', 'fread', 'fwrite', 'fgets', 'fgetcsv', 'fputcsv', 'feof',
+                'stream_context_create',
                 
                 // DateTime (simple constructors).
                 'time', 'microtime', 'date', 'gmdate', 'mktime', 'gmmktime',
                 
                 // URL and validation functions.
                 'filter_var', 'parse_url', 'urlencode', 'urldecode', 'htmlspecialchars', 'htmlentities',
+                'preg_match', 'preg_match_all', 'preg_replace', 'preg_replace_callback', 'preg_split',
                 
                 // PHP debug functions.
                 'debug_backtrace', 'var_dump', 'print_r',
+                // PHP reflection and type checking functions.
+                'method_exists', 'class_exists', 'function_exists', 'property_exists', 'is_a', 'is_subclass_of',
                 
                 // PHP file/path functions.
                 'pathinfo', 'dirname', 'basename', 'realpath',

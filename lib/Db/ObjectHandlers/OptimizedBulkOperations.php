@@ -345,7 +345,8 @@ class OptimizedBulkOperations
 
         for ($i = 0; $i < $objectCount; $i++) {
             $rowValues = [];
-            foreach ($columns as $column) {
+            // Iterate over columns (count only matters, not the column name).
+            for ($j = 0; $j < count($columns); $j++) {
                 $rowValues[] = ':param_'.$paramIndex;
                 $paramIndex++;
             }

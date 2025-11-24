@@ -385,7 +385,7 @@ class SolrDebugCommand extends Command
             if (isset($collectionsData['cluster']['collections']) === true) {
                 $collectionCount = count($collectionsData['cluster']['collections']);
                 $output->writeln("  <info>✅ Found $collectionCount collections (SolrCloud mode)</info>");
-                foreach ($collectionsData['cluster']['collections'] as $collectionName => $collectionInfo) {
+                foreach (array_keys($collectionsData['cluster']['collections']) as $collectionName) {
                     $output->writeln("    - <comment>$collectionName</comment>");
                 }
             }

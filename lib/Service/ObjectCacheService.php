@@ -277,7 +277,7 @@ class ObjectCacheService
         }
 
         // Index in SOLR.
-        $result = $solrService->indexObject($object, $commit);
+        $result = $solrService->indexObject(object: $object, commit: $commit);
 
         if ($result === true) {
             $this->logger->debug(
@@ -324,7 +324,7 @@ class ObjectCacheService
         }
 
         try {
-            $result = $solrService->deleteObject($object->getUuid(), $commit);
+            $result = $solrService->deleteObject(objectId: $object->getUuid(), commit: $commit);
 
             if ($result === true) {
                 $this->logger->debug(
@@ -420,7 +420,7 @@ class ObjectCacheService
             'object_txt'       => json_encode($objectData, JSON_UNESCAPED_UNICODE),
 
             // Full-text search catch-all field.
-            '_text_'           => $this->buildFullTextContent($object, $objectData),
+            '_text_'           => $this->buildFullTextContent(object: $object, objectData: $objectData),
         ];
 
         // Add dynamic fields from object data.

@@ -1522,7 +1522,7 @@ class MagicMapper
         // Map schema properties to columns.
         $schemaProperties = $schema->getProperties();
         if (is_array($schemaProperties)) {
-            foreach ($schemaProperties as $propertyName => $propertyConfig) {
+            foreach (array_keys($schemaProperties) as $propertyName) {
                 if (isset($data[$propertyName])) {
                     $value = $data[$propertyName];
 
@@ -2130,7 +2130,7 @@ class MagicMapper
             $schemaManager->dropTable($tableName);
 
             // Clear from cache - need to clear by table name pattern.
-            foreach (self::$tableExistsCache as $cacheKey => $timestamp) {
+            foreach (array_keys(self::$tableExistsCache) as $cacheKey) {
                 if (isset(self::$registerSchemaTableCache[$cacheKey])
                     && self::$registerSchemaTableCache[$cacheKey] === $tableName
                 ) {

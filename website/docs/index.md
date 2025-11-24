@@ -56,11 +56,11 @@ graph TB
     DB3[PostgreSQL]
     DB4[MongoDB]
     
-    Client -->|Wants to store a JSON object| API
-    API -->|passes incoming JSON objects| Adapter
-    Adapter -->|Validates incoming JSON objects| Validator
-    Validator <--|Obtains schema definitions| Registry
-    Adapter -->|Saves results after validation| Storage
+    Client -->|"Wants to store a JSON object"| API
+    API -->|"passes incoming JSON objects"| Adapter
+    Adapter -->|"Validates incoming JSON objects"| Validator
+    Validator <--|"Obtains schema definitions"| Registry
+    Adapter -->|"Saves results after validation"| Storage
     Storage --> DB1
     Storage --> DB2
     Storage --> DB3

@@ -40,6 +40,8 @@ use OCP\IRequest;
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
+ *
+ * @psalm-suppress UnusedClass - This controller is registered via routes.php and used by Nextcloud's routing system
  */
 class FilesController extends Controller
 {
@@ -138,8 +140,8 @@ class FilesController extends Controller
         int $fileId
     ): JSONResponse {
         // Set the schema and register to the object service (forces a check if the are valid).
-        $schema   = $this->objectService->setSchema($schema);
-        $register = $this->objectService->setRegister($register);
+        $this->objectService->setSchema($schema);
+        $this->objectService->setRegister($register);
         $this->objectService->setObject($id);
         $object = $this->objectService->getObject();
 
@@ -175,8 +177,8 @@ class FilesController extends Controller
         string $id
     ): JSONResponse {
         // Set the schema and register to the object service (forces a check if the are valid).
-        $schema   = $this->objectService->setSchema($schema);
-        $register = $this->objectService->setRegister($register);
+        $this->objectService->setSchema($schema);
+        $this->objectService->setRegister($register);
         $this->objectService->setObject($id);
         $object = $this->objectService->getObject();
 
@@ -230,8 +232,8 @@ class FilesController extends Controller
         string $id
     ): JSONResponse {
         // Set the schema and register to the object service (forces a check if the are valid).
-        $schema   = $this->objectService->setSchema($schema);
-        $register = $this->objectService->setRegister($register);
+        $this->objectService->setSchema($schema);
+        $this->objectService->setRegister($register);
         $this->objectService->setObject($id);
         $object = $this->objectService->getObject();
 
@@ -293,8 +295,8 @@ class FilesController extends Controller
         string $id
     ): JSONResponse {
         // Set the schema and register to the object service (forces a check if the are valid).
-        $schema   = $this->objectService->setSchema($schema);
-        $register = $this->objectService->setRegister($register);
+        $this->objectService->setSchema($schema);
+        $this->objectService->setRegister($register);
         $this->objectService->setObject($id);
         $object = $this->objectService->getObject();
 
@@ -421,9 +423,9 @@ class FilesController extends Controller
         int $fileId
     ): JSONResponse {
         // Set the schema and register to the object service (forces a check if the are valid).
-        $schema   = $this->objectService->setSchema($schema);
-        $register = $this->objectService->setRegister($register);
-        $object   = $this->objectService->setObject($id);
+        $this->objectService->setSchema($schema);
+        $this->objectService->setRegister($register);
+        $this->objectService->setObject($id);
 
         try {
             $data = $this->request->getParams();
@@ -460,8 +462,8 @@ class FilesController extends Controller
         int $fileId
     ): JSONResponse {
         // Set the schema and register to the object service (forces a check if the are valid).
-        $schema   = $this->objectService->setSchema($schema);
-        $register = $this->objectService->setRegister($register);
+        $this->objectService->setSchema($schema);
+        $this->objectService->setRegister($register);
         $this->objectService->setObject($id);
 
         try {
@@ -494,8 +496,8 @@ class FilesController extends Controller
         int $fileId
     ): JSONResponse {
         // Set the schema and register to the object service (forces a check if the are valid).
-        $schema   = $this->objectService->setSchema($schema);
-        $register = $this->objectService->setRegister($register);
+        $this->objectService->setSchema($schema);
+        $this->objectService->setRegister($register);
         $this->objectService->setObject($id);
 
         try {
@@ -528,8 +530,8 @@ class FilesController extends Controller
         int $fileId
     ): JSONResponse {
         // Set the schema and register to the object service (forces a check if the are valid).
-        $schema   = $this->objectService->setSchema($schema);
-        $register = $this->objectService->setRegister($register);
+        $this->objectService->setSchema($schema);
+        $this->objectService->setRegister($register);
         $this->objectService->setObject($id);
 
         try {

@@ -22,6 +22,9 @@ use OCP\AppFramework\Http\TemplateResponse;
 use OCP\IAppConfig;
 use OCP\IRequest;
 
+/**
+ * @psalm-suppress UnusedClass - This controller is registered via routes.php and used by Nextcloud's routing system
+ */
 class TablesController extends Controller
 {
 

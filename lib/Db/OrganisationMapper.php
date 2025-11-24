@@ -125,7 +125,7 @@ class OrganisationMapper extends QBMapper
         $entity = parent::update($entity);
 
         // Dispatch update event.
-        $this->eventDispatcher->dispatchTyped(new OrganisationUpdatedEvent($entity, $oldEntity));
+        $this->eventDispatcher->dispatchTyped(new OrganisationUpdatedEvent(newOrganisation: $entity, oldOrganisation: $oldEntity));
 
         return $entity;
 
@@ -407,7 +407,7 @@ class OrganisationMapper extends QBMapper
         }
 
         // Check for uniqueness.
-        if ($this->uuidExists($uuid, $organisation->getId()) === true) {
+        if ($this->uuidExists(uuid: $uuid, excludeId: $organisation->getId()) === true) {
             throw new \Exception('UUID already exists. Please use a different UUID.');
         }
 
@@ -907,7 +907,7 @@ class OrganisationMapper extends QBMapper
         // Calculate maximum depth after assignment.
         $maxDepthAbove = count($parentChain) + 1;
         // Parent chain + new parent.
-        $maxDepthBelow = $this->getMaxDepthInChain($childrenChain, $organisationUuid);
+        $maxDepthBelow = $this->getMaxDepthInChain(chain: $childrenChain, rootUuid: $organisationUuid);
         $totalDepth    = $maxDepthAbove + $maxDepthBelow;
 
         if ($totalDepth > 10) {
@@ -963,7 +963,7 @@ class OrganisationMapper extends QBMapper
         // Calculate depth for each child.
         $maxDepth = 0;
         foreach ($childrenUuids as $childUuid) {
-            $depth    = $this->calculateDepthFromRoot($childUuid, $rootUuid, $parentMap);
+            $depth    = $this->calculateDepthFromRoot(childUuid: $childUuid, rootUuid: $rootUuid, parentMap: $parentMap);
             $maxDepth = max($maxDepth, $depth);
         }
 

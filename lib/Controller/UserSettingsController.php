@@ -30,6 +30,8 @@ use Psr\Log\LoggerInterface;
  * Controller for managing user-specific settings (GitHub tokens, etc.).
  *
  * @package OCA\OpenRegister\Controller
+ *
+ * @psalm-suppress UnusedClass - This controller is registered via routes.php and used by Nextcloud's routing system
  */
 class UserSettingsController extends Controller
 {

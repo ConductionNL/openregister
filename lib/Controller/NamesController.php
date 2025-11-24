@@ -49,6 +49,8 @@ use Psr\Log\LoggerInterface;
  * @link      https://github.com/OpenCatalogi/OpenRegister
  * @version   1.0.0
  * @copyright 2024 Conduction b.v.
+ *
+ * @psalm-suppress UnusedClass - This controller is registered via routes.php and used by Nextcloud's routing system
  */
 class NamesController extends Controller
 {

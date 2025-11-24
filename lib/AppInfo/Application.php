@@ -130,6 +130,8 @@ use OCA\OpenRegister\Event\OrganisationDeletedEvent;
  * @license AGPL-3.0-or-later
  *
  * @link https://github.com/nextcloud/server/blob/master/apps-extra/openregister
+ *
+ * @psalm-suppress UnusedClass - This class is instantiated by Nextcloud's app framework system
  */
 class Application extends App implements IBootstrap
 {
@@ -266,12 +268,10 @@ class Application extends App implements IBootstrap
                 ObjectCacheService::class,
                 function ($container) {
                     // Break circular dependency by lazy-loading GuzzleSolrService.
-                    $solrService = null;
                     try {
-                        $solrService = $container->get(GuzzleSolrService::class);
+                        $container->get(GuzzleSolrService::class);
                     } catch (\Exception $e) {
                         // If GuzzleSolrService is not available, continue without it.
-                        $solrService = null;
                     }
 
                     return new ObjectCacheService(
@@ -831,9 +831,9 @@ class Application extends App implements IBootstrap
     public function boot(IBootContext $context): void
     {
         // Register event listeners for testing and functionality.
-        $container       = $context->getAppContainer();
-        $eventDispatcher = $container->get(IEventDispatcher::class);
-        $logger          = $container->get(id: 'Psr\Log\LoggerInterface');
+        $container = $context->getAppContainer();
+        $container->get(IEventDispatcher::class);
+        $logger    = $container->get(id: 'Psr\Log\LoggerInterface');
 
         // Log boot process.
         $logger->info(

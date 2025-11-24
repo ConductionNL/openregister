@@ -31,6 +31,8 @@ use Exception;
 
 /**
  * Bulk operations controller for OpenRegister
+ *
+ * @psalm-suppress UnusedClass - This controller is registered via routes.php and used by Nextcloud's routing system
  */
 class BulkController extends Controller
 {

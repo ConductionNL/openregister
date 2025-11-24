@@ -42,6 +42,8 @@ use Symfony\Component\Uid\Uuid;
  *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
+ *
+ * @psalm-suppress UnusedClass - This controller is registered via routes.php and used by Nextcloud's routing system
  */
 class ConversationController extends Controller
 {
@@ -623,7 +625,7 @@ class ConversationController extends Controller
                 );
             } else {
                 // First delete - perform soft delete (archive).
-                $conversation = $this->conversationMapper->softDelete($conversation->getId());
+                $this->conversationMapper->softDelete($conversation->getId());
 
                 $this->logger->info(
                         '[ConversationController] Conversation archived (soft deleted)',
