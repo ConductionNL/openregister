@@ -72,9 +72,9 @@ class SourcesController extends Controller
         $params = $this->request->getParams();
 
         // Extract pagination and search parameters.
-        $limit  = $this->getIntParam($params, '_limit');
-        $offset = $this->getIntParam($params, '_offset');
-        $page   = $this->getIntParam($params, '_page');
+        $limit  = $this->getIntParam(params: $params, key: '_limit');
+        $offset = $this->getIntParam(params: $params, key: '_offset');
+        $page   = $this->getIntParam(params: $params, key: '_page');
         $search = $params['_search'] ?? '';
 
         // Convert page to offset if provided.
@@ -198,7 +198,7 @@ class SourcesController extends Controller
         unset($data['created']);
 
         // Update the source with the provided data.
-        $source = $this->sourceMapper->updateFromArray($id, $data);
+        $source = $this->sourceMapper->updateFromArray(id: $id, object: $data);
         return new JSONResponse(data: $source);
 
     }//end update()

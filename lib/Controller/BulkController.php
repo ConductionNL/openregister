@@ -172,7 +172,7 @@ class BulkController extends Controller
             $this->objectService->setSchema($schema);
 
             // Perform bulk publish operation.
-            $publishedUuids = $this->objectService->publishObjects($uuids, $datetime);
+            $publishedUuids = $this->objectService->publishObjects(uuids: $uuids, datetime: $datetime);
 
             return new JSONResponse(
                     data: [
@@ -237,7 +237,7 @@ class BulkController extends Controller
             $this->objectService->setSchema($schema);
 
             // Perform bulk depublish operation.
-            $depublishedUuids = $this->objectService->depublishObjects($uuids, $datetime);
+            $depublishedUuids = $this->objectService->depublishObjects(uuids: $uuids, datetime: $datetime);
 
             return new JSONResponse(
                     data: [
@@ -366,7 +366,7 @@ class BulkController extends Controller
             $this->objectService->setSchema($schema);
 
             // Perform schema publishing operation.
-            $result = $this->objectService->publishObjectsBySchema((int) $schema, $publishAll);
+            $result = $this->objectService->publishObjectsBySchema(schemaId: (int) $schema, publishAll: $publishAll);
 
             return new JSONResponse(
                     data: [
@@ -417,7 +417,7 @@ class BulkController extends Controller
             $this->objectService->setSchema($schema);
 
             // Perform schema deletion operation.
-            $result = $this->objectService->deleteObjectsBySchema((int) $schema, $hardDelete);
+            $result = $this->objectService->deleteObjectsBySchema(schemaId: (int) $schema, hardDelete: $hardDelete);
 
             return new JSONResponse(
                     data: [

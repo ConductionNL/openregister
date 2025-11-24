@@ -104,7 +104,7 @@ class FilesController extends Controller
             $files = $this->fileService->getFiles(object: $id);
 
             // Format the files with pagination using request parameters.
-            $formattedFiles = $this->fileService->formatFiles($files, $this->request->getParams());
+            $formattedFiles = $this->fileService->formatFiles(files: $files, requestParams: $this->request->getParams());
 
             return new JSONResponse(data: $formattedFiles);
         } catch (DoesNotExistException $e) {
@@ -144,7 +144,7 @@ class FilesController extends Controller
         $object = $this->objectService->getObject();
 
         try {
-            $file = $this->fileService->getFile($object, $fileId);
+            $file = $this->fileService->getFile(object: $object, file: $fileId);
             if ($file === null) {
                 return new JSONResponse(data: ['error' => 'File not found'], statusCode: 404);
             }
@@ -431,7 +431,7 @@ class FilesController extends Controller
             $tags = $data['tags'] ?? [];
             // Content is optional for metadata-only updates.
             $content = $data['content'] ?? null;
-            $result  = $this->fileService->updateFile($fileId, $content, $tags, $this->objectService->getObject());
+            $result  = $this->fileService->updateFile(filePath: $fileId, content: $content, tags: $tags, object: $this->objectService->getObject());
             return new JSONResponse(data: $this->fileService->formatFile($result));
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
@@ -465,7 +465,7 @@ class FilesController extends Controller
         $this->objectService->setObject($id);
 
         try {
-            $result = $this->fileService->deleteFile($fileId, $this->objectService->getObject());
+            $result = $this->fileService->deleteFile(file: $fileId, object: $this->objectService->getObject());
             return new JSONResponse(data: ['success' => $result]);
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
@@ -499,7 +499,7 @@ class FilesController extends Controller
         $this->objectService->setObject($id);
 
         try {
-            $result = $this->fileService->publishFile($this->objectService->getObject(), $fileId);
+            $result = $this->fileService->publishFile(object: $this->objectService->getObject(), file: $fileId);
             return new JSONResponse(data: $this->fileService->formatFile($result));
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);

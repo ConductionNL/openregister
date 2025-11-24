@@ -173,13 +173,13 @@ class AgentsController extends Controller
             // Get agents with RBAC filtering (handled in mapper).
             if ($organisationUuid !== null) {
                 $agents = $this->agentMapper->findByOrganisation(
-                    $organisationUuid,
-                    $this->userId,
-                    $limit,
-                    $offset
+                    organisationUuid: $organisationUuid,
+                    userId: $this->userId,
+                    limit: $limit,
+                    offset: $offset
                 );
             } else {
-                $agents = $this->agentMapper->findAll($limit, $offset);
+                $agents = $this->agentMapper->findAll(limit: $limit, offset: $offset);
             }
 
             return new JSONResponse(data: ['results' => $agents], statusCode: Http::STATUS_OK);
@@ -216,7 +216,7 @@ class AgentsController extends Controller
             $agent = $this->agentMapper->find($id);
 
             // Check access rights using mapper method.
-            if ($this->agentMapper->canUserAccessAgent($agent, $this->userId) === false) {
+            if ($this->agentMapper->canUserAccessAgent(agent: $agent, userId: $this->userId) === false) {
                 return new JSONResponse(data: ['error' => 'Access denied to this agent'], statusCode: Http::STATUS_FORBIDDEN);
             }
 
@@ -316,7 +316,7 @@ class AgentsController extends Controller
             $agent = $this->agentMapper->find($id);
 
             // Check if user can modify this agent using mapper method.
-            if ($this->agentMapper->canUserModifyAgent($agent, $this->userId) === false) {
+            if ($this->agentMapper->canUserModifyAgent(agent: $agent, userId: $this->userId) === false) {
                 return new JSONResponse(data: ['error' => 'You do not have permission to modify this agent'], statusCode: Http::STATUS_FORBIDDEN);
             }
 
@@ -396,7 +396,7 @@ class AgentsController extends Controller
             $agent = $this->agentMapper->find($id);
 
             // Check if user can modify (delete) this agent using mapper method.
-            if ($this->agentMapper->canUserModifyAgent($agent, $this->userId) === false) {
+            if ($this->agentMapper->canUserModifyAgent(agent: $agent, userId: $this->userId) === false) {
                 return new JSONResponse(data: ['error' => 'You do not have permission to delete this agent'], statusCode: Http::STATUS_FORBIDDEN);
             }
 

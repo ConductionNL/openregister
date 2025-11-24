@@ -253,7 +253,7 @@ class WebhooksController extends Controller
             // Remove ID from data if present.
             unset($data['id']);
 
-            $webhook = $this->webhookMapper->updateFromArray($id, $data);
+            $webhook = $this->webhookMapper->updateFromArray(id: $id, data: $data);
 
             $this->logger->info(
                     message: 'Webhook updated',
@@ -370,10 +370,10 @@ class WebhooksController extends Controller
             ];
 
             $success = $this->webhookService->deliverWebhook(
-                $webhook,
-                'OCA\OpenRegister\Event\TestEvent',
-                $testPayload,
-                1
+                webhook: $webhook,
+                eventName: 'OCA\OpenRegister\Event\TestEvent',
+                payload: $testPayload,
+                attempt: 1
             );
 
             if ($success === true) {

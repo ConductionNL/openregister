@@ -263,9 +263,9 @@ class ChatController extends Controller
 
                 // Generate unique default title.
                 $defaultTitle = $this->chatService->ensureUniqueTitle(
-                    'New Conversation',
-                    $this->userId,
-                    $agent->getId()
+                    baseTitle: 'New Conversation',
+                    userId: $this->userId,
+                    agentId: $agent->getId()
                 );
 
                 $conversation = new Conversation();
@@ -307,12 +307,12 @@ class ChatController extends Controller
 
             // Process message through ChatService.
             $result = $this->chatService->processMessage(
-                $conversation->getId(),
-                $this->userId,
-                $message,
-                $selectedViews,
-                $selectedTools,
-                $ragSettings
+                conversationId: $conversation->getId(),
+                userId: $this->userId,
+                userMessage: $message,
+                selectedViews: $selectedViews,
+                selectedTools: $selectedTools,
+                ragSettings: $ragSettings
             );
 
             // Add conversation UUID to result for frontend.
@@ -383,9 +383,9 @@ class ChatController extends Controller
             $offset = (int) ($this->request->getParam('offset') ?? 0);
 
             $messages = $this->messageMapper->findByConversation(
-                $conversationId,
-                $limit,
-                $offset
+                conversationId: $conversationId,
+                limit: $limit,
+                offset: $offset
             );
 
             return new JSONResponse(
@@ -557,7 +557,7 @@ class ChatController extends Controller
             $organisationUuid = $organisation?->getUuid();
 
             // Check if feedback already exists for this message.
-            $existingFeedback = $this->feedbackMapper->findByMessage($messageId, $this->userId);
+            $existingFeedback = $this->feedbackMapper->findByMessage(messageId: $messageId, userId: $this->userId);
 
             if ($existingFeedback !== null) {
                 // Update existing feedback.

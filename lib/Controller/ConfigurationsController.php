@@ -274,7 +274,7 @@ class ConfigurationsController extends Controller
             $configuration = $this->configurationMapper->find($id);
 
             // Export the configuration and its related data.
-            $exportData = $this->configurationService->exportConfig($configuration, $includeObjects);
+            $exportData = $this->configurationService->exportConfig(input: $configuration, includeObjects: $includeObjects);
 
             // Convert to JSON.
             $jsonContent = json_encode($exportData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
@@ -323,19 +323,19 @@ class ConfigurationsController extends Controller
             }
 
             // Get the uploaded JSON data.
-            $jsonData = $this->configurationService->getUploadedJson($this->request->getParams(), $uploadedFiles);
+            $jsonData = $this->configurationService->getUploadedJson(data: $this->request->getParams(), uploadedFiles: $uploadedFiles);
             if ($jsonData instanceof JSONResponse) {
                 return $jsonData;
             }
 
             // Import the data.
             $result = $this->configurationService->importFromJson(
-                $jsonData,
-                null,
-                $this->request->getParam('owner'),
-                $this->request->getParam('appId'),
-                $this->request->getParam('version'),
-                $force
+                data: $jsonData,
+                configuration: null,
+                owner: $this->request->getParam('owner'),
+                appId: $this->request->getParam('appId'),
+                version: $this->request->getParam('version'),
+                force: $force
             );
 
             return new JSONResponse(

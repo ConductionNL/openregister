@@ -429,7 +429,7 @@ class DeletedController extends Controller
                         'restored' => $restored,
                         'failed'   => $failed,
                         'notFound' => $notFound,
-                        'message'  => $this->formatRestoreMessage($restored, $failed, $notFound),
+                        'message'  => $this->formatRestoreMessage(restored: $restored, failed: $failed, notFound: $notFound),
                     ]
                     );
         } catch (\Exception $e) {
@@ -561,7 +561,7 @@ class DeletedController extends Controller
                         'deleted'  => $deleted,
                         'failed'   => $failed,
                         'notFound' => $notFound,
-                        'message'  => $this->formatDeleteMessage($deleted, $failed, $notFound),
+                        'message'  => $this->formatDeleteMessage(deleted: $deleted, failed: $failed, notFound: $notFound),
                     ]
                     );
         } catch (\Exception $e) {
