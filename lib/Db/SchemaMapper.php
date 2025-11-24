@@ -123,8 +123,8 @@ class SchemaMapper extends QBMapper
      */
     public function find(string | int $id, ?array $extend=[]): Schema
     {
-        // Verify RBAC permission to read
-        $this->verifyRbacPermission('read', 'schema');
+        // Verify RBAC permission to read @todo: remove this hotfix for solr
+        //$this->verifyRbacPermission('read', 'schema');
 
         $qb = $this->db->getQueryBuilder();
         $qb->select('*')
