@@ -318,9 +318,33 @@ The codebase is analyzed using [Psalm](https://psalm.dev/) for static type check
 composer psalm
 ```
 
+**Current Status:**
+
+- **Total Errors:** 660
+- **Last Updated:** $(date)
+
+**Error Breakdown:**
+
+| Error Type | Count | Description |
+|------------|-------|-------------|
+| UnusedVariable | ~110 | Unused variables |
+| UnusedProperty | ~20 | Unused properties |
+| UnusedParam | ~61 | Unused parameters |
+| UnusedMethod | ~208 | Unused methods (many false positives) |
+| UndefinedMethod | ~50 | Methods that don't exist |
+| InvalidArgument | ~30 | Invalid argument types |
+| LessSpecificImplementedReturnType | ~25 | Return type too generic |
+| UndefinedDocblockClass | ~18 | Docblock references unknown class |
+| ImplementedReturnTypeMismatch | ~15 | Return type mismatch |
+| ImplementedParamTypeMismatch | ~10 | Parameter type mismatch |
+| RedundantCondition | ~20 | Redundant type checks |
+| MissingTemplateParam | ~7 | Missing template parameters |
+| UndefinedClass | ~64 | Unknown classes |
+| Other | ~122 | Various other error types |
+
 **Full Error Report:**
 
-A complete error report is available in `psalm-errors-full.md` after running Psalm.
+A complete error report is available in `psalm-errors-current.md` after running Psalm.
 
 **Note:** These errors are being systematically fixed. Suppressions are avoided in favor of actual fixes where possible.
 

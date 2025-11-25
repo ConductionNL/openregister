@@ -47,8 +47,8 @@ Both provide:
 **Installation**:
 
 ```bash
-# Start TGI with Mistral
-docker-compose -f docker-compose.huggingface.yml up -d tgi-mistral
+# Start TGI with Mistral (using huggingface profile)
+docker-compose -f docker-compose.dev.yml --profile huggingface up -d tgi-mistral
 
 # Wait for model download (~15GB for Mistral 7B)
 docker logs -f openregister-tgi-mistral
@@ -73,8 +73,8 @@ docker logs -f openregister-tgi-mistral
 **Installation**:
 
 ```bash
-# Start vLLM with Mistral
-docker-compose -f docker-compose.huggingface.yml up -d vllm-mistral
+# Start vLLM with Mistral (if configured)
+docker-compose -f docker-compose.dev.yml --profile huggingface up -d vllm-mistral
 
 # Wait for model download
 docker logs -f openregister-vllm-mistral
@@ -150,7 +150,7 @@ vllm-mistral:
 
 ### Changing the Model
 
-Edit `docker-compose.huggingface.yml`:
+Edit `docker-compose.dev.yml`:
 
 **For TGI**:
 ```yaml
@@ -159,7 +159,7 @@ tgi-mistral:
     - MODEL_ID=mistralai/Mistral-7B-Instruct-v0.2  # Change this
 ```
 
-**For vLLM**:
+**For vLLM** (if configured):
 ```yaml
 vllm-mistral:
   environment:
@@ -171,9 +171,9 @@ vllm-mistral:
 
 Then restart the service:
 ```bash
-docker-compose -f docker-compose.huggingface.yml restart tgi-mistral
+docker-compose -f docker-compose.dev.yml --profile huggingface restart tgi-mistral
 # or
-docker-compose -f docker-compose.huggingface.yml restart vllm-mistral
+docker-compose -f docker-compose.dev.yml --profile huggingface restart vllm-mistral
 ```
 
 ## API Usage
@@ -281,7 +281,7 @@ docker exec openregister-tgi-mistral nvidia-smi
 docker exec openregister-tgi-mistral ping -c 3 huggingface.co
 
 # For gated models, set Hugging Face token:
-# Edit docker-compose.huggingface.yml:
+# Edit docker-compose.dev.yml:
 environment:
   - HUGGING_FACE_HUB_TOKEN=your_token_here
 ```
