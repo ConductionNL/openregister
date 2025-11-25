@@ -209,7 +209,7 @@ class ObjectEntityMapper extends QBMapper
     ) {
         parent::__construct($db, 'openregister_objects');
 
-        /** @var AbstractPlatform $platform */
+        /** @var \Doctrine\DBAL\Platforms\AbstractPlatform $platform */
         $platform = $db->getDatabasePlatform();
         /** @psalm-suppress UndefinedClass - MySQLPlatform may not be available in all Doctrine DBAL versions */
         if ($platform instanceof MySQLPlatform === true) {
@@ -3323,14 +3323,14 @@ class ObjectEntityMapper extends QBMapper
             // Analyze each property for facetable configuration.
             foreach ($properties as $propertyKey => $property) {
                 if ($this->isPropertyFacetable($property) === true) {
-                    $fieldConfig = $this->generateFieldConfigFromProperty($propertyKey, $property);
+                    $fieldConfig = $this->generateFieldConfigFromProperty(propertyKey: $propertyKey, property: $property);
 
                     if ($fieldConfig !== null) {
                         // If field already exists from another schema, merge configurations.
                         if (isset($facetableFields[$propertyKey]) === true) {
                             $facetableFields[$propertyKey] = $this->mergeFieldConfigs(
-                                $facetableFields[$propertyKey],
-                                $fieldConfig
+                                existing: $facetableFields[$propertyKey],
+                                new: $fieldConfig
                             );
                         } else {
                             $facetableFields[$propertyKey] = $fieldConfig;
@@ -3429,7 +3429,7 @@ class ObjectEntityMapper extends QBMapper
         $example = $property['example'] ?? null;
 
         // Determine appropriate facet types based on property type and format.
-        $facetTypes = $this->determineFacetTypesFromProperty($type, $format);
+        $facetTypes = $this->determineFacetTypesFromProperty(type: $type, format: $format);
 
         if (empty($facetTypes) === true) {
             return null;
@@ -3597,7 +3597,7 @@ class ObjectEntityMapper extends QBMapper
         $retryCount = 0;
 
         // Calculate optimal chunk sizes based on data size to prevent max_allowed_packet errors.
-        $maxChunkSize = $this->calculateOptimalChunkSize($insertObjects, $updateObjects);
+        $maxChunkSize = $this->calculateOptimalChunkSize(insertObjects: $insertObjects, updateObjects: $updateObjects);
 
 
         // Separate extremely large objects that should be processed individually.
@@ -3608,8 +3608,8 @@ class ObjectEntityMapper extends QBMapper
         $updateObjectsArray = array_map(function ($obj) {
             return $obj->jsonSerialize();
         }, $updateObjects);
-        $insertObjectGroups = $this->separateLargeObjects($insertObjectsArray, 500000); // 500KB threshold
-        $updateObjectGroups = $this->separateLargeObjects($updateObjectsArray, 500000); // 500KB threshold
+        $insertObjectGroups = $this->separateLargeObjects(objects: $insertObjectsArray, maxSafeSize: 500000); // 500KB threshold
+        $updateObjectGroups = $this->separateLargeObjects(objects: $updateObjectsArray, maxSafeSize: 500000); // 500KB threshold
 
         // separateLargeObjects returns arrays, so we keep them as arrays.
         $largeInsertObjects = $insertObjectGroups['large'];
@@ -4114,7 +4114,7 @@ class ObjectEntityMapper extends QBMapper
         }
 
         // Calculate optimal batch size based on actual data size to prevent max_allowed_packet errors.
-        $batchSize = $this->calculateOptimalBatchSize($insertObjects, $columns);
+        $batchSize = $this->calculateOptimalBatchSize(insertObjects: $insertObjects, columns: $columns);
         $insertedIds = [];
 
 
@@ -4127,7 +4127,7 @@ class ObjectEntityMapper extends QBMapper
             try {
                 $this->db->executeQuery('SELECT 1');
             } catch (\Exception $e) {
-                throw new \OCP\DB\Exception('Database connection lost during bulk insert', 0, $e);
+                throw new \OCP\DB\Exception(message: 'Database connection lost during bulk insert', code: 0, previous: $e);
             }
 
             // Build VALUES clause for this batch.
@@ -4304,7 +4304,7 @@ class ObjectEntityMapper extends QBMapper
                     continue; // Skip primary key
                 }
 
-                $value = $this->getEntityValue($object, $column);
+                $value = $this->getEntityValue(entity: $object, column: $column);
                 $qb->set($column, $qb->createNamedParameter($value));
             }
 
@@ -4377,7 +4377,7 @@ class ObjectEntityMapper extends QBMapper
             // Build parameters array in memory.
             $parameters = ['param_id' => $dbId];
             foreach ($updateableColumns as $column) {
-                $value = $this->getEntityValue($object, $column);
+                $value = $this->getEntityValue(entity: $object, column: $column);
                 $parameters['param_' . $column] = $value;
             }
 
@@ -4429,11 +4429,11 @@ class ObjectEntityMapper extends QBMapper
     {
         // Use the optimized bulk operations handler for maximum performance.
         $optimizedHandler = new \OCA\OpenRegister\Db\ObjectHandlers\OptimizedBulkOperations(
-            $this->db,
-            $this->logger
+            db: $this->db,
+            logger: $this->logger
         );
 
-        return $optimizedHandler->ultraFastUnifiedBulkSave($insertObjects, $updateObjects);
+        return $optimizedHandler->ultraFastUnifiedBulkSave(insertObjects: $insertObjects, updateObjects: $updateObjects);
     }//end ultraFastBulkSave()
 
 
@@ -4462,7 +4462,7 @@ class ObjectEntityMapper extends QBMapper
         $columns = array_keys($firstObject);
 
         // MEMORY OPTIMIZATION: Calculate larger batch sizes when memory allows.
-        $batchSize = min(2000, $this->calculateOptimalBatchSize($insertObjects, $columns));
+        $batchSize = min(2000, $this->calculateOptimalBatchSize(insertObjects: $insertObjects, columns: $columns));
         $insertedIds = [];
 
         // PERFORMANCE: Pre-build column list string.
@@ -4677,7 +4677,7 @@ class ObjectEntityMapper extends QBMapper
             try {
                 $this->db->executeQuery('SELECT 1');
             } catch (\Exception $e) {
-                throw new \OCP\DB\Exception('Database connection lost during bulk delete', 0, $e);
+                throw new \OCP\DB\Exception(message: 'Database connection lost during bulk delete', code: 0, previous: $e);
             }
 
             // First, get the current state of objects to determine soft vs hard delete.
@@ -4789,7 +4789,7 @@ class ObjectEntityMapper extends QBMapper
             try {
                 $this->db->executeQuery('SELECT 1');
             } catch (\Exception $e) {
-                throw new \OCP\DB\Exception('Database connection lost during bulk publish', 0, $e);
+                throw new \OCP\DB\Exception(message: 'Database connection lost during bulk publish', code: 0, previous: $e);
             }
 
             // Get object IDs for the UUIDs in this chunk.
@@ -4881,7 +4881,7 @@ class ObjectEntityMapper extends QBMapper
             try {
                 $this->db->executeQuery('SELECT 1');
             } catch (\Exception $e) {
-                throw new \OCP\DB\Exception('Database connection lost during bulk depublish', 0, $e);
+                throw new \OCP\DB\Exception(message: 'Database connection lost during bulk depublish', code: 0, previous: $e);
             }
 
             // Get object IDs for the UUIDs in this chunk.
@@ -4960,7 +4960,7 @@ class ObjectEntityMapper extends QBMapper
             }
 
             // Bulk delete objects with hard delete flag.
-            $deletedIds = $this->bulkDelete($uuids, $hardDelete);
+            $deletedIds = $this->bulkDelete(uuids: $uuids, hardDelete: $hardDelete);
             $deletedObjectIds = array_merge($deletedObjectIds, $deletedIds);
 
             // Commit transaction only if we started it.
@@ -5028,7 +5028,7 @@ class ObjectEntityMapper extends QBMapper
         }
 
         // Use the existing bulk publish method with publishAll flag.
-        $publishedUuids = $this->publishObjects($uuids, true); // true = publish with current timestamp
+        $publishedUuids = $this->publishObjects(uuids: $uuids, datetime: true); // true = publish with current timestamp
 
         return [
             'published_count' => count($publishedUuids),
@@ -5085,7 +5085,7 @@ class ObjectEntityMapper extends QBMapper
         }
 
         // Use the existing bulk delete method with hard delete flag.
-        $deletedUuids = $this->deleteObjects($uuids, $hardDelete);
+        $deletedUuids = $this->deleteObjects(uuids: $uuids, hardDelete: $hardDelete);
 
         return [
             'deleted_count' => count($deletedUuids),
@@ -5185,7 +5185,7 @@ class ObjectEntityMapper extends QBMapper
             }
 
             // Bulk publish objects.
-            $publishedIds = $this->bulkPublish($uuids, $datetime);
+            $publishedIds = $this->bulkPublish(uuids: $uuids, datetime: $datetime);
             $publishedObjectIds = array_merge($publishedObjectIds, $publishedIds);
 
             // Commit transaction only if we started it.
@@ -5243,7 +5243,7 @@ class ObjectEntityMapper extends QBMapper
             }
 
             // Bulk depublish objects.
-            $depublishedIds = $this->bulkDepublish($uuids, $datetime);
+            $depublishedIds = $this->bulkDepublish(uuids: $uuids, datetime: $datetime);
             $depublishedObjectIds = array_merge($depublishedObjectIds, $depublishedIds);
 
             // Commit transaction only if we started it.
@@ -5449,7 +5449,7 @@ class ObjectEntityMapper extends QBMapper
                 }
 
                 // Process batch of objects.
-                $batchResults = $this->processBulkOwnerDeclarationBatch($objects, $defaultOwner, $defaultOrganisation);
+                $batchResults = $this->processBulkOwnerDeclarationBatch(objects: $objects, defaultOwner: $defaultOwner, defaultOrganisation: $defaultOrganisation);
 
                 // Update statistics.
                 $results['totalProcessed'] += count($objects);
@@ -5515,7 +5515,7 @@ class ObjectEntityMapper extends QBMapper
 
                 // Update the object if needed.
                 if ($needsUpdate === true) {
-                    $this->updateObjectOwnership((int)$objectData['id'], $updateData);
+                    $this->updateObjectOwnership(objectId: (int)$objectData['id'], updateData: $updateData);
                 }
 
             } catch (\Exception $e) {
@@ -5670,13 +5670,13 @@ class ObjectEntityMapper extends QBMapper
     public function optimizeQueryForPerformance(IQueryBuilder $qb, array $filters, bool $skipRbac): void
     {
         // **OPTIMIZATION 1**: Use composite indexes for common query patterns.
-        $this->applyCompositeIndexOptimizations($qb, $filters);
+        $this->applyCompositeIndexOptimizations(qb: $qb, filters: $filters);
 
         // **OPTIMIZATION 2**: Optimize ORDER BY to use indexed columns.
         $this->optimizeOrderBy($qb);
 
         // **OPTIMIZATION 3**: Add query hints for better execution plans.
-        $this->addQueryHints($qb, $filters, $skipRbac);
+        $this->addQueryHints(qb: $qb, filters: $filters, skipRbac: $skipRbac);
     }
 
     /**

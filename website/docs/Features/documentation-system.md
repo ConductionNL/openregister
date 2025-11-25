@@ -172,7 +172,7 @@ See the **[Integrations Overview](../Integrations/index.md)** for a complete ove
 **Start Here:**
 1. [Solr Setup](../technical/solr-setup-configuration.md) - Search engine configuration
 2. [Integrations Overview](../Integrations/index.md) - Service integration
-3. [Docker Services](../development/docker-services.md) - Container setup
+3. [Docker Setup](../development/docker-setup.md) - Container setup
 
 **Key Topics:**
 - Infrastructure setup

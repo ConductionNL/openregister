@@ -43,11 +43,11 @@ See [Ollama Integration](./ollama.md) for detailed setup instructions.
 ### Quick Start
 
 ```bash
-# Start TGI with Mistral
-docker-compose -f docker-compose.huggingface.yml up -d tgi-mistral
+# Start TGI with Mistral (using huggingface profile)
+docker-compose -f docker-compose.dev.yml --profile huggingface up -d tgi-mistral
 
-# Or start vLLM with Mistral
-docker-compose -f docker-compose.huggingface.yml up -d vllm-mistral
+# Or start vLLM with Mistral (if configured)
+docker-compose -f docker-compose.dev.yml --profile huggingface up -d vllm-mistral
 ```
 
 ### Configuration

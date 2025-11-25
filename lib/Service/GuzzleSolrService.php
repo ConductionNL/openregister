@@ -7593,7 +7593,7 @@ class GuzzleSolrService
         $solrFieldType = $solrFieldTypes[$fieldName];
 
         // **CRITICAL VALIDATION**: Check for type compatibility.
-        $isCompatible = $this->isValueCompatibleWithSolrType($fieldValue, $solrFieldType);
+        $isCompatible = $this->isValueCompatibleWithSolrType(value: $fieldValue, solrFieldType: $solrFieldType);
 
         if ($isCompatible === false) {
             $this->logger->warning(
@@ -7647,7 +7647,7 @@ class GuzzleSolrService
 
             // Check each element in the array against the base field type.
             foreach ($value as $element) {
-                if ($this->isValueCompatibleWithSolrType($element, $solrFieldType) === false) {
+                if ($this->isValueCompatibleWithSolrType(value: $element, solrFieldType: $solrFieldType) === false) {
                     return false;
                 }
             }
@@ -7750,7 +7750,7 @@ class GuzzleSolrService
                 $documents = [];
                 foreach ($objects as $object) {
                     try {
-                        $document = $this->createSolrDocument($object, $solrFieldTypes);
+                        $document = $this->createSolrDocument(object: $object, solrFieldTypes: $solrFieldTypes);
                         if (empty($document) === false) {
                             $documents[] = $document;
                         }
@@ -7950,7 +7950,7 @@ class GuzzleSolrService
                     }//end if
 
                     // Prepare field configuration for SOLR.
-                    $solrFieldConfig = $this->prepareSolrFieldConfig($fieldName, $fieldConfig);
+                    $solrFieldConfig = $this->prepareSolrFieldConfig(fieldName: $fieldName, fieldConfig: $fieldConfig);
 
                     // Use replace-field for existing mismatched fields.
                     $payload = [
@@ -8337,7 +8337,7 @@ class GuzzleSolrService
 
                 foreach ($objects as $object) {
                     try {
-                        $success = $this->indexObject($object, false);
+                        $success = $this->indexObject(object: $object, commit: false);
                         // Don't commit each object.
                         if ($success === true) {
                             $batchSuccesses++;
@@ -8406,7 +8406,7 @@ class GuzzleSolrService
             $endMemory = memory_get_usage(true);
 
             $stats['duration_seconds']   = round($endTime - $startTime, 2);
-            $stats['objects_per_second'] = $this->calculateObjectsPerSecond($stats['duration_seconds'], $stats['processed_objects']);
+            $stats['objects_per_second'] = $this->calculateObjectsPerSecond(durationSeconds: $stats['duration_seconds'], processedObjects: $stats['processed_objects']);
             $stats['memory_used_mb']     = round(($endMemory - $startMemory) / 1024 / 1024, 2);
             $stats['peak_memory_mb']     = round(memory_get_peak_usage(true) / 1024 / 1024, 2);
 
@@ -8583,7 +8583,7 @@ class GuzzleSolrService
             foreach ($fieldsToProcess as $fieldName => $fieldConfig) {
                 try {
                     // Prepare field configuration for SOLR.
-                    $solrFieldConfig = $this->prepareSolrFieldConfig($fieldName, $fieldConfig);
+                    $solrFieldConfig = $this->prepareSolrFieldConfig(fieldName: $fieldName, fieldConfig: $fieldConfig);
 
                     // Always use add-field since we only process missing fields.
                     $operation = 'add-field';
@@ -8795,7 +8795,7 @@ class GuzzleSolrService
                 'fields'            => $this->extractFields($schema),
                 'dynamic_fields'    => $this->extractSchemaDynamicFields($schema),
                 'field_types'       => $this->extractFieldTypes($schema),
-                'core_info'         => $this->extractCoreInfo($schema, $collectionName),
+                'core_info'         => $this->extractCoreInfo(schema: $schema, collectionName: $collectionName),
                 'environment_notes' => $this->generateEnvironmentNotes($schema),
             ];
 
@@ -9029,7 +9029,7 @@ class GuzzleSolrService
             }
 
             // Calculate objects to process.
-            $objectsToProcess = $this->calculateObjectsToProcess($maxObjects, $totalObjects);
+            $objectsToProcess = $this->calculateObjectsToProcess(maxObjects: $maxObjects, totalObjects: $totalObjects);
 
             // Memory estimation based on empirical data:.
             // - Base overhead: ~50MB for SOLR service, profiler, etc.
@@ -9112,7 +9112,7 @@ class GuzzleSolrService
 
         // Add prediction accuracy if prediction was available.
         if (empty($prediction) === false && isset($prediction['estimated_additional']) === true) {
-            $predictionAccuracy = $this->calculatePredictionAccuracy($prediction['estimated_additional'], $actualUsed);
+            $predictionAccuracy = $this->calculatePredictionAccuracy(estimated: $prediction['estimated_additional'], actual: $actualUsed);
 
             $report['prediction'] = [
                 'estimated'           => $prediction['estimated_additional'],
@@ -10151,13 +10151,13 @@ class GuzzleSolrService
             if ($isMetadataField && in_array($facetKey, $metadataFieldsWithLabelResolution, true)) {
                 // Use specialized formatting with label resolution for register, schema, organisation.
                 $formattedData = $this->formatMetadataFacetData(
-                    $facetValue,
-                    $facetKey,
-                    $fieldInfo['type']
+                    rawData: $facetValue,
+                    fieldName: $facetKey,
+                    facetType: $fieldInfo['type']
                 );
             } else {
                 // Use generic formatting for other fields.
-                $formattedData = $this->formatFacetData($facetValue, $fieldInfo['type']);
+                $formattedData = $this->formatFacetData(rawFacetData: $facetValue, facetType: $fieldInfo['type']);
             }
 
             // Add to extended data with actual values.
@@ -10167,8 +10167,8 @@ class GuzzleSolrService
             );
 
             // Apply custom facet configuration (but don't filter based on enabled status).
-            $configKey   = $this->getFacetConfigKey($isMetadataField, $facetKey, $fieldName);
-            $facetResult = $this->applyFacetConfiguration($facetResult, $configKey);
+            $configKey   = $this->getFacetConfigKey(isMetadataField: $isMetadataField, facetKey: $facetKey, fieldName: $fieldName);
+            $facetResult = $this->applyFacetConfiguration(facetData: $facetResult, fieldName: $configKey);
 
             // Always include in extended data - let frontend handle enabled/disabled.
             $contextualData['extended'][$fieldName] = $facetResult;
@@ -10392,7 +10392,7 @@ class GuzzleSolrService
                     }
 
                     // Process and format the facet data.
-                    return $this->processFacetResponse($data['facets'], $facetableFields);
+                    return $this->processFacetResponse(facetData: $data['facets'], facetableFields: $facetableFields);
         } catch (\Exception $e) {
             $this->logger->error(
                     'Failed to get extended facet data from SOLR',
@@ -10709,13 +10709,13 @@ class GuzzleSolrService
                     // Strip leading underscore for method parameter (register, schema, organisation).
                     $cleanFieldName = ltrim($fieldName, '_');
                     $formattedData  = $this->formatMetadataFacetData(
-                        $facetData[$fieldName],
-                        $cleanFieldName,
-                        $fieldInfo['type']
+                        rawData: $facetData[$fieldName],
+                        fieldName: $cleanFieldName,
+                        facetType: $fieldInfo['type']
                     );
                 } else {
                     // Use generic formatting for other metadata fields.
-                    $formattedData = $this->formatFacetData($facetData[$fieldName], $fieldInfo['type']);
+                    $formattedData = $this->formatFacetData(rawFacetData: $facetData[$fieldName], facetType: $fieldInfo['type']);
                 }
 
                 $facetResult = array_merge(
@@ -10724,7 +10724,7 @@ class GuzzleSolrService
                 );
 
                 // Apply custom facet configuration.
-                $facetResult = $this->applyFacetConfiguration($facetResult, 'self_'.$fieldName);
+                $facetResult = $this->applyFacetConfiguration(facetData: $facetResult, fieldName: 'self_'.$fieldName);
 
                 // Only include enabled facets.
                 if ($facetResult['enabled'] ?? true) {
@@ -10738,11 +10738,11 @@ class GuzzleSolrService
             if (isset($facetData[$fieldName])) {
                 $facetResult = array_merge(
                     $fieldInfo,
-                    ['data' => $this->formatFacetData($facetData[$fieldName], $fieldInfo['type'])]
+                    ['data' => $this->formatFacetData(rawFacetData: $facetData[$fieldName], facetType: $fieldInfo['type'])]
                 );
 
                 // Apply custom facet configuration.
-                $facetResult = $this->applyFacetConfiguration($facetResult, $fieldName);
+                $facetResult = $this->applyFacetConfiguration(facetData: $facetResult, fieldName: $fieldName);
 
                 // Only include enabled facets.
                 if ($facetResult['enabled'] ?? true) {
@@ -10795,7 +10795,7 @@ class GuzzleSolrService
     {
         if ($facetType !== 'terms') {
             // For non-terms facets (like date_histogram), use regular formatting.
-            return $this->formatFacetData($rawData, $facetType);
+            return $this->formatFacetData(rawFacetData: $rawData, facetType: $facetType);
         }
 
         $buckets          = $rawData['buckets'] ?? [];
@@ -12095,7 +12095,7 @@ class GuzzleSolrService
                 ];
 
                 // Index chunks (chunks are already prepared by TextExtractionService).
-                if ($this->indexFileChunks($fileId, $chunks, $metadata)) {
+                if ($this->indexFileChunks(fileId: $fileId, chunks: $chunks, metadata: $metadata)) {
                     $indexed++;
 
                     // Update file text record.
