@@ -1101,16 +1101,16 @@ class SaveObject
           function (array $property) {
             // Skip if writeBack is enabled (handled by write-back method)
             if ((isset($property['writeBack']) && $property['writeBack'] === true)
-                || (isset($property['items']['writeBack']) && $property['items']['writeBack'] === true)
+                || (isset($property['items']) && is_array($property['items']) && isset($property['items']['writeBack']) && $property['items']['writeBack'] === true)
             ) {
                 return false;
             }
 
             return $property['type'] === 'array'
-                && (isset($property['$ref']) || isset($property['items']['$ref']))
-                && (isset($property['inversedBy']) === true || isset($property['items']['inversedBy']) === true ||
+                && (isset($property['$ref']) || (isset($property['items']) && is_array($property['items']) && isset($property['items']['$ref'])))
+                && (isset($property['inversedBy']) === true || (isset($property['items']) && is_array($property['items']) && isset($property['items']['inversedBy']) === true) ||
                     (isset($property['objectConfiguration']['handling']) && ($property['objectConfiguration']['handling'] === 'cascade'|| $property['objectConfiguration']['handling'] === 'related-object')) ||
-                    (isset($property['items']['objectConfiguration']['handling']) && ($property['items']['objectConfiguration']['handling'] === 'cascade' || $property['objectConfiguration']['handling'] === 'related-object')));
+                    (isset($property['items']) && is_array($property['items']) && isset($property['items']['objectConfiguration']['handling']) && ($property['items']['objectConfiguration']['handling'] === 'cascade' || $property['items']['objectConfiguration']['handling'] === 'related-object')));
           }
           );
 
