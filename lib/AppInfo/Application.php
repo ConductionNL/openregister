@@ -259,7 +259,7 @@ class Application extends App implements IBootstrap
                         // If GuzzleSolrService is not available, continue without it
                         $solrService = null;
                     }
-                    
+
                     return new ObjectCacheService(
                     $container->get(ObjectEntityMapper::class),
                     $container->get(OrganisationMapper::class),
@@ -370,7 +370,8 @@ class Application extends App implements IBootstrap
                     $container->get('OCP\IConfig'),
                     $container->get('OCP\IGroupManager'),
                     $container->get('OCP\IUserManager'),
-                    $container->get('Psr\Log\LoggerInterface')
+                    $container->get('Psr\Log\LoggerInterface'),
+                    appConfig: $container->get('OCP\IAppConfig'),
                     );
                 }
                 );
@@ -734,7 +735,7 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(ObjectCreatedEvent::class, SolrEventListener::class);
         $context->registerEventListener(ObjectUpdatedEvent::class, SolrEventListener::class);
         $context->registerEventListener(ObjectDeletedEvent::class, SolrEventListener::class);
-        
+
         // Register Solr event listeners for schema lifecycle management
         $context->registerEventListener(SchemaCreatedEvent::class, SolrEventListener::class);
         $context->registerEventListener(SchemaUpdatedEvent::class, SolrEventListener::class);
@@ -763,19 +764,19 @@ class Application extends App implements IBootstrap
         $container = $context->getAppContainer();
         $eventDispatcher = $container->get(IEventDispatcher::class);
         $logger = $container->get('Psr\Log\LoggerInterface');
-        
+
         // Log boot process
         $logger->info('OpenRegister boot: Registering event listeners', [
             'app' => 'openregister',
             'timestamp' => date('Y-m-d H:i:s')
         ]);
-        
+
         try {
             $logger->info('OpenRegister boot: Event listeners registered successfully');
-            
+
             // Register recurring SOLR nightly warmup job
             $jobList = $container->get('OCP\BackgroundJob\IJobList');
-            
+
             // Check if the nightly warmup job is already registered
             if (!$jobList->has(SolrNightlyWarmupJob::class, null)) {
                 $jobList->add(SolrNightlyWarmupJob::class);
@@ -786,7 +787,7 @@ class Application extends App implements IBootstrap
             } else {
                 $logger->debug('SOLR Nightly Warmup Job already registered');
             }
-            
+
         } catch (\Exception $e) {
             $logger->error('OpenRegister boot: Failed to register event listeners and background jobs', [
                 'exception' => $e->getMessage(),
