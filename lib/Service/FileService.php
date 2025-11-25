@@ -404,7 +404,7 @@ class FileService
 
         try {
             if ($entity instanceof Register) {
-                return $this->createRegisterFolderById($entity, $currentUser);
+                return $this->createRegisterFolderById(register: $entity, currentUser: $currentUser);
             } else {
                 return $this->createObjectFolderById(objectEntity: $entity, currentUser: $currentUser);
             }
@@ -466,7 +466,7 @@ class FileService
 
             // Share the folder with the currently active user if there is one.
             if ($currentUser !== null && $currentUser->getUID() !== $this->getUser()->getUID()) {
-                $this->shareFolderWithUser($folderNode, $currentUser->getUID());
+                $this->shareFolderWithUser(folder: $folderNode, userId: $currentUser->getUID());
             }
         }
 
@@ -526,7 +526,7 @@ class FileService
             throw new Exception("Failed to create file because no objectEntity or registerId given");
         }
 
-        $registerFolder = $this->createRegisterFolderById($register, $currentUser);
+        $registerFolder = $this->createRegisterFolderById(register: $register, currentUser: $currentUser);
 
         if ($registerFolder === null) {
             throw new Exception("Failed to create or access register folder");
@@ -558,7 +558,7 @@ class FileService
 
         // Share the folder with the currently active user if there is one.
         if ($currentUser !== null && $currentUser->getUID() !== $this->getUser()->getUID()) {
-            $this->shareFolderWithUser($objectFolder, $currentUser->getUID());
+            $this->shareFolderWithUser(folder: $objectFolder, userId: $currentUser->getUID());
         }
 
         return $objectFolder;
@@ -674,7 +674,7 @@ class FileService
         // Handle legacy cases where folder might be null, empty string, or a string path.
         if ($folderProperty === null || $folderProperty === '' || is_string($folderProperty) === true) {
             $this->logger->info(message: "Register {$register->getId()} has legacy folder property, creating new folder");
-            return $this->createRegisterFolderById($register);
+            return $this->createRegisterFolderById(register: $register);
         }
 
         // Try to get folder by ID.
@@ -762,7 +762,7 @@ class FileService
                     $this->groupManager->createGroup(self::APP_GROUP);
                 }
 
-                $this->createShare([
+                $this->createShare(shareData: [
                     'path'        => self::ROOT_FOLDER,
                     'nodeId'      => $rootFolder->getId(),
                     'nodeType'    => $this->getNodeTypeFromFolder($rootFolder),
@@ -901,7 +901,7 @@ class FileService
 
             $this->logger->info(message: "ownFile: Attempting to set ownership of file {$file->getName()} (ID: $fileId) to user: $userId");
 
-            $result = $this->fileMapper->setFileOwnership($fileId, $userId);
+            $result = $this->fileMapper->setFileOwnership(fileId: $fileId, userId: $userId);
 
             if ($result === true) {
                 $this->logger->info(message: "ownFile: Successfully set ownership of file {$file->getName()} (ID: $fileId) to user: $userId");
@@ -1154,7 +1154,7 @@ class FileService
         }
 
         // Apply filters to formatted files.
-        $filteredFiles = $this->applyFileFilters($formattedFiles, $filters);
+        $filteredFiles = $this->applyFileFilters(formattedFiles: $formattedFiles, filters: $filters);
 
         // Count total after filtering but before pagination.
         $totalFiltered = count($filteredFiles);
@@ -1543,7 +1543,7 @@ class FileService
             }
 
             // Create the share.
-            $share = $this->createShare([
+            $share = $this->createShare(shareData: [
                 'path'        => ltrim($folder->getPath(), '/'),
                 'nodeId'      => $folder->getId(),
                 'nodeType'    => 'folder',
@@ -1627,7 +1627,7 @@ class FileService
                 $file->getStorage()->chown($file->getInternalPath(), $openRegisterUserId);
 
                 // Create a share with the current user to maintain access.
-                $this->shareFileWithUser($file, $currentUserId);
+                $this->shareFileWithUser(file: $file, userId: $currentUserId);
 
                 $this->logger->info(message: "Successfully transferred ownership and shared file {$file->getName()} with {$currentUserId}");
             }
@@ -1674,7 +1674,7 @@ class FileService
             $share->setSharedBy($this->getUser()->getUID());
             $share->setPermissions($permissions);
 
-            $this->shareManager->createShare($share);
+            $this->shareManager->createShare(share: $share);
 
             $this->logger->info(message: "Created share for file {$file->getName()} with user {$userId}");
         } catch (\Exception $e) {
@@ -1734,7 +1734,7 @@ class FileService
                 $folder->getStorage()->chown($folder->getInternalPath(), $openRegisterUserId);
 
                 // Create a share with the current user to maintain access.
-                $this->shareFolderWithUser($folder, $currentUserId);
+                $this->shareFolderWithUser(folder: $folder, userId: $currentUserId);
 
                 $this->logger->info(message: "Successfully transferred ownership and shared folder {$folder->getName()} with {$currentUserId}");
             }
@@ -1787,7 +1787,7 @@ class FileService
         $this->checkOwnership($file);
 
         try {
-            $share = $this->createShare([
+            $share = $this->createShare(shareData: [
                 'path'        => $path,
                 'file'        => $file,
                 'shareType'   => $shareType,
@@ -1858,7 +1858,7 @@ class FileService
                     $this->groupManager->createGroup(self::APP_GROUP);
                 }
 
-                $this->createShare([
+                $this->createShare(shareData: [
                     'path'        => self::ROOT_FOLDER,
                     'nodeId'      => $rootFolder->getId(),
                     'nodeType'    => $this->getNodeTypeFromFolder($rootFolder),
@@ -2049,7 +2049,7 @@ class FileService
 					}
 
                 // Security: Block executable files.
-                $this->blockExecutableFile($file->getName(), $content);
+                $this->blockExecutableFile(fileName: $file->getName(), fileContent: $content);
 
                 // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues.
                 $this->checkOwnership($file);
@@ -2068,7 +2068,7 @@ class FileService
         // Update tags if provided.
         if (empty($tags) === false) {
             // Get existing object tags to preserve them.
-            $existingTags = $this->getFileTags(fileId: $file->getId());
+            $existingTags = $this->getFileTags(fileId: (string) $file->getId());
             $objectTags = array_filter($existingTags, static function (string $tag): bool {
                 return str_starts_with($tag, 'object:');
             });
@@ -2076,7 +2076,7 @@ class FileService
             // Combine object tags with new tags, avoiding duplicates.
             $allTags = array_unique(array_merge($objectTags, $tags));
 
-            $this->attachTagsToFile(fileId: $file->getId(), tags: $allTags);
+            $this->attachTagsToFile(fileId: (string) $file->getId(), tags: $allTags);
             $this->logger->info(message: "updateFile: Successfully updated file tags: " . $file->getName());
         }
 
@@ -2367,7 +2367,7 @@ class FileService
             }
 
             // Security: Block executable files.
-            $this->blockExecutableFile($fileName, $content);
+            $this->blockExecutableFile(fileName: $fileName, fileContent: $content);
 
             /**
              * @var File $file
@@ -2394,7 +2394,7 @@ class FileService
 
             // Add tags to the file (including the automatic object tag).
             // $allTags always contains at least $objectTag, so it's never empty.
-            $this->attachTagsToFile(fileId: $file->getId(), tags: $allTags);
+            $this->attachTagsToFile(fileId: (string) $file->getId(), tags: $allTags);
 
             // @TODO: This sets the file array of an object, but we should check why this array is not added elsewhere.
 //                $objectFiles = $objectEntity->getFiles();
@@ -2545,7 +2545,7 @@ class FileService
         }
 
         // Use the new ID-based folder approach.
-        return $this->getFilesForEntity($object, $sharedFilesOnly);
+        return $this->getFilesForEntity(entity: $object, sharedFilesOnly: $sharedFilesOnly);
     }
 
     /**
@@ -3310,7 +3310,7 @@ class FileService
             }
             $results['tests']['file_in_object_folder'] = [
                 'success' => $fileInObjectFolder,
-                'message' => $this->getFileInObjectFolderMessage($fileInObjectFolder, $fileId)
+                'message' => $this->getFileInObjectFolderMessage(fileInObjectFolder: $fileInObjectFolder, fileId: $fileId)
             ];
         }
 
@@ -3439,7 +3439,7 @@ class FileService
 
         // Check magic bytes (file signatures) in content.
         if (!empty($fileContent)) {
-            $this->detectExecutableMagicBytes($fileContent, $fileName);
+            $this->detectExecutableMagicBytes(content: $fileContent, fileName: $fileName);
         }
     }//end blockExecutableFile()
 
@@ -3527,7 +3527,7 @@ class FileService
     {
         // Ensure register folder exists first.
         $register = $this->registerMapper->find($objectEntity->getRegister());
-        $registerFolder = $this->createRegisterFolderById($register, $currentUser);
+        $registerFolder = $this->createRegisterFolderById(register: $register, currentUser: $currentUser);
 
         if ($registerFolder === null) {
             throw new Exception("Failed to create or access register folder");
@@ -3553,7 +3553,7 @@ class FileService
 
         // Share the folder with the currently active user if there is one.
         if ($currentUser !== null && $currentUser->getUID() !== $this->getUser()->getUID()) {
-            $this->shareFolderWithUser($objectFolder, $currentUser->getUID());
+            $this->shareFolderWithUser(folder: $objectFolder, userId: $currentUser->getUID());
         }
 
         return $objectFolder->getId();

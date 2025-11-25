@@ -373,7 +373,7 @@ class GitLabService
                     && (str_ends_with($item['path'], 'openregister.json') === true
                     || str_contains($item['path'], '.openregister.json') === true)
                 ) {
-                    $configData = $this->parseConfigurationFile($projectId, $item['path'], $ref);
+                    $configData = $this->parseConfigurationFile(projectId: $projectId, path: $item['path'], ref: $ref);
 
                     if ($configData !== null) {
                         $files[] = [
@@ -471,7 +471,7 @@ class GitLabService
     private function parseConfigurationFile(int $projectId, string $path, string $ref='main'): ?array
     {
         try {
-            $content = $this->getFileContent($projectId, $path, $ref);
+            $content = $this->getFileContent(projectId: $projectId, path: $path, ref: $ref);
 
             // Validate that it's a valid OpenRegister configuration.
             if (isset($content['openapi']) === false

@@ -112,12 +112,6 @@ class ConfigurationService
      */
     private $appConfig;
 
-    /**
-     * Schema property validator instance for validating schema properties.
-     *
-     * @var SchemaPropertyValidatorService The schema property validator instance.
-     */
-    private SchemaPropertyValidatorService $validator;
 
     /**
      * Logger instance for logging operations.
@@ -365,7 +359,7 @@ class ConfigurationService
                 // Store schema in map by ID for reference.
                 $this->schemasMap[$schema->getId()] = $schema;
 
-                $openApiSpec['components']['schemas'][$schema->getSlug()] = $this->exportSchema($schema, $schemaIdsAndSlugsMap, $registerIdsAndSlugsMap);
+                $openApiSpec['components']['schemas'][$schema->getSlug()] = $this->exportSchema(schema: $schema, schemaIdsAndSlugsMap: $schemaIdsAndSlugsMap, registerIdsAndSlugsMap: $registerIdsAndSlugsMap);
                 $openApiSpec['components']['registers'][$register->getSlug()]['schemas'][] = $schema->getSlug();
             }
 
@@ -478,8 +472,8 @@ class ConfigurationService
                 }
 
                 $registerId = $property['objectConfiguration']['register'];
-                if (is_numeric($registerId) && isset($registerIdsAndSlugsMap[$registerId]) === true) {
-                    $property['objectConfiguration']['register'] = $registerIdsAndSlugsMap[$registerId];
+                if (is_numeric($registerId) && isset($registerIdsAndSlugsMap[(string) $registerId]) === true) {
+                    $property['objectConfiguration']['register'] = $registerIdsAndSlugsMap[(string) $registerId];
                 }
             }
 
@@ -491,8 +485,8 @@ class ConfigurationService
                 }
 
                 $schemaId = $property['objectConfiguration']['schema'];
-                if (is_numeric($schemaId) && isset($schemaIdsAndSlugsMap[$schemaId]) === true) {
-                    $property['objectConfiguration']['schema'] = $schemaIdsAndSlugsMap[$schemaId];
+                if (is_numeric($schemaId) && isset($schemaIdsAndSlugsMap[(string) $schemaId]) === true) {
+                    $property['objectConfiguration']['schema'] = $schemaIdsAndSlugsMap[(string) $schemaId];
                 }
             }
 
@@ -508,8 +502,8 @@ class ConfigurationService
                 }
 
                 $registerId = $property['items']['objectConfiguration']['register'];
-                if (is_numeric($registerId) && isset($registerIdsAndSlugsMap[$registerId]) === true) {
-                    $property['items']['objectConfiguration']['register'] = $registerIdsAndSlugsMap[$registerId];
+                if (is_numeric($registerId) && isset($registerIdsAndSlugsMap[(string) $registerId]) === true) {
+                    $property['items']['objectConfiguration']['register'] = $registerIdsAndSlugsMap[(string) $registerId];
                 }
             }
 
@@ -525,8 +519,8 @@ class ConfigurationService
                 }
 
                 $schemaId = $property['items']['objectConfiguration']['schema'];
-                if (is_numeric($schemaId) && isset($schemaIdsAndSlugsMap[$schemaId]) === true) {
-                    $property['items']['objectConfiguration']['schema'] = $schemaIdsAndSlugsMap[$schemaId];
+                if (is_numeric($schemaId) && isset($schemaIdsAndSlugsMap[(string) $schemaId]) === true) {
+                    $property['items']['objectConfiguration']['schema'] = $schemaIdsAndSlugsMap[(string) $schemaId];
                 }
             }
 
@@ -534,8 +528,8 @@ class ConfigurationService
             if (isset($property['register']) === true) {
                 if (is_string($property['register']) === true) {
                     $registerId = $this->getLastNumericSegment(url: $property['register']);
-                    if (isset($registerIdsAndSlugsMap[$registerId]) === true) {
-                        $property['register'] = $registerIdsAndSlugsMap[$registerId];
+                    if (isset($registerIdsAndSlugsMap[(string) $registerId]) === true) {
+                        $property['register'] = $registerIdsAndSlugsMap[(string) $registerId];
                     }
                 }
             }
@@ -548,8 +542,8 @@ class ConfigurationService
 
                 if (is_string($property['items']['register']) === true) {
                     $registerId = $this->getLastNumericSegment(url: $property['items']['register']);
-                    if (isset($registerIdsAndSlugsMap[$registerId]) === true) {
-                        $property['items']['register'] = $registerIdsAndSlugsMap[$registerId];
+                    if (isset($registerIdsAndSlugsMap[(string) $registerId]) === true) {
+                        $property['items']['register'] = $registerIdsAndSlugsMap[(string) $registerId];
                     }
                 }
             }
@@ -570,7 +564,7 @@ class ConfigurationService
      * @param  string $url The input URL to evaluate
      * @return string The numeric value if found, or the original URL
      *
-     * @throws InvalidArgumentException If the URL is not a string
+     * @throws \InvalidArgumentException If the URL is not a string
      */
     private function getLastNumericSegment(string $url): string
     {
@@ -736,6 +730,9 @@ class ConfigurationService
      *
      * @return array A PHP array with the uploaded json data or a JSONResponse in case of an error.
      */
+    /**
+     * @return array<array-key, mixed>|JSONResponse
+     */
     private function getJSONfromFile(array $uploadedFile, ?string $type=null): array | JSONResponse
     {
         // Check for upload errors.
@@ -801,6 +798,9 @@ class ConfigurationService
      * @param string|null  $type     If the object should be a specific type of object.
      *
      * @return array A PHP array with the uploaded json data or a JSONResponse in case of an error.
+     */
+    /**
+     * @return array<array-key, mixed>|JSONResponse
      */
     private function getJSONfromBody(array | string $phpArray): array | JSONResponse
     {
@@ -1082,7 +1082,7 @@ class ConfigurationService
                 $this->logger->debug(message: 'Import object search filter', context: ['filter' => $search]);
 
                 // Search for existing object.
-                $results        = $this->objectService->searchObjects($search, true, true);
+                $results        = $this->objectService->searchObjects(query: $search, rbac: true, multi: true);
                 $existingObject = is_array($results) && count($results) > 0 ? $results[0] : null;
 
                 if ($existingObject === null) {
@@ -1152,7 +1152,7 @@ class ConfigurationService
 
         // Create or update configuration entity to track imported data.
         if ($appId !== null && $version !== null && (count($result['registers']) > 0 || count($result['schemas']) > 0 || count($result['objects']) > 0)) {
-            $this->createOrUpdateConfiguration($data, $appId, $version, $result, $owner);
+            $this->createOrUpdateConfiguration(data: $data, appId: $appId, version: $version, result: $result, owner: $owner);
         }
 
         // Store the version information if appId and version are available.
@@ -1362,7 +1362,7 @@ class ConfigurationService
                 $this->logger->info(message: "Register '{$data['slug']}' not found in current organisation context, will create new one");
             } catch (\OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
                 // Multiple registers found with the same identifier.
-                $this->handleDuplicateRegisterError($data['slug'], $appId ?? 'unknown', $version ?? 'unknown');
+                $this->handleDuplicateRegisterError(slug: $data['slug'], appId: $appId ?? 'unknown', version: $version ?? 'unknown');
             }
 
             if ($existingRegister !== null) {
@@ -1374,7 +1374,7 @@ class ConfigurationService
                 }
 
                 // Update existing register.
-                $existingRegister = $this->registerMapper->updateFromArray($existingRegister->getId(), $data);
+                $existingRegister = $this->registerMapper->updateFromArray(id: $existingRegister->getId(), object: $data);
                 if ($owner !== null) {
                     $existingRegister->setOwner($owner);
                 }
@@ -1652,7 +1652,7 @@ class ConfigurationService
                 $this->logger->info(message: "Schema '{$data['slug']}' not found in current organisation context, will create new one");
             } catch (\OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
                 // Multiple schemas found with the same identifier.
-                $this->handleDuplicateSchemaError($data['slug'], $appId ?? 'unknown', $version ?? 'unknown');
+                $this->handleDuplicateSchemaError(slug: $data['slug'], appId: $appId ?? 'unknown', version: $version ?? 'unknown');
             }
 
             if ($existingSchema !== null) {
@@ -1664,7 +1664,7 @@ class ConfigurationService
                 }
 
                 // Update existing schema.
-                $existingSchema = $this->schemaMapper->updateFromArray($existingSchema->getId(), $data);
+                $existingSchema = $this->schemaMapper->updateFromArray(id: $existingSchema->getId(), object: $data);
                 if ($owner !== null) {
                     $existingSchema->setOwner($owner);
                 }
@@ -1720,13 +1720,11 @@ class ConfigurationService
 
             // Find existing objects using register, schema, and name combination for uniqueness.
             $existingObjects = $this->objectEntityMapper->findAll(
-                    [
-                        'filters' => [
+                    filters: [
                             'register' => $registerId,
                             'schema'   => $schemaId,
                             'name'     => $objectName,
-                        ],
-                    ]
+                        ]
                     );
 
             $existingObject = null;
@@ -2606,14 +2604,14 @@ class ConfigurationService
         // Preview registers.
         if (isset($remoteData['components']['registers']) === true && is_array($remoteData['components']['registers']) === true) {
             foreach ($remoteData['components']['registers'] as $slug => $registerData) {
-                $preview['registers'][] = $this->previewRegisterChange($slug, $registerData);
+                $preview['registers'][] = $this->previewRegisterChange(slug: $slug, registerData: $registerData);
             }
         }
 
         // Preview schemas.
         if (isset($remoteData['components']['schemas']) === true && is_array($remoteData['components']['schemas']) === true) {
             foreach ($remoteData['components']['schemas'] as $slug => $schemaData) {
-                $preview['schemas'][] = $this->previewSchemaChange($slug, $schemaData);
+                $preview['schemas'][] = $this->previewSchemaChange(slug: $slug, schemaData: $schemaData);
             }
         }
 
@@ -2635,7 +2633,7 @@ class ConfigurationService
             }
 
             foreach ($remoteData['components']['objects'] as $objectData) {
-                $preview['objects'][] = $this->previewObjectChange($objectData, $registerSlugToId, $schemaSlugToId);
+                $preview['objects'][] = $this->previewObjectChange(objectData: $objectData, registerSlugToId: $registerSlugToId, schemaSlugToId: $schemaSlugToId);
             }
         }
 
@@ -2711,7 +2709,7 @@ class ConfigurationService
                 $preview['reason'] = "Remote version ({$proposedVersion}) is not newer than current version ({$currentVersion})";
             } else {
                 // Build list of changed fields.
-                $preview['changes'] = $this->compareArrays($currentData, $registerData);
+                $preview['changes'] = $this->compareArrays(current: $currentData, proposed: $registerData);
             }
         }
 
@@ -2774,7 +2772,7 @@ class ConfigurationService
                 $preview['reason'] = "Remote version ({$proposedVersion}) is not newer than current version ({$currentVersion})";
             } else {
                 // Build list of changed fields.
-                $preview['changes'] = $this->compareArrays($currentData, $schemaData);
+                $preview['changes'] = $this->compareArrays(current: $currentData, proposed: $schemaData);
             }
         }
 
@@ -2849,7 +2847,7 @@ class ConfigurationService
             '_limit' => 1,
         ];
 
-        $results        = $this->objectService->searchObjects($search, true, true);
+        $results        = $this->objectService->searchObjects(query: $search, rbac: true, multi: true);
         $existingObject = is_array($results) && count($results) > 0 ? $results[0] : null;
 
         if ($existingObject === null) {
@@ -2868,7 +2866,7 @@ class ConfigurationService
             } else {
                 $preview['action'] = 'update';
                 // Build list of changed fields.
-                $preview['changes'] = $this->compareArrays($existingObjectData, $objectData);
+                $preview['changes'] = $this->compareArrays(current: $existingObjectData, proposed: $objectData);
             }
         }
 
@@ -2926,7 +2924,7 @@ class ConfigurationService
                     }
                 } else {
                     // For nested arrays, recurse.
-                    $nestedChanges = $this->compareArrays($currentValue, $proposedValue, $fieldName);
+                    $nestedChanges = $this->compareArrays(current: $currentValue, proposed: $proposedValue, prefix: $fieldName);
                     $changes       = array_merge($changes, $nestedChanges);
                 }
             } else if ($proposedValue !== $currentValue) {

@@ -223,7 +223,7 @@ class GitHubService
 
                 // Get enriched config details (from cache or by fetching from raw.githubusercontent.com).
                 // This doesn't count against API rate limit.
-                $configDetails = $this->getEnrichedConfigDetails($owner, $repo, $path, $defaultBranch, $fileSha);
+                $configDetails = $this->getEnrichedConfigDetails(owner: $owner, repo: $repo, path: $path, branch: $defaultBranch, fileSha: $fileSha);
 
                 $allResults[] = [
                     'repository'   => $item['repository']['full_name'],
@@ -285,7 +285,7 @@ class GitHubService
                     );
 
             // Provide user-friendly error messages based on status code.
-            $userMessage = $this->getGitHubErrorMessage($statusCode, $errorMessage);
+            $userMessage = $this->getGitHubErrorMessage(statusCode: $statusCode, rawError: $errorMessage);
             throw new \Exception($userMessage);
         }//end try
 
@@ -380,7 +380,7 @@ class GitHubService
         }
 
         // Not in cache or no SHA available, fetch from GitHub.
-        $enriched = $this->enrichConfigurationDetails($owner, $repo, $path, $branch);
+        $enriched = $this->enrichConfigurationDetails(owner: $owner, repo: $repo, path: $path, branch: $branch);
 
         if ($enriched === null) {
             // Enrichment failed, return fallback.
@@ -649,7 +649,7 @@ class GitHubService
 
             $files = [];
             foreach ($data['items'] ?? [] as $item) {
-                $configData = $this->parseConfigurationFile($owner, $repo, $item['path'], $branch);
+                $configData = $this->parseConfigurationFile(owner: $owner, repo: $repo, path: $item['path'], branch: $branch);
 
                 if ($configData !== null) {
                     $files[] = [
@@ -699,7 +699,7 @@ class GitHubService
     private function parseConfigurationFile(string $owner, string $repo, string $path, string $branch='main'): ?array
     {
         try {
-            $content = $this->getFileContent($owner, $repo, $path, $branch);
+            $content = $this->getFileContent(owner: $owner, repo: $repo, path: $path, branch: $branch);
 
             // Validate that it's a valid OpenRegister configuration.
             if (!isset($content['openapi']) || !isset($content['x-openregister'])) {
@@ -1108,7 +1108,6 @@ class GitHubService
     {
         try {
             // Get user token if userId provided, otherwise use app-level token.
-            $token = null;
             if ($userId !== null) {
                 $token = $this->getUserToken($userId);
             } else {

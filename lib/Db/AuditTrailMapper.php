@@ -42,7 +42,9 @@ use Symfony\Component\Uid\Uuid;
  * @method AuditTrail find(int|string $id)
  * @method AuditTrail findEntity(IQueryBuilder $query)
  * @method AuditTrail[] findAll(int|null $limit = null, int|null $offset = null)
- * @method AuditTrail[] findEntities(IQueryBuilder $query)
+ * @method list<AuditTrail> findEntities(IQueryBuilder $query)
+ *
+ * @extends QBMapper<AuditTrail>
  */
 class AuditTrailMapper extends QBMapper
 {

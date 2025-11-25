@@ -198,6 +198,14 @@ trait MultiTenancyTrait
         }
 
         // Get current user.
+        // Check if userSession is available before accessing it.
+        if (!isset($this->userSession)) {
+            if (isset($this->logger)) {
+                $this->logger->debug('[MultiTenancyTrait] UserSession not available, skipping filter');
+            }
+            return;
+        }
+        
         $user   = $this->userSession->getUser();
         $userId = $user ? $user->getUID() : null;
 
@@ -241,7 +249,12 @@ trait MultiTenancyTrait
             $orgConditions = $qb->expr()->orX();
 
             // Check if user is admin.
-            $userGroups = $this->groupManager->getUserGroupIds($user);
+            // Check if groupManager is available before accessing it.
+            if (!isset($this->groupManager)) {
+                $userGroups = [];
+            } else {
+                $userGroups = $this->groupManager->getUserGroupIds($user);
+            }
             $isAdmin    = in_array('admin', $userGroups);
 
             // Admins can see NULL organisation entities (legacy data).
@@ -293,8 +306,16 @@ trait MultiTenancyTrait
                              in_array($systemDefaultOrgUuid, $activeOrganisationUuids);
 
         // Check admin status and admin override setting.
-        $userGroups = $this->groupManager->getUserGroupIds($user);
-        $isAdmin    = in_array('admin', $userGroups);
+        // Check if groupManager is available before accessing it.
+        if (!isset($this->groupManager)) {
+            if (isset($this->logger)) {
+                $this->logger->debug('[MultiTenancyTrait] GroupManager not available, skipping admin check');
+            }
+            $isAdmin = false;
+        } else {
+            $userGroups = $this->groupManager->getUserGroupIds($user);
+            $isAdmin    = in_array('admin', $userGroups);
+        }
 
         $adminOverrideEnabled = false;
         if ($isAdmin && isset($this->appConfig)) {

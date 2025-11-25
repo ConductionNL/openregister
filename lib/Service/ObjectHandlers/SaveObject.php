@@ -175,7 +175,7 @@ class SaveObject
         if (is_numeric($cleanReference) || preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $cleanReference)) {
             try {
                 $schema = $this->schemaMapper->find(id: $cleanReference);
-                return $schema->getId();
+                return (string) $schema->getId();
             } catch (DoesNotExistException $e) {
                 // Continue with other resolution methods.
             }
@@ -193,7 +193,7 @@ class SaveObject
             $schemas = $this->schemaMapper->findAll();
             foreach ($schemas as $schema) {
                 if (strcasecmp($schema->getSlug(), $slug) === 0) {
-                    return $schema->getId();
+                    return (string) $schema->getId();
                 }
             }
         } catch (Exception $e) {
@@ -202,9 +202,10 @@ class SaveObject
 
         // Try direct slug match as last resort.
         try {
+            /** @psalm-suppress UndefinedMethod - findBySlug doesn't exist, but code handles exception */
             $schema = $this->schemaMapper->findBySlug($slug);
             if ($schema !== null) {
-                return $schema->getId();
+                return (string) $schema->getId();
             }
         } catch (Exception $e) {
             // Schema not found.
@@ -258,7 +259,7 @@ class SaveObject
         if (is_numeric($reference) || preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $reference)) {
             try {
                 $register = $this->registerMapper->find($reference);
-                return $register->getId();
+                return (string) $register->getId();
             } catch (DoesNotExistException $e) {
                 // Continue with other resolution methods.
             }
@@ -276,7 +277,7 @@ class SaveObject
             $registers = $this->registerMapper->findAll();
             foreach ($registers as $register) {
                 if (strcasecmp($register->getSlug(), $slug) === 0) {
-                    return $register->getId();
+                    return (string) $register->getId();
                 }
             }
         } catch (Exception $e) {
@@ -285,9 +286,10 @@ class SaveObject
 
         // Try direct slug match as last resort.
         try {
+            /** @psalm-suppress UndefinedMethod - findBySlug doesn't exist, but code handles exception */
             $register = $this->registerMapper->findBySlug($slug);
             if ($register !== null) {
-                return $register->getId();
+                return (string) $register->getId();
             }
         } catch (Exception $e) {
             // Register not found.
@@ -593,7 +595,7 @@ class SaveObject
                                     ]
                                 );
                                 // Publish the file.
-                                $this->fileService->publishFile($fileNode);
+                                $this->fileService->publishFile($entity, $fileNode->getId());
                                 // Re-fetch file data after publishing.
                                 $fileData = $this->fileService->formatFile($fileNode);
                             }
@@ -640,7 +642,7 @@ class SaveObject
                                 ]
                             );
                             // Publish the file.
-                            $this->fileService->publishFile($fileNode);
+                            $this->fileService->publishFile($entity, $fileNode->getId());
                             // Re-fetch file data after publishing.
                             $fileData = $this->fileService->formatFile($fileNode);
                         }
@@ -1838,8 +1840,8 @@ class SaveObject
         $this->objectCacheService->invalidateForObjectChange(
             object: $savedEntity,
             operation: $uuid ? 'update' : 'create',
-            registerId: $savedEntity->getRegister(),
-            schemaId: $savedEntity->getSchema()
+            registerId: $savedEntity->getRegister() !== null ? (int) $savedEntity->getRegister() : null,
+            schemaId: $savedEntity->getSchema() !== null ? (int) $savedEntity->getSchema() : null
         );
 
         return $savedEntity;

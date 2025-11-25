@@ -62,7 +62,9 @@ class OasService
         private readonly RegisterMapper $registerMapper,
         private readonly SchemaMapper $schemaMapper,
         private readonly IURLGenerator $urlGenerator,
+        /** @psalm-suppress UnusedProperty - Property kept for future use */
         private readonly IConfig $config,
+        /** @psalm-suppress UnusedProperty - Property kept for future use */
         private readonly LoggerInterface $logger
     ) {
         // Initialize the OAS array with the base OAS.

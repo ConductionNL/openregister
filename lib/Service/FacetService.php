@@ -82,6 +82,7 @@ class FacetService
     public function __construct(
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly SchemaMapper $schemaMapper,
+        /** @psalm-suppress PossiblyUnusedProperty - Property is used in constructor to initialize cache */
         private readonly ICacheFactory $cacheFactory,
         private readonly IUserSession $userSession,
         private readonly LoggerInterface $logger
@@ -474,7 +475,7 @@ class FacetService
 
         // No specific schema filter - get all schemas for collection-wide facetable discovery.
         // Null = no limit (get all).
-        return $this->schemaMapper->findAll(null);
+        return $this->schemaMapper->findAll(limit: null);
 
     }//end getSchemasForQuery()
 

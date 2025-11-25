@@ -94,6 +94,7 @@ class DeleteObject
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly FileService $fileService,
         private readonly ObjectCacheService $objectCacheService,
+        /** @psalm-suppress UnusedProperty - Property kept for future use */
         private readonly SchemaCacheService $schemaCacheService,
         private readonly SchemaFacetCacheService $schemaFacetCacheService,
         AuditTrailMapper $auditTrailMapper,

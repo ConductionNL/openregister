@@ -41,7 +41,9 @@ use OCP\IDBConnection;
  * @method Feedback find(int|string $id)
  * @method Feedback findEntity(IQueryBuilder $query)
  * @method Feedback[] findAll(int|null $limit = null, int|null $offset = null)
- * @method Feedback[] findEntities(IQueryBuilder $query)
+ * @method list<Feedback> findEntities(IQueryBuilder $query)
+ *
+ * @extends QBMapper<Feedback>
  */
 class FeedbackMapper extends QBMapper
 {
@@ -64,9 +66,9 @@ class FeedbackMapper extends QBMapper
      *
      * @param Entity $entity Entity to insert
      *
-     * @return Entity Inserted entity
+     * @return Feedback Inserted entity
      */
-    public function insert(Entity $entity): Entity
+    public function insert(Entity $entity): Feedback
     {
         // Generate UUID if not set.
         if (empty($entity->getUuid()) === true) {
@@ -91,9 +93,9 @@ class FeedbackMapper extends QBMapper
      *
      * @param Entity $entity Entity to update
      *
-     * @return Entity Updated entity
+     * @return Feedback Updated entity
      */
-    public function update(Entity $entity): Entity
+    public function update(Entity $entity): Feedback
     {
         $entity->setUpdated(new \DateTime());
         return parent::update($entity);

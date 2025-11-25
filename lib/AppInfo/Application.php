@@ -72,6 +72,7 @@ use OCA\OpenRegister\Search\ObjectsProvider;
 use OCA\OpenRegister\BackgroundJob\SolrWarmupJob;
 use OCA\OpenRegister\BackgroundJob\SolrNightlyWarmupJob;
 use OCA\OpenRegister\BackgroundJob\CronFileTextExtractionJob;
+use OCA\OpenRegister\Cron\WebhookRetryJob;
 use OCP\AppFramework\App;
 use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Bootstrap\IBootstrap;
@@ -899,6 +900,21 @@ class Application extends App implements IBootstrap
                         );
             } else {
                 $logger->debug(message: 'Cron File Text Extraction Job already registered');
+            }
+
+            // Register recurring webhook retry job.
+            $webhookRetryJobClass = 'OCA\OpenRegister\Cron\WebhookRetryJob';
+            if ($jobList->has($webhookRetryJobClass, null) === false) {
+                $jobList->add($webhookRetryJobClass);
+                $logger->info(
+                        message: '🔄 Webhook Retry Job registered successfully',
+                        context: [
+                            'job_class' => $webhookRetryJobClass,
+                            'interval'  => '5 minutes',
+                        ]
+                        );
+            } else {
+                $logger->debug(message: 'Webhook Retry Job already registered');
             }
         } catch (\Exception $e) {
             $logger->error(

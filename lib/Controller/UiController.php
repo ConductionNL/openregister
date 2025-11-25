@@ -75,7 +75,7 @@ class UiController extends Controller
             );
             $response->setStatus(500);
             return $response;
-        }//end try
+        }
 
     }//end makeSpaResponse()
 

@@ -976,8 +976,9 @@ class ValidateObject
 
         // If there are no properties, we don't need to validate.
         if (isset($schemaObject->properties) === false || empty($schemaObject->properties) === true) {
-            // Return a ValidationResult with null data indicating success.
-            return new ValidationResult(null, null);
+            // Validate against an empty schema object to get a valid ValidationResult.
+            $validator = new Validator();
+            return $validator->validate(json_decode(json_encode($object)), new stdClass());
         }
 
         // @todo This should be done earlier.

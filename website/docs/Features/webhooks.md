@@ -458,6 +458,403 @@ docker logs -f nextcloud | grep -E 'Webhook|OpenRegister'
 7. **Use HTTPS**: Secure webhook URLs with TLS encryption
 8. **Test First**: Use the test endpoint before going live
 
+## Request/Response Webhook Flow
+
+OpenRegister supports intercepting requests before they reach controllers, sending them to external webhooks as CloudEvents, and optionally processing responses to modify the request. This enables powerful use cases like:
+
+- **Request Validation**: Validate requests before they're processed
+- **Data Transformation**: Transform or enrich request data
+- **Formatting Logic**: Apply formatting rules before object creation
+- **External Processing**: Send requests to external services for processing
+
+### What are CloudEvents?
+
+CloudEvents is a specification for describing event data in a common way. It provides:
+
+- **Consistent Structure**: Standardized event format across systems
+- **Interoperability**: Works with different event systems and platforms
+- **Standardized Metadata**: Includes source, type, id, time, and other standard attributes
+- **Extensibility**: Supports custom attributes and data
+
+CloudEvents makes it easier to integrate services that produce and consume events, enabling better interoperability between different systems.
+
+### Request Interception Flow
+
+The following diagram illustrates how requests are intercepted and processed:
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant API as OpenRegister API
+    participant Interceptor as Webhook Interceptor
+    participant Webhook as External Webhook
+    participant Controller as Object Controller
+    participant DB as Database
+
+    Client->>API: POST /api/objects/{register}/{schema}
+    API->>Interceptor: Intercept request
+    
+    alt Webhook configured for 'object.creating'
+        Interceptor->>Interceptor: Format as CloudEvent
+        Interceptor->>Webhook: POST CloudEvent payload
+        
+        alt Synchronous webhook (wait for response)
+            Webhook->>Webhook: Process request (validate/transform)
+            Webhook-->>Interceptor: Response with modified data
+            Interceptor->>Interceptor: Process response
+            Interceptor->>Interceptor: Merge response into request
+        else Asynchronous webhook (fire and forget)
+            Webhook-->>Interceptor: (no response awaited)
+        end
+    end
+    
+    Interceptor->>Controller: Modified request data
+    Controller->>Controller: Validate & process
+    Controller->>DB: Save object
+    DB-->>Controller: Object saved
+    Controller-->>API: JSONResponse with object
+    API-->>Client: 201 Created
+```
+
+### Configuration
+
+To enable request interception, configure your webhook with the following settings:
+
+```json
+{
+  "name": "Request Validator",
+  "url": "https://my-service.com/validate",
+  "method": "POST",
+  "events": ["OCA\\OpenRegister\\Event\\ObjectCreatingEvent"],
+  "enabled": true,
+  "configuration": {
+    "interceptRequests": true,
+    "async": false,
+    "processResponse": true,
+    "responseProcessing": {
+      "mergeStrategy": "merge",
+      "fieldMapping": {
+        "validatedData": "data",
+        "enrichedFields": "@self"
+      }
+    }
+  }
+}
+```
+
+#### Configuration Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `interceptRequests` | boolean | false | Enable request interception for this webhook |
+| `async` | boolean | false | If true, don't wait for response (fire and forget) |
+| `processResponse` | boolean | false | If true, process webhook response to modify request |
+| `responseProcessing.mergeStrategy` | string | "merge" | How to merge response: "merge", "replace", or "custom" |
+| `responseProcessing.fieldMapping` | object | Custom field mapping when strategy is "custom" |
+
+### CloudEvent Payload Structure
+
+When a request is intercepted, it's formatted as a CloudEvent with the following structure:
+
+```json
+{
+  "specversion": "1.0",
+  "type": "object.creating",
+  "source": "https://nextcloud.example.com/apps/openregister",
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "time": "2025-01-25T10:30:00+00:00",
+  "datacontenttype": "application/json",
+  "subject": "object:register-1/schema-2",
+  "data": {
+    "method": "POST",
+    "path": "/api/objects/register-1/schema-2",
+    "queryParams": {},
+    "headers": {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer token"
+    },
+    "body": {
+      "@self": {
+        "title": "My Object",
+        "description": "Object description"
+      }
+    }
+  },
+  "openregister": {
+    "app": "openregister",
+    "version": "1.0.0"
+  }
+}
+```
+
+### Response Processing
+
+When `processResponse` is enabled, the webhook response can modify the request:
+
+**Merge Strategy**: Merges response data into request data
+```json
+// Webhook Response
+{
+  "data": {
+    "@self": {
+      "validated": true,
+      "enrichedField": "value"
+    }
+  }
+}
+
+// Result: Merged into original request
+```
+
+**Replace Strategy**: Replaces entire request body with response data
+```json
+// Webhook Response
+{
+  "data": {
+    "@self": {
+      "completely": "new",
+      "structure": "here"
+    }
+  }
+}
+
+// Result: Request body replaced
+```
+
+**Custom Strategy**: Uses field mapping to selectively update fields
+```json
+// Configuration
+{
+  "fieldMapping": {
+    "validatedData": "data",
+    "metadata": "@self.metadata"
+  }
+}
+
+// Webhook Response
+{
+  "validatedData": {...},
+  "metadata": {...}
+}
+
+// Result: Mapped to specific request fields
+```
+
+### Example Use Cases
+
+#### 1. Request Validation
+
+Validate requests before processing:
+
+```json
+{
+  "name": "Validation Webhook",
+  "url": "https://validator.example.com/validate",
+  "configuration": {
+    "interceptRequests": true,
+    "async": false,
+    "processResponse": true,
+    "responseProcessing": {
+      "mergeStrategy": "merge"
+    }
+  }
+}
+```
+
+#### 2. Data Enrichment
+
+Enrich request data with external information:
+
+```json
+{
+  "name": "Enrichment Webhook",
+  "url": "https://enricher.example.com/enrich",
+  "configuration": {
+    "interceptRequests": true,
+    "async": false,
+    "processResponse": true,
+    "responseProcessing": {
+      "mergeStrategy": "merge"
+    }
+  }
+}
+```
+
+#### 3. Async Notifications
+
+Send notifications without waiting for response:
+
+```json
+{
+  "name": "Notification Webhook",
+  "url": "https://notifier.example.com/notify",
+  "configuration": {
+    "interceptRequests": true,
+    "async": true,
+    "processResponse": false
+  }
+}
+```
+
+## Webhook Logging
+
+All webhook delivery attempts are logged to the `webhook_logs` table, providing comprehensive audit trails and debugging capabilities.
+
+### Log Entry Structure
+
+Each log entry contains:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `webhookId` | integer | Reference to the webhook |
+| `eventClass` | string | Event class name that triggered the webhook |
+| `payload` | object | Full payload sent to webhook |
+| `url` | string | Target URL |
+| `method` | string | HTTP method used |
+| `success` | boolean | Whether delivery succeeded |
+| `statusCode` | integer | HTTP status code from response |
+| `responseBody` | string | Response body from webhook |
+| `errorMessage` | string | Error message if delivery failed |
+| `attempt` | integer | Attempt number (1 for first attempt) |
+| `nextRetryAt` | datetime | Timestamp for next retry (if failed) |
+| `created` | datetime | When the log entry was created |
+
+### Accessing Logs
+
+Logs can be accessed via the API:
+
+```bash
+# Get logs for a specific webhook
+curl -X GET http://localhost:8080/index.php/apps/openregister/api/webhooks/{id}/logs \
+  -u 'admin:admin'
+```
+
+## Retry Mechanism
+
+OpenRegister includes an automatic retry mechanism for failed webhook deliveries using Nextcloud background jobs with exponential backoff.
+
+### How It Works
+
+1. **Initial Delivery**: When a webhook delivery fails, a log entry is created with `success=false`
+2. **Retry Scheduling**: The system calculates the next retry time based on the retry policy and stores it in `nextRetryAt`
+3. **Cron Job Processing**: A background cron job (`WebhookRetryJob`) runs every 5 minutes
+4. **Retry Execution**: The cron job finds failed logs where `nextRetryAt` has passed and retries the delivery
+5. **Exponential Backoff**: Each retry uses increasing delays to avoid overwhelming the target service
+
+### Retry Policies
+
+Three retry policies are supported:
+
+#### Exponential Backoff (default)
+
+Delays double with each attempt:
+- Attempt 1: Immediate
+- Attempt 2: 2 minutes (2^1 * 60)
+- Attempt 3: 4 minutes (2^2 * 60)
+- Attempt 4: 8 minutes (2^3 * 60)
+
+#### Linear Backoff
+
+Delays increase linearly:
+- Attempt 1: Immediate
+- Attempt 2: 5 minutes (1 * 300)
+- Attempt 3: 10 minutes (2 * 300)
+- Attempt 4: 15 minutes (3 * 300)
+
+#### Fixed Delay
+
+Constant delay between retries:
+- All retries: 5 minutes (300 seconds)
+
+### Retry Flow Diagram
+
+```mermaid
+sequenceDiagram
+    participant Event as Event Triggered
+    participant Service as WebhookService
+    participant Webhook as External Webhook
+    participant Log as WebhookLog
+    participant Cron as Retry Cron Job
+    participant DB as Database
+
+    Event->>Service: Deliver webhook
+    Service->>Webhook: POST request
+    Webhook-->>Service: Response (success/failure)
+    
+    alt Success
+        Service->>Log: Create log entry (success=true)
+        Log->>DB: Save log
+    else Failure
+        Service->>Log: Create log entry (success=false)
+        Service->>Log: Calculate nextRetryAt
+        Log->>DB: Save log with nextRetryAt
+        
+        Note over Cron: Runs every 5 minutes
+        Cron->>DB: Find logs where nextRetryAt <= now
+        DB-->>Cron: Return failed logs
+        
+        loop For each failed log
+            Cron->>Service: Retry delivery
+            Service->>Webhook: POST request (attempt N+1)
+            Webhook-->>Service: Response
+            
+            alt Success
+                Service->>Log: Update log (success=true)
+            else Failure
+                alt Attempt < maxRetries
+                    Service->>Log: Update nextRetryAt
+                    Log->>DB: Save updated log
+                else Max retries exceeded
+                    Service->>Log: Mark as failed (no more retries)
+                end
+            end
+        end
+    end
+```
+
+### Configuration
+
+Retries are enabled webhook-wide:
+
+```json
+{
+  "name": "My Webhook",
+  "maxRetries": 3,
+  "retryPolicy": "exponential",
+  "configuration": {
+    "enableRetries": true
+  }
+}
+```
+
+#### Retry Configuration Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `maxRetries` | integer | 3 | Maximum number of retry attempts |
+| `retryPolicy` | string | "exponential" | Retry policy: "exponential", "linear", or "fixed" |
+| `configuration.enableRetries` | boolean | true | Enable/disable retries for this webhook |
+
+### Monitoring Retries
+
+You can monitor retry status by checking webhook logs:
+
+```bash
+# Get statistics for a webhook
+curl -X GET http://localhost:8080/index.php/apps/openregister/api/webhooks/{id}/logs/stats \
+  -u 'admin:admin'
+```
+
+Response:
+```json
+{
+  "total": 150,
+  "successful": 145,
+  "failed": 5,
+  "pendingRetries": 2
+}
+```
+
 ## API Reference
 
 For complete API documentation, see the [Events API Reference](../api/events-reference.md).
