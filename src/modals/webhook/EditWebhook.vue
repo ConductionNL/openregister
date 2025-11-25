@@ -84,19 +84,17 @@
 
 					<div class="form-editor">
 						<div class="selectField">
-							<label class="dialog-label">{{ t('openregister', 'Events') }}</label>
+							<label class="dialog-label">{{ t('openregister', 'Event') }}</label>
 							<NcSelect
-								v-model="selectedEvents"
+								v-model="selectedEvent"
 								:options="eventOptions"
 								label="label"
 								track-by="value"
-								:multiple="true"
 								:label-outside="true"
 								:filterable="true"
-								:placeholder="t('openregister', 'Select events to listen to...')"
-								:close-on-select="false"
+								:placeholder="t('openregister', 'Select event to listen to...')"
 								@search-change="searchEvents"
-								@input="updateEvents">
+								@input="updateEvent">
 								<template #option="{ label, description, category, type }">
 									<div class="option-content">
 										<span class="option-title">{{ label }}</span>
@@ -112,12 +110,11 @@
 								</template>
 							</NcSelect>
 							<p class="field-hint">
-								{{ t('openregister', '{count} event(s) selected', { count: selectedEvents.length }) }}
-								<span v-if="selectedEvents.length === 0"> - {{ t('openregister', 'Leave empty to listen to all events') }}</span>
+								{{ t('openregister', 'Select the event this webhook should listen to') }}
 							</p>
 						</div>
 
-						<div v-if="selectedEvents.length > 0" class="selectField">
+						<div v-if="selectedEvent" class="selectField">
 							<label class="dialog-label">{{ t('openregister', 'Event Property for Payload') }}</label>
 							<NcSelect
 								v-model="selectedEventProperty"
@@ -343,7 +340,7 @@ export default {
 			activeTab: 0,
 			webhookItem: null,
 			selectedMethod: null,
-			selectedEvents: [],
+			selectedEvent: null,
 			selectedEventProperty: null,
 			selectedRetryPolicy: null,
 			configuration: {
@@ -368,24 +365,24 @@ export default {
 		}
 	},
 	computed: {
+		navigationStore() {
+			return navigationStore
+		},
 		isValid() {
 			return Boolean(this.webhookItem?.name?.trim() && this.webhookItem?.url?.trim())
 		},
 		eventPropertyOptions() {
-			if (!this.selectedEvents || this.selectedEvents.length === 0) {
+			if (!this.selectedEvent) {
 				return []
 			}
 
-			// Get unique properties from all selected events.
-			const propertiesSet = new Set()
-			this.selectedEvents.forEach(eventClass => {
-				const event = this.availableEvents.find(e => e.class === eventClass)
-				if (event && event.properties) {
-					event.properties.forEach(prop => propertiesSet.add(prop))
-				}
-			})
+			// Get properties from the selected event.
+			const event = this.availableEvents.find(e => e.class === this.selectedEvent)
+			if (!event || !event.properties) {
+				return []
+			}
 
-			return Array.from(propertiesSet).map(prop => ({
+			return event.properties.map(prop => ({
 				value: prop,
 				label: prop,
 			}))
@@ -453,7 +450,7 @@ export default {
 				}
 				this.selectedMethod = this.httpMethodOptions[0] // 'POST'
 				this.selectedRetryPolicy = this.retryPolicyOptions[0] // 'exponential'
-				this.selectedEvents = []
+				this.selectedEvent = null
 				this.selectedEventProperty = null
 			}
 		},
@@ -482,12 +479,24 @@ export default {
 			}
 			this.webhookItem.enabled = value
 		},
-		updateEvents(value) {
+		updateEvent(value) {
 			if (!this.webhookItem) {
 				this.webhookItem = {}
 			}
-			this.webhookItem.events = value.map(e => e.value || e)
-			this.selectedEvents = value
+			// Store as array with single event for backend compatibility.
+			const eventClass = value ? (value.value || value) : null
+			this.webhookItem.events = eventClass ? [eventClass] : []
+			this.selectedEvent = eventClass
+			// Reset event property when event changes.
+			if (eventClass) {
+				this.selectedEventProperty = null
+				if (!this.webhookItem.configuration) {
+					this.webhookItem.configuration = {}
+				}
+				this.webhookItem.configuration.eventProperty = null
+			} else {
+				this.selectedEvent = null
+			}
 		},
 		updateEventProperty(value) {
 			if (!this.webhookItem) {
@@ -628,11 +637,10 @@ export default {
 					) || this.retryPolicyOptions[0]
 				}
 
-				// Load events.
+				// Load event (take first event if multiple exist for backward compatibility).
 				if (item.events && Array.isArray(item.events) && item.events.length > 0) {
-					this.selectedEvents = item.events.map(eventClass =>
-						this.eventOptions.find(e => e.value === eventClass),
-					).filter(Boolean)
+					const eventClass = item.events[0]
+					this.selectedEvent = eventClass
 				}
 
 				// Load configuration.
@@ -656,7 +664,7 @@ export default {
 			this.error = null
 			this.webhookItem = null
 			this.selectedMethod = null
-			this.selectedEvents = []
+			this.selectedEvent = null
 			this.selectedEventProperty = null
 			this.selectedRetryPolicy = null
 			this.configuration = {
@@ -676,7 +684,7 @@ export default {
 					url: this.webhookItem.url,
 					method: this.webhookItem.method,
 					enabled: this.webhookItem.enabled !== false,
-					events: this.webhookItem.events || [],
+					events: this.selectedEvent ? [this.selectedEvent] : [],
 					maxRetries: this.webhookItem.maxRetries || 3,
 					timeout: this.webhookItem.timeout || 30,
 					retryPolicy: this.webhookItem.retryPolicy || 'exponential',

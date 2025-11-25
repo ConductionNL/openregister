@@ -296,7 +296,6 @@ class Application extends App implements IBootstrap
                     return new FacetService(
                     $container->get(ObjectEntityMapper::class),
                     $container->get(SchemaMapper::class),
-                    $container->get(RegisterMapper::class),
                     $container->get('OCP\ICacheFactory'),
                     $container->get('OCP\IUserSession'),
                     $container->get('Psr\Log\LoggerInterface')
@@ -741,11 +740,8 @@ class Application extends App implements IBootstrap
                 SolrManagementCommand::class,
                 function ($container) {
                     return new SolrManagementCommand(
-                    $container->get(SettingsService::class),
                     $container->get(id: 'Psr\Log\LoggerInterface'),
-                    $container->get(GuzzleSolrService::class),
-                    $container->get(SolrSchemaService::class),
-                    $container->get(id: 'OCP\IConfig')
+                    $container->get(GuzzleSolrService::class)
                     );
                 }
                 );

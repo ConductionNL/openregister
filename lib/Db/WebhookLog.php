@@ -61,7 +61,7 @@ class WebhookLog extends Entity implements JsonSerializable
     /**
      * Webhook ID
      *
-     * @var int
+     * @var integer
      */
     protected int $webhookId;
 
@@ -96,14 +96,14 @@ class WebhookLog extends Entity implements JsonSerializable
     /**
      * Success status
      *
-     * @var bool
+     * @var boolean
      */
     protected bool $success = false;
 
     /**
      * HTTP status code
      *
-     * @var int|null
+     * @var integer|null
      */
     protected ?int $statusCode = null;
 
@@ -124,7 +124,7 @@ class WebhookLog extends Entity implements JsonSerializable
     /**
      * Attempt number
      *
-     * @var int
+     * @var integer
      */
     protected int $attempt = 1;
 

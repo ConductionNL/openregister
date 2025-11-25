@@ -71,7 +71,7 @@ class GuzzleSolrService
      * @var array{enabled: bool, host: string, port: int, path: string, core: string,
      *            scheme: string, username: string, password: string, timeout: int,
      *            autoCommit: bool, commitWithin: int, enableLogging: bool,
-     *            useCloud?: bool, collection?: string, configSet?: string}
+     *            useCloud?: bool, collection?: string, configSet?: string, objectCollection?: string}
      */
     private array $solrConfig = [];
 
@@ -826,9 +826,9 @@ class GuzzleSolrService
     /**
      * Ensure tenant collection exists (check both tenant-specific and base collections)
      *
-     * @return bool True if collection exists or was created
+     * @return array|bool True if collection exists, array if collection was created, false on failure
      */
-    public function ensureTenantCollection(): bool
+    public function ensureTenantCollection(): array | bool
     {
         if ($this->isAvailable() === false) {
             return false;
@@ -1603,13 +1603,13 @@ class GuzzleSolrService
             'self_uuid'           => $object->getUuid(),
 
             // Context fields - resolve to integer IDs.
-            'self_register'       => $this->resolveRegisterToId($object->getRegister(), $register),
-            'self_register_id'    => $this->resolveRegisterToId($object->getRegister(), $register),
+            'self_register'       => $this->resolveRegisterToId(registerValue: $object->getRegister(), register: $register),
+            'self_register_id'    => $this->resolveRegisterToId(registerValue: $object->getRegister(), register: $register),
             'self_register_uuid'  => $register?->getUuid(),
             'self_register_slug'  => $register?->getSlug(),
 
-            'self_schema'         => $this->resolveSchemaToId($object->getSchema(), $schema),
-            'self_schema_id'      => $this->resolveSchemaToId($object->getSchema(), $schema),
+            'self_schema'         => $this->resolveSchemaToId(schemaValue: $object->getSchema(), schema: $schema),
+            'self_schema_id'      => $this->resolveSchemaToId(schemaValue: $object->getSchema(), schema: $schema),
             'self_schema_uuid'    => $schema->getUuid(),
             'self_schema_slug'    => $schema->getSlug(),
             'self_schema_version' => $object->getSchemaVersion(),
@@ -1672,8 +1672,8 @@ class GuzzleSolrService
                 $fieldType  = $fieldDefinition['type'] ?? 'string';
 
                 // **TRUNCATE LARGE VALUES**: Respect SOLR's 32,766 byte limit for indexed fields.
-                if ($this->shouldTruncateField($fieldName, $fieldDefinition) === true) {
-                    $fieldValue = $this->truncateFieldValue($fieldValue, $fieldName);
+                if ($this->shouldTruncateField(fieldName: $fieldName, fieldDefinition: $fieldDefinition) === true) {
+                    $fieldValue = $this->truncateFieldValue(value: $fieldValue, fieldName: $fieldName);
                 }
 
                 // **HANDLE ARRAYS**: Process arrays by inspecting actual content.
@@ -1689,11 +1689,11 @@ class GuzzleSolrService
                             );
 
                     // Extract indexable values from the array (ignores schema definition).
-                    $extractedValues = $this->extractIndexableArrayValues($fieldValue, $fieldName);
+                    $extractedValues = $this->extractIndexableArrayValues(arrayValue: $fieldValue, fieldName: $fieldName);
 
                     if (empty($extractedValues) === false) {
-                        $solrFieldName = $this->mapFieldToSolrType($fieldName, 'array', $extractedValues);
-                        if ($solrFieldName !== null && $this->validateFieldForSolr($solrFieldName, $extractedValues, $solrFieldTypes) === true) {
+                        $solrFieldName = $this->mapFieldToSolrType(fieldName: $fieldName, fieldType: 'array', fieldValue: $extractedValues);
+                        if ($solrFieldName !== null && $this->validateFieldForSolr(fieldName: $solrFieldName, fieldValue: $extractedValues, solrFieldTypes: $solrFieldTypes) === true) {
                             $document[$solrFieldName] = $extractedValues;
                             $this->logger->debug(
                                     'Indexed array field (content-based extraction)',
@@ -1760,13 +1760,13 @@ class GuzzleSolrService
                 }
 
                 // Map field based on schema type to appropriate SOLR field name.
-                $solrFieldName = $this->mapFieldToSolrType($fieldName, $fieldType, $fieldValue);
+                $solrFieldName = $this->mapFieldToSolrType(fieldName: $fieldName, fieldType: $fieldType, fieldValue: $fieldValue);
 
                 if ($solrFieldName !== null && $solrFieldName !== '') {
-                    $convertedValue = $this->convertValueForSolr($fieldValue, $fieldType);
+                    $convertedValue = $this->convertValueForSolr(value: $fieldValue, fieldType: $fieldType);
 
                     // **FIELD VALIDATION**: Check if field exists in SOLR and type is compatible.
-                    if ($convertedValue !== null && $this->validateFieldForSolr($solrFieldName, $convertedValue, $solrFieldTypes) === true) {
+                    if ($convertedValue !== null && $this->validateFieldForSolr(fieldName: $solrFieldName, fieldValue: $convertedValue, solrFieldTypes: $solrFieldTypes) === true) {
                         $document[$solrFieldName] = $convertedValue;
                         $this->logger->debug(
                                 'Mapped field',
@@ -2231,7 +2231,7 @@ class GuzzleSolrService
             'id'     => $uuid,
 
             // Full-text search content (at root for Solr optimization).
-            '_text_' => $this->extractTextContent($object, $this->getObjectDataOrDefault($objectData)),
+            '_text_' => $this->extractTextContent(object: $object, objectData: $this->getObjectDataOrDefault($objectData)),
         ];
 
         // **SCHEMALESS MODE**: Add object properties at root level + typed fields for advanced queries.
@@ -2239,8 +2239,8 @@ class GuzzleSolrService
             foreach ($objectData as $key => $value) {
                 if (is_array($value) === false && is_object($value) === false) {
                     // **TRUNCATE LARGE VALUES**: Apply truncation for known large content fields.
-                    if (is_string($value) === true && $this->shouldTruncateField($key) === true) {
-                        $value = $this->truncateFieldValue($value, $key);
+                    if (is_string($value) === true && $this->shouldTruncateField(fieldName: $key) === true) {
+                        $value = $this->truncateFieldValue(value: $value, fieldName: $key);
                     }
 
                     // **PRIMARY**: Raw field for natural querying (SOLR will auto-detect type).
@@ -2388,7 +2388,7 @@ class GuzzleSolrService
                     );
 
             // Apply additional filters (RBAC, multi-tenancy, published, deleted).
-            $this->applyAdditionalFilters($solrQuery, $rbac, $multi, $published, $deleted);
+            $this->applyAdditionalFilters(solrQuery: $solrQuery, rbac: $rbac, multi: $multi, published: $published, deleted: $deleted);
 
             // Execute the search.
             $extend = $query['_extend'] ?? [];
@@ -2397,10 +2397,10 @@ class GuzzleSolrService
                 $extend = array_map('trim', explode(',', $extend));
             }
 
-            $searchResults = $this->executeSearch($solrQuery, $collectionName, $extend);
+            $searchResults = $this->executeSearch(solrQuery: $solrQuery, collectionName: $collectionName, extend: $extend);
 
             // Convert SOLR results to OpenRegister paginated format.
-            $paginatedResults = $this->convertToOpenRegisterPaginatedFormat($searchResults, $query, $solrQuery);
+            $paginatedResults = $this->convertToOpenRegisterPaginatedFormat(searchResults: $searchResults, originalQuery: $query, solrQuery: $solrQuery);
 
             // Add execution metadata.
             $paginatedResults['_execution_time_ms'] = round((microtime(true) - $startTime) * 1000, 2);
@@ -3171,7 +3171,7 @@ class GuzzleSolrService
             $textParts[] = $object->getUuid();
         }
 
-        $this->extractTextFromArray($objectData, $textParts);
+        $this->extractTextFromArray(data: $objectData, textParts: $textParts);
 
         return implode(' ', array_filter($textParts));
 
@@ -3192,7 +3192,7 @@ class GuzzleSolrService
             if (is_string($value) === true && strlen($value) > 2) {
                 $textParts[] = $value;
             } else if (is_array($value) === true) {
-                $this->extractTextFromArray($value, $textParts);
+                $this->extractTextFromArray(data: $value, textParts: $textParts);
             }
         }
 
@@ -3225,7 +3225,7 @@ class GuzzleSolrService
 
             if (is_array($value) === true) {
                 if ($this->isAssociativeArray($value) === true) {
-                    $fields = array_merge($fields, $this->extractDynamicFields($value, $fieldName.'_'));
+                    $fields = array_merge($fields, $this->extractDynamicFields(objectData: $value, prefix: $fieldName.'_'));
                 } else {
                     foreach ($value as $item) {
                         if (is_scalar($item) === true) {
@@ -3364,7 +3364,7 @@ class GuzzleSolrService
     public function bulkIndexObjects(array $objects, bool $commit=true): array
     {
         $startTime     = microtime(true);
-        $success       = $this->bulkIndex($objects, $commit);
+        $success       = $this->bulkIndex(documents: $objects, commit: $commit);
         $executionTime = microtime(true) - $startTime;
 
         return [
@@ -3622,8 +3622,8 @@ class GuzzleSolrService
                 ];
 
                 throw new \RuntimeException(
-                    "SOLR bulk index failed: SOLR status {$solrStatus}. "."Error: {$errorDetails['error_msg']} (Code: {$errorDetails['error_code']}). "."HTTP Status: {$statusCode}",
-                    $solrStatus
+                    message: "SOLR bulk index failed: SOLR status {$solrStatus}. "."Error: {$errorDetails['error_msg']} (Code: {$errorDetails['error_code']}). "."HTTP Status: {$statusCode}",
+                    code: $solrStatus
                 );
             }
 
@@ -3927,7 +3927,7 @@ class GuzzleSolrService
             // Build and execute SOLR query.
             $solrQuery     = $this->buildSolrQuery($searchParams);
             $extend        = $searchParams['_extend'] ?? [];
-            $searchResults = $this->executeSearch($solrQuery, $collectionName, $extend);
+            $searchResults = $this->executeSearch(solrQuery: $solrQuery, collectionName: $collectionName, extend: $extend);
 
             // Return results in expected format.
             return [
@@ -4145,7 +4145,7 @@ class GuzzleSolrService
                                     function ($v) use ($solrField, $metaKey) {
                                         // Resolve schema/register names to IDs if needed.
                                         if (in_array($metaKey, ['register', 'schema']) === true && is_numeric($v) === false) {
-                                            $v = $this->resolveMetadataValueToId($metaKey, $v);
+                                            $v = $this->resolveMetadataValueToId(fieldType: $metaKey, value: $v);
                                         }
 
                                         if (is_numeric($v) === true) {
@@ -4168,7 +4168,7 @@ class GuzzleSolrService
                             foreach ($values as $v) {
                                 // Resolve schema/register names to IDs if needed.
                                 if (in_array($metaKey, ['register', 'schema']) === true && is_numeric($v) === false) {
-                                    $v = $this->resolveMetadataValueToId($metaKey, $v);
+                                    $v = $this->resolveMetadataValueToId(fieldType: $metaKey, value: $v);
                                 }
 
                                 if (is_numeric($v) === true) {
@@ -4185,7 +4185,7 @@ class GuzzleSolrService
                     // Handle string values for register/schema fields by resolving to integer IDs.
                     // Skip arrays - they will be handled in the array processing block below.
                     if (in_array($metaKey, ['register', 'schema']) === true && is_numeric($metaValue) === false && is_array($metaValue) === false) {
-                        $metaValue = $this->resolveMetadataValueToId($metaKey, $metaValue);
+                        $metaValue = $this->resolveMetadataValueToId(fieldType: $metaKey, value: $metaValue);
                     }
 
                     if (is_array($metaValue) === true) {
@@ -4194,7 +4194,7 @@ class GuzzleSolrService
                                 function ($v) use ($solrField, $metaKey) {
                                     // Handle string values in arrays by resolving to integer IDs.
                                     if (in_array($metaKey, ['register', 'schema']) === true && is_numeric($v) === false) {
-                                        $v = $this->resolveMetadataValueToId($metaKey, $v);
+                                        $v = $this->resolveMetadataValueToId(fieldType: $metaKey, value: $v);
                                     }
 
                                     if (is_numeric($v) === true) {
@@ -4388,7 +4388,7 @@ class GuzzleSolrService
                 throw new \Exception('Invalid JSON response from SOLR: '.json_last_error_msg());
             }
 
-            return $this->parseSolrResponse($responseData, $extend);
+            return $this->parseSolrResponse(responseData: $responseData, extend: $extend);
         } catch (\Exception $e) {
             $this->logger->error(
                     'SOLR search execution failed',
@@ -4421,7 +4421,7 @@ class GuzzleSolrService
 
         // Parse documents and convert back to OpenRegister objects.
         if (isset($responseData['response']['docs']) === true) {
-            $results['objects'] = $this->convertSolrDocumentsToOpenRegisterObjects($responseData['response']['docs'], $extend);
+            $results['objects'] = $this->convertSolrDocumentsToOpenRegisterObjects(solrDocuments: $responseData['response']['docs'], extend: $extend);
             if (isset($responseData['response']['numFound']) === true) {
                 $results['total'] = $responseData['response']['numFound'];
             } else {
@@ -4575,7 +4575,7 @@ class GuzzleSolrService
 
                 // Re-run the same query with faceting enabled to get contextual facets.
                 // This is much more efficient than making separate calls.
-                $contextualFacetData = $this->getContextualFacetsFromSameQuery($solrQuery, $originalQuery);
+                $contextualFacetData = $this->getContextualFacetsFromSameQuery(solrQuery: $solrQuery, originalQuery: $originalQuery);
 
                 // Also discover all available facetable fields from SOLR schema.
                 $allFacetableFields = $this->discoverFacetableFieldsFromSolr();
@@ -6257,7 +6257,7 @@ class GuzzleSolrService
             $this->logger->info(message: 'Starting sequential bulk index from database using ObjectEntityMapper directly');
 
             // **IMPROVED**: Get count of only searchable objects for more accurate planning.
-            $totalObjects = $this->countSearchableObjects($objectMapper, $schemaIds);
+            $totalObjects = $this->countSearchableObjects(objectMapper: $objectMapper, schemaIds: $schemaIds);
             if ($maxObjects > 0) {
                 $estimatedBatches = ceil(min($totalObjects, $maxObjects) / $batchSize);
                 $willProcess      = min($totalObjects, $maxObjects);
@@ -6292,7 +6292,7 @@ class GuzzleSolrService
                 // **IMPROVED**: Fetch only objects with searchable schemas.
                 $fetchStart = microtime(true);
                 // Batch fetched (logging removed for performance).
-                $objects = $this->fetchSearchableObjects($objectMapper, $currentBatchSize, $offset, $schemaIds);
+                $objects = $this->fetchSearchableObjects(objectMapper: $objectMapper, limit: $currentBatchSize, offset: $offset, schemaIds: $schemaIds);
 
                 $fetchEnd      = microtime(true);
                 $fetchDuration = round(($fetchEnd - $fetchStart) * 1000, 2);
@@ -6327,7 +6327,7 @@ class GuzzleSolrService
                         if ($objectEntity !== null) {
                             // Since we already filtered for searchable schemas at database level,.
                             // we should not encounter non-searchable schemas here.
-                            $document    = $this->createSolrDocument($objectEntity, $solrFieldTypes);
+                            $document    = $this->createSolrDocument(object: $objectEntity, solrFieldTypes: $solrFieldTypes);
                             $documents[] = $document;
                         }
                     } catch (\RuntimeException $e) {
@@ -6379,7 +6379,7 @@ class GuzzleSolrService
                 if (empty($documents) === false) {
                     $indexStart = microtime(true);
                     // Bulk index the documents (minimal logging for performance).
-                    $this->bulkIndex($documents, true);
+                    $this->bulkIndex(documents: $documents, commit: true);
                     // Commit each batch for immediate visibility
                     $indexed = count($documents);
                     // If we reach here, indexing succeeded
@@ -6486,7 +6486,7 @@ class GuzzleSolrService
             $startTime = microtime(true);
             // Parallel bulk indexing started (logging removed for performance).
             // **IMPROVED**: Get count of only searchable objects for more accurate planning.
-            $totalObjects = $this->countSearchableObjects($objectMapper, $schemaIds);
+            $totalObjects = $this->countSearchableObjects(objectMapper: $objectMapper, schemaIds: $schemaIds);
 
             // Total objects retrieved from database.
             // Total objects determined (logging removed for performance).
@@ -6531,7 +6531,7 @@ class GuzzleSolrService
                 // **FIX**: Process batches synchronously within each chunk to avoid ReactPHP ->wait() issues.
                 $chunkResults = [];
                 foreach ($chunk as $job) {
-                    $result         = $this->processBatchDirectly($objectMapper, $job, $schemaIds);
+                    $result         = $this->processBatchDirectly(objectMapper: $objectMapper, job: $job, schemaIds: $schemaIds);
                     $chunkResults[] = $result;
                 }
 
@@ -6627,7 +6627,7 @@ class GuzzleSolrService
         // Processing batch.
         try {
             // **IMPROVED**: Fetch only objects with searchable schemas for this batch.
-            $objects = $this->fetchSearchableObjects($objectMapper, $job['limit'], $job['offset'], $schemaIds);
+            $objects = $this->fetchSearchableObjects(objectMapper: $objectMapper, limit: $job['limit'], offset: $job['offset'], schemaIds: $schemaIds);
 
             if (empty($objects) === true) {
                 return ['success' => true, 'indexed' => 0, 'batchNumber' => $job['batchNumber']];
@@ -6678,7 +6678,7 @@ class GuzzleSolrService
                         ]
                         );
 
-                $bulkResult = $this->bulkIndex($documents, true);
+                $bulkResult = $this->bulkIndex(documents: $documents, commit: true);
                 // Commit each batch for immediate visibility
                 $this->logger->info(
                         '🔥 WARMUP: Bulk index result',
@@ -6826,7 +6826,7 @@ class GuzzleSolrService
                     // Bulk index the entire batch.
                     $indexed = 0;
                     if (empty($documents) === false) {
-                        $success = $this->bulkIndex($documents, true);
+                        $success = $this->bulkIndex(documents: $documents, commit: true);
                         // Commit each batch for immediate visibility
                         if ($success === true) {
                             $indexed = count($documents);
@@ -6976,7 +6976,7 @@ class GuzzleSolrService
 
             // **OPTIMIZATION**: Single massive bulk index operation.
             if (empty($documents) === false) {
-                $this->bulkIndex($documents, true);
+                $this->bulkIndex(documents: $documents, commit: true);
                 // Commit immediately - will throw on error
                 $totalIndexed = count($documents);
                 // If we reach here, indexing succeeded
@@ -7086,13 +7086,11 @@ class GuzzleSolrService
 
                 try {
                     // Get 5 objects for this schema.
-                    $objects = $objectMapper->searchObjects(
-                            [
+                    $objects = $objectMapper->searchObjects(searchParams: [
                                 'schema'  => $schemaId,
                                 '_limit'  => 5,
                                 '_offset' => 0,
-                            ]
-                            );
+                            ]);
 
                     $schemaDetails['objects_found'] = count($objects);
 
@@ -7113,7 +7111,7 @@ class GuzzleSolrService
                             }
 
                             // Index the document.
-                            if ($this->bulkIndex([$document], true) === true) {
+                            if ($this->bulkIndex(documents: [$document], commit: true) === true) {
                                 $schemaDetails['objects_indexed']++;
                                 $results['objects_indexed']++;
                             }
@@ -7283,7 +7281,7 @@ class GuzzleSolrService
         // **MEMORY TRACKING**: Capture initial memory usage and predict requirements.
         $initialMemoryUsage = (int) memory_get_usage(true);
         $initialMemoryPeak  = (int) memory_get_peak_usage(true);
-        $memoryPrediction   = $this->predictWarmupMemoryUsage($maxObjects, $schemaIds);
+        $memoryPrediction   = $this->predictWarmupMemoryUsage(maxObjects: $maxObjects, schemaIds: $schemaIds);
 
         // **CRITICAL**: Disable profiler during warmup - even with reduced logging, 26K+ queries overwhelm profiler.
         $profilerWasEnabled = false;
@@ -7398,11 +7396,11 @@ class GuzzleSolrService
             }
 
             if ($mode === 'hyper') {
-                $indexResult = $this->bulkIndexFromDatabaseOptimized($batchSize, $maxObjects, $solrFieldTypesValue, $schemaIds);
+                $indexResult = $this->bulkIndexFromDatabaseOptimized(batchSize: $batchSize, maxObjects: $maxObjects, solrFieldTypes: $solrFieldTypesValue, schemaIds: $schemaIds);
             } else if ($mode === 'parallel') {
-                $indexResult = $this->bulkIndexFromDatabaseParallel($batchSize, $maxObjects, 5, $solrFieldTypesValue, $schemaIds);
+                $indexResult = $this->bulkIndexFromDatabaseParallel(batchSize: $batchSize, maxObjects: $maxObjects, parallelBatches: 5, solrFieldTypes: $solrFieldTypesValue, schemaIds: $schemaIds);
             } else {
-                $indexResult = $this->bulkIndexFromDatabase($batchSize, $maxObjects, $solrFieldTypesValue, $schemaIds);
+                $indexResult = $this->bulkIndexFromDatabase(batchSize: $batchSize, maxObjects: $maxObjects, solrFieldTypes: $solrFieldTypesValue, schemaIds: $schemaIds);
             }
 
             // Pass collectErrors mode for potential future use.
@@ -7470,7 +7468,7 @@ class GuzzleSolrService
             // **MEMORY TRACKING**: Calculate final memory usage and statistics.
             $finalMemoryUsage = (int) memory_get_usage(true);
             $finalMemoryPeak  = (int) memory_get_peak_usage(true);
-            $memoryReport     = $this->generateMemoryReport($initialMemoryUsage, $finalMemoryUsage, $initialMemoryPeak, $finalMemoryPeak, $memoryPrediction);
+            $memoryReport     = $this->generateMemoryReport(initialUsage: $initialMemoryUsage, finalUsage: $finalMemoryUsage, initialPeak: $initialMemoryPeak, finalPeak: $finalMemoryPeak, prediction: $memoryPrediction);
 
             // **RESTORE SETTINGS**: Reset PHP execution time to original value.
             ini_set('max_execution_time', $originalMaxExecutionTime);
@@ -7534,7 +7532,7 @@ class GuzzleSolrService
                 $memoryPredictionValue = [];
             }
 
-            $memoryReport = $this->generateMemoryReport($initialMemoryUsage, $finalMemoryUsage, $initialMemoryPeak, $finalMemoryPeak, $memoryPredictionValue);
+            $memoryReport = $this->generateMemoryReport(initialUsage: $initialMemoryUsage, finalUsage: $finalMemoryUsage, initialPeak: $initialMemoryPeak, finalPeak: $finalMemoryPeak, prediction: $memoryPredictionValue);
 
             // **RESTORE SETTINGS**: Reset PHP execution time to original value even on error.
             ini_set('max_execution_time', $originalMaxExecutionTime);
@@ -7712,7 +7710,7 @@ class GuzzleSolrService
         try {
             // **IMPROVED**: Get count of only searchable objects for more accurate planning.
             $objectMapper = \OC::$server->get(\OCA\OpenRegister\Db\ObjectEntityMapper::class);
-            $totalObjects = $this->countSearchableObjects($objectMapper, $schemaIds);
+            $totalObjects = $this->countSearchableObjects(objectMapper: $objectMapper, schemaIds: $schemaIds);
             if ($maxObjects > 0) {
                 $actualLimit = min($maxObjects, $totalObjects);
             } else {
@@ -7741,7 +7739,7 @@ class GuzzleSolrService
                 $batchCount++;
 
                 // **IMPROVED**: Fetch only objects with searchable schemas.
-                $objects = $this->fetchSearchableObjects($objectMapper, $currentBatchSize, $offset, $schemaIds);
+                $objects = $this->fetchSearchableObjects(objectMapper: $objectMapper, limit: $currentBatchSize, offset: $offset, schemaIds: $schemaIds);
 
                 if (empty($objects) === true) {
                     break;
@@ -7784,7 +7782,7 @@ class GuzzleSolrService
 
                 // Bulk index the batch.
                 if (empty($documents) === false) {
-                    $indexResult = $this->bulkIndex($documents, true);
+                    $indexResult = $this->bulkIndex(documents: $documents, commit: true);
                     // Commit each batch for immediate visibility.
                     if ($indexResult === true) {
                         $totalIndexed += count($documents);
@@ -8728,7 +8726,7 @@ class GuzzleSolrService
      * Retrieves field definitions, dynamic fields, field types, and core information
      * from the active SOLR collection to help debug field configuration issues.
      *
-     * @return array{success: bool, message: string, fields?: array, dynamic_fields?: array, field_types?: array, core_info?: array, environment_notes?: array}
+     * @return array{success: bool, message: string, fields?: array, dynamic_fields?: array, field_types?: array, core_info?: array, environment_notes?: array, execution_time_ms?: float, details?: array}
      */
     public function getFieldsConfiguration(): array
     {
@@ -9010,7 +9008,7 @@ class GuzzleSolrService
 
             // If schema IDs are provided, use the searchable objects count (which filters by schema).
             if (empty($schemaIds) === false) {
-                $totalObjects = $this->countSearchableObjects($objectMapper, $schemaIds);
+                $totalObjects = $this->countSearchableObjects(objectMapper: $objectMapper, schemaIds: $schemaIds);
             } else {
                 // Get ALL object count for prediction (since we now index all objects, not just published).
                 $totalObjects = $objectMapper->countAll(
@@ -12594,4 +12592,6 @@ class GuzzleSolrService
             return 'inactive';
         }
         return 'active';
-    }//end getCollecti
+    }//end getCollectionStatus()
+
+}//end class

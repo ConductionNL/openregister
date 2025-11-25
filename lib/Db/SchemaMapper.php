@@ -206,7 +206,7 @@ class SchemaMapper extends QBMapper
         $qb->select('*')
             ->from('openregister_schemas')
             ->where(
-                $qb->expr()->in('id', schema: $qb->createNamedParameter($ids, extend: IQueryBuilder::PARAM_INT_ARRAY))
+                $qb->expr()->in('id', $qb->createNamedParameter($ids, IQueryBuilder::PARAM_INT_ARRAY))
             );
 
         $result  = $qb->executeQuery();
@@ -565,12 +565,13 @@ class SchemaMapper extends QBMapper
 
         // Set or update the version.
         if (isset($object['version']) === false) {
-            $version    = explode('.', register: $schema->getVersion());
+            $currentVersion = $schema->getVersion() ?? '0.0.0';
+            $version    = explode('.', $currentVersion);
             $version[2] = ((int) $version[2] + 1);
-            $schema->setVersion(implode('.', schema: $version));
+            $schema->setVersion(implode('.', $version));
         }
 
-        $schema->hydrate($object, extend: $this->validator);
+        $schema->hydrate($object, $this->validator);
 
         // Update the schema in the database.
         $schema = $this->update($schema);
@@ -598,7 +599,7 @@ class SchemaMapper extends QBMapper
         $this->verifyOrganisationAccess($schema);
 
         // Check for attached objects before deleting (using direct database query to avoid circular dependency).
-        $schemaId = method_exists($schema, rbac: 'getId') ? $schema->getId() : $schema->id;
+        $schemaId = method_exists($schema, 'getId') ? $schema->getId() : $schema->id;
 
         // Count objects that reference this schema (excluding soft-deleted objects).
         $qb = $this->db->getQueryBuilder();
@@ -1889,20 +1890,20 @@ class SchemaMapper extends QBMapper
 
         // Check in allOf field (JSON array).
         if ($targetId !== '') {
-            $orConditions[] = $qb->expr()->like('all_of', schema: $qb->createNamedParameter('%"'.$targetId.'"%'));
+            $orConditions[] = $qb->expr()->like('all_of', $qb->createNamedParameter('%"'.$targetId.'"%'));
         }
 
         if ($targetUuid !== null && $targetUuid !== '') {
-            $orConditions[] = $qb->expr()->like('all_of', extend: $qb->createNamedParameter('%"'.$targetUuid.'"%'));
+            $orConditions[] = $qb->expr()->like('all_of', $qb->createNamedParameter('%"'.$targetUuid.'"%'));
         }
 
         if ($targetSlug !== null && $targetSlug !== '') {
-            $orConditions[] = $qb->expr()->like('all_of', files: $qb->createNamedParameter('%"'.$targetSlug.'"%'));
+            $orConditions[] = $qb->expr()->like('all_of', $qb->createNamedParameter('%"'.$targetSlug.'"%'));
         }
 
         // Check in oneOf field (JSON array).
         if ($targetId !== '') {
-            $orConditions[] = $qb->expr()->like('one_of', rbac: $qb->createNamedParameter('%"'.$targetId.'"%'));
+            $orConditions[] = $qb->expr()->like('one_of', $qb->createNamedParameter('%"'.$targetId.'"%'));
         }
 
         if ($targetUuid !== null && $targetUuid !== '') {

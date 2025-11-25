@@ -85,9 +85,6 @@
 							<th class="column-status">
 								{{ t('openregister', 'Status') }}
 							</th>
-							<th class="column-events">
-								{{ t('openregister', 'Events') }}
-							</th>
 							<th class="column-last-triggered">
 								{{ t('openregister', 'Last Triggered') }}
 							</th>
@@ -117,9 +114,6 @@
 								<span class="badge" :class="'badge-status-' + (webhook.enabled ? 'enabled' : 'disabled')">
 									{{ webhook.enabled ? t('openregister', 'Enabled') : t('openregister', 'Disabled') }}
 								</span>
-							</td>
-							<td class="column-events">
-								{{ getEventsCount(webhook.events) }}
 							</td>
 							<td class="column-last-triggered">
 								{{ formatDate(webhook.lastTriggeredAt) }}
@@ -209,6 +203,8 @@ import {
 	NcEmptyContent,
 } from '@nextcloud/vue'
 
+import WebhooksSidebar from '../../components/WebhooksSidebar.vue'
+
 import Webhook from 'vue-material-design-icons/Webhook.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import FilterVariant from 'vue-material-design-icons/FilterVariant.vue'
@@ -216,8 +212,6 @@ import PlayOutline from 'vue-material-design-icons/PlayOutline.vue'
 import Close from 'vue-material-design-icons/Close.vue'
 import DeleteOutline from 'vue-material-design-icons/DeleteOutline.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
-
-import WebhooksSidebar from '../../components/WebhooksSidebar.vue'
 
 /**
  * Main view for managing webhooks
@@ -231,10 +225,6 @@ export default {
 		NcButton,
 		NcLoadingIcon,
 		NcEmptyContent,
-		NcDialog,
-		NcTextField,
-		NcSelect,
-		NcCheckboxRadioSwitch,
 		Webhook,
 		Refresh,
 		FilterVariant,
@@ -472,20 +462,6 @@ export default {
 			}
 		},
 
-		/**
-		 * Get events count from events string
-		 *
-		 * @param {string|array} events - Events JSON string or array
-		 * @return {number} Number of events
-		 */
-		getEventsCount(events) {
-			try {
-				const eventsArray = Array.isArray(events) ? events : JSON.parse(events || '[]')
-				return eventsArray.length
-			} catch {
-				return 0
-			}
-		},
 
 		/**
 		 * Open create webhook dialog
@@ -684,11 +660,6 @@ export default {
 
 .column-status {
 	width: 120px;
-}
-
-.column-events {
-	width: 80px;
-	text-align: center;
 }
 
 .column-last-triggered {
