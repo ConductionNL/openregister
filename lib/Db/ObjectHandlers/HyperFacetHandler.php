@@ -606,6 +606,7 @@ class HyperFacetHandler
                     'batchOptimization' => 'enabled'
                 ]);
 
+                /** @psalm-suppress InvalidArgument - Promise resolve accepts mixed */
                 $resolve($results);
             } catch (\Throwable $e) {
                 $reject($e);
@@ -1069,6 +1070,7 @@ class HyperFacetHandler
     private function processJsonFacetsParallel(array $jsonFacets, array $baseQuery): PromiseInterface
     {
         return new Promise(function ($resolve) {
+            /** @psalm-suppress InvalidArgument - Promise resolve accepts mixed */
             $resolve([]); // Simplified for now
         });
     }

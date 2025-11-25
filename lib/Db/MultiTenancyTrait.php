@@ -374,6 +374,7 @@ trait MultiTenancyTrait
                 $qb->expr()->andX(
                     $qb->expr()->isNotNull($publishedColumn),
                     $qb->expr()->lte($publishedColumn, $qb->createNamedParameter($now)),
+                    /** @psalm-suppress TypeDoesNotContainType - orX can return false but we handle it */
                     $qb->expr()->orX(
                         $qb->expr()->isNull($depublishedColumn),
                         $qb->expr()->gt($depublishedColumn, $qb->createNamedParameter($now))

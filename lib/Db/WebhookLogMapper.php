@@ -50,6 +50,8 @@ class WebhookLogMapper extends QBMapper
      * WebhookLogMapper constructor
      *
      * @param IDBConnection $db Database connection
+     *
+     * @psalm-suppress PossiblyUnusedMethod - Constructor is called by Nextcloud's DI container
      */
     public function __construct(IDBConnection $db)
     {
@@ -158,7 +160,7 @@ class WebhookLogMapper extends QBMapper
     /**
      * Get statistics for a webhook
      *
-     * @param int $webhookId Webhook ID
+     * @param int $webhookId Webhook ID (0 for all webhooks)
      *
      * @return array Statistics
      */
@@ -166,17 +168,15 @@ class WebhookLogMapper extends QBMapper
     {
         $qb = $this->db->getQueryBuilder();
 
-        $qb->selectAlias($qb->createFunction('COUNT(*)'), 'total')
-            ->addSelectAlias(
-                expr: $qb->createFunction('SUM(CASE WHEN success = 1 THEN 1 ELSE 0 END)'),
-                alias: 'successful'
-            )
-            ->addSelectAlias(
-                expr: $qb->createFunction('SUM(CASE WHEN success = 0 THEN 1 ELSE 0 END)'),
-                alias: 'failed'
-            )
-            ->from($this->getTableName())
-            ->where($qb->expr()->eq('webhook_id', $qb->createNamedParameter($webhookId, IQueryBuilder::PARAM_INT)));
+        $qb->select($qb->createFunction('COUNT(*) as total'))
+            ->addSelect($qb->createFunction('SUM(CASE WHEN success = 1 THEN 1 ELSE 0 END) as successful'))
+            ->addSelect($qb->createFunction('SUM(CASE WHEN success = 0 THEN 1 ELSE 0 END) as failed'))
+            ->from($this->getTableName());
+
+        // Only filter by webhook_id if a specific webhook is requested.
+        if ($webhookId > 0) {
+            $qb->where($qb->expr()->eq('webhook_id', $qb->createNamedParameter($webhookId, IQueryBuilder::PARAM_INT)));
+        }
 
         $result = $qb->executeQuery();
         $row = $result->fetch();

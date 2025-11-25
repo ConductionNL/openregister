@@ -595,7 +595,7 @@ class SaveObject
                                     ]
                                 );
                                 // Publish the file.
-                                $this->fileService->publishFile($entity, $fileNode->getId());
+                                $this->fileService->publishFile(object: $entity, file: $fileNode->getId());
                                 // Re-fetch file data after publishing.
                                 $fileData = $this->fileService->formatFile($fileNode);
                             }
@@ -642,7 +642,7 @@ class SaveObject
                                 ]
                             );
                             // Publish the file.
-                            $this->fileService->publishFile($entity, $fileNode->getId());
+                            $this->fileService->publishFile(object: $entity, file: $fileNode->getId());
                             // Re-fetch file data after publishing.
                             $fileData = $this->fileService->formatFile($fileNode);
                         }

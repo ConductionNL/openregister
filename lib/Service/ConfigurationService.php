@@ -472,8 +472,12 @@ class ConfigurationService
                 }
 
                 $registerId = $property['objectConfiguration']['register'];
-                if (is_numeric($registerId) && isset($registerIdsAndSlugsMap[(string) $registerId]) === true) {
-                    $property['objectConfiguration']['register'] = $registerIdsAndSlugsMap[(string) $registerId];
+                if (is_numeric($registerId)) {
+                    $registerIdStr = (string) $registerId;
+                    if (isset($registerIdsAndSlugsMap[$registerIdStr]) === true) {
+                        /** @var array<int|string, string> $registerIdsAndSlugsMap */
+                        $property['objectConfiguration']['register'] = $registerIdsAndSlugsMap[$registerIdStr];
+                    }
                 }
             }
 
@@ -485,8 +489,12 @@ class ConfigurationService
                 }
 
                 $schemaId = $property['objectConfiguration']['schema'];
-                if (is_numeric($schemaId) && isset($schemaIdsAndSlugsMap[(string) $schemaId]) === true) {
-                    $property['objectConfiguration']['schema'] = $schemaIdsAndSlugsMap[(string) $schemaId];
+                if (is_numeric($schemaId)) {
+                    $schemaIdStr = (string) $schemaId;
+                    if (isset($schemaIdsAndSlugsMap[$schemaIdStr]) === true) {
+                        /** @var array<int|string, string> $schemaIdsAndSlugsMap */
+                        $property['objectConfiguration']['schema'] = $schemaIdsAndSlugsMap[$schemaIdStr];
+                    }
                 }
             }
 
@@ -502,8 +510,12 @@ class ConfigurationService
                 }
 
                 $registerId = $property['items']['objectConfiguration']['register'];
-                if (is_numeric($registerId) && isset($registerIdsAndSlugsMap[(string) $registerId]) === true) {
-                    $property['items']['objectConfiguration']['register'] = $registerIdsAndSlugsMap[(string) $registerId];
+                if (is_numeric($registerId)) {
+                    $registerIdStr = (string) $registerId;
+                    if (isset($registerIdsAndSlugsMap[$registerIdStr]) === true) {
+                        /** @var array<int|string, string> $registerIdsAndSlugsMap */
+                        $property['items']['objectConfiguration']['register'] = $registerIdsAndSlugsMap[$registerIdStr];
+                    }
                 }
             }
 
@@ -519,8 +531,12 @@ class ConfigurationService
                 }
 
                 $schemaId = $property['items']['objectConfiguration']['schema'];
-                if (is_numeric($schemaId) && isset($schemaIdsAndSlugsMap[(string) $schemaId]) === true) {
-                    $property['items']['objectConfiguration']['schema'] = $schemaIdsAndSlugsMap[(string) $schemaId];
+                if (is_numeric($schemaId)) {
+                    $schemaIdStr = (string) $schemaId;
+                    if (isset($schemaIdsAndSlugsMap[$schemaIdStr]) === true) {
+                        /** @var array<int|string, string> $schemaIdsAndSlugsMap */
+                        $property['items']['objectConfiguration']['schema'] = $schemaIdsAndSlugsMap[$schemaIdStr];
+                    }
                 }
             }
 
@@ -528,8 +544,10 @@ class ConfigurationService
             if (isset($property['register']) === true) {
                 if (is_string($property['register']) === true) {
                     $registerId = $this->getLastNumericSegment(url: $property['register']);
-                    if (isset($registerIdsAndSlugsMap[(string) $registerId]) === true) {
-                        $property['register'] = $registerIdsAndSlugsMap[(string) $registerId];
+                    $registerIdStr = (string) $registerId;
+                    if (isset($registerIdsAndSlugsMap[$registerIdStr]) === true) {
+                        /** @var array<int|string, string> $registerIdsAndSlugsMap */
+                        $property['register'] = $registerIdsAndSlugsMap[$registerIdStr];
                     }
                 }
             }
@@ -542,8 +560,10 @@ class ConfigurationService
 
                 if (is_string($property['items']['register']) === true) {
                     $registerId = $this->getLastNumericSegment(url: $property['items']['register']);
-                    if (isset($registerIdsAndSlugsMap[(string) $registerId]) === true) {
-                        $property['items']['register'] = $registerIdsAndSlugsMap[(string) $registerId];
+                    $registerIdStr = (string) $registerId;
+                    if (isset($registerIdsAndSlugsMap[$registerIdStr]) === true) {
+                        /** @var array<int|string, string> $registerIdsAndSlugsMap */
+                        $property['items']['register'] = $registerIdsAndSlugsMap[$registerIdStr];
                     }
                 }
             }
@@ -565,6 +585,7 @@ class ConfigurationService
      * @return string The numeric value if found, or the original URL
      *
      * @throws \InvalidArgumentException If the URL is not a string
+     * @psalm-suppress UndefinedDocblockClass - InvalidArgumentException is a standard PHP exception
      */
     private function getLastNumericSegment(string $url): string
     {
@@ -1720,6 +1741,8 @@ class ConfigurationService
 
             // Find existing objects using register, schema, and name combination for uniqueness.
             $existingObjects = $this->objectEntityMapper->findAll(
+                    limit: null,
+                    offset: null,
                     filters: [
                             'register' => $registerId,
                             'schema'   => $schemaId,
@@ -2576,7 +2599,8 @@ class ConfigurationService
      *     mappings: array,
      *     jobs: array,
      *     synchronizations: array,
-     *     rules: array
+     *     rules: array,
+     *     metadata?: array
      * }|JSONResponse
      */
     public function previewConfigurationChanges(Configuration $configuration): array | JSONResponse
@@ -2986,6 +3010,9 @@ class ConfigurationService
      *     objects: array<ObjectEntity>,
      *     skipped: array
      * }
+     */
+    /**
+     * @return array{objects: array<array-key, ObjectEntity>, registers: array<array-key, Register>, schemas: array<array-key, Schema>, endpoints?: array<array-key, mixed>, sources?: array<array-key, mixed>, mappings?: array<array-key, mixed>, jobs?: array<array-key, mixed>, synchronizations?: array<array-key, mixed>, rules?: array<array-key, mixed>}
      */
     public function importConfigurationWithSelection(Configuration $configuration, array $selection): array
     {

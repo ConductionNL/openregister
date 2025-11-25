@@ -532,6 +532,7 @@ class SettingsService
                     'readLogRetention'       => $retentionData['readLogRetention'] ?? 86400000,
                     'updateLogRetention'     => $retentionData['updateLogRetention'] ?? 604800000,
                     'deleteLogRetention'     => $retentionData['deleteLogRetention'] ?? 2592000000,
+                    'webhookLogRetention'    => $retentionData['webhookLogRetention'] ?? 2592000000,
                     'auditTrailsEnabled'     => $retentionData['auditTrailsEnabled'] ?? true,
                     'searchTrailsEnabled'    => $retentionData['searchTrailsEnabled'] ?? true,
                 ];
@@ -764,6 +765,7 @@ class SettingsService
                     'totalObjects'            => 0,
                     'totalAuditTrails'        => 0,
                     'totalSearchTrails'       => 0,
+                    'totalWebhookLogs'        => 0,
                     'totalConfigurations'     => 0,
                     'totalDataAccessProfiles' => 0,
                     'totalOrganisations'      => 0,
@@ -857,7 +859,25 @@ class SettingsService
             $stats['warnings']['expiredSearchTrails']       = (int) ($searchData['expired_count'] ?? 0);
             $stats['sizes']['expiredSearchTrailsSize']      = (int) ($searchData['expired_size'] ?? 0);
 
-            // 4. All other tables - simple counts (these should be fast).
+            // 4. Webhook logs table - comprehensive stats.
+            $webhookLogQuery = "
+                SELECT
+                    COUNT(*) as total_count
+                FROM `*PREFIX*openregister_webhook_logs`
+            ";
+
+            try {
+                $result         = $db->executeQuery($webhookLogQuery);
+                $webhookLogData = $result->fetch();
+                $result->closeCursor();
+
+                $stats['totals']['totalWebhookLogs'] = (int) ($webhookLogData['total_count'] ?? 0);
+            } catch (Exception $e) {
+                // Table might not exist, set to 0 and continue.
+                $stats['totals']['totalWebhookLogs'] = 0;
+            }
+
+            // 5. All other tables - simple counts (these should be fast).
             $simpleCountTables = [
                 'configurations'     => '`*PREFIX*openregister_configurations`',
                 'dataAccessProfiles' => '`*PREFIX*openregister_data_access_profiles`',
@@ -3207,6 +3227,7 @@ class SettingsService
                 'readLogRetention'       => $retentionData['readLogRetention'] ?? 86400000,
                 'updateLogRetention'     => $retentionData['updateLogRetention'] ?? 604800000,
                 'deleteLogRetention'     => $retentionData['deleteLogRetention'] ?? 2592000000,
+                'webhookLogRetention'    => $retentionData['webhookLogRetention'] ?? 2592000000,
                 'auditTrailsEnabled'     => $this->convertToBoolean($retentionData['auditTrailsEnabled'] ?? true),
                 'searchTrailsEnabled'    => $this->convertToBoolean($retentionData['searchTrailsEnabled'] ?? true),
             ];

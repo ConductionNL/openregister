@@ -24,6 +24,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\WebhookLogMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
@@ -46,6 +47,7 @@ class DashboardService
      * @param SchemaMapper       $schemaMapper     The schema mapper instance
      * @param ObjectEntityMapper $objectMapper     The object entity mapper instance
      * @param AuditTrailMapper   $auditTrailMapper The audit trail mapper instance
+     * @param WebhookLogMapper   $webhookLogMapper The webhook log mapper instance
      * @param IDBConnection      $db               The database connection instance
      * @param LoggerInterface    $logger           The logger instance
      *
@@ -56,6 +58,7 @@ class DashboardService
         private readonly SchemaMapper $schemaMapper,
         private readonly ObjectEntityMapper $objectMapper,
         private readonly AuditTrailMapper $auditTrailMapper,
+        private readonly WebhookLogMapper $webhookLogMapper,
         private readonly LoggerInterface $logger
     ) {
 
@@ -98,6 +101,9 @@ class DashboardService
             // Get audit trail statistics.
             $logStats = $this->auditTrailMapper->getStatistics(registerId: $registerId, schemaId: $schemaId);
 
+            // Get webhook log statistics (0 = all webhooks).
+            $webhookLogStats = $this->webhookLogMapper->getStatistics(webhookId: 0);
+
             return [
                 'objects' => [
                     'total'     => $objectStats['total'],
@@ -110,6 +116,10 @@ class DashboardService
                 'logs'    => [
                     'total' => $logStats['total'],
                     'size'  => $logStats['size'],
+                ],
+                'webhookLogs' => [
+                    'total' => $webhookLogStats['total'] ?? 0,
+                    'size'  => 0,
                 ],
                 'files'   => [
                     'total' => 0,
@@ -128,6 +138,10 @@ class DashboardService
                     'published' => 0,
                 ],
                 'logs'    => [
+                    'total' => 0,
+                    'size'  => 0,
+                ],
+                'webhookLogs' => [
                     'total' => 0,
                     'size'  => 0,
                 ],

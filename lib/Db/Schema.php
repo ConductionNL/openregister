@@ -1119,6 +1119,7 @@ class Schema extends Entity implements JsonSerializable
         }
 
         // Otherwise, it's already an array.
+        /** @psalm-suppress TypeDoesNotContainType - facets can be string|null|array */
         return $this->facets;
 
     }//end getFacets()

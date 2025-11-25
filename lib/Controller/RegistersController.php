@@ -206,7 +206,7 @@ class RegistersController extends Controller
         // Extract filters.
         $filters = $params['filters'] ?? [];
 
-        $registers    = $this->registerService->findAll(limit: $limit, offset: $offset, filters: $filters, order: [], searchConditions: [], searchParams: []);
+        $registers    = $this->registerService->findAll(limit: $limit, offset: $offset, filters: $filters, searchConditions: [], searchParams: []);
         $registersArr = array_map(fn($register) => $register->jsonSerialize(), $registers);
 
         // If 'schemas' is requested in _extend, expand schema IDs to full schema objects.

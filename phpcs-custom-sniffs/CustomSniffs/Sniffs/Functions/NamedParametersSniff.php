@@ -490,6 +490,9 @@ class NamedParametersSniff implements Sniff
                 'file_put_contents', 'file_get_contents', 'readfile', 'filesize',
                 'unlink', 'sys_get_temp_dir', 'tempnam',
                 
+                // PHP DateTime static methods.
+                'createfromformat',
+                
                 // PHP string functions (additional).
                 'addcslashes', 'strcmp', 'fnmatch', 'mb_strcut', 'iconv',
                 

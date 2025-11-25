@@ -28,6 +28,8 @@ use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Create webhook_logs table for webhook delivery logging
+ *
+ * @psalm-suppress UnusedClass - Migration classes are loaded by Nextcloud's migration system
  */
 class Version1Date20250126000000 extends SimpleMigrationStep
 {

@@ -423,9 +423,10 @@ class RegisterMapper extends QBMapper
 
         // Set or update the version.
         if (isset($object['version']) === false) {
-            $version    = explode('.', register: $register->getVersion());
+            $currentVersion = $register->getVersion() ?? '0.0.0';
+            $version    = explode('.', $currentVersion);
             $version[2] = ((int) $version[2] + 1);
-            $register->setVersion(implode('.', schema: $version));
+            $register->setVersion(implode('.', $version));
         }
 
         $register->hydrate(object: $object);
@@ -528,7 +529,7 @@ class RegisterMapper extends QBMapper
         $qb->select('id')
             ->from('openregister_registers')
             ->where('`schemas` REGEXP :pattern')
-            ->setParameter('pattern', rbac: $pattern)
+            ->setParameter('pattern', $pattern)
             ->setMaxResults(1);
 
         $result = $qb->executeQuery()->fetchOne();
