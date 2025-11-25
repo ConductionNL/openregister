@@ -75,7 +75,7 @@ class ApplicationService
      */
     public function findAll(?int $limit=null, ?int $offset=null, array $filters=[]): array
     {
-        return $this->applicationMapper->findAll($limit, $offset, $filters);
+        return $this->applicationMapper->findAll(limit: $limit, offset: $offset, filters: $filters);
 
     }//end findAll()
 
@@ -123,7 +123,7 @@ class ApplicationService
     {
         $this->logger->info(message: 'Creating new application', context: ['data' => $data]);
 
-        $application = $this->applicationMapper->createFromArray($data);
+        $application = $this->applicationMapper->createFromArray(data: $data);
 
         $this->logger->info(message: 'Application created successfully', context: ['id' => $application->getId()]);
 
@@ -146,7 +146,7 @@ class ApplicationService
     {
         $this->logger->info(message: 'Updating application', context: ['id' => $id, 'data' => $data]);
 
-        $application = $this->applicationMapper->updateFromArray($id, $data);
+        $application = $this->applicationMapper->updateFromArray(id: $id, data: $data);
 
         $this->logger->info(message: 'Application updated successfully', context: ['id' => $id]);
 

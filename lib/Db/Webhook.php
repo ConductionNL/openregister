@@ -58,6 +58,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setCreated(?DateTime $created)
  * @method DateTime|null getUpdated()
  * @method void setUpdated(?DateTime $updated)
+ * @method string|null getConfiguration()
+ * @method void setConfiguration(?string $configuration)
  */
 class Webhook extends Entity implements JsonSerializable
 {
@@ -209,6 +211,13 @@ class Webhook extends Entity implements JsonSerializable
      */
     protected ?DateTime $updated = null;
 
+    /**
+     * Configuration
+     *
+     * @var string|null
+     */
+    protected ?string $configuration = null;
+
 
     /**
      * Constructor
@@ -236,6 +245,7 @@ class Webhook extends Entity implements JsonSerializable
         $this->addType('failedDeliveries', 'integer');
         $this->addType('created', 'datetime');
         $this->addType('updated', 'datetime');
+        $this->addType('configuration', 'string');
 
     }//end __construct()
 
@@ -337,6 +347,41 @@ class Webhook extends Entity implements JsonSerializable
 
 
     /**
+     * Get configuration as array
+     *
+     * @return array
+     */
+    public function getConfigurationArray(): array
+    {
+        if ($this->configuration === null) {
+            return [];
+        }
+
+        return json_decode($this->configuration, true) ?? [];
+
+    }//end getConfigurationArray()
+
+
+    /**
+     * Set configuration from array
+     *
+     * @param array|null $configuration Configuration array
+     *
+     * @return void
+     */
+    public function setConfigurationArray(?array $configuration): void
+    {
+        if ($configuration === null) {
+            $this->setConfiguration(null);
+            return;
+        }
+
+        $this->setConfiguration(json_encode($configuration));
+
+    }//end setConfigurationArray()
+
+
+    /**
      * Check if event matches webhook
      *
      * @param string $eventClass Event class name
@@ -404,6 +449,7 @@ class Webhook extends Entity implements JsonSerializable
             'failedDeliveries'     => $this->failedDeliveries,
             'created'              => $this->created?->format('c'),
             'updated'              => $this->updated?->format('c'),
+            'configuration'        => $this->getConfigurationArray(),
         ];
 
     }//end jsonSerialize()
@@ -484,6 +530,14 @@ class Webhook extends Entity implements JsonSerializable
 
         if (isset($object['timeout']) === true) {
             $this->setTimeout((int) $object['timeout']);
+        }
+
+        if (isset($object['configuration']) === true) {
+            if (is_array($object['configuration']) === true) {
+                $this->setConfigurationArray($object['configuration']);
+            } else {
+                $this->setConfiguration($object['configuration']);
+            }
         }
 
         return $this;

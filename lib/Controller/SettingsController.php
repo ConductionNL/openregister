@@ -3208,9 +3208,7 @@ class SettingsController extends Controller
     {
         try {
             // Get database platform information.
-            /*
-             * @var \Doctrine\DBAL\Platforms\AbstractPlatform $platform
-             */
+            /** @var AbstractPlatform $platform */
             $platform = $this->db->getDatabasePlatform();
             /*
              * @var string $platformName
@@ -3598,7 +3596,7 @@ class SettingsController extends Controller
                     ]
                     );
 
-            $response  = curl_exec($ch);
+            curl_exec($ch);
             $httpCode  = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             $curlError = curl_error($ch);
             curl_close($ch);
@@ -3668,7 +3666,7 @@ class SettingsController extends Controller
                     ]
                     );
 
-            $response  = curl_exec($ch);
+            curl_exec($ch);
             $httpCode  = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             $curlError = curl_error($ch);
             curl_close($ch);

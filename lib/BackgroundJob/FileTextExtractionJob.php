@@ -50,10 +50,10 @@ class FileTextExtractionJob extends QueuedJob
     /**
      * Constructor
      *
-     * @param ITimeFactory          $timeFactory           Time factory for job scheduling
+     * @param ITimeFactory    $timeFactory     Time factory for job scheduling
      * @param TextExtractionService $textExtractionService Text extraction service
-     * @param LoggerInterface       $logger                Logger instance
-     * @param IAppConfig            $config                Application configuration
+     * @param LoggerInterface $logger          Logger instance
+     * @param IAppConfig      $config          Application configuration
      *
      * @psalm-suppress PossiblyUnusedMethod - Constructor is called by Nextcloud's job system via dependency injection
      */

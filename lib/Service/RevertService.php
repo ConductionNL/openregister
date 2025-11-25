@@ -84,7 +84,7 @@ class RevertService
         bool $overwriteVersion=false
     ): ObjectEntity {
         // Get the object.
-        $object = $this->objectEntityMapper->find($id);
+        $object = $this->objectEntityMapper->find(identifier: $id);
 
         // Verify that the object belongs to the specified register and schema.
         if ($object->getRegister() !== $register || $object->getSchema() !== $schema) {

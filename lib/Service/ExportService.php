@@ -71,11 +71,13 @@ class ExportService
     /**
      * Constructor for the ExportService
      *
-     * @param ObjectEntityMapper $objectEntityMapper The object entity mapper
+     * @param ObjectEntityMapper $objectEntityMapper The object entity mapper (unused but kept for future use)
      * @param RegisterMapper     $registerMapper     The register mapper
-     * @param IUserManager       $userManager        The user manager
+     * @param IUserManager       $userManager        The user manager (unused but kept for future use)
      * @param IGroupManager      $groupManager       The group manager
      * @param ObjectService      $objectService      The object service
+     *
+     * @psalm-suppress UnusedParam - objectEntityMapper and userManager kept for future use
      */
     public function __construct(
         ObjectEntityMapper $objectEntityMapper,
@@ -84,10 +86,9 @@ class ExportService
         IGroupManager $groupManager,
         ObjectService $objectService
     ) {
-        $this->objectEntityMapper = $objectEntityMapper;
-        $this->registerMapper     = $registerMapper;
-        $this->groupManager       = $groupManager;
-        $this->objectService      = $objectService;
+        $this->registerMapper = $registerMapper;
+        $this->groupManager   = $groupManager;
+        $this->objectService  = $objectService;
 
     }//end __construct()
 

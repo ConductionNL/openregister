@@ -261,9 +261,9 @@ class ChatService
 
             // Store user message (validation only - return value not used).
             $this->storeMessage(
-                $conversationId,
-                Message::ROLE_USER,
-                $userMessage
+                conversationId: $conversationId,
+                role: Message::ROLE_USER,
+                content: $userMessage
             );
 
             // Check if we need to summarize (token limit reached).
@@ -271,7 +271,7 @@ class ChatService
 
             // Retrieve context using agent settings, selected views, and RAG settings.
             $contextStartTime = microtime(true);
-            $context          = $this->retrieveContext($userMessage, $agent, $selectedViews, $ragSettings);
+            $context          = $this->retrieveContext(query: $userMessage, agent: $agent, selectedViews: $selectedViews, ragSettings: $ragSettings);
             $contextTime      = microtime(true) - $contextStartTime;
 
             // Get recent conversation history for context.
@@ -282,20 +282,20 @@ class ChatService
             // Generate response using LLM with selected tools.
             $llmStartTime = microtime(true);
             $aiResponse   = $this->generateResponse(
-                $userMessage,
-                $context,
-                $messageHistory,
-                $agent,
-                $selectedTools
+                userMessage: $userMessage,
+                context: $context,
+                messageHistory: $messageHistory,
+                agent: $agent,
+                selectedTools: $selectedTools
             );
             $llmTotalTime = microtime(true) - $llmStartTime;
 
             // Store AI response.
             $aiMsgEntity = $this->storeMessage(
-                $conversationId,
-                Message::ROLE_ASSISTANT,
-                $aiResponse,
-                $context['sources']
+                conversationId: $conversationId,
+                role: Message::ROLE_ASSISTANT,
+                content: $aiResponse,
+                sources: $context['sources']
             );
 
             // Generate title if this is the first user message and title is still default.
@@ -325,7 +325,7 @@ class ChatService
                 // Only make title unique if we have an agentId to filter by.
                 $agentId = $conversation->getAgentId();
                 if ($agentId !== null) {
-                    $uniqueTitle = $this->ensureUniqueTitle($title, $conversation->getUserId(), $agentId);
+                    $uniqueTitle = $this->ensureUniqueTitle(baseTitle: $title, userId: $conversation->getUserId(), agentId: $agentId);
                 } else {
                     // Without agent, just use the generated title.
                     $uniqueTitle = $title;
@@ -480,17 +480,17 @@ class ChatService
 
             if ($searchMode === 'semantic') {
                 $results = $this->vectorService->semanticSearch(
-                    $query,
-                    $fetchLimit,
-                    $vectorFilters
+                    query: $query,
+                    limit: $fetchLimit,
+                    filters: $vectorFilters
                 // Pass filters array instead of 0.7.
                 );
             } else if ($searchMode === 'hybrid') {
                 $hybridResponse = $this->vectorService->hybridSearch(
-                    $query,
-                    ['vector_filters' => $vectorFilters],
+                    query: $query,
+                    solrFilters: ['vector_filters' => $vectorFilters],
                 // Pass filters in SOLR filters array.
-                    $fetchLimit
+                    limit: $fetchLimit
                 // Limit parameter.
                 );
                 // Extract results array from hybrid search response.
@@ -658,15 +658,11 @@ class ChatService
     private function searchKeywordOnly(string $query, int $limit): array
     {
         $results = $this->solrService->searchObjectsPaginated(
-            $query,
-            0,
-            $limit,
-            [],
-            'score desc',
-            null,
-            null,
-            true,
-            false
+            query: ['_search' => $query],
+            rbac: true,
+            multi: true,
+            published: false,
+            deleted: false
         );
 
         $transformed = [];
@@ -1362,7 +1358,8 @@ class ChatService
                     context: [
                         'provider' => $provider,
                         'model'    => $llphantConfig->model,
-                        'url'      => $llphantConfig->url,
+                        /** @psalm-suppress TypeDoesNotContainType - url is set before this point */
+                        'url'      => $llphantConfig->url ?? 'default',
                     ]
                         );
 
@@ -1402,6 +1399,8 @@ class ChatService
                     'testMessage'    => $testMessage,
                     'response'       => $response,
                     'responseLength' => strlen($response),
+                    /** @psalm-suppress TypeDoesNotContainType - url may not be set for all providers */
+                    'url'            => $llphantConfig->url ?? null,
                 ],
             ];
         } catch (OpenAIErrorException $e) {
@@ -1520,8 +1519,8 @@ class ChatService
 
         if ($httpCode !== 200) {
             // Parse error response.
-            $errorData    = json_decode($response, true);
-            $errorMessage = $errorData['error']['message'] ?? $errorData['error'] ?? $response;
+            $errorData    = is_string($response) ? json_decode($response, true) : [];
+            $errorMessage = $errorData['error']['message'] ?? $errorData['error'] ?? (is_string($response) ? $response : 'Unknown error');
 
             // Make error messages user-friendly.
             if ($httpCode === 401 || $httpCode === 403) {
@@ -1535,9 +1534,9 @@ class ChatService
             }
         }
 
-        $data = json_decode($response, true);
+        $data = is_string($response) ? json_decode($response, true) : [];
         if (!isset($data['choices'][0]['message']['content'])) {
-            throw new \Exception("Unexpected Fireworks API response format: {$response}");
+            throw new \Exception("Unexpected Fireworks API response format: ".(is_string($response) ? $response : 'Invalid response'));
         }
 
         return $data['choices'][0]['message']['content'];
@@ -1635,8 +1634,8 @@ class ChatService
 
         if ($httpCode !== 200) {
             // Parse error response.
-            $errorData    = json_decode($response, true);
-            $errorMessage = $errorData['error']['message'] ?? $errorData['error'] ?? $response;
+            $errorData    = is_string($response) ? json_decode($response, true) : [];
+            $errorMessage = $errorData['error']['message'] ?? $errorData['error'] ?? (is_string($response) ? $response : 'Unknown error');
 
             // Make error messages user-friendly.
             if ($httpCode === 401 || $httpCode === 403) {
@@ -1650,9 +1649,9 @@ class ChatService
             }
         }
 
-        $data = json_decode($response, true);
+        $data = is_string($response) ? json_decode($response, true) : [];
         if (!isset($data['choices'][0]['message']['content'])) {
-            throw new \Exception("Unexpected Fireworks API response format: {$response}");
+            throw new \Exception("Unexpected Fireworks API response format: ".(is_string($response) ? $response : 'Invalid response'));
         }
 
         return $data['choices'][0]['message']['content'];

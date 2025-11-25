@@ -290,7 +290,7 @@ class MetricsService
 
         // Get current total size.
         $qb2 = $this->db->getQueryBuilder();
-        $qb2->select($qb2->func()->sum($qb2->func()->length('embedding')), 'total_bytes')
+        $qb2->select($qb2->createFunction('SUM(LENGTH(embedding))'), 'total_bytes')
             ->from('openregister_vectors');
 
         $result2 = $qb2->execute();

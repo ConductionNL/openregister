@@ -246,10 +246,7 @@ class DashboardService
      *     0: array{
      *         id: 'orphaned'|'totals'|mixed,
      *         title: 'Orphaned Items'|'System Totals'|mixed,
-     *         description: (
-     *             'Items that reference non-existent registers, schemas, '
-     *             .'or invalid register-schema combinations'
-     *             )|('Total statistics across all registers and schemas')|mixed,
+     *         description: ('Items that reference non-existent registers, schemas, or invalid register-schema combinations')|('Total statistics across all registers and schemas')|mixed,
      *         stats: array,
      *         schemas: list<mixed>,
      *         ...
@@ -259,10 +256,7 @@ class DashboardService
      *         schemas: list<mixed>,
      *         id: 'orphaned'|'totals'|mixed,
      *         title: 'Orphaned Items'|'System Totals'|mixed,
-     *         description: (
-     *             'Items that reference non-existent registers, schemas, '
-     *             .'or invalid register-schema combinations'
-     *             )|('Total statistics across all registers and schemas')|mixed,
+     *         description: ('Items that reference non-existent registers, schemas, or invalid register-schema combinations')|('Total statistics across all registers and schemas')|mixed,
      *         ...
      *     },
      *     ...

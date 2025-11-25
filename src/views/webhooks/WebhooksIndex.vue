@@ -33,14 +33,14 @@
 					</span>
 				</div>
 				<div class="viewActions">
-					<NcButton
-						type="primary"
-						@click="showCreateDialog = true">
-						<template #icon>
-							<Plus :size="20" />
-						</template>
-						{{ t('openregister', 'Create Webhook') }}
-					</NcButton>
+				<NcButton
+					type="primary"
+					@click="openCreateDialog">
+					<template #icon>
+						<Plus :size="20" />
+					</template>
+					{{ t('openregister', 'Create Webhook') }}
+				</NcButton>
 					<NcActions
 						:force-name="true"
 						:inline="1"
@@ -190,53 +190,6 @@
 				@update:enabled="handleEnabledUpdate" />
 		</template>
 
-		<!-- Create Webhook Dialog -->
-		<NcDialog
-			:open="showCreateDialog"
-			:name="t('openregister', 'Create Webhook')"
-			@update:open="handleDialogClose">
-			<div class="create-webhook-dialog">
-				<NcTextField
-					v-model="newWebhook.name"
-					:label="t('openregister', 'Name')"
-					:placeholder="t('openregister', 'Enter webhook name')"
-					required
-					class="dialog-field" />
-				<NcTextField
-					v-model="newWebhook.url"
-					:label="t('openregister', 'URL')"
-					:placeholder="t('openregister', 'https://example.com/webhook')"
-					required
-					type="url"
-					class="dialog-field" />
-				<div class="dialog-field">
-					<label class="dialog-label">{{ t('openregister', 'HTTP Method') }}</label>
-					<NcSelect
-						v-model="newWebhook.method"
-						:options="httpMethodOptions"
-						input-label="HTTP Method" />
-				</div>
-				<NcCheckboxRadioSwitch
-					v-model="newWebhook.enabled"
-					type="switch"
-					class="dialog-field">
-					{{ t('openregister', 'Enabled') }}
-				</NcCheckboxRadioSwitch>
-				<div class="dialog-actions">
-					<NcButton
-						type="secondary"
-						@click="showCreateDialog = false">
-						{{ t('openregister', 'Cancel') }}
-					</NcButton>
-					<NcButton
-						type="primary"
-						:disabled="!canCreateWebhook"
-						@click="createWebhook">
-						{{ t('openregister', 'Create') }}
-					</NcButton>
-				</div>
-			</div>
-		</NcDialog>
 	</NcAppContent>
 </template>
 
@@ -245,6 +198,7 @@ import { t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { showError, showSuccess } from '@nextcloud/dialogs'
 import axios from '@nextcloud/axios'
+import { navigationStore } from '../../store/store.js'
 
 import {
 	NcAppContent,
@@ -253,10 +207,6 @@ import {
 	NcButton,
 	NcLoadingIcon,
 	NcEmptyContent,
-	NcDialog,
-	NcTextField,
-	NcSelect,
-	NcCheckboxRadioSwitch,
 } from '@nextcloud/vue'
 
 import Webhook from 'vue-material-design-icons/Webhook.vue'
@@ -304,14 +254,6 @@ export default {
 			sidebarOpen: false,
 			searchQuery: '',
 			enabledFilter: null,
-			showCreateDialog: false,
-			newWebhook: {
-				name: '',
-				url: '',
-				method: 'POST',
-				enabled: true,
-			},
-			httpMethodOptions: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
 		}
 	},
 	computed: {
@@ -331,6 +273,31 @@ export default {
 		 */
 		totalPages() {
 			return Math.ceil(this.totalWebhooks / this.limit)
+		},
+
+		/**
+		 * Get properties for selected events
+		 *
+		 * @return {array} Array of property options
+		 */
+		selectedEventProperties() {
+			if (!this.newWebhook.events || this.newWebhook.events.length === 0) {
+				return []
+			}
+
+			// Get unique properties from all selected events.
+			const propertiesSet = new Set()
+			this.newWebhook.events.forEach(eventClass => {
+				const event = this.availableEvents.find(e => e.class === eventClass)
+				if (event && event.properties) {
+					event.properties.forEach(prop => propertiesSet.add(prop))
+				}
+			})
+
+			return Array.from(propertiesSet).map(prop => ({
+				value: prop,
+				label: prop,
+			}))
 		},
 	},
 	mounted() {
@@ -508,16 +475,25 @@ export default {
 		/**
 		 * Get events count from events string
 		 *
-		 * @param {string} events - Events JSON string
+		 * @param {string|array} events - Events JSON string or array
 		 * @return {number} Number of events
 		 */
 		getEventsCount(events) {
 			try {
-				const eventsArray = JSON.parse(events || '[]')
+				const eventsArray = Array.isArray(events) ? events : JSON.parse(events || '[]')
 				return eventsArray.length
 			} catch {
 				return 0
 			}
+		},
+
+		/**
+		 * Open create webhook dialog
+		 *
+		 * @return {void}
+		 */
+		openCreateDialog() {
+			navigationStore.setModal('editWebhook')
 		},
 
 		/**
@@ -557,76 +533,6 @@ export default {
 			return new Date(date).toLocaleString()
 		},
 
-		/**
-		 * Check if webhook can be created
-		 *
-		 * @return {boolean} True if name and URL are provided
-		 */
-		canCreateWebhook() {
-			return this.newWebhook.name.trim() !== '' && this.newWebhook.url.trim() !== ''
-		},
-
-		/**
-		 * Handle dialog close event
-		 *
-		 * @param {boolean} isOpen - Whether dialog is open
-		 * @return {void}
-		 */
-		handleDialogClose(isOpen) {
-			this.showCreateDialog = isOpen
-			if (!isOpen) {
-				this.resetCreateForm()
-			}
-		},
-
-		/**
-		 * Reset the create webhook form
-		 *
-		 * @return {void}
-		 */
-		resetCreateForm() {
-			this.newWebhook = {
-				name: '',
-				url: '',
-				method: 'POST',
-				enabled: true,
-			}
-		},
-
-		/**
-		 * Create a new webhook
-		 *
-		 * @return {Promise<void>}
-		 */
-		async createWebhook() {
-			if (!this.canCreateWebhook()) {
-				return
-			}
-
-			try {
-				const response = await axios.post(
-					generateUrl('/apps/openregister/api/webhooks'),
-					{
-						name: this.newWebhook.name,
-						url: this.newWebhook.url,
-						method: this.newWebhook.method,
-						enabled: this.newWebhook.enabled,
-						events: [],
-					},
-				)
-
-				if (response.data) {
-					showSuccess(t('openregister', 'Webhook created successfully'))
-					this.showCreateDialog = false
-					this.resetCreateForm()
-					this.loadWebhooks()
-				}
-			} catch (error) {
-				console.error('Failed to create webhook:', error)
-				const errorMessage = error.response?.data?.error || t('openregister', 'Failed to create webhook')
-				showError(errorMessage)
-			}
-		},
 	},
 }
 </script>
@@ -810,30 +716,5 @@ export default {
 .pagination-info {
 	color: var(--color-text-maxcontrast);
 	font-size: 14px;
-}
-
-.create-webhook-dialog {
-	padding: 20px;
-	min-width: 400px;
-}
-
-.dialog-field {
-	margin-bottom: 20px;
-}
-
-.dialog-label {
-	display: block;
-	margin-bottom: 8px;
-	font-weight: 600;
-	color: var(--color-main-text);
-}
-
-.dialog-actions {
-	display: flex;
-	justify-content: flex-end;
-	gap: 12px;
-	margin-top: 24px;
-	padding-top: 20px;
-	border-top: 1px solid var(--color-border);
 }
 </style>

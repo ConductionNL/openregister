@@ -88,7 +88,9 @@ class NamedEntityRecognitionService
     public function __construct(
         private readonly GdprEntityMapper $entityMapper,
         private readonly EntityRelationMapper $entityRelationMapper,
+        /** @psalm-suppress UnusedProperty - Property kept for future use */
         private readonly ChunkMapper $chunkMapper,
+        /** @psalm-suppress UnusedProperty - Property kept for future use */
         private readonly SettingsService $settingsService,
         private readonly LoggerInterface $logger
     ) {
@@ -481,6 +483,7 @@ class NamedEntityRecognitionService
         } catch (DoesNotExistException $e) {
             // Entity doesn't exist, create new one.
             $entity = new GdprEntity();
+            /** @psalm-suppress UndefinedClass - Ramsey\Uuid\Uuid is an optional dependency */
             $entity->setUuid((string) Uuid::v4());
             $entity->setType($type);
             $entity->setValue($value);

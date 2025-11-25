@@ -60,6 +60,8 @@ class ObjectCacheService
      * Cache of relationship mappings to avoid repeated lookups
      *
      * @var array<string, array<string>>
+     *
+     * @psalm-suppress UnusedProperty - Property is used in clearCache method
      */
     private array $relationshipCache = [];
 
@@ -1037,8 +1039,8 @@ class ObjectCacheService
 
         // Extract context from object if provided.
         if ($object !== null) {
-            $registerId = $registerId ?? $object->getRegister();
-            $schemaId   = $schemaId ?? $object->getSchema();
+            $registerId = $registerId ?? ($object->getRegister() !== null ? (int) $object->getRegister() : null);
+            $schemaId   = $schemaId ?? ($object->getSchema() !== null ? (int) $object->getSchema() : null);
             $orgId      = $object->getOrganisation();
             // Track organization for future use.
             // Clear individual object from cache.
@@ -1067,7 +1069,9 @@ class ObjectCacheService
 
         // **SCHEMA-WIDE INVALIDATION**: Clear ALL search caches for this schema.
         // This ensures colleagues see each other's changes immediately.
-        $this->clearSchemaRelatedCaches($schemaId, $registerId, $operation);
+        $schemaIdInt = ($schemaId !== null) ? (is_string($schemaId) ? (int) $schemaId : (int) $schemaId) : null;
+        $registerIdInt = ($registerId !== null) ? (is_string($registerId) ? (int) $registerId : (int) $registerId) : null;
+        $this->clearSchemaRelatedCaches($schemaIdInt, $registerIdInt, $operation);
 
         $executionTime = round((microtime(true) - $startTime) * 1000, 2);
 
@@ -1368,7 +1372,7 @@ class ObjectCacheService
         try {
             // STEP 1: Try to find as organisation first (they take priority).
             try {
-                $organisation = $this->organisationMapper->findByUuid($identifier);
+                $organisation = $this->organisationMapper->findByUuid((string) $identifier);
                 if ($organisation !== null) {
                     $name = $organisation->getName() ?? $organisation->getUuid();
                     $this->setObjectName($identifier, $name);

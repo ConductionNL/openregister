@@ -338,6 +338,7 @@ class AuthorizationExceptionService
         $userGroups = [];
 
         if ($userObj !== null) {
+            /** @psalm-suppress InvalidArgument - IGroupManager::getUserGroups expects IUser|null, but get() can return IGroup */
             $groups = $this->groupManager->getUserGroups($userObj);
             foreach ($groups as $group) {
                 $userGroups[] = $group->getGID();

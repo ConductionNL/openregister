@@ -161,17 +161,17 @@ class TextExtractionService
         $sourceTimestamp = (int) ($ncFile['mtime'] ?? time());
 
         // Check if chunks are up-to-date.
-        if ($forceReExtract === false && $this->isSourceUpToDate($fileId, 'file', $sourceTimestamp, $forceReExtract) === true) {
+        if ($forceReExtract === false && $this->isSourceUpToDate(sourceId: $fileId, sourceType: 'file', sourceTimestamp: $sourceTimestamp, forceReExtract: $forceReExtract) === true) {
             // File is up-to-date and all chunks are still valid.
             $this->logger->info('[TextExtractionService] File already processed and up-to-date', ['fileId' => $fileId]);
             return;
         }
 
         // Extract and sanitize the source text payload (includes language metadata).
-        $payload = $this->extractSourceText('file', $fileId, $ncFile);
+        $payload = $this->extractSourceText(sourceType: 'file', sourceId: $fileId, sourceMeta: $ncFile);
         $chunks  = $this->textToChunks(
-                $payload,
-                [
+                payload: $payload,
+                options: [
                     'chunk_size'    => self::DEFAULT_CHUNK_SIZE,
                     'chunk_overlap' => self::DEFAULT_CHUNK_OVERLAP,
                     'strategy'      => self::RECURSIVE_CHARACTER,
@@ -180,13 +180,13 @@ class TextExtractionService
 
         // Persist textual chunks and include the metadata chunk at the end.
         $this->persistChunksForSource(
-            'file',
-            $fileId,
-            $chunks,
-            $payload['owner'] ?? null,
-            $payload['organisation'] ?? null,
-            $sourceTimestamp,
-            $payload
+            sourceType: 'file',
+            sourceId: $fileId,
+            chunks: $chunks,
+            owner: $payload['owner'] ?? null,
+            organisation: $payload['organisation'] ?? null,
+            sourceTimestamp: $sourceTimestamp,
+            payload: $payload
         );
 
         $this->logger->info(
@@ -225,7 +225,7 @@ class TextExtractionService
         $sourceTimestamp = $object->getUpdated()?->getTimestamp() ?? time();
 
         // Check if chunks are up-to-date.
-        if ($forceReExtract === false && $this->isSourceUpToDate($objectId, 'object', $sourceTimestamp, $forceReExtract) === true) {
+        if ($forceReExtract === false && $this->isSourceUpToDate(sourceId: $objectId, sourceType: 'object', sourceTimestamp: $sourceTimestamp, forceReExtract: $forceReExtract) === true) {
             // Object is up-to-date and all chunks are still valid.
             $this->logger->info('[TextExtractionService] Object already processed and up-to-date', ['objectId' => $objectId]);
             return;
@@ -244,7 +244,7 @@ class TextExtractionService
         $sourceMeta = $objectHandler->getSourceMetadata($objectId);
 
         // Extract text using ObjectHandler.
-        $extractedData = $objectHandler->extractText($objectId, $sourceMeta, $forceReExtract);
+        $extractedData = $objectHandler->extractText(sourceId: $objectId, sourceMeta: $sourceMeta, force: $forceReExtract);
         $cleanText = $this->sanitizeText($extractedData['text']);
 
         if ($cleanText === '') {
@@ -271,20 +271,20 @@ class TextExtractionService
         ];
 
         $chunks = $this->textToChunks(
-            $payload['text'],
-            $payload['source_type'],
-            $payload['source_id']
+            text: $payload['text'],
+            sourceType: $payload['source_type'],
+            sourceId: $payload['source_id']
         );
 
         // Persist chunks to database.
         $this->persistChunksForSource(
-            'object',
-            $objectId,
-            $chunks,
-            $payload['owner'],
-            $payload['organisation'],
-            $sourceTimestamp,
-            $payload
+            sourceType: 'object',
+            sourceId: $objectId,
+            chunks: $chunks,
+            owner: $payload['owner'],
+            organisation: $payload['organisation'],
+            sourceTimestamp: $sourceTimestamp,
+            payload: $payload
         );
 
         $this->logger->info(
@@ -321,7 +321,7 @@ class TextExtractionService
         }
 
         // Look at the newest chunk timestamp for this source.
-        $latestChunkTimestamp = $this->chunkMapper->getLatestUpdatedTimestamp($sourceType, $sourceId);
+        $latestChunkTimestamp = $this->chunkMapper->getLatestUpdatedTimestamp(sourceType: $sourceType, sourceId: $sourceId);
 
         if ($latestChunkTimestamp === null) {
             return false;
@@ -362,7 +362,7 @@ class TextExtractionService
      */
     private function extractSourceText(string $sourceType, int $sourceId, array $sourceMeta): array
     {
-        $rawText = $this->performTextExtraction($sourceId, $sourceMeta);
+        $rawText = $this->performTextExtraction(fileId: $sourceId, ncFile: $sourceMeta);
         if ($rawText === null) {
             throw new Exception('Text extraction returned no result for source.');
         }
@@ -465,8 +465,8 @@ class TextExtractionService
 
         // Generate the low-level chunks.
         $rawChunks = $this->chunkDocument(
-                $payload['text'],
-                [
+                text: $payload['text'],
+                options: [
                     'chunk_size'    => $chunkSize,
                     'chunk_overlap' => $chunkOverlap,
                     'strategy'      => $strategy,
@@ -487,7 +487,7 @@ class TextExtractionService
                 'language_confidence' => $payload['language_confidence'] ?? null,
                 'detection_method'    => $payload['detection_method'] ?? null,
                 'overlap_size'        => $chunkOverlap,
-                'position_reference'  => $this->buildPositionReference($payload['source_type'], $chunk),
+                'position_reference'  => $this->buildPositionReference(sourceType: $payload['source_type'], chunk: $chunk),
                 'checksum'            => $payload['checksum'] ?? null,
             ];
         }
@@ -558,22 +558,22 @@ class TextExtractionService
 
         try {
             // Remove all existing chunks for this source to avoid stale data.
-            $this->chunkMapper->deleteBySource($sourceType, $sourceId);
+            $this->chunkMapper->deleteBySource(sourceType: $sourceType, sourceId: $sourceId);
 
             foreach ($chunks as $chunkData) {
                 $chunkEntity = $this->hydrateChunkEntity(
-                    $sourceType,
-                    $sourceId,
-                    $chunkData,
-                    $owner,
-                    $organisation,
-                    $sourceTimestamp
+                    sourceType: $sourceType,
+                    sourceId: $sourceId,
+                    chunkData: $chunkData,
+                    owner: $owner,
+                    organisation: $organisation,
+                    sourceTimestamp: $sourceTimestamp
                 );
 
                 $this->chunkMapper->insert($chunkEntity);
             }
 
-            $this->persistMetadataChunk($sourceType, $sourceId, $payload, $sourceTimestamp);
+            $this->persistMetadataChunk(sourceType: $sourceType, sourceId: $sourceId, payload: $payload, sourceTimestamp: $sourceTimestamp);
 
             $this->db->commit();
         } catch (Throwable $throwable) {
@@ -686,12 +686,12 @@ class TextExtractionService
         ];
 
         $chunkEntity = $this->hydrateChunkEntity(
-            $sourceType,
-            $sourceId,
-            $chunkData,
-            $payload['owner'] ?? null,
-            $payload['organisation'] ?? null,
-            $sourceTimestamp
+            sourceType: $sourceType,
+            sourceId: $sourceId,
+            chunkData: $chunkData,
+            owner: $payload['owner'] ?? null,
+            organisation: $payload['organisation'] ?? null,
+            sourceTimestamp: $sourceTimestamp
         );
 
         $this->chunkMapper->insert($chunkEntity);
@@ -869,7 +869,7 @@ class TextExtractionService
             foreach ($untrackedFiles as $ncFile) {
                 try {
                     // Extract file directly - chunks will be created.
-                    $this->extractFile($ncFile['fileid'], false);
+                    $this->extractFile(fileId: $ncFile['fileid'], forceReExtract: false);
                     $discovered++;
 
                     $this->logger->debug(
@@ -958,7 +958,7 @@ class TextExtractionService
                         );
 
                 // Trigger extraction for this file.
-                $this->extractFile($ncFile['fileid'], false);
+                $this->extractFile(fileId: $ncFile['fileid'], forceReExtract: false);
                 $processed++;
             } catch (Exception $e) {
                 $failed++;
@@ -1010,7 +1010,7 @@ class TextExtractionService
 
         foreach ($untrackedFiles as $ncFile) {
             try {
-                $this->extractFile($ncFile['fileid'], true);
+                $this->extractFile(fileId: $ncFile['fileid'], forceReExtract: true);
                 $retried++;
             } catch (Exception $e) {
                 $failed++;
@@ -1465,9 +1465,9 @@ class TextExtractionService
 
         // Choose chunking strategy.
         $chunks = match ($strategy) {
-            self::FIXED_SIZE => $this->chunkFixedSize($text, $chunkSize, $chunkOverlap),
-            self::RECURSIVE_CHARACTER => $this->chunkRecursive($text, $chunkSize, $chunkOverlap),
-            default => $this->chunkRecursive($text, $chunkSize, $chunkOverlap)
+            self::FIXED_SIZE => $this->chunkFixedSize(text: $text, chunkSize: $chunkSize, chunkOverlap: $chunkOverlap),
+            self::RECURSIVE_CHARACTER => $this->chunkRecursive(text: $text, chunkSize: $chunkSize, chunkOverlap: $chunkOverlap),
+            default => $this->chunkRecursive(text: $text, chunkSize: $chunkSize, chunkOverlap: $chunkOverlap)
         };
 
         // Respect max chunks limit.
@@ -1635,7 +1635,7 @@ class TextExtractionService
         // Words.
         ];
 
-        return $this->recursiveSplit($text, $separators, $chunkSize, $chunkOverlap);
+        return $this->recursiveSplit(text: $text, separators: $separators, chunkSize: $chunkSize, chunkOverlap: $chunkOverlap);
 
     }//end chunkRecursive()
 
@@ -1665,7 +1665,7 @@ class TextExtractionService
 
         // If no separators left, use fixed size chunking.
         if ($separators === []) {
-            return $this->chunkFixedSize($text, $chunkSize, $chunkOverlap);
+            return $this->chunkFixedSize(text: $text, chunkSize: $chunkSize, chunkOverlap: $chunkOverlap);
         }
 
         // Try splitting with current separator.
@@ -1713,7 +1713,7 @@ class TextExtractionService
                 } else {
                     // Single split is too large, need to split it further.
                     if (strlen($split) > $chunkSize) {
-                        $subChunks = $this->recursiveSplit($split, $separators, $chunkSize, $chunkOverlap);
+                        $subChunks = $this->recursiveSplit(text: $split, separators: $separators, chunkSize: $chunkSize, chunkOverlap: $chunkOverlap);
 
                         // Adjust offsets.
                         foreach ($subChunks as $subChunk) {

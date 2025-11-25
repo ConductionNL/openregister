@@ -1526,9 +1526,7 @@ class MariaDbFacetHandler
             // Check if all types are simple (string, integer, float, boolean, numeric_string, date).
             $simpleTypes = ['string', 'integer', 'float', 'boolean', 'numeric_string', 'date'];
 
-            /*
-             * @psalm-suppress UnusedForeachValue - $type is used in in_array() check
-             */
+            /** @psalm-suppress UnusedForeachValue - $type is used in in_array() check */
             foreach (array_keys($types) as $type) {
                 if (!in_array($type, $simpleTypes)) {
                     return false;

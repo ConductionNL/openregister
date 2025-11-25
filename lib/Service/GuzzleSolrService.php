@@ -70,7 +70,8 @@ class GuzzleSolrService
      *
      * @var array{enabled: bool, host: string, port: int, path: string, core: string,
      *            scheme: string, username: string, password: string, timeout: int,
-     *            autoCommit: bool, commitWithin: int, enableLogging: bool}
+     *            autoCommit: bool, commitWithin: int, enableLogging: bool,
+     *            useCloud?: bool, collection?: string, configSet?: string}
      */
     private array $solrConfig = [];
 
@@ -85,6 +86,8 @@ class GuzzleSolrService
      * Cached schema data to avoid repeated processing
      *
      * @var array|null
+     *
+     * @psalm-suppress UnusedProperty - Property kept for future caching optimization
      */
     private ?array $cachedSchemaData = null;
 
@@ -129,10 +132,24 @@ class GuzzleSolrService
      * @param OrganisationService|null $organisationService Organisation service for organisation operations
      * @param OrganisationMapper|null  $organisationMapper  Organisation mapper for database operations
      */
+    /**
+     * @param IClientService $clientService HTTP client service (unused but kept for future use)
+     * @param IConfig        $config       Nextcloud configuration (unused but kept for future use)
+     *
+     * @psalm-suppress UnusedParam - clientService and config kept for future use
+     */
+    /**
+     * @param IClientService $clientService HTTP client service (unused but kept for future use)
+     * @param IConfig        $config       Nextcloud configuration (unused but kept for future use)
+     *
+     * @psalm-suppress UnusedParam - clientService and config kept for future use
+     */
     public function __construct(
         private readonly SettingsService $settingsService,
         private readonly LoggerInterface $logger,
+        /** @psalm-suppress UnusedProperty - Property kept for future use */
         private readonly IClientService $clientService,
+        /** @psalm-suppress UnusedProperty - Property kept for future use */
         private readonly IConfig $config,
         private readonly ?SchemaMapper $schemaMapper=null,
         private readonly ?RegisterMapper $registerMapper=null,
@@ -467,7 +484,7 @@ class GuzzleSolrService
             $isAvailable    = $connectionTest['success'] ?? false;
 
             // **CACHE RESULT**: Store result for 1 hour to improve performance.
-            $this->setCachedAvailability($cacheKey, $isAvailable);
+            $this->setCachedAvailability(cacheKey: $cacheKey, isAvailable: $isAvailable);
 
             $this->logger->debug(
                     'SOLR availability check completed and cached',
@@ -494,7 +511,7 @@ class GuzzleSolrService
                     );
 
             // **CACHE FAILURE**: Cache negative result for shorter period (5 minutes).
-            $this->setCachedAvailability($cacheKey, false, 300);
+            $this->setCachedAvailability(cacheKey: $cacheKey, isAvailable: false, ttl: 300);
 
             return false;
         }//end try
@@ -850,7 +867,7 @@ class GuzzleSolrService
                 ]
                 );
         $configSet = $this->solrConfig['configSet'] ?? 'openregister';
-        return $this->createCollection($tenantCollectionName, $configSet);
+        return $this->createCollection(collectionName: $tenantCollectionName, configSetName: $configSet);
 
     }//end ensureTenantCollection()
 
@@ -1003,8 +1020,8 @@ class GuzzleSolrService
 
         // Throw exception with SOLR response details.
         throw new \Exception(
-            "SOLR collection creation failed: {$errorMessage}",
-            $errorCode
+            message: "SOLR collection creation failed: {$errorMessage}",
+            code: $errorCode
         );
 
     }//end createCollection()
@@ -1451,7 +1468,7 @@ class GuzzleSolrService
 
         // **USE CONSOLIDATED MAPPING**: Create schema-aware document directly.
         try {
-            $document = $this->createSchemaAwareDocument($object, $schema, $register, $solrFieldTypes);
+            $document = $this->createSchemaAwareDocument(object: $object, schema: $schema, register: $register, solrFieldTypes: $solrFieldTypes);
 
             // Document created successfully using schema-aware mapping.
             $this->logger->debug(
@@ -1479,7 +1496,7 @@ class GuzzleSolrService
             $objectId     = $object->getId();
             $schemaId     = $object->getSchema();
             $errorMessage = 'Schema-aware mapping failed for object. Schemaless fallback is disabled to prevent inconsistent documents. '.'Object ID: '.$objectId.', Schema ID: '.$schemaId.'. '.'Original error: '.$e->getMessage();
-            throw new \RuntimeException($errorMessage, 0, $e);
+            throw new \RuntimeException(message: $errorMessage, code: 0, previous: $e);
         }//end try
 
     }//end createSolrDocument()
@@ -1945,7 +1962,7 @@ class GuzzleSolrService
         }//end foreach
 
         // Sort each array by index and re-index to sequential keys.
-        foreach ($arrays as $fieldName => &$arrayValues) {
+        foreach ($arrays as &$arrayValues) {
             ksort($arrayValues);
             // Re-index to sequential numeric keys (0, 1, 2, ...).
             $arrayValues = array_values($arrayValues);
@@ -2590,11 +2607,6 @@ class GuzzleSolrService
 
         // Handle extended faceting - check for _facets parameter.
         $facetsMode = $query['_facets'] ?? null;
-        if ($facetsMode === 'extend') {
-            $enableExtendedFacets = true;
-        } else {
-            $enableExtendedFacets = false;
-        }
 
         // Store faceting flags for later processing in convertToOpenRegisterPaginatedFormat.
         $solrQuery['_facetable'] = $enableFacets;
@@ -12582,6 +12594,4 @@ class GuzzleSolrService
             return 'inactive';
         }
         return 'active';
-    }//end getCollectionStatus()
-
-}//end class
+    }//end getCollecti

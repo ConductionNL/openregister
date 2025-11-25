@@ -1108,7 +1108,7 @@ class SolrFileService
         $query = "file_id:{$fileId}";
 
         // TODO: PHASE 2 - Use collection-aware delete.
-        return $this->guzzleSolrService->deleteByQuery($query, true);
+        return $this->guzzleSolrService->deleteByQuery(query: $query, commit: true);
 
     }//end deleteFile()
 

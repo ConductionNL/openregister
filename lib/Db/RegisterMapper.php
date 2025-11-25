@@ -209,7 +209,7 @@ class RegisterMapper extends QBMapper
         $qb->select('*')
             ->from('openregister_registers')
             ->where(
-                $qb->expr()->in('id', schema: $qb->createNamedParameter($ids, extend: IQueryBuilder::PARAM_INT_ARRAY))
+                $qb->expr()->in('id', $qb->createNamedParameter($ids, IQueryBuilder::PARAM_INT_ARRAY))
             );
 
         $result    = $qb->executeQuery();
@@ -321,7 +321,7 @@ class RegisterMapper extends QBMapper
     {
         // Check if UUID is set, if not, generate a new one.
         if ($register->getUuid() === null) {
-            $register->setUuid(Uuid::v4());
+            $register->setUuid((string) Uuid::v4());
         }
 
         // Ensure the object has a slug.

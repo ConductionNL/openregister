@@ -211,7 +211,7 @@ class ObjectEntityMapper extends QBMapper
 
         /** @var AbstractPlatform $platform */
         $platform = $db->getDatabasePlatform();
-        /** @psalm-suppress UndefinedClass */
+        /** @psalm-suppress UndefinedClass - MySQLPlatform may not be available in all Doctrine DBAL versions */
         if ($platform instanceof MySQLPlatform === true) {
             $this->databaseJsonService = $mySQLJsonService;
             $this->searchHandler = new MariaDbSearchHandler();
@@ -455,11 +455,11 @@ class ObjectEntityMapper extends QBMapper
             $registerUuid = $register?->getUuid() ?? $object->getRegister();
 
             $exceptionResult = $this->authorizationExceptionService->evaluateUserPermissionOptimized(
-                $userId,
-                $action,
-                $schemaUuid,
-                $registerUuid,
-                $organizationUuid
+                userId: $userId,
+                action: $action,
+                schemaUuid: $schemaUuid,
+                registerUuid: $registerUuid,
+                organizationUuid: $organizationUuid
             );
 
             if ($exceptionResult !== null) {
@@ -483,7 +483,7 @@ class ObjectEntityMapper extends QBMapper
         // Removed automatic published object access - this should be handled via explicit published filter.
 
         // Check schema-level permissions.
-        if ($schema !== null && $this->checkSchemaPermission($userId, $action, $schema) === true) {
+        if ($schema !== null && $this->checkSchemaPermission(userId: $userId, action: $action, schema: $schema) === true) {
             return true;
         }
 
@@ -619,7 +619,7 @@ class ObjectEntityMapper extends QBMapper
                             $qb->expr()->eq("{$schemaTableAlias}.authorization", $qb->createNamedParameter('{}'))
                         ),
                         // Schemas that explicitly allow public read access.
-                        $this->createJsonContainsCondition($qb, "{$schemaTableAlias}.authorization", '$.read', 'public'),
+                        $this->createJsonContainsCondition(qb: $qb, column: "{$schemaTableAlias}.authorization", path: '$.read', value: 'public'),
                         // Objects that are currently published (publication-based public access).
                         $qb->expr()->andX(
                             $qb->expr()->isNotNull("{$objectTableAlias}.published"),
@@ -670,7 +670,7 @@ class ObjectEntityMapper extends QBMapper
         }
 
         // Check for authorization exceptions first (highest priority).
-        $exceptionResult = $this->applyAuthorizationExceptions($qb, $userId, $objectTableAlias, $schemaTableAlias, 'read');
+        $exceptionResult = $this->applyAuthorizationExceptions(qb: $qb, userId: $userId, objectTableAlias: $objectTableAlias, schemaTableAlias: $schemaTableAlias, action: 'read');
         if ($exceptionResult === false) {
             // User is explicitly denied access via exclusion - apply very restrictive filter.
             $qb->andWhere($qb->expr()->eq('1', $qb->createNamedParameter('0'))); // Always false
@@ -937,7 +937,7 @@ class ObjectEntityMapper extends QBMapper
     private function createJsonContainsCondition(IQueryBuilder $qb, string $column, string $path, string $value): string
     {
         // For MySQL/MariaDB, use JSON_CONTAINS to check if array contains value.
-        /** @psalm-suppress UndefinedClass */
+        /** @psalm-suppress UndefinedClass - MySQLPlatform may not be available in all Doctrine DBAL versions */
         if ($this->db->getDatabasePlatform() instanceof MySQLPlatform) {
             return "JSON_CONTAINS({$column}, " . $qb->createNamedParameter(json_encode($value)) . ", '{$path}')";
         }
@@ -960,7 +960,7 @@ class ObjectEntityMapper extends QBMapper
     private function createJsonContainsKeyCondition(IQueryBuilder $qb, string $column, string $path): string
     {
         // For MySQL/MariaDB, use JSON_EXTRACT to check if path exists.
-        /** @psalm-suppress UndefinedClass */
+        /** @psalm-suppress UndefinedClass - MySQLPlatform may not be available in all Doctrine DBAL versions */
         if ($this->db->getDatabasePlatform() instanceof MySQLPlatform) {
             return "JSON_EXTRACT({$column}, '{$path}') IS NOT NULL";
         }
@@ -1139,7 +1139,7 @@ class ObjectEntityMapper extends QBMapper
             ->setFirstResult($offset);
 
         // Apply RBAC filtering based on user permissions.
-        $this->applyRbacFilters($qb, 'o', 's', null, $rbac);
+        $this->applyRbacFilters(qb: $qb, objectTableAlias: 'o', schemaTableAlias: 's', userId: null, rbac: $rbac);
 
 		// By default, only include objects where 'deleted' is NULL unless $includeDeleted is true.
         if ($includeDeleted === false) {
@@ -2043,7 +2043,7 @@ class ObjectEntityMapper extends QBMapper
         $queryBuilder = $this->db->getQueryBuilder();
 
         // Build base size query - use SUM(size) instead of COUNT(*).
-        $queryBuilder->select($queryBuilder->func()->sum('o.size'))
+            $queryBuilder->select($queryBuilder->createFunction('SUM(o.size)'))
             ->from('openregister_objects', 'o');
 
         // Handle basic filters - skip register/schema if they're in metadata filters.
@@ -2370,7 +2370,7 @@ class ObjectEntityMapper extends QBMapper
         }
 
         // Apply RBAC filtering based on user permissions.
-        $this->applyRbacFilters($qb, 'o', 's', null, $rbac);
+        $this->applyRbacFilters(qb: $qb, objectTableAlias: 'o', schemaTableAlias: 's', userId: null, rbac: $rbac);
 
         // By default, only include objects where 'deleted' is NULL unless $includeDeleted is true.
         if ($includeDeleted === false) {
@@ -5432,7 +5432,6 @@ class ObjectEntityMapper extends QBMapper
                 $objects = $result->fetchAll();
 
                 if (empty($objects) === true) {
-                    $hasMoreRecords = false;
                     break;
                 }
 

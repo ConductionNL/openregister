@@ -110,11 +110,11 @@ class SearchTrailService
     ): SearchTrail {
         try {
             $trail = $this->searchTrailMapper->createSearchTrail(
-                $query,
-                $resultCount,
-                $totalResults,
-                $responseTime,
-                $executionType
+                searchQuery: $query,
+                resultCount: $resultCount,
+                totalResults: $totalResults,
+                responseTime: $responseTime,
+                executionType: $executionType
             );
 
             // Self-clearing: automatically clean up old search trails if enabled.

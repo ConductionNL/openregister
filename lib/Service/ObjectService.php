@@ -6840,9 +6840,9 @@ class ObjectService
             )
         )
         ->from('openregister_objects', 'o')
-        ->where($qb->expr()->in('o.id', $qb->createNamedParameter($relationshipIds, IQueryBuilder::PARAM_STR_ARRAY)))
-        ->orWhere($qb->expr()->in('o.uuid', $qb->createNamedParameter($relationshipIds, IQueryBuilder::PARAM_STR_ARRAY)))
-        ->orWhere($qb->expr()->in('o.slug', $qb->createNamedParameter($relationshipIds, IQueryBuilder::PARAM_STR_ARRAY)));
+        ->where($qb->expr()->in('o.id', $qb->createNamedParameter($relationshipIds, \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_STR_ARRAY)))
+        ->orWhere($qb->expr()->in('o.uuid', $qb->createNamedParameter($relationshipIds, \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_STR_ARRAY)))
+        ->orWhere($qb->expr()->in('o.slug', $qb->createNamedParameter($relationshipIds, \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_STR_ARRAY)));
 
         $results = [];
         $stmt = $qb->execute();

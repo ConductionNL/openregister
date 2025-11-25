@@ -1101,7 +1101,7 @@ class SchemaMapper extends QBMapper
         $mergedProperties = $this->mergeSchemaPropertiesWithValidation(
             $mergedProperties,
             $schema->getProperties(),
-            $currentId
+            (string) $currentId
         );
 
         // Merge child required fields (can only add, not remove).

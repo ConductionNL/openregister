@@ -33,11 +33,14 @@ use OCA\OpenRegister\Event\ConversationCreatedEvent;
 use OCA\OpenRegister\Event\ConversationDeletedEvent;
 use OCA\OpenRegister\Event\ConversationUpdatedEvent;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
+use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
+use OCA\OpenRegister\Event\ObjectDeletingEvent;
 use OCA\OpenRegister\Event\ObjectLockedEvent;
 use OCA\OpenRegister\Event\ObjectRevertedEvent;
 use OCA\OpenRegister\Event\ObjectUnlockedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
+use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Event\OrganisationCreatedEvent;
 use OCA\OpenRegister\Event\OrganisationDeletedEvent;
 use OCA\OpenRegister\Event\OrganisationUpdatedEvent;
@@ -141,7 +144,41 @@ class WebhookEventListener implements IEventListener
      */
     private function extractPayload(Event $event): ?array
     {
-        // Object events.
+        // Object events - Before events (ing).
+        if ($event instanceof ObjectCreatingEvent) {
+            $object = $event->getObject();
+            return [
+                'objectType' => 'object',
+                'action'     => 'creating',
+                'object'     => $object->jsonSerialize(),
+                'register'   => $object->getRegister(),
+                'schema'     => $object->getSchema(),
+            ];
+        }
+
+        if ($event instanceof ObjectUpdatingEvent) {
+            $newObject = $event->getNewObject();
+            $oldObject = $event->getOldObject();
+            return [
+                'objectType' => 'object',
+                'action'     => 'updating',
+                'newObject'  => $newObject->jsonSerialize(),
+                'oldObject'  => $oldObject->jsonSerialize(),
+                'register'   => $newObject->getRegister(),
+                'schema'     => $newObject->getSchema(),
+            ];
+        }
+
+        if ($event instanceof ObjectDeletingEvent) {
+            $object = $event->getObject();
+            return [
+                'objectType' => 'object',
+                'action'     => 'deleting',
+                'object'     => $object->jsonSerialize(),
+            ];
+        }
+
+        // Object events - After events (ed).
         if ($event instanceof ObjectCreatedEvent || $event instanceof ObjectUpdatedEvent) {
             if ($event instanceof ObjectCreatedEvent) {
                 $object = $event->getObject();

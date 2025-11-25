@@ -87,7 +87,7 @@ class ViewService
      */
     public function findAll(string $owner): array
     {
-        return $this->viewMapper->findAll($owner);
+        return $this->viewMapper->findAll(owner: $owner);
 
     }//end findAll()
 

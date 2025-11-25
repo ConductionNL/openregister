@@ -29,6 +29,7 @@ use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\WebhookInterceptorService;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -104,7 +105,9 @@ class ObjectsController extends Controller
         private readonly IUserSession $userSession,
         private readonly IGroupManager $groupManager,
         ExportService $exportService,
-        ImportService $importService
+        ImportService $importService,
+        private readonly ?WebhookInterceptorService $webhookInterceptor = null,
+        private readonly ?LoggerInterface $logger = null
     ) {
         parent::__construct(appName: $appName, request: $request);
         $this->exportService = $exportService;
@@ -578,8 +581,30 @@ class ObjectsController extends Controller
             return new JSONResponse(data: ['message' => $e->getMessage()], statusCode: 404);
         }
 
-        // Get object data from request parameters.
+        // Intercept request and send to webhooks before processing.
+        // This allows external systems to validate, transform, or enrich the request.
         $object = $this->request->getParams();
+        if ($this->webhookInterceptor !== null) {
+            try {
+                $object = $this->webhookInterceptor->interceptRequest(
+                    request: $this->request,
+                    eventType: 'object.creating'
+                );
+            } catch (\Exception $e) {
+                // Log error but continue with original request if webhook fails.
+                // This ensures webhook failures don't break the API.
+                if ($this->logger !== null) {
+                    $this->logger->error(
+                        'Webhook interception failed',
+                        [
+                            'error' => $e->getMessage(),
+                            'register' => $register,
+                            'schema' => $schema,
+                        ]
+                    );
+                }
+            }
+        }
 
         // Filter out special parameters and reserved fields.
         // @todo shouldn't this be part of the object service?

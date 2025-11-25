@@ -2870,7 +2870,7 @@ class SolrService
      *
      * @throws \Exception When Solr is not available or query fails
      */
-    public function searchObjectsPaginated(array $query = [], bool $rbac = false, bool $multi = false): array
+    public function searchObjectsPaginated(array $query = [], bool $rbac = false, bool $multi = false, bool $published = false, bool $deleted = false): array
     {
         if ($this->isAvailable() === false) {
             throw new \Exception('Solr service is not available');

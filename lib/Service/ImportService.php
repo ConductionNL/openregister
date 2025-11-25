@@ -120,12 +120,6 @@ class ImportService
      */
     private readonly LoggerInterface $logger;
 
-    /**
-     * User manager for checking user context
-     *
-     * @var IUserManager
-     */
-    private readonly IUserManager $userManager;
 
     /**
      * Group manager for checking admin group membership
@@ -166,7 +160,6 @@ class ImportService
         $this->schemaMapper       = $schemaMapper;
         $this->objectService      = $objectService;
         $this->logger             = $logger;
-        $this->userManager        = $userManager;
         $this->groupManager       = $groupManager;
         $this->jobList            = $jobList;
 
@@ -503,7 +496,6 @@ class ImportService
         int $chunkSize=self::DEFAULT_CHUNK_SIZE
     ): array {
         $sheet      = $spreadsheet->getActiveSheet();
-        $sheetTitle = $sheet->getTitle();
         $highestRow = $sheet->getHighestRow();
 
         // Step 1: Build column mapping array using PhpSpreadsheet built-in methods.
@@ -1031,9 +1023,7 @@ class ImportService
             }
         }
 
-        // Final memory cleanup.
-        $finalMemory = memory_get_usage(true);
-        $totalMemoryUsed = $finalMemory - $startMemory;
+        // Final memory cleanup (memory stats tracked elsewhere).
 
         return [
             'objects' => $objects,
@@ -1516,7 +1506,7 @@ class ImportService
         }
 
         // Transform object data based on schema property types.
-        $objectData = $this->transformObjectBySchema($objectData, $schema);
+        $objectData = $this->transformObjectBySchema(objectData: $objectData, schema: $schema);
 
         // Get the object ID for tracking updates vs creates.
         $objectId    = $rowData['id'] ?? null;
@@ -1525,8 +1515,8 @@ class ImportService
         // Check if object exists (for reporting purposes only).
         if ($objectId !== null) {
             // NO ERROR SUPPRESSION: Let object find errors bubble up immediately!
-            $existingObject = $this->objectEntityMapper->find($objectId);
-            $wasExisting    = true;
+            $this->objectEntityMapper->find($objectId);
+            $wasExisting = true;
         }
 
         // Save the object (ObjectService handles create vs update logic).
@@ -1597,7 +1587,7 @@ class ImportService
             }
 
             // Transform based on type.
-            $transformedData[$propertyName] = $this->transformValueByType($value, $propertyDef);
+            $transformedData[$propertyName] = $this->transformValueByType(value: $value, propertyDef: $propertyDef);
         }
 
         return $transformedData;
@@ -1848,16 +1838,6 @@ class ImportService
      */
     private function validateObjectProperties(array $objectData, string $schemaId): void
     {
-        // Valid ObjectEntity properties (excluding @self which is handled separately).
-        $validProperties = [
-            'uuid', 'slug', 'uri', 'version', 'register', 'schema', 'object',
-            'files', 'relations', 'locked', 'owner', 'authorization', 'folder',
-            'application', 'organisation', 'validation', 'deleted', 'geo',
-            'retention', 'size', 'schemaVersion', 'updated', 'created',
-            'published', 'depublished', 'name', 'description', 'summary',
-            'image', 'groups', 'expires', '@self'
-        ];
-
         // Check for invalid properties (common mistakes).
         $invalidProperties = ['data', 'content', 'body', 'payload'];
 
@@ -1946,7 +1926,7 @@ class ImportService
 
             // Schedule the job with delay.
             $executeAfter = time() + $delaySeconds;
-            $this->jobList->add(SolrWarmupJob::class, $jobArguments, $executeAfter);
+            $this->jobList->scheduleAfter(SolrWarmupJob::class, $executeAfter, $jobArguments);
 
             $this->logger->info(message: '🔥 SOLR Warmup Job Scheduled', context: [
                 'total_imported' => $totalImported,
@@ -1980,7 +1960,7 @@ class ImportService
     {
         $total = 0;
 
-        foreach ($importSummary as $sheetName => $sheetSummary) {
+        foreach ($importSummary as $sheetSummary) {
             if (is_array($sheetSummary)) {
                 $created = count($sheetSummary['created'] ?? []);
                 $updated = count($sheetSummary['updated'] ?? []);
@@ -2040,7 +2020,7 @@ class ImportService
             'delay_seconds' => $delay
         ]);
 
-        return $this->scheduleSolrWarmup($importSummary, $delay, $mode, $maxObjects);
+        return $this->scheduleSolrWarmup(importSummary: $importSummary, delaySeconds: $delay, mode: $mode, maxObjects: $maxObjects);
     }//end scheduleSmartSolrWarmup()
 
 

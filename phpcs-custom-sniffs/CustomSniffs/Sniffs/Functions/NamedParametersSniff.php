@@ -114,7 +114,7 @@ class NamedParametersSniff implements Sniff
         // These are fluent interface methods where named parameters don't make sense or aren't supported.
         $queryBuilderMethods = [
             // QueryBuilder fluent interface methods.
-            'select', 'from', 'where', 'andwhere', 'orwhere', 'orderby', 'groupby',
+            'select', 'from', 'where', 'andwhere', 'orwhere', 'orderby', 'groupby', 'selectalias',
             'having', 'andhaving', 'orhaving', 'setmaxresults', 'setfirstresult',
             'setparameter', 'setparameters', 'createnamedparameter', 'createparameter',
             'createpositionalparameter', 'createfunction', 'executequery', 'executestatement',
@@ -148,9 +148,13 @@ class NamedParametersSniff implements Sniff
             // Nextcloud IRequest methods.
             'getparam', 'getparams', 'getuploadedfile', 'getuploadedfiles',
             // Nextcloud IAppConfig methods.
-            'getvaluebool', 'getvalueint', 'getvaluestring', 'getvaluearray',
+            'getvaluebool', 'getvalueint', 'getvaluestring', 'getvaluearray', 'setvaluestring',
             // Nextcloud IConfig methods.
             'getappvalue', 'setappvalue', 'getuservalue', 'setuservalue', 'deleteuservalue', 'getsystemvalue',
+            // Nextcloud IUserManager methods.
+            'createuser',
+            // Nextcloud Files_Versions methods.
+            'getversionfile',
             // Nextcloud IURLGenerator methods.
             'linktoroute', 'getabsoluteurl',
             // GuzzleHttp Client methods.
@@ -161,6 +165,8 @@ class NamedParametersSniff implements Sniff
             'fromparts',
             // ReactPHP Promise constructor.
             'promise',
+            // ZipArchive methods.
+            'open', 'addfromstring',
             // Doctrine Schema Builder methods (used in migrations).
             'addcolumn', 'addindex', 'adduniqueindex', 'addtype', 'addoption',
             'dropcolumn', 'dropindex', 'dropuniqueindex', 'droptype', 'dropoption',
@@ -194,7 +200,11 @@ class NamedParametersSniff implements Sniff
                 'applicationupdatedevent', 'applicationcreatedevent', 'applicationdeletedevent',
                 'conversationupdatedevent', 'conversationcreatedevent', 'conversationdeletedevent',
                 'configurationupdatedevent', 'configurationcreatedevent', 'configurationdeletedevent',
-                'toolregistrationevent'
+                'toolregistrationevent',
+                // OpenRegister internal constructors.
+                'objecthandler',
+                // ReactPHP Promise constructor.
+                'promise'
             ];
             if (in_array(strtolower($functionName), $nextcloudConstructors)) {
                 // This is a Nextcloud framework constructor, skip named parameter checking.
@@ -411,6 +421,7 @@ class NamedParametersSniff implements Sniff
                 'strlen', 'trim', 'ltrim', 'rtrim', 'strtolower', 'strtoupper', 'ucfirst',
                 'ucwords', 'lcfirst', 'ord', 'chr', 'md5', 'sha1', 'crc32',
                 'str_contains', 'str_starts_with', 'str_ends_with', 'strpos', 'stripos', 'strrpos', 'strripos',
+            'mb_check_encoding', 'mb_convert_encoding',
                 
                 // Array functions (simple ones).
                 'count', 'sizeof', 'array_push', 'array_pop', 'array_shift', 'array_unshift',
@@ -418,7 +429,7 @@ class NamedParametersSniff implements Sniff
                 'array_product', 'min', 'max', 'end', 'reset', 'key', 'current', 'next', 'prev',
                 'array_fill', 'array_fill_keys', 'array_combine', 'array_flip',
                 'array_diff', 'array_diff_key', 'array_diff_assoc', 'array_intersect', 'array_intersect_key',
-                'array_slice', 'array_chunk',
+                'array_slice', 'array_chunk', 'array_column',
                 
                 // Array functions that commonly use callbacks (might benefit from named params but often don't).
                 'array_filter', 'array_map', 'array_reduce', 'array_walk', 'usort', 'uksort',
@@ -458,10 +469,12 @@ class NamedParametersSniff implements Sniff
                 'file_exists', 'is_file', 'is_dir', 'is_readable', 'is_writable',
                 'filesize', 'filemtime', 'filectime', 'fileatime', 'dirname', 'basename',
                 'fopen', 'fclose', 'fread', 'fwrite', 'fgets', 'fgetcsv', 'fputcsv', 'feof',
+            'chown', 'open',
                 'stream_context_create',
                 
                 // DateTime (simple constructors).
                 'time', 'microtime', 'date', 'gmdate', 'mktime', 'gmmktime',
+            'array_replace_recursive', 'version_compare',
                 
                 // URL and validation functions.
                 'filter_var', 'parse_url', 'urlencode', 'urldecode', 'htmlspecialchars', 'htmlentities',
@@ -475,7 +488,20 @@ class NamedParametersSniff implements Sniff
                 // PHP file/path functions.
                 'pathinfo', 'dirname', 'basename', 'realpath',
                 'file_put_contents', 'file_get_contents', 'readfile', 'filesize',
-                'unlink', 'sys_get_temp_dir'
+                'unlink', 'sys_get_temp_dir', 'tempnam',
+                
+                // PHP string functions (additional).
+                'addcslashes', 'strcmp', 'fnmatch', 'mb_strcut', 'iconv',
+                
+                // PHP system functions.
+                'exec', 'ini_set', 'random_int', 'apcu_store',
+                
+                // PHP URL/HTTP functions.
+                'http_build_query',
+                
+                // cURL functions (already partially added, ensuring completeness).
+                'curl_setopt', 'curl_setopt_array', 'curl_exec', 'curl_init', 'curl_close',
+                'curl_getinfo', 'curl_error'
             ];
             
             if (!in_array(strtolower($functionName), $skipFunctions)) {

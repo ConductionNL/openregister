@@ -174,7 +174,7 @@ class VectorizationService
 
             foreach ($entities as $entity) {
                 try {
-                    $result = $this->vectorizeEntity($entity, $strategy, $options);
+                    $result = $this->vectorizeEntity(entity: $entity, strategy: $strategy, options: $options);
 
                     $totalItems += $result['total_items'];
                     $vectorized += $result['vectorized'];
@@ -295,7 +295,7 @@ class VectorizationService
                         $embeddingData = $embeddings[$index] ?? null;
 
                         if ($embeddingData !== null && isset($embeddingData['embedding']) === true && $embeddingData['embedding'] !== null) {
-                            $this->storeVector($entity, $item, $embeddingData, $strategy);
+                            $this->storeVector(entity: $entity, item: $item, embeddingData: $embeddingData, strategy: $strategy);
                             $vectorized++;
                         } else {
                             $failed++;
@@ -323,7 +323,7 @@ class VectorizationService
             foreach ($items as $index => $item) {
                 try {
                     $embeddingData = $this->vectorService->generateEmbedding($item['text']);
-                    $this->storeVector($entity, $item, $embeddingData, $strategy);
+                    $this->storeVector(entity: $entity, item: $item, embeddingData: $embeddingData, strategy: $strategy);
                     $vectorized++;
                 } catch (\Exception $e) {
                     $failed++;
@@ -358,7 +358,7 @@ class VectorizationService
      */
     private function storeVector($entity, array $item, array $embeddingData, VectorizationStrategyInterface $strategy): void
     {
-        $metadata = $strategy->prepareVectorMetadata($entity, $item);
+        $metadata = $strategy->prepareVectorMetadata(entity: $entity, item: $item);
 
         $this->vectorService->storeVector(
             entityType: $metadata['entity_type'],

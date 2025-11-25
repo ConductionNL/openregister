@@ -244,7 +244,7 @@ class SourceMapper extends QBMapper
         $this->verifyOrganisationAccess($entity);
 
         // Get old state before update.
-        $oldEntity = $this->find($entity->getId());
+        $oldEntity = $this->find(id: $entity->getId());
 
         if ($entity instanceof Source) {
             $entity->setUpdated(new \DateTime());
@@ -318,7 +318,7 @@ class SourceMapper extends QBMapper
      */
     public function updateFromArray(int $id, array $object): Source
     {
-        $obj = $this->find($id);
+        $obj = $this->find(id: $id);
         $obj->hydrate($object);
 
         // Set or update the version.
