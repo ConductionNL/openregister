@@ -164,8 +164,8 @@ class OrganisationService
         IGroupManager $groupManager,
         IUserManager $userManager,
         LoggerInterface $logger,
+        private readonly IAppConfig $appConfig,
         ?SettingsService $settingsService = null,
-        private readonly IAppConfig $appConfig
     ) {
         $this->organisationMapper = $organisationMapper;
         $this->userSession        = $userSession;
