@@ -416,6 +416,6 @@ Enhanced search performance with prioritized search strategy:
 ## Related Documentation
 
 - [Ollama Setup](./ollama.md) - Ollama configuration and GPU setup
-- [Vector Search Backends](../technical/vector-search-backends.md) - Vector search backend options
+- [Vector Search Backends](../technical/vectorization.md#vector-search-backends) - Vector search backend options
 - [Search Optimization](./search-optimization.md) - Detailed search optimization guide
 

@@ -57,12 +57,12 @@ graph TB
 
 **Essential features every user should understand:**
 
-- **[Objects](../Features/objects.md)** - Core data entities
-- **[Registers](../Features/registers.md)** - Data containers
-- **[Schemas](../Features/schemas.md)** - Data structure definitions
-- **[Search](../Features/search.md)** - Search and filtering capabilities
-- **[Faceting](../Features/faceting.md)** - Dynamic filtering system
-- **[Applications](../Features/applications.md)** - Application management and access control
+- **[Objects](../features/objects.md)** - Core data entities
+- **[Registers](../features/registers.md)** - Data containers
+- **[Schemas](../features/schemas.md)** - Data structure definitions
+- **[Search](../features/search.md)** - Search and filtering capabilities
+- **[Faceting](../features/faceting.md)** - Dynamic filtering system
+- **[Applications](../features/applications.md)** - Application management and access control
 
 ### Advanced Features
 
@@ -72,34 +72,34 @@ graph TB
 - **[Text Extraction Sources](../features/text-extraction-sources.md)** - Files vs Objects processing
 - **[RAG Implementation](../features/rag-implementation.md)** - Retrieval Augmented Generation
 - **[Entity Extraction](../features/ner-nlp-concepts.md)** - GDPR entity tracking
-- **[Multi-Tenancy](../Features/multi-tenancy.md)** - Multi-tenant support
-- **[Access Control](../Features/access-control.md)** - Role-based access control
+- **[Multi-Tenancy](../features/multi-tenancy.md)** - Multi-tenant support
+- **[Access Control](../features/access-control.md)** - Role-based access control
 - **[Views](../features/views.md)** - Saved search views
-- **[Files](../Features/files.md)** - File management and processing
+- **[Files](../features/files.md)** - File management and processing
 
 ### User Experience Features
 
 **Features that improve user experience:**
 
-- **[Enhanced Validation Errors](../Features/enhanced-validation-errors.md)** - Clear validation messages
+- **[Enhanced Validation Errors](../features/enhanced-validation-errors.md)** - Clear validation messages
 
 ## Technical Documentation
 
 ### Architecture
 
-- **[Text Extraction Entities](../technical/text-extraction-entities.md)** - Database schema
+- **[Text Extraction Entities](../technical/text-extraction.md#database-schema)** - Database schema
 - **[Unified Faceting System](../technical/unified-faceting-system.md)** - Faceting architecture
-- **[Vectorization Architecture](../Technical/vectorization-architecture.md)** - Vector embeddings
+- **[Vectorization Architecture](../technical/vectorization-architecture.md)** - Vector embeddings
 
 ### Implementation
 
 - **[Enhanced Text Extraction Plan](../technical/enhanced-text-extraction-implementation-plan.md)** - Implementation roadmap
-- **[Text Extraction Implementation](../technical/text-extraction-implementation.md)** - Technical details
+- **[Text Extraction Implementation](../technical/text-extraction.md)** - Technical details
 
 ### Setup & Configuration
 
 - **[Solr Setup](../technical/solr-setup-configuration.md)** - Solr configuration
-- **[Text Extraction README](../technical/text-extraction-readme.md)** - Quick start guide
+- **[Text Extraction README](../technical/text-extraction.md)** - Quick start guide
 
 ## Integration Documentation
 
@@ -130,9 +130,9 @@ See the **[Integrations Overview](../Integrations/index.md)** for a complete ove
 ### For End Users
 
 **Start Here:**
-1. [Objects](../Features/objects.md) - Understanding core concepts
-2. [Search](../Features/search.md) - Finding content
-3. [Applications](../Features/applications.md) - Using applications
+1. [Objects](../features/objects.md) - Understanding core concepts
+2. [Search](../features/search.md) - Finding content
+3. [Applications](../features/applications.md) - Using applications
 
 **Key Topics:**
 - Creating and managing objects
@@ -143,10 +143,10 @@ See the **[Integrations Overview](../Integrations/index.md)** for a complete ove
 ### For Administrators
 
 **Start Here:**
-1. [Registers](../Features/registers.md) - Setting up data containers
-2. [Schemas](../Features/schemas.md) - Defining data structures
-3. [Multi-Tenancy](../Features/multi-tenancy.md) - Multi-tenant configuration
-4. [Access Control](../Features/access-control.md) - Security and permissions
+1. [Registers](../features/registers.md) - Setting up data containers
+2. [Schemas](../features/schemas.md) - Defining data structures
+3. [Multi-Tenancy](../features/multi-tenancy.md) - Multi-tenant configuration
+4. [Access Control](../features/access-control.md) - Security and permissions
 
 **Key Topics:**
 - Register and schema management
@@ -157,8 +157,8 @@ See the **[Integrations Overview](../Integrations/index.md)** for a complete ove
 ### For Developers
 
 **Start Here:**
-1. [Text Extraction README](../technical/text-extraction-readme.md) - Quick start
-2. [Database Entities](../technical/text-extraction-entities.md) - Schema reference
+1. [Text Extraction README](../technical/text-extraction.md) - Quick start
+2. [Database Entities](../technical/text-extraction.md#database-schema) - Schema reference
 3. [API Documentation](../api/objects.md) - API endpoints
 
 **Key Topics:**
@@ -227,8 +227,8 @@ Use the sidebar navigation to browse features by category:
 
 **AI & Search:**
 - [RAG Implementation](../features/rag-implementation.md)
-- [Search](../Features/search.md)
-- [Faceting](../Features/faceting.md)
+- [Search](../features/search.md)
+- [Faceting](../features/faceting.md)
 - [Ollama Integration](../Integrations/ollama.md)
 
 **Automation:**
@@ -237,9 +237,9 @@ Use the sidebar navigation to browse features by category:
 - [Custom Webhooks](../Integrations/custom-webhooks.md)
 
 **Multi-Tenancy:**
-- [Multi-Tenancy](../Features/multi-tenancy.md)
-- [Applications](../Features/applications.md)
-- [Access Control](../Features/access-control.md)
+- [Multi-Tenancy](../features/multi-tenancy.md)
+- [Applications](../features/applications.md)
+- [Access Control](../features/access-control.md)
 
 ## Documentation Statistics
 
@@ -265,7 +265,7 @@ Use the sidebar navigation to browse features by category:
 ### Documentation Updates
 
 When adding new features:
-1. Create feature documentation in `website/docs/Features/`
+1. Create feature documentation in `website/docs/features/`
 2. Add technical details in `website/docs/technical/`
 3. Include Mermaid diagrams for flows
 4. Add API endpoint documentation
@@ -476,7 +476,7 @@ npm install --legacy-peer-deps
 
 ## Related Documentation
 
-- [Features Index](../Features/index.md) - Browse all features
+- [Features Index](../features/index.md) - Browse all features
 - [Technical Documentation](../technical/schemas.md) - Implementation details
 - [Integrations](../Integrations/index.md) - Integration guides
 - [API Reference](../api/objects.md) - API documentation

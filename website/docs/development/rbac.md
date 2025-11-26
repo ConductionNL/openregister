@@ -427,8 +427,8 @@ Users without organisations are automatically added to the default organisation 
 
 ## Related Documentation
 
-- [Multi-Tenancy Feature](/docs/Features/multi-tenancy)
-- [Organisations Feature](/docs/Features/organisations)
-- [Access Control](/docs/Features/access-control)
-- [Testing](/docs/developers/testing)
+- [Multi-Tenancy Feature](/docs/features/multi-tenancy)
+- [Organisations Feature](/docs/features/organisations)
+- [Access Control](/docs/features/access-control)
+- [Testing](/docs/development/testing)
 

@@ -483,7 +483,7 @@ location /v1/ {
 
 - [Docker Setup](./docker-setup.md) - Complete Docker development setup guide
 - [Presidio Setup](./presidio-setup.md) - Entity extraction
-- [Ollama Configuration](../Development/docker-setup.md) - Alternative local LLM
+- [Ollama Configuration](../development/docker-setup.md) - Alternative local LLM
 - [NER & NLP Concepts](../features/ner-nlp-concepts.md) - Entity recognition
 
 ## External Resources

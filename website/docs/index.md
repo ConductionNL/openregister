@@ -26,14 +26,14 @@ Open Register operates on three fundamental principles:
 
 | Feature | Description | Benefits | Sub-features |
 |---------|-------------|-----------|--------------|
-| 💾 [Storing Objects](Features/objects.md) | Core entity containing validated data with metadata, relationships, and file attachments | Data integrity, structured storage, rich metadata | • Schema validation<br/>• Object relationships<br/>• Object locking<br/>• Soft deletion<br/>• Version history<br/>• Audit trails |
-| 📝 [Schema Management](Features/schemas.md) | Define and validate data structures using JSON Schema | Data validation, documentation, API contracts | • JSON Schema validation<br/>• Schema versioning<br/>• Schema import/export<br/>• Schema.org integration<br/>• GGM integration<br/>• Custom schema creation |
-| ⏰ [Register Management](Features/registers.md) | Organize collections of related objects with shared schemas | Logical grouping, domain organization, data management | • Domain organization<br/>• Schema grouping<br/>• Access control<br/>• Process automation<br/>• Data segregation<br/>• Register versioning |
-| 🔒 [Access Control](Features/access-control.md) | Enterprise-grade permissions with Nextcloud RBAC and Keycloak integration | Security, compliance, role management | • Role-based access<br/>• ADFS integration<br/>• Keycloak integration<br/>• FCS compliance<br/>• Verwerkingen registers<br/>• Multi-level permissions |
-| 🗑️ [File Management](Features/files.md) | Secure file storage and management with Nextcloud integration | Document handling, versioning, previews | • File versioning<br/>• File previews<br/>• Metadata extraction<br/>• Content indexing<br/>• Secure storage<br/>• File relationships |
-| 🔍 [Search & Facets](Features/search.md) | Advanced search capabilities with automatic faceting | Quick discovery, pattern recognition, efficient filtering | • Full-text search<br/>• Automatic faceting<br/>• Advanced filtering<br/>• Pattern matching<br/>• Wildcard search<br/>• Phrase search |
-| 🔔 [Events & Webhooks](Features/events.md) | Event-driven architecture for system integration | Extensibility, automation, real-time updates | • Schema events<br/>• Register events<br/>• Object events<br/>• File events<br/>• Validation events<br/>• Webhook support |
-| 📦 [Storage Sources](Features/sources.md) | Flexible storage backends with source configuration | Scalability, performance, data segregation | • Multiple backends<br/>• Connection pooling<br/>• Read/write separation<br/>• Sharding support<br/>• Performance optimization<br/>• Data segregation |
+| 💾 [Storing Objects](features/objects.md) | Core entity containing validated data with metadata, relationships, and file attachments | Data integrity, structured storage, rich metadata | • Schema validation<br/>• Object relationships<br/>• Object locking<br/>• Soft deletion<br/>• Version history<br/>• Audit trails |
+| 📝 [Schema Management](features/schemas.md) | Define and validate data structures using JSON Schema | Data validation, documentation, API contracts | • JSON Schema validation<br/>• Schema versioning<br/>• Schema import/export<br/>• Schema.org integration<br/>• GGM integration<br/>• Custom schema creation |
+| ⏰ [Register Management](features/registers.md) | Organize collections of related objects with shared schemas | Logical grouping, domain organization, data management | • Domain organization<br/>• Schema grouping<br/>• Access control<br/>• Process automation<br/>• Data segregation<br/>• Register versioning |
+| 🔒 [Access Control](features/access-control.md) | Enterprise-grade permissions with Nextcloud RBAC and Keycloak integration | Security, compliance, role management | • Role-based access<br/>• ADFS integration<br/>• Keycloak integration<br/>• FCS compliance<br/>• Verwerkingen registers<br/>• Multi-level permissions |
+| 🗑️ [File Management](features/files.md) | Secure file storage and management with Nextcloud integration | Document handling, versioning, previews | • File versioning<br/>• File previews<br/>• Metadata extraction<br/>• Content indexing<br/>• Secure storage<br/>• File relationships |
+| 🔍 [Search & Facets](features/search.md) | Advanced search capabilities with automatic faceting | Quick discovery, pattern recognition, efficient filtering | • Full-text search<br/>• Automatic faceting<br/>• Advanced filtering<br/>• Pattern matching<br/>• Wildcard search<br/>• Phrase search |
+| 🔔 [Events & Webhooks](features/events.md) | Event-driven architecture for system integration | Extensibility, automation, real-time updates | • Schema events<br/>• Register events<br/>• Object events<br/>• File events<br/>• Validation events<br/>• Webhook support |
+| 📦 [Storage Sources](features/sources.md) | Flexible storage backends with source configuration | Scalability, performance, data segregation | • Multiple backends<br/>• Connection pooling<br/>• Read/write separation<br/>• Sharding support<br/>• Performance optimization<br/>• Data segregation |
 
 ### Basic Workflow
 
@@ -115,10 +115,10 @@ graph TB
 
 For developers working with OpenRegister, see our comprehensive developer guides:
 
-- **[Object Handling](developers/object-handling.md)** - Working with the ObjectService and response classes
-- **[Self Metadata Handling](developers/self-metadata-handling.md)** - Managing @self metadata, ownership, and organization assignment
-- **[Object Handlers](developers/object-handlers.md)** - Custom object processing and validation
-- **[Response Classes](developers/response-classes.md)** - Understanding response types and method chaining
+- **[Object Handling](development/object-handling.md)** - Working with the ObjectService and response classes
+- **[Self Metadata Handling](development/self-metadata-handling.md)** - Managing @self metadata, ownership, and organization assignment
+- **[Object Handlers](development/object-handlers.md)** - Custom object processing and validation
+- **[Response Classes](development/response-classes.md)** - Understanding response types and method chaining
 
 ## Troubleshooting & Fixes
 
