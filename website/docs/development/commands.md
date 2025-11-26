@@ -596,11 +596,11 @@ echo "Debug information collected!"
 ## Related Documentation
 
 - **Nextcloud OCC**: [Nextcloud OCC Commands](https://docs.nextcloud.com/server/latest/admin_manual/occ_command.html)
-- **OpenRegister Features**: [SOLR Search](../Features/search.md)
+- **OpenRegister Features**: [SOLR Search](../features/search.md)
 - **Development**: [Testing Guide](./testing.md)
-- **Testing**: [Testing Guide](/docs/developers/testing)
-- **RBAC**: [RBAC Implementation](/docs/developers/rbac)
-- **Frontend**: [Frontend Architecture](/docs/developers/frontend)
+- **Testing**: [Testing Guide](/docs/development/testing)
+- **RBAC**: [RBAC Implementation](/docs/development/rbac)
+- **Frontend**: [Frontend Architecture](/docs/development/frontend)
 
 ## Changelog
 

@@ -237,6 +237,6 @@ All API endpoints are operational and responding correctly with proper error han
 
 - [Services Architecture](./services-architecture.md) - Service architecture details
 - [Vectorization Architecture](../Technical/vectorization-architecture.md) - Vectorization implementation
-- [Vector Search Backends](../technical/vector-search-backends.md) - Vector search backend options
+- [Vector Search Backends](../technical/vectorization.md#vector-search-backends) - Vector search backend options
 - [Performance Optimization](./performance-optimization.md) - Performance improvements
 

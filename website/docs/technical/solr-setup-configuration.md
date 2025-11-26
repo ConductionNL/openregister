@@ -1207,7 +1207,7 @@ The following old endpoints have been removed:
 
 ### Related Documentation
 
-- [Vector Search Backends](./vector-search-backends.md) - Complete vector backend guide
+- [Vector Search Backends](./vectorization.md#vector-search-backends) - Complete vector backend guide
 - [Vectorization Architecture](../Technical/vectorization-architecture.md) - How vectors are generated
 - [Solr Development Troubleshooting](../development/solr-development.md) - Development troubleshooting guide
 
