@@ -4024,8 +4024,8 @@ class SettingsController extends Controller
     public function testSchemaMapping(): JSONResponse
     {
         try {
-            // Get SolrService from container.
-            $solrService = $this->container->get(\OCA\OpenRegister\Service\SolrService::class);
+            // Get GuzzleSolrService from container.
+            $solrService = $this->container->get(\OCA\OpenRegister\Service\GuzzleSolrService::class);
 
             // Get required dependencies from container.
             $objectMapper = $this->container->get(\OCA\OpenRegister\Db\ObjectEntityMapper::class);

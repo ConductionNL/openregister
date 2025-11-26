@@ -48,7 +48,8 @@ use OCA\OpenRegister\Service\FileService;
  * @method Register find(int|string $id)
  * @method Register findEntity(IQueryBuilder $query)
  * @method Register[] findAll(int|null $limit = null, int|null $offset = null)
- * @method Register[] findEntities(IQueryBuilder $query)
+ * @method list<Register> findEntities(IQueryBuilder $query)
+ * @psalm-suppress LessSpecificImplementedReturnType - @method annotation is correct, parent returns list<T>
  */
 class RegisterMapper extends QBMapper
 {

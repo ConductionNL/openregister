@@ -21,7 +21,7 @@ namespace OCA\OpenRegister\Controller;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
-use OCA\OpenRegister\Service\SolrService;
+use OCA\OpenRegister\Service\GuzzleSolrService;
 
 /**
  * Class SearchController
@@ -37,24 +37,24 @@ class SearchController extends Controller
     /**
      * The SOLR search service
      *
-     * @var SolrService
+     * @var GuzzleSolrService
      */
-    private readonly SolrService $solrService;
+    private readonly GuzzleSolrService $solrService;
 
 
     /**
      * Constructor for the SearchController
      *
-     * @param string      $appName     The name of the app
-     * @param IRequest    $request     The request object
-     * @param SolrService $solrService The Solr search service
+     * @param string           $appName     The name of the app
+     * @param IRequest         $request     The request object
+     * @param GuzzleSolrService $solrService The Solr search service
      *
      * @return void
      */
     public function __construct(
         string $appName,
         IRequest $request,
-        SolrService $solrService
+        GuzzleSolrService $solrService
     ) {
         parent::__construct(appName: $appName, request: $request);
         $this->solrService = $solrService;
@@ -81,7 +81,7 @@ class SearchController extends Controller
         // Process the search query to handle multiple search words.
         $processedQuery = $this->processSearchQuery($query);
 
-        // Perform the search using SolrService.
+        // Perform the search using GuzzleSolrService.
         // Note: This is a simplified search endpoint. For full Nextcloud search integration,
         // use the ObjectsProvider which implements IFilteringProvider.
         $searchParams = [
@@ -93,7 +93,7 @@ class SearchController extends Controller
         $results = $this->solrService->searchObjects($searchParams);
 
         // Format the search results for the JSON response.
-        // SolrService returns: ['objects' => [], 'facets' => [], 'total' => int, 'execution_time_ms' => float]
+        // GuzzleSolrService returns: ['objects' => [], 'facets' => [], 'total' => int, 'execution_time_ms' => float]
         $formattedResults = array_map(
             function ($object) {
                 return [

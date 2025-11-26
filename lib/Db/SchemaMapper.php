@@ -48,7 +48,8 @@ use OCA\OpenRegister\Db\ObjectEntityMapper;
  * @method Schema find(int|string $id)
  * @method Schema findEntity(IQueryBuilder $query)
  * @method Schema[] findAll(int|null $limit = null, int|null $offset = null)
- * @method Schema[] findEntities(IQueryBuilder $query)
+ * @method list<Schema> findEntities(IQueryBuilder $query)
+ * @psalm-suppress LessSpecificImplementedReturnType - @method annotation is correct, parent returns list<T>
  */
 class SchemaMapper extends QBMapper
 {
@@ -321,7 +322,7 @@ class SchemaMapper extends QBMapper
 
         // Check if UUID is set, if not, generate a new one.
         if ($schema->getUuid() === null) {
-            $schema->setUuid(Uuid::v4());
+            $schema->setUuid((string) Uuid::v4());
         }
 
         // Ensure the object has a slug.

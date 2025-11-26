@@ -443,7 +443,7 @@ class MariaDbSearchHandler
     public function applyObjectFilters(IQueryBuilder $queryBuilder, array $objectFilters): IQueryBuilder
     {
         foreach ($objectFilters as $field => $value) {
-            $this->applyJsonFieldFilter($queryBuilder, $field, $value);
+            $this->applyJsonFieldFilter(queryBuilder: $queryBuilder, field: $field, value: $value);
         }
 
         return $queryBuilder;

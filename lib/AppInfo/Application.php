@@ -50,7 +50,6 @@ use OCA\OpenRegister\Service\FacetService;
 use OCA\OpenRegister\Service\ObjectCacheService;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\ExportService;
-use OCA\OpenRegister\Service\SolrService;
 use OCA\OpenRegister\Service\GuzzleSolrService;
 use OCA\OpenRegister\Service\SolrObjectService;
 use OCA\OpenRegister\Service\SolrFileService;
@@ -271,8 +270,9 @@ class Application extends App implements IBootstrap
                 ObjectCacheService::class,
                 function ($container) {
                     // Break circular dependency by lazy-loading GuzzleSolrService.
+                    $guzzleSolrService = null;
                     try {
-                        $container->get(GuzzleSolrService::class);
+                        $guzzleSolrService = $container->get(GuzzleSolrService::class);
                     } catch (\Exception $e) {
                         // If GuzzleSolrService is not available, continue without it.
                     }
@@ -281,7 +281,7 @@ class Application extends App implements IBootstrap
                     $container->get(ObjectEntityMapper::class),
                     $container->get(OrganisationMapper::class),
                     $container->get('Psr\Log\LoggerInterface'),
-                    $solrService,
+                    $guzzleSolrService,
                     // Lightweight SOLR service enabled!
                     $container->get('OCP\ICacheFactory'),
                     $container->get('OCP\IUserSession')

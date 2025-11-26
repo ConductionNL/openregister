@@ -52,7 +52,8 @@ use Symfony\Component\Uid\Uuid;
  * @method Organisation find(int|string $id)
  * @method Organisation findEntity(IQueryBuilder $query)
  * @method Organisation[] findAll(int|null $limit = null, int|null $offset = null)
- * @method Organisation[] findEntities(IQueryBuilder $query)
+ * @method list<Organisation> findEntities(IQueryBuilder $query)
+ * @psalm-suppress LessSpecificImplementedReturnType - @method annotation is correct, parent returns list<T>
  */
 class OrganisationMapper extends QBMapper
 {
