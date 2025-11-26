@@ -297,6 +297,7 @@ class SettingsService
                     'defaultUserTenant'   => '',
                     'defaultObjectTenant' => '',
                     'publishedObjectsBypassMultiTenancy' => false,
+                    'adminOverride'       => true,
                 ];
             } else {
                 $multitenancyData     = json_decode($multitenancyConfig, true);
@@ -305,6 +306,7 @@ class SettingsService
                     'defaultUserTenant'   => $multitenancyData['defaultUserTenant'] ?? '',
                     'defaultObjectTenant' => $multitenancyData['defaultObjectTenant'] ?? '',
                     'publishedObjectsBypassMultiTenancy' => $multitenancyData['publishedObjectsBypassMultiTenancy'] ?? false,
+                    'adminOverride'       => $multitenancyData['adminOverride'] ?? true,
                 ];
             }
 
@@ -516,6 +518,7 @@ class SettingsService
                     'defaultUserTenant'   => $multitenancyData['defaultUserTenant'] ?? '',
                     'defaultObjectTenant' => $multitenancyData['defaultObjectTenant'] ?? '',
                     'publishedObjectsBypassMultiTenancy' => $multitenancyData['publishedObjectsBypassMultiTenancy'] ?? false,
+                    'adminOverride'       => $multitenancyData['adminOverride'] ?? true,
                 ];
                 $this->config->setValueString($this->appName, 'multitenancy', json_encode($multitenancyConfig));
             }
@@ -2754,6 +2757,7 @@ class SettingsService
                     'defaultUserTenant'   => '',
                     'defaultObjectTenant' => '',
                     'publishedObjectsBypassMultiTenancy' => false,
+                    'adminOverride'       => true,
                 ];
             } else {
                 $storedData = json_decode($multitenancyConfig, true);
@@ -2762,6 +2766,7 @@ class SettingsService
                     'defaultUserTenant'   => $storedData['defaultUserTenant'] ?? '',
                     'defaultObjectTenant' => $storedData['defaultObjectTenant'] ?? '',
                     'publishedObjectsBypassMultiTenancy' => $storedData['publishedObjectsBypassMultiTenancy'] ?? false,
+                    'adminOverride'       => $storedData['adminOverride'] ?? true,
                 ];
             }
             
@@ -2790,6 +2795,7 @@ class SettingsService
                 'defaultUserTenant'   => $multitenancyData['defaultUserTenant'] ?? '',
                 'defaultObjectTenant' => $multitenancyData['defaultObjectTenant'] ?? '',
                 'publishedObjectsBypassMultiTenancy' => $multitenancyData['publishedObjectsBypassMultiTenancy'] ?? false,
+                'adminOverride'       => $multitenancyData['adminOverride'] ?? true,
             ];
             
             $this->config->setValueString($this->appName, 'multitenancy', json_encode($multitenancyConfig));

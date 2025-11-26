@@ -80,6 +80,19 @@
 			</p>
 		</div>
 
+		<!-- Admin Override -->
+		<div v-if="multitenancyOptions.enabled" class="option-section">
+			<NcCheckboxRadioSwitch
+				:checked.sync="multitenancyOptions.adminOverride"
+				:disabled="saving"
+				type="switch">
+				{{ multitenancyOptions.adminOverride ? 'Admin override enabled' : 'Admin override disabled' }}
+			</NcCheckboxRadioSwitch>
+			<p class="option-description">
+				Allow administrators to bypass all multi-tenancy restrictions
+			</p>
+		</div>
+
 		<!-- Default Tenants -->
 		<div v-if="multitenancyOptions.enabled">
 			<h4>Default Tenants</h4>
