@@ -124,7 +124,7 @@ class GitHubService
                     ]
                     );
         } else {
-            $this->logger->warning('No GitHub API token configured - using unauthenticated access (60 requests/hour limit)');
+            $this->logger->warning(message: 'No GitHub API token configured - using unauthenticated access (60 requests/hour limit)');
         }
 
         return $headers;
@@ -223,7 +223,7 @@ class GitHubService
 
                 // Get enriched config details (from cache or by fetching from raw.githubusercontent.com).
                 // This doesn't count against API rate limit.
-                $configDetails = $this->getEnrichedConfigDetails($owner, $repo, $path, $defaultBranch, $fileSha);
+                $configDetails = $this->getEnrichedConfigDetails(owner: $owner, repo: $repo, path: $path, branch: $defaultBranch, fileSha: $fileSha);
 
                 $allResults[] = [
                     'repository'   => $item['repository']['full_name'],
@@ -285,7 +285,7 @@ class GitHubService
                     );
 
             // Provide user-friendly error messages based on status code.
-            $userMessage = $this->getGitHubErrorMessage($statusCode, $errorMessage);
+            $userMessage = $this->getGitHubErrorMessage(statusCode: $statusCode, rawError: $errorMessage);
             throw new \Exception($userMessage);
         }//end try
 
@@ -374,13 +374,13 @@ class GitHubService
             // Try to get from cache.
             $cached = $this->cache->get($cacheKey);
             if ($cached !== null) {
-                $this->logger->debug('Using cached config details', ['cache_key' => $cacheKey]);
+                $this->logger->debug(message: 'Using cached config details', context: ['cache_key' => $cacheKey]);
                 return $cached;
             }
         }
 
         // Not in cache or no SHA available, fetch from GitHub.
-        $enriched = $this->enrichConfigurationDetails($owner, $repo, $path, $branch);
+        $enriched = $this->enrichConfigurationDetails(owner: $owner, repo: $repo, path: $path, branch: $branch);
 
         if ($enriched === null) {
             // Enrichment failed, return fallback.
@@ -392,7 +392,7 @@ class GitHubService
             $cacheKey = "config_{$owner}_{$repo}_{$fileSha}";
             // Cache for 7 days (file content won't change as long as SHA is the same).
             $this->cache->set($cacheKey, $enriched, 7 * 24 * 60 * 60);
-            $this->logger->debug('Cached config details', ['cache_key' => $cacheKey]);
+            $this->logger->debug(message: 'Cached config details', context: ['cache_key' => $cacheKey]);
         }
 
         return $enriched;
@@ -649,7 +649,7 @@ class GitHubService
 
             $files = [];
             foreach ($data['items'] ?? [] as $item) {
-                $configData = $this->parseConfigurationFile($owner, $repo, $item['path'], $branch);
+                $configData = $this->parseConfigurationFile(owner: $owner, repo: $repo, path: $item['path'], branch: $branch);
 
                 if ($configData !== null) {
                     $files[] = [
@@ -699,7 +699,7 @@ class GitHubService
     private function parseConfigurationFile(string $owner, string $repo, string $path, string $branch='main'): ?array
     {
         try {
-            $content = $this->getFileContent($owner, $repo, $path, $branch);
+            $content = $this->getFileContent(owner: $owner, repo: $repo, path: $path, branch: $branch);
 
             // Validate that it's a valid OpenRegister configuration.
             if (!isset($content['openapi']) || !isset($content['x-openregister'])) {
@@ -738,6 +738,13 @@ class GitHubService
      */
     public function getRepositories(int $page=1, int $perPage=100): array
     {
+        // Check if GitHub API token is configured.
+        $token = $this->config->getAppValue('openregister', 'github_api_token', '');
+        if (empty($token)) {
+            $this->logger->info(message: 'GitHub API token not configured - returning empty repositories list');
+            return [];
+        }
+
         try {
             $this->logger->info(
                     'Fetching repositories from GitHub',
@@ -785,10 +792,28 @@ class GitHubService
                     $repos
                     );
         } catch (GuzzleException $e) {
+            $statusCode = null;
+            if ($e->hasResponse()) {
+                $statusCode = $e->getResponse()->getStatusCode();
+            }
+
+            // If authentication failed (401) or token not configured, return empty array instead of error.
+            if ($statusCode === 401 || empty($token)) {
+                $this->logger->info(
+                        'GitHub API authentication failed or not configured - returning empty repositories list',
+                        [
+                            'status_code' => $statusCode,
+                            'has_token'   => !empty($token),
+                        ]
+                        );
+                return [];
+            }
+
             $this->logger->error(
                     'GitHub API get repositories failed',
                     [
-                        'error' => $e->getMessage(),
+                        'error'       => $e->getMessage(),
+                        'status_code' => $statusCode,
                     ]
                     );
             throw new \Exception('Failed to fetch repositories: '.$e->getMessage());
@@ -1083,7 +1108,6 @@ class GitHubService
     {
         try {
             // Get user token if userId provided, otherwise use app-level token.
-            $token = null;
             if ($userId !== null) {
                 $token = $this->getUserToken($userId);
             } else {
@@ -1109,7 +1133,7 @@ class GitHubService
 
             return $response->getStatusCode() === 200;
         } catch (\Exception $e) {
-            $this->logger->error('GitHub token validation failed', ['error' => $e->getMessage()]);
+            $this->logger->error(message: 'GitHub token validation failed', context: ['error' => $e->getMessage()]);
             return false;
         }//end try
 

@@ -174,8 +174,8 @@ class SaveObject
         // First, try direct ID lookup (numeric ID or UUID).
         if (is_numeric($cleanReference) || preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $cleanReference)) {
             try {
-                $schema = $this->schemaMapper->find($cleanReference);
-                return $schema->getId();
+                $schema = $this->schemaMapper->find(id: $cleanReference);
+                return (string) $schema->getId();
             } catch (DoesNotExistException $e) {
                 // Continue with other resolution methods.
             }
@@ -193,7 +193,7 @@ class SaveObject
             $schemas = $this->schemaMapper->findAll();
             foreach ($schemas as $schema) {
                 if (strcasecmp($schema->getSlug(), $slug) === 0) {
-                    return $schema->getId();
+                    return (string) $schema->getId();
                 }
             }
         } catch (Exception $e) {
@@ -202,9 +202,10 @@ class SaveObject
 
         // Try direct slug match as last resort.
         try {
+            /** @psalm-suppress UndefinedMethod - findBySlug doesn't exist, but code handles exception */
             $schema = $this->schemaMapper->findBySlug($slug);
             if ($schema !== null) {
-                return $schema->getId();
+                return (string) $schema->getId();
             }
         } catch (Exception $e) {
             // Schema not found.
@@ -258,7 +259,7 @@ class SaveObject
         if (is_numeric($reference) || preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $reference)) {
             try {
                 $register = $this->registerMapper->find($reference);
-                return $register->getId();
+                return (string) $register->getId();
             } catch (DoesNotExistException $e) {
                 // Continue with other resolution methods.
             }
@@ -276,7 +277,7 @@ class SaveObject
             $registers = $this->registerMapper->findAll();
             foreach ($registers as $register) {
                 if (strcasecmp($register->getSlug(), $slug) === 0) {
-                    return $register->getId();
+                    return (string) $register->getId();
                 }
             }
         } catch (Exception $e) {
@@ -285,9 +286,10 @@ class SaveObject
 
         // Try direct slug match as last resort.
         try {
+            /** @psalm-suppress UndefinedMethod - findBySlug doesn't exist, but code handles exception */
             $register = $this->registerMapper->findBySlug($slug);
             if ($register !== null) {
-                return $register->getId();
+                return (string) $register->getId();
             }
         } catch (Exception $e) {
             // Register not found.
@@ -349,9 +351,9 @@ class SaveObject
                         foreach ($value as $index => $item) {
                             if (is_array($item)) {
                                 $itemRelations = $this->scanForRelations(
-                                    $item,
-                                    $currentPath.'.'.$index,
-                                    $schema
+                                    data: $item,
+                                    prefix: $currentPath.'.'.$index,
+                                    schema: $schema
                                 );
                                 $relations     = array_merge($relations, $itemRelations);
                             } else if (is_string($item) && !empty($item)) {
@@ -365,9 +367,9 @@ class SaveObject
                             if (is_array($item)) {
                                 // Recursively scan nested arrays/objects.
                                 $itemRelations = $this->scanForRelations(
-                                    $item,
-                                    $currentPath.'.'.$index,
-                                    $schema
+                                    data: $item,
+                                    prefix: $currentPath.'.'.$index,
+                                    schema: $schema
                                 );
                                 $relations     = array_merge($relations, $itemRelations);
                             } else if (is_string($item) && !empty($item) && trim($item) !== '') {
@@ -482,7 +484,7 @@ class SaveObject
     private function updateObjectRelations(ObjectEntity $objectEntity, array $data, ?Schema $schema=null): ObjectEntity
     {
         // Scan for relations in the object data.
-        $relations = $this->scanForRelations($data, '', $schema);
+        $relations = $this->scanForRelations(data: $data, prefix: '', schema: $schema);
 
         // Set the relations on the object entity.
         $objectEntity->setRelations($relations);
@@ -536,7 +538,7 @@ class SaveObject
 
         // Name field mapping.
         if (isset($config['objectNameField']) === true) {
-            $name = $this->extractMetadataValue($objectData, $config['objectNameField']);
+            $name = $this->extractMetadataValue(data: $objectData, fieldPath: $config['objectNameField']);
             if ($name !== null && trim($name) !== '') {
                 $entity->setName(trim($name));
             }
@@ -544,7 +546,7 @@ class SaveObject
 
         // Description field mapping.
         if (isset($config['objectDescriptionField']) === true) {
-            $description = $this->extractMetadataValue($objectData, $config['objectDescriptionField']);
+            $description = $this->extractMetadataValue(data: $objectData, fieldPath: $config['objectDescriptionField']);
             if ($description !== null && trim($description) !== '') {
                 $entity->setDescription(trim($description));
             }
@@ -552,7 +554,7 @@ class SaveObject
 
         // Summary field mapping.
         if (isset($config['objectSummaryField']) === true) {
-            $summary = $this->extractMetadataValue($objectData, $config['objectSummaryField']);
+            $summary = $this->extractMetadataValue(data: $objectData, fieldPath: $config['objectSummaryField']);
             if ($summary !== null && trim($summary) !== '') {
                 $entity->setSummary(trim($summary));
             }
@@ -561,7 +563,7 @@ class SaveObject
         // Image field mapping.
         if (isset($config['objectImageField']) === true) {
             // First check if the field points to a file object.
-            $imageValue = $this->getValueFromPath($objectData, $config['objectImageField']);
+            $imageValue = $this->getValueFromPath(data: $objectData, path: $config['objectImageField']);
 
             // Handle different value types:.
             // 1. Array of file IDs: [123, 124].
@@ -576,7 +578,7 @@ class SaveObject
                 if (is_numeric($firstElement)) {
                     // Array of file IDs - load first file and get its download URL.
                     try {
-                        $fileNode = $this->fileService->getFile($entity, (int) $firstElement);
+                        $fileNode = $this->fileService->getFile(object: $entity, file: (int) $firstElement);
                         if ($fileNode !== null) {
                             $fileData = $this->fileService->formatFile($fileNode);
 
@@ -593,7 +595,7 @@ class SaveObject
                                     ]
                                 );
                                 // Publish the file.
-                                $this->fileService->publishFile($fileNode);
+                                $this->fileService->publishFile(object: $entity, file: $fileNode->getId());
                                 // Re-fetch file data after publishing.
                                 $fileData = $this->fileService->formatFile($fileNode);
                             }
@@ -623,7 +625,7 @@ class SaveObject
             } else if (is_numeric($imageValue)) {
                 // Single file ID - load file and get its download URL.
                 try {
-                    $fileNode = $this->fileService->getFile($entity, (int) $imageValue);
+                    $fileNode = $this->fileService->getFile(object: $entity, file: (int) $imageValue);
                     if ($fileNode !== null) {
                         $fileData = $this->fileService->formatFile($fileNode);
 
@@ -640,7 +642,7 @@ class SaveObject
                                 ]
                             );
                             // Publish the file.
-                            $this->fileService->publishFile($fileNode);
+                            $this->fileService->publishFile(object: $entity, file: $fileNode->getId());
                             // Re-fetch file data after publishing.
                             $fileData = $this->fileService->formatFile($fileNode);
                         }
@@ -674,7 +676,7 @@ class SaveObject
 
         // Slug field mapping.
         if (isset($config['objectSlugField']) === true) {
-            $slug = $this->extractMetadataValue($objectData, $config['objectSlugField']);
+            $slug = $this->extractMetadataValue(data: $objectData, fieldPath: $config['objectSlugField']);
             if ($slug !== null && trim($slug) !== '') {
                 // Generate URL-friendly slug.
                 $generatedSlug = $this->createSlugFromValue(trim($slug));
@@ -686,10 +688,10 @@ class SaveObject
 
         // Published field mapping.
         if (isset($config['objectPublishedField']) === true) {
-            $published = $this->extractMetadataValue($objectData, $config['objectPublishedField']);
+            $published = $this->extractMetadataValue(data: $objectData, fieldPath: $config['objectPublishedField']);
             if ($published !== null && trim($published) !== '') {
                 try {
-                    $publishedDate = new DateTime(trim($published));
+                    $publishedDate = new \DateTime(trim($published));
                     $entity->setPublished($publishedDate);
                 } catch (Exception $e) {
                     // Log warning but don't fail the entire operation.
@@ -706,10 +708,10 @@ class SaveObject
 
         // Depublished field mapping.
         if (isset($config['objectDepublishedField']) === true) {
-            $depublished = $this->extractMetadataValue($objectData, $config['objectDepublishedField']);
+            $depublished = $this->extractMetadataValue(data: $objectData, fieldPath: $config['objectDepublishedField']);
             if ($depublished !== null && trim($depublished) !== '') {
                 try {
-                    $depublishedDate = new DateTime(trim($depublished));
+                    $depublishedDate = new \DateTime(trim($depublished));
                     $entity->setDepublished($depublishedDate);
                 } catch (Exception $e) {
                     // Log warning but don't fail the entire operation.
@@ -783,11 +785,11 @@ class SaveObject
     {
         // Check if this is a twig-like template with {{ }} syntax
         if (str_contains($fieldPath, '{{') && str_contains($fieldPath, '}}')) {
-            return $this->processTwigLikeTemplate($data, $fieldPath);
+            return $this->processTwigLikeTemplate(data: $data, template: $fieldPath);
         }
 
         // Simple field path - use existing method.
-        return $this->getValueFromPath($data, $fieldPath);
+        return $this->getValueFromPath(data: $data, path: $fieldPath);
 
     }//end extractMetadataValue()
 
@@ -822,7 +824,7 @@ class SaveObject
         // Replace each {{ fieldName }} with its value
         foreach ($matches[0] as $index => $fullMatch) {
             $fieldName = trim($matches[1][$index]);
-            $value     = $this->getValueFromPath($data, $fieldName);
+            $value     = $this->getValueFromPath(data: $data, path: $fieldName);
 
             if ($value !== null && trim($value) !== '') {
                 $result    = str_replace($fullMatch, trim($value), $result);
@@ -975,7 +977,7 @@ class SaveObject
 
         // Generate slug if not present and schema has slug configuration.
         if (!isset($mergedData['slug']) && !isset($mergedData['@self']['slug'])) {
-            $slug = $this->generateSlug($mergedData, $schema);
+            $slug = $this->generateSlug(data: $mergedData, schema: $schema);
             if ($slug !== null) {
                 // Set slug in the data (will be applied to entity in setSelfMetadata).
                 $mergedData['slug'] = $slug;
@@ -1006,7 +1008,7 @@ class SaveObject
             }
 
             // Get the value from the specified field.
-            $value = $this->getValueFromPath($data, $slugField);
+            $value = $this->getValueFromPath(data: $data, path: $slugField);
             if ($value === null || empty($value)) {
                 return null;
             }
@@ -1102,7 +1104,7 @@ class SaveObject
             return $property['type'] === 'object'
                 && isset($property['$ref']) === true
                 && (isset($property['inversedBy']) === true ||
-                    (isset($property['objectConfiguration']['handling']) && $property['objectConfiguration']['handling'] === 'cascade'));
+                    (isset($property['objectConfiguration']) && is_array($property['objectConfiguration']) && isset($property['objectConfiguration']['handling']) && $property['objectConfiguration']['handling'] === 'cascade'));
           }
           );
 
@@ -1122,8 +1124,8 @@ class SaveObject
             return $property['type'] === 'array'
                 && (isset($property['$ref']) || isset($property['items']['$ref']))
                 && (isset($property['inversedBy']) === true || isset($property['items']['inversedBy']) === true ||
-                    (isset($property['objectConfiguration']['handling']) && ($property['objectConfiguration']['handling'] === 'cascade'|| $property['objectConfiguration']['handling'] === 'related-object')) ||
-                    (isset($property['items']['objectConfiguration']['handling']) && ($property['items']['objectConfiguration']['handling'] === 'cascade' || $property['objectConfiguration']['handling'] === 'related-object')));
+                    (isset($property['objectConfiguration']) && is_array($property['objectConfiguration']) && isset($property['objectConfiguration']['handling']) && ($property['objectConfiguration']['handling'] === 'cascade'|| $property['objectConfiguration']['handling'] === 'related-object')) ||
+                    (isset($property['items']['objectConfiguration']) && is_array($property['items']['objectConfiguration']) && isset($property['items']['objectConfiguration']['handling']) && ($property['items']['objectConfiguration']['handling'] === 'cascade' || $property['items']['objectConfiguration']['handling'] === 'related-object')));
           }
           );
 
@@ -1671,7 +1673,7 @@ class SaveObject
 
         // Process uploaded files and inject them into data.
         if ($uploadedFiles !== null && !empty($uploadedFiles)) {
-            $data = $this->processUploadedFiles($uploadedFiles, $data);
+            $data = $this->processUploadedFiles(uploadedFiles: $uploadedFiles, data: $data);
         }
 
         // Debug logging can be added here if needed.
@@ -1781,8 +1783,8 @@ class SaveObject
         $filePropertiesProcessed = false;
         try {
             foreach ($data as $propertyName => $value) {
-                if ($this->isFileProperty($value, $schema, $propertyName) === true) {
-                    $this->handleFileProperty($savedEntity, $data, $propertyName, $schema);
+                if ($this->isFileProperty(value: $value, schema: $schema, propertyName: $propertyName) === true) {
+                    $this->handleFileProperty(objectEntity: $savedEntity, object: $data, propertyName: $propertyName, schema: $schema);
                     $filePropertiesProcessed = true;
                 }
             }
@@ -1836,10 +1838,10 @@ class SaveObject
         // $savedEntity->setObject($data);
         // **CACHE INVALIDATION**: Clear collection and facet caches so new/updated objects appear immediately.
         $this->objectCacheService->invalidateForObjectChange(
-            $savedEntity,
-            $uuid ? 'update' : 'create',
-            $savedEntity->getRegister(),
-            $savedEntity->getSchema()
+            object: $savedEntity,
+            operation: $uuid ? 'update' : 'create',
+            registerId: $savedEntity->getRegister() !== null ? (int) $savedEntity->getRegister() : null,
+            schemaId: $savedEntity->getSchema() !== null ? (int) $savedEntity->getSchema() : null
         );
 
         return $savedEntity;
@@ -1868,7 +1870,7 @@ class SaveObject
         bool $multi
     ): ObjectEntity {
         // Set @self metadata properties.
-        $this->setSelfMetadata($objectEntity, $selfData, $data);
+        $this->setSelfMetadata(objectEntity: $objectEntity, selfData: $selfData, data: $data);
 
         // Set UUID if provided, otherwise generate a new one.
         if ($objectEntity->getUuid() === null) {
@@ -1889,14 +1891,14 @@ class SaveObject
         );
 
         // Prepare the data.
-        $preparedData = $this->prepareObjectData($objectEntity, $schema, $data);
+        $preparedData = $this->prepareObjectData(objectEntity: $objectEntity, schema: $schema, data: $data);
 
         // Set the prepared data.
         $objectEntity->setObject($preparedData);
 
         // Hydrate name and description from schema configuration.
         try {
-            $this->hydrateObjectMetadata($objectEntity, $schema);
+            $this->hydrateObjectMetadata(entity: $objectEntity, schema: $schema);
         } catch (Exception $e) {
             // CRITICAL FIX: Hydration failures indicate schema/data mismatch - don't suppress!
             throw new \Exception(
@@ -1949,7 +1951,7 @@ class SaveObject
 
         // Update object relations.
         try {
-            $objectEntity = $this->updateObjectRelations($objectEntity, $preparedData, $schema);
+            $objectEntity = $this->updateObjectRelations(objectEntity: $objectEntity, data: $preparedData, schema: $schema);
         } catch (Exception $e) {
             // CRITICAL FIX: Relation processing failures indicate serious data integrity issues!
             throw new \Exception(
@@ -1985,7 +1987,7 @@ class SaveObject
         ?int $folderId
     ): ObjectEntity {
         // Set @self metadata properties.
-        $this->setSelfMetadata($existingObject, $selfData, $data);
+        $this->setSelfMetadata(objectEntity: $existingObject, selfData: $selfData, data: $data);
 
         // Set folder ID if provided.
         if ($folderId !== null) {
@@ -1993,13 +1995,13 @@ class SaveObject
         }
 
         // Prepare the data.
-        $preparedData = $this->prepareObjectData($existingObject, $schema, $data);
+        $preparedData = $this->prepareObjectData(objectEntity: $existingObject, schema: $schema, data: $data);
 
         // Set the prepared data.
         $existingObject->setObject($preparedData);
 
         // Hydrate name and description from schema configuration.
-        $this->hydrateObjectMetadata($existingObject, $schema);
+        $this->hydrateObjectMetadata(entity: $existingObject, schema: $schema);
 
         // NOTE: Relations are already updated in prepareObjectForCreation() - no need to update again.
         // Duplicate call would overwrite relations after handleInverseRelationsWriteBack removes properties.
@@ -2055,7 +2057,7 @@ class SaveObject
                                     'publishedValue' => $publishedValue,
                                 ]
                                 );
-                        $objectEntity->setPublished(new DateTime($publishedValue));
+                        $objectEntity->setPublished(new \DateTime($publishedValue));
                     }
                 } catch (Exception $exception) {
                     $this->logger->warning(
@@ -2081,7 +2083,7 @@ class SaveObject
             try {
                 // Convert string to DateTime if it's a valid date string.
                 if (is_string($selfData['depublished']) === true) {
-                    $objectEntity->setDepublished(new DateTime($selfData['depublished']));
+                    $objectEntity->setDepublished(new \DateTime($selfData['depublished']));
                 }
             } catch (Exception $exception) {
                 // Silently ignore invalid date formats.
@@ -2117,7 +2119,7 @@ class SaveObject
         // Sanitize empty strings after validation but before cascading operations.
         // This prevents empty values from causing issues in downstream processing.
         try {
-            $data = $this->sanitizeEmptyStringsForObjectProperties($data, $schema);
+            $data = $this->sanitizeEmptyStringsForObjectProperties(data: $data, schema: $schema);
         } catch (Exception $e) {
             // CRITICAL FIX: Sanitization failures indicate serious data problems - don't suppress!
             throw new \Exception(
@@ -2128,11 +2130,11 @@ class SaveObject
         }
 
         // Apply cascading operations.
-        $data = $this->cascadeObjects($objectEntity, $schema, $data);
-        $data = $this->handleInverseRelationsWriteBack($objectEntity, $schema, $data);
+        $data = $this->cascadeObjects(objectEntity: $objectEntity, schema: $schema, data: $data);
+        $data = $this->handleInverseRelationsWriteBack(objectEntity: $objectEntity, schema: $schema, data: $data);
 
         // Apply default values (including slug generation).
-        $data = $this->setDefaultValues($objectEntity, $schema, $data);
+        $data = $this->setDefaultValues(objectEntity: $objectEntity, schema: $schema, data: $data);
 
         return $data;
 
@@ -2641,7 +2643,7 @@ class SaveObject
                     foreach ($existingFileIds as $fileId) {
                         if (is_numeric($fileId)) {
                             try {
-                                $this->fileService->deleteFile((int) $fileId, $objectEntity);
+                                $this->fileService->deleteFile(file: (int) $fileId, object: $objectEntity);
                             } catch (\Exception $e) {
                                 // Log but don't fail - file might already be deleted.
                                 $this->logger->warning("Failed to delete file $fileId: ".$e->getMessage());
@@ -2651,7 +2653,7 @@ class SaveObject
                 } else if (is_numeric($existingFileIds)) {
                     // Single file ID.
                     try {
-                        $this->fileService->deleteFile((int) $existingFileIds, $objectEntity);
+                        $this->fileService->deleteFile(file: (int) $existingFileIds, object: $objectEntity);
                     } catch (\Exception $e) {
                         // Log but don't fail - file might already be deleted.
                         $this->logger->warning("Failed to delete file $existingFileIds: ".$e->getMessage());
@@ -2672,7 +2674,7 @@ class SaveObject
 
                          $fileIds = [];
             foreach ($fileValue as $index => $singleFileContent) {
-                if ($this->isFileProperty($singleFileContent)) {
+                if ($this->isFileProperty(value: $singleFileContent)) {
                     $fileId = $this->processSingleFileProperty(
                         objectEntity: $objectEntity,
                         fileInput: $singleFileContent,
@@ -2690,7 +2692,7 @@ class SaveObject
             $object[$propertyName] = $fileIds;
         } else {
             // Handle single file.
-            if ($this->isFileProperty($fileValue)) {
+            if ($this->isFileProperty(value: $fileValue)) {
                 $fileId = $this->processSingleFileProperty(
                     objectEntity: $objectEntity,
                     fileInput: $fileValue,
@@ -2750,10 +2752,10 @@ class SaveObject
             // Determine input type and process accordingly.
             if (is_string($fileInput)) {
                 // Handle string inputs (base64, data URI, or URL).
-                return $this->processStringFileInput($objectEntity, $fileInput, $propertyName, $fileConfig, $index);
+                return $this->processStringFileInput(objectEntity: $objectEntity, fileInput: $fileInput, propertyName: $propertyName, fileConfig: $fileConfig, index: $index);
             } else if (is_array($fileInput) && $this->isFileObject($fileInput)) {
                 // Handle file object input.
-                return $this->processFileObjectInput($objectEntity, $fileInput, $propertyName, $fileConfig, $index);
+                return $this->processFileObjectInput(objectEntity: $objectEntity, fileObject: $fileInput, propertyName: $propertyName, fileConfig: $fileConfig, index: $index);
             } else {
                 throw new Exception("Unsupported file input type for property '$propertyName'");
             }
@@ -2803,20 +2805,20 @@ class SaveObject
         ) {
             // Fetch file content from URL.
             $fileContent = $this->fetchFileFromUrl($fileInput);
-            $fileData    = $this->parseFileDataFromUrl($fileInput, $fileContent);
+            $fileData    = $this->parseFileDataFromUrl(url: $fileInput, content: $fileContent);
         } else {
             // Parse as base64 or data URI.
             $fileData = $this->parseFileData($fileInput);
         }
 
         // Validate file against property configuration.
-        $this->validateFileAgainstConfig($fileData, $fileConfig, $propertyName, $index);
+        $this->validateFileAgainstConfig(fileData: $fileData, fileConfig: $fileConfig, propertyName: $propertyName, index: $index);
 
         // Generate filename.
-        $filename = $this->generateFileName($propertyName, $fileData['extension'], $index);
+        $filename = $this->generateFileName(propertyName: $propertyName, extension: $fileData['extension'], index: $index);
 
         // Prepare auto tags.
-        $autoTags = $this->prepareAutoTags($fileConfig, $propertyName, $index);
+        $autoTags = $this->prepareAutoTags(fileConfig: $fileConfig, propertyName: $propertyName, index: $index);
 
         // Check if auto-publish is enabled in the property configuration.
         $autoPublish = $fileConfig['autoPublish'] ?? false;
@@ -2878,10 +2880,10 @@ class SaveObject
                 $existingFile = $this->fileService->getFile(object: $objectEntity, file: $fileId);
                 if ($existingFile !== null) {
                     // Validate the existing file against current config.
-                    $this->validateExistingFileAgainstConfig($existingFile, $fileConfig, $propertyName, $index);
+                    $this->validateExistingFileAgainstConfig(file: $existingFile, fileConfig: $fileConfig, propertyName: $propertyName, index: $index);
 
                     // Apply auto tags if needed (non-destructive - adds to existing tags).
-                    $this->applyAutoTagsToExistingFile($existingFile, $fileConfig, $propertyName, $index);
+                    $this->applyAutoTagsToExistingFile(file: $existingFile, fileConfig: $fileConfig, propertyName: $propertyName, index: $index);
 
                     return $fileId;
                 }
@@ -2901,7 +2903,7 @@ class SaveObject
         }
 
         // Fetch and process as URL.
-        return $this->processStringFileInput($objectEntity, $fileUrl, $propertyName, $fileConfig, $index);
+        return $this->processStringFileInput(objectEntity: $objectEntity, fileInput: $fileUrl, propertyName: $propertyName, fileConfig: $fileConfig, index: $index);
 
     }//end processFileObjectInput()
 
@@ -3066,7 +3068,7 @@ class SaveObject
      */
     private function applyAutoTagsToExistingFile($file, array $fileConfig, string $propertyName, ?int $index=null): void
     {
-        $autoTags = $this->prepareAutoTags($fileConfig, $propertyName, $index);
+        $autoTags = $this->prepareAutoTags(fileConfig: $fileConfig, propertyName: $propertyName, index: $index);
 
         if (!empty($autoTags)) {
             // Get existing tags and merge with auto tags.
@@ -3182,7 +3184,7 @@ class SaveObject
         // Security: Block executable files (unless explicitly allowed).
         $allowExecutables = $fileConfig['allowExecutables'] ?? false;
         if ($allowExecutables === false) {
-            $this->blockExecutableFiles($fileData, $errorPrefix);
+            $this->blockExecutableFiles(fileData: $fileData, errorPrefix: $errorPrefix);
         }
 
         // Validate MIME type.
@@ -3309,7 +3311,7 @@ class SaveObject
 
         // Check magic bytes (file signatures) in content.
         if (isset($fileData['content']) && !empty($fileData['content'])) {
-            $this->detectExecutableMagicBytes($fileData['content'], $errorPrefix);
+            $this->detectExecutableMagicBytes(content: $fileData['content'], errorPrefix: $errorPrefix);
         }
 
         // Check MIME types for executables.
@@ -3639,8 +3641,8 @@ class SaveObject
         // Handle file properties - process them and replace content with file IDs.
         $filePropertiesProcessed = false;
         foreach ($data as $propertyName => $value) {
-            if ($this->isFileProperty($value, $schema, $propertyName) === true) {
-                $this->handleFileProperty($updatedEntity, $data, $propertyName, $schema);
+            if ($this->isFileProperty(value: $value, schema: $schema, propertyName: $propertyName) === true) {
+                $this->handleFileProperty(objectEntity: $updatedEntity, object: $data, propertyName: $propertyName, schema: $schema);
                 $filePropertiesProcessed = true;
             }
         }

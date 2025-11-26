@@ -53,6 +53,8 @@ use OCP\IUserSession;
  * @method Configuration findEntity(IQueryBuilder $query)
  * @method Configuration[] findAll(int|null $limit = null, int|null $offset = null)
  * @method list<Configuration> findEntities(IQueryBuilder $query)
+ *
+ * @extends QBMapper<Configuration>
  */
 class ConfigurationMapper extends QBMapper
 {
@@ -335,10 +337,10 @@ class ConfigurationMapper extends QBMapper
     /**
      * Update synchronization status for a configuration
      *
-     * @param int       $id       Configuration ID
-     * @param string    $status   Sync status: 'success', 'failed', 'pending'
-     * @param \DateTime $syncDate Synchronization timestamp
-     * @param string    $message  Optional message about the sync result
+     * @param int      $id       Configuration ID
+     * @param string   $status   Sync status: 'success', 'failed', 'pending'
+     * @param DateTime $syncDate Synchronization timestamp
+     * @param string   $message  Optional message about the sync result
      *
      * @return Configuration The updated configuration
      * @throws \Exception If configuration not found or user doesn't have permission
@@ -368,11 +370,13 @@ class ConfigurationMapper extends QBMapper
      * @return Configuration The inserted configuration with updated ID
      * @throws \Exception If user doesn't have create permission
      */
-    public function insert(Entity $entity): Entity
+    public function insert(Entity $entity): Configuration
     {
         // Verify RBAC permission to create.
         $this->verifyRbacPermission('create', 'configuration');
 
+        /** @var Configuration $entity */
+        /** @psalm-suppress RedundantCondition - Runtime type check for defensive programming */
         if ($entity instanceof Configuration) {
             // Generate UUID if not set.
             if (empty($entity->getUuid()) === true) {
@@ -420,7 +424,7 @@ class ConfigurationMapper extends QBMapper
      * @return Configuration The updated configuration
      * @throws \Exception If user doesn't have update permission or access to this organisation
      */
-    public function update(Entity $entity): Entity
+    public function update(Entity $entity): Configuration
     {
         // Verify RBAC permission to update.
         $this->verifyRbacPermission('update', 'configuration');
@@ -431,10 +435,7 @@ class ConfigurationMapper extends QBMapper
         // Get old state before update.
         $oldEntity = $this->find($entity->getId());
 
-        // @psalm-suppress RedundantCondition
-        if ($entity instanceof Configuration) {
-            $entity->setUpdated(new DateTime());
-        }
+        $entity->setUpdated(new DateTime());
 
         $result = parent::update($entity);
 
@@ -508,7 +509,7 @@ class ConfigurationMapper extends QBMapper
      */
     public function updateFromArray(int $id, array $data): Configuration
     {
-        $object = $this->find($id);
+        $object = $this->find(id: $id);
 
         // Set or update the version.
         if (isset($data['version']) === false) {

@@ -79,21 +79,21 @@ class Version1Date20250102000000 extends SimpleMigrationStep
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /** @var ISchemaWrapper $schema */
+        // Get schema wrapper instance from closure.
         $schema = $schemaClosure();
 
         // Add groups field to organisations table.
-        if ($schema->hasTable('openregister_organisations')) {
+        if ($schema->hasTable('openregister_organisations') === true) {
             $table = $schema->getTable('openregister_organisations');
 
             // Add groups field (JSON array of Nextcloud group IDs).
-            if (!$table->hasColumn('groups')) {
+            if ($table->hasColumn('groups') === false) {
                 $table->addColumn('groups', Types::JSON, [
                     'notnull' => false,
                     'default' => '[]',
                     'comment' => 'Array of Nextcloud group IDs that have access to this organisation'
                 ]);
-                $output->info('Added groups column to organisations table');
+                $output->info(message: 'Added groups column to organisations table');
             }
         }
 
@@ -122,7 +122,7 @@ class Version1Date20250102000000 extends SimpleMigrationStep
         $affected = $qb->executeStatement();
 
         if ($affected > 0) {
-            $output->info("Initialized groups field for {$affected} existing organisations");
+            $output->info(message: "Initialized groups field for {$affected} existing organisations");
         }
 
     }//end postSchemaChange()

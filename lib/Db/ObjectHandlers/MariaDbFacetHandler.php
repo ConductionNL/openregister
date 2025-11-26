@@ -70,8 +70,8 @@ class MariaDbFacetHandler
         $jsonPath = '$.'.$field;
 
         // First, check if this field commonly contains arrays.
-        if ($this->fieldContainsArrays($field, $baseQuery)) {
-            return $this->getTermsFacetForArrayField($field, $baseQuery);
+        if ($this->fieldContainsArrays(field: $field, baseQuery: $baseQuery)) {
+            return $this->getTermsFacetForArrayField(field: $field, baseQuery: $baseQuery);
         }
 
         // For non-array fields, use the standard approach.
@@ -93,7 +93,7 @@ class MariaDbFacetHandler
             ->orderBy('doc_count', 'DESC');
         // Note: Still using doc_count in ORDER BY as it's the SQL alias
         // Apply base filters.
-        $this->applyBaseFilters($queryBuilder, $baseQuery);
+        $this->applyBaseFilters(queryBuilder: $queryBuilder, baseQuery: $baseQuery);
 
         $result  = $queryBuilder->executeQuery();
         $buckets = [];
@@ -150,7 +150,7 @@ class MariaDbFacetHandler
             ->setMaxResults(10);
 
         // Apply base filters.
-        $this->applyBaseFilters($queryBuilder, $baseQuery);
+        $this->applyBaseFilters(queryBuilder: $queryBuilder, baseQuery: $baseQuery);
 
         $result     = $queryBuilder->executeQuery();
         $arrayCount = 0;
@@ -205,7 +205,7 @@ class MariaDbFacetHandler
                     );
 
         // Apply base filters.
-        $this->applyBaseFilters($queryBuilder, $baseQuery);
+        $this->applyBaseFilters(queryBuilder: $queryBuilder, baseQuery: $baseQuery);
 
         $result      = $queryBuilder->executeQuery();
         $valueCounts = [];
@@ -341,7 +341,7 @@ class MariaDbFacetHandler
             ->orderBy('date_key', 'ASC');
 
         // Apply base filters.
-        $this->applyBaseFilters($queryBuilder, $baseQuery);
+        $this->applyBaseFilters(queryBuilder: $queryBuilder, baseQuery: $baseQuery);
 
         $result  = $queryBuilder->executeQuery();
         $buckets = [];
@@ -419,7 +419,7 @@ class MariaDbFacetHandler
             }
 
             // Apply base filters.
-            $this->applyBaseFilters($queryBuilder, $baseQuery);
+            $this->applyBaseFilters(queryBuilder: $queryBuilder, baseQuery: $baseQuery);
 
             $result = $queryBuilder->executeQuery();
             $count  = (int) $result->fetchOne();
@@ -498,17 +498,17 @@ class MariaDbFacetHandler
 
         // Apply full-text search if provided.
         if ($search !== null && trim($search) !== '') {
-            $this->applyFullTextSearch($queryBuilder, trim($search));
+            $this->applyFullTextSearch(queryBuilder: $queryBuilder, searchTerm: trim($search));
         }
 
         // Apply IDs filter if provided.
         if ($ids !== null && is_array($ids) && !empty($ids)) {
-            $this->applyIdsFilter($queryBuilder, $ids);
+            $this->applyIdsFilter(queryBuilder: $queryBuilder, ids: $ids);
         }
 
         // Apply metadata filters from @self.
         if (isset($baseQuery['@self']) && is_array($baseQuery['@self'])) {
-            $this->applyMetadataFilters($queryBuilder, $baseQuery['@self']);
+            $this->applyMetadataFilters(queryBuilder: $queryBuilder, metadataFilters: $baseQuery['@self']);
         }
 
         // Apply JSON object field filters (non-@self filters).
@@ -521,7 +521,7 @@ class MariaDbFacetHandler
                 );
 
         if (!empty($objectFilters)) {
-            $this->applyObjectFieldFilters($queryBuilder, $objectFilters);
+            $this->applyObjectFieldFilters(queryBuilder: $queryBuilder, objectFilters: $objectFilters);
         }
 
     }//end applyBaseFilters()
@@ -819,7 +819,7 @@ class MariaDbFacetHandler
                 // This is an array of values, not operators.
                 $orConditions = $queryBuilder->expr()->orX();
                 foreach ($value as $val) {
-                    $this->addObjectFieldValueCondition($queryBuilder, $orConditions, $jsonPath, $val);
+                    $this->addObjectFieldValueCondition(queryBuilder: $queryBuilder, conditions: $orConditions, jsonPath: $jsonPath, value: $val);
                 }
 
                 $queryBuilder->andWhere($orConditions);
@@ -828,7 +828,7 @@ class MariaDbFacetHandler
 
             // Handle operator-based filters.
             foreach ($value as $operator => $operatorValue) {
-                $this->applyObjectFieldOperator($queryBuilder, $jsonPath, $operator, $operatorValue);
+                $this->applyObjectFieldOperator(queryBuilder: $queryBuilder, jsonPath: $jsonPath, operator: $operator, operatorValue: $operatorValue);
             }
         }//end foreach
 
@@ -1154,7 +1154,7 @@ class MariaDbFacetHandler
             ->setMaxResults($sampleSize);
 
         // Apply base filters.
-        $this->applyBaseFilters($queryBuilder, $baseQuery);
+        $this->applyBaseFilters(queryBuilder: $queryBuilder, baseQuery: $baseQuery);
 
         $result  = $queryBuilder->executeQuery();
         $objects = [];
@@ -1228,9 +1228,7 @@ class MariaDbFacetHandler
                 if (!empty($value) && is_array($value[0])) {
                     $fieldAnalysis[$fieldPath]['is_nested'] = true;
                     // Recursively analyze nested objects.
-                    if (is_array($value[0])) {
-                        $this->analyzeObjectFields($value[0], $fieldAnalysis, $fieldPath, $depth + 1);
-                    }
+                    $this->analyzeObjectFields($value[0], $fieldAnalysis, $fieldPath, $depth + 1);
                 } else {
                     // Array of simple values - not nested.
                     foreach ($value as $item) {
@@ -1241,13 +1239,17 @@ class MariaDbFacetHandler
             } else if (is_object($value)) {
                 $fieldAnalysis[$fieldPath]['is_nested'] = true;
                 // Recursively analyze nested object.
-                if (is_array($value)) {
-                    $this->analyzeObjectFields($value, $fieldAnalysis, $fieldPath, $depth + 1);
+                // Note: is_object($value) and is_array($value) are mutually exclusive.
+                // This code path handles objects that are not arrays.
+                // For array-like objects, convert to array first.
+                if (method_exists($value, '__toArray')) {
+                    $valueArray = (array) $value->__toArray();
+                    $this->analyzeObjectFields($valueArray, $fieldAnalysis, $fieldPath, $depth + 1);
                 }
             } else {
                 // Simple value.
-                $this->recordValueType($fieldAnalysis[$fieldPath], $value);
-                $this->recordSampleValue($fieldAnalysis[$fieldPath], $value);
+                $this->recordValueType(fieldAnalysis: $fieldAnalysis[$fieldPath], value: $value);
+                $this->recordSampleValue(fieldAnalysis: $fieldAnalysis[$fieldPath], value: $value);
             }//end if
         }//end foreach
 
@@ -1524,6 +1526,7 @@ class MariaDbFacetHandler
             // Check if all types are simple (string, integer, float, boolean, numeric_string, date).
             $simpleTypes = ['string', 'integer', 'float', 'boolean', 'numeric_string', 'date'];
 
+            /** @psalm-suppress UnusedForeachValue - $type is used in in_array() check */
             foreach (array_keys($types) as $type) {
                 if (!in_array($type, $simpleTypes)) {
                     return false;

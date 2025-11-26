@@ -57,7 +57,7 @@ class Version1Date20251102130000 extends SimpleMigrationStep
 
         $schema = $schemaClosure();
 
-        $output->info('🔧 Adding groups column to applications table...');
+        $output->info(message: '🔧 Adding groups column to applications table...');
 
         if ($schema->hasTable('openregister_applications') === true) {
             $table = $schema->getTable('openregister_applications');
@@ -74,18 +74,18 @@ class Version1Date20251102130000 extends SimpleMigrationStep
                         ]
                         );
 
-                $output->info('✅ Added groups column to openregister_applications table');
+                $output->info(message: '✅ Added groups column to openregister_applications table');
                 $output->info('🎯 Applications now support:');
-                $output->info('   • Group-based access control');
-                $output->info('   • Restriction by Nextcloud group membership');
-                $output->info('   • Empty array = all users have access');
+                $output->info(message: '   • Group-based access control');
+                $output->info(message: '   • Restriction by Nextcloud group membership');
+                $output->info(message: '   • Empty array = all users have access');
 
                 return $schema;
             } else {
-                $output->info('ℹ️  Groups column already exists, skipping...');
+                $output->info(message: 'ℹ️  Groups column already exists, skipping...');
             }//end if
         } else {
-            $output->info('⚠️  Applications table not found!');
+            $output->info(message: '⚠️  Applications table not found!');
         }//end if
 
         return null;

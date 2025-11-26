@@ -42,6 +42,8 @@ use Psr\Log\LoggerInterface;
  * - Comprehensive logging and error handling
  * - Performance metrics tracking
  * - Automatic cleanup after execution
+ *
+ * @psalm-suppress UnusedClass - This background job is instantiated dynamically by ImportService when scheduling SOLR warmup after imports
  */
 class SolrWarmupJob extends QueuedJob
 {
@@ -59,30 +61,32 @@ class SolrWarmupJob extends QueuedJob
     /**
      * Execute the SOLR warmup job.
      *
-     * @param array $arguments Job arguments containing warmup parameters
+     * @param array $argument Job arguments containing warmup parameters
      *                         - maxObjects: Maximum number of objects to index (default: 5000)
      *                         - mode: Warmup mode - 'serial', 'parallel', or 'hyper' (default: 'serial')
      *                         - collectErrors: Whether to collect detailed errors (default: false)
      *                         - triggeredBy: What triggered this warmup (default: 'unknown')
      *
      * @return void
+     *
+     * @psalm-suppress PossiblyUnusedMethod - This method is called by Nextcloud's job system when the job executes
      */
-    protected function run($arguments): void
+    protected function run($argument): void
     {
         $startTime = microtime(true);
 
         // Parse job arguments with defaults.
-        $maxObjects    = $arguments['maxObjects'] ?? self::DEFAULT_MAX_OBJECTS;
-        $mode          = $arguments['mode'] ?? self::DEFAULT_MODE;
-        $collectErrors = $arguments['collectErrors'] ?? false;
-        $triggeredBy   = $arguments['triggeredBy'] ?? 'unknown';
+        $maxObjects    = $argument['maxObjects'] ?? self::DEFAULT_MAX_OBJECTS;
+        $mode          = $argument['mode'] ?? self::DEFAULT_MODE;
+        $collectErrors = $argument['collectErrors'] ?? false;
+        $triggeredBy   = $argument['triggeredBy'] ?? 'unknown';
 
         // @var LoggerInterface $logger
         $logger = \OC::$server->get(LoggerInterface::class);
 
         $logger->info(
-                '🔥 SOLR Warmup Job Started',
-                [
+                message: '🔥 SOLR Warmup Job Started',
+                context: [
                     'job_id'         => $this->getId(),
                     'max_objects'    => $maxObjects,
                     'mode'           => $mode,
@@ -105,8 +109,8 @@ class SolrWarmupJob extends QueuedJob
             // Check if SOLR is available before proceeding.
             if ($this->isSolrAvailable($solrService, $logger) === false) {
                 $logger->warning(
-                        'SOLR Warmup Job skipped - SOLR not available',
-                        [
+                        message: 'SOLR Warmup Job skipped - SOLR not available',
+                        context: [
                             'job_id'       => $this->getId(),
                             'triggered_by' => $triggeredBy,
                         ]
@@ -118,8 +122,8 @@ class SolrWarmupJob extends QueuedJob
             $schemas = $schemaMapper->findAll();
 
             $logger->info(
-                    'Starting SOLR index warmup',
-                    [
+                    message: 'Starting SOLR index warmup',
+                    context: [
                         'schemas_found' => count($schemas),
                         'max_objects'   => $maxObjects,
                         'mode'          => $mode,
@@ -167,8 +171,8 @@ class SolrWarmupJob extends QueuedJob
             $executionTime = microtime(true) - $startTime;
 
             $logger->error(
-                    '🚨 SOLR Warmup Job Exception',
-                    [
+                    message: '🚨 SOLR Warmup Job Exception',
+                    context: [
                         'job_id'                 => $this->getId(),
                         'execution_time_seconds' => round($executionTime, 2),
                         'exception'              => $e->getMessage(),
@@ -204,8 +208,8 @@ class SolrWarmupJob extends QueuedJob
             }
 
             $logger->info(
-                    'SOLR connection test failed during warmup job',
-                    [
+                    message: 'SOLR connection test failed during warmup job',
+                    context: [
                         'test_result' => $connectionTest,
                     ]
                     );
@@ -213,8 +217,8 @@ class SolrWarmupJob extends QueuedJob
             return false;
         } catch (\Exception $e) {
             $logger->warning(
-                    'SOLR availability check failed during warmup job',
-                    [
+                    message: 'SOLR availability check failed during warmup job',
+                    context: [
                         'error' => $e->getMessage(),
                     ]
                     );

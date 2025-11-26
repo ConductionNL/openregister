@@ -112,12 +112,12 @@ class RegisterService
         ?array $extend=[]
     ): array {
         return $this->registerMapper->findAll(
-            $limit,
-            $offset,
-            $filters,
-            $searchConditions,
-            $searchParams,
-            $extend
+            limit: $limit,
+            offset: $offset,
+            filters: $filters,
+            searchConditions: $searchConditions,
+            searchParams: $searchParams,
+            extend: $extend
         );
 
     }//end findAll()
@@ -292,14 +292,14 @@ class RegisterService
                     // Save the entity with the new folder ID.
                     $this->registerMapper->update($entity);
 
-                    $this->logger->info("Created folder with ID {$folderNode->getId()} for register {$entity->getId()}");
+                    $this->logger->info(message: "Created folder with ID {$folderNode->getId()} for register {$entity->getId()}");
                 } else {
-                    $this->logger->warning("Failed to create folder for register {$entity->getId()}");
+                    $this->logger->warning(message: "Failed to create folder for register {$entity->getId()}");
                 }
             } catch (Exception $e) {
                 // Log the error but don't fail the register creation/update.
                 // The register can still function without a folder.
-                $this->logger->error("Failed to create folder for register {$entity->getId()}: ".$e->getMessage());
+                $this->logger->error(message: "Failed to create folder for register {$entity->getId()}: ".$e->getMessage());
             }
         }//end if
 

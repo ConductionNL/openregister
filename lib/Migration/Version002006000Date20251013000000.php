@@ -284,7 +284,7 @@ class Version002006000Date20251013000000 extends SimpleMigrationStep
      */
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
-        $output->info('File texts table created successfully');
+        $output->info(message: 'File texts table created successfully');
 
     }//end postSchemaChange()
 

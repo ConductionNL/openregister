@@ -110,11 +110,11 @@ class SearchTrailService
     ): SearchTrail {
         try {
             $trail = $this->searchTrailMapper->createSearchTrail(
-                $query,
-                $resultCount,
-                $totalResults,
-                $responseTime,
-                $executionType
+                searchQuery: $query,
+                resultCount: $resultCount,
+                totalResults: $totalResults,
+                responseTime: $responseTime,
+                executionType: $executionType
             );
 
             // Self-clearing: automatically clean up old search trails if enabled.
@@ -659,7 +659,7 @@ class SearchTrailService
         // Process date filters.
         if (isset($config['from']) === true) {
             try {
-                $processed['from'] = new DateTime($config['from']);
+                $processed['from'] = new \DateTime($config['from']);
             } catch (Exception $e) {
                 // Invalid date format, ignore.
             }
@@ -667,7 +667,7 @@ class SearchTrailService
 
         if (isset($config['to']) === true) {
             try {
-                $processed['to'] = new DateTime($config['to']);
+                $processed['to'] = new \DateTime($config['to']);
             } catch (Exception $e) {
                 // Invalid date format, ignore.
             }

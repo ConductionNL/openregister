@@ -33,6 +33,6 @@ fi
 echo ""
 echo "To monitor build progress in real-time:"
 echo "  cd ~/nextcloud-docker-dev/workspace/server/apps-extra/openregister"
-echo "  docker-compose -f docker-compose.huggingface.yml build dolphin-vlm"
+echo "  docker-compose -f docker-compose.dev.yml --profile huggingface build dolphin-vlm"
 echo ""
 

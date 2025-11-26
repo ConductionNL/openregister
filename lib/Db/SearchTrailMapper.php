@@ -1,5 +1,8 @@
 <?php
-/**
+
+declare(strict_types=1);
+
+/*
  * OpenRegister SearchTrailMapper
  *
  * This file contains the mapper class for SearchTrail entities,
@@ -46,7 +49,8 @@ use Symfony\Component\Uid\Uuid;
  * @method SearchTrail find(int|string $id)
  * @method SearchTrail findEntity(IQueryBuilder $query)
  * @method SearchTrail[] findAll(int|null $limit = null, int|null $offset = null)
- * @method SearchTrail[] findEntities(IQueryBuilder $query)
+ * @method list<SearchTrail> findEntities(IQueryBuilder $query)
+ * @psalm-suppress LessSpecificImplementedReturnType - @method annotation is correct, parent returns list<T>
  */
 class SearchTrailMapper extends QBMapper
 {
@@ -979,7 +983,11 @@ class SearchTrailMapper extends QBMapper
             $searchTrail->setUserName($user->getDisplayName());
         }
 
-        $sessionId = $this->request->getHeader('X-Session-ID') ?? session_id();
+        $sessionId = $this->request->getHeader('X-Session-ID');
+        if ($sessionId === '') {
+            $sessionId = session_id();
+        }
+
         $searchTrail->setSession($sessionId);
 
     }//end setUserInformation()

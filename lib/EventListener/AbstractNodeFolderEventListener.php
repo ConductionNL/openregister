@@ -21,6 +21,7 @@
 namespace OCA\OpenRegister\EventListener;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -42,7 +43,7 @@ class AbstractNodeFolderEventListener implements IEventListener
      * Constructor for AbstractNodeFolderEventListener.
      *
      * @param ObjectService $objectService The object service for handling node events.
-     * @param FileService   $fileService   The file service for file operations.
+     * @param \OCA\OpenRegister\Service\FileService $fileService The file service for file operations.
      *
      * @return void
      */

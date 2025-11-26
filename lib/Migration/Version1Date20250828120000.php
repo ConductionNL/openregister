@@ -77,7 +77,7 @@ class Version1Date20250828120000 extends SimpleMigrationStep
         foreach ($singleIndexes as $column => $indexName) {
             if ($table->hasColumn($column) === true && $table->hasIndex($indexName) === false) {
                 $table->addIndex([$column], $indexName);
-                $output->info("Added index {$indexName} on column {$column}");
+                $output->info(message: "Added index {$indexName} on column {$column}");
             }
         }
 

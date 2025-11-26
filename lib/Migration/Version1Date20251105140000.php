@@ -71,7 +71,7 @@ class Version1Date20251105140000 extends SimpleMigrationStep
                         'default' => 'manual',
                     ]
                 );
-                $output->info('Added source_type column to openregister_configurations');
+                $output->info(message: 'Added source_type column to openregister_configurations');
                 $updated = true;
             }
 
@@ -85,7 +85,7 @@ class Version1Date20251105140000 extends SimpleMigrationStep
                         'default' => null,
                     ]
                 );
-                $output->info('Added source_url column to openregister_configurations');
+                $output->info(message: 'Added source_url column to openregister_configurations');
                 $updated = true;
             }
 
@@ -100,7 +100,7 @@ class Version1Date20251105140000 extends SimpleMigrationStep
                         'default' => null,
                     ]
                 );
-                $output->info('Added local_version column to openregister_configurations');
+                $output->info(message: 'Added local_version column to openregister_configurations');
                 $updated = true;
             }
 
@@ -115,7 +115,7 @@ class Version1Date20251105140000 extends SimpleMigrationStep
                         'default' => null,
                     ]
                 );
-                $output->info('Added remote_version column to openregister_configurations');
+                $output->info(message: 'Added remote_version column to openregister_configurations');
                 $updated = true;
             }
 
@@ -129,7 +129,7 @@ class Version1Date20251105140000 extends SimpleMigrationStep
                         'default' => null,
                     ]
                 );
-                $output->info('Added last_checked column to openregister_configurations');
+                $output->info(message: 'Added last_checked column to openregister_configurations');
                 $updated = true;
             }
 
@@ -143,7 +143,7 @@ class Version1Date20251105140000 extends SimpleMigrationStep
                         'default' => false,
                     ]
                 );
-                $output->info('Added auto_update column to openregister_configurations');
+                $output->info(message: 'Added auto_update column to openregister_configurations');
                 $updated = true;
             }
 
@@ -157,7 +157,7 @@ class Version1Date20251105140000 extends SimpleMigrationStep
                         'default' => null,
                     ]
                 );
-                $output->info('Added notification_groups column to openregister_configurations');
+                $output->info(message: 'Added notification_groups column to openregister_configurations');
                 $updated = true;
             }
 
@@ -172,7 +172,7 @@ class Version1Date20251105140000 extends SimpleMigrationStep
                         'default' => null,
                     ]
                 );
-                $output->info('Added github_repo column to openregister_configurations');
+                $output->info(message: 'Added github_repo column to openregister_configurations');
                 $updated = true;
             }
 
@@ -187,7 +187,7 @@ class Version1Date20251105140000 extends SimpleMigrationStep
                         'default' => 'main',
                     ]
                 );
-                $output->info('Added github_branch column to openregister_configurations');
+                $output->info(message: 'Added github_branch column to openregister_configurations');
                 $updated = true;
             }
 
@@ -202,7 +202,7 @@ class Version1Date20251105140000 extends SimpleMigrationStep
                         'default' => null,
                     ]
                 );
-                $output->info('Added github_path column to openregister_configurations');
+                $output->info(message: 'Added github_path column to openregister_configurations');
                 $updated = true;
             }
 
@@ -216,7 +216,7 @@ class Version1Date20251105140000 extends SimpleMigrationStep
                         'default' => null,
                     ]
                 );
-                $output->info('Added schemas column to openregister_configurations');
+                $output->info(message: 'Added schemas column to openregister_configurations');
                 $updated = true;
             }
 
@@ -230,7 +230,7 @@ class Version1Date20251105140000 extends SimpleMigrationStep
                         'default' => null,
                     ]
                 );
-                $output->info('Added objects column to openregister_configurations');
+                $output->info(message: 'Added objects column to openregister_configurations');
                 $updated = true;
             }
 
@@ -245,7 +245,7 @@ class Version1Date20251105140000 extends SimpleMigrationStep
                         'default' => null,
                     ]
                 );
-                $output->info('Added uuid column to openregister_configurations');
+                $output->info(message: 'Added uuid column to openregister_configurations');
                 $updated = true;
             }
 
@@ -260,7 +260,7 @@ class Version1Date20251105140000 extends SimpleMigrationStep
                         'default' => null,
                     ]
                 );
-                $output->info('Added app column to openregister_configurations');
+                $output->info(message: 'Added app column to openregister_configurations');
                 $updated = true;
             }
 
@@ -274,20 +274,20 @@ class Version1Date20251105140000 extends SimpleMigrationStep
                         'default' => null,
                     ]
                 );
-                $output->info('Added organisation column to openregister_configurations');
+                $output->info(message: 'Added organisation column to openregister_configurations');
                 $updated = true;
             }
 
             // Add indexes for better query performance.
             if ($table->hasIndex('openregister_config_source_type_idx') === false) {
                 $table->addIndex(['source_type'], 'openregister_config_source_type_idx');
-                $output->info('Added index for source_type');
+                $output->info(message: 'Added index for source_type');
                 $updated = true;
             }
 
             if ($table->hasIndex('openregister_config_app_idx') === false) {
                 $table->addIndex(['app'], 'openregister_config_app_idx');
-                $output->info('Added index for app');
+                $output->info(message: 'Added index for app');
                 $updated = true;
             }
         }//end if

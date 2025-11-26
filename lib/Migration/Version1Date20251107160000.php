@@ -59,7 +59,7 @@ class Version1Date20251107160000 extends SimpleMigrationStep
         $schema  = $schemaClosure();
         $updated = false;
 
-        $output->info('📄 Adding UUID column to file_texts table...');
+        $output->info(message: '📄 Adding UUID column to file_texts table...');
 
         if ($schema->hasTable('openregister_file_texts') === true) {
             $table = $schema->getTable('openregister_file_texts');
@@ -81,10 +81,10 @@ class Version1Date20251107160000 extends SimpleMigrationStep
                     $table->addIndex(['uuid'], 'file_texts_uuid_idx');
                 }
 
-                $output->info('✅ Added UUID column to file_texts table');
+                $output->info(message: '✅ Added UUID column to file_texts table');
                 $updated = true;
             } else {
-                $output->info('ℹ️  UUID column already exists in file_texts table');
+                $output->info(message: 'ℹ️  UUID column already exists in file_texts table');
             }//end if
         }//end if
 
@@ -110,12 +110,12 @@ class Version1Date20251107160000 extends SimpleMigrationStep
      */
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
-        $output->info('Generating UUIDs for existing file_texts records...');
+        $output->info(message: 'Generating UUIDs for existing file_texts records...');
 
         // Note: UUID generation for existing records will be handled by the.
         // FileTextMapper when records are accessed/updated, to avoid.
         // potential timeout issues with large datasets.
-        $output->info('✅ Migration complete - UUIDs will be generated on-demand');
+        $output->info(message: '✅ Migration complete - UUIDs will be generated on-demand');
 
     }//end postSchemaChange()
 

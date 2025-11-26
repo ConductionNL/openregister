@@ -29,6 +29,8 @@ use OCP\IRequest;
 /**
  * Class AuditTrailController
  * Handles all audit trail related operations
+ *
+ * @psalm-suppress UnusedClass - This controller is registered via routes.php and used by Nextcloud's routing system
  */
 class AuditTrailController extends Controller
 {
@@ -48,7 +50,7 @@ class AuditTrailController extends Controller
         private readonly LogService $logService,
         private readonly AuditTrailMapper $auditTrailMapper
     ) {
-        parent::__construct($appName, $request);
+        parent::__construct(appName: $appName, request: $request);
 
     }//end __construct()
 
@@ -195,7 +197,7 @@ class AuditTrailController extends Controller
 
         // Return paginated results.
         return new JSONResponse(
-                [
+                data: [
                     'results' => $logs,
                     'total'   => $total,
                     'page'    => $params['page'],
@@ -233,12 +235,9 @@ class AuditTrailController extends Controller
     {
         try {
             $log = $this->logService->getLog($id);
-            return new JSONResponse($log);
+            return new JSONResponse(data: $log);
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-            return new JSONResponse(
-                ['error' => 'Audit trail not found'],
-                404
-            );
+            return new JSONResponse(data: ['error' => 'Audit trail not found'], statusCode: 404);
         }
 
     }//end show()
@@ -279,18 +278,18 @@ class AuditTrailController extends Controller
         try {
             // Get logs from service.
             $logs = $this->logService->getLogs(
-                    $register,
-                    $schema,
-                    $id,
-                    $params
-                    );
+                    register: $register,
+                    schema: $schema,
+                    id: $id,
+                    config: $params
+            );
 
             // Get total count for pagination.
             $total = $this->logService->count($register, $schema, $id);
 
             // Return paginated results.
             return new JSONResponse(
-                    [
+                    data: [
                         'results' => $logs,
                         'total'   => $total,
                         'page'    => $params['page'],
@@ -300,15 +299,9 @@ class AuditTrailController extends Controller
                     ]
                     );
         } catch (\InvalidArgumentException $e) {
-            return new JSONResponse(
-                ['error' => $e->getMessage()],
-                400
-            );
+            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-            return new JSONResponse(
-                ['error' => 'Object not found'],
-                404
-            );
+            return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
         }//end try
 
     }//end objects()
@@ -358,11 +351,11 @@ class AuditTrailController extends Controller
             ];
 
             // Export logs using service.
-            $exportResult = $this->logService->exportLogs($format, $exportConfig);
+            $exportResult = $this->logService->exportLogs(format: $format, config: $exportConfig);
 
             // Return export data.
             return new JSONResponse(
-                    [
+                    data: [
                         'success' => true,
                         'data'    => [
                             'content'     => $exportResult['content'],
@@ -374,17 +367,17 @@ class AuditTrailController extends Controller
                     );
         } catch (\InvalidArgumentException $e) {
             return new JSONResponse(
-                    [
+                    data: [
                         'error' => 'Invalid export format: '.$e->getMessage(),
                     ],
-                    400
+                    statusCode: 400
                     );
         } catch (\Exception $e) {
             return new JSONResponse(
-                    [
+                    data: [
                         'error' => 'Export failed: '.$e->getMessage(),
                     ],
-                    500
+                    statusCode: 500
                     );
         }//end try
 
@@ -419,32 +412,33 @@ class AuditTrailController extends Controller
 
             if ($success === true) {
                 return new JSONResponse(
-                        [
+                        data: [
                             'success' => true,
                             'message' => 'Audit trail deleted successfully',
-                        ]
+                        ],
+                        statusCode: 200
                         );
             } else {
                 return new JSONResponse(
-                        [
+                        data: [
                             'error' => 'Failed to delete audit trail',
                         ],
-                        500
+                        statusCode: 500
                         );
             }
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             return new JSONResponse(
-                    [
+                    data: [
                         'error' => 'Audit trail not found',
                     ],
-                    404
+                    statusCode: 404
                     );
         } catch (\Exception $e) {
             return new JSONResponse(
-                    [
+                    data: [
                         'error' => 'Deletion failed: '.$e->getMessage(),
                     ],
-                    500
+                    statusCode: 500
                     );
         }//end try
 
@@ -500,22 +494,18 @@ class AuditTrailController extends Controller
             $result = $this->logService->deleteLogs($deleteConfig);
 
             return new JSONResponse(
-                    [
+                    data: [
                         'success' => true,
                         'results' => $result,
-                        'message' => sprintf(
-                    'Deleted %d audit trails successfully. %d failed.',
-                    $result['deleted'],
-                    $result['failed']
-                ),
+                        'message' => sprintf('Deleted %d audit trails successfully. %d failed.', $result['deleted'], $result['failed']),
                     ]
                     );
         } catch (\Exception $e) {
             return new JSONResponse(
-                    [
+                    data: [
                         'error' => 'Mass deletion failed: '.$e->getMessage(),
                     ],
-                    500
+                    statusCode: 500
                     );
         }//end try
 
@@ -550,28 +540,30 @@ class AuditTrailController extends Controller
 
             if ($result === true) {
                 return new JSONResponse(
-                        [
+                        data: [
                             'success' => true,
                             'message' => 'All audit trails cleared successfully',
                             'deleted' => 'All expired audit trails have been deleted',
-                        ]
+                        ],
+                        statusCode: 200
                         );
             } else {
                 return new JSONResponse(
-                        [
+                        data: [
                             'success' => true,
                             'message' => 'No expired audit trails found to clear',
                             'deleted' => 0,
-                        ]
+                        ],
+                        statusCode: 200
                         );
             }
         } catch (\Exception $e) {
             return new JSONResponse(
-                    [
+                    data: [
                         'success' => false,
                         'error'   => 'Failed to clear audit trails: '.$e->getMessage(),
                     ],
-                    500
+                    statusCode: 500
                     );
         }//end try
 

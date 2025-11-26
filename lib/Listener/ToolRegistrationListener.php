@@ -117,9 +117,9 @@ class ToolRegistrationListener implements IEventListener
         // Register built-in OpenRegister tools.
         // Using tool's getName() and getDescription() to avoid duplication.
         $event->registerTool(
-                'openregister.register',
-                $this->registerTool,
-                [
+                id: 'openregister.register',
+                tool: $this->registerTool,
+                metadata: [
                     'name'        => $this->registerTool->getName(),
                     'description' => $this->registerTool->getDescription(),
                     'icon'        => 'icon-category-office',
@@ -128,9 +128,9 @@ class ToolRegistrationListener implements IEventListener
                 );
 
         $event->registerTool(
-                'openregister.schema',
-                $this->schemaTool,
-                [
+                id: 'openregister.schema',
+                tool: $this->schemaTool,
+                metadata: [
                     'name'        => $this->schemaTool->getName(),
                     'description' => $this->schemaTool->getDescription(),
                     'icon'        => 'icon-category-customization',
@@ -139,9 +139,9 @@ class ToolRegistrationListener implements IEventListener
                 );
 
         $event->registerTool(
-                'openregister.objects',
-                $this->objectsTool,
-                [
+                id: 'openregister.objects',
+                tool: $this->objectsTool,
+                metadata: [
                     'name'        => $this->objectsTool->getName(),
                     'description' => $this->objectsTool->getDescription(),
                     'icon'        => 'icon-category-organization',
@@ -150,9 +150,9 @@ class ToolRegistrationListener implements IEventListener
                 );
 
         $event->registerTool(
-                'openregister.application',
-                $this->applicationTool,
-                [
+                id: 'openregister.application',
+                tool: $this->applicationTool,
+                metadata: [
                     'name'        => $this->applicationTool->getName(),
                     'description' => $this->applicationTool->getDescription(),
                     'icon'        => 'icon-category-integration',
@@ -161,9 +161,9 @@ class ToolRegistrationListener implements IEventListener
                 );
 
         $event->registerTool(
-                'openregister.agent',
-                $this->agentTool,
-                [
+                id: 'openregister.agent',
+                tool: $this->agentTool,
+                metadata: [
                     'name'        => $this->agentTool->getName(),
                     'description' => $this->agentTool->getDescription(),
                     'icon'        => 'icon-category-monitoring',

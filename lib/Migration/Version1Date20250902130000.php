@@ -1,6 +1,6 @@
 <?php
-
-/**
+declare(strict_types=1);
+/*
  * Migration to add individual indexes for search optimization
  *
  * This migration adds individual indexes on name, description, and summary columns
@@ -18,8 +18,6 @@
  *
  * @link https://www.OpenRegister.nl
  */
-
-declare(strict_types=1);
 
 namespace OCA\OpenRegister\Migration;
 
@@ -50,21 +48,15 @@ class Version1Date20250902130000 extends SimpleMigrationStep
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /*
-         * @var ISchemaWrapper $schema
-         */
-
         $schema = $schemaClosure();
 
         if ($schema->hasTable('openregister_objects') === false) {
             return null;
         }
 
-        $table = $schema->getTable('openregister_objects');
-
         // Skip name index creation for now to avoid MySQL key length issues.
         // TODO: Add name index after app is enabled with proper length prefix.
-        $output->info('Skipping name index creation to avoid MySQL key length issues');
+        $output->info(message: 'Skipping name index creation to avoid MySQL key length issues');
 
         return $schema;
 
@@ -82,10 +74,6 @@ class Version1Date20250902130000 extends SimpleMigrationStep
      */
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
-        /*
-         * @var ISchemaWrapper $schema
-         */
-
         $schema = $schemaClosure();
 
         if ($schema->hasTable('openregister_objects') === false) {
@@ -97,7 +85,7 @@ class Version1Date20250902130000 extends SimpleMigrationStep
 
         // Skip complex index creation for now to avoid MySQL key length issues.
         // TODO: Add indexes after app is enabled.
-        $output->info('Skipping complex index creation to avoid MySQL key length issues');
+        $output->info(message: 'Skipping complex index creation to avoid MySQL key length issues');
 
     }//end postSchemaChange()
 

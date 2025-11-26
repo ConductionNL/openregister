@@ -110,6 +110,7 @@ return [
         ['name' => 'settings#getFileExtractionStats', 'url' => '/api/settings/files/stats', 'verb' => 'GET'],
         ['name' => 'settings#testDolphinConnection', 'url' => '/api/settings/files/test-dolphin', 'verb' => 'POST'],
         ['name' => 'settings#getObjectSettings', 'url' => '/api/settings/objects/vectorize', 'verb' => 'GET'],
+        ['name' => 'settings#getObjectSettings', 'url' => '/api/settings/objects', 'verb' => 'GET'],
         ['name' => 'settings#updateObjectSettings', 'url' => '/api/settings/objects/vectorize', 'verb' => 'POST'],
         ['name' => 'settings#patchObjectSettings', 'url' => '/api/settings/objects/vectorize', 'verb' => 'PATCH'],
         ['name' => 'settings#updateObjectSettings', 'url' => '/api/settings/objects/vectorize', 'verb' => 'PUT'],
@@ -387,6 +388,8 @@ return [
 		['name' => 'ui#deleted', 'url' => '/deleted', 'verb' => 'GET'],
 		['name' => 'ui#auditTrail', 'url' => '/audit-trails', 'verb' => 'GET'],
 		['name' => 'ui#searchTrail', 'url' => '/search-trails', 'verb' => 'GET'],
+		['name' => 'ui#webhooks', 'url' => '/webhooks', 'verb' => 'GET'],
+		['name' => 'ui#entities', 'url' => '/entities', 'verb' => 'GET'],
 	['name' => 'files#page', 'url' => '/files', 'verb' => 'GET'],
 
 		// Webhooks.
@@ -397,5 +400,7 @@ return [
 		['name' => 'webhooks#destroy', 'url' => '/api/webhooks/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\d+']],
 		['name' => 'webhooks#test', 'url' => '/api/webhooks/{id}/test', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
 		['name' => 'webhooks#events', 'url' => '/api/webhooks/events', 'verb' => 'GET'],
+		['name' => 'webhooks#logs', 'url' => '/api/webhooks/{id}/logs', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
+		['name' => 'webhooks#logStats', 'url' => '/api/webhooks/{id}/logs/stats', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
     ],
 ];

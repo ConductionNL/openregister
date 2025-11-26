@@ -1,6 +1,6 @@
 <?php
-
-/**
+declare(strict_types=1);
+/*
  * OpenRegister Views Table Migration
  *
  * This migration creates the 'openregister_views' table
@@ -17,8 +17,6 @@
  *
  * @link https://www.OpenRegister.nl
  */
-
-declare(strict_types=1);
 
 namespace OCA\OpenRegister\Migration;
 
@@ -52,13 +50,9 @@ class Version1Date20251102140000 extends SimpleMigrationStep
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /*
-         * @var ISchemaWrapper $schema
-         */
-
         $schema = $schemaClosure();
 
-        $output->info('🔧 Creating views table...');
+        $output->info(message: '🔧 Creating views table...');
 
         if ($schema->hasTable('openregister_views') === false) {
             $table = $schema->createTable('openregister_views');
@@ -190,18 +184,18 @@ class Version1Date20251102140000 extends SimpleMigrationStep
             $table->addIndex(['is_default'], 'views_default_index');
             $table->addIndex(['owner', 'is_default'], 'views_owner_default_index');
 
-            $output->info('✅ Created openregister_views table');
+            $output->info(message: '✅ Created openregister_views table');
             $output->info('🎯 Views system now supports:');
-            $output->info('   • Saving reusable query filters');
-            $output->info('   • Multi-register and multi-schema constraints');
-            $output->info('   • Public and private views');
-            $output->info('   • Favorite views per user');
-            $output->info('   • Search terms, facets, and filters');
+            $output->info(message: '   • Saving reusable query filters');
+            $output->info(message: '   • Multi-register and multi-schema constraints');
+            $output->info(message: '   • Public and private views');
+            $output->info(message: '   • Favorite views per user');
+            $output->info(message: '   • Search terms, facets, and filters');
             $output->info('   • Future: Expose views as API endpoints');
 
             return $schema;
         } else {
-            $output->info('ℹ️  Views table already exists, skipping...');
+            $output->info(message: 'ℹ️  Views table already exists, skipping...');
         }//end if
 
         return null;

@@ -5,7 +5,8 @@
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xmlns="https://getpsalm.org/schema/config"
     findUnusedBaselineEntry="true"
-    findUnusedCode="false"
+    findUnusedCode="true"
+    findUnusedVariablesAndParams="true"
 >
     <projectFiles>
         <directory name="lib" />
@@ -29,8 +30,17 @@
             <errorLevel type="suppress">
                 <referencedClass name="OC"/>
                 <referencedClass name="Doctrine\DBAL\Types\Types"/>
+                <referencedClass name="Doctrine\DBAL\Types\Type"/>
                 <referencedClass name="Doctrine\DBAL\Connection"/>
+                <referencedClass name="Doctrine\DBAL\Schema\Schema"/>
                 <referencedClass name="Symfony\Component\HttpFoundation\Response"/>
+                <referencedClass name="Doctrine\DBAL\Platforms\AbstractPlatform"/>
+                <referencedClass name="React\Async\PromiseInterface"/>
+                <referencedClass name="Solarium\Client"/>
+                <referencedClass name="Solarium\Core\Client\Adapter\Curl"/>
+                <referencedClass name="Solarium\Exception\HttpException"/>
+                <referencedClass name="Symfony\Component\EventDispatcher\EventDispatcher"/>
+                <referencedClass name="Ramsey\Uuid\Uuid"/>
             </errorLevel>
         </UndefinedClass>
         <UndefinedMagicMethod errorLevel="suppress"/>

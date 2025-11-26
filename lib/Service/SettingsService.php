@@ -298,6 +298,7 @@ class SettingsService
                     'defaultUserTenant'                  => '',
                     'defaultObjectTenant'                => '',
                     'publishedObjectsBypassMultiTenancy' => false,
+                    'adminOverride'                      => true,
                 ];
             } else {
                 $multitenancyData     = json_decode($multitenancyConfig, true);
@@ -306,6 +307,7 @@ class SettingsService
                     'defaultUserTenant'                  => $multitenancyData['defaultUserTenant'] ?? '',
                     'defaultObjectTenant'                => $multitenancyData['defaultObjectTenant'] ?? '',
                     'publishedObjectsBypassMultiTenancy' => $multitenancyData['publishedObjectsBypassMultiTenancy'] ?? false,
+                    'adminOverride'                      => $multitenancyData['adminOverride'] ?? true,
                 ];
             }
 
@@ -517,6 +519,7 @@ class SettingsService
                     'defaultUserTenant'                  => $multitenancyData['defaultUserTenant'] ?? '',
                     'defaultObjectTenant'                => $multitenancyData['defaultObjectTenant'] ?? '',
                     'publishedObjectsBypassMultiTenancy' => $multitenancyData['publishedObjectsBypassMultiTenancy'] ?? false,
+                    'adminOverride'                      => $multitenancyData['adminOverride'] ?? true,
                 ];
                 $this->config->setValueString($this->appName, 'multitenancy', json_encode($multitenancyConfig));
             }
@@ -532,6 +535,7 @@ class SettingsService
                     'readLogRetention'       => $retentionData['readLogRetention'] ?? 86400000,
                     'updateLogRetention'     => $retentionData['updateLogRetention'] ?? 604800000,
                     'deleteLogRetention'     => $retentionData['deleteLogRetention'] ?? 2592000000,
+                    'webhookLogRetention'    => $retentionData['webhookLogRetention'] ?? 2592000000,
                     'auditTrailsEnabled'     => $retentionData['auditTrailsEnabled'] ?? true,
                     'searchTrailsEnabled'    => $retentionData['searchTrailsEnabled'] ?? true,
                 ];
@@ -655,7 +659,7 @@ class SettingsService
     public function rebaseObjectsAndLogs(): array
     {
         try {
-            $startTime = new \DateTime();
+            $startTime = new \DateTime('now');
             $results   = [
                 'startTime'        => $startTime,
                 'ownershipResults' => null,
@@ -710,7 +714,7 @@ class SettingsService
                 $results['errors'][] = $error;
             }//end try
 
-            $results['endTime']  = new \DateTime();
+            $results['endTime']  = new \DateTime('now');
             $results['duration'] = $results['endTime']->diff($startTime)->format('%H:%I:%S');
             $results['success']  = empty($results['errors']);
 
@@ -764,6 +768,7 @@ class SettingsService
                     'totalObjects'            => 0,
                     'totalAuditTrails'        => 0,
                     'totalSearchTrails'       => 0,
+                    'totalWebhookLogs'        => 0,
                     'totalConfigurations'     => 0,
                     'totalDataAccessProfiles' => 0,
                     'totalOrganisations'      => 0,
@@ -781,7 +786,7 @@ class SettingsService
                     'expiredSearchTrailsSize' => 0,
                     'expiredObjectsSize'      => 0,
                 ],
-                'lastUpdated' => (new \DateTime())->format('c'),
+                'lastUpdated' => (new \DateTime('now'))->format('c'),
             ];
 
             // Get database connection for optimized queries.
@@ -857,7 +862,25 @@ class SettingsService
             $stats['warnings']['expiredSearchTrails']       = (int) ($searchData['expired_count'] ?? 0);
             $stats['sizes']['expiredSearchTrailsSize']      = (int) ($searchData['expired_size'] ?? 0);
 
-            // 4. All other tables - simple counts (these should be fast).
+            // 4. Webhook logs table - comprehensive stats.
+            $webhookLogQuery = "
+                SELECT
+                    COUNT(*) as total_count
+                FROM `*PREFIX*openregister_webhook_logs`
+            ";
+
+            try {
+                $result         = $db->executeQuery($webhookLogQuery);
+                $webhookLogData = $result->fetch();
+                $result->closeCursor();
+
+                $stats['totals']['totalWebhookLogs'] = (int) ($webhookLogData['total_count'] ?? 0);
+            } catch (Exception $e) {
+                // Table might not exist, set to 0 and continue.
+                $stats['totals']['totalWebhookLogs'] = 0;
+            }
+
+            // 5. All other tables - simple counts (these should be fast).
             $simpleCountTables = [
                 'configurations'     => '`*PREFIX*openregister_configurations`',
                 'dataAccessProfiles' => '`*PREFIX*openregister_data_access_profiles`',
@@ -948,7 +971,7 @@ class SettingsService
                 ],
                 'distributed' => $distributedStats,
                 'performance' => $performanceStats,
-                'lastUpdated' => (new \DateTime())->format('c'),
+                'lastUpdated' => (new \DateTime('now'))->format('c'),
             ];
 
             return $stats;
@@ -977,7 +1000,7 @@ class SettingsService
                 ],
                 'distributed' => ['type' => 'none', 'backend' => 'Unknown', 'available' => false],
                 'performance' => ['averageHitTime' => 0, 'averageMissTime' => 0, 'performanceGain' => 0, 'optimalHitRate' => 85.0],
-                'lastUpdated' => (new \DateTime())->format('c'),
+                'lastUpdated' => (new \DateTime('now'))->format('c'),
                 'error'       => 'Cache statistics unavailable: '.$e->getMessage(),
             ];
         }//end try
@@ -1110,7 +1133,7 @@ class SettingsService
             $results = [
                 'type'         => $type,
                 'userId'       => $userId,
-                'timestamp'    => (new \DateTime())->format('c'),
+                'timestamp'    => (new \DateTime('now'))->format(format: 'c'),
                 'results'      => [],
                 'errors'       => [],
                 'totalCleared' => 0,
@@ -1470,11 +1493,11 @@ class SettingsService
                 // Test Zookeeper connection using SOLR's Zookeeper API.
                 $url = sprintf(
                     '%s://%s:%d%s/admin/collections?action=CLUSTERSTATUS&wt=json',
-                    $solrSettings['scheme'],
+                        $solrSettings['scheme'],
                     $solrSettings['host'],
                     $solrSettings['port'],
                     $solrSettings['path']
-                );
+                        );
 
                 $context = stream_context_create(
                         [
@@ -1540,20 +1563,20 @@ class SettingsService
                 // Kubernetes service - don't append port, it's handled by the service.
                 $baseUrl = sprintf(
                     '%s://%s%s',
-                    $solrSettings['scheme'],
+                        $solrSettings['scheme'],
                     $host,
                     $solrSettings['path']
-                );
+                        );
             } else {
                 // Regular hostname - append port (default to 8983 if not provided).
                 $port    = !empty($solrSettings['port']) ? $solrSettings['port'] : 8983;
                 $baseUrl = sprintf(
                     '%s://%s:%d%s',
-                    $solrSettings['scheme'],
+                        $solrSettings['scheme'],
                     $host,
                     $port,
                     $solrSettings['path']
-                );
+                        );
             }
 
             // Test basic SOLR connectivity with admin endpoints.
@@ -1621,73 +1644,47 @@ class SettingsService
             $data = json_decode($response, true);
 
             // Validate admin response - be flexible about response format.
-            if ($testType === 'admin_ping') {
-                // Check for successful response - different endpoints have different formats.
-                $isValidResponse = false;
+            // Check for successful response - different endpoints have different formats.
+            // Note: $testType is always 'admin_ping' in current implementation.
+            $isValidResponse = false;
 
-                if (isset($data['status']) && $data['status'] === 'OK') {
-                    // Standard ping response.
-                    $isValidResponse = true;
-                } else if (isset($data['responseHeader']['status']) && $data['responseHeader']['status'] === 0) {
-                    // System info response.
-                    $isValidResponse = true;
-                } else if (is_array($data) && !empty($data)) {
-                    // Any valid JSON response indicates SOLR is responding.
-                    $isValidResponse = true;
-                }
+            if (isset($data['status']) && $data['status'] === 'OK') {
+                // Standard ping response.
+                $isValidResponse = true;
+            } else if (isset($data['responseHeader']['status']) && $data['responseHeader']['status'] === 0) {
+                // System info response.
+                $isValidResponse = true;
+            } else if (is_array($data) && !empty($data)) {
+                // Any valid JSON response indicates SOLR is responding.
+                $isValidResponse = true;
+            }
 
-                if ($isValidResponse === false) {
-                    return [
-                        'success' => false,
-                        'message' => 'SOLR admin endpoint returned invalid response',
-                        'details' => [
-                            'url'              => $testUrl,
-                            'test_type'        => $testType,
-                            'response'         => $data,
-                            'response_time_ms' => round($responseTime, 2),
-                        ],
-                    ];
-                }
-
+            if ($isValidResponse === false) {
                 return [
-                    'success' => true,
-                    'message' => 'SOLR server responding correctly',
+                    'success' => false,
+                    'message' => 'SOLR admin endpoint returned invalid response',
                     'details' => [
                         'url'              => $testUrl,
                         'test_type'        => $testType,
+                        'response'         => $data,
                         'response_time_ms' => round($responseTime, 2),
-                        'solr_status'      => $data['status'] ?? 'OK',
-                        'use_cloud'        => $solrSettings['useCloud'] ?? false,
-                        'server_info'      => $data['responseHeader'] ?? [],
-                        'working_endpoint' => str_replace($baseUrl, '', $testUrl),
                     ],
                 ];
-            } else {
-                // For standalone admin ping test.
-                if (!isset($data['status']) || $data['status'] !== 'OK') {
-                    return [
-                        'success' => false,
-                        'message' => 'SOLR admin ping failed',
-                        'details' => [
-                            'url'              => $testUrl,
-                            'test_type'        => $testType,
-                            'response'         => $data,
-                            'response_time_ms' => round($responseTime, 2),
-                        ],
-                    ];
-                }
+            }
 
-                return [
-                    'success' => true,
-                    'message' => 'SOLR standalone server responding correctly',
-                    'details' => [
-                        'url'              => $testUrl,
-                        'test_type'        => $testType,
-                        'response_time_ms' => round($responseTime, 2),
-                        'solr_version'     => $data['lucene']['solr-spec-version'] ?? 'unknown',
-                    ],
-                ];
-            }//end if
+            return [
+                'success' => true,
+                'message' => 'SOLR server responding correctly',
+                'details' => [
+                    'url'              => $testUrl,
+                    'test_type'        => $testType,
+                    'response_time_ms' => round($responseTime, 2),
+                    'solr_status'      => $data['status'] ?? 'OK',
+                    'use_cloud'        => $solrSettings['useCloud'] ?? false,
+                    'server_info'      => $data['responseHeader'] ?? [],
+                    'working_endpoint' => str_replace($baseUrl, '', $testUrl),
+                ],
+            ];
         } catch (Exception $e) {
             return [
                 'success' => false,
@@ -1722,20 +1719,20 @@ class SettingsService
                 // Kubernetes service - don't append port, it's handled by the service.
                 $baseUrl = sprintf(
                     '%s://%s%s',
-                    $solrSettings['scheme'],
+                        $solrSettings['scheme'],
                     $host,
                     $solrSettings['path']
-                );
+                        );
             } else {
                 // Regular hostname - append port (default to 8983 if not provided).
                 $port    = !empty($solrSettings['port']) ? $solrSettings['port'] : 8983;
                 $baseUrl = sprintf(
                     '%s://%s:%d%s',
-                    $solrSettings['scheme'],
+                        $solrSettings['scheme'],
                     $host,
                     $port,
                     $solrSettings['path']
-                );
+                        );
             }
 
             // For SolrCloud, test collection existence.
@@ -1862,20 +1859,20 @@ class SettingsService
                 // Kubernetes service - don't append port, it's handled by the service.
                 $baseUrl = sprintf(
                     '%s://%s%s',
-                    $solrSettings['scheme'],
+                        $solrSettings['scheme'],
                     $host,
                     $solrSettings['path']
-                );
+                        );
             } else {
                 // Regular hostname - append port (default to 8983 if not provided).
                 $port    = !empty($solrSettings['port']) ? $solrSettings['port'] : 8983;
                 $baseUrl = sprintf(
                     '%s://%s:%d%s',
-                    $solrSettings['scheme'],
+                        $solrSettings['scheme'],
                     $host,
                     $port,
                     $solrSettings['path']
-                );
+                        );
             }
 
             // Test collection select query.
@@ -2004,11 +2001,11 @@ class SettingsService
                 $schemas      = $schemaMapper->findAll();
             } catch (Exception $e) {
                 // Continue without schema mirroring if schema mapper is not available.
-                $this->logger->warning('Schema mapper not available for warmup', ['error' => $e->getMessage()]);
+                $this->logger->warning(message: 'Schema mapper not available for warmup', context: ['error' => $e->getMessage()]);
             }
 
             // **COMPLETE WARMUP**: Mirror schemas + index objects + cache warmup.
-            $warmupResult = $solrService->warmupIndex($schemas, $maxObjects, $mode, $collectErrors);
+            $warmupResult = $solrService->warmupIndex($schemas, multi: $maxObjects, mode: $mode, collectErrors: $collectErrors);
 
             $totalDuration = microtime(true) - $startTime;
 
@@ -2052,8 +2049,8 @@ class SettingsService
             }//end if
         } catch (Exception $e) {
             $this->logger->error(
-                    'SOLR warmup failed with exception',
-                    [
+                    message: 'SOLR warmup failed with exception',
+                    context: [
                         'error' => $e->getMessage(),
                         'class' => get_class($e),
                         'file'  => $e->getFile(),
@@ -2777,7 +2774,7 @@ class SettingsService
             $settings = $this->getOrganisationSettingsOnly();
             return $settings['organisation']['default_organisation'] ?? null;
         } catch (Exception $e) {
-            $this->logger->warning('Failed to get default organisation UUID: '.$e->getMessage());
+            $this->logger->warning(message: 'Failed to get default organisation UUID: '.$e->getMessage());
             return null;
         }
 
@@ -2797,7 +2794,7 @@ class SettingsService
             $settings['organisation']['default_organisation'] = $uuid;
             $this->updateOrganisationSettingsOnly($settings['organisation']);
         } catch (Exception $e) {
-            $this->logger->error('Failed to set default organisation UUID: '.$e->getMessage());
+            $this->logger->error(message: 'Failed to set default organisation UUID: '.$e->getMessage());
         }
 
     }//end setDefaultOrganisationUuid()
@@ -2840,6 +2837,7 @@ class SettingsService
                     'defaultUserTenant'                  => '',
                     'defaultObjectTenant'                => '',
                     'publishedObjectsBypassMultiTenancy' => false,
+                    'adminOverride'                      => true,
                 ];
             } else {
                 $storedData       = json_decode($multitenancyConfig, true);
@@ -2848,6 +2846,7 @@ class SettingsService
                     'defaultUserTenant'                  => $storedData['defaultUserTenant'] ?? '',
                     'defaultObjectTenant'                => $storedData['defaultObjectTenant'] ?? '',
                     'publishedObjectsBypassMultiTenancy' => $storedData['publishedObjectsBypassMultiTenancy'] ?? false,
+                    'adminOverride'                      => $storedData['adminOverride'] ?? true,
                 ];
             }
 
@@ -2877,6 +2876,7 @@ class SettingsService
                 'defaultUserTenant'                  => $multitenancyData['defaultUserTenant'] ?? '',
                 'defaultObjectTenant'                => $multitenancyData['defaultObjectTenant'] ?? '',
                 'publishedObjectsBypassMultiTenancy' => $multitenancyData['publishedObjectsBypassMultiTenancy'] ?? false,
+                'adminOverride'                      => $multitenancyData['adminOverride'] ?? true,
             ];
 
             $this->config->setValueString($this->appName, 'multitenancy', json_encode($multitenancyConfig));
@@ -3047,7 +3047,7 @@ class SettingsService
                     'textExtractor'        => 'llphant',
                 // llphant, dolphin.
                     'extractionMode'       => 'background',
-                // background, immediate, manual.
+                // immediate, background, cron, manual.
                     'maxFileSize'          => 100,
                     'batchSize'            => 10,
                     'dolphinApiEndpoint'   => '',
@@ -3088,7 +3088,7 @@ class SettingsService
                 'textExtractor'        => $fileData['textExtractor'] ?? 'llphant',
             // llphant, dolphin.
                 'extractionMode'       => $fileData['extractionMode'] ?? 'background',
-            // background, immediate, manual.
+            // immediate, background, cron, manual.
                 'maxFileSize'          => $fileData['maxFileSize'] ?? 100,
                 'batchSize'            => $fileData['batchSize'] ?? 10,
                 'dolphinApiEndpoint'   => $fileData['dolphinApiEndpoint'] ?? '',
@@ -3136,6 +3136,8 @@ class SettingsService
                     'maxNestingDepth'      => 10,
                     'batchSize'            => 25,
                     'autoRetry'            => true,
+                    'objectExtractionMode' => 'background',
+                    // immediate, background, cron, manual.
                 ];
             }
 
@@ -3151,6 +3153,8 @@ class SettingsService
                 'maxNestingDepth'      => $objectData['maxNestingDepth'] ?? 10,
                 'batchSize'            => $objectData['batchSize'] ?? 25,
                 'autoRetry'            => $objectData['autoRetry'] ?? true,
+                'objectExtractionMode' => $objectData['objectExtractionMode'] ?? 'background',
+                // immediate, background, cron, manual.
             ];
         } catch (Exception $e) {
             throw new \RuntimeException('Failed to get Object Management settings: '.$e->getMessage());
@@ -3173,6 +3177,8 @@ class SettingsService
                 'maxNestingDepth'      => $objectData['maxNestingDepth'] ?? 10,
                 'batchSize'            => $objectData['batchSize'] ?? 25,
                 'autoRetry'            => $objectData['autoRetry'] ?? true,
+                'objectExtractionMode' => $objectData['objectExtractionMode'] ?? 'background',
+                // immediate, background, cron, manual.
             ];
 
             $this->config->setValueString($this->appName, 'objectManagement', json_encode($objectConfig));
@@ -3227,6 +3233,7 @@ class SettingsService
                 'readLogRetention'       => $retentionData['readLogRetention'] ?? 86400000,
                 'updateLogRetention'     => $retentionData['updateLogRetention'] ?? 604800000,
                 'deleteLogRetention'     => $retentionData['deleteLogRetention'] ?? 2592000000,
+                'webhookLogRetention'    => $retentionData['webhookLogRetention'] ?? 2592000000,
                 'auditTrailsEnabled'     => $this->convertToBoolean($retentionData['auditTrailsEnabled'] ?? true),
                 'searchTrailsEnabled'    => $this->convertToBoolean($retentionData['searchTrailsEnabled'] ?? true),
             ];

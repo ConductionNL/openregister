@@ -227,7 +227,7 @@ class Version1Date20250829120000 extends SimpleMigrationStep
                             'comment' => 'Image data or reference representing the object (e.g. logo)',
                         ]
                         );
-                $output->info('Added image column to openregister_objects table');
+                $output->info(message: 'Added image column to openregister_objects table');
             }
         }
 
@@ -240,7 +240,7 @@ class Version1Date20250829120000 extends SimpleMigrationStep
                 $indexName = 'registers_organisation_slug_unique';
                 if ($table->hasIndex($indexName) === false) {
                     $table->addUniqueIndex(['organisation', 'slug'], $indexName);
-                    $output->info('Added unique constraint on (organisation, slug) for registers table');
+                    $output->info(message: 'Added unique constraint on (organisation, slug) for registers table');
                 }
             } else {
                 $output->warning('Cannot add unique constraint: organisation or slug column missing in registers table');
@@ -256,7 +256,7 @@ class Version1Date20250829120000 extends SimpleMigrationStep
                 $indexName = 'schemas_organisation_slug_unique';
                 if ($table->hasIndex($indexName) === false) {
                     $table->addUniqueIndex(['organisation', 'slug'], $indexName);
-                    $output->info('Added unique constraint on (organisation, slug) for schemas table');
+                    $output->info(message: 'Added unique constraint on (organisation, slug) for schemas table');
                 }
             } else {
                 $output->warning('Cannot add unique constraint: organisation or slug column missing in schemas table');

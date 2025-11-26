@@ -22,11 +22,11 @@ Dolphin is a Vision-Language Model (VLM) that excels at:
 
 ### Step 1: Deploy Dolphin Container
 
-Dolphin is included in `docker-compose.huggingface.yml`:
+Dolphin is included in `docker-compose.dev.yml` with the `huggingface` profile:
 
 ```bash
 # Start Dolphin service
-docker-compose -f docker-compose.huggingface.yml up -d dolphin-vlm
+docker-compose -f docker-compose.dev.yml --profile huggingface up -d dolphin-vlm
 
 # Wait for model download and initialization
 docker logs -f openregister-dolphin-vlm
@@ -332,7 +332,7 @@ docker exec openregister-dolphin-vlm nvidia-smi
 
 ## Further Reading
 
-- [Dolphin Deployment Guide](../development/dolphin-deployment.md)
+- [Docker Setup](../development/docker-setup.md) - Docker setup with Hugging Face profile
 - [Text Extraction Implementation](../technical/text-extraction-implementation.md)
 - [Dolphin GitHub Repository](https://github.com/bytedance/Dolphin)
 - [Hugging Face Dolphin Model](https://huggingface.co/ByteDance/Dolphin-1.5)
@@ -340,9 +340,11 @@ docker exec openregister-dolphin-vlm nvidia-smi
 ## Support
 
 For issues specific to:
-- **Dolphin setup**: Check [Dolphin Deployment Guide](../development/dolphin-deployment.md)
+- **Dolphin setup**: Check [Docker Setup](../development/docker-setup.md) - Use `--profile huggingface` to enable Dolphin
 - **OpenRegister integration**: OpenRegister GitHub issues
 - **Model issues**: Check [Dolphin GitHub](https://github.com/bytedance/Dolphin)
+
+
 
 
 

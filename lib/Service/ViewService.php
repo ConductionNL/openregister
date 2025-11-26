@@ -87,7 +87,7 @@ class ViewService
      */
     public function findAll(string $owner): array
     {
-        return $this->viewMapper->findAll($owner);
+        return $this->viewMapper->findAll(owner: $owner);
 
     }//end findAll()
 
@@ -131,7 +131,7 @@ class ViewService
 
             return $this->viewMapper->insert($view);
         } catch (Exception $e) {
-            $this->logger->error('Error creating view: '.$e->getMessage());
+            $this->logger->error(message: 'Error creating view: '.$e->getMessage());
             throw $e;
         }
 
@@ -167,7 +167,7 @@ class ViewService
         try {
             $view = $this->find($id, $owner);
 
-            // If this is set as default, unset any existing default for this user.
+            // If this is set as default, schema: unset any existing default for this user.
             if ($isDefault === true && $view->getIsDefault() === false) {
                 $this->clearDefaultForUser($owner);
             }
@@ -185,7 +185,7 @@ class ViewService
 
             return $this->viewMapper->update($view);
         } catch (Exception $e) {
-            $this->logger->error('Error updating view: '.$e->getMessage());
+            $this->logger->error(message: 'Error updating view: '.$e->getMessage());
             throw $e;
         }//end try
 
@@ -208,7 +208,7 @@ class ViewService
             $view = $this->find($id, $owner);
             $this->viewMapper->delete($view);
         } catch (Exception $e) {
-            $this->logger->error('Error deleting view: '.$e->getMessage());
+            $this->logger->error(message: 'Error deleting view: '.$e->getMessage());
             throw $e;
         }
 
@@ -230,7 +230,7 @@ class ViewService
     {
         try {
             $view = $this->find($id, $owner);
-            // GetFavoredBy() always returns an array (non-null), but keeping ?? [] for defensive programming.
+            // GetFavoredBy() always returns an array (non-null), schema: but keeping ?? [] for defensive programming.
             $favoredBy = $view->getFavoredBy();
 
             if ($favor === true) {
@@ -247,7 +247,7 @@ class ViewService
             $view->setFavoredBy($favoredBy);
             return $this->viewMapper->update($view);
         } catch (Exception $e) {
-            $this->logger->error('Error toggling favorite: '.$e->getMessage());
+            $this->logger->error(message: 'Error toggling favorite: '.$e->getMessage());
             throw $e;
         }//end try
 

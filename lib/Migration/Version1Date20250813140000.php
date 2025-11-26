@@ -75,12 +75,12 @@ class Version1Date20250813140000 extends SimpleMigrationStep
                         'comment' => 'URL-friendly identifier for the object, unique within register+schema combination',
                     ]
                     );
-            $output->info('Added slug column to openregister_objects table');
+            $output->info(message: 'Added slug column to openregister_objects table');
         }
 
         // Skip complex index creation for now to avoid MySQL key length issues.
         // TODO: Add indexes after app is enabled.
-        $output->info('Skipping complex index creation to avoid MySQL key length issues');
+        $output->info(message: 'Skipping complex index creation to avoid MySQL key length issues');
 
         return $schema;
 

@@ -34,6 +34,8 @@ use Symfony\Component\Uid\Uuid;
  * Class ConfigurationController
  *
  * @package OCA\OpenRegister\Controller
+ *
+ * @psalm-suppress UnusedClass - This controller is registered via routes.php and used by Nextcloud's routing system
  */
 class ConfigurationsController extends Controller
 {
@@ -55,7 +57,7 @@ class ConfigurationsController extends Controller
         private readonly ConfigurationService $configurationService,
         private readonly UploadService $uploadService
     ) {
-        parent::__construct($appName, $request);
+        parent::__construct(appName: $appName, request: $request);
 
     }//end __construct()
 
@@ -81,14 +83,14 @@ class ConfigurationsController extends Controller
 
         // Return all configurations that match the search conditions.
         return new JSONResponse(
-                [
+                data: [
                     'results' => $this->configurationMapper->findAll(
                 limit: null,
                 offset: null,
                 filters: $filters,
                 searchConditions: $searchConditions,
                 searchParams: $searchParams
-            ),
+                            ),
                 ]
                 );
 
@@ -108,12 +110,9 @@ class ConfigurationsController extends Controller
     public function show(int $id): JSONResponse
     {
         try {
-            return new JSONResponse($this->configurationMapper->find($id));
+            return new JSONResponse(data: $this->configurationMapper->find($id));
         } catch (Exception $e) {
-            return new JSONResponse(
-                ['error' => 'Configuration not found'],
-                404
-            );
+            return new JSONResponse(data: ['error' => 'Configuration not found'], statusCode: 404);
         }
 
     }//end show()
@@ -132,7 +131,7 @@ class ConfigurationsController extends Controller
         $data = $this->request->getParams();
 
         // Remove internal parameters and data attribute.
-        foreach ($data as $key => $value) {
+        foreach (array_keys($data) as $key) {
             if (str_starts_with($key, '_') === true || $key === 'data') {
                 unset($data[$key]);
             }
@@ -163,13 +162,10 @@ class ConfigurationsController extends Controller
 
         try {
             return new JSONResponse(
-                $this->configurationMapper->createFromArray($data)
+                    data: $this->configurationMapper->createFromArray($data)
             );
         } catch (Exception $e) {
-            return new JSONResponse(
-                ['error' => 'Failed to create configuration: '.$e->getMessage()],
-                400
-            );
+            return new JSONResponse(data: ['error' => 'Failed to create configuration: '.$e->getMessage()], statusCode: 400);
         }
 
     }//end create()
@@ -190,7 +186,7 @@ class ConfigurationsController extends Controller
         $data = $this->request->getParams();
 
         // Remove internal parameters and data attribute.
-        foreach ($data as $key => $value) {
+        foreach (array_keys($data) as $key) {
             if (str_starts_with($key, '_') === true || $key === 'data') {
                 unset($data[$key]);
             }
@@ -213,13 +209,10 @@ class ConfigurationsController extends Controller
 
         try {
             return new JSONResponse(
-                $this->configurationMapper->updateFromArray($id, $data)
+                    data: $this->configurationMapper->updateFromArray(id: $id, data: $data)
             );
         } catch (Exception $e) {
-            return new JSONResponse(
-                ['error' => 'Failed to update configuration: '.$e->getMessage()],
-                400
-            );
+            return new JSONResponse(data: ['error' => 'Failed to update configuration: '.$e->getMessage()], statusCode: 400);
         }
 
     }//end update()
@@ -257,12 +250,9 @@ class ConfigurationsController extends Controller
         try {
             $configuration = $this->configurationMapper->find($id);
             $this->configurationMapper->delete($configuration);
-            return new JSONResponse();
+            return new JSONResponse(data: null, statusCode: 204);
         } catch (Exception $e) {
-            return new JSONResponse(
-                ['error' => 'Failed to delete configuration: '.$e->getMessage()],
-                400
-            );
+            return new JSONResponse(data: ['error' => 'Failed to delete configuration: '.$e->getMessage()], statusCode: 400);
         }
 
     }//end destroy()
@@ -286,7 +276,7 @@ class ConfigurationsController extends Controller
             $configuration = $this->configurationMapper->find($id);
 
             // Export the configuration and its related data.
-            $exportData = $this->configurationService->exportConfig($configuration, $includeObjects);
+            $exportData = $this->configurationService->exportConfig(input: $configuration, includeObjects: $includeObjects);
 
             // Convert to JSON.
             $jsonContent = json_encode($exportData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
@@ -297,7 +287,7 @@ class ConfigurationsController extends Controller
             // Generate filename.
             $filename = sprintf(
                 'configuration_%s_%s.json',
-                $configuration->getTitle(),
+                    $configuration->getTitle(),
                 (new \DateTime())->format('Y-m-d_His')
             );
 
@@ -308,10 +298,7 @@ class ConfigurationsController extends Controller
                 'application/json'
             );
         } catch (Exception $e) {
-            return new JSONResponse(
-                ['error' => 'Failed to export configuration: '.$e->getMessage()],
-                400
-            );
+            return new JSONResponse(data: ['error' => 'Failed to export configuration: '.$e->getMessage()], statusCode: 400);
         }//end try
 
     }//end export()
@@ -338,31 +325,29 @@ class ConfigurationsController extends Controller
             }
 
             // Get the uploaded JSON data.
-            $jsonData = $this->configurationService->getUploadedJson($this->request->getParams(), $uploadedFiles);
+            $jsonData = $this->configurationService->getUploadedJson(data: $this->request->getParams(), uploadedFiles: $uploadedFiles);
             if ($jsonData instanceof JSONResponse) {
                 return $jsonData;
             }
 
             // Import the data.
             $result = $this->configurationService->importFromJson(
-                $jsonData,
-                $this->request->getParam('owner'),
-                $this->request->getParam('appId'),
-                $this->request->getParam('version'),
-                $force
+                data: $jsonData,
+                configuration: null,
+                owner: $this->request->getParam('owner'),
+                appId: $this->request->getParam('appId'),
+                version: $this->request->getParam('version'),
+                force: $force
             );
 
             return new JSONResponse(
-                    [
+                    data: [
                         'message'  => 'Import successful',
                         'imported' => $result,
                     ]
                     );
         } catch (Exception $e) {
-            return new JSONResponse(
-                ['error' => 'Failed to import configuration: '.$e->getMessage()],
-                400
-            );
+            return new JSONResponse(data: ['error' => 'Failed to import configuration: '.$e->getMessage()], statusCode: 400);
         }//end try
 
     }//end import()

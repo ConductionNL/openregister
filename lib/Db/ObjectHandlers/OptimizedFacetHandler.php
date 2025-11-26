@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * OpenRegister Optimized Facet Handler
  *
@@ -88,7 +90,7 @@ class OptimizedFacetHandler
         // Generate cache key for this facet combination.
         $cacheKey = $this->generateCacheKey($facetConfig, $baseQuery);
 
-        if (isset($this->facetCache[$cacheKey])) {
+        if (isset($this->facetCache[$cacheKey]) === true) {
             return $this->facetCache[$cacheKey];
         }
 
@@ -97,7 +99,7 @@ class OptimizedFacetHandler
         $jsonFieldFacets = [];
 
         foreach ($facetConfig as $facetName => $config) {
-            if ($facetName === '@self' && is_array($config)) {
+            if ($facetName === '@self' && is_array($config) === true) {
                 $metadataFacets = $config;
             } elseif ($facetName !== '@self') {
                 $jsonFieldFacets[$facetName] = $config;
@@ -105,7 +107,7 @@ class OptimizedFacetHandler
         }
 
         // Process metadata facets (fast - use table indexes).
-        if (!empty($metadataFacets)) {
+        if (empty($metadataFacets) === false) {
             $results['@self'] = $this->getBatchedMetadataFacets($metadataFacets, $baseQuery);
         }
 
@@ -194,7 +196,8 @@ class OptimizedFacetHandler
             ->where($queryBuilder->expr()->isNotNull($field))
             ->groupBy($field)
             ->orderBy('doc_count', 'DESC')
-            ->setMaxResults(100); // Limit results for performance
+            ->setMaxResults(100);
+        // Limit results for performance.
 
         // Apply optimized base filters.
         $this->applyOptimizedBaseFilters($queryBuilder, $baseQuery);

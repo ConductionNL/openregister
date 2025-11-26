@@ -330,9 +330,7 @@ class OptimizedBulkOperations
      */
     private function buildMassiveInsertOnDuplicateKeyUpdateSQL(string $tableName, array $columns, int $objectCount): string
     {
-        // MEMORY ALLOCATION: Pre-calculate sizes to avoid string reallocation.
-        $estimatedSize = $objectCount * count($columns) * 20;
-        // Rough estimate.
+        // Build SQL string.
         $sql = '';
 
         // Build INSERT portion.
@@ -345,7 +343,8 @@ class OptimizedBulkOperations
 
         for ($i = 0; $i < $objectCount; $i++) {
             $rowValues = [];
-            foreach ($columns as $column) {
+            // Iterate over columns (count only matters, not the column name).
+            for ($j = 0; $j < count($columns); $j++) {
                 $rowValues[] = ':param_'.$paramIndex;
                 $paramIndex++;
             }

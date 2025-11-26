@@ -21,7 +21,7 @@ if docker ps | grep -q openregister-dolphin-vlm; then
 else
     echo -e "${RED}✗ Dolphin container is not running${NC}"
     echo "Starting Dolphin container..."
-    docker-compose -f docker-compose.huggingface.yml up -d dolphin-vlm
+    docker-compose -f docker-compose.dev.yml --profile huggingface up -d dolphin-vlm
     echo "Waiting for container to start (30 seconds)..."
     sleep 30
 fi

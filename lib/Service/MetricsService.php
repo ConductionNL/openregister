@@ -123,11 +123,11 @@ class MetricsService
             $qb->execute();
         } catch (\Exception $e) {
             $this->logger->error(
-            '[MetricsService] Failed to record metric',
-            [
-                'metric_type' => $metricType,
-                'error'       => $e->getMessage(),
-            ]
+                    message: '[MetricsService] Failed to record metric',
+                    context: [
+                        'metric_type' => $metricType,
+                        'error'       => $e->getMessage(),
+                    ]
             );
         }//end try
 
@@ -290,7 +290,7 @@ class MetricsService
 
         // Get current total size.
         $qb2 = $this->db->getQueryBuilder();
-        $qb2->select($qb2->func()->sum($qb2->func()->length('embedding')), 'total_bytes')
+        $qb2->select($qb2->createFunction('SUM(LENGTH(embedding))'), 'total_bytes')
             ->from('openregister_vectors');
 
         $result2 = $qb2->execute();
@@ -353,5 +353,74 @@ class MetricsService
 
     }//end cleanOldMetrics()
 
+    /**
+     * Encode metadata array to JSON string.
+     *
+     * @param array $metadata Metadata array to encode.
+     *
+     * @return string JSON-encoded metadata string.
+     */
+    private function encodeMetadata(array $metadata): string
+    {
+        $encoded = json_encode($metadata);
+        if ($encoded === false) {
+            return '{}';
+        }
+        return $encoded;
+    }//end encodeMetadata()
+
+    /**
+     * Calculate success rate percentage.
+     *
+     * @param int $total     Total number of operations.
+     * @param int $successful Number of successful operations.
+     *
+     * @return float Success rate as percentage (0-100).
+     */
+    private function calculateSuccessRate(int $total, int $successful): float
+    {
+        if ($total === 0) {
+            return 0.0;
+        }
+        return round(($successful / $total) * 100, 2);
+    }//end calculateSuccessRate()
+
+    /**
+     * Round average milliseconds value.
+     *
+     * @param mixed $avgMs Average milliseconds value (can be string or float).
+     *
+     * @return float Rounded average milliseconds.
+     */
+    private function roundAverageMs($avgMs): float
+    {
+        if (is_numeric($avgMs) === true) {
+            return round((float) $avgMs, 2);
+        }
+        return 0.0;
+    }//end roundAverageMs()
+
+    /**
+     * Calculate average vectors per day from growth data.
+     *
+     * @param array $growthData Growth data array.
+     *
+     * @return float Average vectors per day.
+     */
+    private function calculateAverageVectorsPerDay(array $growthData): float
+    {
+        if (empty($growthData) === true) {
+            return 0.0;
+        }
+        $totalVectors = 0;
+        $days = count($growthData);
+        foreach ($growthData as $dayData) {
+            $totalVectors += (int) ($dayData['count'] ?? 0);
+        }
+        if ($days === 0) {
+            return 0.0;
+        }
+        return round($totalVectors / $days, 2);
+    }//end calculateAverageVectorsPerDay()
 
 }//end class

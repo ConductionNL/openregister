@@ -33,6 +33,7 @@ use OCP\IDBConnection;
  */
 class Version1Date20250123120000 extends SimpleMigrationStep
 {
+
     /**
      * Database connection
      *
@@ -40,72 +41,88 @@ class Version1Date20250123120000 extends SimpleMigrationStep
      */
     private IDBConnection $connection;
 
+
     /**
      * Constructor
      *
      * @param IDBConnection $connection Database connection
+     *
+     * @return void
      */
     public function __construct(IDBConnection $connection)
     {
         $this->connection = $connection;
-    }
+
+    }//end __construct()
+
 
     /**
      * Pre-schema change operations
      *
-     * @param IOutput                   $output
-     * @param Closure(): ISchemaWrapper $schemaClosure
-     * @param array                     $options
+     * @param IOutput                   $output        Output interface
+     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure
+     * @param array                     $options       Migration options
      *
      * @return void
      */
     public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
         // No pre-schema changes required.
-    }
+
+    }//end preSchemaChange()
+
 
     /**
      * Apply schema changes for active column
      *
-     * @param IOutput                   $output
-     * @param Closure(): ISchemaWrapper $schemaClosure
-     * @param array                     $options
+     * @param IOutput                   $output        Output interface
+     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure
+     * @param array                     $options       Migration options
      *
      * @return null|ISchemaWrapper
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /** @var ISchemaWrapper $schema */
+        // Get schema from closure.
         $schema = $schemaClosure();
 
         // Add active field to organisations table.
-        if ($schema->hasTable('openregister_organisations')) {
+        if ($schema->hasTable('openregister_organisations') === true) {
             $table = $schema->getTable('openregister_organisations');
 
             // Add active field (boolean flag for active organisation).
-            if (!$table->hasColumn('active')) {
-                $table->addColumn('active', Types::BOOLEAN, [
-                    'notnull' => false,
-                    'default' => true
-                ]);
-                $output->info('Added active column to organisations table');
+            if ($table->hasColumn('active') === false) {
+                $table->addColumn(
+                    'active',
+                    Types::BOOLEAN,
+                    [
+                        'notnull' => false,
+                        'default' => true,
+                    ]
+                );
+                $output->info(message: 'Added active column to organisations table');
             }
         }
 
         return $schema;
-    }
+
+    }//end changeSchema()
+
 
     /**
      * Post-schema change operations
      *
-     * @param IOutput                   $output
-     * @param Closure(): ISchemaWrapper $schemaClosure
-     * @param array                     $options
+     * @param IOutput                   $output        Output interface
+     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure
+     * @param array                     $options       Migration options
      *
      * @return void
      */
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
         // No post-schema changes required.
-    }
-}
+
+    }//end postSchemaChange()
+
+
+}//end class

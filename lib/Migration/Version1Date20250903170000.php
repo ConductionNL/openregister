@@ -76,7 +76,7 @@ class Version1Date20250903170000 extends SimpleMigrationStep
         $table   = $schema->getTable('openregister_objects');
         $changed = false;
 
-        $output->info('=== OpenRegister Performance Index Migration ===');
+        $output->info(message: '=== OpenRegister Performance Index Migration ===');
 
         // **CRITICAL SINGLE-COLUMN INDEXES** for direct lookups.
         // Note: Using column length limits to avoid MySQL 3072 byte key limit.
@@ -108,19 +108,19 @@ class Version1Date20250903170000 extends SimpleMigrationStep
 
         // Skip complex index creation for now to avoid MySQL key length issues.
         // TODO: Add indexes after app is enabled.
-        $output->info('Skipping complex index creation to avoid MySQL key length issues');
+        $output->info(message: 'Skipping complex index creation to avoid MySQL key length issues');
 
         // Skip other complex indexes that may cause key size issues.
-        $output->info('Skipping complex multi-column indexes to avoid MySQL key size limits');
-        $output->info('Focus on basic indexes that provide maximum performance benefit');
+        $output->info(message: 'Skipping complex multi-column indexes to avoid MySQL key size limits');
+        $output->info(message: 'Focus on basic indexes that provide maximum performance benefit');
 
         // Log completion.
         if ($changed === true) {
-            $output->info('=== Performance Index Migration Completed Successfully ===');
+            $output->info(message: '=== Performance Index Migration Completed Successfully ===');
             $output->info('Expected performance improvement: 80-95% reduction in query time');
             $output->info('Target: 30 second queries should now run in <1 second');
         } else {
-            $output->info('=== All Performance Indexes Already Exist ===');
+            $output->info(message: '=== All Performance Indexes Already Exist ===');
         }
 
         if ($changed === true) {

@@ -97,6 +97,7 @@ export const useSettingsStore = defineStore('settings', {
 			defaultUserTenant: '',
 			defaultObjectTenant: '',
 			publishedObjectsBypassMultiTenancy: false,
+			adminOverride: true,
 		},
 
 		retentionOptions: {
@@ -834,6 +835,45 @@ export const useSettingsStore = defineStore('settings', {
 			} catch (error) {
 				console.error('Failed to save file settings:', error)
 				showError('Failed to save file settings: ' + error.message)
+				throw error
+			}
+		},
+
+		/**
+		 * Get object text extraction settings
+		 */
+		async getObjectSettings() {
+			try {
+				const response = await axios.get(generateUrl('/apps/openregister/api/settings/objects'))
+				if (response.data) {
+					return response.data
+				}
+				return {}
+			} catch (error) {
+				console.error('Failed to load object settings:', error)
+				return {}
+			}
+		},
+
+		/**
+		 * Save object text extraction settings
+		 * @param {object} objectData - The object settings to save
+		 */
+		async saveObjectSettings(objectData) {
+			try {
+				const response = await axios.put(
+					generateUrl('/apps/openregister/api/settings/objects'),
+					objectData,
+				)
+
+				if (response.data) {
+					showSuccess('Object settings saved successfully')
+				}
+
+				return response.data
+			} catch (error) {
+				console.error('Failed to save object settings:', error)
+				showError('Failed to save object settings: ' + error.message)
 				throw error
 			}
 		},

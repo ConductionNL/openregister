@@ -58,6 +58,7 @@ use OCP\IUserManager;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
+use Doctrine\DBAL\Schema\Schema as DoctrineSchema;
 
 /**
  * Dynamic Schema-Based Table Management Service
@@ -1227,6 +1228,7 @@ class MagicMapper
      */
     private function createTable(string $tableName, array $columns): void
     {
+        /** @var DoctrineSchema $schema */
         $schema = $this->db->createSchema();
         $table  = $schema->createTable($tableName);
 
@@ -1499,7 +1501,7 @@ class MagicMapper
                 } else if (is_string($value)) {
                     // Validate and convert datetime strings.
                     try {
-                        $dateTime = new DateTime($value);
+                        $dateTime = new \DateTime($value);
                         $value    = $dateTime->format('Y-m-d H:i:s');
                     } catch (Exception $e) {
                         $value = null;
@@ -1520,7 +1522,7 @@ class MagicMapper
         // Map schema properties to columns.
         $schemaProperties = $schema->getProperties();
         if (is_array($schemaProperties)) {
-            foreach ($schemaProperties as $propertyName => $propertyConfig) {
+            foreach (array_keys($schemaProperties) as $propertyName) {
                 if (isset($data[$propertyName])) {
                     $value = $data[$propertyName];
 
@@ -1640,7 +1642,7 @@ class MagicMapper
 
                     // Handle datetime fields.
                     if (in_array($metadataField, ['created', 'updated', 'published', 'depublished', 'expires']) && $value) {
-                        $value = new DateTime($value);
+                        $value = new \DateTime(datetime: $value);
                     }
 
                     // Handle JSON fields.
@@ -2061,6 +2063,7 @@ class MagicMapper
      */
     private function updateTableStructure(string $tableName, array $currentColumns, array $requiredColumns): void
     {
+        /** @var DoctrineSchema $schema */
         $schema = $this->db->createSchema();
         $table  = $schema->getTable($tableName);
 
@@ -2127,7 +2130,7 @@ class MagicMapper
             $schemaManager->dropTable($tableName);
 
             // Clear from cache - need to clear by table name pattern.
-            foreach (self::$tableExistsCache as $cacheKey => $timestamp) {
+            foreach (array_keys(self::$tableExistsCache) as $cacheKey) {
                 if (isset(self::$registerSchemaTableCache[$cacheKey])
                     && self::$registerSchemaTableCache[$cacheKey] === $tableName
                 ) {

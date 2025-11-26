@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 /**
  * Bulk Object Save Operations Handler
  *
@@ -133,7 +136,7 @@ class SaveObjects
     private function loadSchemaWithCache(int|string $schemaId): Schema
     {
         // Check static cache first.
-        if (isset(self::$schemaCache[$schemaId])) {
+        if (isset(self::$schemaCache[$schemaId]) === true) {
             return self::$schemaCache[$schemaId];
         }
 
@@ -157,7 +160,7 @@ class SaveObjects
         $schemaId = $schema->getId();
 
         // Check static cache first.
-        if (isset(self::$schemaAnalysisCache[$schemaId])) {
+        if (isset(self::$schemaAnalysisCache[$schemaId]) === true) {
             return self::$schemaAnalysisCache[$schemaId];
         }
 
@@ -180,7 +183,7 @@ class SaveObjects
     private function loadRegisterWithCache(int|string $registerId): Register
     {
         // Check static cache first.
-        if (isset(self::$registerCache[$registerId])) {
+        if (isset(self::$registerCache[$registerId]) === true) {
             return self::$registerCache[$registerId];
         }
 
@@ -252,10 +255,22 @@ class SaveObjects
 
         // PERFORMANCE OPTIMIZATION: Reduce logging overhead during bulk operations.
         // Only log for large operations or when debugging is needed.
-        if (count($objects) > 10000 || ($isMixedSchemaOperation && count($objects) > 1000)) {
-            $this->logger->info($isMixedSchemaOperation ? 'Starting mixed-schema bulk save operation' : 'Starting single-schema bulk save operation', [
+        if ($isMixedSchemaOperation === true) {
+            $logThreshold = 1000;
+        } else {
+            $logThreshold = 10000;
+        }
+        if (count($objects) > $logThreshold) {
+            if ($isMixedSchemaOperation === true) {
+                $logMessage = 'Starting mixed-schema bulk save operation';
+                $operationType = 'mixed-schema';
+            } else {
+                $logMessage = 'Starting single-schema bulk save operation';
+                $operationType = 'single-schema';
+            }
+            $this->logger->info($logMessage, [
                 'totalObjects' => count($objects),
-                'operation' => $isMixedSchemaOperation ? 'mixed-schema' : 'single-schema'
+                'operation' => $operationType
             ]);
         }
 
@@ -265,26 +280,26 @@ class SaveObjects
         // Bulk save operation starting.
 
         // Initialize result arrays for different outcomes.
-                // TODO: Replace 'skipped' with 'unchanged' throughout codebase - "unchanged" is more descriptive.
+        // TODO: Replace 'skipped' with 'unchanged' throughout codebase - "unchanged" is more descriptive.
         // and tells WHY an object was skipped (because content was unchanged).
         $result = [
             'saved'      => [],
             'updated'    => [],
-            'unchanged'  => [], // TODO: Rename from 'skipped' - more descriptive
+            'unchanged'  => [], // TODO: Rename from 'skipped' - more descriptive.
             'invalid'    => [],
             'errors'     => [],
             'statistics' => [
                 'totalProcessed' => $totalObjects,
                 'saved'          => 0,
                 'updated'        => 0,
-                'unchanged'      => 0, // TODO: Rename from 'skipped' - more descriptive
+                'unchanged'      => 0, // TODO: Rename from 'skipped' - more descriptive.
                 'invalid'        => 0,
                 'errors'         => 0,
                 'processingTimeMs' => 0,
             ],
         ];
 
-        if (empty($objects)) {
+        if (empty($objects) === true) {
             return $result;
         }
 
@@ -293,11 +308,14 @@ class SaveObjects
         $globalSchemaCache = [];
         $preparationInvalidObjects = [];
 
-        if (!$isMixedSchemaOperation && $schema !== null) {
-
+        if ($isMixedSchemaOperation === false && $schema !== null) {
             // FAST PATH: Single-schema operation - avoid complex mixed-schema logic.
             // NO ERROR SUPPRESSION: Let real preparation errors surface immediately.
-            [$processedObjects, $globalSchemaCache, $preparationInvalidObjects] = $this->prepareSingleSchemaObjectsOptimized($objects, $register, $schema);
+            [$processedObjects, $globalSchemaCache, $preparationInvalidObjects] = $this->prepareSingleSchemaObjectsOptimized(
+                objects: $objects,
+                register: $register,
+                schema: $schema
+            );
         } else {
 
             // STANDARD PATH: Mixed-schema operation - use full preparation logic.
@@ -313,7 +331,7 @@ class SaveObjects
         }
 
         // Check if we have any processed objects.
-        if (empty($processedObjects)) {
+        if (empty($processedObjects) === true) {
             $result['errors'][] = [
                 'error' => 'No objects were successfully prepared for bulk save',
                 'type'  => 'NoObjectsPreparedException',
@@ -342,7 +360,7 @@ class SaveObjects
             $chunkStart = microtime(true);
 
             // Process the current chunk and get the result.
-            $chunkResult = $this->processObjectsChunk($objectsChunk, $globalSchemaCache, $rbac, $multi, $validation, $events);
+            $chunkResult = $this->processObjectsChunk(objects: $objectsChunk, schemaCache: $globalSchemaCache, rbac: $rbac, multi: $multi, validation: $validation, events: $events);
 
             // Merge chunk results for saved, updated, invalid, errors, and unchanged.
             $result['saved']   = array_merge($result['saved'], $chunkResult['saved']);
@@ -426,7 +444,10 @@ class SaveObjects
             $current = $current[$key];
         }
 
-        return is_string($current) ? $current : (string) $current;
+        if (is_string($current) === true) {
+            return $current;
+        }
+        return (string) $current;
 
     }//end getValueFromPath()
 
@@ -451,7 +472,7 @@ class SaveObjects
     private function extractMetadataValue(array $object, string $fieldPath, Schema $schema, string $metadataType): ?string
     {
         // First try to get the raw value using the existing method.
-        $rawValue = $this->getValueFromPath($object, $fieldPath);
+        $rawValue = $this->getValueFromPath(data: $object, path: $fieldPath);
 
         if ($rawValue === null) {
             return null;
@@ -471,7 +492,7 @@ class SaveObjects
         // Check if this is an object reference field.
         if (isset($propertyConfig['type']) && $propertyConfig['type'] === 'object' && isset($propertyConfig['$ref'])) {
             // This is an object reference - try to resolve it to a readable name.
-            $resolved = $this->resolveObjectReference($object, $fieldPath, $propertyConfig, $metadataType);
+            $resolved = $this->resolveObjectReference(object: $object, fieldPath: $fieldPath, propertyConfig: $propertyConfig, metadataType: $metadataType);
             return $resolved;
         }
 
@@ -501,7 +522,7 @@ class SaveObjects
     {
         try {
             // Extract the object reference data.
-            $referenceData = $this->getObjectReferenceData($object, $fieldPath);
+            $referenceData = $this->getObjectReferenceData(object: $object, fieldPath: $fieldPath);
 
             if ($referenceData === null) {
                 return null;
@@ -522,7 +543,7 @@ class SaveObjects
             }
 
             // Fallback: return the UUID or a descriptive text.
-            return $this->generateFallbackName($uuid, $metadataType, $propertyConfig);
+            return $this->generateFallbackName(uuid: $uuid, metadataType: $metadataType, propertyConfig: $propertyConfig);
 
         } catch (\Exception $e) {
             // If resolution fails, return a fallback based on the field type.
@@ -573,16 +594,16 @@ class SaveObjects
      */
     private function extractUuidFromReference($referenceData): ?string
     {
-        // Handle object format: {"value": "uuid"}
-        if (is_array($referenceData) && isset($referenceData['value'])) {
+        // Handle object format: {"value": "uuid"}.
+        if (is_array($referenceData) === true && isset($referenceData['value']) === true) {
             $uuid = $referenceData['value'];
-            if (is_string($uuid) && !empty($uuid)) {
+            if (is_string($uuid) === true && empty($uuid) === false) {
                 return $uuid;
             }
         }
 
         // Handle direct UUID string.
-        if (is_string($referenceData) && !empty($referenceData)) {
+        if (is_string($referenceData) === true && empty($referenceData) === false) {
             return $referenceData;
         }
 
@@ -704,12 +725,12 @@ class SaveObjects
      * METADATA MAPPING: Each object gets schema-based metadata hydration using SaveObject::hydrateObjectMetadata()
      * to extract name, description, summary, etc. based on the object's specific schema configuration.
      *
-     * @see website/docs/developers/import-flow.md for complete import flow documentation
-     * @see SaveObject::hydrateObjectMetadata() for metadata extraction details
-     *
      * @param array $objects Array of objects in serialized format
      *
      * @return array Array containing [prepared objects, schema cache]
+     *
+     * @see website/docs/developers/import-flow.md for complete import flow documentation
+     * @see SaveObject::hydrateObjectMetadata() for metadata extraction details
      */
     private function prepareObjectsForBulkSave(array $objects): array
     {
@@ -805,7 +826,7 @@ class SaveObjects
                 $tempEntity->hydrate($selfDataForHydration);
             }
 
-            $this->saveHandler->hydrateObjectMetadata($tempEntity, $schema);
+            $this->saveHandler->hydrateObjectMetadata(entity: $tempEntity, schema: $schema);
 
             // AUTO-PUBLISH LOGIC: Only set published for NEW objects if not already set from CSV.
             $config = $schema->getConfiguration();
@@ -866,19 +887,19 @@ class SaveObjects
             // RELATIONS EXTRACTION: Scan the object data for relations (UUIDs and URLs).
             // This ensures relations metadata is populated during bulk import.
             $objectDataForRelations = $tempEntity->getObject();
-            $relations = $this->scanForRelations($objectDataForRelations, '', $schema);
+            $relations = $this->scanForRelations(data: $objectDataForRelations, prefix: '', schema: $schema);
             $selfData['relations'] = $relations;
 
             $object['@self'] = $selfData;
 
             // Handle pre-validation cascading for inversedBy properties.
-            [$processedObject, $uuid] = $this->handlePreValidationCascading($object, $schema, $selfData['id']);
+            [$processedObject, $uuid] = $this->handlePreValidationCascading(object: $object, schema: $schema, uuid: $selfData['id']);
 
             $preparedObjects[$index] = $processedObject;
         }//end foreach
 
         // PERFORMANCE OPTIMIZATION: Use cached analysis for bulk inverse relations.
-        $this->handleBulkInverseRelationsWithAnalysis($preparedObjects, $schemaAnalysis);
+        $this->handleBulkInverseRelationsWithAnalysis(preparedObjects: $preparedObjects, schemaAnalysis: $schemaAnalysis);
 
         // Performance logging.
         $endTime      = microtime(true);
@@ -903,14 +924,14 @@ class SaveObjects
      * SaveObject::hydrateObjectMetadata() to extract name, description, summary, etc.
      * from object data based on schema configuration.
      *
-     * @see website/docs/developers/import-flow.md for complete import flow documentation
-     * @see SaveObject::hydrateObjectMetadata() for metadata extraction details
-     *
      * @param array                  $objects  Array of objects in serialized format
      * @param Register|string|int    $register Register context
      * @param Schema|string|int      $schema   Schema context
      *
      * @return array Array containing [prepared objects, schema cache, invalid objects]
+     *
+     * @see website/docs/developers/import-flow.md for complete import flow documentation
+     * @see SaveObject::hydrateObjectMetadata() for metadata extraction details
      */
     private function prepareSingleSchemaObjectsOptimized(array $objects, Register|string|int $register, Schema|string|int $schema): array
     {
@@ -944,7 +965,11 @@ class SaveObjects
 
         // PERFORMANCE OPTIMIZATION: Pre-calculate metadata once.
         $currentUser = $this->userSession->getUser();
-        $defaultOwner = $currentUser ? $currentUser->getUID() : null;
+        if ($currentUser !== null) {
+            $defaultOwner = $currentUser->getUID();
+        } else {
+            $defaultOwner = null;
+        }
         $defaultOrganisation = null;
 
         // NO ERROR SUPPRESSION: Let organisation service errors bubble up immediately!
@@ -1015,7 +1040,7 @@ class SaveObjects
                     $tempEntity->hydrate($selfDataForHydration);
                 }
 
-                $this->saveHandler->hydrateObjectMetadata($tempEntity, $schemaObj);
+                $this->saveHandler->hydrateObjectMetadata(entity: $tempEntity, schema: $schemaObj);
 
                 // AUTO-PUBLISH LOGIC: Only set published for NEW objects if not already set from CSV.
                 // Note: For updates to existing objects, published status should be preserved unless explicitly changed.
@@ -1109,7 +1134,7 @@ class SaveObjects
 
                 // RELATIONS EXTRACTION: Scan the business data for relations (UUIDs and URLs).
                 // This ensures relations metadata is populated during bulk import.
-                $relations = $this->scanForRelations($businessData, '', $schemaObj);
+                $relations = $this->scanForRelations(data: $businessData, prefix: '', schema: $schemaObj);
                 $selfData['relations'] = $relations;
 
                 $this->logger->info("[SaveObjects] Relations scanned in preparation (single schema)", [
@@ -1128,7 +1153,7 @@ class SaveObjects
         }
 
         // INVERSE RELATIONS PROCESSING - Handle bulk inverse relations.
-            $this->handleBulkInverseRelationsWithAnalysis($preparedObjects, $schemaAnalysis);
+            $this->handleBulkInverseRelationsWithAnalysis(preparedObjects: $preparedObjects, schemaAnalysis: $schemaAnalysis);
 
         $endTime = microtime(true);
         $duration = round(($endTime - $startTime) * 1000, 2);
@@ -1189,7 +1214,7 @@ class SaveObjects
         ];
 
         // STEP 1: Transform objects for database format with metadata hydration.
-        $transformationResult = $this->transformObjectsToDatabaseFormatInPlace($objects, $schemaCache);
+        $transformationResult = $this->transformObjectsToDatabaseFormatInPlace(objects: $objects, schemaCache: $schemaCache);
         $transformedObjects = $transformationResult['valid'];
 
 
@@ -1204,7 +1229,7 @@ class SaveObjects
                 $tempEntity->setObject($objData['object'] ?? []);
 
                 // Use SaveObject's enhanced metadata hydration.
-                $this->saveHandler->hydrateObjectMetadata($tempEntity, $schema);
+                $this->saveHandler->hydrateObjectMetadata(entity: $tempEntity, schema: $schema);
 
                 // AUTO-PUBLISH LOGIC: Set published date to now if autoPublish is enabled and no published date exists.
                 $config = $schema->getConfiguration();
@@ -1300,7 +1325,7 @@ class SaveObjects
         // This will reveal the real problem causing silent failures.
 
         // MAXIMUM PERFORMANCE: Always use ultra-fast bulk operations for large imports.
-        $bulkResult = $this->objectEntityMapper->ultraFastBulkSave($insertObjects, $updateObjects);
+        $bulkResult = $this->objectEntityMapper->ultraFastBulkSave(insertObjects: $insertObjects, updateObjects: $updateObjects);
 
         // Bulk save completed successfully.
 
@@ -1413,7 +1438,7 @@ class SaveObjects
 
         } else {
             // FALLBACK: Use traditional object reconstruction.
-            $savedObjects = $this->reconstructSavedObjects($insertObjects, $updateObjects, $savedObjectIds, []);
+            $savedObjects = $this->reconstructSavedObjects(insertObjects: $insertObjects, updateObjects: $updateObjects, savedObjectIds: $savedObjectIds, existingObjects: []);
 
             // Fallback classification (less precise).
         foreach ($savedObjects as $obj) {
@@ -1657,6 +1682,7 @@ class SaveObjects
      * Handles string "true"/"false", integers 1/0, and actual booleans
      *
      * @param mixed $value The value to cast to boolean
+     *
      * @return bool The boolean value
      */
     private function castToBoolean($value): bool
@@ -1932,7 +1958,7 @@ class SaveObjects
             if (!isset($selfData['relations']) || empty($selfData['relations'])) {
                 if (isset($schemaCache[$selfData['schema']])) {
                     $schema = $schemaCache[$selfData['schema']];
-                    $relations = $this->scanForRelations($businessData, '', $schema);
+                    $relations = $this->scanForRelations(data: $businessData, prefix: '', schema: $schema);
                     $selfData['relations'] = $relations;
 
                     $this->logger->info("[SaveObjects] Relations scanned in transformation", [
@@ -2245,7 +2271,7 @@ class SaveObjects
 
         // SINGLE PATH: Full comprehensive processing for all import sizes.
         foreach ($transformedObjects as $index => $incomingData) {
-            $existingObject = $this->findExistingObjectByAnyIdentifier($incomingData, $existingObjects);
+            $existingObject = $this->findExistingObjectByAnyIdentifier(incomingData: $incomingData, existingObjects: $existingObjects);
 
             // Continue with categorization logic.
 
@@ -2753,9 +2779,9 @@ class SaveObjects
                     foreach ($value as $index => $item) {
                         if (is_array($item)) {
                             $itemRelations = $this->scanForRelations(
-                                $item,
-                                $currentPath.'.'.$index,
-                                $schema
+                                data: $item,
+                                prefix: $currentPath.'.'.$index,
+                                schema: $schema
                             );
                             $relations     = array_merge($relations, $itemRelations);
                         } else if (is_string($item) && !empty($item)) {
@@ -2769,9 +2795,9 @@ class SaveObjects
                         if (is_array($item)) {
                             // Recursively scan nested arrays/objects.
                             $itemRelations = $this->scanForRelations(
-                                $item,
-                                $currentPath.'.'.$index,
-                                $schema
+                                data: $item,
+                                prefix: $currentPath.'.'.$index,
+                                schema: $schema
                             );
                             $relations = array_merge($relations, $itemRelations);
                         } else if (is_string($item) && !empty($item) && trim($item) !== '') {

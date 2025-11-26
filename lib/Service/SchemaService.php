@@ -19,6 +19,7 @@
 
 namespace OCA\OpenRegister\Service;
 
+use DateTime;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -110,7 +111,7 @@ class SchemaService
      */
     public function exploreSchemaProperties(int $schemaId): array
     {
-        $this->logger->info('Starting schema exploration for schema ID: '.$schemaId);
+        $this->logger->info(message: 'Starting schema exploration for schema ID: '.$schemaId);
 
         // Get the schema to validate it exists.
         try {
@@ -122,7 +123,7 @@ class SchemaService
         // Get all objects for this schema.
         $objects = $this->objectEntityMapper->findBySchema($schemaId);
 
-        $this->logger->info('Found '.count($objects).' objects to analyze');
+        $this->logger->info(message: 'Found '.count($objects).' objects to analyze');
 
         if (empty($objects) === true) {
             return [
@@ -132,7 +133,7 @@ class SchemaService
                 'discovered_properties' => [],
                 'existing_properties'   => $schema->getProperties(),
                 'suggestions'           => [],
-                'analysis_date'         => (new \DateTime())->format('c'),
+                'analysis_date'         => (new \DateTime('now'))->format(format: 'c'),
                 'message'               => 'No objects found for analysis',
             ];
         }
@@ -305,17 +306,19 @@ class SchemaService
                     break;
                 }
 
-                // Analyze array structure.
-                $analysis['array_structure'] = $this->analyzezArrayStructure($value);
+                // Check if this is an associative array (object-like).
+                if (array_is_list($value) === false) {
+                    // Treat associative arrays as objects.
+                    $analysis['object_structure'] = $this->analyzeObjectStructure($value);
+                } else {
+                    // Analyze array structure for list arrays.
+                    $analysis['array_structure'] = $this->analyzezArrayStructure($value);
+                }
                 break;
 
             case 'object':
-            case 'array':
-                if (is_object($value) === true
-                    || (is_array($value) === true && empty($value) === false && array_is_list($value) === false)
-                ) {
-                    $analysis['object_structure'] = $this->analyzeObjectStructure($value);
-                }
+                // Analyze object structure.
+                $analysis['object_structure'] = $this->analyzeObjectStructure($value);
                 break;
         }//end switch
 
@@ -335,7 +338,7 @@ class SchemaService
     {
         // Date formats.
         if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) === 1) {
-            $parsed = DateTime::createFromFormat('Y-m-d', $value);
+            $parsed = \DateTime::createFromFormat('Y-m-d', $value);
             if ($parsed !== false && $parsed->format('Y-m-d') === $value) {
                 return 'date';
             }
@@ -1358,7 +1361,7 @@ class SchemaService
      */
     public function updateSchemaFromExploration(int $schemaId, array $propertyUpdates): Schema
     {
-        $this->logger->info('Updating schema '.$schemaId.' with '.count($propertyUpdates).' property updates');
+        $this->logger->info(message: 'Updating schema '.$schemaId.' with '.count($propertyUpdates).' property updates');
 
         try {
             // Get existing schema.
@@ -1379,11 +1382,11 @@ class SchemaService
             // Save updated schema.
             $updatedSchema = $this->schemaMapper->update($schema);
 
-            $this->logger->info('Schema '.$schemaId.' successfully updated with exploration results');
+            $this->logger->info(message: 'Schema '.$schemaId.' successfully updated with exploration results');
 
             return $updatedSchema;
         } catch (\Exception $e) {
-            $this->logger->error('Failed to update schema '.$schemaId.': '.$e->getMessage());
+            $this->logger->error(message: 'Failed to update schema '.$schemaId.': '.$e->getMessage());
             throw new \Exception('Failed to update schema properties: '.$e->getMessage());
         }//end try
 

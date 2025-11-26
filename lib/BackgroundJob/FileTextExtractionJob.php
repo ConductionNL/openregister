@@ -20,7 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
-use OCA\OpenRegister\Service\FileTextService;
+use OCA\OpenRegister\Service\TextExtractionService;
 use OCP\BackgroundJob\QueuedJob;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IAppConfig;
@@ -40,6 +40,8 @@ use Psr\Log\LoggerInterface;
  * - Supports all file formats (PDF, DOCX, images, etc.)
  *
  * @package OCA\OpenRegister\BackgroundJob
+ *
+ * @psalm-suppress UnusedClass - This background job is registered and instantiated by Nextcloud's job system
  */
 class FileTextExtractionJob extends QueuedJob
 {
@@ -49,13 +51,15 @@ class FileTextExtractionJob extends QueuedJob
      * Constructor
      *
      * @param ITimeFactory    $timeFactory     Time factory for job scheduling
-     * @param FileTextService $fileTextService File text extraction service
+     * @param TextExtractionService $textExtractionService Text extraction service
      * @param LoggerInterface $logger          Logger instance
      * @param IAppConfig      $config          Application configuration
+     *
+     * @psalm-suppress PossiblyUnusedMethod - Constructor is called by Nextcloud's job system via dependency injection
      */
     public function __construct(
         ITimeFactory $timeFactory,
-        private readonly FileTextService $fileTextService,
+        private readonly TextExtractionService $textExtractionService,
         private readonly LoggerInterface $logger,
         private readonly IAppConfig $config,
     ) {
@@ -73,6 +77,8 @@ class FileTextExtractionJob extends QueuedJob
      * @param array $argument Job arguments containing file_id
      *
      * @return void
+     *
+     * @psalm-suppress PossiblyUnusedMethod - This method is called by Nextcloud's job system when the job executes
      */
     protected function run($argument): void
     {
@@ -107,43 +113,18 @@ class FileTextExtractionJob extends QueuedJob
         $startTime = microtime(true);
 
         try {
-            // Check if extraction is still needed.
-            // (file might have been processed by another job or deleted).
-            if ($this->fileTextService->needsExtraction($fileId) === false) {
-                $this->logger->info(
-                        '[FileTextExtractionJob] Extraction no longer needed',
-                        [
-                            'file_id' => $fileId,
-                            'reason'  => 'Already processed or not required',
-                        ]
-                        );
-                return;
-            }
-
-            // Extract and store text.
-            $result = $this->fileTextService->extractAndStoreFileText($fileId);
+            // Extract text using TextExtractionService.
+            $this->textExtractionService->extractFile($fileId, false);
 
             $processingTime = round((microtime(true) - $startTime) * 1000, 2);
 
-            if ($result['success'] === true) {
-                $this->logger->info(
-                        '[FileTextExtractionJob] Text extraction completed successfully',
-                        [
-                            'file_id'            => $fileId,
-                            'text_length'        => $result['fileText']?->getTextLength() ?? 0,
-                            'processing_time_ms' => $processingTime,
-                        ]
-                        );
-            } else {
-                $this->logger->warning(
-                        '[FileTextExtractionJob] Text extraction failed',
-                        [
-                            'file_id'            => $fileId,
-                            'error'              => $result['error'] ?? 'Unknown error',
-                            'processing_time_ms' => $processingTime,
-                        ]
-                        );
-            }
+            $this->logger->info(
+                    '[FileTextExtractionJob] Text extraction completed successfully',
+                    [
+                        'file_id'            => $fileId,
+                        'processing_time_ms' => $processingTime,
+                    ]
+                    );
         } catch (\Exception $e) {
             $processingTime = round((microtime(true) - $startTime) * 1000, 2);
 

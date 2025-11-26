@@ -29,11 +29,10 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\ViewMapper;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\OrganisationMapper;
-use OCA\OpenRegister\Db\FileTextMapper;
 use OCA\OpenRegister\Db\ChunkMapper;
-use OCA\OpenRegister\Db\ObjectTextMapper;
 use OCA\OpenRegister\Db\GdprEntityMapper;
 use OCA\OpenRegister\Db\EntityRelationMapper;
+use OCA\OpenRegister\Db\FileTextMapper;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OrganisationService;
@@ -51,7 +50,6 @@ use OCA\OpenRegister\Service\FacetService;
 use OCA\OpenRegister\Service\ObjectCacheService;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\ExportService;
-use OCA\OpenRegister\Service\SolrService;
 use OCA\OpenRegister\Service\GuzzleSolrService;
 use OCA\OpenRegister\Service\SolrObjectService;
 use OCA\OpenRegister\Service\SolrFileService;
@@ -59,8 +57,9 @@ use OCA\OpenRegister\Service\VectorEmbeddingService;
 use OCA\OpenRegister\Service\VectorizationService;
 use OCA\OpenRegister\Service\Vectorization\FileVectorizationStrategy;
 use OCA\OpenRegister\Service\Vectorization\ObjectVectorizationStrategy;
+use OCA\OpenRegister\Service\NamedEntityRecognitionService;
 use OCA\OpenRegister\Service\ChatService;
-use OCA\OpenRegister\Service\FileTextService;
+use OCA\OpenRegister\Service\TextExtractionService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\SolrSchemaService;
 use OCA\OpenRegister\Setup\SolrSetup;
@@ -71,6 +70,8 @@ use OCA\OpenRegister\Service\SchemaFacetCacheService;
 use OCA\OpenRegister\Search\ObjectsProvider;
 use OCA\OpenRegister\BackgroundJob\SolrWarmupJob;
 use OCA\OpenRegister\BackgroundJob\SolrNightlyWarmupJob;
+use OCA\OpenRegister\BackgroundJob\CronFileTextExtractionJob;
+use OCA\OpenRegister\Cron\WebhookRetryJob;
 use OCP\AppFramework\App;
 use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Bootstrap\IBootstrap;
@@ -79,6 +80,7 @@ use OCP\EventDispatcher\IEventDispatcher;
 
 use OCA\OpenRegister\EventListener\SolrEventListener;
 use OCA\OpenRegister\Listener\FileChangeListener;
+use OCA\OpenRegister\Listener\ObjectChangeListener;
 use OCA\OpenRegister\Listener\ToolRegistrationListener;
 use OCA\OpenRegister\Listener\WebhookEventListener;
 use OCP\Files\Events\Node\NodeCreatedEvent;
@@ -130,6 +132,8 @@ use OCA\OpenRegister\Event\OrganisationDeletedEvent;
  * @license AGPL-3.0-or-later
  *
  * @link https://github.com/nextcloud/server/blob/master/apps-extra/openregister
+ *
+ * @psalm-suppress UnusedClass - This class is instantiated by Nextcloud's app framework system
  */
 class Application extends App implements IBootstrap
 {
@@ -172,18 +176,9 @@ class Application extends App implements IBootstrap
                 SearchTrailMapper::class,
                 function ($container) {
                     return new SearchTrailMapper(
-                    $container->get('OCP\IDBConnection'),
-                    $container->get('OCP\IRequest'),
-                    $container->get('OCP\IUserSession')
-                    );
-                }
-                );
-
-        $context->registerService(
-                ObjectTextMapper::class,
-                function ($container) {
-                    return new ObjectTextMapper(
-                    $container->get('OCP\IDBConnection')
+                    $container->get(id: 'OCP\IDBConnection'),
+                    $container->get(id: 'OCP\IRequest'),
+                    $container->get(id: 'OCP\IUserSession')
                     );
                 }
                 );
@@ -192,7 +187,7 @@ class Application extends App implements IBootstrap
                 ChunkMapper::class,
                 function ($container) {
                     return new ChunkMapper(
-                    $container->get('OCP\IDBConnection')
+                    $container->get(id: 'OCP\IDBConnection')
                     );
                 }
                 );
@@ -251,7 +246,7 @@ class Application extends App implements IBootstrap
                     // AuthorizationExceptionService.
                     );
                 }
-        );
+                );
 
         /*
          * Register SolrService for advanced search capabilities (disabled due to performance issues).
@@ -275,19 +270,18 @@ class Application extends App implements IBootstrap
                 ObjectCacheService::class,
                 function ($container) {
                     // Break circular dependency by lazy-loading GuzzleSolrService.
-                    $solrService = null;
+                    $guzzleSolrService = null;
                     try {
-                        $solrService = $container->get(GuzzleSolrService::class);
+                        $guzzleSolrService = $container->get(GuzzleSolrService::class);
                     } catch (\Exception $e) {
                         // If GuzzleSolrService is not available, continue without it.
-                        $solrService = null;
                     }
 
                     return new ObjectCacheService(
                     $container->get(ObjectEntityMapper::class),
                     $container->get(OrganisationMapper::class),
                     $container->get('Psr\Log\LoggerInterface'),
-                    $solrService,
+                    $guzzleSolrService,
                     // Lightweight SOLR service enabled!
                     $container->get('OCP\ICacheFactory'),
                     $container->get('OCP\IUserSession')
@@ -302,7 +296,6 @@ class Application extends App implements IBootstrap
                     return new FacetService(
                     $container->get(ObjectEntityMapper::class),
                     $container->get(SchemaMapper::class),
-                    $container->get(RegisterMapper::class),
                     $container->get('OCP\ICacheFactory'),
                     $container->get('OCP\IUserSession'),
                     $container->get('Psr\Log\LoggerInterface')
@@ -537,7 +530,8 @@ class Application extends App implements IBootstrap
                     return new SolrDebugCommand(
                     $container->get(SettingsService::class),
                     $container->get('Psr\Log\LoggerInterface'),
-                    $container->get('OCP\IConfig')
+                    $container->get('OCP\IConfig'),
+                    $container->get('OCP\Http\Client\IClientService')
                     );
                 }
                 );
@@ -588,7 +582,8 @@ class Application extends App implements IBootstrap
                     $container->get(GuzzleSolrService::class),
                     $container->get(SettingsService::class),
                     $container,
-                    $container->get('Psr\Log\LoggerInterface')
+                    $container->get('Psr\Log\LoggerInterface'),
+                    $container->get(ChunkMapper::class)
                     );
                 }
                 );
@@ -598,10 +593,24 @@ class Application extends App implements IBootstrap
                 VectorEmbeddingService::class,
                 function ($container) {
                     return new VectorEmbeddingService(
-                    $container->get('OCP\IDBConnection'),
+                    $container->get(id: 'OCP\IDBConnection'),
                     $container->get(SettingsService::class),
                     $container->get(GuzzleSolrService::class),
-                    $container->get('Psr\Log\LoggerInterface')
+                    $container->get(id: 'Psr\Log\LoggerInterface')
+                    );
+                }
+                );
+
+        // Register NamedEntityRecognitionService for entity extraction and GDPR compliance.
+        $context->registerService(
+                NamedEntityRecognitionService::class,
+                function ($container) {
+                    return new NamedEntityRecognitionService(
+                    $container->get(GdprEntityMapper::class),
+                    $container->get(EntityRelationMapper::class),
+                    $container->get(ChunkMapper::class),
+                    $container->get(SettingsService::class),
+                    $container->get(id: 'Psr\Log\LoggerInterface')
                     );
                 }
                 );
@@ -611,8 +620,9 @@ class Application extends App implements IBootstrap
                 FileVectorizationStrategy::class,
                 function ($container) {
                     return new FileVectorizationStrategy(
-                    $container->get(FileTextMapper::class),
-                    $container->get('Psr\Log\LoggerInterface')
+                    $container->get(ChunkMapper::class),
+                    $container->get(id: 'OCP\IDBConnection'),
+                    $container->get(id: 'Psr\Log\LoggerInterface')
                     );
                 }
                 );
@@ -623,7 +633,7 @@ class Application extends App implements IBootstrap
                     return new ObjectVectorizationStrategy(
                     $container->get(ObjectService::class),
                     $container->get(SettingsService::class),
-                    $container->get('Psr\Log\LoggerInterface')
+                    $container->get(id: 'Psr\Log\LoggerInterface')
                     );
                 }
                 );
@@ -634,7 +644,7 @@ class Application extends App implements IBootstrap
                 function ($container) {
                     $service = new VectorizationService(
                     $container->get(VectorEmbeddingService::class),
-                    $container->get('Psr\Log\LoggerInterface')
+                    $container->get(id: 'Psr\Log\LoggerInterface')
                     );
 
                     // Register strategies.
@@ -650,14 +660,14 @@ class Application extends App implements IBootstrap
                 ChatService::class,
                 function ($container) {
                     return new ChatService(
-                    $container->get('OCP\IDBConnection'),
+                    $container->get(id: 'OCP\IDBConnection'),
                     $container->get(\OCA\OpenRegister\Db\ConversationMapper::class),
                     $container->get(\OCA\OpenRegister\Db\MessageMapper::class),
                     $container->get(\OCA\OpenRegister\Db\AgentMapper::class),
                     $container->get(VectorEmbeddingService::class),
                     $container->get(GuzzleSolrService::class),
                     $container->get(SettingsService::class),
-                    $container->get('Psr\Log\LoggerInterface'),
+                    $container->get(id: 'Psr\Log\LoggerInterface'),
                     $container->get(\OCA\OpenRegister\Tool\RegisterTool::class),
                     $container->get(\OCA\OpenRegister\Tool\SchemaTool::class),
                     $container->get(\OCA\OpenRegister\Tool\ObjectsTool::class),
@@ -666,16 +676,21 @@ class Application extends App implements IBootstrap
                 }
                 );
 
-        // Register FileTextService for file text extraction and storage.
+        // Register TextExtractionService for file and object text extraction and storage.
         $context->registerService(
-                FileTextService::class,
+                TextExtractionService::class,
                 function ($container) {
-                    return new FileTextService(
-                    $container->get(FileTextMapper::class),
-                    $container->get('OCA\OpenRegister\Db\FileMapper'),
-                    $container->get(SolrFileService::class),
-                    $container->get('OCP\Files\IRootFolder'),
-                    $container->get('Psr\Log\LoggerInterface')
+                    return new TextExtractionService(
+                    $container->get(id: 'OCA\OpenRegister\Db\FileMapper'),
+                    $container->get(ChunkMapper::class),
+                    $container->get(GdprEntityMapper::class),
+                    $container->get(EntityRelationMapper::class),
+                    $container->get(id: 'OCP\Files\IRootFolder'),
+                    $container->get(id: 'OCP\IDBConnection'),
+                    $container->get(id: 'Psr\Log\LoggerInterface'),
+                    $container->get(ObjectEntityMapper::class),
+                    $container->get(SchemaMapper::class),
+                    $container->get(RegisterMapper::class)
                     );
                 }
                 );
@@ -685,9 +700,23 @@ class Application extends App implements IBootstrap
                 FileChangeListener::class,
                 function ($container) {
                     return new FileChangeListener(
-                    $container->get(FileTextService::class),
-                    $container->get('OCP\BackgroundJob\IJobList'),
-                    $container->get('Psr\Log\LoggerInterface')
+                    $container->get(TextExtractionService::class),
+                    $container->get(SettingsService::class),
+                    $container->get(id: 'OCP\BackgroundJob\IJobList'),
+                    $container->get(id: 'Psr\Log\LoggerInterface')
+                    );
+                }
+                );
+
+        // Register ObjectChangeListener for automatic object text extraction (async via background jobs).
+        $context->registerService(
+                ObjectChangeListener::class,
+                function ($container) {
+                    return new ObjectChangeListener(
+                    $container->get(TextExtractionService::class),
+                    $container->get(SettingsService::class),
+                    $container->get(id: 'OCP\BackgroundJob\IJobList'),
+                    $container->get(id: 'Psr\Log\LoggerInterface')
                     );
                 }
                 );
@@ -700,8 +729,8 @@ class Application extends App implements IBootstrap
                     $container->get(SchemaMapper::class),
                     $container->get(GuzzleSolrService::class),
                     $container->get(SettingsService::class),
-                    $container->get('Psr\Log\LoggerInterface'),
-                    $container->get('OCP\IConfig')
+                    $container->get(id: 'Psr\Log\LoggerInterface'),
+                    $container->get(id: 'OCP\IConfig')
                     );
                 }
                 );
@@ -711,11 +740,8 @@ class Application extends App implements IBootstrap
                 SolrManagementCommand::class,
                 function ($container) {
                     return new SolrManagementCommand(
-                    $container->get(SettingsService::class),
-                    $container->get('Psr\Log\LoggerInterface'),
-                    $container->get(GuzzleSolrService::class),
-                    $container->get(SolrSchemaService::class),
-                    $container->get('OCP\IConfig')
+                    $container->get(id: 'Psr\Log\LoggerInterface'),
+                    $container->get(GuzzleSolrService::class)
                     );
                 }
                 );
@@ -725,8 +751,8 @@ class Application extends App implements IBootstrap
                 \OCA\OpenRegister\Service\ToolRegistry::class,
                 function ($container) {
                     return new \OCA\OpenRegister\Service\ToolRegistry(
-                    $container->get('OCP\EventDispatcher\IEventDispatcher'),
-                    $container->get('Psr\Log\LoggerInterface')
+                    $container->get(id: 'OCP\EventDispatcher\IEventDispatcher'),
+                    $container->get(id: 'Psr\Log\LoggerInterface')
                     );
                 }
                 );
@@ -737,9 +763,9 @@ class Application extends App implements IBootstrap
                 function ($container) {
                     return new \OCA\OpenRegister\Service\GitHubService(
                     $container->get('OCP\Http\Client\IClientService')->newClient(),
-                    $container->get('OCP\IConfig'),
-                    $container->get('OCP\ICacheFactory'),
-                    $container->get('Psr\Log\LoggerInterface')
+                    $container->get(id: 'OCP\IConfig'),
+                    $container->get(id: 'OCP\ICacheFactory'),
+                    $container->get(id: 'Psr\Log\LoggerInterface')
                     );
                 }
                 );
@@ -750,8 +776,8 @@ class Application extends App implements IBootstrap
                 function ($container) {
                     return new \OCA\OpenRegister\Service\GitLabService(
                     $container->get('OCP\Http\Client\IClientService')->newClient(),
-                    $container->get('OCP\IConfig'),
-                    $container->get('Psr\Log\LoggerInterface')
+                    $container->get(id: 'OCP\IConfig'),
+                    $container->get(id: 'Psr\Log\LoggerInterface')
                     );
                 }
                 );
@@ -769,6 +795,10 @@ class Application extends App implements IBootstrap
         // Register FileChangeListener for automatic file text extraction.
         $context->registerEventListener(NodeCreatedEvent::class, FileChangeListener::class);
         $context->registerEventListener(NodeWrittenEvent::class, FileChangeListener::class);
+
+        // Register ObjectChangeListener for automatic object text extraction.
+        $context->registerEventListener(ObjectCreatedEvent::class, ObjectChangeListener::class);
+        $context->registerEventListener(ObjectUpdatedEvent::class, ObjectChangeListener::class);
 
         // Register ToolRegistrationListener for agent function tools.
         $context->registerEventListener(ToolRegistrationEvent::class, ToolRegistrationListener::class);
@@ -821,14 +851,14 @@ class Application extends App implements IBootstrap
     public function boot(IBootContext $context): void
     {
         // Register event listeners for testing and functionality.
-        $container       = $context->getAppContainer();
-        $eventDispatcher = $container->get(IEventDispatcher::class);
-        $logger          = $container->get('Psr\Log\LoggerInterface');
+        $container = $context->getAppContainer();
+        $container->get(IEventDispatcher::class);
+        $logger    = $container->get(id: 'Psr\Log\LoggerInterface');
 
         // Log boot process.
         $logger->info(
-                'OpenRegister boot: Registering event listeners',
-                [
+                message: 'OpenRegister boot: Registering event listeners',
+                context: [
                     'app'       => 'openregister',
                     'timestamp' => date('Y-m-d H:i:s'),
                 ]
@@ -838,25 +868,54 @@ class Application extends App implements IBootstrap
             $logger->info('OpenRegister boot: Event listeners registered successfully');
 
             // Register recurring SOLR nightly warmup job.
-            $jobList = $container->get('OCP\BackgroundJob\IJobList');
+            $jobList = $container->get(id: 'OCP\BackgroundJob\IJobList');
 
             // Check if the nightly warmup job is already registered.
             if ($jobList->has(SolrNightlyWarmupJob::class, null) === false) {
                 $jobList->add(SolrNightlyWarmupJob::class);
                 $logger->info(
-                        '🌙 SOLR Nightly Warmup Job registered successfully',
-                        [
+                        message: '🌙 SOLR Nightly Warmup Job registered successfully',
+                        context: [
                             'job_class' => SolrNightlyWarmupJob::class,
                             'interval'  => '24 hours (daily at 00:00)',
                         ]
                         );
             } else {
-                $logger->debug('SOLR Nightly Warmup Job already registered');
+                $logger->debug(message: 'SOLR Nightly Warmup Job already registered');
+            }
+
+            // Register recurring cron file text extraction job.
+            if ($jobList->has(CronFileTextExtractionJob::class, null) === false) {
+                $jobList->add(CronFileTextExtractionJob::class);
+                $logger->info(
+                        message: '🔄 Cron File Text Extraction Job registered successfully',
+                        context: [
+                            'job_class' => CronFileTextExtractionJob::class,
+                            'interval'  => '15 minutes',
+                        ]
+                        );
+            } else {
+                $logger->debug(message: 'Cron File Text Extraction Job already registered');
+            }
+
+            // Register recurring webhook retry job.
+            $webhookRetryJobClass = 'OCA\OpenRegister\Cron\WebhookRetryJob';
+            if ($jobList->has($webhookRetryJobClass, null) === false) {
+                $jobList->add($webhookRetryJobClass);
+                $logger->info(
+                        message: '🔄 Webhook Retry Job registered successfully',
+                        context: [
+                            'job_class' => $webhookRetryJobClass,
+                            'interval'  => '5 minutes',
+                        ]
+                        );
+            } else {
+                $logger->debug(message: 'Webhook Retry Job already registered');
             }
         } catch (\Exception $e) {
             $logger->error(
-                    'OpenRegister boot: Failed to register event listeners and background jobs',
-                    [
+                    message: 'OpenRegister boot: Failed to register event listeners and background jobs',
+                    context: [
                         'exception' => $e->getMessage(),
                         'trace'     => $e->getTraceAsString(),
                     ]

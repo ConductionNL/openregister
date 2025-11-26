@@ -219,7 +219,7 @@ class ViewMapper extends QBMapper
 
         // Generate UUID if not present.
         if (empty($entity->getUuid()) === true) {
-            $entity->setUuid(Uuid::v4());
+            $entity->setUuid((string) Uuid::v4());
         }
 
         // Set timestamps.

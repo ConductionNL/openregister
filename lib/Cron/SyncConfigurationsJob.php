@@ -164,10 +164,10 @@ class SyncConfigurationsJob extends TimedJob
                     // Update sync status to failed.
                     try {
                         $this->configurationMapper->updateSyncStatus(
-                            $configuration->getId(),
-                            'failed',
-                            new DateTime(),
-                            $e->getMessage()
+                            id: $configuration->getId(),
+                            status: 'failed',
+                            syncedAt: new DateTime(),
+                            errorMessage: $e->getMessage()
                         );
                     } catch (Exception $statusError) {
                         $this->logger->error("Failed to update sync status: ".$statusError->getMessage());
@@ -273,7 +273,7 @@ class SyncConfigurationsJob extends TimedJob
         list($owner, $repo) = explode('/', $githubRepo);
 
         // Fetch file content.
-        $configData = $this->githubService->getFileContent($owner, $repo, $githubPath, $githubBranch);
+        $configData = $this->githubService->getFileContent(owner: $owner, repo: $repo, path: $githubPath, branch: $githubBranch);
 
         // Get app ID and version.
         $appId   = $configData['x-openregister']['app'] ?? $configuration->getApp();
@@ -289,9 +289,9 @@ class SyncConfigurationsJob extends TimedJob
 
         // Update sync status.
         $this->configurationMapper->updateSyncStatus(
-            $configuration->getId(),
-            'success',
-            new DateTime()
+            id: $configuration->getId(),
+            status: 'success',
+            syncedAt: new DateTime()
         );
 
     }//end syncFromGitHub()
@@ -325,11 +325,11 @@ class SyncConfigurationsJob extends TimedJob
         }
 
         // Get project info.
-        $projectData = $this->gitlabService->getProjectByPath($namespace, $project);
+        $projectData = $this->gitlabService->getProjectByPath(namespace: $namespace, project: $project);
         $projectId   = $projectData['id'];
 
         // Fetch file content.
-        $configData = $this->gitlabService->getFileContent($projectId, $path, $ref);
+        $configData = $this->gitlabService->getFileContent(projectId: $projectId, path: $path, ref: $ref);
 
         // Get app ID and version.
         $appId   = $configData['x-openregister']['app'] ?? $configuration->getApp();
@@ -345,9 +345,9 @@ class SyncConfigurationsJob extends TimedJob
 
         // Update sync status.
         $this->configurationMapper->updateSyncStatus(
-            $configuration->getId(),
-            'success',
-            new DateTime()
+            id: $configuration->getId(),
+            status: 'success',
+            syncedAt: new DateTime()
         );
 
     }//end syncFromGitLab()
@@ -392,9 +392,9 @@ class SyncConfigurationsJob extends TimedJob
 
         // Update sync status.
         $this->configurationMapper->updateSyncStatus(
-            $configuration->getId(),
-            'success',
-            new DateTime()
+            id: $configuration->getId(),
+            status: 'success',
+            syncedAt: new DateTime()
         );
 
     }//end syncFromUrl()
@@ -430,9 +430,9 @@ class SyncConfigurationsJob extends TimedJob
 
         // Update sync status.
         $this->configurationMapper->updateSyncStatus(
-            $configuration->getId(),
-            'success',
-            new DateTime()
+            id: $configuration->getId(),
+            status: 'success',
+            syncedAt: new DateTime()
         );
 
     }//end syncFromLocal()

@@ -243,7 +243,7 @@ class OrganisationService
                             ]
                             );
                     // UUID in settings doesn't exist, create new default.
-                    $defaultOrg = $this->createOrganisation('Default Organisation', 'Auto-generated default organisation', false);
+                    $defaultOrg = $this->createOrganisation(name: 'Default Organisation', description: 'Auto-generated default organisation', addCurrentUser: false);
 
                     // Update settings with new UUID.
                     if ($this->settingsService !== null) {
@@ -254,8 +254,8 @@ class OrganisationService
                 }//end try
             } else {
                 // No UUID in settings, create a new default organisation.
-                $this->logger->info('No default organisation found in settings, creating new one');
-                $defaultOrg = $this->createOrganisation('Default Organisation', 'Auto-generated default organisation', false);
+                $this->logger->info(message: 'No default organisation found in settings, creating new one');
+                $defaultOrg = $this->createOrganisation(name: 'Default Organisation', description: 'Auto-generated default organisation', addCurrentUser: false);
 
                 // Store in settings.
                 if ($this->settingsService !== null) {
@@ -276,12 +276,21 @@ class OrganisationService
                 }
             }
 
+            // Ensure admin group has full RBAC permissions.
+            $authorization    = $defaultOrg->getAuthorization();
+            $adminGroupInAuth = $this->hasAdminGroupInAuthorization($authorization);
+            if ($adminGroupInAuth === false) {
+                $defaultOrg = $this->addAdminGroupToAuthorization($defaultOrg);
+                $updated    = true;
+            }
+
             if ($updated === true) {
                 $defaultOrg = $this->organisationMapper->update($defaultOrg);
                 $this->logger->info(
-                        'Added admin users to existing default organisation',
+                        'Added admin users and RBAC permissions to existing default organisation',
                         [
-                            'adminUsersAdded' => $adminUsers,
+                            'adminUsersAdded'  => $adminUsers,
+                            'adminGroupInAuth' => $adminGroupInAuth,
                         ]
                         );
                 // Clear cache since we updated the organisation.
@@ -417,7 +426,7 @@ class OrganisationService
 
         // Cache the result if we have an organisation.
         if ($organisation !== null) {
-            $this->cacheActiveOrganisation($organisation, $userId);
+            $this->cacheActiveOrganisation(organisation: $organisation, userId: $userId);
         }
 
         return $organisation;
@@ -456,10 +465,10 @@ class OrganisationService
 
         // Set in user configuration (persistent across sessions).
         $this->config->setUserValue(
-            $userId,
-            self::APP_NAME,
-            self::CONFIG_ACTIVE_ORGANISATION,
-            $organisationUuid
+            userId: $userId,
+            appName: self::APP_NAME,
+            key: self::CONFIG_ACTIVE_ORGANISATION,
+            value: $organisationUuid
         );
 
         // Clear cached organisations and active organisation to force refresh.
@@ -468,7 +477,7 @@ class OrganisationService
         $this->clearActiveOrganisationCache($userId);
 
         // Cache the new active organisation immediately.
-        $this->cacheActiveOrganisation($organisation, $userId);
+        $this->cacheActiveOrganisation(organisation: $organisation, userId: $userId);
 
         $this->logger->info(
                 'Set active organisation in user config',
@@ -517,7 +526,7 @@ class OrganisationService
             }
 
             // Add user to organisation.
-            $this->organisationMapper->addUserToOrganisation($organisationUuid, $userId);
+            $this->organisationMapper->addUserToOrganisation(organisationUuid: $organisationUuid, userId: $userId);
 
             // Clear cached organisations to force refresh for the affected user.
             $cacheKey = self::SESSION_USER_ORGANISATIONS.'_'.$userId;
@@ -563,7 +572,7 @@ class OrganisationService
         }
 
         try {
-            $organisation = $this->organisationMapper->removeUserFromOrganisation($organisationUuid, $userId);
+            $organisation = $this->organisationMapper->removeUserFromOrganisation(organisationUuid: $organisationUuid, userId: $userId);
 
             // If this was the active organisation, clear cache and reset.
             $activeOrg = $this->getActiveOrganisation();
@@ -659,6 +668,9 @@ class OrganisationService
         // Add all admin group users to the organisation.
         $organisation = $this->addAdminUsersToOrganisation($organisation);
 
+        // Add admin group to RBAC authorization with full permissions.
+        $organisation = $this->addAdminGroupToAuthorization($organisation);
+
         $saved = $this->organisationMapper->save($organisation);
 
         // If there's no default organisation set, make this one the default.
@@ -704,7 +716,7 @@ class OrganisationService
      */
     public function createOrganisationWithUuid(string $name, string $description, string $uuid, bool $addCurrentUser=true): Organisation
     {
-        return $this->createOrganisation($name, $description, $addCurrentUser, $uuid);
+        return $this->createOrganisation(name: $name, description: $description, addCurrentUser: $addCurrentUser, uuid: $uuid);
 
     }//end createOrganisationWithUuid()
 
@@ -786,7 +798,7 @@ class OrganisationService
         self::$defaultOrganisationCache          = null;
         self::$defaultOrganisationCacheTimestamp = null;
 
-        $this->logger->info('Cleared default organisation static cache');
+        $this->logger->info(message: 'Cleared default organisation static cache');
 
     }//end clearDefaultOrganisationCache()
 
@@ -835,7 +847,7 @@ class OrganisationService
     {
         $adminGroup = $this->groupManager->get('admin');
         if ($adminGroup === null) {
-            $this->logger->warning('Admin group not found');
+            $this->logger->warning(message: 'Admin group not found');
             return [];
         }
 
@@ -888,6 +900,98 @@ class OrganisationService
         return $organisation;
 
     }//end addAdminUsersToOrganisation()
+
+
+    /**
+     * Add admin group to organisation authorization with full permissions
+     *
+     * @param Organisation $organisation The organisation to add admin group permissions to
+     *
+     * @return Organisation The updated organisation
+     */
+    private function addAdminGroupToAuthorization(Organisation $organisation): Organisation
+    {
+        $authorization = $organisation->getAuthorization();
+        $adminGroupId  = 'admin';
+
+        // Add admin group to all CRUD permissions for all entity types.
+        $entityTypes = ['register', 'schema', 'object', 'view', 'agent', 'configuration', 'application'];
+        foreach ($entityTypes as $entityType) {
+            if (isset($authorization[$entityType]) === true && is_array($authorization[$entityType]) === true) {
+                foreach (['create', 'read', 'update', 'delete'] as $action) {
+                    if (isset($authorization[$entityType][$action]) === true && is_array($authorization[$entityType][$action]) === true) {
+                        if (in_array($adminGroupId, $authorization[$entityType][$action]) === false) {
+                            $authorization[$entityType][$action][] = $adminGroupId;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Add admin group to special permissions.
+        $specialPermissions = ['object_publish', 'agent_use', 'dashboard_view', 'llm_use'];
+        foreach ($specialPermissions as $permission) {
+            if (isset($authorization[$permission]) === true && is_array($authorization[$permission]) === true) {
+                if (in_array($adminGroupId, $authorization[$permission]) === false) {
+                    $authorization[$permission][] = $adminGroupId;
+                }
+            }
+        }
+
+        $organisation->setAuthorization($authorization);
+
+        $this->logger->info(
+                'Added admin group to organisation RBAC authorization',
+                [
+                    'organisationUuid' => $organisation->getUuid(),
+                    'organisationName' => $organisation->getName(),
+                    'adminGroupId'     => $adminGroupId,
+                ]
+                );
+
+        return $organisation;
+
+    }//end addAdminGroupToAuthorization()
+
+
+    /**
+     * Check if admin group is already in authorization configuration
+     *
+     * @param array $authorization The authorization configuration to check
+     *
+     * @return bool True if admin group is found in any permission
+     */
+    private function hasAdminGroupInAuthorization(array $authorization): bool
+    {
+        $adminGroupId = 'admin';
+
+        // Check all entity types.
+        $entityTypes = ['register', 'schema', 'object', 'view', 'agent', 'configuration', 'application'];
+        foreach ($entityTypes as $entityType) {
+            if (isset($authorization[$entityType]) === true && is_array($authorization[$entityType]) === true) {
+                foreach (['create', 'read', 'update', 'delete'] as $action) {
+                    if (isset($authorization[$entityType][$action]) === true && is_array($authorization[$entityType][$action]) === true) {
+                        if (in_array($adminGroupId, $authorization[$entityType][$action]) === true) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Check special permissions.
+        $specialPermissions = ['object_publish', 'agent_use', 'dashboard_view', 'llm_use'];
+        foreach ($specialPermissions as $permission) {
+            if (isset($authorization[$permission]) === true && is_array($authorization[$permission]) === true) {
+                if (in_array($adminGroupId, $authorization[$permission]) === true) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+
+    }//end hasAdminGroupInAuthorization()
 
 
     /**
@@ -1247,7 +1351,7 @@ class OrganisationService
         $activeOrg = $this->getActiveOrganisation();
 
         if ($activeOrg === null) {
-            $this->logger->debug('No active organisation found for user');
+            $this->logger->debug(message: 'No active organisation found for user');
             return [];
         }
 

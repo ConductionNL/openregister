@@ -76,7 +76,7 @@ class DownloadService
         $mapper = $this->getMapper($objectType);
 
         try {
-            $object = $mapper->find($id);
+            $object = $mapper->find(id: $id);
         } catch (Exception $exception) {
             return ['error' => "Could not find $objectType with id $id.", 'statusCode' => 404];
         }
@@ -100,7 +100,7 @@ class DownloadService
             // Convert the object data to JSON.
             $jsonData = json_encode($objArray, JSON_PRETTY_PRINT);
 
-            $this->downloadJson($jsonData, $filename);
+            $this->downloadJson(jsonData: $jsonData, filename: $filename);
         }
 
         return ['error' => "The Accept type $accept is not supported.", 'statusCode' => 400];

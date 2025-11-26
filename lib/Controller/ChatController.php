@@ -41,6 +41,8 @@ use Psr\Log\LoggerInterface;
  *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
+ *
+ * @psalm-suppress UnusedClass - This controller is registered via routes.php and used by Nextcloud's routing system
  */
 class ChatController extends Controller
 {
@@ -137,7 +139,7 @@ class ChatController extends Controller
         LoggerInterface $logger,
         string $userId
     ) {
-        parent::__construct($appName, $request);
+        parent::__construct(appName: $appName, request: $request);
         $this->chatService         = $chatService;
         $this->conversationMapper  = $conversationMapper;
         $this->messageMapper       = $messageMapper;
@@ -162,9 +164,9 @@ class ChatController extends Controller
     public function page(): TemplateResponse
     {
         return new TemplateResponse(
-            'openregister',
-            'index',
-            []
+                appName: 'openregister',
+                templateName: 'index',
+                params: []
         );
 
     }//end page()
@@ -211,17 +213,17 @@ class ChatController extends Controller
 
             if (empty($message) === true) {
                 return new JSONResponse(
-                        [
+                        data:                         [
                             'error'   => 'Missing message',
                             'message' => 'message content is required',
                         ],
-                        400
+                        statusCode: 400
                         );
             }
 
             $this->logger->info(
-                    '[ChatController] Received message with settings',
-                    [
+                    message: '[ChatController] Received message with settings',
+                    context: [
                         'views'       => count($selectedViews),
                         'tools'       => count($selectedTools),
                         'ragSettings' => $ragSettings,
@@ -237,11 +239,11 @@ class ChatController extends Controller
                     $conversation = $this->conversationMapper->findByUuid($conversationUuid);
                 } catch (\Exception $e) {
                     return new JSONResponse(
-                            [
+                            data: [
                                 'error'   => 'Conversation not found',
                                 'message' => 'The conversation with UUID '.$conversationUuid.' does not exist',
                             ],
-                            404
+                            statusCode: 404
                             );
                 }
             } else if (empty($agentUuid) === false) {
@@ -253,19 +255,19 @@ class ChatController extends Controller
                     $agent = $this->agentMapper->findByUuid($agentUuid);
                 } catch (\Exception $e) {
                     return new JSONResponse(
-                            [
+                            data: [
                                 'error'   => 'Agent not found',
                                 'message' => 'The agent with UUID '.$agentUuid.' does not exist',
                             ],
-                            404
+                            statusCode: 404
                             );
                 }
 
                 // Generate unique default title.
                 $defaultTitle = $this->chatService->ensureUniqueTitle(
-                    'New Conversation',
-                    $this->userId,
-                    $agent->getId()
+                    baseTitle: 'New Conversation',
+                    userId: $this->userId,
+                    agentId: $agent->getId()
                 );
 
                 $conversation = new Conversation();
@@ -276,8 +278,8 @@ class ChatController extends Controller
                 $conversation = $this->conversationMapper->insert($conversation);
 
                 $this->logger->info(
-                        '[ChatController] New conversation created',
-                        [
+                        message: '[ChatController] New conversation created',
+                        context: [
                             'uuid'    => $conversation->getUuid(),
                             'userId'  => $this->userId,
                             'agentId' => $agent->getId(),
@@ -286,54 +288,54 @@ class ChatController extends Controller
                         );
             } else {
                 return new JSONResponse(
-                        [
+                        data: [
                             'error'   => 'Missing conversation or agentUuid',
                             'message' => 'Either conversation or agentUuid is required',
                         ],
-                        400
+                        statusCode: 400
                         );
             }//end if
 
             // Verify user has access.
             if ($conversation->getUserId() !== $this->userId) {
                 return new JSONResponse(
-                        [
+                        data: [
                             'error'   => 'Access denied',
                             'message' => 'You do not have access to this conversation',
                         ],
-                        403
+                        statusCode: 403
                         );
             }
 
             // Process message through ChatService.
             $result = $this->chatService->processMessage(
-                $conversation->getId(),
-                $this->userId,
-                $message,
-                $selectedViews,
-                $selectedTools,
-                $ragSettings
+                conversationId: $conversation->getId(),
+                userId: $this->userId,
+                userMessage: $message,
+                selectedViews: $selectedViews,
+                selectedTools: $selectedTools,
+                ragSettings: $ragSettings
             );
 
             // Add conversation UUID to result for frontend.
             $result['conversation'] = $conversation->getUuid();
 
-            return new JSONResponse($result, 200);
+            return new JSONResponse(data: $result, statusCode: 200);
         } catch (\Exception $e) {
             $this->logger->error(
-                    '[ChatController] Failed to send message',
-                    [
+                    message: '[ChatController] Failed to send message',
+                    context: [
                         'error' => $e->getMessage(),
                         'trace' => $e->getTraceAsString(),
                     ]
                     );
 
             return new JSONResponse(
-                    [
+                    data: [
                         'error'   => 'Failed to process message',
                         'message' => $e->getMessage(),
                     ],
-                    500
+                    statusCode: 500
                     );
         }//end try
 
@@ -356,11 +358,11 @@ class ChatController extends Controller
 
             if (empty($conversationId) === true) {
                 return new JSONResponse(
-                        [
+                        data: [
                             'error'   => 'Missing conversationId',
                             'message' => 'conversationId is required',
                         ],
-                        400
+                        statusCode: 400
                         );
             }
 
@@ -370,11 +372,11 @@ class ChatController extends Controller
             // Verify ownership.
             if ($conversation->getUserId() !== $this->userId) {
                 return new JSONResponse(
-                        [
+                        data: [
                             'error'   => 'Access denied',
                             'message' => 'You do not have access to this conversation',
                         ],
-                        403
+                        statusCode: 403
                         );
             }
 
@@ -383,18 +385,18 @@ class ChatController extends Controller
             $offset = (int) ($this->request->getParam('offset') ?? 0);
 
             $messages = $this->messageMapper->findByConversation(
-                $conversationId,
-                $limit,
-                $offset
+                conversationId: $conversationId,
+                limit: $limit,
+                offset: $offset
             );
 
             return new JSONResponse(
-                    [
+                    data: [
                         'messages'       => array_map(fn($msg) => $msg->jsonSerialize(), $messages),
                         'total'          => $this->messageMapper->countByConversation($conversationId),
                         'conversationId' => $conversationId,
                     ],
-                    200
+                    statusCode: 200
                     );
         } catch (\Exception $e) {
             $this->logger->error(
@@ -406,11 +408,11 @@ class ChatController extends Controller
                     );
 
             return new JSONResponse(
-                    [
+                    data: [
                         'error'   => 'Failed to fetch conversation history',
                         'message' => $e->getMessage(),
                     ],
-                    500
+                    statusCode: 500
                     );
         }//end try
 
@@ -433,11 +435,11 @@ class ChatController extends Controller
 
             if (empty($conversationId) === true) {
                 return new JSONResponse(
-                        [
+                        data: [
                             'error'   => 'Missing conversationId',
                             'message' => 'conversationId is required',
                         ],
-                        400
+                        statusCode: 400
                         );
             }
 
@@ -447,11 +449,11 @@ class ChatController extends Controller
             // Verify ownership.
             if ($conversation->getUserId() !== $this->userId) {
                 return new JSONResponse(
-                        [
+                        data: [
                             'error'   => 'Access denied',
                             'message' => 'You do not have access to this conversation',
                         ],
-                        403
+                        statusCode: 403
                         );
             }
 
@@ -459,19 +461,19 @@ class ChatController extends Controller
             $this->conversationMapper->softDelete($conversationId);
 
             $this->logger->info(
-                    '[ChatController] Conversation cleared (soft deleted)',
-                    [
+                    message: '[ChatController] Conversation cleared (soft deleted)',
+                    context: [
                         'conversationId' => $conversationId,
                         'userId'         => $this->userId,
                     ]
                     );
 
             return new JSONResponse(
-                    [
+                    data: [
                         'message'        => 'Conversation cleared successfully',
                         'conversationId' => $conversationId,
                     ],
-                    200
+                    statusCode: 200
                     );
         } catch (\Exception $e) {
             $this->logger->error(
@@ -483,11 +485,11 @@ class ChatController extends Controller
                     );
 
             return new JSONResponse(
-                    [
+                    data: [
                         'error'   => 'Failed to clear conversation',
                         'message' => $e->getMessage(),
                     ],
-                    500
+                    statusCode: 500
                     );
         }//end try
 
@@ -502,10 +504,10 @@ class ChatController extends Controller
      * @param string $conversationUuid Conversation UUID
      * @param int    $messageId        Message ID
      *
+     * @return JSONResponse Feedback data
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
-     *
-     * @return JSONResponse Feedback data
      */
     public function sendFeedback(string $conversationUuid, int $messageId): JSONResponse
     {
@@ -517,11 +519,11 @@ class ChatController extends Controller
             // Validate feedback type.
             if (in_array($type, ['positive', 'negative'], true) === false) {
                 return new JSONResponse(
-                        [
+                        data: [
                             'error'   => 'Invalid feedback type',
                             'message' => 'type must be "positive" or "negative"',
                         ],
-                        400
+                        statusCode: 400
                         );
             }
 
@@ -531,11 +533,11 @@ class ChatController extends Controller
             // Verify user has access to this conversation.
             if ($conversation->getUserId() !== $this->userId) {
                 return new JSONResponse(
-                        [
+                        data: [
                             'error'   => 'Access denied',
                             'message' => 'You do not have access to this conversation',
                         ],
-                        403
+                        statusCode: 403
                         );
             }
 
@@ -544,11 +546,11 @@ class ChatController extends Controller
 
             if ($message->getConversationId() !== $conversation->getId()) {
                 return new JSONResponse(
-                        [
+                        data: [
                             'error'   => 'Message not found',
                             'message' => 'Message does not belong to this conversation',
                         ],
-                        404
+                        statusCode: 404
                         );
             }
 
@@ -557,7 +559,7 @@ class ChatController extends Controller
             $organisationUuid = $organisation?->getUuid();
 
             // Check if feedback already exists for this message.
-            $existingFeedback = $this->feedbackMapper->findByMessage($messageId, $this->userId);
+            $existingFeedback = $this->feedbackMapper->findByMessage(messageId: $messageId, userId: $this->userId);
 
             if ($existingFeedback !== null) {
                 // Update existing feedback.
@@ -599,7 +601,7 @@ class ChatController extends Controller
                         );
             }//end if
 
-            return new JSONResponse($feedback->jsonSerialize(), 200);
+            return new JSONResponse(data: $feedback->jsonSerialize(), statusCode: 200);
         } catch (\Exception $e) {
             $this->logger->error(
                     '[ChatController] Failed to save feedback',
@@ -612,11 +614,11 @@ class ChatController extends Controller
                     );
 
             return new JSONResponse(
-                    [
+                    data: [
                         'error'   => 'Failed to save feedback',
                         'message' => $e->getMessage(),
                     ],
-                    500
+                    statusCode: 500
                     );
         }//end try
 
@@ -653,12 +655,12 @@ class ChatController extends Controller
             $totalMessages = (int) $qb->executeQuery()->fetchOne();
 
             return new JSONResponse(
-                    [
+                    data: [
                         'total_agents'        => $totalAgents,
                         'total_conversations' => $totalConversations,
                         'total_messages'      => $totalMessages,
                     ],
-                    200
+                    statusCode: 200
                     );
         } catch (\Exception $e) {
             $this->logger->error(
@@ -669,11 +671,11 @@ class ChatController extends Controller
                     );
 
             return new JSONResponse(
-                    [
+                    data: [
                         'error'   => 'Failed to get chat statistics',
                         'message' => $e->getMessage(),
                     ],
-                    500
+                    statusCode: 500
                     );
         }//end try
 

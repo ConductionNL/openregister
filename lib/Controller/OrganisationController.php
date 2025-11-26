@@ -38,6 +38,8 @@ use Exception;
  * and organisation CRUD operations.
  *
  * @package OCA\OpenRegister\Controller
+ *
+ * @psalm-suppress UnusedClass - This controller is registered via routes.php and used by Nextcloud's routing system
  */
 class OrganisationController extends Controller
 {
@@ -80,7 +82,7 @@ class OrganisationController extends Controller
         OrganisationMapper $organisationMapper,
         LoggerInterface $logger
     ) {
-        parent::__construct($appName, $request);
+        parent::__construct(appName: $appName, request: $request);
         $this->organisationService = $organisationService;
         $this->organisationMapper  = $organisationMapper;
         $this->logger = $logger;
@@ -101,21 +103,21 @@ class OrganisationController extends Controller
         try {
             $stats = $this->organisationService->getUserOrganisationStats();
 
-            return new JSONResponse($stats, Http::STATUS_OK);
+            return new JSONResponse(data: $stats, statusCode: Http::STATUS_OK);
         } catch (Exception $e) {
             $this->logger->error(
-                    'Failed to get user organisations',
-                    [
+                    message: 'Failed to get user organisations',
+                    context: [
                         'error' => $e->getMessage(),
                         'trace' => $e->getTraceAsString(),
                     ]
                     );
 
             return new JSONResponse(
-                    [
+                    data: [
                         'error' => 'Failed to retrieve organisations',
                     ],
-                    Http::STATUS_INTERNAL_SERVER_ERROR
+                    statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
                     );
         }
 
@@ -145,34 +147,34 @@ class OrganisationController extends Controller
                 }
 
                 return new JSONResponse(
-                        [
+                        data: [
                             'message'            => 'Active organisation set successfully',
                             'activeOrganisation' => $activeOrgData,
                         ],
-                        Http::STATUS_OK
+                        statusCode: Http::STATUS_OK
                         );
             } else {
                 return new JSONResponse(
-                        [
+                        data: [
                             'error' => 'Failed to set active organisation',
                         ],
-                        Http::STATUS_BAD_REQUEST
+                        statusCode: Http::STATUS_BAD_REQUEST
                         );
             }//end if
         } catch (Exception $e) {
             $this->logger->error(
-                    'Failed to set active organisation',
-                    [
+                    message: 'Failed to set active organisation',
+                    context: [
                         'uuid'  => $uuid,
                         'error' => $e->getMessage(),
                     ]
                     );
 
             return new JSONResponse(
-                    [
+                    data: [
                         'error' => $e->getMessage(),
                     ],
-                    Http::STATUS_BAD_REQUEST
+                    statusCode: Http::STATUS_BAD_REQUEST
                     );
         }//end try
 
@@ -198,24 +200,24 @@ class OrganisationController extends Controller
             }
 
             return new JSONResponse(
-                    [
+                    data: [
                         'activeOrganisation' => $activeOrgData,
                     ],
-                    Http::STATUS_OK
+                    statusCode: Http::STATUS_OK
                     );
         } catch (Exception $e) {
             $this->logger->error(
-                    'Failed to get active organisation',
-                    [
+                    message: 'Failed to get active organisation',
+                    context: [
                         'error' => $e->getMessage(),
                     ]
                     );
 
             return new JSONResponse(
-                    [
+                    data: [
                         'error' => 'Failed to retrieve active organisation',
                     ],
-                    Http::STATUS_INTERNAL_SERVER_ERROR
+                    statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
                     );
         }//end try
 
@@ -239,10 +241,10 @@ class OrganisationController extends Controller
             // Validate input.
             if (empty(trim($name)) === true) {
                 return new JSONResponse(
-                        [
+                        data: [
                             'error' => 'Organisation name is required',
                         ],
-                        Http::STATUS_BAD_REQUEST
+                        statusCode: Http::STATUS_BAD_REQUEST
                         );
             }
 
@@ -250,29 +252,29 @@ class OrganisationController extends Controller
             $requestData = $this->request->getParams();
             $uuid        = $requestData['uuid'] ?? '';
 
-            $organisation = $this->organisationService->createOrganisation($name, $description, true, $uuid);
+            $organisation = $this->organisationService->createOrganisation(name: $name, description: $description, isPublic: true, uuid: $uuid);
 
             return new JSONResponse(
-                    [
+                    data: [
                         'message'      => 'Organisation created successfully',
                         'organisation' => $organisation->jsonSerialize(),
                     ],
-                    Http::STATUS_CREATED
+                    statusCode: Http::STATUS_CREATED
                     );
         } catch (Exception $e) {
             $this->logger->error(
-                    'Failed to create organisation',
-                    [
+                    message: 'Failed to create organisation',
+                    context: [
                         'name'  => $name,
                         'error' => $e->getMessage(),
                     ]
                     );
 
             return new JSONResponse(
-                    [
+                    data: [
                         'error' => $e->getMessage(),
                     ],
-                    Http::STATUS_BAD_REQUEST
+                    statusCode: Http::STATUS_BAD_REQUEST
                     );
         }//end try
 
@@ -297,27 +299,27 @@ class OrganisationController extends Controller
             $userId      = $requestData['userId'] ?? null;
 
             // Join organisation with optional userId parameter.
-            $success = $this->organisationService->joinOrganisation($uuid, $userId);
+            $success = $this->organisationService->joinOrganisation(organisationUuid: $uuid, targetUserId: $userId);
 
             if ($success === true) {
                 return new JSONResponse(
-                        [
+                        data: [
                             'message' => 'Successfully joined organisation',
                         ],
-                        Http::STATUS_OK
+                        statusCode: Http::STATUS_OK
                         );
             } else {
                 return new JSONResponse(
-                        [
+                        data: [
                             'error' => 'Failed to join organisation',
                         ],
-                        Http::STATUS_BAD_REQUEST
+                        statusCode: Http::STATUS_BAD_REQUEST
                         );
             }
         } catch (Exception $e) {
             $this->logger->error(
-                    'Failed to join organisation',
-                    [
+                    message: 'Failed to join organisation',
+                    context: [
                         'uuid'   => $uuid,
                         'userId' => $requestData['userId'] ?? 'current_user',
                         'error'  => $e->getMessage(),
@@ -325,10 +327,10 @@ class OrganisationController extends Controller
                     );
 
             return new JSONResponse(
-                    [
+                    data: [
                         'error' => $e->getMessage(),
                     ],
-                    Http::STATUS_BAD_REQUEST
+                    statusCode: Http::STATUS_BAD_REQUEST
                     );
         }//end try
 
@@ -352,7 +354,7 @@ class OrganisationController extends Controller
             $data   = $this->request->getParams();
             $userId = $data['userId'] ?? null;
 
-            $success = $this->organisationService->leaveOrganisation($uuid, $userId);
+            $success = $this->organisationService->leaveOrganisation(organisationUuid: $uuid, targetUserId: $userId);
 
             if ($success === true) {
                 $message = "Successfully left organisation";
@@ -361,23 +363,23 @@ class OrganisationController extends Controller
                 }
 
                 return new JSONResponse(
-                        [
+                        data: [
                             'message' => $message,
                         ],
-                        Http::STATUS_OK
+                        statusCode: Http::STATUS_OK
                         );
             } else {
                 return new JSONResponse(
-                        [
+                        data: [
                             'error' => 'Failed to leave organisation',
                         ],
-                        Http::STATUS_BAD_REQUEST
+                        statusCode: Http::STATUS_BAD_REQUEST
                         );
             }
         } catch (Exception $e) {
             $this->logger->error(
-                    'Failed to leave organisation',
-                    [
+                    message: 'Failed to leave organisation',
+                    context: [
                         'uuid'   => $uuid,
                         'userId' => $userId ?? 'current-user',
                         'error'  => $e->getMessage(),
@@ -385,10 +387,10 @@ class OrganisationController extends Controller
                     );
 
             return new JSONResponse(
-                    [
+                    data: [
                         'error' => $e->getMessage(),
                     ],
-                    Http::STATUS_BAD_REQUEST
+                    statusCode: Http::STATUS_BAD_REQUEST
                     );
         }//end try
 
@@ -411,10 +413,10 @@ class OrganisationController extends Controller
             // Check if user has access to this organisation.
             if ($this->organisationService->hasAccessToOrganisation($uuid) === false) {
                 return new JSONResponse(
-                        [
+                        data: [
                             'error' => 'Access denied to this organisation',
                         ],
-                        Http::STATUS_FORBIDDEN
+                        statusCode: Http::STATUS_FORBIDDEN
                         );
             }
 
@@ -425,25 +427,25 @@ class OrganisationController extends Controller
             $organisation->setChildren($children);
 
             return new JSONResponse(
-                    [
+                    data: [
                         'organisation' => $organisation->jsonSerialize(),
                     ],
-                    Http::STATUS_OK
+                    statusCode: Http::STATUS_OK
                     );
         } catch (Exception $e) {
             $this->logger->error(
-                    'Failed to get organisation',
-                    [
+                    message: 'Failed to get organisation',
+                    context: [
                         'uuid'  => $uuid,
                         'error' => $e->getMessage(),
                     ]
                     );
 
             return new JSONResponse(
-                    [
+                    data: [
                         'error' => 'Organisation not found',
                     ],
-                    Http::STATUS_NOT_FOUND
+                    statusCode: Http::STATUS_NOT_FOUND
                     );
         }//end try
 
@@ -466,10 +468,10 @@ class OrganisationController extends Controller
             // Check if user has access to this organisation.
             if ($this->organisationService->hasAccessToOrganisation($uuid) === false) {
                 return new JSONResponse(
-                        [
+                        data: [
                             'error' => 'Access denied to this organisation',
                         ],
-                        Http::STATUS_FORBIDDEN
+                        statusCode: Http::STATUS_FORBIDDEN
                         );
             }
 
@@ -539,12 +541,12 @@ class OrganisationController extends Controller
 
                 // Validate parent assignment to prevent circular references.
                 try {
-                    $this->organisationMapper->validateParentAssignment($uuid, $newParent);
+                    $this->organisationMapper->validateParentAssignment(organisationUuid: $uuid, parentUuid: $newParent);
                     $organisation->setParent($newParent);
                 } catch (Exception $e) {
                     $this->logger->warning(
-                    'Parent assignment validation failed',
-                    [
+                    message: 'Parent assignment validation failed',
+                    context: [
                         'organisationUuid' => $uuid,
                         'newParent'        => $newParent,
                         'error'            => $e->getMessage(),
@@ -552,21 +554,21 @@ class OrganisationController extends Controller
                     );
 
                     return new JSONResponse(
-                    [
+                    data: [
                         'error' => $e->getMessage(),
                     ],
-                    Http::STATUS_BAD_REQUEST
+                    statusCode: Http::STATUS_BAD_REQUEST
                     );
                 }
             }//end if
 
             $updated = $this->organisationMapper->save($organisation);
 
-            return new JSONResponse($updated->jsonSerialize(), Http::STATUS_OK);
+            return new JSONResponse(data: $updated->jsonSerialize(), statusCode: Http::STATUS_OK);
         } catch (Exception $e) {
             $this->logger->error(
-                    'Failed to update organisation',
-                    [
+                    message: 'Failed to update organisation',
+                    context: [
                         'uuid'  => $uuid,
                         'error' => $e->getMessage(),
                         'trace' => $e->getTraceAsString(),
@@ -574,10 +576,10 @@ class OrganisationController extends Controller
                     );
 
             return new JSONResponse(
-                    [
+                    data: [
                         'error' => 'Failed to update organisation: '.$e->getMessage(),
                     ],
-                    Http::STATUS_BAD_REQUEST
+                    statusCode: Http::STATUS_BAD_REQUEST
                     );
         }//end try
 
@@ -604,12 +606,12 @@ class OrganisationController extends Controller
     /**
      * Search organisations by name with pagination (for joining)
      *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
      * @param string $query Search query.
      *
      * @return JSONResponse List of matching organisations with pagination info.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
      */
     public function search(string $query=''): JSONResponse
     {
@@ -626,9 +628,9 @@ class OrganisationController extends Controller
             // If query is empty, return all organisations.
             // Otherwise search by name.
             if (empty(trim($query)) === true) {
-                $organisations = $this->organisationMapper->findAll($limit, $offset);
+                $organisations = $this->organisationMapper->findAll(limit: $limit, offset: $offset);
             } else {
-                $organisations = $this->organisationMapper->findByName(trim($query), $limit, $offset);
+                $organisations = $this->organisationMapper->findByName(name: trim($query), limit: $limit, offset: $offset);
             }
 
             // Remove user information for privacy.
@@ -645,28 +647,28 @@ class OrganisationController extends Controller
                     );
 
             return new JSONResponse(
-                    [
+                    data: [
                         'organisations' => $publicData,
                         'limit'         => $limit,
                         'offset'        => $offset,
                         'count'         => count($publicData),
                     ],
-                    Http::STATUS_OK
+                    statusCode: Http::STATUS_OK
                     );
         } catch (Exception $e) {
             $this->logger->error(
-                    'Failed to search organisations',
-                    [
+                    message: 'Failed to search organisations',
+                    context: [
                         'query' => $query,
                         'error' => $e->getMessage(),
                     ]
                     );
 
             return new JSONResponse(
-                    [
+                    data: [
                         'error' => 'Search failed',
                     ],
-                    Http::STATUS_INTERNAL_SERVER_ERROR
+                    statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
                     );
         }//end try
 
@@ -687,24 +689,24 @@ class OrganisationController extends Controller
             $this->organisationService->clearCache();
 
             return new JSONResponse(
-                    [
+                    data: [
                         'message' => 'Cache cleared successfully',
                     ],
-                    Http::STATUS_OK
+                    statusCode: Http::STATUS_OK
                     );
         } catch (Exception $e) {
             $this->logger->error(
-                    'Failed to clear cache',
-                    [
+                    message: 'Failed to clear cache',
+                    context: [
                         'error' => $e->getMessage(),
                     ]
                     );
 
             return new JSONResponse(
-                    [
+                    data: [
                         'error' => 'Failed to clear cache',
                     ],
-                    Http::STATUS_INTERNAL_SERVER_ERROR
+                    statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
                     );
         }//end try
 
@@ -725,24 +727,24 @@ class OrganisationController extends Controller
             $stats = $this->organisationMapper->getStatistics();
 
             return new JSONResponse(
-                    [
+                    data: [
                         'statistics' => $stats,
                     ],
-                    Http::STATUS_OK
+                    statusCode: Http::STATUS_OK
                     );
         } catch (Exception $e) {
             $this->logger->error(
-                    'Failed to get organisation statistics',
-                    [
+                    message: 'Failed to get organisation statistics',
+                    context: [
                         'error' => $e->getMessage(),
                     ]
                     );
 
             return new JSONResponse(
-                    [
+                    data: [
                         'error' => 'Failed to retrieve statistics',
                     ],
-                    Http::STATUS_INTERNAL_SERVER_ERROR
+                    statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
                     );
         }//end try
 
@@ -762,13 +764,13 @@ class OrganisationController extends Controller
         $slug = strtolower($name);
 
         // Replace spaces and special characters with hyphens.
-        $slug = preg_replace('/[^a-z0-9]+/', '-', $slug);
+        $slug = preg_replace(pattern: '/[^a-z0-9]+/', replacement: '-', subject: $slug);
 
         // Remove leading/trailing hyphens.
-        $slug = trim($slug, '-');
+        $slug = trim(string: $slug, characters: '-');
 
         // Limit length to 100 characters.
-        $slug = substr($slug, 0, 100);
+        $slug = substr(string: $slug, offset: 0, length: 100);
 
         return $slug;
 

@@ -1,6 +1,8 @@
 <?php
 
-/**
+declare(strict_types=1);
+
+/*
  * SPDX-FileCopyrightText: 2024 Nextcloud GmbH and Nextcloud contributors
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
@@ -13,8 +15,6 @@
  *
  * @link https://www.OpenRegister.nl
  */
-
-declare(strict_types=1);
 
 namespace OCA\OpenRegister\Migration;
 
@@ -54,10 +54,6 @@ class Version002003000Date20251013000000 extends SimpleMigrationStep
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /*
-         * @var ISchemaWrapper $schema
-         */
-
         $schema = $schemaClosure();
 
         // Check if table already exists.
@@ -66,124 +62,124 @@ class Version002003000Date20251013000000 extends SimpleMigrationStep
 
             // Primary key.
             $table->addColumn(
-                    'id',
-                    'bigint',
-                    [
-                        'autoincrement' => true,
-                        'notnull'       => true,
-                        'length'        => 20,
-                        'unsigned'      => true,
-                    ]
-                    );
+                'id',
+                'bigint',
+                [
+                    'autoincrement' => true,
+                    'notnull'       => true,
+                    'length'        => 20,
+                    'unsigned'      => true,
+                ]
+            );
 
             // Entity information.
             $table->addColumn(
-                    'entity_type',
-                    'string',
-                    [
-                        'notnull' => true,
-                        'length'  => 50,
-                        'comment' => 'Type of entity: object or file',
-                    ]
-                    );
+                'entity_type',
+                'string',
+                [
+                    'notnull' => true,
+                    'length'  => 50,
+                    'comment' => 'Type of entity: object or file',
+                ]
+            );
 
             $table->addColumn(
-                    'entity_id',
-                    'string',
-                    [
-                        'notnull' => true,
-                        'length'  => 255,
-                        'comment' => 'UUID of the object or file',
-                    ]
-                    );
+                'entity_id',
+                'string',
+                [
+                    'notnull' => true,
+                    'length'  => 255,
+                    'comment' => 'UUID of the object or file',
+                ]
+            );
 
             // Chunk information (for files).
             $table->addColumn(
-                    'chunk_index',
-                    'integer',
-                    [
-                        'notnull' => true,
-                        'default' => 0,
-                        'comment' => '0 for objects, N for file chunks',
-                    ]
-                    );
+                'chunk_index',
+                'integer',
+                [
+                    'notnull' => true,
+                    'default' => 0,
+                    'comment' => '0 for objects, N for file chunks',
+                ]
+            );
 
             $table->addColumn(
-                    'total_chunks',
-                    'integer',
-                    [
-                        'notnull' => true,
-                        'default' => 1,
-                        'comment' => '1 for objects, N for files',
-                    ]
-                    );
+                'total_chunks',
+                'integer',
+                [
+                    'notnull' => true,
+                    'default' => 1,
+                    'comment' => '1 for objects, N for files',
+                ]
+            );
 
             $table->addColumn(
-                    'chunk_text',
-                    'text',
-                    [
-                        'notnull' => false,
-                        'comment' => 'The text that was embedded (for reference and debugging)',
-                    ]
-                    );
+                'chunk_text',
+                'text',
+                [
+                    'notnull' => false,
+                    'comment' => 'The text that was embedded (for reference and debugging)',
+                ]
+            );
 
             // Vector data.
             $table->addColumn(
-                    'embedding',
-                    'blob',
-                    [
-                        'notnull' => true,
-                        'comment' => 'Binary vector data (serialized array or binary format)',
-                    ]
-                    );
+                'embedding',
+                'blob',
+                [
+                    'notnull' => true,
+                    'comment' => 'Binary vector data (serialized array or binary format)',
+                ]
+            );
 
             $table->addColumn(
-                    'embedding_model',
-                    'string',
-                    [
-                        'notnull' => true,
-                        'length'  => 100,
-                        'comment' => 'Model used to generate embeddings (e.g., text-embedding-ada-002)',
-                    ]
-                    );
+                'embedding_model',
+                'string',
+                [
+                    'notnull' => true,
+                    'length'  => 100,
+                    'comment' => 'Model used to generate embeddings (e.g., text-embedding-ada-002)',
+                ]
+            );
 
             $table->addColumn(
-                    'embedding_dimensions',
-                    'integer',
-                    [
-                        'notnull' => true,
-                        'comment' => 'Number of dimensions in the vector (e.g., 1536 for OpenAI ada-002)',
-                    ]
-                    );
+                'embedding_dimensions',
+                'integer',
+                [
+                    'notnull' => true,
+                    'comment' => 'Number of dimensions in the vector (e.g., 1536 for OpenAI ada-002)',
+                ]
+            );
 
             // Metadata.
             $table->addColumn(
-                    'metadata',
-                    'text',
-                    [
-                        'notnull' => false,
-                        'comment' => 'Additional metadata as JSON',
-                    ]
-                    );
+                'metadata',
+                'text',
+                [
+                    'notnull' => false,
+                    'comment' => 'Additional metadata as JSON',
+                ]
+            );
 
             // Timestamps.
             $table->addColumn(
-                    'created_at',
-                    'datetime',
-                    [
-                        'notnull' => true,
-                        'default' => 'CURRENT_TIMESTAMP',
-                    ]
-                    );
+                'created_at',
+                'datetime',
+                [
+                    'notnull' => true,
+                    'default' => 'CURRENT_TIMESTAMP',
+                ]
+            );
 
             $table->addColumn(
-                    'updated_at',
-                    'datetime',
-                    [
-                        'notnull' => true,
-                        'default' => 'CURRENT_TIMESTAMP',
-                    ]
-                    );
+                'updated_at',
+                'datetime',
+                [
+                    'notnull' => true,
+                    'default' => 'CURRENT_TIMESTAMP',
+                ]
+            );
 
             // Set primary key.
             $table->setPrimaryKey(['id']);
@@ -194,12 +190,12 @@ class Version002003000Date20251013000000 extends SimpleMigrationStep
             $table->addIndex(['embedding_model'], 'openreg_vec_model_idx');
             $table->addIndex(['created_at'], 'openreg_vec_created_idx');
 
-            $output->info('Created table openregister_vectors for vector embeddings');
+            $output->info(message: 'Created table openregister_vectors for vector embeddings');
 
             return $schema;
         }//end if
 
-        $output->info('Table openregister_vectors already exists');
+        $output->info(message: 'Table openregister_vectors already exists');
         return null;
 
     }//end changeSchema()

@@ -80,7 +80,7 @@ class UploadService
      */
     public function getUploadedJson(array $data): array | JSONResponse
     {
-        foreach ($data as $key => $value) {
+        foreach (array_keys($data) as $key) {
             if (str_starts_with($key, '_') === true) {
                 unset($data[$key]);
             }

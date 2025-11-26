@@ -94,6 +94,7 @@ class DeleteObject
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly FileService $fileService,
         private readonly ObjectCacheService $objectCacheService,
+        /** @psalm-suppress UnusedProperty - Property kept for future use */
         private readonly SchemaCacheService $schemaCacheService,
         private readonly SchemaFacetCacheService $schemaFacetCacheService,
         AuditTrailMapper $auditTrailMapper,
@@ -140,10 +141,10 @@ class DeleteObject
         // **CACHE INVALIDATION**: Clear collection and facet caches so deleted objects disappear immediately.
         if ($result === true) {
             $this->objectCacheService->invalidateForObjectChange(
-                $objectEntity,
-                'delete',
-                $objectEntity->getRegister(),
-                $objectEntity->getSchema()
+                object: $objectEntity,
+                operation: 'delete',
+                registerId: $objectEntity->getRegister(),
+                schemaId: $objectEntity->getSchema()
             );
         }
 
@@ -185,7 +186,7 @@ class DeleteObject
 
             // Handle cascading deletes if this is the root object.
             if ($originalObjectId === null) {
-                $this->cascadeDeleteObjects($register, $schema, $object, $uuid);
+                $this->cascadeDeleteObjects(register: $register, schema: $schema, object: $object, originalObjectId: $uuid);
             }
 
             return $this->delete($object);
@@ -225,10 +226,10 @@ class DeleteObject
 
             if (is_array($value) === true) {
                 foreach ($value as $id) {
-                    $this->deleteObject($register, $schema, $id, $originalObjectId);
+                    $this->deleteObject(register: $register, schema: $schema, uuid: $id, originalObjectId: $originalObjectId);
                 }
             } else {
-                $this->deleteObject($register, $schema, $value, $originalObjectId);
+                $this->deleteObject(register: $register, schema: $schema, uuid: $value, originalObjectId: $originalObjectId);
             }
         }
 

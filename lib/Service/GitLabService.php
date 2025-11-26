@@ -140,8 +140,8 @@ class GitLabService
             }
 
             $this->logger->info(
-                    'Searching GitLab for OpenRegister configurations',
-                    [
+                    message: 'Searching GitLab for OpenRegister configurations',
+                    context: [
                         '_search' => $search,
                         'query'   => $searchQuery,
                         'page'    => $page,
@@ -196,8 +196,8 @@ class GitLabService
             ];
         } catch (GuzzleException $e) {
             $this->logger->error(
-                    'GitLab API search failed',
-                    [
+                    message: 'GitLab API search failed',
+                    context: [
                         'error'   => $e->getMessage(),
                         '_search' => $search,
                         'query'   => $searchQuery ?? '',
@@ -223,8 +223,8 @@ class GitLabService
     {
         try {
             $this->logger->info(
-                    'Fetching branches from GitLab',
-                    [
+                    message: 'Fetching branches from GitLab',
+                    context: [
                         'project_id' => $projectId,
                     ]
                     );
@@ -252,8 +252,8 @@ class GitLabService
                     );
         } catch (GuzzleException $e) {
             $this->logger->error(
-                    'GitLab API get branches failed',
-                    [
+                    message: 'GitLab API get branches failed',
+                    context: [
                         'error'      => $e->getMessage(),
                         'project_id' => $projectId,
                     ]
@@ -280,8 +280,8 @@ class GitLabService
     {
         try {
             $this->logger->info(
-                    'Fetching file from GitLab',
-                    [
+                    message: 'Fetching file from GitLab',
+                    context: [
                         'project_id' => $projectId,
                         'path'       => $path,
                         'ref'        => $ref,
@@ -310,8 +310,8 @@ class GitLabService
             return $json;
         } catch (GuzzleException $e) {
             $this->logger->error(
-                    'GitLab API get file content failed',
-                    [
+                    message: 'GitLab API get file content failed',
+                    context: [
                         'error'      => $e->getMessage(),
                         'project_id' => $projectId,
                         'path'       => $path,
@@ -342,8 +342,8 @@ class GitLabService
     {
         try {
             $this->logger->info(
-                    'Listing configuration files from GitLab',
-                    [
+                    message: 'Listing configuration files from GitLab',
+                    context: [
                         'project_id' => $projectId,
                         'ref'        => $ref,
                         'path'       => $path,
@@ -373,7 +373,7 @@ class GitLabService
                     && (str_ends_with($item['path'], 'openregister.json') === true
                     || str_contains($item['path'], '.openregister.json') === true)
                 ) {
-                    $configData = $this->parseConfigurationFile($projectId, $item['path'], $ref);
+                    $configData = $this->parseConfigurationFile(projectId: $projectId, path: $item['path'], ref: $ref);
 
                     if ($configData !== null) {
                         $files[] = [
@@ -394,8 +394,8 @@ class GitLabService
             return $files;
         } catch (GuzzleException $e) {
             $this->logger->error(
-                    'GitLab API list files failed',
-                    [
+                    message: 'GitLab API list files failed',
+                    context: [
                         'error'      => $e->getMessage(),
                         'project_id' => $projectId,
                         'ref'        => $ref,
@@ -426,8 +426,8 @@ class GitLabService
             $projectPath = urlencode($namespace.'/'.$project);
 
             $this->logger->info(
-                    'Fetching GitLab project by path',
-                    [
+                    message: 'Fetching GitLab project by path',
+                    context: [
                         'namespace' => $namespace,
                         'project'   => $project,
                     ]
@@ -444,8 +444,8 @@ class GitLabService
             return json_decode($response->getBody(), true);
         } catch (GuzzleException $e) {
             $this->logger->error(
-                    'GitLab API get project failed',
-                    [
+                    message: 'GitLab API get project failed',
+                    context: [
                         'error'     => $e->getMessage(),
                         'namespace' => $namespace,
                         'project'   => $project,
@@ -471,15 +471,15 @@ class GitLabService
     private function parseConfigurationFile(int $projectId, string $path, string $ref='main'): ?array
     {
         try {
-            $content = $this->getFileContent($projectId, $path, $ref);
+            $content = $this->getFileContent(projectId: $projectId, path: $path, ref: $ref);
 
             // Validate that it's a valid OpenRegister configuration.
             if (isset($content['openapi']) === false
                 || isset($content['x-openregister']) === false
             ) {
                 $this->logger->debug(
-                        'File does not contain required OpenRegister structure',
-                        [
+                        message: 'File does not contain required OpenRegister structure',
+                        context: [
                             'path' => $path,
                         ]
                         );
@@ -489,8 +489,8 @@ class GitLabService
             return $content;
         } catch (\Exception $e) {
             $this->logger->debug(
-                    'Failed to parse configuration file',
-                    [
+                    message: 'Failed to parse configuration file',
+                    context: [
                         'path'  => $path,
                         'error' => $e->getMessage(),
                     ]

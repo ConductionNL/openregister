@@ -1,6 +1,8 @@
 <?php
 
-/**
+declare(strict_types=1);
+
+/*
  * OpenRegister Audit Trail Mapper
  *
  * This file contains the class for handling audit trail related operations
@@ -20,7 +22,9 @@
 
 namespace OCA\OpenRegister\Db;
 
+use DateTime;
 use OCP\AppFramework\Db\Entity;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -38,7 +42,11 @@ use Symfony\Component\Uid\Uuid;
  * @method AuditTrail find(int|string $id)
  * @method AuditTrail findEntity(IQueryBuilder $query)
  * @method AuditTrail[] findAll(int|null $limit = null, int|null $offset = null)
- * @method AuditTrail[] findEntities(IQueryBuilder $query)
+ * @method list<AuditTrail> findEntities(IQueryBuilder $query)
+ *
+ * @template T of AuditTrail
+ * @template-extends QBMapper<AuditTrail>
+ * @psalm-suppress LessSpecificImplementedReturnType - @method annotation is correct, parent returns list<T>
  */
 class AuditTrailMapper extends QBMapper
 {
@@ -61,7 +69,7 @@ class AuditTrailMapper extends QBMapper
      */
     public function __construct(IDBConnection $db, ObjectEntityMapper $objectEntityMapper)
     {
-        parent::__construct($db, 'openregister_audit_trails', AuditTrail::class);
+        parent::__construct(db: $db, tableName: 'openregister_audit_trails', entityClass: AuditTrail::class);
         $this->objectEntityMapper = $objectEntityMapper;
 
     }//end __construct()
@@ -242,7 +250,7 @@ class AuditTrailMapper extends QBMapper
             $object            = $this->objectEntityMapper->find(identifier: $identifier);
             $objectId          = $object->getId();
             $filters['object'] = $objectId;
-            return $this->findAll($limit, $offset, $filters);
+            return $this->findAll(limit: $limit, offset: $offset, filters: $filters);
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             // Object not found.
             return [];
@@ -265,7 +273,7 @@ class AuditTrailMapper extends QBMapper
 
         // Set uuid if not provided.
         if ($auditTrail->getUuid() === null) {
-            $auditTrail->setUuid(Uuid::v4());
+            $auditTrail->setUuid((string) Uuid::v4());
         }
 
         // Set default expiration date if not provided (30 days from now).
@@ -345,7 +353,7 @@ class AuditTrailMapper extends QBMapper
 
         // Create and populate a new AuditTrail object.
         $auditTrail = new AuditTrail();
-        $auditTrail->setUuid(Uuid::v4());
+        $auditTrail->setUuid((string) Uuid::v4());
         // $auditTrail->setObject($objectEntity->getId()); @todo change migration!!
         $auditTrail->setObject($objectEntity->getId());
         $auditTrail->setAction($action);
@@ -431,7 +439,7 @@ class AuditTrailMapper extends QBMapper
                         $qb->createFunction(
                             sprintf(
                                 '(SELECT created FROM `*PREFIX*openregister_audit_trails` WHERE id = %s)',
-                                $qb->createNamedParameter($until, IQueryBuilder::PARAM_STR)
+                                    $qb->createNamedParameter($until, IQueryBuilder::PARAM_STR)
                             )
                         )
                     )
@@ -477,9 +485,9 @@ class AuditTrailMapper extends QBMapper
 
         // Get audit trail entries until the specified point.
         $auditTrails = $this->findByObjectUntil(
-            $object->getId(),
-            $object->getUuid(),
-            $until
+            objectId: $object->getId(),
+            objectUuid: $object->getUuid(),
+            until: $until
         );
 
         if (empty($auditTrails) === true && $until !== null) {
@@ -491,7 +499,7 @@ class AuditTrailMapper extends QBMapper
 
         // Apply changes in reverse.
         foreach ($auditTrails as $audit) {
-            $this->revertChanges($revertedObject, $audit);
+            $this->revertChanges(object: $revertedObject, audit: $audit);
         }
 
         // Handle versioning.
@@ -643,10 +651,10 @@ class AuditTrailMapper extends QBMapper
     /**
      * Get chart data for audit trail actions over time
      *
-     * @param \DateTime|null $from       Start date for the chart data
-     * @param \DateTime|null $till       End date for the chart data
-     * @param int|null       $registerId Optional register ID to filter by
-     * @param int|null       $schemaId   Optional schema ID to filter by
+     * @param DateTime|null $from       Start date for the chart data
+     * @param DateTime|null $till       End date for the chart data
+     * @param int|null      $registerId Optional register ID to filter by
+     * @param int|null      $schemaId   Optional schema ID to filter by
      *
      * @return array Array containing chart data:
      *               - labels: Array of dates
@@ -755,7 +763,7 @@ class AuditTrailMapper extends QBMapper
     {
         try {
             // Get total count.
-            $totalStats = $this->getStatistics($registerId, $schemaId);
+            $totalStats = $this->getStatistics(registerId: $registerId, schemaId: $schemaId);
             $total      = $totalStats['total'];
 
             // Get recent action counts.

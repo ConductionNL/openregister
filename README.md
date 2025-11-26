@@ -250,6 +250,104 @@ See the [Docker Development Setup Guide](website/docs/Development/docker-setup.m
 
 If you are looking to contribute, please setup your own development environment following [setting up a development environment](https://cloud.nextcloud.com/s/iyNGp8ryWxc7Efa?dir=/1%20Setting%20up%20a%20development%20environment/Tutorial%20for%20Windows&openfile=true) or use our docker-compose setup.
 
+## Code Quality
+
+### Static Analysis Status
+
+The codebase is analyzed using [Psalm](https://psalm.dev/) for static type checking and error detection.
+
+**Current Status:** 602 errors remaining (as of latest scan)
+
+**Error Breakdown by Type:**
+
+| Error Type | Count | Description |
+|------------|-------|-------------|
+| UndefinedClass | 64 | Classes/interfaces not found or missing use statements |
+| UndefinedMethod | 60 | Methods called that don't exist on the class |
+| InvalidArrayOffset | 39 | Array access on invalid keys or types |
+| UndefinedInterfaceMethod | 37 | Interface method calls on interfaces |
+| InvalidReturnStatement | 36 | Return values don't match declared return types |
+| TypeDoesNotContainType | 30 | Type comparisons that can never be true |
+| InvalidArgument | 28 | Wrong argument types passed to functions |
+| RedundantCondition | 22 | Unnecessary type checks that are always true/false |
+| InvalidReturnType | 23 | Declared return types don't match actual returns |
+| InvalidNamedArgument | 21 | Named arguments that don't exist on function |
+| UndefinedDocblockClass | 18 | Classes referenced in docblocks that don't exist |
+| RedundantPropertyInitializationCheck | 18 | Unnecessary isset checks on always-set properties |
+| TooFewArguments | 16 | Missing required function arguments |
+| UndefinedThisPropertyFetch | 15 | Accessing properties that don't exist |
+| UndefinedVariable | 13 | Variables used before being defined |
+| NoValue | 13 | Variables that may not have values |
+| InvalidScalarArgument | 13 | Wrong scalar types passed to functions |
+| InvalidMethodCall | 13 | Methods called incorrectly |
+| LessSpecificImplementedReturnType | 11 | Return types too generic compared to parent |
+| InvalidPropertyAssignmentValue | 11 | Wrong values assigned to properties |
+| RedundantCast | 10 | Unnecessary type casts |
+| TypeDoesNotContainNull | 9 | Null checks on non-nullable types |
+| MissingDependency | 8 | Missing required dependencies |
+| MissingTemplateParam | 7 | Missing template parameters on generic classes |
+| UndefinedThisPropertyAssignment | 6 | Assigning to non-existent properties |
+| UndefinedPropertyAssignment | 6 | Assigning to non-existent properties |
+| UndefinedFunction | 5 | Functions that don't exist |
+| MoreSpecificImplementedParamType | 5 | Parameter types too specific compared to parent |
+| ImplementedReturnTypeMismatch | 5 | Return type doesn't match parent class |
+| UndefinedPropertyFetch | 4 | Accessing non-existent properties |
+| TooManyArguments | 4 | Too many arguments passed to function |
+| ImplementedParamTypeMismatch | 4 | Parameter type doesn't match parent class |
+| MismatchingDocblockReturnType | 3 | Docblock return type doesn't match actual return type |
+| InvalidOperand | 3 | Invalid operations on types |
+| InvalidCast | 3 | Invalid type casts |
+| InaccessibleMethod | 3 | Calling inaccessible methods |
+| ImplicitToStringCast | 3 | Implicit string conversions |
+| DuplicateArrayKey | 3 | Duplicate keys in array literals |
+| StringIncrement | 2 | Incrementing strings |
+| ParamNameMismatch | 2 | Parameter name doesn't match parent |
+| ParadoxicalCondition | 2 | Conditions that can never be true |
+| MismatchingDocblockParamType | 2 | Docblock parameter type doesn't match |
+| InvalidDocblock | 2 | Invalid docblock syntax |
+| RedundantFunctionCall | 1 | Unnecessary function calls |
+| NullableReturnStatement | 1 | Returning null from non-nullable function |
+| NullArgument | 1 | Passing null to non-nullable parameter |
+| InvalidNullableReturnType | 1 | Return type incorrectly nullable |
+| InvalidArrayAccess | 1 | Invalid array access operations |
+| ForbiddenCode | 1 | Use of forbidden code patterns |
+
+**Running Psalm:**
+
+```bash
+composer psalm
+```
+
+**Current Status:**
+
+- **Total Errors:** 660
+- **Last Updated:** $(date)
+
+**Error Breakdown:**
+
+| Error Type | Count | Description |
+|------------|-------|-------------|
+| UnusedVariable | ~110 | Unused variables |
+| UnusedProperty | ~20 | Unused properties |
+| UnusedParam | ~61 | Unused parameters |
+| UnusedMethod | ~208 | Unused methods (many false positives) |
+| UndefinedMethod | ~50 | Methods that don't exist |
+| InvalidArgument | ~30 | Invalid argument types |
+| LessSpecificImplementedReturnType | ~25 | Return type too generic |
+| UndefinedDocblockClass | ~18 | Docblock references unknown class |
+| ImplementedReturnTypeMismatch | ~15 | Return type mismatch |
+| ImplementedParamTypeMismatch | ~10 | Parameter type mismatch |
+| RedundantCondition | ~20 | Redundant type checks |
+| MissingTemplateParam | ~7 | Missing template parameters |
+| UndefinedClass | ~64 | Unknown classes |
+| Other | ~122 | Various other error types |
+
+**Full Error Report:**
+
+A complete error report is available in `psalm-errors-current.md` after running Psalm.
+
+**Note:** These errors are being systematically fixed. Suppressions are avoided in favor of actual fixes where possible.
+
 ## Contact
 
 For more information, please contact [info@conduction.nl](mailto:info@conduction.nl).

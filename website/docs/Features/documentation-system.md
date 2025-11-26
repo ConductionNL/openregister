@@ -172,7 +172,7 @@ See the **[Integrations Overview](../Integrations/index.md)** for a complete ove
 **Start Here:**
 1. [Solr Setup](../technical/solr-setup-configuration.md) - Search engine configuration
 2. [Integrations Overview](../Integrations/index.md) - Service integration
-3. [Docker Services](../development/docker-services.md) - Container setup
+3. [Docker Setup](../development/docker-setup.md) - Container setup
 
 **Key Topics:**
 - Infrastructure setup
@@ -280,6 +280,199 @@ Follow these guidelines:
 - Document API endpoints
 - Add troubleshooting tips
 - Link to related documentation
+
+## Building and Viewing Documentation Locally
+
+The OpenRegister documentation is built using Docusaurus and can be viewed locally during development. This is especially useful when making changes to documentation and wanting to preview them before committing.
+
+### Docker Compose (Recommended)
+
+The easiest way to run the documentation locally is using Docker Compose, which provides a consistent environment with hot-reload support.
+
+**Start the documentation server:**
+
+```bash
+# From the openregister root directory
+docker-compose -f docker-compose.dev.yml up documentation
+```
+
+Or start all services including documentation:
+
+```bash
+docker-compose -f docker-compose.dev.yml up -d
+```
+
+**Access the documentation:**
+- URL: `http://localhost:3000`
+- Hot-reload: Automatically reloads when you edit markdown files
+- Container: `openregister-docs-dev`
+
+**View logs:**
+```bash
+docker-compose -f docker-compose.dev.yml logs -f documentation
+```
+
+**Stop the documentation server:**
+```bash
+docker-compose -f docker-compose.dev.yml stop documentation
+```
+
+The Docker container will:
+- Automatically install dependencies on first start
+- Start Docusaurus development server with hot-reload
+- Mount the website directory for live editing
+- Accessible from Windows via `http://localhost:3000`
+
+### Manual Setup (Alternative)
+
+If you prefer to run documentation locally without Docker:
+
+**Prerequisites:**
+- Node.js 18 or higher installed in WSL
+- npm package manager
+
+**Development Server:**
+
+```bash
+# Navigate to the website directory
+cd openregister/website
+
+# Install dependencies (first time only)
+npm install --legacy-peer-deps
+
+# Start the development server
+npm start
+```
+
+The development server will:
+- Start on `http://localhost:3000`
+- Automatically reload when you make changes to documentation files
+- Show build errors and warnings in the terminal
+
+**Access from Windows:** Since WSL automatically forwards localhost, you can open `http://localhost:3000` in Cursor's browser or any Windows browser to view the documentation.
+
+**Production Build:**
+
+To build and serve a production version of the documentation:
+
+```bash
+# Navigate to the website directory
+cd openregister/website
+
+# Build the documentation
+npm run build
+
+# Serve the built documentation
+npm run serve
+```
+
+The production server will:
+- Start on `http://localhost:3000`
+- Serve optimized, production-ready documentation
+- Not include hot-reload (restart server after changes)
+
+### Build Process Flow
+
+**Docker Compose Flow:**
+
+```mermaid
+sequenceDiagram
+    participant Dev as Developer
+    participant Docker as Docker Compose
+    participant Container as Docs Container
+    participant Node as Node.js/npm
+    participant Docusaurus as Docusaurus
+    participant Browser as Browser
+
+    Dev->>Docker: docker-compose up documentation
+    Docker->>Container: Start Node.js container
+    Container->>Node: Install dependencies
+    Node->>Docusaurus: Start development server
+    Docusaurus->>Docusaurus: Process markdown files
+    Docusaurus->>Docusaurus: Watch for changes
+    Docusaurus-->>Container: Server running on port 3000
+    Container-->>Docker: Container ready
+    Docker-->>Dev: Ready message
+    Dev->>Browser: Open http://localhost:3000
+    Browser->>Container: Request documentation
+    Container->>Docusaurus: Serve page
+    Docusaurus-->>Browser: Documentation pages
+    Note over Docusaurus: Hot-reload on file changes
+```
+
+**Manual Setup Flow:**
+
+```mermaid
+sequenceDiagram
+    participant Dev as Developer
+    participant WSL as WSL Terminal
+    participant Node as Node.js/npm
+    participant Docusaurus as Docusaurus
+    participant Browser as Browser
+
+    Dev->>WSL: cd openregister/website
+    Dev->>WSL: npm start (or npm run build)
+    WSL->>Node: Execute npm command
+    Node->>Docusaurus: Start build process
+    Docusaurus->>Docusaurus: Process markdown files
+    Docusaurus->>Docusaurus: Generate static HTML
+    Docusaurus->>Docusaurus: Start local server
+    Docusaurus-->>WSL: Server running on port 3000
+    WSL-->>Dev: Ready message
+    Dev->>Browser: Open http://localhost:3000
+    Browser->>Docusaurus: Request documentation
+    Docusaurus-->>Browser: Serve documentation pages
+```
+
+### Troubleshooting
+
+**Docker-Specific Issues:**
+
+**Container won't start:**
+```bash
+# Check container logs
+docker-compose -f docker-compose.dev.yml logs documentation
+
+# Restart the container
+docker-compose -f docker-compose.dev.yml restart documentation
+
+# Rebuild if dependencies changed
+docker-compose -f docker-compose.dev.yml up --build documentation
+```
+
+**Port Already in Use:**
+If port 3000 is already in use:
+- Docker: Change the port mapping in `docker-compose.dev.yml` (e.g., `"3001:3000"`)
+- Manual: Docusaurus will automatically try the next available port (3001, 3002, etc.). Check the terminal output for the actual port number.
+
+**Dependencies Issues:**
+- Docker: The container automatically installs dependencies. If issues persist, rebuild the container.
+- Manual: Use the `--legacy-peer-deps` flag:
+```bash
+npm install --legacy-peer-deps
+```
+
+**Hot-reload not working:**
+- Docker: Ensure the website directory is properly mounted as a volume
+- Manual: Check that the file watcher has permissions to monitor file changes
+
+**Build Errors:**
+- Check for broken links: Docusaurus will throw errors for broken internal links
+- Verify Mermaid diagram syntax: Invalid diagrams will cause build failures
+- Check markdown formatting: Ensure proper frontmatter and structure
+
+**WSL Localhost Access:**
+- WSL2 automatically forwards localhost from Linux to Windows
+- Docker containers are accessible via `http://localhost:3000` from Windows
+- If localhost doesn't work, check Docker port mapping and firewall settings
+
+### Available Scripts
+
+- `npm start` - Start development server with hot-reload
+- `npm run build` - Build production version
+- `npm run serve` - Serve production build locally
+- `npm run clear` - Clear Docusaurus cache
+- `npm run write-heading-ids` - Add heading IDs to markdown files
 
 ## Related Documentation
 

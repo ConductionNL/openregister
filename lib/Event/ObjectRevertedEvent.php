@@ -19,6 +19,7 @@
 
 namespace OCA\OpenRegister\Event;
 
+use DateTime;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\EventDispatcher\Event;
 
@@ -38,7 +39,7 @@ class ObjectRevertedEvent extends Event
     /**
      * The reversion point reference
      *
-     * @var \DateTime|string|null The point in time or audit ID reverted to
+     * @var DateTime|string|null The point in time or audit ID reverted to
      */
     private $until;
 
@@ -46,8 +47,8 @@ class ObjectRevertedEvent extends Event
     /**
      * Constructor for ObjectRevertedEvent
      *
-     * @param ObjectEntity          $object The reverted object
-     * @param \DateTime|string|null $until  The point in time or audit ID reverted to
+     * @param ObjectEntity         $object The reverted object
+     * @param DateTime|string|null $until  The point in time or audit ID reverted to
      *
      * @return void
      */
@@ -75,7 +76,7 @@ class ObjectRevertedEvent extends Event
     /**
      * Get the reversion point
      *
-     * @return \DateTime|string|null The point in time or audit ID reverted to
+     * @return DateTime|string|null The point in time or audit ID reverted to
      */
     public function getRevertPoint()
     {

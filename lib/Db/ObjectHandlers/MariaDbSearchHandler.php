@@ -443,7 +443,7 @@ class MariaDbSearchHandler
     public function applyObjectFilters(IQueryBuilder $queryBuilder, array $objectFilters): IQueryBuilder
     {
         foreach ($objectFilters as $field => $value) {
-            $this->applyJsonFieldFilter($queryBuilder, $field, $value);
+            $this->applyJsonFieldFilter(queryBuilder: $queryBuilder, field: $field, value: $value);
         }
 
         return $queryBuilder;
@@ -649,9 +649,6 @@ class MariaDbSearchHandler
                 continue;
             }
 
-            // Create a parameter for the search term to avoid SQL injection.
-            $searchParam = $queryBuilder->createNamedParameter('%'.$cleanTerm.'%');
-
             // Create OR conditions for each searchable field.
             // PERFORMANCE OPTIMIZATION: Search indexed metadata columns first for best performance.
             $termConditions = $queryBuilder->expr()->orX();
@@ -664,7 +661,7 @@ class MariaDbSearchHandler
                 'o.description' => 'description',
             ];
 
-            foreach ($indexedFields as $columnName => $fieldName) {
+            foreach (array_keys($indexedFields) as $columnName) {
                 $termConditions->add(
                     $queryBuilder->expr()->like(
                         $queryBuilder->createFunction('LOWER('.$columnName.')'),

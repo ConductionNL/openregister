@@ -1,10 +1,10 @@
 <?php
-
-declare(strict_types=1);
-
-/*
+/**
  * SPDX-FileCopyrightText: 2024 Nextcloud GmbH and Nextcloud contributors
  * SPDX-License-Identifier: AGPL-3.0-or-later
+ *
+ * @author  Conduction Development Team <dev@conduction.nl>
+ * @license AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  */
 
 namespace OCA\OpenRegister\Db;
@@ -58,51 +58,165 @@ use OCP\AppFramework\Db\Entity;
  * @method void setCreated(?DateTime $created)
  * @method DateTime|null getUpdated()
  * @method void setUpdated(?DateTime $updated)
+ * @method string|null getConfiguration()
+ * @method void setConfiguration(?string $configuration)
  */
 class Webhook extends Entity implements JsonSerializable
 {
 
+    /**
+     * UUID
+     *
+     * @var string
+     */
     protected string $uuid = '';
 
+    /**
+     * Name
+     *
+     * @var string
+     */
     protected string $name = '';
 
+    /**
+     * URL
+     *
+     * @var string
+     */
     protected string $url = '';
 
+    /**
+     * Method
+     *
+     * @var string
+     */
     protected string $method = 'POST';
 
+    /**
+     * Events
+     *
+     * @var string
+     */
     protected string $events = '[]';
 
+    /**
+     * Headers
+     *
+     * @var string|null
+     */
     protected ?string $headers = null;
 
+    /**
+     * Secret
+     *
+     * @var string|null
+     */
     protected ?string $secret = null;
 
+    /**
+     * Enabled
+     *
+     * @var boolean
+     */
     protected bool $enabled = true;
 
+    /**
+     * Organisation
+     *
+     * @var string|null
+     */
     protected ?string $organisation = null;
 
+    /**
+     * Filters
+     *
+     * @var string|null
+     */
     protected ?string $filters = null;
 
+    /**
+     * Retry policy
+     *
+     * @var string
+     */
     protected string $retryPolicy = 'exponential';
 
+    /**
+     * Max retries
+     *
+     * @var integer
+     */
     protected int $maxRetries = 3;
 
+    /**
+     * Timeout
+     *
+     * @var integer
+     */
     protected int $timeout = 30;
 
+    /**
+     * Last triggered at
+     *
+     * @var DateTime|null
+     */
     protected ?DateTime $lastTriggeredAt = null;
 
+    /**
+     * Last success at
+     *
+     * @var DateTime|null
+     */
     protected ?DateTime $lastSuccessAt = null;
 
+    /**
+     * Last failure at
+     *
+     * @var DateTime|null
+     */
     protected ?DateTime $lastFailureAt = null;
 
+    /**
+     * Total deliveries
+     *
+     * @var integer
+     */
     protected int $totalDeliveries = 0;
 
+    /**
+     * Successful deliveries
+     *
+     * @var integer
+     */
     protected int $successfulDeliveries = 0;
 
+    /**
+     * Failed deliveries
+     *
+     * @var integer
+     */
     protected int $failedDeliveries = 0;
 
+    /**
+     * Created
+     *
+     * @var DateTime|null
+     */
     protected ?DateTime $created = null;
 
+    /**
+     * Updated
+     *
+     * @var DateTime|null
+     */
     protected ?DateTime $updated = null;
+
+    /**
+     * Configuration
+     *
+     * @var string|null
+     */
+    protected ?string $configuration = null;
 
 
     /**
@@ -131,6 +245,7 @@ class Webhook extends Entity implements JsonSerializable
         $this->addType('failedDeliveries', 'integer');
         $this->addType('created', 'datetime');
         $this->addType('updated', 'datetime');
+        $this->addType('configuration', 'string');
 
     }//end __construct()
 
@@ -232,6 +347,41 @@ class Webhook extends Entity implements JsonSerializable
 
 
     /**
+     * Get configuration as array
+     *
+     * @return array
+     */
+    public function getConfigurationArray(): array
+    {
+        if ($this->configuration === null) {
+            return [];
+        }
+
+        return json_decode($this->configuration, true) ?? [];
+
+    }//end getConfigurationArray()
+
+
+    /**
+     * Set configuration from array
+     *
+     * @param array|null $configuration Configuration array
+     *
+     * @return void
+     */
+    public function setConfigurationArray(?array $configuration): void
+    {
+        if ($configuration === null) {
+            $this->setConfiguration(null);
+            return;
+        }
+
+        $this->setConfiguration(json_encode($configuration));
+
+    }//end setConfigurationArray()
+
+
+    /**
      * Check if event matches webhook
      *
      * @param string $eventClass Event class name
@@ -271,6 +421,11 @@ class Webhook extends Entity implements JsonSerializable
      */
     public function jsonSerialize(): array
     {
+        $secretValue = null;
+        if ($this->secret !== null) {
+            $secretValue = '***';
+        }
+
         return [
             'id'                   => $this->id,
             'uuid'                 => $this->uuid,
@@ -279,7 +434,7 @@ class Webhook extends Entity implements JsonSerializable
             'method'               => $this->method,
             'events'               => $this->getEventsArray(),
             'headers'              => $this->getHeadersArray(),
-            'secret'               => $this->secret !== null ? '***' : null,
+            'secret'               => $secretValue,
             'enabled'              => $this->enabled,
             'organisation'         => $this->organisation,
             'filters'              => $this->getFiltersArray(),
@@ -294,6 +449,7 @@ class Webhook extends Entity implements JsonSerializable
             'failedDeliveries'     => $this->failedDeliveries,
             'created'              => $this->created?->format('c'),
             'updated'              => $this->updated?->format('c'),
+            'configuration'        => $this->getConfigurationArray(),
         ];
 
     }//end jsonSerialize()
@@ -374,6 +530,14 @@ class Webhook extends Entity implements JsonSerializable
 
         if (isset($object['timeout']) === true) {
             $this->setTimeout((int) $object['timeout']);
+        }
+
+        if (isset($object['configuration']) === true) {
+            if (is_array($object['configuration']) === true) {
+                $this->setConfigurationArray($object['configuration']);
+            } else {
+                $this->setConfiguration($object['configuration']);
+            }
         }
 
         return $this;

@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 /**
  * OpenAPI Specification (OAS) Service
  *
@@ -59,7 +62,9 @@ class OasService
         private readonly RegisterMapper $registerMapper,
         private readonly SchemaMapper $schemaMapper,
         private readonly IURLGenerator $urlGenerator,
+        /** @psalm-suppress UnusedProperty - Property kept for future use */
         private readonly IConfig $config,
+        /** @psalm-suppress UnusedProperty - Property kept for future use */
         private readonly LoggerInterface $logger
     ) {
         // Initialize the OAS array with the base OAS.
@@ -117,7 +122,7 @@ class OasService
 
             // Build enhanced description.
             $description = $register->getDescription();
-            if (empty($description)) {
+            if (empty($description) === true) {
                 $description = 'API for '.$register->getTitle().' register providing CRUD operations, filtering, and search capabilities.';
             }
 
@@ -136,7 +141,7 @@ class OasService
         foreach ($schemas as $schema) {
             // Ensure schema has valid title.
             $schemaTitle = $schema->getTitle();
-            if (empty($schemaTitle)) {
+            if (empty($schemaTitle) === true) {
                 continue;
             }
 
@@ -309,31 +314,31 @@ class OasService
 
         // Remove invalid/empty values that violate OpenAPI spec.
         // oneOf must have at least 1 item, remove if empty.
-        if (isset($cleanDef['oneOf']) && (empty($cleanDef['oneOf']) || !is_array($cleanDef['oneOf']))) {
+        if (isset($cleanDef['oneOf']) === true && (empty($cleanDef['oneOf']) === true || is_array($cleanDef['oneOf']) === false)) {
             unset($cleanDef['oneOf']);
         }
 
         // anyOf must have at least 1 item, remove if empty.
-        if (isset($cleanDef['anyOf']) && (empty($cleanDef['anyOf']) || !is_array($cleanDef['anyOf']))) {
+        if (isset($cleanDef['anyOf']) === true && (empty($cleanDef['anyOf']) === true || is_array($cleanDef['anyOf']) === false)) {
             unset($cleanDef['anyOf']);
         }
 
         // allOf must have at least 1 item, remove if empty or invalid.
-        if (isset($cleanDef['allOf'])) {
-            if (!is_array($cleanDef['allOf']) || empty($cleanDef['allOf'])) {
+        if (isset($cleanDef['allOf']) === true) {
+            if (is_array($cleanDef['allOf']) === false || empty($cleanDef['allOf']) === true) {
                 unset($cleanDef['allOf']);
             } else {
                 // Validate each allOf element.
                 $validAllOfItems = [];
                 foreach ($cleanDef['allOf'] as $item) {
                     // Each allOf item must be an object/array.
-                    if (is_array($item) && !empty($item)) {
+                    if (is_array($item) === true && empty($item) === false) {
                         $validAllOfItems[] = $item;
                     }
                 }
 
                 // If no valid items remain, remove allOf.
-                if (empty($validAllOfItems)) {
+                if (empty($validAllOfItems) === true) {
                     unset($cleanDef['allOf']);
                 } else {
                     $cleanDef['allOf'] = $validAllOfItems;
@@ -341,18 +346,18 @@ class OasService
             }
         }
 
-        // $ref must be a non-empty string, remove if empty
-        if (isset($cleanDef['$ref']) && (empty($cleanDef['$ref']) || !is_string($cleanDef['$ref']))) {
+        // $ref must be a non-empty string, remove if empty.
+        if (isset($cleanDef['$ref']) === true && (empty($cleanDef['$ref']) === true || is_string($cleanDef['$ref']) === false)) {
             unset($cleanDef['$ref']);
         }
 
         // enum must have at least 1 item, remove if empty.
-        if (isset($cleanDef['enum']) && (empty($cleanDef['enum']) || !is_array($cleanDef['enum']))) {
+        if (isset($cleanDef['enum']) === true && (empty($cleanDef['enum']) === true || is_array($cleanDef['enum']) === false)) {
             unset($cleanDef['enum']);
         }
 
         // Ensure we have at least a type.
-        if (!isset($cleanDef['type']) && !isset($cleanDef['$ref'])) {
+        if (isset($cleanDef['type']) === false && isset($cleanDef['$ref']) === false) {
             $cleanDef['type'] = 'string';
         }
 

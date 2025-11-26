@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use Exception;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Controller;
@@ -39,6 +40,8 @@ use OCP\IRequest;
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
+ *
+ * @psalm-suppress UnusedClass - This controller is registered via routes.php and used by Nextcloud's routing system
  */
 class FilesController extends Controller
 {
@@ -74,7 +77,7 @@ class FilesController extends Controller
         FileService $fileService,
         ObjectService $objectService
     ) {
-        parent::__construct($appName, $request);
+        parent::__construct(appName: $appName, request: $request);
         $this->fileService   = $fileService;
         $this->objectService = $objectService;
 
@@ -84,13 +87,14 @@ class FilesController extends Controller
      /**
       * Get all files associated with a specific object
       *
+      * @param string $register The register slug or identifier
+      * @param string $schema   The schema slug or identifier
+      * @param string $id       The ID of the object to retrieve files for
+      *
+      * @return JSONResponse
+      *
       * @NoAdminRequired
       * @NoCSRFRequired
-      *
-      * @param  string $register The register slug or identifier
-      * @param  string $schema   The schema slug or identifier
-      * @param  string $id       The ID of the object to retrieve files for
-      * @return JSONResponse
       */
     public function index(
         string $register,
@@ -102,15 +106,15 @@ class FilesController extends Controller
             $files = $this->fileService->getFiles(object: $id);
 
             // Format the files with pagination using request parameters.
-            $formattedFiles = $this->fileService->formatFiles($files, $this->request->getParams());
+            $formattedFiles = $this->fileService->formatFiles(files: $files, requestParams: $this->request->getParams());
 
-            return new JSONResponse($formattedFiles);
+            return new JSONResponse(data: $formattedFiles);
         } catch (DoesNotExistException $e) {
-            return new JSONResponse(['error' => 'Object not found'], 404);
+            return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
         } catch (NotFoundException $e) {
-            return new JSONResponse(['error' => 'Files folder not found'], 404);
+            return new JSONResponse(data: ['error' => 'Files folder not found'], statusCode: 404);
         } catch (\Exception $e) {
-            return new JSONResponse(['error' => $e->getMessage()], 500);
+            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }//end try
 
     }//end index()
@@ -119,15 +123,15 @@ class FilesController extends Controller
     /**
      * Get a specific file associated with an object
      *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
      * @param string $register The register slug or identifier
      * @param string $schema   The schema slug or identifier
      * @param string $id       The ID of the object to retrieve files for
      * @param int    $fileId   The ID of the file to retrieve
      *
      * @return JSONResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
      */
     public function show(
         string $register,
@@ -136,23 +140,20 @@ class FilesController extends Controller
         int $fileId
     ): JSONResponse {
         // Set the schema and register to the object service (forces a check if the are valid).
-        $schema   = $this->objectService->setSchema($schema);
-        $register = $this->objectService->setRegister($register);
+        $this->objectService->setSchema($schema);
+        $this->objectService->setRegister($register);
         $this->objectService->setObject($id);
         $object = $this->objectService->getObject();
 
         try {
-            $file = $this->fileService->getFile($object, $fileId);
+            $file = $this->fileService->getFile(object: $object, file: $fileId);
             if ($file === null) {
-                return new JSONResponse(['error' => 'File not found'], 404);
+                return new JSONResponse(data: ['error' => 'File not found'], statusCode: 404);
             }
 
-            return new JSONResponse($this->fileService->formatFile($file));
+            return new JSONResponse(data: $this->fileService->formatFile($file));
         } catch (Exception $e) {
-            return new JSONResponse(
-                ['error' => $e->getMessage()],
-                400
-            );
+            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
         }//end try
 
     }//end show()
@@ -161,14 +162,14 @@ class FilesController extends Controller
     /**
      * Add a new file to an object
      *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
      * @param string $register The register slug or identifier
      * @param string $schema   The schema slug or identifier
      * @param string $id       The ID of the object
      *
      * @return JSONResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
      */
     public function create(
         string $register,
@@ -176,19 +177,19 @@ class FilesController extends Controller
         string $id
     ): JSONResponse {
         // Set the schema and register to the object service (forces a check if the are valid).
-        $schema   = $this->objectService->setSchema($schema);
-        $register = $this->objectService->setRegister($register);
+        $this->objectService->setSchema($schema);
+        $this->objectService->setRegister($register);
         $this->objectService->setObject($id);
         $object = $this->objectService->getObject();
 
         try {
             $data = $this->request->getParams();
             if (empty($data['name']) === true) {
-                return new JSONResponse(['error' => 'File name is required'], 400);
+                return new JSONResponse(data: ['error' => 'File name is required'], statusCode: 400);
             }
 
             if (array_key_exists('content', $data) === false) {
-                return new JSONResponse(['error' => 'File content is required'], 400);
+                return new JSONResponse(data: ['error' => 'File content is required'], statusCode: 400);
             }
 
             $share = $this->parseBool($data['share'] ?? false);
@@ -201,9 +202,9 @@ class FilesController extends Controller
                 share: $share,
                 tags: $tags
             );
-            return new JSONResponse($this->fileService->formatFile($result));
+            return new JSONResponse(data: $this->fileService->formatFile($result));
         } catch (Exception $e) {
-            return new JSONResponse(['error' => $e->getMessage()], 400);
+            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
         }//end try
 
     }//end create()
@@ -216,14 +217,14 @@ class FilesController extends Controller
      * whether to create a new file or update an existing one. Perfect for synchronization
      * scenarios where you want to "upsert" files.
      *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
      * @param string $register The register slug or identifier
      * @param string $schema   The schema slug or identifier
      * @param string $id       The ID of the object to save the file to
      *
      * @return JSONResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
      */
     public function save(
         string $register,
@@ -231,8 +232,8 @@ class FilesController extends Controller
         string $id
     ): JSONResponse {
         // Set the schema and register to the object service (forces a check if the are valid).
-        $schema   = $this->objectService->setSchema($schema);
-        $register = $this->objectService->setRegister($register);
+        $this->objectService->setSchema($schema);
+        $this->objectService->setRegister($register);
         $this->objectService->setObject($id);
         $object = $this->objectService->getObject();
 
@@ -241,11 +242,11 @@ class FilesController extends Controller
 
             // Validate required parameters.
             if (empty($data['name']) === true) {
-                return new JSONResponse(['error' => 'File name is required'], 400);
+                return new JSONResponse(data: ['error' => 'File name is required'], statusCode: 400);
             }
 
             if (array_key_exists('content', $data) === false || empty($data['content']) === true) {
-                return new JSONResponse(['error' => 'File content is required'], 400);
+                return new JSONResponse(data: ['error' => 'File content is required'], statusCode: 400);
             }
 
             // Extract parameters with defaults.
@@ -268,12 +269,9 @@ class FilesController extends Controller
                 tags: $tags
             );
 
-            return new JSONResponse($this->fileService->formatFile($result));
+            return new JSONResponse(data: $this->fileService->formatFile($result));
         } catch (Exception $e) {
-            return new JSONResponse(
-                ['error' => $e->getMessage()],
-                400
-            );
+            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
         }//end try
 
     }//end save()
@@ -282,14 +280,14 @@ class FilesController extends Controller
     /**
      * Add a new file to an object via multipart form upload
      *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
      * @param string $register The register slug or identifier
      * @param string $schema   The schema slug or identifier
      * @param string $id       The ID of the object to retrieve files for
      *
      * @return JSONResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
      */
     public function createMultipart(
         string $register,
@@ -297,18 +295,19 @@ class FilesController extends Controller
         string $id
     ): JSONResponse {
         // Set the schema and register to the object service (forces a check if the are valid).
-        $schema   = $this->objectService->setSchema($schema);
-        $register = $this->objectService->setRegister($register);
+        $this->objectService->setSchema($schema);
+        $this->objectService->setRegister($register);
         $this->objectService->setObject($id);
         $object = $this->objectService->getObject();
 
         $data = $this->request->getParams();
         try {
-            // Get the uploaded file$data = $this->request->getParams();
+            // Get the uploaded file.
             $uploadedFiles = [];
 
             // Check if multiple files have been uploaded.
-            $files = $_FILES['files'] ?? null;
+            /** @var array<string, array<int, string>|string|int> $files */
+            $files = $_FILES['files'] ?? [];
 
             // Lets see if we have files in the request.
             if (empty($files) === true) {
@@ -316,38 +315,44 @@ class FilesController extends Controller
             }
 
             // Normalize single file upload to array structure.
-            if (isset($files['name']) === true && is_array($files['name']) === false) {
-                $tags = $data['tags'] ?? '';
-                if (!is_array($tags)) {
-                    $tags = explode(',', $tags);
-                }
-
-                $uploadedFiles[] = [
-                    'name'     => $files['name'],
-                    'type'     => $files['type'],
-                    'tmp_name' => $files['tmp_name'],
-                    'error'    => $files['error'],
-                    'size'     => $files['size'],
-                    'share'    => $data['share'] === 'true',
-                    'tags'     => $tags,
-                ];
-            } else if (isset($files['name']) === true && is_array($files['name']) === true) {
-                // Loop through each file using the count of 'name'.
-                for ($i = 0; $i < count($files['name']); $i++) {
-                    $tags = $data['tags'][$i] ?? '';
-                    if (!is_array($tags)) {
+            // $_FILES can have 'name' as string (single file) or array (multiple files).
+            if (isset($files['name']) === true) {
+                if (is_array($files['name']) === false) {
+                    // Single file upload.
+                    $tags = $data['tags'] ?? '';
+                    if (is_array($tags) === false) {
                         $tags = explode(',', $tags);
                     }
 
                     $uploadedFiles[] = [
-                        'name'     => $files['name'][$i],
-                        'type'     => $files['type'][$i],
-                        'tmp_name' => $files['tmp_name'][$i],
-                        'error'    => $files['error'][$i],
-                        'size'     => $files['size'][$i],
+                        'name'     => (string) $files['name'],
+                        'type'     => (string) ($files['type'] ?? ''),
+                        'tmp_name' => (string) ($files['tmp_name'] ?? ''),
+                        'error'    => (int) ($files['error'] ?? UPLOAD_ERR_NO_FILE),
+                        'size'     => (int) ($files['size'] ?? 0),
                         'share'    => $data['share'] === 'true',
                         'tags'     => $tags,
                     ];
+                } else {
+                    // Multiple file upload.
+                    // Loop through each file using the count of 'name'.
+                    $nameArray = $files['name'];
+                    for ($i = 0; $i < count($nameArray); $i++) {
+                        $tags = $data['tags'][$i] ?? '';
+                        if (is_array($tags) === false) {
+                            $tags = explode(',', $tags);
+                        }
+
+                        $uploadedFiles[] = [
+                            'name'     => (string) ($nameArray[$i] ?? ''),
+                            'type'     => (string) ((is_array($files['type'] ?? null) && isset($files['type'][$i])) ? $files['type'][$i] : ''),
+                            'tmp_name' => (string) ((is_array($files['tmp_name'] ?? null) && isset($files['tmp_name'][$i])) ? $files['tmp_name'][$i] : ''),
+                            'error'    => (int) ((is_array($files['error'] ?? null) && isset($files['error'][$i])) ? $files['error'][$i] : UPLOAD_ERR_NO_FILE),
+                            'size'     => (int) ((is_array($files['size'] ?? null) && isset($files['size'][$i])) ? $files['size'][$i] : 0),
+                            'share'    => $data['share'] === 'true',
+                            'tags'     => $tags,
+                        ];
+                    }
                 }
             }//end if
 
@@ -390,12 +395,9 @@ class FilesController extends Controller
                 );
             }//end foreach
 
-            return new JSONResponse($this->fileService->formatFiles($results, $this->request->getParams())['results']);
+            return new JSONResponse(data: $this->fileService->formatFiles(files: $results, requestParams: $this->request->getParams())['results']);
         } catch (Exception $e) {
-            return new JSONResponse(
-                ['error' => $e->getMessage()],
-                400
-            );
+            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
         }//end try
 
     }//end createMultipart()
@@ -404,16 +406,15 @@ class FilesController extends Controller
     /**
      * Update file metadata for an object
      *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
      * @param string $register The register slug or identifier
      * @param string $schema   The schema slug or identifier
      * @param string $id       The ID of the object to retrieve files for
      * @param int    $fileId   ID of the file to update
-     * @param array  $tags     Optional tags to update
      *
      * @return JSONResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
      */
     public function update(
         string $register,
@@ -422,9 +423,9 @@ class FilesController extends Controller
         int $fileId
     ): JSONResponse {
         // Set the schema and register to the object service (forces a check if the are valid).
-        $schema   = $this->objectService->setSchema($schema);
-        $register = $this->objectService->setRegister($register);
-        $object   = $this->objectService->setObject($id);
+        $this->objectService->setSchema($schema);
+        $this->objectService->setRegister($register);
+        $this->objectService->setObject($id);
 
         try {
             $data = $this->request->getParams();
@@ -432,13 +433,10 @@ class FilesController extends Controller
             $tags = $data['tags'] ?? [];
             // Content is optional for metadata-only updates.
             $content = $data['content'] ?? null;
-            $result  = $this->fileService->updateFile($fileId, $content, $tags, $this->objectService->getObject());
-            return new JSONResponse($this->fileService->formatFile($result));
+            $result  = $this->fileService->updateFile(filePath: $fileId, content: $content, tags: $tags, object: $this->objectService->getObject());
+            return new JSONResponse(data: $this->fileService->formatFile($result));
         } catch (Exception $e) {
-            return new JSONResponse(
-                ['error' => $e->getMessage()],
-                400
-            );
+            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
         }//end try
 
     }//end update()
@@ -447,14 +445,15 @@ class FilesController extends Controller
     /**
      * Delete a file from an object
      *
+     * @param string $register The register slug or identifier
+     * @param string $schema   The schema slug or identifier
+     * @param string $id       The ID of the object to retrieve files for
+     * @param int    $fileId   ID of the file to delete
+     *
+     * @return JSONResponse
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
-     *
-     * @param  string $register The register slug or identifier
-     * @param  string $schema   The schema slug or identifier
-     * @param  string $id       The ID of the object to retrieve files for
-     * @param  int    $fileId   ID of the file to delete
-     * @return JSONResponse
      */
     public function delete(
         string $register,
@@ -463,18 +462,15 @@ class FilesController extends Controller
         int $fileId
     ): JSONResponse {
         // Set the schema and register to the object service (forces a check if the are valid).
-        $schema   = $this->objectService->setSchema($schema);
-        $register = $this->objectService->setRegister($register);
+        $this->objectService->setSchema($schema);
+        $this->objectService->setRegister($register);
         $this->objectService->setObject($id);
 
         try {
-            $result = $this->fileService->deleteFile($fileId, $this->objectService->getObject());
-            return new JSONResponse(['success' => $result]);
+            $result = $this->fileService->deleteFile(file: $fileId, object: $this->objectService->getObject());
+            return new JSONResponse(data: ['success' => $result]);
         } catch (Exception $e) {
-            return new JSONResponse(
-                ['error' => $e->getMessage()],
-                400
-            );
+            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
         }
 
     }//end delete()
@@ -483,15 +479,15 @@ class FilesController extends Controller
     /**
      * Publish a file associated with an object
      *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
      * @param string $register The register slug or identifier
      * @param string $schema   The schema slug or identifier
      * @param string $id       The ID of the object to retrieve files for
      * @param int    $fileId   ID of the file to publish
      *
      * @return JSONResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
      */
     public function publish(
         string $register,
@@ -500,18 +496,15 @@ class FilesController extends Controller
         int $fileId
     ): JSONResponse {
         // Set the schema and register to the object service (forces a check if the are valid).
-        $schema   = $this->objectService->setSchema($schema);
-        $register = $this->objectService->setRegister($register);
+        $this->objectService->setSchema($schema);
+        $this->objectService->setRegister($register);
         $this->objectService->setObject($id);
 
         try {
-            $result = $this->fileService->publishFile($this->objectService->getObject(), $fileId);
-            return new JSONResponse($this->fileService->formatFile($result));
+            $result = $this->fileService->publishFile(object: $this->objectService->getObject(), file: $fileId);
+            return new JSONResponse(data: $this->fileService->formatFile($result));
         } catch (Exception $e) {
-            return new JSONResponse(
-                ['error' => $e->getMessage()],
-                400
-            );
+            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
         }//end try
 
     }//end publish()
@@ -520,15 +513,15 @@ class FilesController extends Controller
     /**
      * Depublish a file associated with an object
      *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
      * @param string $register The register slug or identifier
      * @param string $schema   The schema slug or identifier
      * @param string $id       The ID of the object to retrieve files for
      * @param int    $fileId   ID of the file to depublish
      *
      * @return JSONResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
      */
     public function depublish(
         string $register,
@@ -537,18 +530,15 @@ class FilesController extends Controller
         int $fileId
     ): JSONResponse {
         // Set the schema and register to the object service (forces a check if the are valid).
-        $schema   = $this->objectService->setSchema($schema);
-        $register = $this->objectService->setRegister($register);
+        $this->objectService->setSchema($schema);
+        $this->objectService->setRegister($register);
         $this->objectService->setObject($id);
 
         try {
-            $result = $this->fileService->unpublishFile($this->objectService->getObject(), $fileId);
-            return new JSONResponse($this->fileService->formatFile($result));
+            $result = $this->fileService->unpublishFile(object: $this->objectService->getObject(), filePath: $fileId);
+            return new JSONResponse(data: $this->fileService->formatFile($result));
         } catch (Exception $e) {
-            return new JSONResponse(
-                ['error' => $e->getMessage()],
-                400
-            );
+            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
         }//end try
 
     }//end depublish()
@@ -561,12 +551,12 @@ class FilesController extends Controller
      * to know the object, register, or schema. This is used for authenticated
      * file access where the user must be logged in to Nextcloud.
      *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
      * @param int $fileId ID of the file to download
      *
      * @return JSONResponse|\OCP\AppFramework\Http\StreamResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
      *
      * @phpstan-param  int $fileId
      * @phpstan-return JSONResponse|\OCP\AppFramework\Http\StreamResponse
@@ -578,15 +568,15 @@ class FilesController extends Controller
             $file = $this->fileService->getFileById($fileId);
 
             if ($file === null) {
-                return new JSONResponse(['error' => 'File not found'], 404);
+                return new JSONResponse(data: ['error' => 'File not found'], statusCode: 404);
             }
 
             // Stream the file content back to the client.
             return $this->fileService->streamFile($file);
         } catch (NotFoundException $e) {
-            return new JSONResponse(['error' => 'File not found'], 404);
+            return new JSONResponse(data: ['error' => 'File not found'], statusCode: 404);
         } catch (Exception $e) {
-            return new JSONResponse(['error' => $e->getMessage()], 500);
+            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
 
     }//end downloadById()
@@ -693,11 +683,7 @@ class FilesController extends Controller
      */
     public function page(): TemplateResponse
     {
-        return new TemplateResponse(
-            'openregister',
-            'index',
-            []
-        );
+        return new TemplateResponse(appName: 'openregister', templateName: 'index', params: []);
 
     }//end page()
 

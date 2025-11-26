@@ -218,7 +218,7 @@ class SolrObjectService
                 $textParts[] = "{$contextKey}: {$boolStr}";
             } else if (is_array($value) === true && empty($value) === false) {
                 // Recursively process nested arrays.
-                $nestedText = $this->extractTextFromArray($value, $contextKey, $depth + 1);
+                $nestedText = $this->extractTextFromArray(data: $value, prefix: $contextKey, depth: $depth + 1);
                 if (empty($nestedText) === false) {
                     $textParts[] = $nestedText;
                 }
@@ -314,7 +314,7 @@ class SolrObjectService
 
         // TODO: Move createSolrDocument and indexing logic from GuzzleSolrService
         // For now, delegate to existing method (will be refactored).
-        return $this->guzzleSolrService->indexObject($object, $commit);
+        return $this->guzzleSolrService->indexObject(object: $object, commit: $commit);
 
     }//end indexObject()
 
@@ -346,7 +346,7 @@ class SolrObjectService
                 );
 
         // TODO: Move bulk indexing logic from GuzzleSolrService.
-        return $this->guzzleSolrService->bulkIndexObjects($objects, $commit);
+        return $this->guzzleSolrService->bulkIndexObjects(objects: $objects, commit: $commit);
 
     }//end bulkIndexObjects()
 
@@ -385,7 +385,7 @@ class SolrObjectService
                 );
 
         // Delegate to GuzzleSolrService - will be refactored in later phases.
-        return $this->guzzleSolrService->searchObjectsPaginated($query, $rbac, $multi, $published, $deleted);
+        return $this->guzzleSolrService->searchObjectsPaginated(query: $query, rbac: $rbac, multi: $multi, published: $published, deleted: $deleted);
 
     }//end searchObjects()
 
@@ -417,7 +417,7 @@ class SolrObjectService
                 );
 
         // TODO: Move delete logic to use collection parameter.
-        return $this->guzzleSolrService->deleteObject($objectId, $commit);
+        return $this->guzzleSolrService->deleteObject(objectId: $objectId, commit: $commit);
 
     }//end deleteObject()
 
@@ -494,7 +494,7 @@ class SolrObjectService
                 );
 
         // TODO: Move warmup logic to use collection parameter.
-        return $this->guzzleSolrService->warmupIndex($schemaIds, $maxObjects, 'serial', false, $batchSize, $schemaIds);
+        return $this->guzzleSolrService->warmupIndex(schemas: $schemaIds, maxObjects: $maxObjects, mode: 'serial', collectErrors: false, batchSize: $batchSize, schemaIds: $schemaIds);
 
     }//end warmupObjects()
 
@@ -530,7 +530,7 @@ class SolrObjectService
                 );
 
         // TODO: Move reindex logic to use collection parameter.
-        return $this->guzzleSolrService->reindexAll($maxObjects, $batchSize);
+        return $this->guzzleSolrService->reindexAll(maxObjects: $maxObjects, batchSize: $batchSize);
 
     }//end reindexObjects()
 
@@ -612,7 +612,7 @@ class SolrObjectService
         // The service is already registered in the DI container from Application.php.
         $vectorService = \OC::$server->get(VectorEmbeddingService::class);
 
-        $embedding = $vectorService->generateEmbedding($text, $provider);
+        $embedding = $vectorService->generateEmbedding(text: $text, provider: $provider);
 
         if ($embedding === null || empty($embedding['embedding']) === true) {
             throw new \Exception("Failed to generate embedding for object {$object->getId()}");
@@ -620,23 +620,15 @@ class SolrObjectService
 
         // Step 3: Store vector in database.
         $vectorId = $vectorService->storeVector(
-            'object',
-            // Entity type.
-            (string) $object->getId(),
-            // Entity ID.
-            $embedding['embedding'],
-            // Embedding array.
-            $embedding['model'],
-            // Model name.
-            $embedding['dimensions'],
-            // Dimensions.
-            0,
-            // Chunk index (objects are not chunked).
-            1,
-            // Total chunks (always 1 for objects).
-            $text,
-            // Chunk text.
-            [
+            entityType: 'object',
+            entityId: (string) $object->getId(),
+            embedding: $embedding['embedding'],
+            model: $embedding['model'],
+            dimensions: $embedding['dimensions'],
+            chunkIndex: 0,
+            totalChunks: 1,
+            chunkText: $text,
+            metadata: [
                 'uuid'         => $object->getUuid(),
                 'schema_id'    => $object->getSchema(),
                 'register_id'  => $object->getRegister(),
@@ -718,8 +710,8 @@ class SolrObjectService
         // Step 2: Generate embeddings in batch (more efficient).
         $vectorService = \OC::$server->get(VectorEmbeddingService::class);
 
-        $texts      = array_column($textData, 'text');
-        $embeddings = $vectorService->generateBatchEmbeddings($texts, $provider);
+        $texts      = array_column(array: $textData, column_key: 'text');
+        $embeddings = $vectorService->generateBatchEmbeddings(texts: $texts, provider: $provider);
 
         // Step 3: Store vectors for each object.
         foreach ($textData as $index => $item) {
@@ -752,15 +744,15 @@ class SolrObjectService
 
                 // Store vector.
                 $vectorId = $vectorService->storeVector(
-                    'object',
-                    (string) $object->getId(),
-                    $embedding['embedding'],
-                    $embedding['model'],
-                    $embedding['dimensions'],
-                    0,
-                    1,
-                    $item['text'],
-                    [
+                    entityType: 'object',
+                    entityId: (string) $object->getId(),
+                    embedding: $embedding['embedding'],
+                    model: $embedding['model'],
+                    dimensions: $embedding['dimensions'],
+                    chunkIndex: 0,
+                    totalChunks: 1,
+                    chunkText: $item['text'],
+                    metadata: [
                         'uuid'         => $object->getUuid(),
                         'schema_id'    => $object->getSchema(),
                         'register_id'  => $object->getRegister(),
@@ -806,7 +798,7 @@ class SolrObjectService
                     'successful'         => $successful,
                     'failed'             => $failed,
                     'duration_ms'        => round($duration, 2),
-                    'objects_per_second' => $this->calculateObjectsPerSecond($successful, $duration),
+                    'objects_per_second' => $this->calculateObjectsPerSecond(durationSeconds: $duration / 1000, processedObjects: $successful),
                 ]
                 );
 
@@ -816,7 +808,7 @@ class SolrObjectService
             'successful'         => $successful,
             'failed'             => $failed,
             'duration_ms'        => round($duration, 2),
-            'objects_per_second' => $this->calculateObjectsPerSecond($successful, $duration),
+            'objects_per_second' => $this->calculateObjectsPerSecond(durationSeconds: $duration / 1000, processedObjects: $successful),
             'results'            => $results,
         ];
 

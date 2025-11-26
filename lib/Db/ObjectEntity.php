@@ -728,7 +728,7 @@ class ObjectEntity extends Entity implements JsonSerializable
 
         // If already locked, check if it's the same user and not expired.
         if ($this->isLocked() === true) {
-            $lock = $this->setLocked();
+            $lock = $this->getLocked();
 
             // If locked by different user.
             if ($lock['user'] !== $userId) {
@@ -736,7 +736,6 @@ class ObjectEntity extends Entity implements JsonSerializable
             }
 
             // If same user, extend the lock.
-            $expirationDate = new \DateTime($lock['expiration']);
             $newExpiration  = clone $now;
             $newExpiration->add(new \DateInterval('PT'.$duration.'S'));
 

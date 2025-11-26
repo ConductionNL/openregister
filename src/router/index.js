@@ -20,6 +20,8 @@ import ConfigurationsIndex from '../views/configuration/ConfigurationsIndex.vue'
 import DeletedIndex from '../views/deleted/DeletedIndex.vue'
 import AuditTrailIndex from '../views/logs/AuditTrailIndex.vue'
 import SearchTrailIndex from '../views/logs/SearchTrailIndex.vue'
+import WebhooksIndex from '../views/webhooks/WebhooksIndex.vue'
+import EntitiesIndex from '../views/entities/EntitiesIndex.vue'
 
 Vue.use(Router)
 
@@ -64,6 +66,8 @@ const router = new Router({
 		{ path: '/deleted', component: DeletedIndex },
 		{ path: '/audit-trails', component: AuditTrailIndex },
 		{ path: '/search-trails', component: SearchTrailIndex },
+		{ path: '/webhooks', component: WebhooksIndex },
+		{ path: '/entities', component: EntitiesIndex },
 		{ path: '*', redirect: '/' },
 	],
 })

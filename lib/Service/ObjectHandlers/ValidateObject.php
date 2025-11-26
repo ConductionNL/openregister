@@ -30,7 +30,6 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\File;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Exception\CustomValidationException;
@@ -114,7 +113,7 @@ class ValidateObject
                     continue;
                 }
 
-                $processedSchema->properties->$propertyName = $this->resolveSchemaProperty($propertySchema, $visited);
+                $processedSchema->properties->$propertyName = $this->resolveSchemaProperty(propertySchema: $propertySchema, visited: $visited);
             }
         }
 
@@ -126,7 +125,7 @@ class ValidateObject
             ) {
                 // Skip processing - already transformed.
             } else {
-                $processedSchema->items = $this->resolveSchemaProperty($processedSchema->items, $visited);
+                $processedSchema->items = $this->resolveSchemaProperty(propertySchema: $processedSchema->items, visited: $visited);
             }
         }
 
@@ -174,7 +173,7 @@ class ValidateObject
                     $referencedSchemaObject = $referencedSchema->getSchemaObject($this->urlGenerator);
 
                     $newVisited     = array_merge($visited, [$schemaSlug]);
-                    $resolvedSchema = $this->preprocessSchemaReferences($referencedSchemaObject, $newVisited);
+                    $resolvedSchema = $this->preprocessSchemaReferences(schemaObject: $referencedSchemaObject, visited: $newVisited);
 
                     // For object properties, we need to handle both nested objects and UUID references.
                     if (isset($propertySchema->type) && $propertySchema->type === 'object') {
@@ -217,13 +216,13 @@ class ValidateObject
 
         // Handle array items with $ref.
         if (isset($propertySchema->items) && isset($propertySchema->items->{'$ref'})) {
-            $propertySchema->items = $this->resolveSchemaProperty($propertySchema->items, $visited);
+            $propertySchema->items = $this->resolveSchemaProperty(propertySchema: $propertySchema->items, visited: $visited);
         }
 
         // Recursively process nested properties.
         if (isset($propertySchema->properties)) {
             foreach ($propertySchema->properties as $nestedPropertyName => $nestedPropertySchema) {
-                $propertySchema->properties->$nestedPropertyName = $this->resolveSchemaProperty($nestedPropertySchema, $visited);
+                $propertySchema->properties->$nestedPropertyName = $this->resolveSchemaProperty(propertySchema: $nestedPropertySchema, visited: $visited);
             }
         }
 
@@ -544,7 +543,7 @@ class ValidateObject
         // Step 1: Handle circular references.
         foreach ($propertiesArray as $propertyName => $propertySchema) {
             // Check if this property has a $ref that references the current schema.
-            if ($this->isSelfReference($propertySchema, $currentSchemaSlug)) {
+            if ($this->isSelfReference(propertySchema: $propertySchema, schemaSlug: $currentSchemaSlug)) {
                 // Check if this is a related-object with objectConfiguration.
                 if (isset($propertySchema->objectConfiguration)
                     && isset($propertySchema->objectConfiguration->handling)
@@ -578,7 +577,7 @@ class ValidateObject
 
                     unset($propertySchema->properties, $propertySchema->required, $propertySchema->{'$ref'});
                 } else if (isset($propertySchema->type) && $propertySchema->type === 'array'
-                    && isset($propertySchema->items) && is_object($propertySchema->items) && $this->isSelfReference($propertySchema->items, $currentSchemaSlug)
+                    && isset($propertySchema->items) && is_object($propertySchema->items) && $this->isSelfReference(propertySchema: $propertySchema->items, schemaSlug: $currentSchemaSlug)
                 ) {
                     // Check if array items are self-referencing.
                     $propertySchema->type = 'array';
@@ -680,13 +679,13 @@ class ValidateObject
         // Handle properties recursively.
         if (isset($cleanedSchema->properties)) {
             foreach ($cleanedSchema->properties as $propertyName => $propertySchema) {
-                $cleanedSchema->properties->$propertyName = $this->cleanPropertyForValidation($propertySchema, false);
+                $cleanedSchema->properties->$propertyName = $this->cleanPropertyForValidation(propertySchema: $propertySchema, isArrayItems: false);
             }
         }
 
         // Handle array items - this is where the distinction matters.
         if (isset($cleanedSchema->items)) {
-            $cleanedSchema->items = $this->cleanPropertyForValidation($cleanedSchema->items, true);
+            $cleanedSchema->items = $this->cleanPropertyForValidation(propertySchema: $cleanedSchema->items, isArrayItems: true);
         }
 
         return $cleanedSchema;
@@ -744,13 +743,13 @@ class ValidateObject
         // Handle nested properties recursively.
         if (isset($cleanedProperty->properties)) {
             foreach ($cleanedProperty->properties as $nestedPropertyName => $nestedPropertySchema) {
-                $cleanedProperty->properties->$nestedPropertyName = $this->cleanPropertyForValidation($nestedPropertySchema, false);
+                $cleanedProperty->properties->$nestedPropertyName = $this->cleanPropertyForValidation(propertySchema: $nestedPropertySchema, isArrayItems: false);
             }
         }
 
         // Handle nested array items.
         if (isset($cleanedProperty->items)) {
-            $cleanedProperty->items = $this->cleanPropertyForValidation($cleanedProperty->items, true);
+            $cleanedProperty->items = $this->cleanPropertyForValidation(propertySchema: $cleanedProperty->items, isArrayItems: true);
         }
 
         return $cleanedProperty;
@@ -955,7 +954,7 @@ class ValidateObject
             }
         }
 
-        $this->validateUniqueFields($object, $schema);
+        $this->validateUniqueFields(object: $object, schema: $schema);
 
         // Get the current schema slug for circular reference detection.
         $currentSchemaSlug = '';
@@ -964,7 +963,7 @@ class ValidateObject
         }
 
         // Transform schema for validation (handles circular references, OpenRegister configs, and schema resolution).
-        [$schemaObject, $object] = $this->transformSchemaForValidation($schemaObject, $object, $currentSchemaSlug);
+        [$schemaObject, $object] = $this->transformSchemaForValidation(schemaObject: $schemaObject, object: $object, currentSchemaSlug: $currentSchemaSlug);
 
         // Clean the schema by removing all Nextcloud-specific metadata properties.
         $schemaObject = $this->cleanSchemaForValidation($schemaObject);
@@ -977,8 +976,9 @@ class ValidateObject
 
         // If there are no properties, we don't need to validate.
         if (isset($schemaObject->properties) === false || empty($schemaObject->properties) === true) {
-            // Return a ValidationResult with null data indicating success.
-            return new ValidationResult(null, null);
+            // Validate against an empty schema object to get a valid ValidationResult.
+            $validator = new Validator();
+            return $validator->validate(json_decode(json_encode($object)), new stdClass());
         }
 
         // @todo This should be done earlier.
@@ -1090,7 +1090,19 @@ class ValidateObject
         if ($this->urlGenerator->getBaseUrl() === $uri->scheme().'://'.$uri->host()
             && str_contains($uri->path(), '/api/files/schema') === true
         ) {
-            return File::getSchema($this->urlGenerator);
+            // Return a basic file schema object.
+            // TODO: Implement proper file schema resolution.
+            $fileSchema = (object) [
+                'type'       => 'object',
+                'properties' => (object) [
+                    'id'       => (object) ['type' => 'integer'],
+                    'name'     => (object) ['type' => 'string'],
+                    'path'     => (object) ['type' => 'string'],
+                    'mimetype' => (object) ['type' => 'string'],
+                    'size'     => (object) ['type' => 'integer'],
+                ],
+            ];
+            return json_encode($fileSchema);
         }
 
         // External schema resolution.
@@ -1149,8 +1161,8 @@ class ValidateObject
 
                 if ($value !== null && preg_match($pattern, $value) === false) {
                     throw new ValidationException(
-                        $rule['message'] ?? self::VALIDATION_ERROR_MESSAGE,
-                        $rule['property']
+                        message: $rule['message'] ?? self::VALIDATION_ERROR_MESSAGE,
+                        code: 0
                     );
                 }
             }
@@ -1365,13 +1377,13 @@ class ValidateObject
         }
 
         return new JSONResponse(
-            [
-                'status'  => 'error',
-                'message' => 'Validation failed',
-                'errors'  => $errors,
-            ],
-            400
-        );
+                data: [
+                    'status'  => 'error',
+                    'message' => 'Validation failed',
+                    'errors'  => $errors,
+                ],
+                statusCode: 400
+            );
 
     }//end handleValidationException()
 

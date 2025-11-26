@@ -89,7 +89,7 @@ class MagicSearchHandler
      *
      * @psalm-return int|list<ObjectEntity>
      */
-    public function searchObjects(array $query, Register $register, Schema $schema, string $tableName): array|int|int
+    public function searchObjects(array $query, Register $register, Schema $schema, string $tableName): array|int
     {
         // Extract options from query (prefixed with _).
         $limit          = $query['_limit'] ?? null;
@@ -513,7 +513,7 @@ class MagicSearchHandler
         $countQuery           = $query;
         $countQuery['_count'] = true;
 
-        return $this->searchObjects($countQuery, $register, $schema, $tableName);
+        return $this->searchObjects(query: $countQuery, activeOrganisationUuid: $register, rbac: $schema, multi: $tableName);
 
     }//end countObjects()
 

@@ -15,9 +15,7 @@ declare(strict_types=1);
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
  */
- * * You should have received a copy of the GNU Affero General public License * along with this program.if not, see < http:
-// www.gnu.org/licenses/>.
- * / namespace OCA\OpenRegister\Setup;
+namespace OCA\OpenRegister\Setup;
 
 use Psr\Log\LoggerInterface;
 use GuzzleHttp\Client as GuzzleClient;
@@ -1091,11 +1089,11 @@ class SolrSetup
         // Use SolrCloud ConfigSets API for configSet creation with authentication.
         $url = $this->buildSolrUrl(
                 sprintf(
-                '/admin/configs?action=CREATE&name=%s&baseConfigSet=%s&wt=json',
-            urlencode($newConfigSetName),
-            urlencode($templateConfigSetName)
-        )
-                );
+                    '/admin/configs?action=CREATE&name=%s&baseConfigSet=%s&wt=json',
+                    urlencode($newConfigSetName),
+                    urlencode($templateConfigSetName)
+                )
+        );
 
         $this->logger->info(
                 'Attempting to create SOLR configSet',
@@ -1552,7 +1550,8 @@ class SolrSetup
                         );
 
                 // Direct attempt to create collection.
-                $success = $this->solrService->createCollection($collectionName, $configSetName);
+                $result  = $this->solrService->createCollection($collectionName, $configSetName);
+                $success = isset($result['success']) && $result['success'] === true;
 
                 if ($success === true) {
                     $totalElapsed = time() - $startTime;
@@ -1915,11 +1914,11 @@ class SolrSetup
     {
         $url = $this->buildSolrUrl(
                 sprintf(
-                '/admin/collections?action=CREATE&name=%s&collection.configName=%s&numShards=1&replicationFactor=1&wt=json',
-            urlencode($collectionName),
-            urlencode($configSetName)
-        )
-                );
+                        '/admin/collections?action=CREATE&name=%s&collection.configName=%s&numShards=1&replicationFactor=1&wt=json',
+                        urlencode($collectionName),
+                        urlencode($configSetName)
+                )
+        );
 
         $this->logger->info(
                 'Attempting to create SOLR collection',
@@ -2116,10 +2115,10 @@ class SolrSetup
 
         $url = $this->buildSolrUrl(
                 sprintf(
-                '/admin/configs?action=UPLOAD&name=%s&wt=json',
-            urlencode($configSetName)
-        )
-                );
+                        '/admin/configs?action=UPLOAD&name=%s&wt=json',
+                        urlencode($configSetName)
+                )
+        );
 
         $this->logger->info(
                 'Uploading SOLR configSet from ZIP file',
@@ -2308,10 +2307,10 @@ class SolrSetup
     {
         $url = $this->buildSolrUrl(
                 sprintf(
-                '/admin/cores?action=STATUS&core=%s&wt=json',
-            urlencode($coreName)
-        )
-                );
+                        '/admin/cores?action=STATUS&core=%s&wt=json',
+                        urlencode($coreName)
+                )
+        );
 
         try {
             $response = $this->httpClient->get($url, ['timeout' => 10]);
@@ -2345,10 +2344,10 @@ class SolrSetup
     {
         $url = $this->buildSolrUrl(
                 sprintf(
-                '/admin/cores?action=CREATE&name=%s&configSet=%s&wt=json',
-            urlencode($coreName),
-            urlencode($configSetName)
-        )
+                        '/admin/cores?action=CREATE&name=%s&configSet=%s&wt=json',
+                        urlencode($coreName),
+                        urlencode($configSetName)
+                )
                 );
 
         try {
@@ -2658,8 +2657,8 @@ class SolrSetup
         \Psr\Log\LoggerInterface $logger
     ): array {
         $logger->info(
-                'Applying ObjectEntity schema fields to SOLR collection',
-                [
+                message: 'Applying ObjectEntity schema fields to SOLR collection',
+                context: [
                     'collection' => $collectionName,
                 ]
                 );
@@ -2715,7 +2714,7 @@ class SolrSetup
                     $data = json_decode((string) $response->getBody(), true);
                     if (($data['responseHeader']['status'] ?? -1) === 0) {
                         $results['fields_added']++;
-                        $logger->debug('Added schema field', ['field' => $fieldName]);
+                        $logger->debug(message: 'Added schema field', context: ['field' => $fieldName]);
                         continue;
                     }
                 }
@@ -2738,7 +2737,7 @@ class SolrSetup
                     $data = json_decode((string) $response->getBody(), true);
                     if (($data['responseHeader']['status'] ?? -1) === 0) {
                         $results['fields_updated']++;
-                        $logger->debug('Updated schema field', ['field' => $fieldName]);
+                        $logger->debug(message: 'Updated schema field', context: ['field' => $fieldName]);
                         continue;
                     }
                 }
@@ -2747,8 +2746,8 @@ class SolrSetup
                 $results['fields_failed']++;
                 $results['errors'][] = "Failed to add/update field: {$fieldName}";
                 $logger->warning(
-                        'Failed to add/update schema field',
-                        [
+                        message: 'Failed to add/update schema field',
+                        context: [
                             'field'         => $fieldName,
                             'last_response' => (string) $response->getBody(),
                         ]
@@ -2757,8 +2756,8 @@ class SolrSetup
                 $results['fields_failed']++;
                 $results['errors'][] = "Exception for field {$fieldName}: ".$e->getMessage();
                 $logger->error(
-                        'Exception applying schema field',
-                        [
+                        message: 'Exception applying schema field',
+                        context: [
                             'field'          => $fieldName,
                             'error'          => $e->getMessage(),
                             'exception_type' => get_class($e),
@@ -3222,10 +3221,10 @@ class SolrSetup
     {
         $url = $this->buildSolrUrl(
                 sprintf(
-                '/%s/select?q=*:*&rows=0&wt=json',
-            urlencode($collectionName)
-        )
-                );
+                        '/%s/select?q=*:*&rows=0&wt=json',
+                        urlencode($collectionName)
+                )
+        );
 
         try {
             $response = $this->httpClient->get($url, ['timeout' => 10]);
@@ -3258,10 +3257,10 @@ class SolrSetup
     {
         $url = $this->buildSolrUrl(
                 sprintf(
-                '/%s/select?q=*:*&rows=0&wt=json',
-            urlencode($coreName)
-        )
-                );
+                        '/%s/select?q=*:*&rows=0&wt=json',
+                        urlencode($coreName)
+                )
+        );
 
         try {
             $response = $this->httpClient->get($url, ['timeout' => 10]);

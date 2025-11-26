@@ -62,14 +62,18 @@ use OCP\IURLGenerator;
  *   published: string|null
  * }
  *
- * @method File insert(Entity $entity)
- * @method File update(Entity $entity)
- * @method File insertOrUpdate(Entity $entity)
- * @method File delete(Entity $entity)
- * @method File find(int|string $id)
- * @method File findEntity(IQueryBuilder $query)
+ * @method array insert(Entity $entity)
+ * @method array update(Entity $entity)
+ * @method array insertOrUpdate(Entity $entity)
+ * @method array delete(Entity $entity)
+ * @method array find(int|string $id)
+ * @method array findEntity(IQueryBuilder $query)
  * @method File[] findAll(int|null $limit = null, int|null $offset = null)
  * @method File[] findEntities(IQueryBuilder $query)
+ *
+ * @psalm-suppress ImplementedReturnTypeMismatch - FileMapper returns arrays, not Entity objects
+ * @psalm-suppress ImplementedParamTypeMismatch - FileMapper uses Entity type for compatibility
+ * @psalm-suppress LessSpecificImplementedReturnType - FileMapper returns arrays, not Entity objects
  */
 class FileMapper extends QBMapper
 {
@@ -513,7 +517,7 @@ class FileMapper extends QBMapper
         $shareId = $qb->getLastInsertId();
 
         return [
-            'id'          => (int) $shareId,
+            'id'          => $shareId,
             'token'       => $token,
             'accessUrl'   => $this->generateShareUrl($token),
             'downloadUrl' => $this->generateShareUrl($token).'/download',
@@ -658,7 +662,7 @@ class FileMapper extends QBMapper
     public function getTotalFilesSize(): int
     {
         $qb = $this->db->getQueryBuilder();
-        $qb->select($qb->func()->sum('fc.size', 'total_size'))
+        $qb->selectAlias($qb->createFunction('SUM(fc.size)'), 'total_size')
             ->from('filecache', 'fc')
             ->leftJoin('fc', 'mimetypes', 'mt', $qb->expr()->eq('fc.mimetype', 'mt.id'))
             ->where($qb->expr()->neq('mt.mimetype', $qb->createNamedParameter('httpd/unix-directory', IQueryBuilder::PARAM_STR)));

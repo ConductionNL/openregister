@@ -1,6 +1,8 @@
 <?php
 
-/**
+declare(strict_types=1);
+
+/*
  * OpenRegister Migration - Facets Column
  *
  * Migration to add facets column to openregister_schemas table.
@@ -16,8 +18,6 @@
  *
  * @link https://www.OpenRegister.app
  */
-
-declare(strict_types=1);
 
 namespace OCA\OpenRegister\Migration;
 
@@ -66,7 +66,6 @@ class Version1Date20250902150000 extends SimpleMigrationStep
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        // @var ISchemaWrapper $schema
         $schema = $schemaClosure();
 
         if ($schema->hasTable('openregister_schemas') === false) {
@@ -78,15 +77,15 @@ class Version1Date20250902150000 extends SimpleMigrationStep
         // Add facets column for pre-computed facet configurations.
         if ($table->hasColumn('facets') === false) {
             $table->addColumn(
-                    'facets',
-                    Types::JSON,
-                    [
-                        'notnull' => false,
-                        'default' => null,
-                        'comment' => 'Pre-computed facetable field configurations for performance optimization',
-                    ]
-                    );
-            $output->info('Added facets column to openregister_schemas table for facet caching');
+                'facets',
+                Types::JSON,
+                [
+                    'notnull' => false,
+                    'default' => null,
+                    'comment' => 'Pre-computed facetable field configurations for performance optimization',
+                ]
+            );
+            $output->info(message: 'Added facets column to openregister_schemas table for facet caching');
         }
 
         return $schema;

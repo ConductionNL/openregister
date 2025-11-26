@@ -31,6 +31,8 @@ use OCA\OpenRegister\Exception\LockedException;
 /**
  * Class RevertController
  * Handles all object reversion operations
+ *
+ * @psalm-suppress UnusedClass - This controller is registered via routes.php and used by Nextcloud's routing system
  */
 class RevertController extends Controller
 {
@@ -48,7 +50,7 @@ class RevertController extends Controller
         IRequest $request,
         private readonly RevertService $revertService
     ) {
-        parent::__construct($appName, $request);
+        parent::__construct(appName: $appName, request: $request);
 
     }//end __construct()
 
@@ -107,7 +109,7 @@ class RevertController extends Controller
                 overwriteVersion: $overwriteVersion
             );
 
-            return new JSONResponse($revertedObject->jsonSerialize());
+            return new JSONResponse(data: $revertedObject->jsonSerialize());
         } catch (DoesNotExistException $e) {
             return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
         } catch (NotAuthorizedException $e) {

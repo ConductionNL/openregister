@@ -1,6 +1,6 @@
 <?php
-
-/**
+declare(strict_types=1);
+/*
  * OpenRegister Schema Extension Migration
  *
  * This migration adds the 'extend' column to the schemas table to support
@@ -17,8 +17,6 @@
  *
  * @link https://www.OpenRegister.nl
  */
-
-declare(strict_types=1);
 
 namespace OCA\OpenRegister\Migration;
 
@@ -49,14 +47,11 @@ class Version1Date20251102170000 extends SimpleMigrationStep
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+        // Get schema wrapper instance from closure (validation only).
+        $schemaClosure();
 
-        $schema = $schemaClosure();
-
-        $output->info('⚠️  Schema extension (extend column) is deprecated - skipping migration');
-        $output->info('   Schema inheritance now uses allOf, oneOf, and anyOf fields instead');
+        $output->info(message: '⚠️  Schema extension (extend column) is deprecated - skipping migration');
+        $output->info(message: '   Schema inheritance now uses allOf, oneOf, and anyOf fields instead');
 
         // DEPRECATED: The extend column functionality has been replaced by JSON Schema.
         // composition using allOf, oneOf, and anyOf fields. This migration is kept.

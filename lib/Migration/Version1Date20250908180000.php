@@ -1,7 +1,4 @@
 <?php
-
-declare(strict_types=1);
-
 /**
  * OpenRegister Updated Column Enhancement Migration
  *
@@ -20,6 +17,8 @@ declare(strict_types=1);
  *
  * @link     https://www.OpenRegister.nl
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Migration;
 
@@ -42,37 +41,37 @@ class Version1Date20250908180000 extends SimpleMigrationStep
     /**
      * Enhance updated column with ON UPDATE CURRENT_TIMESTAMP
      *
-     * @param IOutput $output Migration output interface
-     * @param Closure $schemaClosure Schema closure
-     * @param array   $options Migration options
+     * @param IOutput                   $output        Migration output interface
+     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure
+     * @param array                     $options       Migration options
      *
      * @return ISchemaWrapper|null Updated schema
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /** @var ISchemaWrapper $schema */
-        $schema = $schemaClosure();
+        // Get schema wrapper instance from closure (validation only).
+        $schemaClosure();
 
         // This migration requires raw SQL as Nextcloud's schema wrapper doesn't.
         // support the ON UPDATE CURRENT_TIMESTAMP syntax directly.
-        $output->info('🔧 This migration requires manual SQL execution for ON UPDATE functionality');
-        $output->info('ℹ️  Nextcloud schema wrapper has limited support for MySQL-specific timestamp features');
+        $output->info(message: '🔧 This migration requires manual SQL execution for ON UPDATE functionality');
+        $output->info(message: 'ℹ️  Nextcloud schema wrapper has limited support for MySQL-specific timestamp features');
 
-        return null; // No schema changes via wrapper - will use postSchemaChange
+        return null; // No schema changes via wrapper - will use postSchemaChange.
     }
 
     /**
      * Execute raw SQL to modify updated column behavior
      *
-     * @param IOutput $output Migration output interface
-     * @param Closure $schemaClosure Schema closure
-     * @param array   $options Migration options
+     * @param IOutput                   $output        Migration output interface
+     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure
+     * @param array                     $options       Migration options
      *
      * @return void
      */
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
-        $output->info('🔧 Modifying updated column to auto-update on row changes...');
+        $output->info(message: '🔧 Modifying updated column to auto-update on row changes...');
 
         // Use direct database connection for MySQL-specific syntax.
         $connection = \OC::$server->getDatabaseConnection();
@@ -85,17 +84,19 @@ class Version1Date20250908180000 extends SimpleMigrationStep
 
             $connection->executeStatement($sql);
 
-            $output->info('✅ Updated column now auto-updates on row modifications');
-            $output->info('🎯 This enables precise create vs update tracking:');
-            $output->info('   • created = updated → Object was just created (INSERT)');
-            $output->info('   • created ≠ updated → Object was updated (UPDATE)');
-            $output->info('🚀 Bulk imports can now distinguish creates vs updates per-object!');
+            $output->info(message: '✅ Updated column now auto-updates on row modifications');
+            $output->info(message: '🎯 This enables precise create vs update tracking:');
+            $output->info(message: '   • created = updated → Object was just created (INSERT)');
+            $output->info(message: '   • created ≠ updated → Object was updated (UPDATE)');
+            $output->info(message: '🚀 Bulk imports can now distinguish creates vs updates per-object!');
 
         } catch (\Exception $e) {
-            $output->info('❌ Failed to modify updated column: ' . $e->getMessage());
-            $output->info('⚠️  This may prevent precise create/update tracking');
-            $output->info('💡 Manual fix: ALTER TABLE oc_openregister_objects MODIFY updated datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP');
-        }
-    }
+            $output->info(message: '❌ Failed to modify updated column: ' . $e->getMessage());
+            $output->info(message: '⚠️  This may prevent precise create/update tracking');
+            $output->info(
+                message: '💡 Manual SQL fix: See migration docs for ALTER TABLE command'
+            );
+        }//end try
+    }//end postSchemaChange()
 
 }//end class

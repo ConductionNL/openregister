@@ -549,10 +549,7 @@ class SchemaFacetCacheService
             foreach ($properties as $propertyName => $property) {
                 if ($this->isPropertyFacetable($property) === true) {
                     $fieldConfig = $this->generateFieldConfigFromProperty($propertyName, $property);
-                    // @psalm-suppress RedundantCondition
-                    if ($fieldConfig !== null) {
-                        $facetableFields['object_fields'][$propertyName] = $fieldConfig;
-                    }
+                    $facetableFields['object_fields'][$propertyName] = $fieldConfig;
                 }
             }
         }

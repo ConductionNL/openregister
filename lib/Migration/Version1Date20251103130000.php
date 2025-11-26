@@ -1,6 +1,6 @@
 <?php
-
-/**
+declare(strict_types=1);
+/*
  * Add authorization column to organisations and applications
  *
  * This migration adds the authorization column (JSON type) to both
@@ -16,8 +16,6 @@
  * @version   GIT: <git-id>
  * @link      https://www.openregister.nl
  */
-
-declare(strict_types=1);
 
 namespace OCA\OpenRegister\Migration;
 
@@ -48,10 +46,6 @@ class Version1Date20251103130000 extends SimpleMigrationStep
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /*
-         * @var ISchemaWrapper $schema
-         */
-
         $schema  = $schemaClosure();
         $updated = false;
 
@@ -68,7 +62,7 @@ class Version1Date20251103130000 extends SimpleMigrationStep
                         'default' => null,
                     ]
                 );
-                $output->info('Added authorization column to openregister_organisations');
+                $output->info(message: 'Added authorization column to openregister_organisations');
                 $updated = true;
             }
         }//end if
@@ -86,7 +80,7 @@ class Version1Date20251103130000 extends SimpleMigrationStep
                         'default' => null,
                     ]
                 );
-                $output->info('Added authorization column to openregister_applications');
+                $output->info(message: 'Added authorization column to openregister_applications');
                 $updated = true;
             }
         }//end if

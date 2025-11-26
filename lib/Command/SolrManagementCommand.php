@@ -59,18 +59,12 @@ class SolrManagementCommand extends Command
     /**
      * Constructor
      *
-     * @param SettingsService   $settingsService Settings service for configuration
      * @param LoggerInterface   $logger          Logger for debugging and monitoring
      * @param GuzzleSolrService $solrService     SOLR service for operations
-     * @param SolrSchemaService $schemaService   Schema mirroring service
-     * @param IConfig           $config          Nextcloud configuration
      */
     public function __construct(
-        private readonly SettingsService $settingsService,
         private readonly LoggerInterface $logger,
-        private readonly GuzzleSolrService $solrService,
-        private readonly SolrSchemaService $schemaService,
-        private readonly IConfig $config
+        private readonly GuzzleSolrService $solrService
     ) {
         parent::__construct();
 
@@ -87,27 +81,27 @@ class SolrManagementCommand extends Command
         $this->setName('openregister:solr:manage')
             ->setDescription('🔧 SOLR Management - Setup, optimize, and maintain SOLR infrastructure')
             ->addArgument(
-                'action',
-                InputArgument::REQUIRED,
-                'Action to perform: setup, optimize, warm, health, schema-check, clear, stats, configure-vectors'
+                name: 'action',
+                mode: InputArgument::REQUIRED,
+                description: 'Action to perform: setup, optimize, warm, health, schema-check, clear, stats, configure-vectors'
             )
             ->addOption(
-                'tenant-collection',
-                't',
-                InputOption::VALUE_OPTIONAL,
-                'Target specific tenant collection (default: current tenant)'
+                name: 'tenant-collection',
+                shortcut: 't',
+                mode: InputOption::VALUE_OPTIONAL,
+                description: 'Target specific tenant collection (default: current tenant)'
             )
             ->addOption(
-                'force',
-                'f',
-                InputOption::VALUE_NONE,
-                'Force operation (use with caution)'
+                name: 'force',
+                shortcut: 'f',
+                mode: InputOption::VALUE_NONE,
+                description: 'Force operation (use with caution)'
             )
             ->addOption(
-                'commit',
-                'c',
-                InputOption::VALUE_NONE,
-                'Commit changes immediately'
+                name: 'commit',
+                shortcut: 'c',
+                mode: InputOption::VALUE_NONE,
+                description: 'Commit changes immediately'
             )
             ->setHelp(
                 '🔧 <info>SOLR Management Command</info>
@@ -177,14 +171,14 @@ class SolrManagementCommand extends Command
         }
 
         return match ($action) {
-            'setup' => $this->handleSetup($output),
-            'optimize' => $this->handleOptimize($output, $commit),
-            'warm' => $this->handleWarm($output),
-            'health' => $this->handleHealth($output),
-            'schema-check' => $this->handleSchemaCheck($output),
-            'clear' => $this->handleClear($output, $force),
-            'stats' => $this->handleStats($output),
-            default => $this->handleInvalidAction($output, $action),
+            'setup' => $this->handleSetup(output: $output),
+            'optimize' => $this->handleOptimize(output: $output, commit: $commit),
+            'warm' => $this->handleWarm(output: $output),
+            'health' => $this->handleHealth(output: $output),
+            'schema-check' => $this->handleSchemaCheck(output: $output),
+            'clear' => $this->handleClear(output: $output, force: $force),
+            'stats' => $this->handleStats(output: $output),
+            default => $this->handleInvalidAction(output: $output, action: $action),
         };
 
     }//end execute()
@@ -222,11 +216,9 @@ class SolrManagementCommand extends Command
             $output->writeln('   • Single-valued tenant_id field');
             $output->writeln('');
 
-            // Get SOLR configuration.
-            $solrConfig = $this->settingsService->getSolrSettings();
-
+            // Use the injected solrService instead of creating a new one.
             // Initialize SolrSetup with proper configuration.
-            $solrSetup = new SolrSetup($solrConfig, $this->logger);
+            $solrSetup = new SolrSetup($this->solrService, $this->logger);
 
             // Run complete setup including schema field configuration.
             if ($solrSetup->setupSolr() === true) {
@@ -334,7 +326,7 @@ class SolrManagementCommand extends Command
             foreach ($warmQueries as $query) {
                 $output->write('   🔥 '.$query['description'].'... ');
 
-                $result = $this->solrService->searchObjects($query);
+                $result = $this->solrService->searchObjects(query: $query);
                 if ($result['success'] === true) {
                     $output->writeln('<info>✅</info>');
                     $successCount++;
@@ -403,7 +395,7 @@ class SolrManagementCommand extends Command
             // Basic search test.
             $output->writeln('');
             $output->writeln('🔍 <info>Testing search functionality...</info>');
-            $searchResult = $this->solrService->searchObjects(['q' => '*:*', 'rows' => 1]);
+            $searchResult = $this->solrService->searchObjects(query: ['q' => '*:*', 'rows' => 1]);
             if ($searchResult['success'] === true) {
                 $output->writeln('   ✅ Search working ('.$searchResult['execution_time_ms'].'ms)');
                 $output->writeln('   📊 Total documents: <comment>'.$searchResult['total'].'</comment>');
@@ -477,7 +469,7 @@ class SolrManagementCommand extends Command
             $output->writeln('🔍 Checking field compatibility...');
 
             // Test a document structure.
-            $testResult = $this->solrService->searchObjects(['q' => '*:*', 'rows' => 1]);
+            $testResult = $this->solrService->searchObjects(query: ['q' => '*:*', 'rows' => 1]);
             if ($testResult['success'] === true && empty($testResult['data']) === false) {
                 $sampleDoc       = $testResult['data'][0];
                 $availableFields = array_keys($sampleDoc);
@@ -535,7 +527,8 @@ class SolrManagementCommand extends Command
         $output->writeln('');
 
         try {
-            if ($this->solrService->clearIndex() === true) {
+            $result = $this->solrService->clearIndex();
+            if (isset($result['success']) && $result['success'] === true) {
                 $output->writeln('✅ Index cleared successfully');
                 $output->writeln('<comment>   All documents have been removed from the index</comment>');
                 return self::SUCCESS;

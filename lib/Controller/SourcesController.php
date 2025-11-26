@@ -27,6 +27,8 @@ use OCP\IRequest;
 
 /**
  * Class SourcesController
+ *
+ * @psalm-suppress UnusedClass - This controller is registered via routes.php and used by Nextcloud's routing system
  */
 class SourcesController extends Controller
 {
@@ -48,7 +50,7 @@ class SourcesController extends Controller
         private readonly IAppConfig $config,
         private readonly SourceMapper $sourceMapper
     ) {
-        parent::__construct($appName, $request);
+        parent::__construct(appName: $appName, request: $request);
 
     }//end __construct()
 
@@ -72,10 +74,10 @@ class SourcesController extends Controller
         $params = $this->request->getParams();
 
         // Extract pagination and search parameters.
-        $limit  = $this->getIntParam($params, '_limit');
-        $offset = $this->getIntParam($params, '_offset');
-        $page   = $this->getIntParam($params, '_page');
-        $search = $params['_search'] ?? '';
+        $limit  = $this->getIntParam(params: $params, key: '_limit');
+        $offset = $this->getIntParam(params: $params, key: '_offset');
+        $page   = $this->getIntParam(params: $params, key: '_page');
+        // Note: search parameter not currently used in this endpoint
 
         // Convert page to offset if provided.
         if ($page !== null && $limit !== null) {
@@ -88,7 +90,7 @@ class SourcesController extends Controller
 
         // Return all sources that match the filters.
         return new JSONResponse(
-            [
+            data: [
                 'results' => $this->sourceMapper->findAll(
                     limit: $limit,
                     offset: $offset,
@@ -119,7 +121,7 @@ class SourcesController extends Controller
     {
         try {
             // Try to find the source by ID.
-            return new JSONResponse($this->sourceMapper->find(id: (int) $id));
+            return new JSONResponse(data: $this->sourceMapper->find(id: (int) $id));
         } catch (DoesNotExistException $exception) {
             // Return a 404 error if the source doesn't exist.
             return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
@@ -147,7 +149,7 @@ class SourcesController extends Controller
         $data = $this->request->getParams();
 
         // Remove internal parameters (starting with '_').
-        foreach ($data as $key => $value) {
+        foreach (array_keys($data) as $key) {
             if (str_starts_with($key, '_') === true) {
                 unset($data[$key]);
             }
@@ -159,7 +161,7 @@ class SourcesController extends Controller
         }
 
         // Create a new source from the data.
-        return new JSONResponse($this->sourceMapper->createFromArray(object: $data));
+        return new JSONResponse(data: $this->sourceMapper->createFromArray(object: $data));
 
     }//end create()
 
@@ -185,7 +187,7 @@ class SourcesController extends Controller
         $data = $this->request->getParams();
 
         // Remove internal parameters (starting with '_').
-        foreach ($data as $key => $value) {
+        foreach (array_keys($data) as $key) {
             if (str_starts_with($key, '_') === true) {
                 unset($data[$key]);
             }
@@ -198,7 +200,8 @@ class SourcesController extends Controller
         unset($data['created']);
 
         // Update the source with the provided data.
-        return new JSONResponse($this->sourceMapper->updateFromArray(id: $id, object: $data));
+        $source = $this->sourceMapper->updateFromArray(id: $id, object: $data);
+        return new JSONResponse(data: $source);
 
     }//end update()
 
@@ -243,7 +246,7 @@ class SourcesController extends Controller
         $this->sourceMapper->delete($this->sourceMapper->find($id));
 
         // Return an empty response.
-        return new JSONResponse([]);
+        return new JSONResponse(data: []);
 
     }//end destroy()
 

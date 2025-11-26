@@ -24,6 +24,7 @@ use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\GuzzleSolrService;
 use OCA\OpenRegister\Setup\SolrSetup;
 use OCP\IConfig;
+use OCP\Http\Client\IClientService;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -53,7 +54,8 @@ class SolrDebugCommand extends Command
     public function __construct(
         private readonly SettingsService $settingsService,
         private readonly LoggerInterface $logger,
-        private readonly IConfig $config
+        private readonly IConfig $config,
+        private readonly IClientService $clientService
     ) {
         parent::__construct();
 
@@ -162,8 +164,8 @@ class SolrDebugCommand extends Command
         $output->writeln('<info>📋 Tenant Information</info>');
 
         // Generate tenant ID the same way as SolrService.
-        $instanceId    = $this->config->getSystemValue('instanceid', 'default');
-        $overwriteHost = $this->config->getSystemValue('overwrite.cli.url', '');
+        $instanceId    = $this->config->getSystemValue(key: 'instanceid', default: 'default');
+        $overwriteHost = $this->config->getSystemValue(key: 'overwrite.cli.url', default: '');
 
         if (empty($overwriteHost) === false) {
             $tenantId = 'nc_'.hash('crc32', $overwriteHost);
@@ -218,8 +220,15 @@ class SolrDebugCommand extends Command
             $output->writeln("    Core: <comment>{$solrSettings['core']}</comment>");
             $output->writeln("    Scheme: <comment>{$solrSettings['scheme']}</comment>");
 
+            // Create GuzzleSolrService from settings.
+            $solrService = new GuzzleSolrService(
+                settingsService: $this->settingsService,
+                logger: $this->logger,
+                clientService: $this->clientService,
+                config: $this->config
+            );
             // Test setup.
-            $setup  = new SolrSetup($solrSettings, $this->logger);
+            $setup  = new SolrSetup($solrService, $this->logger);
             $result = $setup->setupSolr();
 
             if ($result === true) {
@@ -313,7 +322,7 @@ class SolrDebugCommand extends Command
             }
 
             // Test direct SOLR admin API calls.
-            $this->testSolrAdminAPI($output, $solrSettings);
+            $this->testSolrAdminAPI(output: $output, solrSettings: $solrSettings);
         } catch (\Exception $e) {
             $output->writeln("<error>❌ Core check failed: {$e->getMessage()}</error>");
         }
@@ -336,11 +345,11 @@ class SolrDebugCommand extends Command
         // Test cores listing (standalone SOLR).
         $coresUrl = sprintf(
             '%s://%s:%d%s/admin/cores?action=STATUS&wt=json',
-            $solrSettings['scheme'],
+                $solrSettings['scheme'],
             $solrSettings['host'],
             $solrSettings['port'],
             $solrSettings['path']
-        );
+                );
 
         $output->writeln("  Testing cores API: <comment>$coresUrl</comment>");
 
@@ -362,11 +371,11 @@ class SolrDebugCommand extends Command
         // Test collections listing (SolrCloud).
         $collectionsUrl = sprintf(
             '%s://%s:%d%s/admin/collections?action=CLUSTERSTATUS&wt=json',
-            $solrSettings['scheme'],
+                $solrSettings['scheme'],
             $solrSettings['host'],
             $solrSettings['port'],
             $solrSettings['path']
-        );
+                );
 
         $output->writeln("  Testing collections API: <comment>$collectionsUrl</comment>");
 
@@ -376,7 +385,7 @@ class SolrDebugCommand extends Command
             if (isset($collectionsData['cluster']['collections']) === true) {
                 $collectionCount = count($collectionsData['cluster']['collections']);
                 $output->writeln("  <info>✅ Found $collectionCount collections (SolrCloud mode)</info>");
-                foreach ($collectionsData['cluster']['collections'] as $collectionName => $collectionInfo) {
+                foreach (array_keys($collectionsData['cluster']['collections']) as $collectionName) {
                     $output->writeln("    - <comment>$collectionName</comment>");
                 }
             }
@@ -387,11 +396,11 @@ class SolrDebugCommand extends Command
         // Test configSets listing.
         $configSetsUrl = sprintf(
             '%s://%s:%d%s/admin/configs?action=LIST&wt=json',
-            $solrSettings['scheme'],
+                $solrSettings['scheme'],
             $solrSettings['host'],
             $solrSettings['port'],
             $solrSettings['path']
-        );
+                );
 
         $output->writeln("  Testing configSets API: <comment>$configSetsUrl</comment>");
 

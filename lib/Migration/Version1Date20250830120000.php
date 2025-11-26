@@ -1,5 +1,8 @@
 <?php
-/**
+
+declare(strict_types=1);
+
+/*
  * OpenRegister Configuration Table Updates Migration
  *
  * This migration updates the openregister_configurations table to:
@@ -10,7 +13,7 @@
  * @category Migration
  * @package  OCA\OpenRegister\Migration
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -18,8 +21,6 @@
  *
  * @link https://OpenRegister.app
  */
-
-declare(strict_types=1);
 
 namespace OCA\OpenRegister\Migration;
 
@@ -47,10 +48,6 @@ class Version1Date20250830120000 extends SimpleMigrationStep
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /*
-         * @var ISchemaWrapper $schema
-         */
-
         $schema = $schemaClosure();
 
         // Check if the configurations table exists.
@@ -62,13 +59,13 @@ class Version1Date20250830120000 extends SimpleMigrationStep
                 // Add the new 'app' column.
                 if ($table->hasColumn('app') === false) {
                     $table->addColumn(
-                            'app',
-                            Types::STRING,
-                            [
-                                'notnull' => false,
-                                'length'  => 64,
-                            ]
-                            );
+                        'app',
+                        Types::STRING,
+                        [
+                            'notnull' => false,
+                            'length'  => 64,
+                        ]
+                    );
                 }
 
                 // Note: We'll copy data in postSchemaChange, then drop the old column.
@@ -77,23 +74,23 @@ class Version1Date20250830120000 extends SimpleMigrationStep
             // Add 'schemas' column if it doesn't exist.
             if ($table->hasColumn('schemas') === false) {
                 $table->addColumn(
-                        'schemas',
-                        Types::JSON,
-                        [
-                            'notnull' => false,
-                        ]
-                        );
+                    'schemas',
+                    Types::JSON,
+                    [
+                        'notnull' => false,
+                    ]
+                );
             }
 
             // Add 'objects' column if it doesn't exist.
             if ($table->hasColumn('objects') === false) {
                 $table->addColumn(
-                        'objects',
-                        Types::JSON,
-                        [
-                            'notnull' => false,
-                        ]
-                        );
+                    'objects',
+                    Types::JSON,
+                    [
+                        'notnull' => false,
+                    ]
+                );
             }
 
             return $schema;
@@ -115,10 +112,6 @@ class Version1Date20250830120000 extends SimpleMigrationStep
      */
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
-        /*
-         * @var ISchemaWrapper $schema
-         */
-
         $schema = $schemaClosure();
 
         // Check if the configurations table exists.

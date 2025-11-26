@@ -55,9 +55,9 @@ class Version1Date20250801000000 extends SimpleMigrationStep
     /**
      * Pre-schema change operations
      *
-     * @param IOutput                   $output
-     * @param Closure(): ISchemaWrapper $schemaClosure
-     * @param array                     $options
+     * @param IOutput                   $output        Output interface
+     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure
+     * @param array                     $options       Migration options
      *
      * @return void
      */
@@ -70,57 +70,57 @@ class Version1Date20250801000000 extends SimpleMigrationStep
     /**
      * Apply schema changes for multi-tenancy
      *
-     * @param IOutput                   $output
-     * @param Closure(): ISchemaWrapper $schemaClosure
-     * @param array                     $options
+     * @param IOutput                   $output        Output interface
+     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure
+     * @param array                     $options       Migration options
      *
      * @return null|ISchemaWrapper
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /** @var ISchemaWrapper $schema */
+        // Get schema wrapper instance from closure.
         $schema = $schemaClosure();
 
         // 1. Add new fields to organisations table.
-        if ($schema->hasTable('openregister_organisations')) {
+        if ($schema->hasTable('openregister_organisations') === true) {
             $table = $schema->getTable('openregister_organisations');
 
             // Add users field (JSON array of user IDs).
-            if (!$table->hasColumn('users')) {
+            if ($table->hasColumn('users') === false) {
                 $table->addColumn('users', Types::JSON, [
                     'notnull' => false,
                     'default' => '[]'
                 ]);
-                $output->info('Added users column to organisations table');
+                $output->info(message: 'Added users column to organisations table');
             }
 
             // Add owner field (user ID who owns the organisation).
-            if (!$table->hasColumn('owner')) {
+            if ($table->hasColumn('owner') === false) {
                 $table->addColumn('owner', Types::STRING, [
                     'notnull' => false,
                     'length' => 255
                 ]);
-                $output->info('Added owner column to organisations table');
+                $output->info(message: 'Added owner column to organisations table');
             }
 
             // Add slug field (URL-friendly identifier).
-            if (!$table->hasColumn('slug')) {
+            if ($table->hasColumn('slug') === false) {
                 $table->addColumn('slug', Types::STRING, [
                     'notnull' => false,
                     'length' => 255
                 ]);
-                $output->info('Added slug column to organisations table');
+                $output->info(message: 'Added slug column to organisations table');
             }
 
             // Add unique constraints for uuid and slug.
-            if ($table->hasColumn('uuid') && !$table->hasIndex('organisations_uuid_unique')) {
+            if ($table->hasColumn('uuid') === true && $table->hasIndex('organisations_uuid_unique') === false) {
                 $table->addUniqueIndex(['uuid'], 'organisations_uuid_unique');
-                $output->info('Added unique constraint on uuid column');
+                $output->info(message: 'Added unique constraint on uuid column');
             }
 
-            if ($table->hasColumn('slug') && !$table->hasIndex('organisations_slug_unique')) {
+            if ($table->hasColumn('slug') === true && $table->hasIndex('organisations_slug_unique') === false) {
                 $table->addUniqueIndex(['slug'], 'organisations_slug_unique');
-                $output->info('Added unique constraint on slug column');
+                $output->info(message: 'Added unique constraint on slug column');
             }
         }
 
@@ -131,9 +131,9 @@ class Version1Date20250801000000 extends SimpleMigrationStep
     /**
      * Post-schema change operations
      *
-     * @param IOutput                   $output
-     * @param Closure(): ISchemaWrapper $schemaClosure
-     * @param array                     $options
+     * @param IOutput                   $output        Output interface
+     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure
+     * @param array                     $options       Migration options
      *
      * @return void
      */

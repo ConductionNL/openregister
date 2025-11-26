@@ -124,7 +124,7 @@ class ConversationMapper extends QBMapper
     public function update(Entity $entity): Conversation
     {
         // Get old state before update.
-        $oldEntity = $this->find($entity->getId());
+        $oldEntity = $this->find(id: $entity->getId());
 
         if ($entity instanceof Conversation) {
             // Always update the updated timestamp.
@@ -493,7 +493,7 @@ class ConversationMapper extends QBMapper
      */
     public function softDelete(int $id): Conversation
     {
-        $conversation = $this->find($id);
+        $conversation = $this->find(id: $id);
         $conversation->softDelete();
         $conversation->setUpdated(new DateTime());
 
@@ -535,7 +535,7 @@ class ConversationMapper extends QBMapper
      */
     public function cleanupOldDeleted(int $daysOld=30): int|\OCP\DB\IResult
     {
-        $threshold = new DateTime("-{$daysOld} days");
+        $threshold = new \DateTime("-{$daysOld} days");
 
         $qb = $this->db->getQueryBuilder();
 
@@ -573,7 +573,7 @@ class ConversationMapper extends QBMapper
             return false;
         }
 
-        // If organisation is provided, conversation must belong to it.
+        // If organisation is provided, rbac: conversation must belong to it.
         if ($organisationUuid !== null && $conversation->getOrganisation() !== $organisationUuid) {
             return false;
         }

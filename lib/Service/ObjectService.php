@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 /**
  * OpenRegister ObjectService
  *
@@ -22,6 +25,7 @@
 namespace OCA\OpenRegister\Service;
 
 use Adbar\Dot;
+use DateTime;
 use Exception;
 use JsonSerializable;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -60,6 +64,7 @@ use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\GuzzleSolrService;
 use OCA\OpenRegister\Service\SolrObjectService;
 use OCP\AppFramework\IAppContainer;
+use OCP\DB\QueryBuilder\IQueryBuilder;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 
@@ -226,11 +231,12 @@ class ObjectService
      *
      * @param string $appId Unique identifier for the external app
      *
+     * @phpstan-param  string $appId
+     * @psalm-param    string $appId
+     *
      * @return self For method chaining
      *
-     * @phpstan-param  string $appId
      * @phpstan-return self
-     * @psalm-param    string $appId
      * @psalm-return   self
      */
     public function setExternalAppContext(string $appId): self
@@ -238,8 +244,8 @@ class ObjectService
         $this->externalAppId = $appId;
 
         $this->logger->debug(
-            'External app context set for cache isolation',
-            [
+            message: 'External app context set for cache isolation',
+            context: [
                 'appId'         => $appId,
                 'cacheNamespace' => "external_app_{$appId}",
                 'benefit'       => 'improved_cache_performance'
@@ -293,6 +299,7 @@ class ObjectService
      * @param string      $action      The CRUD action (create, read, update, delete)
      * @param string|null $userId      Optional user ID (defaults to current user)
      * @param string|null $objectOwner Optional object owner for ownership check
+     * @param bool        $rbac        Whether to apply RBAC checks (default: true)
      *
      * @return bool True if user has permission, false otherwise
      *
@@ -310,7 +317,7 @@ class ObjectService
             $user = $this->userSession->getUser();
             if ($user === null) {
                 // For unauthenticated requests, check if 'public' group has permission.
-                return $schema->hasPermission('public', $action, null, null, $objectOwner);
+                return $schema->hasPermission(groupId: 'public', action: $action, userId: null, userGroup: null, objectOwner: $objectOwner);
             }
 
             $userId = $user->getUID();
@@ -320,7 +327,7 @@ class ObjectService
         $userObj = $this->userManager->get($userId);
         if ($userObj === null) {
             // User doesn't exist, treat as public.
-            return $schema->hasPermission('public', $action, null, null, $objectOwner);
+            return $schema->hasPermission(groupId: 'public', action: $action, userId: null, userGroup: null, objectOwner: $objectOwner);
         }
 
         $userGroups = $this->groupManager->getUserGroupIds($userObj);
@@ -339,7 +346,7 @@ class ObjectService
                 $adminGroup = 'admin';
             }
 
-            if ($schema->hasPermission($groupId, $action, $userId, $adminGroup, $objectOwner) === true) {
+            if ($schema->hasPermission(groupId: $groupId, action: $action, userId: $userId, userGroup: $adminGroup, objectOwner: $objectOwner) === true) {
                 return true;
             }
         }
@@ -350,18 +357,6 @@ class ObjectService
 
 
     /**
-     * Validate user has permission for a specific action, throw exception if not
-     *
-     * @param Schema      $schema      The schema to check permissions for
-     * @param string      $action      The CRUD action (create, read, update, delete)
-     * @param string|null $userId      Optional user ID (defaults to current user)
-     * @param string|null $objectOwner Optional object owner for ownership check
-     *
-     * @throws \Exception If user does not have permission
-     *
-     * @return void
-     */
-    /**
      * Check permission and throw exception if not granted
      *
      * @param Schema      $schema      Schema to check permissions for
@@ -371,11 +366,12 @@ class ObjectService
      * @param bool        $rbac        Whether to enforce RBAC checks
      *
      * @return void
+     *
      * @throws \Exception If permission is not granted
      */
     private function checkPermission(Schema $schema, string $action, ?string $userId=null, ?string $objectOwner=null, bool $rbac=true): void
     {
-        if ($this->hasPermission($schema, $action, $userId, $objectOwner, $rbac) === false) {
+        if ($this->hasPermission(schema: $schema, action: $action, userId: $userId, objectOwner: $objectOwner, rbac: $rbac) === false) {
             $user = $this->userSession->getUser();
             $userName = 'Anonymous';
             if ($user !== null) {
@@ -451,7 +447,7 @@ class ObjectService
     {
         if (is_string($register) === true || is_int($register) === true) {
             // **PERFORMANCE OPTIMIZATION**: Use cached entity lookup.
-            $registers = $this->getCachedEntities('register', [$register], function($ids) {
+            $registers = $this->getCachedEntities(entityType: 'register', ids: [$register], fallbackFunc: function($ids) {
                 return [$this->registerMapper->find($ids[0])];
             });
             $registerExists = isset($registers[0]) === true;
@@ -481,7 +477,7 @@ class ObjectService
     {
         if (is_string($schema) === true || is_int($schema) === true) {
             // **PERFORMANCE OPTIMIZATION**: Use cached entity lookup.
-            $schemas = $this->getCachedEntities('schema', [$schema], function($ids) {
+            $schemas = $this->getCachedEntities(entityType: 'schema', ids: [$schema], fallbackFunc: function($ids) {
                 return [$this->schemaMapper->find($ids[0])];
             });
             $schemaExists = isset($schemas[0]) === true;
@@ -535,9 +531,9 @@ class ObjectService
     /**
      * Clears the current schema and current register, so that a new call on the ObjectService does not retain old values.
      *
+     * @return void
      *
      * @deprecated Deprecated as public function, should be called from within at appropriate locations.
-     * @return void
      */
     public function clearCurrents(): void
     {
@@ -603,9 +599,19 @@ class ObjectService
 
         // If the object is not published, check the permissions.
         $now = new \DateTime('now');
-        if ($object->getPublished() === null || $now < $object->getPublished() || ($object->getDepublished() !== null && $object->getDepublished() <= $now)) {
+        $published = $object->getPublished();
+        $depublished = $object->getDepublished();
+        $isNotPublished = $published === null || $now < $published;
+        $isDepublished = $depublished !== null && $depublished <= $now;
+        if ($isNotPublished === true || $isDepublished === true) {
             // Check user has permission to read this specific object (includes object owner check).
-            $this->checkPermission($this->currentSchema, 'read', null, $object->getOwner(), $rbac);
+            $this->checkPermission(
+                schema: $this->currentSchema,
+                action: 'read',
+                userId: null,
+                objectOwner: $object->getOwner(),
+                rbac: $rbac
+            );
         }
 
         // Render the object before returning.
@@ -716,7 +722,7 @@ class ObjectService
 
         // Check user has permission to create objects in this schema.
         if ($this->currentSchema !== null) {
-            $this->checkPermission($this->currentSchema, 'create', null, null, $rbac);
+            $this->checkPermission(schema: $this->currentSchema, action: 'create', userId: null, objectOwner: null, rbac: $rbac);
         }
 
         // Skip validation here - let saveObject handle the proper order of pre-validation cascading then validation.
@@ -803,7 +809,8 @@ class ObjectService
      * @param Register|string|int|null $register      The register object or its ID/UUID.
      * @param Schema|string|int|null   $schema        The schema object or its ID/UUID.
      * @param bool                     $rbac          Whether to apply RBAC checks (default: true).
-     * @param bool                     $multi         Whether to apply multitenancy filtering (default: true).
+     * @param bool                     $multi          Whether to apply multitenancy filtering (default: true).
+     * @param bool                     $silent         Whether to skip audit trail creation and events (default: false).
      *
      * @return array The updated object.
      *
@@ -843,7 +850,7 @@ class ObjectService
         }
 
         // Check user has permission to update this specific object.
-        $this->checkPermission($this->currentSchema, 'update', null, $existingObject->getOwner(), $rbac);
+        $this->checkPermission(schema: $this->currentSchema, action: 'update', userId: null, objectOwner: $existingObject->getOwner(), rbac: $rbac);
 
         // If patch is true, merge the existing object with the new data.
         if ($patch === true) {
@@ -991,13 +998,13 @@ class ObjectService
         // Check if '@self.schema' or '@self.register' is in extend but not in filters.
         if (isset($config['extend']) === true && in_array('@self.schema', (array) $config['extend'], true) === true && $schemas === null) {
             $schemaIds = array_unique(array_filter(array_map(fn($object) => $object->getSchema() ?? null, $objects)));
-            $schemas   = $this->getCachedEntities('schema', $schemaIds, [$this->schemaMapper, 'findMultiple']);
+            $schemas   = $this->getCachedEntities(entityType: 'schema', ids: $schemaIds, fallbackFunc: [$this->schemaMapper, 'findMultiple']);
             $schemas   = array_combine(array_map(fn($schema) => $schema->getId(), $schemas), $schemas);
         }
 
         if (isset($config['extend']) === true && in_array('@self.register', (array) $config['extend'], true) === true && $registers === null) {
             $registerIds = array_unique(array_filter(array_map(fn($object) => $object->getRegister() ?? null, $objects)));
-            $registers   = $this->getCachedEntities('register', $registerIds, [$this->registerMapper, 'findMultiple']);
+            $registers   = $this->getCachedEntities(entityType: 'register', ids: $registerIds, fallbackFunc: [$this->registerMapper, 'findMultiple']);
             $registers   = array_combine(array_map(fn($register) => $register->getId(), $registers), $registers);
         }
 
@@ -1039,6 +1046,7 @@ class ObjectService
      *                      - ids: Array of IDs or UUIDs to filter by
      *
      * @return int The number of matching objects.
+     *
      * @throws \Exception If register or schema is not set
      */
     public function count(
@@ -1078,7 +1086,7 @@ class ObjectService
     public function findByRelations(string $search, bool $partialMatch=true): array
     {
         // Use the findByRelation method from the ObjectEntityMapper to find objects by their relations.
-        return $this->objectEntityMapper->findByRelation($search, $partialMatch);
+        return $this->objectEntityMapper->findByRelation(search: $search, partialMatch: $partialMatch);
 
     }//end findByRelations()
 
@@ -1142,22 +1150,23 @@ class ObjectService
      *
      * FOR BULK OPERATIONS: Use saveObjects() method for optimized bulk processing
      *
-     * TODO: Add property-level RBAC validation here
-     * Before saving object data, check if user has permission to create/update specific properties
-     * based on property-level authorization arrays in the schema.
-     *
      * @param array|ObjectEntity       $object   The object data to save or ObjectEntity instance
      * @param array|null               $extend   Properties to extend the object with
      * @param Register|string|int|null $register The register object or its ID/UUID
      * @param Schema|string|int|null   $schema   The schema object or its ID/UUID
      * @param string|null              $uuid     The UUID of the object to update (if updating)
-     * @param bool                     $rbac     Whether to apply RBAC checks (default: true)
-     * @param bool                     $multi    Whether to apply multitenancy filtering (default: true)
-     * @param bool                     $silent   Whether to skip audit trail creation and events (default: false)
+     * @param bool                     $rbac          Whether to apply RBAC checks (default: true)
+     * @param bool                     $multi         Whether to apply multitenancy filtering (default: true)
+     * @param bool                     $silent        Whether to skip audit trail creation and events (default: false)
+     * @param array|null               $uploadedFiles Uploaded files from multipart/form-data (optional)
      *
      * @return ObjectEntity The saved and rendered object
      *
      * @throws Exception If there is an error during save
+     *
+     * @TODO Add property-level RBAC validation here
+     * Before saving object data, check if user has permission to create/update specific properties
+     * based on property-level authorization arrays in the schema.
      */
     public function saveObject(
         array | ObjectEntity $object,
@@ -1214,18 +1223,18 @@ class ObjectService
                 $isUpdate       = true;
                 // This is an UPDATE operation.
                 if ($this->currentSchema !== null) {
-                    $this->checkPermission($this->currentSchema, 'update', null, $existingObject->getOwner(), $rbac);
+                    $this->checkPermission(schema: $this->currentSchema, action: 'update', userId: null, objectOwner: $existingObject->getOwner(), rbac: $rbac);
                 }
             } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
                 // Object not found, this is a CREATE operation with specific UUID.
                 if ($this->currentSchema !== null) {
-                    $this->checkPermission($this->currentSchema, 'create', null, null, $rbac);
+                    $this->checkPermission(schema: $this->currentSchema, action: 'create', userId: null, objectOwner: null, rbac: $rbac);
                 }
             }
         } else {
             // No UUID provided, this is a CREATE operation.
             if ($this->currentSchema !== null) {
-                $this->checkPermission($this->currentSchema, 'create', null, null, $rbac);
+                $this->checkPermission(schema: $this->currentSchema, action: 'create', userId: null, objectOwner: null, rbac: $rbac);
             }
         }
 
@@ -1236,8 +1245,8 @@ class ObjectService
 
         // Pre-validation cascading: Handle inversedBy properties BEFORE validation.
         // This creates related objects and replaces them with UUIDs so validation sees UUIDs, not objects.
-        // TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property
-        [$object, $uuid] = $this->handlePreValidationCascading($object, $parentSchema, $uuid);
+        // TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property.
+        [$object, $uuid] = $this->handlePreValidationCascading(object: $object, schema: $parentSchema, uuid: $uuid);
 
         // Restore the parent object's register and schema context after cascading.
         $this->currentRegister = $parentRegister;
@@ -1245,9 +1254,9 @@ class ObjectService
 
         // Validate the object against the current schema only if hard validation is enabled.
         if ($this->currentSchema->getHardValidation() === true) {
-            $result = $this->validateHandler->validateObject($object, $this->currentSchema);
+            $result = $this->validateHandler->validateObject(object: $object, schema: $this->currentSchema);
             if ($result->isValid() === false) {
-                $meaningfulMessage = $this->validateHandler->generateErrorMessage($result);
+                $meaningfulMessage = $this->validateHandler->generateErrorMessage(result: $result);
                 throw new ValidationException($meaningfulMessage, errors: $result->error());
             }
         } else {
@@ -1281,17 +1290,17 @@ class ObjectService
         // Let SaveObject handle the UUID logic completely.
 
         $savedObject = $this->saveHandler->saveObject(
-            $this->currentRegister,
-            $this->currentSchema,
-            $object,
-            $uuid,
-            $folderId,
-            $rbac,
-            $multi,
-            true, // persist
-            $silent, // silent
-            true, // validation
-            $uploadedFiles // uploaded files from multipart/form-data
+            register: $this->currentRegister,
+            schema: $this->currentSchema,
+            data: $object,
+            uuid: $uuid,
+            folderId: $folderId,
+            rbac: $rbac,
+            multi: $multi,
+            persist: true,
+            silent: $silent,
+            validation: true,
+            uploadedFiles: $uploadedFiles
         );
 
         // Determine if register and schema should be passed to renderEntity.
@@ -1343,21 +1352,21 @@ class ObjectService
             }
 
             // Check user has permission to delete this specific object.
-            $this->checkPermission($this->currentSchema, 'delete', null, $objectToDelete->getOwner(), $rbac);
+            $this->checkPermission(schema: $this->currentSchema, action: 'delete', userId: null, objectOwner: $objectToDelete->getOwner(), rbac: $rbac);
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             // Object doesn't exist, no permission check needed but let the deleteHandler handle this.
             if ($this->currentSchema !== null) {
-                $this->checkPermission($this->currentSchema, 'delete', null, null, $rbac);
+                $this->checkPermission(schema: $this->currentSchema, action: 'delete', userId: null, objectOwner: null, rbac: $rbac);
             }
         }
 
         return $this->deleteHandler->deleteObject(
-            $this->currentRegister,
-            $this->currentSchema,
-            $uuid,
-            null,
-            $rbac,
-            $multi
+            register: $this->currentRegister,
+            schema: $this->currentSchema,
+            uuid: $uuid,
+            folderId: null,
+            rbac: $rbac,
+            multi: $multi
         );
 
     }//end deleteObject()
@@ -1367,14 +1376,16 @@ class ObjectService
      * Get all registers extended with their schemas
      *
      * @return array The registers with schema data
+     *
      * @throws Exception If extension fails
      */
     public function getRegisters(): array
     {
         // Get all registers.
-        $registers = $this->getCachedEntities('register', 'all', function($ids) {
+        $registers = $this->getCachedEntities(entityType: 'register', ids: 'all', fallbackFunc: function($ids) {
             // **TYPE SAFETY**: Convert 'all' to proper null limit for RegisterMapper::findAll().
-            return $this->registerMapper->findAll(null); // null = no limit (get all)
+            // Null = no limit (get all).
+            return $this->registerMapper->findAll(null);
         });
 
         // Convert to arrays and extend schemas.
@@ -1421,8 +1432,10 @@ class ObjectService
     /**
      * Find applicable ids for objects that have an inversed relationship through which a search request is performed.
      *
-     * @param  array $filters The set of filters to find the inversed relationships through.
-     * @return array|null The list of ids that have an inversed relationship to an object that meets the filters. Returns NULL if no filters are found that are applicable.
+     * @param array $filters The set of filters to find the inversed relationships through.
+     *
+     * @return array|null The list of ids that have an inversed relationship to an object that meets the filters.
+     *                    Returns NULL if no filters are found that are applicable.
      *
      * @throws \OCP\DB\Exception
      */
@@ -1445,7 +1458,7 @@ class ObjectService
                 }
                 );
 
-        $filtersWithSub = array_intersect_key($filters, array_flip($filterKeysWithSub));
+        $filtersWithSub = array_intersect_key(array: $filters, array2: array_flip(array: $filterKeysWithSub));
 
         if (empty($filtersWithSub) === true) {
             return [];
@@ -1488,10 +1501,10 @@ class ObjectService
             if ($ids === []) {
                 $ids = $foundIds;
             } else {
-                $ids = array_intersect($ids, $foundIds);
+                $ids = array_intersect(array1: $ids, array2: $foundIds);
             }
 
-            foreach ($value as $k => $v) {
+            foreach (array_keys($value) as $k) {
                 unset($filters[$key.'_'.$k]);
             }
         }//end foreach
@@ -1548,7 +1561,15 @@ class ObjectService
         $filters = $requestParams;
         unset($filters['_route']);
         // TODO: Investigate why this is here and if it's needed.
-        unset($filters['_extend'], $filters['_limit'], $filters['_offset'], $filters['_order'], $filters['_page'], $filters['_search'], $filters['_facetable']);
+        unset(
+            $filters['_extend'],
+            $filters['_limit'],
+            $filters['_offset'],
+            $filters['_order'],
+            $filters['_page'],
+            $filters['_search'],
+            $filters['_facetable']
+        );
         unset($filters['extend'], $filters['limit'], $filters['offset'], $filters['order'], $filters['page']);
 
         if (isset($filters['register']) === false) {
@@ -1567,14 +1588,14 @@ class ObjectService
         if ($ids === null && $searchIds !== null) {
             $ids = $searchIds;
         } else if ($ids !== null && $searchIds !== null) {
-            $ids = array_intersect($ids, $searchIds);
+            $ids = array_intersect(array1: $ids, array2: $searchIds);
         } else if ($searchIds === null && $searchIds !== []) {
             // Return empty because applyInversedBy had a filter but got found result.
             $returnEmpty = true;
         }
         if ($ids !== null && $returnEmpty === false) {
             $objects = $this->findAll(
-                [
+                config: [
                     "limit"     => $limit,
                     "offset"    => $offset,
                     "filters"   => $filters,
@@ -1594,7 +1615,7 @@ class ObjectService
             );
         } elseif ($returnEmpty === false) {
             $objects = $this->findAll(
-                [
+                config: [
                     "limit"     => $limit,
                     "offset"    => $offset,
                     "filters"   => $filters,
@@ -1620,7 +1641,7 @@ class ObjectService
 
         // Use new faceting system with basic configuration.
         $facetQuery = [
-            '@self'   => array_intersect_key($filters, array_flip(['register', 'schema'])),
+            '@self'   => array_intersect_key(array: $filters, array2: array_flip(array: ['register', 'schema'])),
             '_search' => $search,
             '_facets' => [
                 '@self' => [
@@ -1631,7 +1652,7 @@ class ObjectService
         ];
 
         // Add object field filters to facet query.
-        $objectFilters = array_diff_key($filters, array_flip(['register', 'schema', 'extend', 'limit', 'offset', 'order', 'page']));
+        $objectFilters = array_diff_key(array: $filters, array2: array_flip(array: ['register', 'schema', 'extend', 'limit', 'offset', 'order', 'page']));
         foreach ($objectFilters as $key => $value) {
             if (str_starts_with($key, '_') === false) {
                 $facetQuery[$key]            = $value;
@@ -1656,7 +1677,7 @@ class ObjectService
             // Use the same base query as for facets.
             $sampleSize = (int) ($requestParams['_sample_size'] ?? 100);
 
-            $result['facetable'] = $this->getFacetableFields($baseQuery, $sampleSize);
+            $result['facetable'] = $this->getFacetableFields(baseQuery: $baseQuery, sampleSize: $sampleSize);
         }
 
         return $result;
@@ -1747,33 +1768,6 @@ class ObjectService
 
 
     /**
-     * Search objects using clean query structure
-     *
-     * This method provides a cleaner search interface that uses the new searchObjects
-     * method from ObjectEntityMapper with proper query structure. It automatically
-     * handles metadata filters, object field searches, and search options.
-     *
-     * @param array $query The search query array containing filters and options
-     *                     - @self: Metadata filters (register, schema, uuid, etc.)
-     *                     - Direct keys: Object field filters for JSON data
-     *                     - _limit: Maximum results to return
-     *                     - _offset: Results to skip (pagination)
-     *                     - _order: Sorting criteria
-     *                     - _search: Full-text search term
-     *                     - _includeDeleted: Include soft-deleted objects
-     *                     - _published: Only published objects
-     *                     - _ids: Array of IDs/UUIDs to filter by
-     *                     - _count: Return count instead of objects (boolean)
-     *
-     * @phpstan-param array<string, mixed> $query
-     *
-     * @psalm-param array<string, mixed> $query
-     *
-     * @throws \OCP\DB\Exception If a database error occurs
-     *
-     * @return array<int, ObjectEntity>|int An array of ObjectEntity objects matching the criteria, or integer count if _count is true
-     */
-    /**
      * Build a search query from request parameters for faceting-enabled methods
      *
      * This method builds a query structure compatible with the searchObjectsPaginated method
@@ -1784,28 +1778,33 @@ class ObjectService
      * @param int|string|null $schema        Optional schema identifier (should be resolved numeric ID)
      * @param array|null      $ids           Optional array of specific IDs to filter
      *
-     * @return array Query array containing:
-     *               - @self: Metadata filters (register, schema, etc.)
-     *               - Direct keys: Object field filters
-     *               - _limit: Maximum number of items per page
-     *               - _offset: Number of items to skip
-     *               - _page: Current page number
-     *               - _order: Sort parameters
-     *               - _search: Search term
-     *               - _extend: Properties to extend
-     *               - _fields: Fields to include
-     *               - _filter/_unset: Fields to exclude
-     *               - _facets: Facet configuration
-     *               - _facetable: Include facetable field discovery
-     *               - _ids: Specific IDs to filter
-     *
      * @phpstan-param  array<string, mixed> $requestParams
-     * @phpstan-return array<string, mixed>
      * @psalm-param    array<string, mixed> $requestParams
+     *
+     * @return array<string, mixed> Query array containing:
+     *                               - @self: Metadata filters (register, schema, etc.)
+     *                               - Direct keys: Object field filters
+     *                               - _limit: Maximum number of items per page
+     *                               - _offset: Number of items to skip
+     *                               - _page: Current page number
+     *                               - _order: Sort parameters
+     *                               - _search: Search term
+     *                               - _extend: Properties to extend
+     *                               - _fields: Fields to include
+     *                               - _filter/_unset: Fields to exclude
+     *                               - _facets: Facet configuration
+     *                               - _facetable: Include facetable field discovery
+     *                               - _ids: Specific IDs to filter
+     *
+     * @phpstan-return array<string, mixed>
      * @psalm-return   array<string, mixed>
      */
-    public function buildSearchQuery(array $requestParams, int | string | array | null $register=null, int | string | array | null $schema=null, ?array $ids=null): array
-    {
+    public function buildSearchQuery(
+        array $requestParams,
+        int | string | array | null $register=null,
+        int | string | array | null $schema=null,
+        ?array $ids=null
+    ): array {
         // STEP 1: Fix PHP's dot-to-underscore mangling in query parameter names.
         // PHP converts dots to underscores in parameter names, e.g.:.
         // @self.register → @self_register.
@@ -1814,7 +1813,7 @@ class ObjectService
         $fixedParams = [];
         foreach ($requestParams as $key => $value) {
             // Skip parameters that start with underscore (system parameters like _limit, _offset).
-            if (str_starts_with($key, '_')) {
+            if (str_starts_with(haystack: $key, needle: '_') === true) {
                 $fixedParams[$key] = $value;
                 continue;
             }
@@ -1854,13 +1853,25 @@ class ObjectService
         $query = [];
 
         // Extract metadata filters into @self.
-        $metadataFields = ['register', 'schema', 'uuid', 'organisation', 'owner', 'application', 'created', 'updated', 'published', 'depublished', 'deleted'];
+        $metadataFields = [
+            'register',
+            'schema',
+            'uuid',
+            'organisation',
+            'owner',
+            'application',
+            'created',
+            'updated',
+            'published',
+            'depublished',
+            'deleted'
+        ];
         $query['@self'] = [];
 
         // Add register and schema to @self if provided.
         // Support both single values and arrays for multi-register/schema filtering.
-        if ($register !== null) {
-            if (is_array($register)) {
+        if ($register !== null) { // phpcs:ignore
+            if (is_array($register) === true) {
                 // Convert array values to integers.
                 $query['@self']['register'] = array_map('intval', $register);
             } else {
@@ -1868,8 +1879,8 @@ class ObjectService
             }
         }
 
-        if ($schema !== null) {
-            if (is_array($schema)) {
+        if ($schema !== null) { // phpcs:ignore
+            if (is_array($schema) === true) {
                 // Convert array values to integers.
                 $query['@self']['schema'] = array_map('intval', $schema);
             } else {
@@ -1884,9 +1895,9 @@ class ObjectService
         $objectFilters = [];
 
         foreach ($params as $key => $value) {
-            if (str_starts_with($key, '_')) {
+            if (str_starts_with(haystack: $key, needle: '_') === true) {
                 $specialParams[$key] = $value;
-            } else if (in_array($key, $metadataFields)) {
+            } elseif (in_array(needle: $key, haystack: $metadataFields) === true) {
                 // Only add to @self if not already set from function parameters.
                 if (isset($query['@self'][$key]) === false) {
                     $query['@self'][$key] = $value;
@@ -1906,9 +1917,10 @@ class ObjectService
         }
 
         // Support both 'ids' and '_ids' parameters for flexibility.
-        if (isset($specialParams['ids'])) {
+        if (isset($specialParams['ids']) === true) {
             $query['_ids'] = $specialParams['ids'];
-            unset($specialParams['ids']); // Remove to avoid duplication
+            // Remove to avoid duplication.
+            unset($specialParams['ids']);
         }
 
         // Add all special parameters (they'll be handled by searchObjectsPaginated).
@@ -1932,11 +1944,11 @@ class ObjectService
      */
     private function applyViewsToQuery(array $query, array $viewIds): array
     {
-        if (empty($viewIds)) {
+        if (empty($viewIds) === true) {
             return $query;
         }
 
-        $this->logger->debug('[ObjectService] Applying views to query', [
+        $this->logger->debug(message: '[ObjectService] Applying views to query', context: [
             'viewIds' => $viewIds,
             'originalQuery' => array_keys($query),
         ]);
@@ -1965,8 +1977,8 @@ class ObjectService
                 }
 
                 // Apply schemas filter using @self metadata (format ObjectEntityMapper understands).
-                if (!empty($viewQuery['schemas'])) {
-                    if (!isset($query['@self'])) {
+                if (empty($viewQuery['schemas']) === false) {
+                    if (isset($query['@self']) === false) {
                         $query['@self'] = [];
                     }
                     $schemaValue = $query['@self']['schema'] ?? null;
@@ -2024,7 +2036,7 @@ class ObjectService
                     $query['_source'] = $viewQuery['source'];
                 }
 
-                $this->logger->debug('[ObjectService] Applied view to query', [
+                $this->logger->debug(message: '[ObjectService] Applied view to query', context: [
                     'viewId' => $viewId,
                     'viewName' => $view->getName(),
                     'addedFilters' => [
@@ -2035,7 +2047,7 @@ class ObjectService
                 ]);
 
             } catch (\Exception $e) {
-                $this->logger->warning('[ObjectService] Failed to apply view', [
+                $this->logger->warning(message: '[ObjectService] Failed to apply view', context: [
                     'viewId' => $viewId,
                     'error' => $e->getMessage(),
                 ]);
@@ -2043,7 +2055,7 @@ class ObjectService
             }
         }
 
-        $this->logger->info('[ObjectService] Views applied to query', [
+        $this->logger->info(message: '[ObjectService] Views applied to query', context: [
             'viewIds' => $viewIds,
             'resultingFilters' => [
                 'registers' => $query['@self']['register'] ?? null,
@@ -2057,11 +2069,48 @@ class ObjectService
     }//end applyViewsToQuery()
 
 
-    public function searchObjects(array $query=[], bool $rbac=true, bool $multi=true, ?array $ids=null, ?string $uses=null, ?array $views=null): array|int
-    {
+    /**
+     * Search objects using clean query structure
+     *
+     * This method provides a cleaner search interface that uses the new searchObjects
+     * method from ObjectEntityMapper with proper query structure. It automatically
+     * handles metadata filters, object field searches, and search options.
+     *
+     * @param array $query The search query array containing filters and options
+     *                     - @self: Metadata filters (register, schema, uuid, etc.)
+     *                     - Direct keys: Object field filters for JSON data
+     *                     - _limit: Maximum results to return
+     *                     - _offset: Results to skip (pagination)
+     *                     - _order: Sorting criteria
+     *                     - _search: Full-text search term
+     *                     - _includeDeleted: Include soft-deleted objects
+     *                     - _published: Only published objects
+     *                     - _ids: Array of IDs/UUIDs to filter by
+     *                     - _count: Return count instead of objects (boolean)
+     * @param bool  $rbac  Whether to apply RBAC checks (default: true)
+     * @param bool  $multi Whether to apply multitenancy filtering (default: true)
+     * @param array|null $ids   Optional array of IDs to filter by
+     * @param string|null $uses Optional filter by object usage
+     * @param array|null $views Optional view IDs to apply
+     *
+     * @phpstan-param array<string, mixed> $query
+     * @psalm-param array<string, mixed> $query
+     *
+     * @return array<int, ObjectEntity>|int An array of ObjectEntity objects matching the criteria, or integer count if _count is true
+     *
+     * @throws \OCP\DB\Exception If a database error occurs
+     */
+    public function searchObjects(
+        array $query=[],
+        bool $rbac=true,
+        bool $multi=true,
+        ?array $ids=null,
+        ?string $uses=null,
+        ?array $views=null
+    ): array|int {
         // Apply view filters if provided.
-        if ($views !== null && !empty($views)) {
-            $query = $this->applyViewsToQuery($query, $views);
+        if ($views !== null && empty($views) === false) {
+            $query = $this->applyViewsToQuery(query: $query, viewIds: $views);
         }
 
         // **CRITICAL PERFORMANCE OPTIMIZATION**: Detect simple vs complex rendering needs.
@@ -2081,7 +2130,7 @@ class ObjectService
         $dbStart = microtime(true);
         $limit = $query['_limit'] ?? 20;
 
-        $this->logger->info('🔍 MAPPER CALL - Starting database search', [
+        $this->logger->info(message: '🔍 MAPPER CALL - Starting database search', context: [
             'queryKeys' => array_keys($query),
             'rbac' => $rbac,
             'multi' => $multi,
@@ -2091,13 +2140,13 @@ class ObjectService
 
         // **MAPPER CALL TIMING**: Track how long the mapper takes.
         $mapperStart = microtime(true);
-        $result = $this->objectEntityMapper->searchObjects($query, $activeOrganisationUuid, $rbac, $multi, $ids, $uses);
+        $result = $this->objectEntityMapper->searchObjects(query: $query, activeOrganisationUuid: $activeOrganisationUuid, rbac: $rbac, multi: $multi, ids: $ids, uses: $uses);
 
         $resultCount = 'non-array';
         if (is_array($result) === true) {
             $resultCount = count($result);
         }
-        $this->logger->info('✅ MAPPER CALL - Database search completed', [
+        $this->logger->info(message: '✅ MAPPER CALL - Database search completed', context: [
             'resultCount' => $resultCount,
             'mapperTime' => round((microtime(true) - $mapperStart) * 1000, 2) . 'ms',
             'requestUri' => $_SERVER['REQUEST_URI'] ?? 'unknown'
@@ -2108,7 +2157,7 @@ class ObjectService
         if (is_array($result) === true) {
             $resultCount = count($result);
         }
-        $this->logger->debug('Database query completed', [
+        $this->logger->debug(message: 'Database query completed', context: [
             'dbTime' => $dbTime . 'ms',
             'resultCount' => $resultCount,
             'limit' => $limit,
@@ -2116,7 +2165,7 @@ class ObjectService
         ]);
 
         // If _count option was used, return the integer count directly.
-        if (isset($query['_count']) && $query['_count'] === true) {
+        if (isset($query['_count']) === true && $query['_count'] === true) {
             return $result;
         }
 
@@ -2125,7 +2174,7 @@ class ObjectService
 
         // **ULTRA-FAST PATH**: Skip all expensive operations for simple requests.
         if ($hasComplexRendering === false) {
-            $this->logger->debug('Ultra-fast path - skipping all expensive operations', [
+            $this->logger->debug(message: 'Ultra-fast path - skipping all expensive operations', context: [
                 'objectCount' => count($objects),
                 'skipOperations' => ['schema_loading', 'register_loading', 'relationship_preloading', 'complex_rendering']
             ]);
@@ -2170,10 +2219,10 @@ class ObjectService
             }
 
             $simpleRenderTime = round((microtime(true) - $startSimpleRender) * 1000, 2);
-            $this->logger->debug('Ultra-fast rendering completed', [
+            $this->logger->debug(message: 'Ultra-fast rendering completed', context: [
                 'renderTime' => $simpleRenderTime . 'ms',
                 'objectCount' => count($objects),
-                'avgPerObject' => $this->calculateAvgPerObject(count($objects), $simpleRenderTime),
+                'avgPerObject' => $this->calculateAvgPerObject(objectCount: count($objects), renderTime: $simpleRenderTime),
                 'pathType' => 'ultra-fast-minimal'
             ]);
 
@@ -2181,7 +2230,7 @@ class ObjectService
         }
 
         // **COMPLEX RENDERING PATH**: Full operations for requests needing extensions/filtering.
-        $this->logger->debug('Complex rendering path - loading additional context', [
+        $this->logger->debug(message: 'Complex rendering path - loading additional context', context: [
             'objectCount' => count($objects),
             'hasExtend' => $hasExtend,
             'hasFields' => $hasFields,
@@ -2198,7 +2247,7 @@ class ObjectService
         $schemas   = null;
 
         if (empty($registerIds) === false) {
-            $registerEntities = $this->getCachedEntities('register', $registerIds, [$this->registerMapper, 'findMultiple']);
+            $registerEntities = $this->getCachedEntities(entityType: 'register', ids: $registerIds, fallbackFunc: [$this->registerMapper, 'findMultiple']);
 
             // **TYPE SAFETY**: Ensure we have Register objects, not arrays.
             $validRegisters = [];
@@ -2221,13 +2270,13 @@ class ObjectService
             $registers = array_combine(array_map(fn($register) => $register->getId(), $validRegisters), $validRegisters);
         }
 
-        if (!empty($schemaIds)) {
-            $schemaEntities = $this->getCachedEntities('schema', $schemaIds, [$this->schemaMapper, 'findMultiple']);
+        if (empty($schemaIds) === false) {
+            $schemaEntities = $this->getCachedEntities(entityType: 'schema', ids: $schemaIds, fallbackFunc: [$this->schemaMapper, 'findMultiple']);
 
             // **TYPE SAFETY**: Ensure we have Schema objects, not arrays.
             $validSchemas = [];
             foreach ($schemaEntities as $schema) {
-                if (is_array($schema)) {
+                if (is_array($schema) === true) {
                     // Hydrate array back to Schema object.
                     try {
                         $schemaObj = new \OCA\OpenRegister\Db\Schema();
@@ -2247,13 +2296,13 @@ class ObjectService
 
         // Extract extend configuration from query if present.
         $extend = $query['_extend'] ?? [];
-        if (is_string($extend)) {
+        if (is_string($extend) === true) {
             $extend = array_map('trim', explode(',', $extend));
         }
 
         // Extract fields configuration from query if present.
         $fields = $query['_fields'] ?? null;
-        if (is_string($fields)) {
+        if (is_string($fields) === true) {
             $fields = array_map('trim', explode(',', $fields));
         }
 
@@ -2261,34 +2310,37 @@ class ObjectService
 
         // Extract filter configuration from query if present.
         $filter = $query['_filter'] ?? null;
-        if (is_string($filter)) {
+        if (is_string($filter) === true) {
             $filter = array_map('trim', explode(',', $filter));
         }
 
         // Extract unset configuration from query if present.
         $unset = $query['_unset'] ?? null;
-        if (is_string($unset)) {
+        if (is_string($unset) === true) {
             $unset = array_map('trim', explode(',', $unset));
         }
 
         // **PERFORMANCE OPTIMIZATION**: Smart relationship loading with limits to prevent 30s+ load times.
-        if (!empty($extend) && !empty($objects)) {
+        if (empty($extend) === false && empty($objects) === false) {
             $startUltraPreload = microtime(true);
 
             // **CIRCUIT BREAKER**: Add limits to prevent massive relationship loading that causes 30s+ timeouts.
-            $maxObjects = min(count($objects), 50); // Limit to 50 objects max
-            $maxRelationships = 200; // Limit to 200 total relationships max
-            $maxExtends = min(count($extend), 5); // Limit to 5 extend properties max
+            // Limit to 50 objects max.
+            $maxObjects = min(count($objects), 50);
+            // Limit to 200 total relationships max.
+            $maxRelationships = 200;
+            // Limit to 5 extend properties max.
+            $maxExtends = min(count($extend), 5);
 
-            $limitedObjects = array_slice($objects, 0, $maxObjects);
-            $limitedExtends = array_slice($extend, 0, $maxExtends);
+            $limitedObjects = array_slice(array: $objects, offset: 0, length: $maxObjects);
+            $limitedExtends = array_slice(array: $extend, offset: 0, length: $maxExtends);
 
             // Extract relationship IDs with aggressive limits.
-            $allRelationshipIds = $this->extractAllRelationshipIds($limitedObjects, $limitedExtends);
-            $allRelationshipIds = array_slice($allRelationshipIds, 0, $maxRelationships);
+            $allRelationshipIds = $this->extractAllRelationshipIds(objects: $limitedObjects, extend: $limitedExtends);
+            $allRelationshipIds = array_slice(array: $allRelationshipIds, offset: 0, length: $maxRelationships);
 
-            if (!empty($allRelationshipIds)) {
-                $this->logger->info('🚀 PERFORMANCE: Smart relationship loading with limits', [
+            if (empty($allRelationshipIds) === false) {
+                $this->logger->info(message: '🚀 PERFORMANCE: Smart relationship loading with limits', context: [
                     'originalObjects' => count($objects),
                     'limitedObjects' => $maxObjects,
                     'originalExtends' => count($extend),
@@ -2306,7 +2358,7 @@ class ObjectService
                 $this->renderHandler->setUltraPreloadCache($relatedObjectsMap);
 
                 $ultraPreloadTime = round((microtime(true) - $startUltraPreload) * 1000, 2);
-                $this->logger->info('✅ Smart relationship loading completed', [
+                $this->logger->info(message: '✅ Smart relationship loading completed', context: [
                     'ultraPreloadTime' => $ultraPreloadTime . 'ms',
                     'cachedObjects' => count($relatedObjectsMap),
                     'objectsToRender' => count($objects),
@@ -2315,7 +2367,7 @@ class ObjectService
 
                 // **PERFORMANCE ALERT**: Warn if still taking too long.
                 if ($ultraPreloadTime > 1000) {
-                    $this->logger->warning('⚠️  PERFORMANCE WARNING: Relationship loading still slow', [
+                    $this->logger->warning(message: '⚠️  PERFORMANCE WARNING: Relationship loading still slow', context: [
                         'time' => $ultraPreloadTime . 'ms',
                         'suggestion' => 'Consider reducing _extend parameters or object count'
                     ]);
@@ -2323,8 +2375,8 @@ class ObjectService
             }
         } else {
             // **PERFORMANCE OPTIMIZATION**: Log that preloading was skipped for simple requests.
-            if (empty($extend)) {
-                $this->logger->debug('Ultra preload skipped - no extend parameters', [
+            if (empty($extend) === true) {
+                $this->logger->debug(message: 'Ultra preload skipped - no extend parameters', context: [
                     'objectCount' => count($objects),
                     'performanceImpact' => 'significant_improvement'
                 ]);
@@ -2340,7 +2392,7 @@ class ObjectService
         $isLargeDataset = $objectCount > 20 || !empty($extend);
 
         if ($isLargeDataset === true) {
-            $this->logger->info('📊 PERFORMANCE: Large dataset detected, using circuit breakers', [
+            $this->logger->info(message: '📊 PERFORMANCE: Large dataset detected, using circuit breakers', context: [
                 'objectCount' => $objectCount,
                 'hasExtend' => !empty($extend),
                 'renderTimeout' => $maxRenderTime . 'ms',
@@ -2352,7 +2404,7 @@ class ObjectService
             // **CIRCUIT BREAKER**: Stop rendering if taking too long to prevent frontend timeouts.
             $renderElapsed = round((microtime(true) - $startRender) * 1000, 2);
             if ($renderElapsed > $maxRenderTime) {
-                $this->logger->warning('⚠️  RENDER CIRCUIT BREAKER: Stopping early to prevent timeout', [
+                $this->logger->warning(message: '⚠️  RENDER CIRCUIT BREAKER: Stopping early to prevent timeout', context: [
                     'renderTime' => $renderElapsed . 'ms',
                     'processedObjects' => $key,
                     'totalObjects' => $objectCount,
@@ -2366,7 +2418,8 @@ class ObjectService
 
             $objects[$key] = $this->renderHandler->renderEntity(
              entity: $object,
-             extend: $limitedExtends ?? $extend, // Use limited extends if available
+             // Use limited extends if available.
+             extend: $limitedExtends ?? $extend,
              filter: $filter,
              fields: $fields,
              unset: $unset,
@@ -2379,10 +2432,10 @@ class ObjectService
 
         $renderTime = round((microtime(true) - $startRender) * 1000, 2);
         $objectCount = count($objects);
-        $this->logger->debug('Ultra-fast rendering completed', [
+        $this->logger->debug(message: 'Ultra-fast rendering completed', context: [
             'renderTime' => $renderTime . 'ms',
             'objectCount' => $objectCount,
-            'avgPerObject' => $this->calculateAvgPerObject($objectCount, $renderTime),
+            'avgPerObject' => $this->calculateAvgPerObject(objectCount: $objectCount, totalTime: $renderTime),
             'ultraCacheEnabled' => !empty($this->renderHandler->getUltraCacheSize())
         ]);
 
@@ -2398,16 +2451,22 @@ class ObjectService
      * functionality but returns only the count of matching objects. It uses the new
      * countSearchObjects method which is optimized for counting operations.
      *
-     * @param array $query The search query array containing filters and options
-     *                     - @self: Metadata filters (register, schema, uuid, etc.)
-     *                     - Direct keys: Object field filters for JSON data
-     *                     - _includeDeleted: Include soft-deleted objects
-     *                     - _published: Only published objects
-     *                     - _search: Full-text search term
+     * @param array<string, mixed> $query The search query array containing filters and options
+     *                                    - @self: Metadata filters (register, schema, uuid, etc.)
+     *                                    - Direct keys: Object field filters for JSON data
+     *                                    - _includeDeleted: Include soft-deleted objects
+     *                                    - _published: Only published objects
+     *                                    - _search: Full-text search term
+     * @param bool                 $rbac  Whether to apply RBAC checks (default: true)
+     * @param bool                 $multi Whether to apply multitenancy filtering (default: true)
+     * @param array|null           $ids   Optional array of object IDs to filter by
+     * @param string|null          $uses  Optional uses parameter for filtering
      *
      * @phpstan-param array<string, mixed> $query
+     * @phpstan-return int
      *
      * @psalm-param array<string, mixed> $query
+     * @psalm-return int
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
@@ -2422,7 +2481,7 @@ class ObjectService
         }
 
         // Use the new optimized countSearchObjects method from ObjectEntityMapper with organization context.
-        return $this->objectEntityMapper->countSearchObjects($query, $activeOrganisationUuid, $rbac, $multi, $ids, $uses);
+        return $this->objectEntityMapper->countSearchObjects(query: $query, activeOrganisationUuid: $activeOrganisationUuid, rbac: $rbac, multi: $multi, ids: $ids, uses: $uses);
 
     }//end countSearchObjects()
 
@@ -2563,7 +2622,7 @@ class ObjectService
     public function getFacetableFields(array $baseQuery=[], int $sampleSize=100): array
     {
         // **ARCHITECTURAL IMPROVEMENT**: Delegate to dedicated FacetService.
-        return $this->facetService->getFacetableFields($baseQuery, $sampleSize);
+        return $this->facetService->getFacetableFields(baseQuery: $baseQuery, sampleSize: $sampleSize);
 
     }//end getFacetableFields()
 
@@ -2585,9 +2644,9 @@ class ObjectService
     private function loadRegistersAndSchemas(array $query): void
     {
         // Load register context if specified.
-        if (isset($query['@self']['register'])) {
+        if (isset($query['@self']['register']) === true) {
             $registerValue = $query['@self']['register'];
-            if (!is_array($registerValue) && $this->currentRegister === null) {
+            if (is_array($registerValue) === false && $this->currentRegister === null) {
                 try {
                     $this->setRegister($registerValue);
                 } catch (\Exception $e) {
@@ -2597,9 +2656,9 @@ class ObjectService
         }
 
         // Load schema context if specified.
-        if (isset($query['@self']['schema'])) {
+        if (isset($query['@self']['schema']) === true) {
             $schemaValue = $query['@self']['schema'];
-            if (!is_array($schemaValue) && $this->currentSchema === null) {
+            if (is_array($schemaValue) === false && $this->currentSchema === null) {
                 try {
                     $this->setSchema($schemaValue);
                 } catch (\Exception $e) {
@@ -2693,10 +2752,19 @@ class ObjectService
      *                     - _fields: Fields to include
      *                     - _filter/_unset: Fields to exclude
      *                     - _queries: Specific fields for legacy facets
+     * @param bool        $rbac     Whether to apply RBAC checks (default: true)
+     * @param bool        $multi    Whether to apply multitenancy filtering (default: true)
+     * @param bool        $published Whether to filter by published status (default: false)
+     * @param bool        $deleted  Whether to include deleted objects (default: false)
+     * @param array|null  $ids      Optional array of object IDs to filter by
+     * @param string|null $uses     Optional uses parameter for filtering
+     * @param array|null  $views    Optional array of view IDs to apply filters from
      *
      * @phpstan-param array<string, mixed> $query
+     * @phpstan-return array<string, mixed>
      *
      * @psalm-param array<string, mixed> $query
+     * @psalm-return array<string, mixed>
      *
      * @throws \OCP\DB\Exception If a database error occurs
      * @throws \Exception If Solr search fails and cannot be recovered
@@ -2713,37 +2781,52 @@ class ObjectService
      *                              - next: URL for next page (if available)
      *                              - prev: URL for previous page (if available)
      */
-    public function searchObjectsPaginated(array $query=[], bool $rbac=true, bool $multi=true, bool $published=false, bool $deleted=false, ?array $ids=null, ?string $uses=null, ?array $views=null): array
-    {
+    public function searchObjectsPaginated(
+        array $query=[],
+        bool $rbac=true,
+        bool $multi=true,
+        bool $published=false,
+        bool $deleted=false,
+        ?array $ids=null,
+        ?string $uses=null,
+        ?array $views=null
+    ): array {
         // Apply view filters if provided.
-        if ($views !== null && !empty($views)) {
-            $query = $this->applyViewsToQuery($query, $views);
+        if ($views !== null && empty($views) === false) {
+            $query = $this->applyViewsToQuery(query: $query, viewIds: $views);
         }
 
-        // ids and uses are passed as proper parameters, not added to query.
+        // IDs and uses are passed as proper parameters, not added to query.
 
         $requestedSource = $query['_source'] ?? null;
 
         // Simple switch: Use SOLR if explicitly requested OR if SOLR is enabled in config.
         // BUT force database when ids or uses parameters are provided (relation-based searches).
+        $hasIds = isset($query['_ids']) === true;
+        $hasUses = isset($query['_uses']) === true;
+        $hasIdsParam = $ids !== null;
+        $hasUsesParam = $uses !== null;
+        $isSolrRequested = ($requestedSource === 'index' || $requestedSource === 'solr');
+        $isSolrEnabled = $this->isSolrAvailable() === true;
+        $isNotDatabase = $requestedSource !== 'database';
         if (
             (
-                ($requestedSource === 'index' || $requestedSource === 'solr') &&
-                $ids === null && $uses === null &&
-                !isset($query['_ids']) && !isset($query['_uses'])
+                $isSolrRequested === true &&
+                $hasIdsParam === false && $hasUsesParam === false &&
+                $hasIds === false && $hasUses === false
             ) ||
             (
                 $requestedSource === null &&
-                $this->isSolrAvailable() &&
-                $requestedSource !== 'database' &&
-                $ids === null && $uses === null &&
-                !isset($query['_ids']) && !isset($query['_uses'])
+                $isSolrEnabled === true &&
+                $isNotDatabase === true &&
+                $hasIdsParam === false && $hasUsesParam === false &&
+                $hasIds === false && $hasUses === false
             )
         ) {
 
             // Forward to SOLR Object service - let it handle availability checks and error handling.
             $solrService = $this->container->get(SolrObjectService::class);
-            $result = $solrService->searchObjects($query, $rbac, $multi, $published, $deleted);
+            $result = $solrService->searchObjects(query: $query, rbac: $rbac, multi: $multi, published: $published, deleted: $deleted);
             $result['@self']['source'] = 'index';
             $result['@self']['query'] = $query;
             $result['@self']['rbac'] =  $rbac;
@@ -2754,7 +2837,7 @@ class ObjectService
         }
 
         // Use database search.
-        $result = $this->searchObjectsPaginatedDatabase($query, $rbac, $multi, $published, $deleted, $ids, $uses);
+        $result = $this->searchObjectsPaginatedDatabase(query: $query, rbac: $rbac, multi: $multi, published: $published, deleted: $deleted, ids: $ids, uses: $uses);
         $result['@self']['source'] = 'database';
         $result['@self']['query'] = $query;
         $result['@self']['rbac'] =  $rbac;
@@ -2766,7 +2849,9 @@ class ObjectService
     }
 
     /**
-     * Check if Solr is available for use
+     * Check if Solr is available for use.
+     *
+     * @return bool True if Solr is enabled and available, false otherwise
      */
     private function isSolrAvailable(): bool
     {
@@ -2779,10 +2864,27 @@ class ObjectService
     }
 
     /**
-     * Original database search logic - extracted to avoid code duplication
+     * Original database search logic - extracted to avoid code duplication.
+     *
+     * @param array<string, mixed> $query     The search query array
+     * @param bool                 $rbac      Whether to apply RBAC checks (default: true)
+     * @param bool                 $multi     Whether to apply multitenancy filtering (default: true)
+     * @param bool                 $published Whether to filter by published status (default: false)
+     * @param bool                 $deleted   Whether to include deleted objects (default: false)
+     * @param array|null           $ids       Optional array of object IDs to filter by
+     * @param string|null          $uses      Optional uses parameter for filtering
+     *
+     * @return array<string, mixed> Search results with pagination
      */
-    private function searchObjectsPaginatedDatabase(array $query=[], bool $rbac=true, bool $multi=true, bool $published=false, bool $deleted=false, ?array $ids=null, ?string $uses=null): array
-    {
+    private function searchObjectsPaginatedDatabase(
+        array $query=[],
+        bool $rbac=true,
+        bool $multi=true,
+        bool $published=false,
+        bool $deleted=false,
+        ?array $ids=null,
+        ?string $uses=null
+    ): array {
         // **VALIDATION**: Database mode now supports facetable functionality.
         $facetable = $query['_facetable'] ?? false;
         $aggregations = $query['_aggregations'] ?? false;
@@ -2792,7 +2894,7 @@ class ObjectService
         $perfTimings = [];
 
         // **50% PERFORMANCE BOOST**: Early query optimization and request routing.
-        $this->optimizeRequestForPerformance($query, $perfTimings);
+        $this->optimizeRequestForPerformance(query: $query, perfTimings: $perfTimings);
 
         // **REMOVED**: Cache bypass logic removed since SOLR is now our index.
 
@@ -2802,7 +2904,7 @@ class ObjectService
         $includePerformance = ($query['_performance'] ?? false) === true || ($query['_performance'] ?? false) === 'true';
 
         if ($includePerformance === true) {
-            $this->logger->info('📊 PERFORMANCE MONITORING: _performance=true parameter detected', [
+            $this->logger->info(message: '📊 PERFORMANCE MONITORING: _performance=true parameter detected', context: [
                 'requestUri' => $_SERVER['REQUEST_URI'] ?? 'unknown',
                 'purpose' => 'performance_analysis',
                 'note' => 'Response will include detailed performance metrics'
@@ -2828,10 +2930,10 @@ class ObjectService
 
         // **PERFORMANCE OPTIMIZATION**: For complex requests, use async version for better performance.
         if ($isComplexRequest === true) {
-            $this->logger->debug('Complex request detected, using async processing', [
+            $this->logger->debug(message: 'Complex request detected, using async processing', context: [
                 'hasFacets' => $hasFacets,
                 'hasFacetable' => $hasFacetable,
-                'facetCount' => $hasFacets ? count($query['_facets']) : 0
+                'facetCount' => $this->getFacetCount(hasFacets: $hasFacets, query: $query)
             ]);
 
             // Use async version and return synchronous result.
@@ -2839,7 +2941,7 @@ class ObjectService
         }
 
         // **PERFORMANCE OPTIMIZATION**: Simple requests - minimal operations for sub-500ms performance.
-        $this->logger->debug('Simple request detected, using optimized path', [
+        $this->logger->debug(message: 'Simple request detected, using optimized path', context: [
             'limit' => $query['_limit'] ?? 20,
             'hasExtend' => !empty($query['_extend']),
             'hasSearch' => !empty($query['_search'])
@@ -2908,29 +3010,29 @@ class ObjectService
         $includeRelated = filter_var($query['_related'] ?? false, FILTER_VALIDATE_BOOLEAN);
         $includeRelatedNames = filter_var($query['_relatedNames'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
-        if ($includeRelated || $includeRelatedNames) {
-            $relatedData = $this->extractRelatedData($results, $includeRelated, $includeRelatedNames);
+        if ($includeRelated === true || $includeRelatedNames === true) {
+            $relatedData = $this->extractRelatedData(results: $results, includeRelated: $includeRelated, includeRelatedNames: $includeRelatedNames);
             $paginatedResults = array_merge($paginatedResults, $relatedData);
         }
 
         // **PERFORMANCE OPTIMIZATION**: Only add facets if explicitly requested.
-        if (isset($query['_facets']) && !empty($query['_facets'])) {
+        if (isset($query['_facets']) === true && empty($query['_facets']) === false) {
             $paginatedResults['facets'] = ['facets' => []];
         }
 
         // **DEBUG**: Add query to results for debugging purposes.
-        if (isset($query['_debug']) && $query['_debug']) {
+        if (isset($query['_debug']) === true && $query['_debug'] === true) {
             $paginatedResults['query'] = $query;
         }
 
         // **PERFORMANCE OPTIMIZATION**: Add next/prev page URLs efficiently.
-        $this->addPaginationUrls($paginatedResults, $page, $pages);
+        $this->addPaginationUrls(paginatedResults: $paginatedResults, page: $page, pages: $pages);
 
         // Calculate execution time in milliseconds.
         $executionTime = (microtime(true) - $startTime) * 1000;
 
         // **PERFORMANCE LOGGING**: Log performance metrics for simple requests.
-        $this->logger->debug('Simple search completed', [
+        $this->logger->debug(message: 'Simple search completed', context: [
             'totalTime' => round($executionTime, 2) . 'ms',
             'searchTime' => $searchTime . 'ms',
             'countTime' => $countTime . 'ms',
@@ -2939,13 +3041,19 @@ class ObjectService
         ]);
 
         // Log the search trail with actual execution time.
-        $this->logSearchTrail($query, count($results), $total, $executionTime, 'optimized');
+        $this->logSearchTrail(query: $query, resultCount: count($results), totalResults: $total, executionTime: $executionTime, executionType: 'optimized');
 
         // **REMOVED**: Cache storage logic removed since SOLR is now our index.
 
         // **PERFORMANCE MONITORING**: Include performance metrics if requested.
         if ($includePerformance === true) {
             $totalTime = round((microtime(true) - $perfStart) * 1000, 2);
+            
+            // Extract extend configuration from query if present.
+            $extend = $query['_extend'] ?? [];
+            if (is_string($extend) === true) {
+                $extend = array_map('trim', explode(',', $extend));
+            }
 
             $paginatedResults['_performance'] = [
                 'totalTime' => $totalTime,
@@ -2962,17 +3070,17 @@ class ObjectService
                 ],
                 'queryInfo' => [
                     'totalObjects' => count($results),
-                    'totalPages' => $total > 0 ? intval(ceil($total / $limit)) : 1,
+                    'totalPages' => $this->calculateTotalPages(total: $total, limit: $limit),
                     'currentPage' => $page,
                     'limit' => $limit,
                     'hasExtend' => !empty($extend),
                     'extendCount' => count($extend ?? []),
                 ],
-                'recommendations' => $this->getPerformanceRecommendations($totalTime, $perfTimings, $query),
-                'timestamp' => (new \DateTime())->format('c'),
+                'recommendations' => $this->getPerformanceRecommendations(totalTime: $totalTime, perfTimings: $perfTimings, query: $query),
+                'timestamp' => (new \DateTime('now'))->format('c'),
             ];
 
-            $this->logger->info('📊 PERFORMANCE METRICS INCLUDED', [
+            $this->logger->info(message: '📊 PERFORMANCE METRICS INCLUDED', context: [
                 'totalTime' => $totalTime,
                 'objectCount' => count($results),
                 'hasExtend' => !empty($extend),
@@ -3055,8 +3163,8 @@ class ObjectService
 
         // Extend usage recommendations.
         $extendCount = 0;
-        if (!empty($query['_extend'])) {
-            $extendCount = is_array($query['_extend']) ? count($query['_extend']) : count(array_filter(array_map('trim', explode(',', $query['_extend']))));
+        if (empty($query['_extend']) === false) {
+            $extendCount = $this->calculateExtendCount($query['_extend']);
         }
         if ($extendCount > 3) {
             $recommendations[] = [
@@ -3086,7 +3194,7 @@ class ObjectService
         }
 
         // Success case.
-        if ($totalTime <= 500 && empty($recommendations)) {
+        if ($totalTime <= 500 && empty($recommendations) === true) {
             $recommendations[] = [
                 'type' => 'success',
                 'issue' => 'Excellent performance',
@@ -3121,16 +3229,16 @@ class ObjectService
         $isSimpleRequest = $this->isSimpleRequest($query);
         if ($isSimpleRequest === true) {
             $query['_fast_path'] = true;
-            $this->logger->debug('🚀 FAST PATH: Simple request detected', [
+            $this->logger->debug(message: '🚀 FAST PATH: Simple request detected', context: [
                 'benefit' => 'skip_heavy_processing',
                 'estimatedSaving' => '200-300ms'
             ]);
         }
 
         // **OPTIMIZATION 2**: Limit destructive extend operations.
-        if (!empty($query['_extend'])) {
+        if (empty($query['_extend']) === false) {
             // **BUGFIX**: Handle _extend as both string and array for count.
-            if (is_array($query['_extend'])) {
+            if (is_array($query['_extend']) === true) {
                 $originalExtendCount = count($query['_extend']);
             } else {
                 $originalExtendCount = count(array_filter(array_map('trim', explode(',', $query['_extend']))));
@@ -3138,14 +3246,11 @@ class ObjectService
 
             $query['_extend'] = $this->optimizeExtendQueries($query['_extend']);
 
-            if (is_array($query['_extend'])) {
-                $newExtendCount = count($query['_extend']);
-            } else {
-                $newExtendCount = count(array_filter(array_map('trim', explode(',', $query['_extend']))));
-            }
+            // optimizeExtendQueries always returns an array, so no need to check.
+            $newExtendCount = count($query['_extend']);
 
             if ($newExtendCount < $originalExtendCount) {
-                $this->logger->info('⚡ EXTEND OPTIMIZATION: Reduced extend complexity', [
+                $this->logger->info(message: '⚡ EXTEND OPTIMIZATION: Reduced extend complexity', context: [
                     'original' => $originalExtendCount,
                     'optimized' => $newExtendCount,
                     'estimatedSaving' => ($originalExtendCount - $newExtendCount) * 100 . 'ms'
@@ -3176,10 +3281,10 @@ class ObjectService
 
         // **BUGFIX**: Handle _extend as both string and array.
         $extendCount = 0;
-        if (!empty($query['_extend'])) {
-            if (is_array($query['_extend'])) {
+        if (empty($query['_extend']) === false) {
+            if (is_array($query['_extend']) === true) {
                 $extendCount = count($query['_extend']);
-            } elseif (is_string($query['_extend'])) {
+            } elseif (is_string($query['_extend']) === true) {
                 // Count comma-separated extend fields.
                 $extendCount = count(array_filter(array_map('trim', explode(',', $query['_extend']))));
             }
@@ -3190,8 +3295,10 @@ class ObjectService
 
         // Count filter criteria (excluding system parameters).
         $filterCount = 0;
-        foreach ($query as $key => $value) {
-            if (!str_starts_with($key, '_') && !str_starts_with($key, '@')) {
+        foreach (array_keys($query) as $key) {
+            $startsWithUnderscore = str_starts_with(haystack: $key, needle: '_') === true;
+            $startsWithAt = str_starts_with(haystack: $key, needle: '@') === true;
+            if ($startsWithUnderscore === false && $startsWithAt === false) {
                 $filterCount++;
             }
         }
@@ -3210,13 +3317,13 @@ class ObjectService
     private function optimizeExtendQueries($extend): array
     {
         // **BUGFIX**: Handle _extend as both string and array.
-        if (is_string($extend)) {
+        if (is_string($extend) === true) {
             if (trim($extend) === '') {
                 return [];
             }
             // Convert comma-separated string to array.
             $extend = array_filter(array_map('trim', explode(',', $extend)));
-        } elseif (!is_array($extend)) {
+        } elseif (is_array($extend) === false) {
             return [];
         }
 
@@ -3236,7 +3343,7 @@ class ObjectService
 
         // **SMART LIMITING**: Keep maximum 3 extend relationships for sub-500ms performance.
         if (count($optimized) > 3) {
-            $optimized = array_slice($optimized, 0, 3);
+            $optimized = array_slice(array: $optimized, offset: 0, length: 3);
         }
 
         return array_values($optimized);
@@ -3255,19 +3362,19 @@ class ObjectService
 
         try {
             // **CACHE WARMUP**: Preload register and schema if not already cached.
-            if (isset($query['@self']['register'])) {
+            if (isset($query['@self']['register']) === true) {
                 $registerValue = $query['@self']['register'];
                 // Handle both single values and arrays.
-                $registerIds = is_array($registerValue) ? $registerValue : [$registerValue];
+                $registerIds = $this->normalizeToArray($registerValue);
                 $this->getCachedEntities('register', $registerIds, function($ids) {
                     $results = [];
                     foreach ($ids as $id) {
-                        if (is_string($id) || is_int($id)) {
+                        if (is_string($id) === true || is_int($id) === true) {
                             try {
                                 $results[] = $this->registerMapper->find($id);
                             } catch (\Exception $e) {
                                 // Log and skip invalid IDs.
-                                $this->logger->warning('Failed to preload register', ['id' => $id, 'error' => $e->getMessage()]);
+                                $this->logger->warning(message: 'Failed to preload register', context: ['id' => $id, 'error' => $e->getMessage()]);
                             }
                         }
                     }
@@ -3275,19 +3382,19 @@ class ObjectService
                 });
             }
 
-            if (isset($query['@self']['schema'])) {
+            if (isset($query['@self']['schema']) === true) {
                 $schemaValue = $query['@self']['schema'];
                 // Handle both single values and arrays.
-                $schemaIds = is_array($schemaValue) ? $schemaValue : [$schemaValue];
+                $schemaIds = $this->normalizeToArray($schemaValue);
                 $this->getCachedEntities('schema', $schemaIds, function($ids) {
                     $results = [];
                     foreach ($ids as $id) {
-                        if (is_string($id) || is_int($id)) {
+                        if (is_string($id) === true || is_int($id) === true) {
                             try {
                                 $results[] = $this->schemaMapper->find($id);
                             } catch (\Exception $e) {
                                 // Log and skip invalid IDs.
-                                $this->logger->warning('Failed to preload schema', ['id' => $id, 'error' => $e->getMessage()]);
+                                $this->logger->warning(message: 'Failed to preload schema', context: ['id' => $id, 'error' => $e->getMessage()]);
                             }
                         }
                     }
@@ -3297,14 +3404,14 @@ class ObjectService
 
             $preloadTime = round((microtime(true) - $preloadStart) * 1000, 2);
             if ($preloadTime > 0) {
-                $this->logger->debug('🔥 CACHE WARMUP: Critical entities preloaded', [
+                $this->logger->debug(message: '🔥 CACHE WARMUP: Critical entities preloaded', context: [
                     'preloadTime' => $preloadTime . 'ms',
                     'benefit' => 'faster_main_query'
                 ]);
             }
         } catch (\Exception $e) {
             // Preloading failed, continue without cache warmup.
-            $this->logger->debug('Cache warmup failed, continuing', ['error' => $e->getMessage()]);
+            $this->logger->debug(message: 'Cache warmup failed, continuing', context: ['error' => $e->getMessage()]);
         }
     }
 
@@ -3338,7 +3445,7 @@ class ObjectService
             $nextPage = ($page + 1);
             $nextUrl  = preg_replace('/([?&])page=\d+/', '$1page='.$nextPage, $currentUrl);
             if (strpos($nextUrl, 'page=') === false) {
-                $nextUrl .= (strpos($nextUrl, '?') === false ? '?' : '&').'page='.$nextPage;
+                $nextUrl .= $this->getUrlSeparator($nextUrl).'page='.$nextPage;
             }
 
             $paginatedResults['next'] = $nextUrl;
@@ -3349,7 +3456,7 @@ class ObjectService
             $prevPage = ($page - 1);
             $prevUrl  = preg_replace('/([?&])page=\d+/', '$1page='.$prevPage, $currentUrl);
             if (strpos($prevUrl, 'page=') === false) {
-                $prevUrl .= (strpos($prevUrl, '?') === false ? '?' : '&').'page='.$prevPage;
+                $prevUrl .= $this->getUrlSeparator($prevUrl).'page='.$prevPage;
             }
 
             $paginatedResults['prev'] = $prevUrl;
@@ -3384,21 +3491,32 @@ class ObjectService
      * 3. **Facets** (~10ms) - Aggregation calculations
      * 4. **Count** (~5ms) - Total count for pagination
      *
-     * @param array $query The search query array (same structure as searchObjectsPaginated)
+     * @param array<string, mixed> $query     The search query array (same structure as searchObjectsPaginated)
+     * @param bool                 $rbac      Whether to apply RBAC checks (default: true)
+     * @param bool                 $multi     Whether to apply multitenancy filtering (default: true)
+     * @param bool                 $published Whether to filter by published status (default: false)
+     * @param bool                 $deleted   Whether to include deleted objects (default: false)
      *
      * @phpstan-param array<string, mixed> $query
+     * @phpstan-return PromiseInterface<array<string, mixed>>
      *
      * @psalm-param array<string, mixed> $query
+     * @psalm-return PromiseInterface<array<string, mixed>>
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
      * @return PromiseInterface<array<string, mixed>> Promise that resolves to the same structure as searchObjectsPaginated
      */
-    public function searchObjectsPaginatedAsync(array $query=[], bool $rbac=true, bool $multi=true, bool $published=false, bool $deleted=false): PromiseInterface
-    {
+    public function searchObjectsPaginatedAsync(
+        array $query=[],
+        bool $rbac=true,
+        bool $multi=true,
+        bool $published=false,
+        bool $deleted=false
+    ): PromiseInterface {
         // Start timing execution.
         $startTime = microtime(true);
-        $this->logger->debug('Starting searchObjectsPaginatedAsync', ['query_limit' => $query['_limit'] ?? 20]);
+        $this->logger->debug(message: 'Starting searchObjectsPaginatedAsync', context: ['query_limit' => $query['_limit'] ?? 20]);
 
         // Extract pagination parameters (same as synchronous version).
         $limit     = $query['_limit'] ?? 20;
@@ -3447,10 +3565,10 @@ class ObjectService
             $promises['facetable'] = new Promise(
                     function ($resolve, $reject) use ($baseQuery, $sampleSize) {
                         try {
-                            $result = $this->getFacetableFields($baseQuery, $sampleSize);
+                            $result = $this->getFacetableFields(baseQuery: $baseQuery, sampleSize: $sampleSize);
                             $resolve($result);
                         } catch (\Throwable $e) {
-                            $this->logger->error('❌ FACETABLE PROMISE ERROR', [
+                            $this->logger->error(message: '❌ FACETABLE PROMISE ERROR', context: [
                                 'error' => $e->getMessage(),
                                 'trace' => $e->getTraceAsString()
                             ]);
@@ -3465,9 +3583,9 @@ class ObjectService
                 function ($resolve, $reject) use ($paginatedQuery, $rbac, $multi) {
                     try {
                         $searchStart = microtime(true);
-                        $result = $this->searchObjects($paginatedQuery, $rbac, $multi, null, null);
+                        $result = $this->searchObjects(query: $paginatedQuery, rbac: $rbac, multi: $multi, ids: null, uses: null);
                         $searchTime = round((microtime(true) - $searchStart) * 1000, 2);
-                        $this->logger->debug('Search objects completed', [
+                        $this->logger->debug(message: 'Search objects completed', context: [
                             'searchTime' => $searchTime . 'ms',
                             'resultCount' => count($result),
                             'limit' => $paginatedQuery['_limit'] ?? 20
@@ -3495,7 +3613,7 @@ class ObjectService
         $promises['count'] = new Promise(
                 function ($resolve, $reject) use ($countQuery, $rbac, $multi) {
                     try {
-                        $result = $this->countSearchObjects($countQuery, $rbac, $multi);
+                        $result = $this->countSearchObjects(query: $countQuery, rbac: $rbac, multi: $multi);
                         $resolve($result);
                     } catch (\Throwable $e) {
                         $reject($e);
@@ -3539,7 +3657,7 @@ class ObjectService
                         $nextPage = ($page + 1);
                         $nextUrl  = preg_replace('/([?&])page=\d+/', '$1page='.$nextPage, $currentUrl);
                         if (strpos($nextUrl, 'page=') === false) {
-                            $nextUrl .= (strpos($nextUrl, '?') === false ? '?' : '&').'page='.$nextPage;
+                            $nextUrl .= $this->getUrlSeparator($nextUrl).'page='.$nextPage;
                         }
 
                         $paginatedResults['next'] = $nextUrl;
@@ -3550,7 +3668,7 @@ class ObjectService
                         $prevPage = ($page - 1);
                         $prevUrl  = preg_replace('/([?&])page=\d+/', '$1page='.$prevPage, $currentUrl);
                         if (strpos($prevUrl, 'page=') === false) {
-                            $prevUrl .= (strpos($prevUrl, '?') === false ? '?' : '&').'page='.$prevPage;
+                            $prevUrl .= $this->getUrlSeparator($prevUrl).'page='.$prevPage;
                         }
 
                         $paginatedResults['prev'] = $prevUrl;
@@ -3560,7 +3678,7 @@ class ObjectService
                     $executionTime = (microtime(true) - $startTime) * 1000;
 
                     // Log the search trail with actual execution time.
-                    $this->logSearchTrail($query, count($searchResults), $total, $executionTime, 'async');
+                    $this->logSearchTrail(query: $query, resultCount: count($searchResults), totalResults: $total, executionTime: $executionTime, executionType: 'async');
 
                     return $paginatedResults;
                 }
@@ -3577,7 +3695,11 @@ class ObjectService
      * performance benefits of concurrent operations but need to work within
      * synchronous code.
      *
-     * @param array $query The search query array (same structure as searchObjectsPaginated)
+     * @param array<string, mixed> $query     The search query array (same structure as searchObjectsPaginated)
+     * @param bool                 $rbac      Whether to apply RBAC checks (default: true)
+     * @param bool                 $multi     Whether to apply multitenancy filtering (default: true)
+     * @param bool                 $published Whether to filter by published status (default: false)
+     * @param bool                 $deleted   Whether to include deleted objects (default: false)
      *
      * @phpstan-param array<string, mixed> $query
      *
@@ -3590,10 +3712,10 @@ class ObjectService
     public function searchObjectsPaginatedSync(array $query=[], bool $rbac=true, bool $multi=true, bool $published=false, bool $deleted=false): array
     {
         // Execute the async version and wait for the result.
-        $promise = $this->searchObjectsPaginatedAsync($query, $rbac, $multi, $published, $deleted);
+        $promise = $this->searchObjectsPaginatedAsync(query: $query, rbac: $rbac, multi: $multi, published: $published, deleted: $deleted);
 
         // Use React's await functionality to get the result synchronously.
-        // Note: The async version already logs the search trail, so we don't need to log again
+        // Note: The async version already logs the search trail, so we don't need to log again.
         return \React\Async\await($promise);
 
     }//end searchObjectsPaginatedSync()
@@ -3654,14 +3776,32 @@ class ObjectService
      * @param int|null     $depth  Optional depth for rendering
      * @param array|null   $filter Optional filters to apply
      * @param array|null   $fields Optional fields to include
-     * @param bool         $rbac   Whether to apply RBAC checks (default: true).
-     * @param bool         $multi  Whether to apply multitenancy filtering (default: true).
+     * @param array|null   $unset  Optional fields to exclude
+     * @param bool         $rbac   Whether to apply RBAC checks (default: true)
+     * @param bool         $multi  Whether to apply multitenancy filtering (default: true)
      *
-     * @return array The rendered entity.
+     * @return array The rendered entity
      */
-    public function renderEntity(ObjectEntity $entity, ?array $extend=[], ?int $depth=0, ?array $filter=[], ?array $fields=[], ?array $unset=[], bool $rbac=true, bool $multi=true): array
-    {
-        return $this->renderHandler->renderEntity(entity: $entity, extend: $extend, depth: $depth, filter: $filter, fields: $fields, unset: $unset, rbac: $rbac, multi: $multi)->jsonSerialize();
+    public function renderEntity(
+        ObjectEntity $entity,
+        ?array $extend=[],
+        ?int $depth=0,
+        ?array $filter=[],
+        ?array $fields=[],
+        ?array $unset=[],
+        bool $rbac=true,
+        bool $multi=true
+    ): array {
+        return $this->renderHandler->renderEntity(
+            entity: $entity,
+            extend: $extend,
+            depth: $depth,
+            filter: $filter,
+            fields: $fields,
+            unset: $unset,
+            rbac: $rbac,
+            multi: $multi
+        )->jsonSerialize();
 
     }//end renderEntity()
 
@@ -3713,7 +3853,7 @@ class ObjectService
 
         // Add object field filters and create basic facet config.
         foreach ($filters as $key => $value) {
-            if (!in_array($key, ['register', 'schema']) && !str_starts_with($key, '_')) {
+            if (in_array($key, ['register', 'schema']) === false && str_starts_with($key, '_') === false) {
                 $query[$key]            = $value;
                 $query['_facets'][$key] = ['type' => 'terms'];
             }
@@ -3744,7 +3884,7 @@ class ObjectService
      * Publish an object, setting its publication date to now or a specified date.
      *
      * @param string|null    $uuid  The UUID of the object to publish. If null, uses the current object.
-     * @param \DateTime|null $date  Optional publication date. If null, uses current date/time.
+     * @param DateTime|null $date  Optional publication date. If null, uses current date/time.
      * @param bool           $rbac  Whether to apply RBAC checks (default: true).
      * @param bool           $multi Whether to apply multitenancy filtering (default: true).
      *
@@ -3770,7 +3910,7 @@ class ObjectService
      * Depublish an object, setting its depublication date to now or a specified date.
      *
      * @param string|null    $uuid  The UUID of the object to depublish. If null, uses the current object.
-     * @param \DateTime|null $date  Optional depublication date. If null, uses current date/time.
+     * @param DateTime|null $date  Optional depublication date. If null, uses current date/time.
      * @param bool           $rbac  Whether to apply RBAC checks (default: true).
      * @param bool           $multi Whether to apply multitenancy filtering (default: true).
      *
@@ -3924,7 +4064,7 @@ class ObjectService
             $totalAffected = $createdCount + $updatedCount;
 
             if ($totalAffected > 0) {
-                $this->logger->debug('Bulk operation cache invalidation starting', [
+                $this->logger->debug(message: 'Bulk operation cache invalidation starting', context: [
                     'objectsCreated' => $createdCount,
                     'objectsUpdated' => $updatedCount,
                     'totalAffected' => $totalAffected,
@@ -3935,20 +4075,20 @@ class ObjectService
                 // **BULK CACHE COORDINATION**: Invalidate collection caches for affected contexts.
                 // This ensures that GET collection calls immediately see the bulk imported objects.
                 $this->objectCacheService->invalidateForObjectChange(
-                    object: null, // Bulk operation affects multiple objects
+                    object: null, // Bulk operation affects multiple objects.
                     operation: 'bulk_save',
                     registerId: $this->currentRegister?->getId(),
                     schemaId: $this->currentSchema?->getId()
                 );
 
-                $this->logger->debug('Bulk operation cache invalidation completed', [
+                $this->logger->debug(message: 'Bulk operation cache invalidation completed', context: [
                     'totalAffected' => $totalAffected,
                     'cacheInvalidation' => 'success'
                 ]);
             }
         } catch (\Exception $e) {
             // Log cache invalidation errors but don't fail the bulk operation.
-            $this->logger->warning('Bulk operation cache invalidation failed', [
+            $this->logger->warning(message: 'Bulk operation cache invalidation failed', context: [
                 'error' => $e->getMessage(),
                 'totalAffected' => $totalAffected ?? 0
             ]);
@@ -3990,14 +4130,14 @@ class ObjectService
         $config = $schema->getConfiguration();
 
         // PERFORMANCE OPTIMIZATION: Early return if no metadata fields configured.
-        if (empty($config['objectNameField']) && empty($config['objectDescriptionField'])
-            && empty($config['objectSummaryField']) && empty($config['objectImageField'])
-            && empty($config['objectSlugField'])) {
+        if (empty($config['objectNameField']) === true && empty($config['objectDescriptionField']) === true
+            && empty($config['objectSummaryField']) === true && empty($config['objectImageField']) === true
+            && empty($config['objectSlugField']) === true) {
             return $objectData;
         }
 
         // Initialize @self if not exists, but avoid copying if it already exists.
-        if (!isset($objectData['@self'])) {
+        if (isset($objectData['@self']) === false) {
             $objectData['@self'] = [];
         }
 
@@ -4013,10 +4153,10 @@ class ObjectService
         ];
 
         foreach ($metadataFields as $metaField => $sourceField) {
-            if (!empty($sourceField)) {
+            if (empty($sourceField) === false) {
                 if ($metaField === 'slug') {
                     // Special handling for slug - generate from source field value.
-                    $slugValue = $this->getValueFromPath($objectData, $sourceField);
+                    $slugValue = $this->getValueFromPath(data: $objectData, path: $sourceField);
                     if ($slugValue !== null) {
                         $generatedSlug = $this->generateSlugFromValue((string) $slugValue);
                         if ($generatedSlug !== null && $generatedSlug !== '') {
@@ -4026,17 +4166,17 @@ class ObjectService
                 } else if ($metaField === 'image') {
                     // Special handling for image - extract download URL if it's a file object.
                     // IMPORTANT: Object image should use downloadUrl for public access.
-                    $value = $this->getValueFromPath($objectData, $sourceField);
+                    $value = $this->getValueFromPath(data: $objectData, path: $sourceField);
                     if ($value !== null) {
                         // If value is an array of files, use the first file.
-                        if (is_array($value) && isset($value[0]) && is_array($value[0])) {
+                        if (is_array($value) === true && isset($value[0]) === true && is_array($value[0]) === true) {
                             // Array of file objects - prefer downloadUrl, fallback to accessUrl.
-                            if (isset($value[0]['downloadUrl'])) {
+                            if (isset($value[0]['downloadUrl']) === true) {
                                 $objectData['@self'][$metaField] = $value[0]['downloadUrl'];
-                            } else if (isset($value[0]['accessUrl'])) {
+                            } else if (isset($value[0]['accessUrl']) === true) {
                                 $objectData['@self'][$metaField] = $value[0]['accessUrl'];
                             }
-                        } else if (is_array($value) && (isset($value['downloadUrl']) || isset($value['accessUrl']))) {
+                        } else if (is_array($value) === true && (isset($value['downloadUrl']) === true || isset($value['accessUrl']) === true)) {
                             // Single file object - prefer downloadUrl, fallback to accessUrl.
                             $objectData['@self'][$metaField] = $value['downloadUrl'] ?? $value['accessUrl'];
                         } else {
@@ -4046,7 +4186,7 @@ class ObjectService
                     }
                 } else {
                     // Regular metadata field handling.
-                    $value = $this->getValueFromPath($objectData, $sourceField);
+                    $value = $this->getValueFromPath(data: $objectData, path: $sourceField);
                     if ($value !== null) {
                         $objectData['@self'][$metaField] = $value;
                     }
@@ -4081,7 +4221,7 @@ class ObjectService
         $current = $data;
 
         foreach ($keys as $key) {
-            if (is_array($current) && array_key_exists($key, $current)) {
+            if (is_array($current) === true && array_key_exists($key, $current) === true) {
                 $current = $current[$key];
             } else {
                 return null;
@@ -4104,7 +4244,7 @@ class ObjectService
     private function generateSlugFromValue(string $value): ?string
     {
         try {
-            if (empty($value)) {
+            if (empty($value) === true) {
                 return null;
             }
 
@@ -4141,7 +4281,7 @@ class ObjectService
         $text = trim($text, '-');
 
         // Ensure the slug is not empty.
-        if (empty($text)) {
+        if (empty($text) === true) {
             $text = 'object';
         }
 
@@ -4176,13 +4316,13 @@ class ObjectService
     private function handlePostSaveInverseRelations(array $savedObjects, array $schemaCache): void
     {
         $writeBackCount = 0;
-        $bulkWriteBackUpdates = []; // PERFORMANCE OPTIMIZATION: Collect updates for bulk processing
+        $bulkWriteBackUpdates = []; // PERFORMANCE OPTIMIZATION: Collect updates for bulk processing.
 
         foreach ($savedObjects as $savedObject) {
             $objectData = $savedObject->getObject();
             $schemaId   = $savedObject->getSchema();
 
-            if (!isset($schemaCache[$schemaId])) {
+            if (isset($schemaCache[$schemaId]) === false) {
                 continue;
             }
 
@@ -4190,7 +4330,7 @@ class ObjectService
             $schemaProperties = $schema->getProperties();
 
             foreach ($objectData as $property => $value) {
-                if (!isset($schemaProperties[$property])) {
+                if (isset($schemaProperties[$property]) === false) {
                     continue;
                 }
 
@@ -4201,35 +4341,36 @@ class ObjectService
                 $writeBack  = $propertyConfig['writeBack'] ?? ($items['writeBack'] ?? false);
                 $inversedBy = $propertyConfig['inversedBy'] ?? ($items['inversedBy'] ?? null);
 
-                if ($writeBack && $inversedBy && !empty($value)) {
+                if ($writeBack === true && $inversedBy !== null && empty($value) === false) {
                     // Use SaveObject handler's writeBack functionality.
                     try {
                         // Create a temporary object data array for writeBack processing.
                         $writeBackData = [$property => $value];
-                        $this->saveHandler->handleInverseRelationsWriteBack($savedObject, $schema, $writeBackData);
+                        $this->saveHandler->handleInverseRelationsWriteBack(objectEntity: $savedObject, schema: $schema, data: $writeBackData);
                         $writeBackCount++;
 
                         // After writeBack, update the source object's property with the current value.
                         // This ensures the source object reflects the relationship.
                         $currentObjectData = $savedObject->getObject();
-                        if (!isset($currentObjectData[$property]) || $currentObjectData[$property] !== $value) {
+                        if (isset($currentObjectData[$property]) === false || $currentObjectData[$property] !== $value) {
                             $currentObjectData[$property] = $value;
                             $savedObject->setObject($currentObjectData);
 
                             // PERFORMANCE OPTIMIZATION: Collect for bulk update instead of individual UPDATE.
                             $objectUuid = $savedObject->getUuid();
-                            if (!isset($bulkWriteBackUpdates[$objectUuid])) {
+                            if (isset($bulkWriteBackUpdates[$objectUuid]) === false) {
                                 $bulkWriteBackUpdates[$objectUuid] = $savedObject;
                             }
                         }
                     } catch (\Exception $e) {
+                        // Ignore writeBack errors to prevent cascading failures.
                     }
                 }//end if
             }//end foreach
         }//end foreach
 
         // PERFORMANCE OPTIMIZATION: Execute all writeBack updates in a single bulk operation.
-        if (!empty($bulkWriteBackUpdates)) {
+        if (empty($bulkWriteBackUpdates) === false) {
             $this->performBulkWriteBackUpdates(array_values($bulkWriteBackUpdates));
         }
 
@@ -4258,23 +4399,26 @@ class ObjectService
     {
         $filteredObjects = [];
         $currentUser     = $this->userSession->getUser();
-        $userId          = $currentUser ? $currentUser->getUID() : null;
+        $userId = null;
+        if ($currentUser !== null) {
+            $userId = $currentUser->getUID();
+        }
         $activeOrganisation = $this->getActiveOrganisationForContext();
 
         foreach ($objects as $object) {
             $self = $object['@self'] ?? [];
 
             // Check RBAC permissions if enabled.
-            if ($rbac && $userId !== null) {
+            if ($rbac === true && $userId !== null) {
                 $objectOwner  = $self['owner'] ?? null;
                 $objectSchema = $self['schema'] ?? null;
 
                 if ($objectSchema !== null) {
                     try {
                         $schema = $this->schemaMapper->find($objectSchema);
-                        // TODO: Add property-level RBAC check for 'create' action here
+                        // TODO: Add property-level RBAC check for 'create' action here.
                         // Check individual property permissions before allowing property values to be set.
-                        if ($this->hasPermission($schema, 'create', $userId, $objectOwner, $rbac) === false) {
+                        if ($this->hasPermission(schema: $schema, action: 'create', userId: $userId, objectOwner: $objectOwner, rbac: $rbac) === false) {
                             continue;
                             // Skip this object if user doesn't have permission.
                         }
@@ -4286,7 +4430,7 @@ class ObjectService
             }
 
             // Check multi-organization filtering if enabled.
-            if ($multi && $activeOrganisation !== null) {
+            if ($multi === true && $activeOrganisation !== null) {
                 $objectOrganisation = $self['organisation'] ?? null;
                 if ($objectOrganisation !== null && $objectOrganisation !== $activeOrganisation) {
                     continue;
@@ -4320,7 +4464,7 @@ class ObjectService
 
         foreach ($objects as $index => $object) {
             // Check if object has @self section.
-            if (!isset($object['@self']) || !is_array($object['@self'])) {
+            if (isset($object['@self']) === false || is_array($object['@self']) === false) {
                 throw new \InvalidArgumentException(
                     "Object at index {$index} is missing required '@self' section"
                 );
@@ -4330,7 +4474,7 @@ class ObjectService
 
             // Check each required field.
             foreach ($requiredFields as $field) {
-                if (!isset($self[$field]) || empty($self[$field])) {
+                if (isset($self[$field]) === false || empty($self[$field]) === true) {
                     throw new \InvalidArgumentException(
                         "Object at index {$index} is missing required field '{$field}' in @self section"
                     );
@@ -4391,7 +4535,7 @@ class ObjectService
 
         // CRITICAL FIX: Ensure correct property names before hydrating.
         // ObjectEntity expects 'object' property, not 'data'.
-        if (isset($newObjectData['data']) && !isset($newObjectData['object'])) {
+        if (isset($newObjectData['data']) === true && isset($newObjectData['object']) === false) {
             $newObjectData['object'] = $newObjectData['data'];
             unset($newObjectData['data']);
         }
@@ -4527,23 +4671,23 @@ class ObjectService
             // Handle files.
             if ($fileAction === 'transfer' && $sourceObject->getFolder() !== null) {
                 try {
-                    $fileResult = $this->transferObjectFiles($sourceObject, $targetObject);
+                    $fileResult = $this->transferObjectFiles(sourceObject: $sourceObject, targetObject: $targetObject);
                     $mergeReport['actions']['files'] = $fileResult['files'];
                     $mergeReport['statistics']['filesTransferred'] = $fileResult['transferred'];
 
-                    if (!empty($fileResult['errors'])) {
+                    if (empty($fileResult['errors']) === false) {
                         $mergeReport['warnings'] = array_merge($mergeReport['warnings'], $fileResult['errors']);
                     }
                 } catch (\Exception $e) {
                     $mergeReport['warnings'][] = 'Failed to transfer files: '.$e->getMessage();
                 }
-            } else if ($fileAction === 'delete' && $sourceObject->getFolder() !== null) {
+            } elseif ($fileAction === 'delete' && $sourceObject->getFolder() !== null) {
                 try {
                     $deleteResult = $this->deleteObjectFiles($sourceObject);
                     $mergeReport['actions']['files']           = $deleteResult['files'];
                     $mergeReport['statistics']['filesDeleted'] = $deleteResult['deleted'];
 
-                    if (!empty($deleteResult['errors'])) {
+                    if (empty($deleteResult['errors']) === false) {
                         $mergeReport['warnings'] = array_merge($mergeReport['warnings'], $deleteResult['errors']);
                     }
                 } catch (\Exception $e) {
@@ -4558,7 +4702,7 @@ class ObjectService
 
                 $transferredRelations = [];
                 foreach ($sourceRelations as $relation) {
-                    if (!in_array($relation, $targetRelations)) {
+                    if (in_array($relation, $targetRelations) === false) {
                         $targetRelations[]      = $relation;
                         $transferredRelations[] = $relation;
                         $mergeReport['statistics']['relationsTransferred']++;
@@ -4660,7 +4804,7 @@ class ObjectService
             foreach ($sourceFiles as $file) {
                 try {
                     // Skip if not a file.
-                    if (!($file instanceof \OCP\Files\File)) {
+                    if (($file instanceof \OCP\Files\File) === false) {
                         continue;
                     }
 
@@ -4678,7 +4822,7 @@ class ObjectService
                     );
 
                     // Delete original file from source.
-                    $this->fileService->deleteFile($file, $sourceObject);
+                    $this->fileService->deleteFile(file: $file, objectEntity: $sourceObject);
 
                     $result['files'][] = [
                         'name'    => $fileName,
@@ -4730,14 +4874,14 @@ class ObjectService
             foreach ($sourceFiles as $file) {
                 try {
                     // Skip if not a file.
-                    if (!($file instanceof \OCP\Files\File)) {
+                    if (($file instanceof \OCP\Files\File) === false) {
                         continue;
                     }
 
                     $fileName = $file->getName();
 
                     // Delete the file using FileService.
-                    $this->fileService->deleteFile($file, $sourceObject);
+                    $this->fileService->deleteFile(file: $file, objectEntity: $sourceObject);
 
                     $result['files'][] = [
                         'name'    => $fileName,
@@ -4800,17 +4944,17 @@ class ObjectService
         }
 
         // Find properties that have inversedBy configuration.
-        // TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property
+        // TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property.
         $inversedByProperties = array_filter(
             $properties,
             function (array $property) {
                 // Check for inversedBy in array items.
-                if ($property['type'] === 'array' && isset($property['items']['inversedBy'])) {
+                if ($property['type'] === 'array' && isset($property['items']['inversedBy']) === true) {
                     return true;
                 }
 
                 // Check for inversedBy in direct object properties.
-                if (isset($property['inversedBy'])) {
+                if (isset($property['inversedBy']) === true) {
                     return true;
                 }
 
@@ -4819,7 +4963,7 @@ class ObjectService
         );
 
         // Check if we have any inversedBy properties to process.
-        if (empty($inversedByProperties)) {
+        if (count($inversedByProperties) === 0) {
             return [$object, $uuid];
         }
 
@@ -4830,24 +4974,24 @@ class ObjectService
 
         foreach ($inversedByProperties as $propertyName => $definition) {
             // Skip if property not present in data or is empty.
-            if (!isset($object[$propertyName]) || empty($object[$propertyName])) {
+            if (isset($object[$propertyName]) === false || empty($object[$propertyName]) === true) {
                 continue;
             }
 
             $propertyValue = $object[$propertyName];
 
             // Handle array properties.
-            if ($definition['type'] === 'array' && isset($definition['items']['inversedBy'])) {
-                if (is_array($propertyValue) && !empty($propertyValue)) {
+            if ($definition['type'] === 'array' && isset($definition['items']['inversedBy']) === true) {
+                if (is_array($propertyValue) === true && empty($propertyValue) === false) {
                     $createdUuids = [];
                     foreach ($propertyValue as $item) {
-                        if (is_array($item) && !$this->isUuid($item)) {
+                        if (is_array($item) === true && $this->isUuid($item) === false) {
                             // This is a nested object, create it first.
-                            $createdUuid = $this->createRelatedObject($item, $definition['items'], $uuid);
+                            $createdUuid = $this->createRelatedObject(objectData: $item, definition: $definition['items'], parentUuid: $uuid);
 
                             // If creation failed, keep original item to avoid empty array.
                             $createdUuids[] = $createdUuid ?? $item;
-                        } else if (is_string($item) && $this->isUuid($item)) {
+                        } elseif (is_string($item) === true && $this->isUuid($item) === true) {
                             // This is already a UUID, keep it.
                             $createdUuids[] = $item;
                         }
@@ -4855,12 +4999,11 @@ class ObjectService
 
                     $object[$propertyName] = $createdUuids;
                 }
-            }
-            // Handle single object properties.
-            else if (isset($definition['inversedBy']) && $definition['type'] !== 'array') {
-                if (is_array($propertyValue) && !$this->isUuid($propertyValue)) {
+            } elseif (isset($definition['inversedBy']) === true && $definition['type'] !== 'array') {
+                // Handle single object properties.
+                if (is_array($propertyValue) === true && $this->isUuid($propertyValue) === false) {
                     // This is a nested object, create it first.
-                    $createdUuid = $this->createRelatedObject($propertyValue, $definition, $uuid);
+                    $createdUuid = $this->createRelatedObject(objectData: $propertyValue, definition: $definition, parentUuid: $uuid);
 
                     // Only overwrite if creation succeeded.
                     $object[$propertyName] = $createdUuid ?? $propertyValue;
@@ -4893,7 +5036,7 @@ class ObjectService
 
             // Extract schema slug from reference.
             $schemaSlug = null;
-            if (str_contains($schemaRef, '#/components/schemas/')) {
+            if (str_contains($schemaRef, '#/components/schemas/') === true) {
                 $schemaSlug = substr($schemaRef, strrpos($schemaRef, '/') + 1);
             }
 
@@ -4907,7 +5050,7 @@ class ObjectService
             // First try to find by slug using findAll and filtering.
             $allSchemas = $this->schemaMapper->findAll();
             foreach ($allSchemas as $schema) {
-                if (strcasecmp($schema->getSlug(), $schemaSlug) === 0) {
+                if (strcasecmp(string1: $schema->getSlug(), string2: $schemaSlug) === 0) {
                     $targetSchema = $schema;
                     break;
                 }
@@ -4966,7 +5109,7 @@ class ObjectService
         $startTime = microtime(true);
         $relatedData = [];
 
-        if (empty($results)) {
+        if (empty($results) === true) {
             return $relatedData;
         }
 
@@ -4982,14 +5125,14 @@ class ObjectService
 
             // Look for relationship fields in the object data.
             foreach ($objectData as $key => $value) {
-                if (is_array($value)) {
+                if (is_array($value) === true) {
                     // Handle array of IDs.
                     foreach ($value as $relatedId) {
-                        if (is_string($relatedId) && $this->isUuid($relatedId)) {
+                        if (is_string($relatedId) === true && $this->isUuid($relatedId) === true) {
                             $allRelatedIds[] = $relatedId;
                         }
                     }
-                } elseif (is_string($value) && $this->isUuid($value)) {
+                } elseif (is_string($value) === true && $this->isUuid($value) === true) {
                     // Handle single ID.
                     $allRelatedIds[] = $value;
                 }
@@ -5003,7 +5146,7 @@ class ObjectService
             $relatedData['related'] = array_values($allRelatedIds);
         }
 
-        if ($includeRelatedNames && !empty($allRelatedIds)) {
+        if ($includeRelatedNames === true && empty($allRelatedIds) === false) {
             // Get names for all related objects using the object cache service.
             $relatedNames = $this->objectCacheService->getMultipleObjectNames($allRelatedIds);
             $relatedData['relatedNames'] = $relatedNames;
@@ -5011,7 +5154,7 @@ class ObjectService
 
         $executionTime = round((microtime(true) - $startTime) * 1000, 2);
 
-        $this->logger->debug('🔗 RELATED DATA EXTRACTED', [
+        $this->logger->debug(message: '🔗 RELATED DATA EXTRACTED', context: [
             'related_ids_found' => count($allRelatedIds),
             'include_related' => $includeRelated,
             'include_related_names' => $includeRelatedNames,
@@ -5032,7 +5175,7 @@ class ObjectService
      */
     private function isUuid($value): bool
     {
-        if (!is_string($value)) {
+        if (is_string($value) === false) {
             return false;
         }
 
@@ -5086,10 +5229,10 @@ class ObjectService
 
         try {
             // Load source and target registers/schemas.
-            $sourceRegisterEntity = is_string($sourceRegister) || is_int($sourceRegister) ? $this->registerMapper->find($sourceRegister) : $sourceRegister;
-            $sourceSchemaEntity   = is_string($sourceSchema) || is_int($sourceSchema) ? $this->schemaMapper->find($sourceSchema) : $sourceSchema;
-            $targetRegisterEntity = is_string($targetRegister) || is_int($targetRegister) ? $this->registerMapper->find($targetRegister) : $targetRegister;
-            $targetSchemaEntity   = is_string($targetSchema) || is_int($targetSchema) ? $this->schemaMapper->find($targetSchema) : $targetSchema;
+            $sourceRegisterEntity = $this->normalizeEntity(entity: $sourceRegister, type: 'register');
+            $sourceSchemaEntity   = $this->normalizeEntity(entity: $sourceSchema, type: 'schema');
+            $targetRegisterEntity = $this->normalizeEntity(entity: $targetRegister, type: 'register');
+            $targetSchemaEntity   = $this->normalizeEntity(entity: $targetSchema, type: 'schema');
 
             // Validate entities exist.
             if ($sourceRegisterEntity === null || $sourceSchemaEntity === null || $targetRegisterEntity === null || $targetSchemaEntity === null) {
@@ -5134,7 +5277,9 @@ class ObjectService
                         $actualRegister = $sourceObject->getRegister();
                         $actualSchema   = $sourceObject->getSchema();
                         throw new \InvalidArgumentException(
-                            "Object {$objectId} does not belong to the specified source register/schema. "."Expected: register='{$sourceRegister}', schema='{$sourceSchema}'. "."Actual: register='{$actualRegister}', schema='{$actualSchema}'"
+                            "Object {$objectId} does not belong to the specified source register/schema. "
+                            ."Expected: register='{$sourceRegister}', schema='{$sourceSchema}'. "
+                            ."Actual: register='{$actualRegister}', schema='{$actualSchema}'"
                         );
                     }
 
@@ -5142,14 +5287,14 @@ class ObjectService
                     $sourceData = $sourceObject->getObject();
 
                     // Map properties according to mapping configuration.
-                    $mappedData = $this->mapObjectProperties($sourceData, $mapping);
+                    $mappedData = $this->mapObjectProperties(sourceData: $sourceData, mapping: $mapping);
                     $migrationReport['statistics']['propertiesMapped']    += count($mappedData);
                     $migrationReport['statistics']['propertiesDiscarded'] += (count($sourceData) - count($mappedData));
 
                     // Log the mapping result for debugging.
                     $this->logger->debug(
-                            'Object properties mapped',
-                            [
+                            message: 'Object properties mapped',
+                            context: [
                                 'mappedData' => $mappedData,
                             ]
                             );
@@ -5174,7 +5319,7 @@ class ObjectService
                     }
 
                     // Handle relations migration (relations are already on the object).
-                    if (!empty($originalRelations)) {
+                    if (empty($originalRelations) === false) {
                         // Relations are preserved on the object, no additional migration needed.
                     }
 
@@ -5248,7 +5393,7 @@ class ObjectService
         // Simple mapping: keys are target properties, values are source properties.
         foreach ($mapping as $targetProperty => $sourceProperty) {
             // Only map if the source property exists in the source data.
-            if (array_key_exists($sourceProperty, $sourceData)) {
+            if (array_key_exists($sourceProperty, $sourceData) === true) {
                 $mappedData[$targetProperty] = $sourceData[$sourceProperty];
             }
         }
@@ -5281,7 +5426,7 @@ class ObjectService
             foreach ($sourceFiles as $file) {
                 try {
                     // Skip if not a file.
-                    if (!($file instanceof \OCP\Files\File)) {
+                    if (($file instanceof \OCP\Files\File) === false) {
                         continue;
                     }
 
@@ -5324,7 +5469,7 @@ class ObjectService
         try {
             // Copy relations from source to target.
             $sourceRelations = $sourceObject->getRelations();
-            if (!empty($sourceRelations)) {
+            if (empty($sourceRelations) === false) {
                 $targetObject->setRelations($sourceRelations);
                 $this->objectEntityMapper->update($targetObject);
             }
@@ -5374,14 +5519,14 @@ class ObjectService
     {
         try {
             // Only create search trail if search trails are enabled.
-            if ($this->isSearchTrailsEnabled()) {
+            if ($this->isSearchTrailsEnabled() === true) {
                 // Create the search trail entry using the service with actual execution time.
                 $this->searchTrailService->createSearchTrail(
-                    $query,
-                    $resultCount,
-                    $totalResults,
-                    $executionTime,
-                    $executionType
+                    query: $query,
+                    resultCount: $resultCount,
+                    totalResults: $totalResults,
+                    executionTime: $executionTime,
+                    executionType: $executionType
                 );
             }
         } catch (\Exception $e) {
@@ -5391,14 +5536,24 @@ class ObjectService
     }//end logSearchTrail()
 
 
+    /**
+     * Clean and normalize query parameters
+     *
+     * @param array<string, mixed> $parameters Query parameters to clean
+     *
+     * @return array<string, mixed> Cleaned query parameters
+     */
     private function cleanQuery(array $parameters): array
     {
         $newParameters = [];
 
         // 1. Handle ordering.
-        if (isset($parameters['ordering'])) {
+        if (isset($parameters['ordering']) === true) {
             $ordering  = $parameters['ordering'];
-            $direction = str_starts_with($ordering, '-') ? 'DESC' : 'ASC';
+            $direction = 'ASC';
+            if (str_starts_with($ordering, '-') === true) {
+                $direction = 'DESC';
+            }
             $field     = ltrim($ordering, '-');
             $newParameters['_order'] = [$field => $direction];
             unset($parameters['ordering']);
@@ -5412,8 +5567,9 @@ class ObjectService
 
         // 3. Process parameters (no nested loops).
         foreach ($normalized as $key => $value) {
-            if (preg_match('/^(.*)_(in|gt|lt|gte|lte|isnull)$/', $key, $matches)) {
-                [$_, $base, $suffix] = $matches;
+            if (preg_match('/^(.*)_(in|gt|lt|gte|lte|isnull)$/', $key, $matches) === 1) {
+                $fullMatch = $matches[0];
+                [$fullMatch, $base, $suffix] = $matches;
 
                 switch ($suffix) {
                     case 'in':
@@ -5425,7 +5581,10 @@ class ObjectService
                         break;
 
                     case 'isnull':
-                        $newParameters[$base] = $value === true ? 'IS NULL' : 'IS NOT NULL';
+                        $newParameters[$base] = 'IS NOT NULL';
+                        if ($value === true) {
+                            $newParameters[$base] = 'IS NULL';
+                        }
                         break;
                 }
             } else {
@@ -5459,13 +5618,13 @@ class ObjectService
      */
     public function deleteObjects(array $uuids=[], bool $rbac=true, bool $multi=true): array
     {
-        if (empty($uuids)) {
+        if (empty($uuids) === true) {
             return [];
         }
 
         // Apply RBAC and multi-organization filtering if enabled.
-        if ($rbac || $multi) {
-            $filteredUuids = $this->filterUuidsForPermissions($uuids, $rbac, $multi);
+        if ($rbac === true || $multi === true) {
+            $filteredUuids = $this->filterUuidsForPermissions(uuids: $uuids, rbac: $rbac, multi: $multi);
         } else {
             $filteredUuids = $uuids;
         }
@@ -5474,26 +5633,26 @@ class ObjectService
         $deletedObjectIds = $this->objectEntityMapper->deleteObjects($filteredUuids);
 
         // **BULK CACHE INVALIDATION**: Clear collection caches after bulk delete operations.
-        if (!empty($deletedObjectIds)) {
+        if (empty($deletedObjectIds) === false) {
             try {
-                $this->logger->debug('Bulk delete cache invalidation starting', [
+                $this->logger->debug(message: 'Bulk delete cache invalidation starting', context: [
                     'deletedCount' => count($deletedObjectIds),
-                    'operation' => 'bulk_delete'
+                    'operation' => 'bulk_delete',
                 ]);
 
                 $this->objectCacheService->invalidateForObjectChange(
-                    object: null, // Bulk operation affects multiple objects
+                    object: null, // Bulk operation affects multiple objects.
                     operation: 'bulk_delete',
-                    registerId: null, // Affects multiple registers potentially
-                    schemaId: null   // Affects multiple schemas potentially
+                    registerId: null, // Affects multiple registers potentially.
+                    schemaId: null   // Affects multiple schemas potentially.
                 );
 
-                $this->logger->debug('Bulk delete cache invalidation completed', [
+                $this->logger->debug(message: 'Bulk delete cache invalidation completed', context: [
                     'deletedCount' => count($deletedObjectIds),
                     'cacheInvalidation' => 'success'
                 ]);
             } catch (\Exception $e) {
-                $this->logger->warning('Bulk delete cache invalidation failed', [
+                $this->logger->warning(message: 'Bulk delete cache invalidation failed', context: [
                     'error' => $e->getMessage(),
                     'deletedCount' => count($deletedObjectIds)
                 ]);
@@ -5526,41 +5685,41 @@ class ObjectService
      */
     public function publishObjects(array $uuids=[], \DateTime|bool $datetime=true, bool $rbac=true, bool $multi=true): array
     {
-        if (empty($uuids)) {
+        if (empty($uuids) === true) {
             return [];
         }
 
         // Apply RBAC and multi-organization filtering if enabled.
-        if ($rbac || $multi) {
-            $filteredUuids = $this->filterUuidsForPermissions($uuids, $rbac, $multi);
+        if ($rbac === true || $multi === true) {
+            $filteredUuids = $this->filterUuidsForPermissions(uuids: $uuids, rbac: $rbac, multi: $multi);
         } else {
             $filteredUuids = $uuids;
         }
 
         // Use the mapper's bulk publish operation.
-        $publishedObjectIds = $this->objectEntityMapper->publishObjects($filteredUuids, $datetime);
+        $publishedObjectIds = $this->objectEntityMapper->publishObjects(uuids: $filteredUuids, datetime: $datetime);
 
         // **BULK CACHE INVALIDATION**: Clear collection caches after bulk publish operations.
-        if (!empty($publishedObjectIds)) {
+        if (empty($publishedObjectIds) === false) {
             try {
-                $this->logger->debug('Bulk publish cache invalidation starting', [
+                $this->logger->debug(message: 'Bulk publish cache invalidation starting', context: [
                     'publishedCount' => count($publishedObjectIds),
-                    'operation' => 'bulk_publish'
+                    'operation' => 'bulk_publish',
                 ]);
 
                 $this->objectCacheService->invalidateForObjectChange(
-                    object: null, // Bulk operation affects multiple objects
+                    object: null, // Bulk operation affects multiple objects.
                     operation: 'bulk_publish',
-                    registerId: null, // Affects multiple registers potentially
-                    schemaId: null   // Affects multiple schemas potentially
+                    registerId: null, // Affects multiple registers potentially.
+                    schemaId: null   // Affects multiple schemas potentially.
                 );
 
-                $this->logger->debug('Bulk publish cache invalidation completed', [
+                $this->logger->debug(message: 'Bulk publish cache invalidation completed', context: [
                     'publishedCount' => count($publishedObjectIds),
                     'cacheInvalidation' => 'success'
                 ]);
             } catch (\Exception $e) {
-                $this->logger->warning('Bulk publish cache invalidation failed', [
+                $this->logger->warning(message: 'Bulk publish cache invalidation failed', context: [
                     'error' => $e->getMessage(),
                     'publishedCount' => count($publishedObjectIds)
                 ]);
@@ -5593,41 +5752,41 @@ class ObjectService
      */
     public function depublishObjects(array $uuids=[], \DateTime|bool $datetime=true, bool $rbac=true, bool $multi=true): array
     {
-        if (empty($uuids)) {
+        if (empty($uuids) === true) {
             return [];
         }
 
         // Apply RBAC and multi-organization filtering if enabled.
-        if ($rbac || $multi) {
-            $filteredUuids = $this->filterUuidsForPermissions($uuids, $rbac, $multi);
+        if ($rbac === true || $multi === true) {
+            $filteredUuids = $this->filterUuidsForPermissions(uuids: $uuids, rbac: $rbac, multi: $multi);
         } else {
             $filteredUuids = $uuids;
         }
 
         // Use the mapper's bulk depublish operation.
-        $depublishedObjectIds = $this->objectEntityMapper->depublishObjects($filteredUuids, $datetime);
+        $depublishedObjectIds = $this->objectEntityMapper->depublishObjects(uuids: $filteredUuids, datetime: $datetime);
 
         // **BULK CACHE INVALIDATION**: Clear collection caches after bulk depublish operations.
-        if (!empty($depublishedObjectIds)) {
+        if (empty($depublishedObjectIds) === false) {
             try {
-                $this->logger->debug('Bulk depublish cache invalidation starting', [
+                $this->logger->debug(message: 'Bulk depublish cache invalidation starting', context: [
                     'depublishedCount' => count($depublishedObjectIds),
-                    'operation' => 'bulk_depublish'
+                    'operation' => 'bulk_depublish',
                 ]);
 
                 $this->objectCacheService->invalidateForObjectChange(
-                    object: null, // Bulk operation affects multiple objects
+                    object: null, // Bulk operation affects multiple objects.
                     operation: 'bulk_depublish',
                     registerId: null, // Affects multiple registers potentially
                     schemaId: null   // Affects multiple schemas potentially
                 );
 
-                $this->logger->debug('Bulk depublish cache invalidation completed', [
+                $this->logger->debug(message: 'Bulk depublish cache invalidation completed', context: [
                     'depublishedCount' => count($depublishedObjectIds),
                     'cacheInvalidation' => 'success'
                 ]);
             } catch (\Exception $e) {
-                $this->logger->warning('Bulk depublish cache invalidation failed', [
+                $this->logger->warning(message: 'Bulk depublish cache invalidation failed', context: [
                     'error' => $e->getMessage(),
                     'depublishedCount' => count($depublishedObjectIds)
                 ]);
@@ -5658,12 +5817,12 @@ class ObjectService
     public function publishObjectsBySchema(int $schemaId, bool $publishAll = false): array
     {
         // Use the mapper's schema publishing operation.
-        $result = $this->objectEntityMapper->publishObjectsBySchema($schemaId, $publishAll);
+        $result = $this->objectEntityMapper->publishObjectsBySchema(schemaId: $schemaId, publishAll: $publishAll);
 
         // **BULK CACHE INVALIDATION**: Clear collection caches after bulk publish operations.
         if ($result['published_count'] > 0) {
             try {
-                $this->logger->debug('Schema objects publishing cache invalidation starting', [
+                $this->logger->debug(message: 'Schema objects publishing cache invalidation starting', context: [
                     'publishedCount' => $result['published_count'],
                     'schemaId' => $schemaId,
                     'operation' => 'schema_publish',
@@ -5677,13 +5836,13 @@ class ObjectService
                     schemaId: $schemaId
                 );
 
-                $this->logger->debug('Schema objects publishing cache invalidation completed', [
+                $this->logger->debug(message: 'Schema objects publishing cache invalidation completed', context: [
                     'publishedCount' => $result['published_count'],
                     'schemaId' => $schemaId,
                     'publishAll' => $publishAll
                 ]);
             } catch (\Exception $e) {
-                $this->logger->warning('Schema objects publishing cache invalidation failed', [
+                $this->logger->warning(message: 'Schema objects publishing cache invalidation failed', context: [
                     'error' => $e->getMessage(),
                     'schemaId' => $schemaId,
                     'publishedCount' => $result['published_count'],
@@ -5716,12 +5875,12 @@ class ObjectService
     public function deleteObjectsBySchema(int $schemaId, bool $hardDelete = false): array
     {
         // Use the mapper's schema deletion operation.
-        $result = $this->objectEntityMapper->deleteObjectsBySchema($schemaId, $hardDelete);
+        $result = $this->objectEntityMapper->deleteObjectsBySchema(schemaId: $schemaId, hardDelete: $hardDelete);
 
         // **BULK CACHE INVALIDATION**: Clear collection caches after bulk delete operations.
         if ($result['deleted_count'] > 0) {
             try {
-                $this->logger->debug('Schema objects deletion cache invalidation starting', [
+                $this->logger->debug(message: 'Schema objects deletion cache invalidation starting', context: [
                     'deletedCount' => $result['deleted_count'],
                     'schemaId' => $schemaId,
                     'operation' => 'schema_delete',
@@ -5735,13 +5894,13 @@ class ObjectService
                     schemaId: $schemaId
                 );
 
-                $this->logger->debug('Schema objects deletion cache invalidation completed', [
+                $this->logger->debug(message: 'Schema objects deletion cache invalidation completed', context: [
                     'deletedCount' => $result['deleted_count'],
                     'schemaId' => $schemaId,
                     'hardDelete' => $hardDelete
                 ]);
             } catch (\Exception $e) {
-                $this->logger->warning('Schema objects deletion cache invalidation failed', [
+                $this->logger->warning(message: 'Schema objects deletion cache invalidation failed', context: [
                     'error' => $e->getMessage(),
                     'schemaId' => $schemaId,
                     'deletedCount' => $result['deleted_count'],
@@ -5778,7 +5937,7 @@ class ObjectService
         // **BULK CACHE INVALIDATION**: Clear collection caches after bulk delete operations.
         if ($result['deleted_count'] > 0) {
             try {
-                $this->logger->debug('Register objects deletion cache invalidation starting', [
+                $this->logger->debug(message: 'Register objects deletion cache invalidation starting', context: [
                     'deletedCount' => $result['deleted_count'],
                     'registerId' => $registerId,
                     'operation' => 'register_delete'
@@ -5791,12 +5950,12 @@ class ObjectService
                     schemaId: null
                 );
 
-                $this->logger->debug('Register objects deletion cache invalidation completed', [
+                $this->logger->debug(message: 'Register objects deletion cache invalidation completed', context: [
                     'deletedCount' => $result['deleted_count'],
                     'registerId' => $registerId
                 ]);
             } catch (\Exception $e) {
-                $this->logger->warning('Register objects deletion cache invalidation failed', [
+                $this->logger->warning(message: 'Register objects deletion cache invalidation failed', context: [
                     'error' => $e->getMessage(),
                     'registerId' => $registerId,
                     'deletedCount' => $result['deleted_count']
@@ -5821,8 +5980,10 @@ class ObjectService
      *
      * @throws \Exception If the validation operation fails
      *
-     * @phpstan-return array{valid_count: int, invalid_count: int, valid_objects: array<int, array>, invalid_objects: array<int, array>, schema_id: int}
-     * @psalm-return array{valid_count: int, invalid_count: int, valid_objects: array<int, array>, invalid_objects: array<int, array>, schema_id: int}
+     * @phpstan-return array{valid_count: int, invalid_count: int, valid_objects: array<int, array>,
+     *                      invalid_objects: array<int, array>, schema_id: int}
+     * @psalm-return array{valid_count: int, invalid_count: int, valid_objects: array<int, array>,
+     *                    invalid_objects: array<int, array>, schema_id: int}
      */
     public function validateObjectsBySchema(int $schemaId): array
     {
@@ -5912,14 +6073,17 @@ class ObjectService
      *
      * @phpstan-param  array<int, string> $uuids
      * @psalm-param    array<int, string> $uuids
-     * @phpstan-return array<int, string>
-     * @psalm-return   array<int, string>
+     * @phpstan-return list<string>
+     * @psalm-return   list<string>
      */
     private function filterUuidsForPermissions(array $uuids, bool $rbac, bool $multi): array
     {
         $filteredUuids = [];
         $currentUser   = $this->userSession->getUser();
-        $userId        = $currentUser ? $currentUser->getUID() : null;
+        $userId = null;
+        if ($currentUser !== null) {
+            $userId = $currentUser->getUID();
+        }
         $activeOrganisation = $this->getActiveOrganisationForContext();
 
         // Get objects for permission checking.
@@ -5929,7 +6093,7 @@ class ObjectService
             $objectUuid = $object->getUuid();
 
             // Check RBAC permissions if enabled.
-            if ($rbac && $userId !== null) {
+            if ($rbac === true && $userId !== null) {
                 $objectOwner  = $object->getOwner();
                 $objectSchema = $object->getSchema();
 
@@ -5939,31 +6103,33 @@ class ObjectService
 
                         // TODO: Add property-level RBAC check for 'delete' action here
                         // Check if user has permission to delete objects with specific property values.
-                        if ($this->hasPermission($schema, 'delete', $userId, $objectOwner, $rbac) === false) {
+                        if ($this->hasPermission(schema: $schema, action: 'delete', userId: $userId, objectOwner: $objectOwner, rbac: $rbac) === false) {
                             continue;
                             // Skip this object - no permission.
                         }
                     } catch (DoesNotExistException $e) {
-                        continue;
                         // Skip this object - schema not found.
+                        continue;
                     }
                 }
             }
 
             // Check multi-organization permissions if enabled.
-            if ($multi && $activeOrganisation !== null) {
+            if ($multi === true && $activeOrganisation !== null) {
                 $objectOrganisation = $object->getOrganisation();
 
                 if ($objectOrganisation !== null && $objectOrganisation !== $activeOrganisation) {
-                    continue;
                     // Skip this object - different organization.
+                    continue;
                 }
             }
 
-            $filteredUuids[] = $objectUuid;
+            if ($objectUuid !== null) {
+                $filteredUuids[] = $objectUuid;
+            }
         }//end foreach
 
-        return $filteredUuids;
+        return array_values(array_filter($filteredUuids, fn($uuid) => $uuid !== null));
 
     }//end filterUuidsForPermissions()
 
@@ -6001,7 +6167,7 @@ class ObjectService
             // Check database response time (simple heuristic).
             $start = microtime(true);
             try {
-                $this->objectEntityMapper->countAll([], null, [], null, false, null, null, null, false, false);
+                $this->objectEntityMapper->countAll(filters: [], search: null, ids: [], uses: null, includeDeleted: false, activeOrganisationUuid: null, rbac: null, multi: null, published: false, deleted: false);
                 $dbTime = (microtime(true) - $start) * 1000; // Convert to milliseconds
 
                 // If a simple count takes more than 50ms, consider it slow.
@@ -6014,7 +6180,7 @@ class ObjectService
                     $environmentScore += 3;
                 }
             } catch (\Exception $e) {
-                // If we can't measure, assume potentially slow.
+                // If we can't measure, assume potentially slow environment.
                 $environmentScore += 1;
             }
 
@@ -6025,7 +6191,7 @@ class ObjectService
             }
 
             // Log detection result for monitoring.
-            $this->logger->debug('Environment performance detection', [
+            $this->logger->debug(message: 'Environment performance detection', context: [
                 'score' => $environmentScore,
                 'dbTime' => $dbTime ?? 'unknown',
                 'memoryLimit' => $memoryLimit,
@@ -6124,14 +6290,14 @@ class ObjectService
         // Determine optimal batch size based on dataset and resources.
         $batchSize = $this->calculateOptimalBatchSize($totalObjects);
 
-        $this->logger->debug('Parallel rendering configuration', [
+        $this->logger->debug(message: 'Parallel rendering configuration', context: [
             'totalObjects' => $totalObjects,
             'batchSize' => $batchSize,
             'batchCount' => ceil($totalObjects / $batchSize)
         ]);
 
         // Split objects into batches for parallel processing.
-        $batches = array_chunk($objects, $batchSize, true);
+        $batches = array_chunk(array: $objects, length: $batchSize, preserve_keys: true);
         $promises = [];
 
         // Create promises for each batch.
@@ -6158,7 +6324,7 @@ class ObjectService
                         }
 
                         $batchTime = round((microtime(true) - $startBatch) * 1000, 2);
-                        $this->logger->debug('Batch rendering completed', [
+                        $this->logger->debug(message: 'Batch rendering completed', context: [
                             'batchIndex' => $batchIndex,
                             'objectsInBatch' => count($batch),
                             'executionTime' => $batchTime . 'ms'
@@ -6166,7 +6332,7 @@ class ObjectService
 
                         $resolve($renderedBatch);
                     } catch (\Throwable $e) {
-                        $this->logger->error('Batch rendering failed', [
+                        $this->logger->error(message: 'Batch rendering failed', context: [
                             'batchIndex' => $batchIndex,
                             'exception' => $e->getMessage()
                         ]);
@@ -6210,13 +6376,13 @@ class ObjectService
     {
         // Base batch size calculation based on dataset size.
         if ($totalObjects <= 50) {
-            return 10; // Small datasets: small batches for quick turnaround
+            return 10; // Small datasets: small batches for quick turnaround.
         } elseif ($totalObjects <= 200) {
-            return 25; // Medium datasets: balanced batches
+            return 25; // Medium datasets: balanced batches.
         } elseif ($totalObjects <= 500) {
-            return 50; // Large datasets: bigger batches for efficiency
+            return 50; // Large datasets: bigger batches for efficiency.
         } else {
-            return 100; // Very large datasets: maximum efficiency batches
+            return 100; // Very large datasets: maximum efficiency batches.
         }
 
         // Note: PHP's ReactPHP doesn't provide true parallelism (due to GIL-like behavior)
@@ -6258,11 +6424,11 @@ class ObjectService
             $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 10);
 
             foreach ($trace as $frame) {
-                if (isset($frame['file'])) {
+                if (isset($frame['file']) === true) {
                     $filePath = $frame['file'];
 
                     // Look for app patterns in the file path.
-                    if (preg_match('#/apps/([^/]+)/#', $filePath, $matches)) {
+                    if (preg_match('#/apps/([^/]+)/#', $filePath, $matches) === 1) {
                         $detectedApp = $matches[1];
 
                         // Skip if it's our own app.
@@ -6272,7 +6438,7 @@ class ObjectService
                     }
 
                     // Look for apps-extra patterns.
-                    if (preg_match('#/apps-extra/([^/]+)/#', $filePath, $matches)) {
+                    if (preg_match('#/apps-extra/([^/]+)/#', $filePath, $matches) === 1) {
                         $detectedApp = $matches[1];
 
                         // Skip if it's our own app.
@@ -6318,7 +6484,7 @@ class ObjectService
         foreach ($objects as $objectIndex => $object) {
             // **PERFORMANCE BYPASS**: Stop early if we've extracted enough.
             if ($extractedCount >= $maxIds) {
-                $this->logger->info('🛑 RELATIONSHIP EXTRACTION: Stopped early to prevent timeout', [
+                $this->logger->info(message: '🛑 RELATIONSHIP EXTRACTION: Stopped early to prevent timeout', context: [
                     'extractedIds' => $extractedCount,
                     'maxIds' => $maxIds,
                     'processedObjects' => $objectIndex,
@@ -6331,15 +6497,15 @@ class ObjectService
             $objectData = $object->getObject();
 
             foreach ($extend as $extendProperty) {
-                if (isset($objectData[$extendProperty])) {
+                if (isset($objectData[$extendProperty]) === true) {
                     $value = $objectData[$extendProperty];
 
-                    if (is_array($value)) {
+                    if (is_array($value) === true) {
                         // **PERFORMANCE LIMIT**: Limit array relationships per object.
-                        $limitedArray = array_slice($value, 0, 10); // Max 10 relationships per array
+                        $limitedArray = array_slice(array: $value, offset: 0, length: 10); // Max 10 relationships per array.
 
                         foreach ($limitedArray as $id) {
-                            if (!empty($id) && is_string($id)) {
+                            if (empty($id) === false && is_string($id) === true) {
                                 $allIds[] = $id;
                                 $extractedCount++;
 
@@ -6352,7 +6518,7 @@ class ObjectService
 
                         // Log if we had to limit the array.
                         if (count($value) > 10) {
-                            $this->logger->debug('🔪 PERFORMANCE: Limited relationship array', [
+                            $this->logger->debug(message: '🔪 PERFORMANCE: Limited relationship array', context: [
                                 'property' => $extendProperty,
                                 'originalCount' => count($value),
                                 'limitedTo' => count($limitedArray),
@@ -6360,7 +6526,7 @@ class ObjectService
                             ]);
                         }
 
-                    } elseif (is_string($value) && !empty($value)) {
+                    } elseif (is_string($value) === true && empty($value) === false) {
                         // Handle single relationship ID.
                         $allIds[] = $value;
                         $extractedCount++;
@@ -6377,7 +6543,7 @@ class ObjectService
         // Remove duplicates and return unique IDs.
         $uniqueIds = array_unique($allIds);
 
-        $this->logger->info('🔍 RELATIONSHIP EXTRACTION: Completed with limits', [
+        $this->logger->info(message: '🔍 RELATIONSHIP EXTRACTION: Completed with limits', context: [
             'totalExtracted' => count($allIds),
             'uniqueIds' => count($uniqueIds),
             'maxAllowed' => $maxIds,
@@ -6406,7 +6572,7 @@ class ObjectService
      */
     private function bulkLoadRelationshipsBatched(array $relationshipIds): array
     {
-        if (empty($relationshipIds)) {
+        if (count($relationshipIds) === 0) {
             return [];
         }
 
@@ -6416,9 +6582,9 @@ class ObjectService
         $lookupMap = [];
         $startTime = microtime(true);
 
-        $batches = array_chunk($relationshipIds, $batchSize);
+        $batches = array_chunk(array: $relationshipIds, length: $batchSize);
 
-        $this->logger->info('🔄 BATCHED LOADING: Processing relationship batches', [
+        $this->logger->info(message: '🔄 BATCHED LOADING: Processing relationship batches', context: [
             'totalIds' => count($relationshipIds),
             'batchCount' => count($batches),
             'batchSize' => $batchSize,
@@ -6431,7 +6597,7 @@ class ObjectService
             // **CIRCUIT BREAKER**: Stop if we've been running too long.
             $elapsedTime = round((microtime(true) - $startTime) * 1000, 2);
             if ($elapsedTime > 5000) { // 5 second total timeout
-                $this->logger->warning('⚠️  CIRCUIT BREAKER: Stopping relationship loading to prevent timeout', [
+                $this->logger->warning(message: '⚠️  CIRCUIT BREAKER: Stopping relationship loading to prevent timeout', context: [
                     'elapsedTime' => $elapsedTime . 'ms',
                     'processedBatches' => $batchIndex,
                     'totalBatches' => count($batches),
@@ -6468,7 +6634,7 @@ class ObjectService
 
                 // **PERFORMANCE MONITORING**: Log slow batches.
                 if ($batchTime > 500) {
-                    $this->logger->warning('⚠️  SLOW BATCH: Relationship batch taking too long', [
+                    $this->logger->warning(message: '⚠️  SLOW BATCH: Relationship batch taking too long', context: [
                         'batchIndex' => $batchIndex,
                         'batchTime' => $batchTime . 'ms',
                         'batchSize' => count($batch),
@@ -6477,7 +6643,7 @@ class ObjectService
                 }
 
             } catch (\Exception $e) {
-                $this->logger->error('❌ BATCH ERROR: Failed to load relationship batch', [
+                $this->logger->error(message: '❌ BATCH ERROR: Failed to load relationship batch', context: [
                     'batchIndex' => $batchIndex,
                     'error' => $e->getMessage(),
                     'batchSize' => count($batch)
@@ -6488,10 +6654,10 @@ class ObjectService
         }
 
         $totalTime = round((microtime(true) - $startTime) * 1000, 2);
-        $this->logger->info('✅ BATCHED LOADING: Completed', [
+        $this->logger->info(message: '✅ BATCHED LOADING: Completed', context: [
             'totalTime' => $totalTime . 'ms',
             'loadedObjects' => count($lookupMap),
-            'efficiency' => count($lookupMap) > 0 ? round($totalTime / count($lookupMap), 2) . 'ms/object' : 'no_objects'
+            'efficiency' => $this->calculateEfficiency(lookupMap: $lookupMap, totalTime: $totalTime)
         ]);
 
         return $lookupMap;
@@ -6500,9 +6666,11 @@ class ObjectService
     /**
      * Bulk load all relationship objects in a single optimized query (legacy method - kept for compatibility)
      *
-     * @deprecated Use bulkLoadRelationshipsBatched() instead for better performance
      * @param array $relationshipIds Array of all relationship IDs to load
+     *
      * @return array Array of objects indexed by ID/UUID for instant lookup
+     *
+     * @deprecated Use bulkLoadRelationshipsBatched() instead for better performance
      */
     private function bulkLoadRelationships(array $relationshipIds): array
     {
@@ -6536,10 +6704,10 @@ class ObjectService
         $chunkSize = 50; // Optimal chunk size for parallel processing
         $maxParallelChunks = 4; // Limit parallel connections to avoid overwhelming DB
 
-        $chunks = array_chunk($relationshipIds, $chunkSize);
+        $chunks = array_chunk(array: $relationshipIds, length: $chunkSize);
         $lookupMap = [];
 
-        $this->logger->info('🚀 PARALLEL LOADING: Starting parallel relationship loading', [
+        $this->logger->info(message: '🚀 PARALLEL LOADING: Starting parallel relationship loading', context: [
             'totalIds' => count($relationshipIds),
             'chunkCount' => count($chunks),
             'chunkSize' => $chunkSize,
@@ -6548,7 +6716,7 @@ class ObjectService
         ]);
 
         // **PARALLEL STRATEGY**: Process chunks in parallel groups.
-        $chunkGroups = array_chunk($chunks, $maxParallelChunks);
+        $chunkGroups = array_chunk(array: $chunks, length: $maxParallelChunks);
 
         foreach ($chunkGroups as $groupIndex => $chunkGroup) {
             $groupStart = microtime(true);
@@ -6563,7 +6731,7 @@ class ObjectService
                     $results[$chunkIndex] = $chunkResults;
 
                 } catch (\Exception $e) {
-                    $this->logger->error('❌ PARALLEL ERROR: Chunk failed', [
+                    $this->logger->error(message: '❌ PARALLEL ERROR: Chunk failed', context: [
                         'groupIndex' => $groupIndex,
                         'chunkIndex' => $chunkIndex,
                         'chunkSize' => count($chunk),
@@ -6596,7 +6764,7 @@ class ObjectService
             }
 
             $groupTime = round((microtime(true) - $groupStart) * 1000, 2);
-            $this->logger->debug('✅ PARALLEL GROUP: Completed', [
+            $this->logger->debug(message: '✅ PARALLEL GROUP: Completed', context: [
                 'groupIndex' => $groupIndex,
                 'groupTime' => $groupTime . 'ms',
                 'chunksInGroup' => count($chunkGroup),
@@ -6605,10 +6773,10 @@ class ObjectService
         }
 
         $totalTime = round((microtime(true) - $startTime) * 1000, 2);
-        $this->logger->info('🎯 PARALLEL LOADING: Completed', [
+        $this->logger->info(message: '🎯 PARALLEL LOADING: Completed', context: [
             'totalTime' => $totalTime . 'ms',
             'loadedObjects' => count($lookupMap),
-            'efficiency' => count($lookupMap) > 0 ? round($totalTime / count($lookupMap), 2) . 'ms/object' : 'no_objects',
+            'efficiency' => $this->calculateEfficiency(lookupMap: $lookupMap, totalTime: $totalTime),
             'improvementVsSequential' => '~60-70%'
         ]);
 
@@ -6672,9 +6840,9 @@ class ObjectService
             )
         )
         ->from('openregister_objects', 'o')
-        ->where($qb->expr()->in('o.id', $qb->createNamedParameter($relationshipIds, \OCP\DB\IQueryBuilder::PARAM_STR_ARRAY)))
-        ->orWhere($qb->expr()->in('o.uuid', $qb->createNamedParameter($relationshipIds, \OCP\DB\IQueryBuilder::PARAM_STR_ARRAY)))
-        ->orWhere($qb->expr()->in('o.slug', $qb->createNamedParameter($relationshipIds, \OCP\DB\IQueryBuilder::PARAM_STR_ARRAY)));
+        ->where($qb->expr()->in('o.id', $qb->createNamedParameter($relationshipIds, \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_STR_ARRAY)))
+        ->orWhere($qb->expr()->in('o.uuid', $qb->createNamedParameter($relationshipIds, \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_STR_ARRAY)))
+        ->orWhere($qb->expr()->in('o.slug', $qb->createNamedParameter($relationshipIds, \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_STR_ARRAY)));
 
         $results = [];
         $stmt = $qb->execute();
@@ -6688,7 +6856,7 @@ class ObjectService
                 }
 
             } catch (\Exception $e) {
-                $this->logger->debug('Skipped invalid relationship object', [
+                $this->logger->debug(message: 'Skipped invalid relationship object', context: [
                     'id' => $row['id'] ?? 'unknown',
                     'error' => $e->getMessage()
                 ]);
@@ -6769,7 +6937,7 @@ class ObjectService
                         $object->setObject($decodedObject ?? []);
                     } else {
                         // Ultra-lightweight fallback for large objects.
-                        $object->setObject([
+                        $object->setObject(object: [
                             '_lightweight' => true,
                             'id' => $row['id'] ?? null,
                             'name' => $row['name'] ?? 'Unknown'
@@ -6829,11 +6997,11 @@ class ObjectService
                 }
             }
 
-            if (!($schema instanceof Schema)) {
+            if (($schema instanceof Schema) === false) {
                 // Skip non-Schema objects.
-                $this->logger->warning('Invalid schema object in facetable fields processing', [
+                $this->logger->warning(message: 'Invalid schema object in facetable fields processing', context: [
                     'type' => gettype($schema),
-                    'isArray' => is_array($schema)
+                    'isArray' => is_array($schema),
                 ]);
                 continue;
             }
@@ -6841,7 +7009,7 @@ class ObjectService
             try {
                 $schemaFacets = $schema->getFacets();
             } catch (\Exception $e) {
-                $this->logger->error('Failed to get facets from schema', [
+                $this->logger->error(message: 'Failed to get facets from schema', context: [
                     'error' => $e->getMessage(),
                     'schemaType' => gettype($schema),
                     'isSchemaInstance' => $schema instanceof Schema
@@ -6851,12 +7019,12 @@ class ObjectService
 
             // Check if facets exist and have queryParameter properties.
             $needsRegeneration = false;
-            if ($schemaFacets === null || !isset($schemaFacets['object_fields'])) {
+            if ($schemaFacets === null || isset($schemaFacets['object_fields']) === false) {
                 $needsRegeneration = true;
             } else {
                 // Check if existing facets have queryParameter properties.
                 foreach ($schemaFacets['object_fields'] as $fieldName => $fieldConfig) {
-                    if (!isset($fieldConfig['queryParameter'])) {
+                    if (isset($fieldConfig['queryParameter']) === false) {
                         $needsRegeneration = true;
                         break;
                     }
@@ -6871,10 +7039,14 @@ class ObjectService
                 );
             } else {
                 // **FALLBACK**: If schema doesn't have pre-computed facets or missing queryParameter, generate them.
-                $this->logger->debug('Regenerating facets for schema (missing facets or queryParameter)', [
+                $reason = 'missing_queryParameter';
+                if ($schemaFacets === null) {
+                    $reason = 'no_facets';
+                }
+                $this->logger->debug(message: 'Regenerating facets for schema (missing facets or queryParameter)', context: [
                     'schemaId' => $schema->getId(),
                     'schemaSlug' => $schema->getSlug(),
-                    'reason' => $schemaFacets === null ? 'no_facets' : 'missing_queryParameter'
+                    'reason' => $reason
                 ]);
 
                 $schema->regenerateFacetsFromProperties();
@@ -6892,7 +7064,7 @@ class ObjectService
                         );
                     }
                 } catch (\Exception $e) {
-                    $this->logger->warning('Failed to save generated facets for schema', [
+                    $this->logger->warning(message: 'Failed to save generated facets for schema', context: [
                         'schemaId' => $schema->getId(),
                         'error' => $e->getMessage()
                     ]);
@@ -6979,10 +7151,10 @@ class ObjectService
         if ($schemaFilter !== null) {
             // Get specific schemas.
             if (is_array($schemaFilter)) {
-                return $this->getCachedEntities('schema', $schemaFilter, [$this->schemaMapper, 'findMultiple']);
+                return $this->getCachedEntities(entityType: 'schema', ids: $schemaFilter, fallbackFunc: [$this->schemaMapper, 'findMultiple']);
             } else {
                 try {
-                    return $this->getCachedEntities('schema', [$schemaFilter], function($ids) {
+                    return $this->getCachedEntities(entityType: 'schema', ids: [$schemaFilter], fallbackFunc: function($ids) {
                         return [$this->schemaMapper->find($ids[0])];
                     });
                 } catch (\Exception $e) {
@@ -6993,7 +7165,7 @@ class ObjectService
 
         // No specific schema filter - get all schemas (for global facetable discovery).
         // **PERFORMANCE OPTIMIZATION**: Cache all schemas when doing global queries.
-        return $this->getCachedEntities('schema', 'all', function($ids) {
+        return $this->getCachedEntities(entityType: 'schema', ids: 'all', fallbackFunc: function($ids) {
             // **TYPE SAFETY**: Convert 'all' to proper null limit for SchemaMapper::findAll().
             return $this->schemaMapper->findAll(null); // null = no limit (get all)
         });
@@ -7077,7 +7249,7 @@ class ObjectService
             return $retentionSettings['searchTrailsEnabled'] ?? true;
         } catch (\Exception $e) {
             // If we can't get settings, default to enabled for safety.
-            $this->logger->warning('Failed to check search trails setting, defaulting to enabled', ['error' => $e->getMessage()]);
+            $this->logger->warning(message: 'Failed to check search trails setting, defaulting to enabled', context: ['error' => $e->getMessage()]);
             return true;
         }
     }//end isSearchTrailsEnabled()
@@ -7096,6 +7268,134 @@ class ObjectService
             return round($totalTime / $objectCount, 2) . 'ms';
         }
         return '0ms';
+    }
+
+    /**
+     * Get facet count from query.
+     *
+     * @param bool  $hasFacets Whether facets are present.
+     * @param array $query     Query array.
+     *
+     * @return int Facet count.
+     */
+    private function getFacetCount(bool $hasFacets, array $query): int
+    {
+        if ($hasFacets === true) {
+            return count($query['_facets']);
+        }
+        return 0;
+    }
+
+    /**
+     * Calculate total pages.
+     *
+     * @param int $total Total items.
+     * @param int $limit Items per page.
+     *
+     * @return int Total pages.
+     */
+    private function calculateTotalPages(int $total, int $limit): int
+    {
+        if ($total > 0) {
+            return intval(ceil($total / $limit));
+        }
+        return 1;
+    }
+
+    /**
+     * Calculate extend count.
+     *
+     * @param mixed $extend Extend parameter.
+     *
+     * @return int Extend count.
+     */
+    private function calculateExtendCount($extend): int
+    {
+        if (is_array($extend) === true) {
+            return count($extend);
+        }
+        return count(array_filter(array_map('trim', explode(',', $extend))));
+    }
+
+    /**
+     * Normalize value to array.
+     *
+     * @param mixed $value Value to normalize.
+     *
+     * @return array Normalized array.
+     */
+    private function normalizeToArray($value): array
+    {
+        if (is_array($value) === true) {
+            return $value;
+        }
+        return [$value];
+    }
+
+    /**
+     * Get URL separator for pagination.
+     *
+     * @param string $url URL to check.
+     *
+     * @return string Separator ('?' or '&').
+     */
+    private function getUrlSeparator(string $url): string
+    {
+        if (strpos($url, '?') === false) {
+            return '?';
+        }
+        return '&';
+    }
+
+    /**
+     * Normalize entity (string/int to entity object).
+     *
+     * @param mixed  $entity Entity identifier or object.
+     * @param string $type   Entity type ('register' or 'schema').
+     *
+     * @return mixed Entity object.
+     */
+    private function normalizeEntity($entity, string $type)
+    {
+        if (is_string($entity) === true || is_int($entity) === true) {
+            if ($type === 'register') {
+                return $this->registerMapper->find($entity);
+            }
+            return $this->schemaMapper->find($entity);
+        }
+        return $entity;
+    }
+
+    /**
+     * Calculate efficiency metric.
+     *
+     * @param array $lookupMap Lookup map.
+     * @param float $totalTime Total time in milliseconds.
+     *
+     * @return string Efficiency string.
+     */
+    private function calculateEfficiency(array $lookupMap, float $totalTime): string
+    {
+        $count = count($lookupMap);
+        if ($count > 0) {
+            return round($totalTime / $count, 2) . 'ms/object';
+        }
+        return 'no_objects';
+    }
+
+    /**
+     * Get facet reason.
+     *
+     * @param mixed $schemaFacets Schema facets.
+     *
+     * @return string Reason string.
+     */
+    private function getFacetReason($schemaFacets): string
+    {
+        if ($schemaFacets === null) {
+            return 'no_facets';
+        }
+        return 'missing_queryParameter';
     }
 
 

@@ -36,6 +36,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\MagicMapperHandlers;
 
+use DateTime;
+
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -237,7 +239,7 @@ class MagicBulkHandler
      * @param Register       $register  Register context
      * @param Schema         $schema    Schema context
      * @param string         $tableName Target dynamic table name
-     * @param \DateTime|bool $datetime  Publication datetime (true for now, false to unpublish)
+     * @param DateTime|bool $datetime  Publication datetime (true for now, false to unpublish)
      *
      * @return array Array of published UUIDs
      *
@@ -288,7 +290,7 @@ class MagicBulkHandler
      * @param Register       $register  Register context
      * @param Schema         $schema    Schema context
      * @param string         $tableName Target dynamic table name
-     * @param \DateTime|bool $datetime  Depublication datetime (true for now, false to remove depublication)
+     * @param DateTime|bool $datetime  Depublication datetime (true for now, false to remove depublication)
      *
      * @return array Array of depublished UUIDs
      *
@@ -373,7 +375,7 @@ class MagicBulkHandler
             $preparedObject['_uri']          = $selfData['uri'] ?? null;
 
             // Map schema properties to columns.
-            foreach ($properties as $propertyName => $propertyConfig) {
+            foreach (array_keys($properties) as $propertyName) {
                 $columnName = $this->sanitizeColumnName($propertyName);
                 $value      = $object[$propertyName] ?? null;
 

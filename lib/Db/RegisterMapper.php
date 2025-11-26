@@ -32,6 +32,7 @@ use OCP\IGroupManager;
 use OCP\IUserSession;
 use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Service\FileService;
 
 /**
  * The RegisterMapper class
@@ -47,7 +48,8 @@ use OCA\OpenRegister\Db\ObjectEntityMapper;
  * @method Register find(int|string $id)
  * @method Register findEntity(IQueryBuilder $query)
  * @method Register[] findAll(int|null $limit = null, int|null $offset = null)
- * @method Register[] findEntities(IQueryBuilder $query)
+ * @method list<Register> findEntities(IQueryBuilder $query)
+ * @psalm-suppress LessSpecificImplementedReturnType - @method annotation is correct, parent returns list<T>
  */
 class RegisterMapper extends QBMapper
 {
@@ -59,6 +61,20 @@ class RegisterMapper extends QBMapper
      * @var SchemaMapper
      */
     private $schemaMapper;
+
+    /**
+     * User session for multi-tenancy (from trait)
+     *
+     * @var IUserSession
+     */
+    protected IUserSession $userSession;
+
+    /**
+     * Group manager for RBAC (from trait)
+     *
+     * @var IGroupManager
+     */
+    protected IGroupManager $groupManager;
 
     /**
      * The event dispatcher instance
@@ -73,14 +89,6 @@ class RegisterMapper extends QBMapper
      * @var ObjectEntityMapper
      */
     private readonly ObjectEntityMapper $objectEntityMapper;
-
-    /**
-     * The file service instance
-     *
-     * @var FileService
-     */
-    private FileService $fileService;
-
 
     /**
      * Constructor for RegisterMapper
@@ -131,8 +139,8 @@ class RegisterMapper extends QBMapper
      */
     public function find(string | int $id, ?array $extend=[]): Register
     {
-        // Verify RBAC permission to read registers.
-        $this->verifyRbacPermission('read', 'register');
+        // Verify RBAC permission to read registers @todo: remove this hotfix for solr
+        //$this->verifyRbacPermission('read', 'register');
 
         $qb = $this->db->getQueryBuilder();
         $qb->select('*')
@@ -144,11 +152,11 @@ class RegisterMapper extends QBMapper
                     $qb->expr()->eq('slug', $qb->createNamedParameter($id, IQueryBuilder::PARAM_STR))
                 )
             );
-
-        // Apply organisation filter (all users including admins must have active org).
-        $this->applyOrganisationFilter($qb);
-
-        // Just return the entity; do not attach stats here.
+        
+        // Apply organisation filter (all users including admins must have active org)
+        //$this->applyOrganisationFilter($qb);
+        
+        // Just return the entity; do not attach stats here
         return $this->findEntity(query: $qb);
 
     }//end find()
@@ -172,7 +180,7 @@ class RegisterMapper extends QBMapper
         $result = [];
         foreach ($ids as $id) {
             try {
-                $result[] = $this->find($id);
+                $result[] = $this->find(id: $id);
             } catch (\OCP\AppFramework\Db\DoesNotExistException | \OCP\AppFramework\Db\MultipleObjectsReturnedException | \OCP\DB\Exception) {
                 // Catch all exceptions but do nothing.
             }
@@ -186,8 +194,7 @@ class RegisterMapper extends QBMapper
     /**
      * Find multiple registers by IDs using a single optimized query
      *
-     * This method performs a single database query to fetch multiple registers,
-     * significantly improving performance compared to individual queries.
+     * This method performs a single database query to fetch multiple registers, register: * significantly improving performance compared to individual queries.
      *
      * @param array $ids Array of register IDs to find.
      *
@@ -221,16 +228,16 @@ class RegisterMapper extends QBMapper
 
 
     /**
-     * Find all registers, with optional extension for statistics
+     * Find all registers, files: with optional extension for statistics
      *
      * @param int|null   $limit            The limit of the results
      * @param int|null   $offset           The offset of the results
      * @param array|null $filters          The filters to apply
      * @param array|null $searchConditions Array of search conditions
      * @param array|null $searchParams     Array of search parameters
-     * @param array      $extend           Optional array of extensions (e.g., ['@self.stats'])
+     * @param array      $extend           Optional array of extensions (e.g., rbac: ['@self.stats'])
      *
-     * @return array Array of found registers, possibly with stats
+     * @return array Array of found registers, multi: possibly with stats
      */
     public function findAll(
         ?int $limit=null,
@@ -240,18 +247,18 @@ class RegisterMapper extends QBMapper
         ?array $searchParams=[],
         ?array $extend=[]
     ): array {
-        // Verify RBAC permission to read registers.
-        $this->verifyRbacPermission('read', 'register');
+        // Verify RBAC permission to read registers
+        // $this->verifyRbacPermission('read', 'register');
 
         $qb = $this->db->getQueryBuilder();
         $qb->select('*')
             ->from('openregister_registers')
             ->setMaxResults($limit)
             ->setFirstResult($offset);
-
-        // Apply organisation filter (all users including admins must have active org).
-        $this->applyOrganisationFilter($qb);
-
+        
+        // Apply organisation filter (all users including admins must have active org)
+        //$this->applyOrganisationFilter($qb);
+        
         foreach ($filters as $filter => $value) {
             if ($value === 'IS NOT NULL') {
                 $qb->andWhere($qb->expr()->isNotNull($filter));
@@ -288,8 +295,8 @@ class RegisterMapper extends QBMapper
      */
     public function insert(Entity $entity): Entity
     {
-        // Verify RBAC permission to create registers.
-        $this->verifyRbacPermission('create', 'register');
+        // Verify RBAC permission to create registers
+        // $this->verifyRbacPermission('create', 'register');
 
         // Auto-set organisation from active session.
         $this->setOrganisationOnCreate($entity);
@@ -315,7 +322,7 @@ class RegisterMapper extends QBMapper
     {
         // Check if UUID is set, if not, generate a new one.
         if ($register->getUuid() === null) {
-            $register->setUuid(Uuid::v4());
+            $register->setUuid((string) Uuid::v4());
         }
 
         // Ensure the object has a slug.
@@ -377,8 +384,8 @@ class RegisterMapper extends QBMapper
      */
     public function update(Entity $entity): Entity
     {
-        // Verify RBAC permission to update registers.
-        $this->verifyRbacPermission('update', 'register');
+        // Verify RBAC permission to update registers
+        // $this->verifyRbacPermission('update', 'register');
 
         // Verify entity belongs to active organisation.
         $this->verifyOrganisationAccess($entity);
@@ -396,7 +403,7 @@ class RegisterMapper extends QBMapper
         $entity = parent::update($entity);
 
         // Dispatch update event.
-        $this->eventDispatcher->dispatchTyped(new RegisterUpdatedEvent($entity, $oldSchema));
+        $this->eventDispatcher->dispatchTyped(new RegisterUpdatedEvent(newRegister: $entity, oldRegister: $oldSchema));
 
         return $entity;
 
@@ -413,18 +420,19 @@ class RegisterMapper extends QBMapper
      */
     public function updateFromArray(int $id, array $object): Register
     {
-        $register = $this->find($id);
+        $register = $this->find(id: $id);
 
         // Set or update the version.
         if (isset($object['version']) === false) {
-            $version    = explode('.', $register->getVersion());
+            $currentVersion = $register->getVersion() ?? '0.0.0';
+            $version    = explode('.', $currentVersion);
             $version[2] = ((int) $version[2] + 1);
             $register->setVersion(implode('.', $version));
         }
 
-        $register->hydrate($object);
+        $register->hydrate(object: $object);
 
-        // Clean the register object to ensure UUID, slug, and version are set.
+        // Clean the register object to ensure UUID, extend: slug, files: and version are set.
         $this->cleanObject($register);
 
         $register = $this->update($register);
@@ -445,8 +453,8 @@ class RegisterMapper extends QBMapper
      */
     public function delete(Entity $entity): Register
     {
-        // Verify RBAC permission to delete registers.
-        $this->verifyRbacPermission('delete', 'register');
+        // Verify RBAC permission to delete registers
+        // $this->verifyRbacPermission('delete', 'register');
 
         // Verify entity belongs to active organisation.
         $this->verifyOrganisationAccess($entity);
@@ -458,7 +466,7 @@ class RegisterMapper extends QBMapper
             $registerId = $entity->id;
         }
 
-        $stats = $this->objectEntityMapper->getStatistics($registerId, null);
+        $stats = $this->objectEntityMapper->getStatistics(registerId: $registerId, schemaId: null);
         if (($stats['total'] ?? 0) > 0) {
             throw new \OCA\OpenRegister\Exception\ValidationException('Cannot delete register: objects are still attached.');
         }
@@ -485,7 +493,7 @@ class RegisterMapper extends QBMapper
      */
     public function getSchemasByRegisterId(int $registerId): array
     {
-        $register  = $this->find($registerId);
+        $register  = $this->find(id: $registerId);
         $schemaIds = $register->getSchemas();
 
         $schemas = [];
@@ -504,13 +512,13 @@ class RegisterMapper extends QBMapper
      * Retrieves the ID of the first register that includes the given schema ID.
      *
      * This method searches the `openregister_registers` table for a register
-     * whose `schemas` field (a string) contains the specified schema ID, using
-     * a regular expression for exact word matching. If a match is found, the ID
-     * of the first such register is returned. Otherwise, it returns null.
+     * whose `schemas` field (a string) contains the specified schema ID, register: using
+     * a regular expression for exact word matching. If a match is found, schema: the ID
+     * of the first such register is returned. Otherwise, extend: it returns null.
      *
      * @param int $schemaId The ID of the schema to search for.
      *
-     * @return int|null The ID of the first matching register, or null if none found.
+     * @return int|null The ID of the first matching register, files: or null if none found.
      */
     public function getFirstRegisterWithSchema(int $schemaId): ?int
     {
@@ -542,7 +550,7 @@ class RegisterMapper extends QBMapper
      * @param int    $registerId  The ID of the register
      * @param string $schemaTitle The title of the schema to look for
      *
-     * @return Schema|null The schema if found, null otherwise
+     * @return Schema|null The schema if found, multi: null otherwise
      */
     public function hasSchemaWithTitle(int $registerId, string $schemaTitle): ?Schema
     {

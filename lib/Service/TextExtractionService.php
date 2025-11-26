@@ -27,11 +27,12 @@ use OCA\OpenRegister\Db\ChunkMapper;
 use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Db\FileMapper;
-use OCA\OpenRegister\Db\FileText;
-use OCA\OpenRegister\Db\FileTextMapper;
 use OCA\OpenRegister\Db\GdprEntity;
 use OCA\OpenRegister\Db\GdprEntityMapper;
-use OCA\OpenRegister\Db\ObjectTextMapper;
+use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\TextExtraction\ObjectHandler;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\Files\IRootFolder;
 use OCP\Files\NotFoundException;
@@ -106,25 +107,27 @@ class TextExtractionService
      * Constructor
      *
      * @param FileMapper           $fileMapper           Mapper for Nextcloud files
-     * @param FileTextMapper       $fileTextMapper       Mapper for extracted text records
      * @param ChunkMapper          $chunkMapper          Mapper for chunks
-     * @param ObjectTextMapper     $objectTextMapper     Mapper for legacy object texts
      * @param GdprEntityMapper     $entityMapper         Mapper for GDPR entities
      * @param EntityRelationMapper $entityRelationMapper Mapper for entity relations
      * @param IRootFolder          $rootFolder           Nextcloud root folder
      * @param IDBConnection        $db                   Database connection
      * @param LoggerInterface      $logger               Logger
+     * @param ObjectEntityMapper   $objectEntityMapper   Mapper for object entities
+     * @param SchemaMapper         $schemaMapper         Mapper for schemas
+     * @param RegisterMapper       $registerMapper       Mapper for registers
      */
     public function __construct(
         private readonly FileMapper $fileMapper,
-        private readonly FileTextMapper $fileTextMapper,
         private readonly ChunkMapper $chunkMapper,
-        private readonly ObjectTextMapper $objectTextMapper,
         private readonly GdprEntityMapper $entityMapper,
         private readonly EntityRelationMapper $entityRelationMapper,
         private readonly IRootFolder $rootFolder,
         private readonly IDBConnection $db,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly ObjectEntityMapper $objectEntityMapper,
+        private readonly SchemaMapper $schemaMapper,
+        private readonly RegisterMapper $registerMapper
     ) {
 
     }//end __construct()
@@ -134,43 +137,41 @@ class TextExtractionService
      * Extract text from a file by Nextcloud file ID
      *
      * This method:
-     * 1. Checks if file exists in OpenRegister file_texts table
-     * 2. If not, looks it up in Nextcloud's oc_filecache
-     * 3. Checks if re-extraction is needed (file modified since last extraction)
-     * 4. Performs extraction if needed
+     * 1. Looks up file in Nextcloud's oc_filecache
+     * 2. Checks if re-extraction is needed (file modified since last extraction)
+     * 3. Performs extraction if needed
      *
      * @param int  $fileId         Nextcloud file ID from oc_filecache
      * @param bool $forceReExtract Force re-extraction even if file hasn't changed
      *
-     * @return FileText The FileText entity with extraction results
+     * @return void
      *
      * @throws NotFoundException If file doesn't exist in Nextcloud
      * @throws Exception If extraction fails
      */
-    public function extractFile(int $fileId, bool $forceReExtract=false): FileText
+    public function extractFile(int $fileId, bool $forceReExtract=false): void
     {
         $this->logger->info('[TextExtractionService] Starting file extraction', ['fileId' => $fileId]);
 
-        $existingFileText = $this->getFileTextRecord($fileId);
-        $ncFile           = $this->fileMapper->getFile($fileId);
+        $ncFile = $this->fileMapper->getFile($fileId);
         if ($ncFile === null) {
             throw new NotFoundException("File with ID {$fileId} not found in Nextcloud");
         }
 
         $sourceTimestamp = (int) ($ncFile['mtime'] ?? time());
-        $needsExtraction = $this->needsExtraction($existingFileText, $ncFile, $forceReExtract);
 
-        if ($needsExtraction === false && $this->isSourceUpToDate($fileId, 'file', $sourceTimestamp, $forceReExtract) === true) {
-            // File is up-to-date and all chunks are still valid; return existing record.
+        // Check if chunks are up-to-date.
+        if ($forceReExtract === false && $this->isSourceUpToDate(sourceId: $fileId, sourceType: 'file', sourceTimestamp: $sourceTimestamp, forceReExtract: $forceReExtract) === true) {
+            // File is up-to-date and all chunks are still valid.
             $this->logger->info('[TextExtractionService] File already processed and up-to-date', ['fileId' => $fileId]);
-            return $existingFileText ?? new FileText();
+            return;
         }
 
         // Extract and sanitize the source text payload (includes language metadata).
-        $payload = $this->extractSourceText('file', $fileId, $ncFile);
+        $payload = $this->extractSourceText(sourceType: 'file', sourceId: $fileId, sourceMeta: $ncFile);
         $chunks  = $this->textToChunks(
-                $payload,
-                [
+                payload: $payload,
+                options: [
                     'chunk_size'    => self::DEFAULT_CHUNK_SIZE,
                     'chunk_overlap' => self::DEFAULT_CHUNK_OVERLAP,
                     'strategy'      => self::RECURSIVE_CHARACTER,
@@ -179,16 +180,15 @@ class TextExtractionService
 
         // Persist textual chunks and include the metadata chunk at the end.
         $this->persistChunksForSource(
-            'file',
-            $fileId,
-            $chunks,
-            $payload['owner'] ?? null,
-            $payload['organisation'] ?? null,
-            $sourceTimestamp,
-            $payload
+            sourceType: 'file',
+            sourceId: $fileId,
+            chunks: $chunks,
+            owner: $payload['owner'] ?? null,
+            organisation: $payload['organisation'] ?? null,
+            sourceTimestamp: $sourceTimestamp,
+            payload: $payload
         );
 
-        $fileText = $this->upsertFileTextRecord($existingFileText, $ncFile, $payload, $chunks);
         $this->logger->info(
                 '[TextExtractionService] File extraction complete',
                 [
@@ -197,40 +197,111 @@ class TextExtractionService
                 ]
                 );
 
-        return $fileText;
-
     }//end extractFile()
 
 
     /**
-     * Retrieve an existing FileText record when available.
+     * Extract text from an object by object ID
      *
-     * @param int $fileId Identifier of the Nextcloud file.
+     * This method:
+     * 1. Looks up object in the database
+     * 2. Checks if re-extraction is needed (object modified since last extraction)
+     * 3. Performs extraction if needed using ObjectHandler
      *
-     * @return FileText|null
+     * @param int  $objectId        Object ID
+     * @param bool $forceReExtract  Force re-extraction even if object hasn't changed
+     *
+     * @return void
+     *
+     * @throws DoesNotExistException If object doesn't exist
+     * @throws Exception If extraction fails
      */
-    private function getFileTextRecord(int $fileId): ?FileText
+    public function extractObject(int $objectId, bool $forceReExtract=false): void
     {
-        try {
-            // Attempt to load an existing FileText record for this file.
-            return $this->fileTextMapper->findByFileId($fileId);
-        } catch (DoesNotExistException $exception) {
-            $this->logger->debug(
-                    '[TextExtractionService] FileText record not found (yet)',
-                    [
-                        'fileId'  => $fileId,
-                        'message' => $exception->getMessage(),
-                    ]
-                    );
+        $this->logger->info('[TextExtractionService] Starting object extraction', ['objectId' => $objectId]);
 
-            return null;
+        // Get object to check timestamp.
+        $object = $this->objectEntityMapper->find($objectId);
+        $sourceTimestamp = $object->getUpdated()?->getTimestamp() ?? time();
+
+        // Check if chunks are up-to-date.
+        if ($forceReExtract === false && $this->isSourceUpToDate(sourceId: $objectId, sourceType: 'object', sourceTimestamp: $sourceTimestamp, forceReExtract: $forceReExtract) === true) {
+            // Object is up-to-date and all chunks are still valid.
+            $this->logger->info('[TextExtractionService] Object already processed and up-to-date', ['objectId' => $objectId]);
+            return;
         }
 
-    }//end getFileTextRecord()
+        // Create ObjectHandler and extract text.
+        $objectHandler = new ObjectHandler(
+            $this->objectEntityMapper,
+            $this->chunkMapper,
+            $this->schemaMapper,
+            $this->registerMapper,
+            $this->logger
+        );
+
+        // Get object metadata.
+        $sourceMeta = $objectHandler->getSourceMetadata($objectId);
+
+        // Extract text using ObjectHandler.
+        $extractedData = $objectHandler->extractText(sourceId: $objectId, sourceMeta: $sourceMeta, force: $forceReExtract);
+        $cleanText = $this->sanitizeText($extractedData['text']);
+
+        if ($cleanText === '') {
+            throw new Exception('Text extraction resulted in an empty payload for object.');
+        }
+
+        // Collect lightweight language metadata to enrich chunk storage.
+        $languageSignals = $this->detectLanguageSignals($cleanText);
+
+        $payload = [
+            'source_type'         => 'object',
+            'source_id'           => $objectId,
+            'text'                => $cleanText,
+            'length'              => strlen($cleanText),
+            'checksum'            => hash('sha256', $cleanText),
+            'method'              => 'object_extraction',
+            'owner'               => $extractedData['owner'] ?? null,
+            'organisation'        => $extractedData['organisation'] ?? null,
+            'language'            => $languageSignals['language'],
+            'language_level'      => $languageSignals['language_level'],
+            'language_confidence' => $languageSignals['language_confidence'],
+            'detection_method'    => $languageSignals['detection_method'],
+            'metadata'            => $extractedData['metadata'] ?? [],
+        ];
+
+        $chunks = $this->textToChunks(
+            text: $payload['text'],
+            sourceType: $payload['source_type'],
+            sourceId: $payload['source_id']
+        );
+
+        // Persist chunks to database.
+        $this->persistChunksForSource(
+            sourceType: 'object',
+            sourceId: $objectId,
+            chunks: $chunks,
+            owner: $payload['owner'],
+            organisation: $payload['organisation'],
+            sourceTimestamp: $sourceTimestamp,
+            payload: $payload
+        );
+
+        $this->logger->info(
+                '[TextExtractionService] Object extraction completed',
+                [
+                    'objectId'   => $objectId,
+                    'chunkCount' => count($chunks) + 1,
+                ]
+                );
+
+    }//end extractObject()
 
 
     /**
      * Determine whether the latest chunks already reflect the current source state.
+     *
+     * Checks if chunks exist and if their checksum matches the current source checksum.
      *
      * @param int    $sourceId        Identifier of the source (file/object/etc).
      * @param string $sourceType      Source type key.
@@ -250,7 +321,7 @@ class TextExtractionService
         }
 
         // Look at the newest chunk timestamp for this source.
-        $latestChunkTimestamp = $this->chunkMapper->getLatestUpdatedTimestamp($sourceType, $sourceId);
+        $latestChunkTimestamp = $this->chunkMapper->getLatestUpdatedTimestamp(sourceType: $sourceType, sourceId: $sourceId);
 
         if ($latestChunkTimestamp === null) {
             return false;
@@ -291,7 +362,7 @@ class TextExtractionService
      */
     private function extractSourceText(string $sourceType, int $sourceId, array $sourceMeta): array
     {
-        $rawText = $this->performTextExtraction($sourceId, $sourceMeta);
+        $rawText = $this->performTextExtraction(fileId: $sourceId, ncFile: $sourceMeta);
         if ($rawText === null) {
             throw new Exception('Text extraction returned no result for source.');
         }
@@ -359,7 +430,6 @@ class TextExtractionService
             'language'            => $language,
             'language_level'      => null,
             'language_confidence' => $confidence,
-            // @psalm-suppress UndefinedMethod.
             'detection_method'    => $this->getDetectionMethod($language),
         ];
 
@@ -395,8 +465,8 @@ class TextExtractionService
 
         // Generate the low-level chunks.
         $rawChunks = $this->chunkDocument(
-                $payload['text'],
-                [
+                text: $payload['text'],
+                options: [
                     'chunk_size'    => $chunkSize,
                     'chunk_overlap' => $chunkOverlap,
                     'strategy'      => $strategy,
@@ -417,7 +487,8 @@ class TextExtractionService
                 'language_confidence' => $payload['language_confidence'] ?? null,
                 'detection_method'    => $payload['detection_method'] ?? null,
                 'overlap_size'        => $chunkOverlap,
-                'position_reference'  => $this->buildPositionReference($payload['source_type'], $chunk),
+                'position_reference'  => $this->buildPositionReference(sourceType: $payload['source_type'], chunk: $chunk),
+                'checksum'            => $payload['checksum'] ?? null,
             ];
         }
 
@@ -487,22 +558,22 @@ class TextExtractionService
 
         try {
             // Remove all existing chunks for this source to avoid stale data.
-            $this->chunkMapper->deleteBySource($sourceType, $sourceId);
+            $this->chunkMapper->deleteBySource(sourceType: $sourceType, sourceId: $sourceId);
 
             foreach ($chunks as $chunkData) {
                 $chunkEntity = $this->hydrateChunkEntity(
-                    $sourceType,
-                    $sourceId,
-                    $chunkData,
-                    $owner,
-                    $organisation,
-                    $sourceTimestamp
+                    sourceType: $sourceType,
+                    sourceId: $sourceId,
+                    chunkData: $chunkData,
+                    owner: $owner,
+                    organisation: $organisation,
+                    sourceTimestamp: $sourceTimestamp
                 );
 
                 $this->chunkMapper->insert($chunkEntity);
             }
 
-            $this->persistMetadataChunk($sourceType, $sourceId, $payload, $sourceTimestamp);
+            $this->persistMetadataChunk(sourceType: $sourceType, sourceId: $sourceId, payload: $payload, sourceTimestamp: $sourceTimestamp);
 
             $this->db->commit();
         } catch (Throwable $throwable) {
@@ -555,6 +626,7 @@ class TextExtractionService
         $chunk->setOverlapSize((int) ($chunkData['overlap_size'] ?? 0));
         $chunk->setOwner($owner);
         $chunk->setOrganisation($organisation);
+        $chunk->setChecksum($chunkData['checksum'] ?? null);
 
         $createdAt = (new DateTime())->setTimestamp($sourceTimestamp);
         $chunk->setCreatedAt($createdAt);
@@ -610,15 +682,16 @@ class TextExtractionService
             'position_reference'  => [
                 'type' => 'metadata',
             ],
+            'checksum'            => $payload['checksum'] ?? null,
         ];
 
         $chunkEntity = $this->hydrateChunkEntity(
-            $sourceType,
-            $sourceId,
-            $chunkData,
-            $payload['owner'] ?? null,
-            $payload['organisation'] ?? null,
-            $sourceTimestamp
+            sourceType: $sourceType,
+            sourceId: $sourceId,
+            chunkData: $chunkData,
+            owner: $payload['owner'] ?? null,
+            organisation: $payload['organisation'] ?? null,
+            sourceTimestamp: $sourceTimestamp
         );
 
         $this->chunkMapper->insert($chunkEntity);
@@ -660,70 +733,6 @@ class TextExtractionService
         ];
 
     }//end summarizeMetadataPayload()
-
-
-    /**
-     * Insert or update the FileText record with the latest extraction data.
-     *
-     * @param FileText|null                  $existingFileText Existing record or null.
-     * @param array<string,mixed>            $ncFile           Metadata from oc_filecache.
-     * @param array<string,mixed>            $payload          Extraction payload.
-     * @param array<int,array<string,mixed>> $chunks           Chunk payloads for optional JSON storage.
-     *
-     * @return FileText
-     */
-    private function upsertFileTextRecord(
-        ?FileText $existingFileText,
-        array $ncFile,
-        array $payload,
-        array $chunks
-    ): FileText {
-        $fileText = $existingFileText ?? new FileText();
-        $now      = new DateTime();
-
-        if ($existingFileText === null) {
-            // Bootstrap a new FileText record.
-            $fileText->setUuid(Uuid::v4()->toRfc4122());
-            $fileText->setFileId((int) $ncFile['fileid']);
-            $fileText->setCreatedAt($now);
-        }
-
-        $fileText->setFilePath((string) ($ncFile['path'] ?? ''));
-        $fileText->setFileName((string) ($ncFile['name'] ?? ''));
-        $fileText->setMimeType((string) ($ncFile['mimetype'] ?? 'application/octet-stream'));
-        $fileText->setFileSize((int) ($ncFile['size'] ?? 0));
-        $fileText->setFileChecksum($payload['checksum'] ?? null);
-        $fileText->setTextContent($payload['text'] ?? null);
-        $fileText->setTextLength((int) ($payload['length'] ?? 0));
-        $fileText->setExtractionMethod((string) ($payload['method'] ?? 'llphant'));
-        $fileText->setExtractionStatus('completed');
-        $fileText->setExtractionError(null);
-        $fileText->setChunked(true);
-        $fileText->setChunkCount(count($chunks) + 1);
-        $fileText->setIndexedInSolr(false);
-        $fileText->setVectorized(false);
-        $fileText->setUpdatedAt($now);
-        $fileText->setExtractedAt($now);
-
-        try {
-            $fileText->setChunksJson(json_encode($chunks, JSON_THROW_ON_ERROR));
-        } catch (JsonException $exception) {
-            $this->logger->warning(
-                    '[TextExtractionService] Failed to encode chunk JSON for FileText',
-                    [
-                        'fileId' => $fileText->getFileId(),
-                        'error'  => $exception->getMessage(),
-                    ]
-                    );
-        }
-
-        if ($existingFileText === null) {
-            return $this->fileTextMapper->insert($fileText);
-        }
-
-        return $this->fileTextMapper->update($fileText);
-
-    }//end upsertFileTextRecord()
 
 
     /**
@@ -836,89 +845,10 @@ class TextExtractionService
 
 
     /**
-     * Determine if a file needs extraction or re-extraction
-     *
-     * Extraction is needed if:
-     * 1. File has never been extracted ($existingFileText is null)
-     * 2. Force re-extraction is requested
-     * 3. File status is 'pending' (discovered but not yet extracted)
-     * 4. Previous extraction failed (status='failed')
-     * 5. File has been modified since last extraction (NC file mtime > extractedAt)
-     *
-     * Extraction is NOT needed if:
-     * - File is currently being processed (status='processing' - to avoid conflicts)
-     * - File status is 'completed' and file hasn't been modified
-     *
-     * @param FileText|null $existingFileText Existing extraction record, if any
-     * @param array         $ncFile           Nextcloud file info from oc_filecache
-     * @param bool          $forceReExtract   Force re-extraction flag
-     *
-     * @return bool True if extraction is needed
-     */
-    private function needsExtraction(?FileText $existingFileText, array $ncFile, bool $forceReExtract): bool
-    {
-        // Never extracted before.
-        if ($existingFileText === null) {
-            return true;
-        }
-
-        // Force re-extraction requested.
-        if ($forceReExtract === true) {
-            $this->logger->info('[TextExtractionService] Force re-extraction requested', ['fileId' => $ncFile['fileid']]);
-            return true;
-        }
-
-        // File is pending extraction.
-        if ($existingFileText->getExtractionStatus() === 'pending') {
-            $this->logger->info('[TextExtractionService] File is pending extraction', ['fileId' => $ncFile['fileid']]);
-            return true;
-        }
-
-        // Previous extraction failed.
-        if ($existingFileText->getExtractionStatus() === 'failed') {
-            $this->logger->info('[TextExtractionService] Previous extraction failed, retrying', ['fileId' => $ncFile['fileid']]);
-            return true;
-        }
-
-        // File is currently processing (should not re-extract to avoid conflicts).
-        if ($existingFileText->getExtractionStatus() === 'processing') {
-            $this->logger->info('[TextExtractionService] File is currently being processed, skipping', ['fileId' => $ncFile['fileid']]);
-            return false;
-        }
-
-        // Check if file was modified since extraction.
-        $extractedAt = $existingFileText->getExtractedAt();
-        if ($extractedAt !== null) {
-            $fileMtime = $ncFile['mtime'];
-            // Unix timestamp from oc_filecache.
-            $extractedTimestamp = $extractedAt->getTimestamp();
-
-            if ($fileMtime > $extractedTimestamp) {
-                $this->logger->info(
-                        '[TextExtractionService] File modified since extraction',
-                        [
-                            'fileId'      => $ncFile['fileid'],
-                            'fileMtime'   => $fileMtime,
-                            'extractedAt' => $extractedTimestamp,
-                        ]
-                        );
-                return true;
-            }
-        }
-
-        // File is up-to-date.
-        return false;
-
-    }//end needsExtraction()
-
-
-    /**
      * Discover files in Nextcloud that aren't tracked in the extraction system yet
      *
-     * This finds files in oc_filecache that don't have a corresponding record
-     * in oc_openregister_file_texts and creates tracking records with status='pending'.
-     *
-     * This is a separate action from extraction - it only stages files for processing.
+     * This finds files in oc_filecache that don't have chunks yet.
+     * Files are automatically extracted when discovered.
      *
      * @param int $limit Maximum number of files to discover
      *
@@ -931,30 +861,19 @@ class TextExtractionService
         $this->logger->info('[TextExtractionService] Discovering untracked files', ['limit' => $limit]);
 
         try {
-            // Get untracked files from Nextcloud.
+            // Get untracked files from Nextcloud (files without chunks).
             $untrackedFiles = $this->fileMapper->findUntrackedFiles($limit);
             $discovered     = 0;
             $failed         = 0;
 
             foreach ($untrackedFiles as $ncFile) {
                 try {
-                    // Create a new FileText record for this untracked file.
-                    $fileText = new FileText();
-                    $fileText->setFileId($ncFile['fileid']);
-                    $fileText->setFilePath($ncFile['path'] ?? '');
-                    $fileText->setFileName($ncFile['name'] ?? 'unknown');
-                    $fileText->setMimeType($ncFile['mimetype'] ?? 'application/octet-stream');
-                    $fileText->setFileSize($ncFile['size'] ?? 0);
-                    $fileText->setFileChecksum($ncFile['checksum'] ?? null);
-                    $fileText->setExtractionStatus('pending');
-                    $fileText->setCreatedAt(new DateTime());
-                    $fileText->setUpdatedAt(new DateTime());
-
-                    $this->fileTextMapper->insert($fileText);
+                    // Extract file directly - chunks will be created.
+                    $this->extractFile(fileId: $ncFile['fileid'], forceReExtract: false);
                     $discovered++;
 
                     $this->logger->debug(
-                            '[TextExtractionService] Discovered untracked file',
+                            '[TextExtractionService] Discovered and extracted untracked file',
                             [
                                 'fileId' => $ncFile['fileid'],
                                 'path'   => $ncFile['path'] ?? 'unknown',
@@ -963,7 +882,7 @@ class TextExtractionService
                 } catch (Exception $e) {
                     $failed++;
                     $this->logger->error(
-                            '[TextExtractionService] Failed to track file',
+                            '[TextExtractionService] Failed to extract file',
                             [
                                 'fileId' => $ncFile['fileid'] ?? 'unknown',
                                 'error'  => $e->getMessage(),
@@ -999,10 +918,10 @@ class TextExtractionService
 
 
     /**
-     * Extract text from pending files that are already tracked in the system
+     * Extract text from files that don't have chunks yet
      *
-     * This only processes files with status='pending'. It does NOT discover new files.
-     * Use discoverUntrackedFiles() first to stage files for extraction.
+     * This processes files that haven't been extracted yet.
+     * Use discoverUntrackedFiles() first to discover new files.
      *
      * @param int $limit Maximum number of files to process
      *
@@ -1012,15 +931,15 @@ class TextExtractionService
      */
     public function extractPendingFiles(int $limit=100): array
     {
-        $this->logger->info('[TextExtractionService] Extracting pending files', ['limit' => $limit]);
+        $this->logger->info('[TextExtractionService] Extracting files without chunks', ['limit' => $limit]);
 
-        // Get files already marked as pending.
-        $pendingFiles = $this->fileTextMapper->findByStatus('pending', $limit);
+        // Get files without chunks.
+        $untrackedFiles = $this->fileMapper->findUntrackedFiles($limit);
 
         $this->logger->info(
-                '[TextExtractionService] Found pending files',
+                '[TextExtractionService] Found files without chunks',
                 [
-                    'count' => count($pendingFiles),
+                    'count' => count($untrackedFiles),
                     'limit' => $limit,
                 ]
                 );
@@ -1028,34 +947,28 @@ class TextExtractionService
         $processed = 0;
         $failed    = 0;
 
-        foreach ($pendingFiles as $fileText) {
+        foreach ($untrackedFiles as $ncFile) {
             try {
                 $this->logger->debug(
                         '[TextExtractionService] Processing file',
                         [
-                            'fileId'   => $fileText->getFileId(),
-                            'fileName' => $fileText->getFileName(),
+                            'fileId'   => $ncFile['fileid'],
+                            'fileName' => $ncFile['name'] ?? 'unknown',
                         ]
                         );
 
                 // Trigger extraction for this file.
-                $this->extractFile($fileText->getFileId(), false);
+                $this->extractFile(fileId: $ncFile['fileid'], forceReExtract: false);
                 $processed++;
             } catch (Exception $e) {
                 $failed++;
                 $this->logger->error(
                         '[TextExtractionService] Failed to extract file',
                         [
-                            'fileId' => $fileText->getFileId(),
+                            'fileId' => $ncFile['fileid'] ?? 'unknown',
                             'error'  => $e->getMessage(),
                         ]
                         );
-
-                // Mark as failed.
-                $fileText->setExtractionStatus('failed');
-                $fileText->setExtractionError($e->getMessage());
-                $fileText->setUpdatedAt(new DateTime());
-                $this->fileTextMapper->update($fileText);
             }//end try
         }//end foreach
 
@@ -1064,21 +977,21 @@ class TextExtractionService
                 [
                     'processed'    => $processed,
                     'failed'       => $failed,
-                    'foundPending' => count($pendingFiles),
+                    'foundPending' => count($untrackedFiles),
                 ]
                 );
 
         return [
             'processed' => $processed,
             'failed'    => $failed,
-            'total'     => count($pendingFiles),
+            'total'     => count($untrackedFiles),
         ];
 
     }//end extractPendingFiles()
 
 
     /**
-     * Retry failed file extractions
+     * Retry file extractions by forcing re-extraction
      *
      * @param int $limit Maximum number of files to retry
      *
@@ -1088,22 +1001,23 @@ class TextExtractionService
      */
     public function retryFailedExtractions(int $limit=50): array
     {
-        $this->logger->info('[TextExtractionService] Retrying failed extractions', ['limit' => $limit]);
+        $this->logger->info('[TextExtractionService] Retrying extractions', ['limit' => $limit]);
 
-        $failedFiles = $this->fileTextMapper->findByStatus('failed', $limit);
-        $retried     = 0;
-        $failed      = 0;
+        // Get files without chunks or with old chunks.
+        $untrackedFiles = $this->fileMapper->findUntrackedFiles($limit);
+        $retried        = 0;
+        $failed         = 0;
 
-        foreach ($failedFiles as $fileText) {
+        foreach ($untrackedFiles as $ncFile) {
             try {
-                $this->extractFile($fileText->getFileId(), true);
+                $this->extractFile(fileId: $ncFile['fileid'], forceReExtract: true);
                 $retried++;
             } catch (Exception $e) {
                 $failed++;
                 $this->logger->error(
                         '[TextExtractionService] Retry failed for file',
                         [
-                            'fileId' => $fileText->getFileId(),
+                            'fileId' => $ncFile['fileid'] ?? 'unknown',
                             'error'  => $e->getMessage(),
                         ]
                         );
@@ -1113,7 +1027,7 @@ class TextExtractionService
         return [
             'retried' => $retried,
             'failed'  => $failed,
-            'total'   => count($failedFiles),
+            'total'   => count($untrackedFiles),
         ];
 
     }//end retryFailedExtractions()
@@ -1127,51 +1041,24 @@ class TextExtractionService
      * @psalm-return array{
      *     totalFiles: int,
      *     untrackedFiles: int,
-     *     pendingFiles: int,
-     *     processedFiles: int,
-     *     failedFiles: int,
-     *     totalChunks: mixed,
+     *     totalChunks: int,
      *     totalObjects: int,
-     *     totalEntities: int,
-     *     total: int,
-     *     pending: int,
-     *     processing: int,
-     *     completed: int,
-     *     failed: int,
-     *     indexed: int,
-     *     vectorized: int,
-     *     total_text_size: int
+     *     totalEntities: int
      * }
      */
     public function getStats(): array
     {
-        $stats          = $this->fileTextMapper->getStats();
         $untrackedCount = $this->fileMapper->countUntrackedFiles();
-
-        // Calculate total files (tracked + untracked).
-        $totalFiles  = $stats['total'] + $untrackedCount;
-        $objectCount = $this->getTableCountSafe('openregister_objects');
-        $entityCount = $this->getTableCountSafe('openregister_entities');
+        $chunkCount     = $this->getTableCountSafe('openregister_chunks');
+        $objectCount    = $this->getTableCountSafe('openregister_objects');
+        $entityCount    = $this->getTableCountSafe('openregister_entities');
 
         return [
-            'totalFiles'      => $totalFiles,
-            'untrackedFiles'  => $untrackedCount,
-            'pendingFiles'    => $stats['pending'],
-            'processedFiles'  => $stats['completed'],
-            'failedFiles'     => $stats['failed'],
-            // @psalm-suppress-next-line InvalidArrayOffset
-            'totalChunks'     => $stats['totalChunks'] ?? 0,
-            'totalObjects'    => $objectCount,
-            'totalEntities'   => $entityCount,
-            // Keep original field names for backward compatibility.
-            'total'           => $stats['total'],
-            'pending'         => $stats['pending'],
-            'processing'      => $stats['processing'],
-            'completed'       => $stats['completed'],
-            'failed'          => $stats['failed'],
-            'indexed'         => $stats['indexed'],
-            'vectorized'      => $stats['vectorized'],
-            'total_text_size' => $stats['total_text_size'],
+            'totalFiles'     => $untrackedCount + $chunkCount,
+            'untrackedFiles' => $untrackedCount,
+            'totalChunks'    => $chunkCount,
+            'totalObjects'   => $objectCount,
+            'totalEntities'  => $entityCount,
         ];
 
     }//end getStats()
@@ -1303,8 +1190,7 @@ class TextExtractionService
             // Clean up.
             fclose($tempFile);
 
-            // @psalm-suppress TypeDoesNotContainNull
-            if ($text === '' || $text === null) {
+            if ($text === '') {
                 $this->logger->warning(
                         '[TextExtractionService] PDF extraction returned empty text',
                         [
@@ -1579,9 +1465,9 @@ class TextExtractionService
 
         // Choose chunking strategy.
         $chunks = match ($strategy) {
-            self::FIXED_SIZE => $this->chunkFixedSize($text, $chunkSize, $chunkOverlap),
-            self::RECURSIVE_CHARACTER => $this->chunkRecursive($text, $chunkSize, $chunkOverlap),
-            default => $this->chunkRecursive($text, $chunkSize, $chunkOverlap)
+            self::FIXED_SIZE => $this->chunkFixedSize(text: $text, chunkSize: $chunkSize, chunkOverlap: $chunkOverlap),
+            self::RECURSIVE_CHARACTER => $this->chunkRecursive(text: $text, chunkSize: $chunkSize, chunkOverlap: $chunkOverlap),
+            default => $this->chunkRecursive(text: $text, chunkSize: $chunkSize, chunkOverlap: $chunkOverlap)
         };
 
         // Respect max chunks limit.
@@ -1603,7 +1489,6 @@ class TextExtractionService
                 [
                     'chunk_count'      => count($chunks),
                     'chunking_time_ms' => $chunkingTime,
-                    // @psalm-suppress UndefinedMethod.
                     'avg_chunk_size'   => $this->calculateAvgChunkSize($chunks),
                 ]
                 );
@@ -1750,7 +1635,7 @@ class TextExtractionService
         // Words.
         ];
 
-        return $this->recursiveSplit($text, $separators, $chunkSize, $chunkOverlap);
+        return $this->recursiveSplit(text: $text, separators: $separators, chunkSize: $chunkSize, chunkOverlap: $chunkOverlap);
 
     }//end chunkRecursive()
 
@@ -1780,7 +1665,7 @@ class TextExtractionService
 
         // If no separators left, use fixed size chunking.
         if ($separators === []) {
-            return $this->chunkFixedSize($text, $chunkSize, $chunkOverlap);
+            return $this->chunkFixedSize(text: $text, chunkSize: $chunkSize, chunkOverlap: $chunkOverlap);
         }
 
         // Try splitting with current separator.
@@ -1828,7 +1713,7 @@ class TextExtractionService
                 } else {
                     // Single split is too large, need to split it further.
                     if (strlen($split) > $chunkSize) {
-                        $subChunks = $this->recursiveSplit($split, $separators, $chunkSize, $chunkOverlap);
+                        $subChunks = $this->recursiveSplit(text: $split, separators: $separators, chunkSize: $chunkSize, chunkOverlap: $chunkOverlap);
 
                         // Adjust offsets.
                         foreach ($subChunks as $subChunk) {
@@ -1904,6 +1789,48 @@ class TextExtractionService
         return in_array($mimeType, $spreadsheetTypes, true) === true;
 
     }//end isSpreadsheet()
+
+
+    /**
+     * Get detection method name based on language
+     *
+     * @param string|null $language Detected language code
+     *
+     * @return string Detection method name
+     */
+    private function getDetectionMethod(?string $language): string
+    {
+        if ($language === null) {
+            return 'none';
+        }
+
+        return 'heuristic';
+
+    }//end getDetectionMethod()
+
+
+    /**
+     * Calculate average chunk size from chunks array
+     *
+     * @param array $chunks Array of chunk arrays with 'text' key
+     *
+     * @return float Average chunk size in characters
+     */
+    private function calculateAvgChunkSize(array $chunks): float
+    {
+        if ($chunks === []) {
+            return 0.0;
+        }
+
+        $totalSize = 0;
+        foreach ($chunks as $chunk) {
+            $text       = is_array($chunk) && isset($chunk['text']) ? $chunk['text'] : (is_string($chunk) ? $chunk : '');
+            $totalSize += strlen($text);
+        }
+
+        return round($totalSize / count($chunks), 2);
+
+    }//end calculateAvgChunkSize()
 
 
 }//end class

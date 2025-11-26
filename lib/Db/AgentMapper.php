@@ -53,7 +53,7 @@ use Symfony\Component\Uid\Uuid;
  * @method Agent find(int|string $id)
  * @method Agent findEntity(IQueryBuilder $query)
  * @method Agent[] findAll(int|null $limit = null, int|null $offset = null)
- * @method Agent[] findEntities(IQueryBuilder $query)
+ * @method list<Agent> findEntities(IQueryBuilder $query)
  */
 class AgentMapper extends QBMapper
 {
@@ -229,7 +229,7 @@ class AgentMapper extends QBMapper
         $accessible = [];
 
         foreach ($agents as $agent) {
-            if ($this->canUserAccessAgent($agent, $userId) === true) {
+            if ($this->canUserAccessAgent(agent: $agent, userId: $userId) === true) {
                 $accessible[] = $agent;
             }
         }
@@ -425,11 +425,13 @@ class AgentMapper extends QBMapper
      * @return Agent The inserted agent with updated ID
      * @throws \Exception If user doesn't have create permission
      */
-    public function insert(Entity $entity): Entity
+    public function insert(Entity $entity): Agent
     {
         // Verify RBAC permission to create.
         $this->verifyRbacPermission('create', 'agent');
 
+        /** @var Agent $entity */
+        /** @psalm-suppress RedundantCondition - Runtime type check for defensive programming */
         if ($entity instanceof Agent) {
             // Ensure UUID is set.
             $uuid = $entity->getUuid();
@@ -469,7 +471,7 @@ class AgentMapper extends QBMapper
      * @return Agent The updated agent
      * @throws \Exception If user doesn't have update permission or access to this organisation
      */
-    public function update(Entity $entity): Entity
+    public function update(Entity $entity): Agent
     {
         // Verify RBAC permission to update.
         $this->verifyRbacPermission('update', 'agent');
@@ -478,11 +480,9 @@ class AgentMapper extends QBMapper
         $this->verifyOrganisationAccess($entity);
 
         // Get old state before update.
-        $oldEntity = $this->find($entity->getId());
+        $oldEntity = $this->find(id: $entity->getId());
 
-        if ($entity instanceof Agent) {
-            $entity->setUpdated(new DateTime());
-        }
+        $entity->setUpdated(new DateTime());
 
         $entity = parent::update($entity);
 

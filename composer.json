@@ -28,11 +28,15 @@
 			"@composer bin all update --ansi"
 		],
 		"lint": "find . -name \\*.php -not -path './vendor/*' -not -path './vendor-bin/*' -not -path './build/*' -print0 | xargs -0 -n1 php -l",
+		"check:named-args": "php scripts/check-named-arguments.php --path=lib",
+		"fix:named-args": "php scripts/fix-named-arguments.php --path=lib",
+		"fix:named-args:dry-run": "php scripts/fix-named-arguments.php --dry-run --path=lib",
 		"cs:check": "./vendor/bin/phpcs --standard=phpcs.xml",
 		"cs:fix": "./vendor/bin/phpcbf --standard=phpcs.xml",
 		"phpcs": "./vendor/bin/phpcs --standard=phpcs.xml",
 		"phpcs:fix": "./vendor/bin/phpcbf --standard=phpcs.xml",
 		"psalm": "psalm --threads=1 --no-cache || echo 'Psalm not installed, skipping...'",
+		"psalm:fix": "psalm --threads=1 --no-cache --alter || echo 'Psalm not installed, skipping...'",
 		"phpstan": "php phpstan.phar analyse --memory-limit=1G || echo 'PHPStan not installed, skipping...'",
 		"phpmd": "phpmd lib text phpmd.xml || echo 'PHPMD not installed, skipping...'",
 		"test:unit": "./vendor/bin/phpunit --testsuite=\"Unit Tests\" --colors=always || echo 'Tests require Nextcloud environment, skipping...'",
@@ -59,17 +63,22 @@
 		"openapi": "generate-spec",
 		"check": [
 			"@lint",
+			"@check:named-args",
+			"@phpcs",
 			"@psalm",
 			"@test:unit"
 		],
 		"check:full": [
 			"@lint",
+			"@check:named-args",
+			"@phpcs",
 			"@psalm",
 			"@phpstan",
 			"@test:all"
 		],
 		"check:strict": [
 			"@lint",
+			"@check:named-args",
 			"@phpcs",
 			"@phpmd",
 			"@psalm",

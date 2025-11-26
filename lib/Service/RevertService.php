@@ -84,7 +84,7 @@ class RevertService
         bool $overwriteVersion=false
     ): ObjectEntity {
         // Get the object.
-        $object = $this->objectEntityMapper->find($id);
+        $object = $this->objectEntityMapper->find(identifier: $id);
 
         // Verify that the object belongs to the specified register and schema.
         if ($object->getRegister() !== $register || $object->getSchema() !== $schema) {
@@ -103,16 +103,16 @@ class RevertService
 
         // Get the reverted object using AuditTrailMapper.
         $revertedObject = $this->auditTrailMapper->revertObject(
-            $id,
-            $until,
-            $overwriteVersion
+            identifier: $id,
+            until: $until,
+            overwriteVersion: $overwriteVersion
         );
 
         // Save the reverted object.
         $savedObject = $this->objectEntityMapper->update($revertedObject);
 
         // Dispatch revert event.
-        $this->eventDispatcher->dispatchTyped(new ObjectRevertedEvent($savedObject, $until));
+        $this->eventDispatcher->dispatchTyped(new ObjectRevertedEvent(object: $savedObject, until: $until));
 
         return $savedObject;
 

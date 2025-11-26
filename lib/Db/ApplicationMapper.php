@@ -301,7 +301,7 @@ class ApplicationMapper extends QBMapper
         $this->verifyOrganisationAccess($entity);
 
         // Get old state before update.
-        $oldEntity = $this->find($entity->getId());
+        $oldEntity = $this->find(id: $entity->getId());
 
         if ($entity instanceof Application) {
             $entity->setUpdated(new DateTime());

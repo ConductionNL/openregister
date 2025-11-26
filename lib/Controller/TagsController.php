@@ -26,7 +26,9 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use Exception;
 /**
- * Class ObjectsController
+ * Class TagsController
+ *
+ * @psalm-suppress UnusedClass - This controller is registered via routes.php and used by Nextcloud's routing system
  */
 class TagsController extends Controller
 {
@@ -46,7 +48,7 @@ class TagsController extends Controller
         private readonly ObjectService $objectService,
         private readonly FileService $fileService,
     ) {
-        parent::__construct($appName, $request);
+        parent::__construct(appName: $appName, request: $request);
 
     }//end __construct()
 
@@ -65,7 +67,7 @@ class TagsController extends Controller
     public function getAllTags(): JSONResponse
     {
         // Use the FileService to fetch all tags.
-        return new JSONResponse($this->fileService->getAllTags());
+        return new JSONResponse(data: $this->fileService->getAllTags());
 
     }//end getAllTags()
 

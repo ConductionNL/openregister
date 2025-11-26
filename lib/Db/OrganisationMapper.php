@@ -20,6 +20,7 @@
 
 namespace OCA\OpenRegister\Db;
 
+use DateTime;
 use OCA\OpenRegister\Event\OrganisationCreatedEvent;
 use OCA\OpenRegister\Event\OrganisationDeletedEvent;
 use OCA\OpenRegister\Event\OrganisationUpdatedEvent;
@@ -51,7 +52,8 @@ use Symfony\Component\Uid\Uuid;
  * @method Organisation find(int|string $id)
  * @method Organisation findEntity(IQueryBuilder $query)
  * @method Organisation[] findAll(int|null $limit = null, int|null $offset = null)
- * @method Organisation[] findEntities(IQueryBuilder $query)
+ * @method list<Organisation> findEntities(IQueryBuilder $query)
+ * @psalm-suppress LessSpecificImplementedReturnType - @method annotation is correct, parent returns list<T>
  */
 class OrganisationMapper extends QBMapper
 {
@@ -114,7 +116,9 @@ class OrganisationMapper extends QBMapper
     public function update(Entity $entity): Entity
     {
         // Get old state before update.
-        $oldEntity = $this->find($entity->getId());
+        /** @var Organisation $oldEntity */
+        /** @psalm-suppress UndefinedMethod - parent::find exists on QBMapper */
+        $oldEntity = parent::find($entity->getId());
 
         if ($entity instanceof Organisation) {
             $entity->setUpdated(new \DateTime());
@@ -123,7 +127,7 @@ class OrganisationMapper extends QBMapper
         $entity = parent::update($entity);
 
         // Dispatch update event.
-        $this->eventDispatcher->dispatchTyped(new OrganisationUpdatedEvent($entity, $oldEntity));
+        $this->eventDispatcher->dispatchTyped(new OrganisationUpdatedEvent(newOrganisation: $entity, oldOrganisation: $oldEntity));
 
         return $entity;
 
@@ -175,8 +179,7 @@ class OrganisationMapper extends QBMapper
     /**
      * Find multiple organisations by UUIDs using a single optimized query
      *
-     * This method performs a single database query to fetch multiple organisations,
-     * significantly improving performance compared to individual queries.
+     * This method performs a single database query to fetch multiple organisations, extend: * significantly improving performance compared to individual queries.
      *
      * @param array $uuids Array of organisation UUIDs to find
      *
@@ -406,7 +409,7 @@ class OrganisationMapper extends QBMapper
         }
 
         // Check for uniqueness.
-        if ($this->uuidExists($uuid, $organisation->getId()) === true) {
+        if ($this->uuidExists(uuid: $uuid, excludeId: $organisation->getId()) === true) {
             throw new \Exception('UUID already exists. Please use a different UUID.');
         }
 
@@ -677,7 +680,7 @@ class OrganisationMapper extends QBMapper
     /**
      * Find organisations updated after a specific datetime
      *
-     * @param \DateTime $cutoffTime The cutoff time to search after
+     * @param DateTime $cutoffTime The cutoff time to search after
      *
      * @return array Array of Organisation entities updated after the cutoff time
      */
@@ -885,9 +888,9 @@ class OrganisationMapper extends QBMapper
             throw new \Exception('Organisation cannot be its own parent.');
         }
 
-        // Check if new parent exists.
+        // Check if new parent exists (validation only).
         try {
-            $parentOrg = $this->findByUuid($newParentUuid);
+            $this->findByUuid($newParentUuid);
         } catch (\Exception $e) {
             throw new \Exception('Parent organisation not found.');
         }
@@ -906,7 +909,7 @@ class OrganisationMapper extends QBMapper
         // Calculate maximum depth after assignment.
         $maxDepthAbove = count($parentChain) + 1;
         // Parent chain + new parent.
-        $maxDepthBelow = $this->getMaxDepthInChain($childrenChain, $organisationUuid);
+        $maxDepthBelow = $this->getMaxDepthInChain(chain: $childrenChain, rootUuid: $organisationUuid);
         $totalDepth    = $maxDepthAbove + $maxDepthBelow;
 
         if ($totalDepth > 10) {
@@ -962,7 +965,7 @@ class OrganisationMapper extends QBMapper
         // Calculate depth for each child.
         $maxDepth = 0;
         foreach ($childrenUuids as $childUuid) {
-            $depth    = $this->calculateDepthFromRoot($childUuid, $rootUuid, $parentMap);
+            $depth    = $this->calculateDepthFromRoot(childUuid: $childUuid, rootUuid: $rootUuid, parentMap: $parentMap);
             $maxDepth = max($maxDepth, $depth);
         }
 

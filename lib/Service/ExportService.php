@@ -47,25 +47,11 @@ class ExportService
 {
 
     /**
-     * Object entity mapper instance
-     *
-     * @var ObjectEntityMapper
-     */
-    private readonly ObjectEntityMapper $objectEntityMapper;
-
-    /**
      * Register mapper instance
      *
      * @var RegisterMapper
      */
     private readonly RegisterMapper $registerMapper;
-
-    /**
-     * User manager for checking user context
-     *
-     * @var IUserManager
-     */
-    private readonly IUserManager $userManager;
 
     /**
      * Group manager for checking admin group membership
@@ -85,11 +71,13 @@ class ExportService
     /**
      * Constructor for the ExportService
      *
-     * @param ObjectEntityMapper $objectEntityMapper The object entity mapper
+     * @param ObjectEntityMapper $objectEntityMapper The object entity mapper (unused but kept for future use)
      * @param RegisterMapper     $registerMapper     The register mapper
-     * @param IUserManager       $userManager        The user manager
+     * @param IUserManager       $userManager        The user manager (unused but kept for future use)
      * @param IGroupManager      $groupManager       The group manager
      * @param ObjectService      $objectService      The object service
+     *
+     * @psalm-suppress UnusedParam - objectEntityMapper and userManager kept for future use
      */
     public function __construct(
         ObjectEntityMapper $objectEntityMapper,
@@ -98,11 +86,9 @@ class ExportService
         IGroupManager $groupManager,
         ObjectService $objectService
     ) {
-        $this->objectEntityMapper = $objectEntityMapper;
-        $this->registerMapper     = $registerMapper;
-        $this->userManager        = $userManager;
-        $this->groupManager       = $groupManager;
-        $this->objectService      = $objectService;
+        $this->registerMapper = $registerMapper;
+        $this->groupManager   = $groupManager;
+        $this->objectService  = $objectService;
 
     }//end __construct()
 
@@ -376,7 +362,7 @@ class ExportService
             $properties = $schema->getProperties();
 
             // Sort properties by their order in the schema.
-            foreach ($properties as $fieldName => $fieldDefinition) {
+            foreach (array_keys($properties) as $fieldName) {
                 // Skip fields that are already in the default headers.
                 if (in_array($fieldName, ['id', 'uuid', 'uri', 'register', 'schema', 'created', 'updated']) === true) {
                     continue;

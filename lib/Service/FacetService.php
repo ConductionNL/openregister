@@ -82,7 +82,7 @@ class FacetService
     public function __construct(
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly SchemaMapper $schemaMapper,
-        private readonly RegisterMapper $registerMapper,
+        /** @psalm-suppress PossiblyUnusedProperty - Property is used in constructor to initialize cache */
         private readonly ICacheFactory $cacheFactory,
         private readonly IUserSession $userSession,
         private readonly LoggerInterface $logger
@@ -97,7 +97,7 @@ class FacetService
             } catch (\Exception $e) {
                 // No caching available - will skip cache operations.
                 $this->facetCache = null;
-                $this->logger->warning('Facet caching unavailable', ['error' => $e->getMessage()]);
+                $this->logger->warning(message: 'Facet caching unavailable', context: ['error' => $e->getMessage()]);
             }
         }
 
@@ -133,7 +133,7 @@ class FacetService
 
         // Extract facet configuration.
         $facetConfig = $query['_facets'] ?? [];
-        if (empty($facetConfig)) {
+        if (empty($facetConfig) === true) {
             return ['facets' => []];
         }
 
@@ -143,7 +143,7 @@ class FacetService
 
         // **RESPONSE CACHING**: Check cache first for identical requests.
         $cacheKey = $this->generateFacetCacheKey($facetQuery, $facetConfig);
-        $cached = $this->getCachedFacetResponse($cacheKey);
+        $cached   = $this->getCachedFacetResponse($cacheKey);
         if ($cached !== null) {
             return $cached;
         }
@@ -158,12 +158,15 @@ class FacetService
         // **CACHE RESULTS**: Store for future requests.
         $this->cacheFacetResponse($cacheKey, $result);
 
-        $this->logger->debug('FacetService completed facet calculation', [
-            'executionTime' => $executionTime . 'ms',
-            'strategy' => $result['performance_metadata']['strategy'] ?? 'unknown',
-            'cacheUsed' => false,
-            'totalFacetResults' => $result['performance_metadata']['total_facet_results'] ?? 0
-        ]);
+        $this->logger->debug(
+                message: 'FacetService completed facet calculation',
+                context: [
+                    'executionTime'     => $executionTime.'ms',
+                    'strategy'          => $result['performance_metadata']['strategy'] ?? 'unknown',
+                    'cacheUsed'         => false,
+                    'totalFacetResults' => $result['performance_metadata']['total_facet_results'] ?? 0,
+                ]
+                );
 
         return $result;
 
@@ -177,7 +180,7 @@ class FacetService
      * always see meaningful facet options, even when their current search/filters
      * return zero results.
      *
-     * @param array $facetQuery Query for facet calculation (without pagination)
+     * @param array $facetQuery  Query for facet calculation (without pagination)
      * @param array $facetConfig Facet configuration
      *
      * @return array Facet results with fallback metadata
@@ -188,53 +191,58 @@ class FacetService
         $facets = $this->objectEntityMapper->getSimpleFacets($facetQuery);
 
         // **STAGE 2**: Check if we got meaningful facets.
-        $totalFacetResults = $this->countFacetResults($facets);
+        $totalFacetResults     = $this->countFacetResults($facets);
         $hasRestrictiveFilters = $this->hasRestrictiveFilters($facetQuery);
 
-        $strategy = 'filtered';
+        $strategy     = 'filtered';
         $fallbackUsed = false;
 
         // **INTELLIGENT FALLBACK**: If no facets and we have restrictive filters, try broader query.
-        if ($totalFacetResults === 0 && $hasRestrictiveFilters) {
-
-            $this->logger->debug('Facets empty with restrictive filters, trying collection-wide fallback', [
-                'originalQuery' => array_keys($facetQuery),
-                'totalResults' => $totalFacetResults
-            ]);
+        if ($totalFacetResults === 0 && $hasRestrictiveFilters === true) {
+            $this->logger->debug(
+                    message: 'Facets empty with restrictive filters, trying collection-wide fallback',
+                    context: [
+                        'originalQuery' => array_keys($facetQuery),
+                        'totalResults'  => $totalFacetResults,
+                    ]
+                    );
 
             // Create collection-wide query: keep register/schema context but remove restrictive filters.
             $collectionQuery = [
-                '@self' => $facetQuery['@self'] ?? [],
-                '_facets' => $facetConfig,
-                '_published' => $facetQuery['_published'] ?? false,
-                '_includeDeleted' => $facetQuery['_includeDeleted'] ?? false
+                '@self'           => $facetQuery['@self'] ?? [],
+                '_facets'         => $facetConfig,
+                '_published'      => $facetQuery['_published'] ?? false,
+                '_includeDeleted' => $facetQuery['_includeDeleted'] ?? false,
             ];
 
             // Calculate collection-wide facets.
-            $fallbackFacets = $this->objectEntityMapper->getSimpleFacets($collectionQuery);
+            $fallbackFacets  = $this->objectEntityMapper->getSimpleFacets($collectionQuery);
             $fallbackResults = $this->countFacetResults($fallbackFacets);
 
             if ($fallbackResults > 0) {
-                $facets = $fallbackFacets;
-                $strategy = 'collection_fallback';
+                $facets       = $fallbackFacets;
+                $strategy     = 'collection_fallback';
                 $fallbackUsed = true;
 
-                $this->logger->info('Smart faceting fallback successful', [
-                    'fallbackResults' => $fallbackResults,
-                    'originalResults' => $totalFacetResults,
-                    'collectionQuery' => array_keys($collectionQuery)
-                ]);
+                $this->logger->info(
+                        message: 'Smart faceting fallback successful',
+                        context: [
+                            'fallbackResults' => $fallbackResults,
+                            'originalResults' => $totalFacetResults,
+                            'collectionQuery' => array_keys($collectionQuery),
+                        ]
+                        );
             }
-        }
+        }//end if
 
         return [
-            'facets' => $facets,
+            'facets'               => $facets,
             'performance_metadata' => [
-                'strategy' => $strategy,
-                'fallback_used' => $fallbackUsed,
-                'total_facet_results' => $this->countFacetResults($facets),
-                'has_restrictive_filters' => $hasRestrictiveFilters
-            ]
+                'strategy'                => $strategy,
+                'fallback_used'           => $fallbackUsed,
+                'total_facet_results'     => $this->countFacetResults($facets),
+                'has_restrictive_filters' => $hasRestrictiveFilters,
+            ],
         ];
 
     }//end calculateFacetsWithFallback()
@@ -251,7 +259,7 @@ class FacetService
      *
      * @return array Facetable field configuration
      */
-    public function getFacetableFields(array $baseQuery, int $limit = 100): array
+    public function getFacetableFields(array $baseQuery, int $limit=100): array
     {
         $startTime = microtime(true);
 
@@ -263,11 +271,14 @@ class FacetService
 
         $executionTime = round((microtime(true) - $startTime) * 1000, 2);
 
-        $this->logger->debug('Facetable fields discovery completed', [
-            'executionTime' => $executionTime . 'ms',
-            'schemaCount' => count($schemas),
-            'facetableFieldCount' => count($facetableFields['@self'] ?? []) + count($facetableFields['object_fields'] ?? [])
-        ]);
+        $this->logger->debug(
+                message: 'Facetable fields discovery completed',
+                context: [
+                    'executionTime'       => $executionTime.'ms',
+                    'schemaCount'         => count($schemas),
+                    'facetableFieldCount' => count($facetableFields['@self'] ?? []) + count($facetableFields['object_fields'] ?? []),
+                ]
+                );
 
         return $facetableFields;
 
@@ -277,7 +288,7 @@ class FacetService
     /**
      * Generate cache key for facet responses
      *
-     * @param array $facetQuery Query for faceting (without pagination)
+     * @param array $facetQuery  Query for faceting (without pagination)
      * @param array $facetConfig Facet configuration
      *
      * @return string Cache key
@@ -286,24 +297,29 @@ class FacetService
     {
         // **RBAC COMPLIANCE**: Include user context for role-based access control.
         $user = $this->userSession->getUser();
-        $userId = $user ? $user->getUID() : 'anonymous';
+        if ($user !== null) {
+            $userId = $user->getUID();
+        } else {
+            $userId = 'anonymous';
+        }
 
         // Get organization context if available.
         $orgId = null;
-        if (isset($facetQuery['@self']['organisation'])) {
+        if (isset($facetQuery['@self']['organisation']) === true) {
             $orgId = $facetQuery['@self']['organisation'];
         }
 
         // Create RBAC-aware cache key.
         $cacheData = [
-            'facets' => $facetConfig,
+            'facets'  => $facetConfig,
             'filters' => array_diff_key($facetQuery, ['_facets' => true]),
-            'user' => $userId,
-            'org' => $orgId,
-            'version' => '2.0' // Increment to invalidate when RBAC logic changes
+            'user'    => $userId,
+            'org'     => $orgId,
+            'version' => '2.0',
+        // Increment to invalidate when RBAC logic changes.
         ];
 
-        return 'facet_rbac_' . md5(json_encode($cacheData));
+        return 'facet_rbac_'.md5(json_encode($cacheData));
 
     }//end generateFacetCacheKey()
 
@@ -324,7 +340,7 @@ class FacetService
         try {
             $cached = $this->facetCache->get($cacheKey);
             if ($cached !== null) {
-                $this->logger->debug('Facet response cache hit', ['cacheKey' => $cacheKey]);
+                $this->logger->debug(message: 'Facet response cache hit', context: ['cacheKey' => $cacheKey]);
                 // Add cache metadata.
                 $cached['performance_metadata']['cache_hit'] = true;
                 return $cached;
@@ -354,19 +370,26 @@ class FacetService
 
         try {
             // Use different TTL based on strategy.
-            $ttl = $result['performance_metadata']['fallback_used'] ?? false ?
-                self::COLLECTION_FACET_TTL : self::FACET_CACHE_TTL;
+            $fallbackUsed = $result['performance_metadata']['fallback_used'] ?? false;
+            if ($fallbackUsed === true) {
+                $ttl = self::COLLECTION_FACET_TTL;
+            } else {
+                $ttl = self::FACET_CACHE_TTL;
+            }
 
             $this->facetCache->set($cacheKey, $result, $ttl);
 
-            $this->logger->debug('Facet response cached', [
-                'cacheKey' => $cacheKey,
-                'ttl' => $ttl,
-                'strategy' => $result['performance_metadata']['strategy'] ?? 'unknown'
-            ]);
+            $this->logger->debug(
+                    message: 'Facet response cached',
+                    context: [
+                        'cacheKey' => $cacheKey,
+                        'ttl'      => $ttl,
+                        'strategy' => $result['performance_metadata']['strategy'] ?? 'unknown',
+                    ]
+                    );
         } catch (\Exception $e) {
             // Cache set failed, continue without caching.
-        }
+        }//end try
 
     }//end cacheFacetResponse()
 
@@ -383,9 +406,9 @@ class FacetService
         $total = 0;
 
         foreach ($facets as $facetGroup) {
-            if (is_array($facetGroup)) {
+            if (is_array($facetGroup) === true) {
                 foreach ($facetGroup as $facet) {
-                    if (isset($facet['buckets']) && is_array($facet['buckets'])) {
+                    if (isset($facet['buckets']) === true && is_array($facet['buckets']) === true) {
                         foreach ($facet['buckets'] as $bucket) {
                             $total += (int) ($bucket['results'] ?? 0);
                         }
@@ -409,13 +432,13 @@ class FacetService
     private function hasRestrictiveFilters(array $query): bool
     {
         // Check for search terms.
-        if (!empty($query['_search'])) {
+        if (empty($query['_search']) === false) {
             return true;
         }
 
         // Check for object field filters (anything not starting with _ or @self).
         foreach ($query as $key => $value) {
-            if (!str_starts_with($key, '_') && $key !== '@self' && !empty($value)) {
+            if (str_starts_with($key, '_') === false && $key !== '@self' && empty($value) === false) {
                 return true;
             }
         }
@@ -439,7 +462,7 @@ class FacetService
 
         if ($schemaFilter !== null) {
             // Get specific schemas.
-            if (is_array($schemaFilter)) {
+            if (is_array($schemaFilter) === true) {
                 return $this->schemaMapper->findMultiple($schemaFilter);
             } else {
                 try {
@@ -451,7 +474,8 @@ class FacetService
         }
 
         // No specific schema filter - get all schemas for collection-wide facetable discovery.
-        return $this->schemaMapper->findAll(null); // null = no limit (get all)
+        // Null = no limit (get all).
+        return $this->schemaMapper->findAll(limit: null);
 
     }//end getSchemasForQuery()
 
@@ -468,21 +492,21 @@ class FacetService
     private function getFacetableFieldsFromSchemas(array $schemas): array
     {
         $facetableFields = [
-            '@self' => [],
-            'object_fields' => []
+            '@self'         => [],
+            'object_fields' => [],
         ];
 
         foreach ($schemas as $schema) {
             // **TYPE SAFETY**: Ensure we have a Schema object.
-            if (!($schema instanceof Schema)) {
+            if (($schema instanceof Schema) === false) {
                 continue;
             }
 
             try {
                 $schemaFacets = $schema->getFacets();
-                if (!empty($schemaFacets)) {
+                if (empty($schemaFacets) === false) {
                     // Merge @self metadata facets.
-                    if (isset($schemaFacets['@self'])) {
+                    if (isset($schemaFacets['@self']) === true) {
                         $facetableFields['@self'] = array_merge(
                             $facetableFields['@self'],
                             $schemaFacets['@self']
@@ -490,7 +514,7 @@ class FacetService
                     }
 
                     // Merge object field facets.
-                    if (isset($schemaFacets['object_fields'])) {
+                    if (isset($schemaFacets['object_fields']) === true) {
                         $facetableFields['object_fields'] = array_merge(
                             $facetableFields['object_fields'],
                             $schemaFacets['object_fields']
@@ -498,13 +522,22 @@ class FacetService
                     }
                 }
             } catch (\Exception $e) {
-                $this->logger->error('Failed to get facets from schema', [
-                    'error' => $e->getMessage(),
-                    'schemaId' => method_exists($schema, 'getId') ? $schema->getId() : 'unknown'
-                ]);
+                // Get schema ID if method exists, otherwise use 'unknown'.
+                $schemaId = 'unknown';
+                if (method_exists($schema, 'getId') === true) {
+                    $schemaId = $schema->getId();
+                }
+
+                $this->logger->error(
+                        message: 'Failed to get facets from schema',
+                        context: [
+                            'error'    => $e->getMessage(),
+                            'schemaId' => $schemaId,
+                        ]
+                        );
                 continue;
-            }
-        }
+            }//end try
+        }//end foreach
 
         return $facetableFields;
 

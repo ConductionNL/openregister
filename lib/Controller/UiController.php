@@ -23,6 +23,8 @@ use OCP\IRequest;
  * UiController that serves SPA entry for history-mode deep links.
  *
  * @psalm-type TemplateName = 'index'
+ *
+ * @psalm-suppress UnusedClass - This controller is registered via routes.php and used by Nextcloud's routing system
  */
 class UiController extends Controller
 {
@@ -38,7 +40,7 @@ class UiController extends Controller
      */
     public function __construct(string $appName, IRequest $request)
     {
-        parent::__construct($appName, $request);
+        parent::__construct(appName: $appName, request: $request);
 
     }//end __construct()
 
@@ -55,9 +57,9 @@ class UiController extends Controller
     {
         try {
             $response = new TemplateResponse(
-                $this->appName,
-                'index',
-                []
+                    appName: $this->appName,
+                    templateName: 'index',
+                    params: []
             );
 
             $csp = new ContentSecurityPolicy();
@@ -66,12 +68,13 @@ class UiController extends Controller
 
             return $response;
         } catch (\Exception $e) {
-            return new TemplateResponse(
-                $this->appName,
-                'error',
-                ['error' => $e->getMessage()],
-                '500'
+            $response = new TemplateResponse(
+                    appName: $this->appName,
+                    templateName: 'error',
+                    params: ['error' => $e->getMessage()]
             );
+            $response->setStatus(500);
+            return $response;
         }
 
     }//end makeSpaResponse()
@@ -309,6 +312,42 @@ class UiController extends Controller
         return $this->makeSpaResponse();
 
     }//end searchTrail()
+
+
+    /**
+     * Returns the webhooks page template.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return TemplateResponse The template response.
+     *
+     * @phpstan-return TemplateResponse
+     * @psalm-return   TemplateResponse
+     */
+    public function webhooks(): TemplateResponse
+    {
+        return $this->makeSpaResponse();
+
+    }//end webhooks()
+
+
+    /**
+     * Returns the entities page template.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return TemplateResponse The template response.
+     *
+     * @phpstan-return TemplateResponse
+     * @psalm-return   TemplateResponse
+     */
+    public function entities(): TemplateResponse
+    {
+        return $this->makeSpaResponse();
+
+    }//end entities()
 
 
 }//end class

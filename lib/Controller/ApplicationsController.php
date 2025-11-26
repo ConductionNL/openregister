@@ -34,6 +34,8 @@ use Exception;
  * REST API controller for managing applications.
  *
  * @package OCA\OpenRegister\Controller
+ *
+ * @psalm-suppress UnusedClass - This controller is registered via routes.php and used by Nextcloud's routing system
  */
 class ApplicationsController extends Controller
 {
@@ -76,7 +78,7 @@ class ApplicationsController extends Controller
         ApplicationMapper $applicationMapper,
         LoggerInterface $logger
     ) {
-        parent::__construct($appName, $request);
+        parent::__construct(appName: $appName, request: $request);
         $this->applicationService = $applicationService;
         $this->applicationMapper  = $applicationMapper;
         $this->logger = $logger;
@@ -95,9 +97,9 @@ class ApplicationsController extends Controller
     public function page(): TemplateResponse
     {
         return new TemplateResponse(
-            'openregister',
-            'index',
-            []
+                appName: 'openregister',
+                templateName: 'index',
+                params: []
         );
 
     }//end page()
@@ -120,7 +122,6 @@ class ApplicationsController extends Controller
             $limit  = $this->extractLimit($params);
             $offset = $this->extractOffset($params);
             $page   = $this->extractPage($params);
-            $search = $params['_search'] ?? '';
 
             // Convert page to offset if provided.
             if ($page !== null && $limit !== null) {
@@ -132,25 +133,22 @@ class ApplicationsController extends Controller
             unset($filters['_limit'], $filters['_offset'], $filters['_page'], $filters['_search'], $filters['_route']);
 
             $applications = $this->applicationMapper->findAll(
-                $limit,
-                $offset,
-                $filters
+                limit: $limit,
+                offset: $offset,
+                filters: $filters
             );
 
-            return new JSONResponse(['results' => $applications], Http::STATUS_OK);
+            return new JSONResponse(data: ['results' => $applications], statusCode: Http::STATUS_OK);
         } catch (Exception $e) {
             $this->logger->error(
-                'Failed to get applications',
-                [
+                message: 'Failed to get applications',
+                context: [
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString(),
                 ]
             );
 
-            return new JSONResponse(
-                ['error' => 'Failed to retrieve applications'],
-                Http::STATUS_INTERNAL_SERVER_ERROR
-            );
+            return new JSONResponse(data: ['error' => 'Failed to retrieve applications'], statusCode: Http::STATUS_INTERNAL_SERVER_ERROR);
         }//end try
 
     }//end index()
@@ -171,20 +169,17 @@ class ApplicationsController extends Controller
         try {
             $application = $this->applicationService->find($id);
 
-            return new JSONResponse($application, Http::STATUS_OK);
+            return new JSONResponse(data: $application, statusCode: Http::STATUS_OK);
         } catch (Exception $e) {
             $this->logger->error(
-                'Failed to get application',
-                [
+                message: 'Failed to get application',
+                context: [
                     'id'    => $id,
                     'error' => $e->getMessage(),
                 ]
             );
 
-            return new JSONResponse(
-                ['error' => 'Application not found'],
-                Http::STATUS_NOT_FOUND
-            );
+            return new JSONResponse(data: ['error' => 'Application not found'], statusCode: Http::STATUS_NOT_FOUND);
         }
 
     }//end show()
@@ -206,20 +201,17 @@ class ApplicationsController extends Controller
 
             $application = $this->applicationService->create($data);
 
-            return new JSONResponse($application, Http::STATUS_CREATED);
+            return new JSONResponse(data: $application, statusCode: Http::STATUS_CREATED);
         } catch (Exception $e) {
             $this->logger->error(
-                'Failed to create application',
-                [
+                message: 'Failed to create application',
+                context: [
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString(),
                 ]
             );
 
-            return new JSONResponse(
-                ['error' => 'Failed to create application: '.$e->getMessage()],
-                Http::STATUS_BAD_REQUEST
-            );
+            return new JSONResponse(data: ['error' => 'Failed to create application: '.$e->getMessage()], statusCode: Http::STATUS_BAD_REQUEST);
         }//end try
 
     }//end create()
@@ -249,20 +241,17 @@ class ApplicationsController extends Controller
 
             $application = $this->applicationService->update($id, $data);
 
-            return new JSONResponse($application, Http::STATUS_OK);
+            return new JSONResponse(data: $application, statusCode: Http::STATUS_OK);
         } catch (Exception $e) {
             $this->logger->error(
-                'Failed to update application',
-                [
+                message: 'Failed to update application',
+                context: [
                     'id'    => $id,
                     'error' => $e->getMessage(),
                 ]
             );
 
-            return new JSONResponse(
-                ['error' => 'Failed to update application: '.$e->getMessage()],
-                Http::STATUS_BAD_REQUEST
-            );
+            return new JSONResponse(data: ['error' => 'Failed to update application: '.$e->getMessage()], statusCode: Http::STATUS_BAD_REQUEST);
         }//end try
 
     }//end update()
@@ -300,20 +289,17 @@ class ApplicationsController extends Controller
         try {
             $this->applicationService->delete($id);
 
-            return new JSONResponse(['message' => 'Application deleted successfully'], Http::STATUS_OK);
+            return new JSONResponse(data: ['message' => 'Application deleted successfully'], statusCode: Http::STATUS_OK);
         } catch (Exception $e) {
             $this->logger->error(
-                'Failed to delete application',
-                [
+                message: 'Failed to delete application',
+                context: [
                     'id'    => $id,
                     'error' => $e->getMessage(),
                 ]
             );
 
-            return new JSONResponse(
-                ['error' => 'Failed to delete application'],
-                Http::STATUS_BAD_REQUEST
-            );
+            return new JSONResponse(data: ['error' => 'Failed to delete application'], statusCode: Http::STATUS_BAD_REQUEST);
         }
 
     }//end destroy()

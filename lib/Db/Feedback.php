@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use DateTime;
 use JsonSerializable;
 use OCP\AppFramework\Db\Entity;
 
@@ -42,10 +43,10 @@ use OCP\AppFramework\Db\Entity;
  * @method void setType(string $type)
  * @method string|null getComment()
  * @method void setComment(?string $comment)
- * @method \DateTime|null getCreated()
- * @method void setCreated(?\DateTime $created)
- * @method \DateTime|null getUpdated()
- * @method void setUpdated(?\DateTime $updated)
+ * @method DateTime|null getCreated()
+ * @method void setCreated(?DateTime $created)
+ * @method DateTime|null getUpdated()
+ * @method void setUpdated(?DateTime $updated)
  */
 class Feedback extends Entity implements JsonSerializable
 {
@@ -109,16 +110,16 @@ class Feedback extends Entity implements JsonSerializable
     /**
      * Created timestamp.
      *
-     * @var \DateTime|null
+     * @var DateTime|null
      */
-    protected ?\DateTime $created = null;
+    protected ?DateTime $created = null;
 
     /**
      * Updated timestamp.
      *
-     * @var \DateTime|null
+     * @var DateTime|null
      */
-    protected ?\DateTime $updated = null;
+    protected ?DateTime $updated = null;
 
 
     /**

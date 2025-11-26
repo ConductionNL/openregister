@@ -53,14 +53,14 @@ class Version1Date20251102180000 extends SimpleMigrationStep
         // @var ISchemaWrapper $schema
         $schema = $schemaClosure();
 
-        $output->info('🔧 Preparing to rename roles to groups in organisations table...');
+        $output->info(message: '🔧 Preparing to rename roles to groups in organisations table...');
 
         if ($schema->hasTable('openregister_organisations') === true) {
             $table = $schema->getTable('openregister_organisations');
 
             // Only proceed if we have roles column and don't have groups column yet.
             if ($table->hasColumn('roles') === true && $table->hasColumn('groups') === false) {
-                $output->info('   ✓ Ready to migrate roles column to groups');
+                $output->info(message: '   ✓ Ready to migrate roles column to groups');
             }
         }
 
@@ -97,11 +97,11 @@ class Version1Date20251102180000 extends SimpleMigrationStep
                         ]
                         );
 
-                $output->info('   ✓ Added groups column');
+                $output->info(message: '   ✓ Added groups column');
 
                 return $schema;
             } else if ($table->hasColumn('groups') === true) {
-                $output->info('   ⚠️  Groups column already exists');
+                $output->info(message: '   ⚠️  Groups column already exists');
             }
         }//end if
 
@@ -128,7 +128,7 @@ class Version1Date20251102180000 extends SimpleMigrationStep
             return;
         }
 
-        $output->info('📋 Migrating data from roles to groups...');
+        $output->info(message: '📋 Migrating data from roles to groups...');
 
         // Get database connection.
         $connection = \OC::$server->get(\OCP\IDBConnection::class);
@@ -143,16 +143,16 @@ class Version1Date20251102180000 extends SimpleMigrationStep
                 $result = $connection->executeUpdate($sql);
 
                 if ($result > 0) {
-                    $output->info("   ✓ Copied data from roles to groups for {$result} organisations");
+                    $output->info(message: "   ✓ Copied data from roles to groups for {$result} organisations");
                 } else {
-                    $output->info('   ℹ️  No data to migrate (already migrated or roles column empty)');
+                    $output->info(message: '   ℹ️  No data to migrate (already migrated or roles column empty)');
                 }
             } catch (\Exception $copyError) {
                 // Roles column might not exist if migration already ran.
-                $output->info('   ℹ️  Data migration skipped (roles column may not exist)');
+                $output->info(message: '   ℹ️  Data migration skipped (roles column may not exist)');
             }
 
-            $output->info('✅ Migration completed successfully - organisations now use groups');
+            $output->info(message: '✅ Migration completed successfully - organisations now use groups');
         } catch (\Exception $e) {
             $output->info('   ⚠️  Error during migration: '.$e->getMessage());
         }//end try

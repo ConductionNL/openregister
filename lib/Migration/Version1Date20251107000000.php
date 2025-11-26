@@ -59,16 +59,16 @@ class Version1Date20251107000000 extends SimpleMigrationStep
 
             // Check if roles column still exists.
             if ($table->hasColumn('roles') === true) {
-                $output->info('🗑️  Removing deprecated roles column from organisations table...');
+                $output->info(message: '🗑️  Removing deprecated roles column from organisations table...');
 
                 $table->dropColumn('roles');
 
-                $output->info('   ✓ Dropped roles column');
-                $output->info('✅ Cleanup completed - organisations table now only uses groups column');
+                $output->info(message: '   ✓ Dropped roles column');
+                $output->info(message: '✅ Cleanup completed - organisations table now only uses groups column');
 
                 return $schema;
             } else {
-                $output->info('   ℹ️  Roles column already removed');
+                $output->info(message: '   ℹ️  Roles column already removed');
             }
         }
 
