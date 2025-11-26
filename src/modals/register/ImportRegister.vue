@@ -422,9 +422,16 @@ export default {
 		schemaOptions() {
 			if (!registerStore.registerItem) return { options: [] }
 
+			// Convert register schemas to strings for comparison
+			const registerSchemaIds = (registerStore.registerItem.schemas || []).map(id => String(id))
+
 			return {
 				options: schemaStore.schemaList
-					.filter(schema => registerStore.registerItem.schemas.includes(schema.id))
+					.filter(schema => {
+						// Convert schema ID to string for comparison
+						const schemaId = String(schema.id)
+						return registerSchemaIds.includes(schemaId)
+					})
 					.map(schema => ({
 						value: schema.id,
 						label: schema.title,
@@ -645,9 +652,36 @@ export default {
 			const i = Math.floor(Math.log(bytes) / Math.log(k))
 			return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 		},
-		handleRegisterChange(option) {
+		async handleRegisterChange(option) {
+			if (!option) {
+				registerStore.setRegisterItem(null)
+				schemaStore.setSchemaItem(null)
+				return
+			}
+
 			registerStore.setRegisterItem(option)
 			schemaStore.setSchemaItem(null)
+
+			// Always refresh schema list when register changes to ensure we have all schemas
+			// This is important because schemas might not be loaded yet or might have changed
+			const registerSchemas = option.schemas || []
+			if (registerSchemas.length > 0) {
+				this.schemaLoading = true
+				try {
+					// Load all schemas to ensure we have the ones for this register
+					await schemaStore.refreshSchemaList()
+					console.log('ImportRegister: Loaded schemas, register has', registerSchemas.length, 'schemas, schemaList has', schemaStore.schemaList.length, 'schemas')
+					console.log('ImportRegister: Register schema IDs:', registerSchemas)
+					console.log('ImportRegister: Available schema IDs:', schemaStore.schemaList.map(s => s.id))
+				} catch (error) {
+					console.error('ImportRegister: Error loading schemas for register:', error)
+				} finally {
+					this.schemaLoading = false
+				}
+			} else {
+				// Register has no schemas
+				console.log('ImportRegister: Register has no schemas')
+			}
 		},
 		async handleSchemaChange(option) {
 			schemaStore.setSchemaItem(option)
