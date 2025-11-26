@@ -619,7 +619,7 @@ docker-compose restart ollama
 - **Ollama Documentation**: https://ollama.ai/
 - **Model Library**: https://ollama.ai/library
 - **GitHub**: https://github.com/ollama/ollama
-- **OpenRegister AI Docs**: See [AI Features](../features/ai.md)
+- **OpenRegister AI Docs**: See [AI Features](../Features/ai.md)
 
 ## FAQ
 

@@ -509,8 +509,8 @@ src/
 
 ## Related Documentation
 
-- [Multi-Tenancy Feature](/docs/features/multi-tenancy)
+- [Multi-Tenancy Feature](/docs/Features/multi-tenancy)
 - [RBAC and Multi-Tenancy](/docs/development/rbac)
 - [Testing](/docs/development/testing)
-- [Component Development](/docs/Development/Services/styleguide)
+- [Component Development](/docs/development/Services/styleguide)
 

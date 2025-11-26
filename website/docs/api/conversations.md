@@ -504,7 +504,7 @@ await fetch(`/index.php/apps/openregister/api/conversations/${uuid}/permanent`, 
 
 - [Chat & RAG Deep Dive](../features/chat-rag-deepdive.md) - How chat and RAG work
 - [AI Agents](../features/agents.md) - Manage and configure AI agents
-- [AI Configuration](../features/ai.md) - LLM setup and configuration
+- [AI Configuration](../Features/ai.md) - LLM setup and configuration
 
 ## Database Schema
 
