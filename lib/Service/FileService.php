@@ -208,6 +208,7 @@ class FileService
         if (class_exists(\OCA\Files_Versions\Versions\VersionManager::class) === true) {
             /** @var \OCA\Files_Versions\Versions\VersionManager $versionManager */
             $versionManager = \OC::$server->get(\OCA\Files_Versions\Versions\VersionManager::class);
+            /** @psalm-suppress UndefinedClass - VersionManager is optional dependency */
             $versionManager->createVersion(user: $this->userManager->get(self::APP_USER), file: $file);
         }
 
@@ -240,6 +241,7 @@ class FileService
         if (class_exists(\OCA\Files_Versions\Versions\VersionManager::class) === true) {
             /** @var \OCA\Files_Versions\Versions\VersionManager $versionManager */
             $versionManager = \OC::$server->get(\OCA\Files_Versions\Versions\VersionManager::class);
+            /** @psalm-suppress UndefinedClass - VersionManager is optional dependency */
             return $versionManager->getVersionFile($this->userManager->get(self::APP_USER), $file, $version);
         }
 

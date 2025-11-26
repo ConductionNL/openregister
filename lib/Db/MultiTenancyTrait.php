@@ -180,6 +180,7 @@ trait MultiTenancyTrait
         }
         
         // Check if multitenancy is enabled (if appConfig is available)
+        /** @psalm-suppress RedundantCondition - Defensive check for optional property */
         if (isset($this->appConfig)) {
             $multitenancyConfig = $this->appConfig->getValueString('openregister', 'multitenancy', '');
             if (!empty($multitenancyConfig)) {
@@ -226,6 +227,7 @@ trait MultiTenancyTrait
 
         // Check if published objects should bypass multi-tenancy (objects table only).
         $publishedBypassEnabled = false;
+        /** @psalm-suppress RedundantCondition - Defensive check for optional property */
         if ($enablePublished && isset($this->appConfig)) {
             $multitenancyConfig = $this->appConfig->getValueString('openregister', 'multitenancy', '');
             if (!empty($multitenancyConfig)) {
@@ -318,6 +320,7 @@ trait MultiTenancyTrait
         }
 
         $adminOverrideEnabled = false;
+        /** @psalm-suppress RedundantCondition - Defensive check for optional property */
         if ($isAdmin && isset($this->appConfig)) {
             $multitenancyConfig = $this->appConfig->getValueString('openregister', 'multitenancy', '');
             if (!empty($multitenancyConfig)) {
@@ -353,6 +356,7 @@ trait MultiTenancyTrait
             $qb->expr()->in($organisationColumn, $qb->createNamedParameter($activeOrganisationUuids, IQueryBuilder::PARAM_STR_ARRAY))
         );
 
+        /** @psalm-suppress RedundantCondition - Defensive check for optional property */
         if (isset($this->logger)) {
             $this->logger->debug(
                     '[MultiTenancyTrait] Added organisation filter',

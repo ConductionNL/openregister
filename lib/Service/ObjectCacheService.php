@@ -475,7 +475,7 @@ class ObjectCacheService
                     $dynamicFields[$fieldName.'_txt'] = implode(' ', array_filter($value, 'is_string'));
                 } else {
                     // Nested object - recurse with dot notation.
-                    $nestedFields  = $this->extractDynamicFieldsFromObject($value, $fieldName.'_');
+                    $nestedFields  = $this->extractDynamicFieldsFromObject(objectData: $value, prefix: $fieldName.'_');
                     $dynamicFields = array_merge($dynamicFields, $nestedFields);
                 }
             } else if (is_string($value)) {
@@ -514,7 +514,7 @@ class ObjectCacheService
         $textContent[] = $object->getSummary();
 
         // Extract text from object data recursively.
-        $this->extractTextFromArray($objectData, $textContent);
+        $this->extractTextFromArray(data: $objectData, textContent: $textContent);
 
         return implode(' ', array_filter($textContent));
 
@@ -535,7 +535,7 @@ class ObjectCacheService
             if (is_string($value)) {
                 $textContent[] = $value;
             } else if (is_array($value)) {
-                $this->extractTextFromArray($value, $textContent);
+                $this->extractTextFromArray(data: $value, textContent: $textContent);
             }
         }
 
@@ -786,7 +786,7 @@ class ObjectCacheService
      */
     public function getCachedSearchResult(array $query, ?string $activeOrganisationUuid, bool $rbac, bool $multi): array|int|null
     {
-        $cacheKey = $this->generateSearchCacheKey($query, $activeOrganisationUuid, $rbac, $multi);
+        $cacheKey = $this->generateSearchCacheKey(query: $query, activeOrganisationUuid: $activeOrganisationUuid, rbac: $rbac, multi: $multi);
 
         // Check in-memory cache first (fastest).
         if (isset($this->inMemoryQueryCache[$cacheKey])) {
@@ -858,7 +858,7 @@ class ObjectCacheService
         // Enforce maximum cache TTL for office environments.
         $ttl = min($ttl, self::MAX_CACHE_TTL);
 
-        $cacheKey = $this->generateSearchCacheKey($query, $activeOrganisationUuid, $rbac, $multi);
+        $cacheKey = $this->generateSearchCacheKey(query: $query, activeOrganisationUuid: $activeOrganisationUuid, rbac: $rbac, multi: $multi);
 
         // Store in in-memory cache.
         $this->inMemoryQueryCache[$cacheKey] = $result;
@@ -1049,17 +1049,17 @@ class ObjectCacheService
             // **SOLR INTEGRATION**: Index or remove from SOLR based on operation.
             if ($operation === 'create' || $operation === 'update') {
                 // Index the object in SOLR with immediate commit for instant visibility.
-                $this->indexObjectInSolr($object, true);
+                $this->indexObjectInSolr(object: $object, commit: true);
 
                 // Update name cache for the modified object.
                 $name = $object->getName() ?? $object->getUuid();
-                $this->setObjectName($object->getUuid(), $name);
+                $this->setObjectName(identifier: $object->getUuid(), name: $name);
                 if ($object->getId() && (string) $object->getId() !== $object->getUuid()) {
-                    $this->setObjectName($object->getId(), $name);
+                    $this->setObjectName(identifier: $object->getId(), name: $name);
                 }
             } else if ($operation === 'delete') {
                 // Remove from SOLR index with immediate commit for instant visibility.
-                $this->removeObjectFromSolr($object, true);
+                $this->removeObjectFromSolr(object: $object, commit: true);
 
                 // Remove from name cache.
                 unset($this->nameCache[$object->getUuid()]);
@@ -1071,7 +1071,7 @@ class ObjectCacheService
         // This ensures colleagues see each other's changes immediately.
         $schemaIdInt = ($schemaId !== null) ? (is_string($schemaId) ? (int) $schemaId : (int) $schemaId) : null;
         $registerIdInt = ($registerId !== null) ? (is_string($registerId) ? (int) $registerId : (int) $registerId) : null;
-        $this->clearSchemaRelatedCaches($schemaIdInt, $registerIdInt, $operation);
+        $this->clearSchemaRelatedCaches(schemaId: $schemaIdInt, registerId: $registerIdInt, operation: $operation);
 
         $executionTime = round((microtime(true) - $startTime) * 1000, 2);
 
@@ -1375,7 +1375,7 @@ class ObjectCacheService
                 $organisation = $this->organisationMapper->findByUuid((string) $identifier);
                 if ($organisation !== null) {
                     $name = $organisation->getName() ?? $organisation->getUuid();
-                    $this->setObjectName($identifier, $name);
+                    $this->setObjectName(identifier: $identifier, name: $name);
                     return $name;
                 }
             } catch (\Exception $e) {
@@ -1386,7 +1386,7 @@ class ObjectCacheService
             $object = $this->objectEntityMapper->find($identifier);
             if ($object !== null) {
                 $name = $object->getName() ?? $object->getUuid();
-                $this->setObjectName($identifier, $name);
+                $this->setObjectName(identifier: $identifier, name: $name);
                 return $name;
             }
         } catch (\Exception $e) {
@@ -1473,7 +1473,7 @@ class ObjectCacheService
                     $results[$key] = $name;
 
                     // Cache for future use (UUID only).
-                    $this->setObjectName($key, $name);
+                    $this->setObjectName(identifier: $key, name: $name);
 
                     // Remove from missing list since we found it.
                     $missingIdentifiers = array_diff($missingIdentifiers, [$key]);
@@ -1488,7 +1488,7 @@ class ObjectCacheService
                         $results[$key] = $name;
 
                         // Cache for future use (UUID only).
-                        $this->setObjectName($key, $name);
+                        $this->setObjectName(identifier: $key, name: $name);
                     }
                 }
             } catch (\Exception $e) {
@@ -1759,10 +1759,10 @@ class ObjectCacheService
 
                 // Load batch of objects.
                 $objects = $this->objectEntityMapper->findInBatches(
-                    $offset,
-                    $batchSize,
-                    $registerId,
-                    $schemaId
+                    offset: $offset,
+                    batchSize: $batchSize,
+                    registerId: $registerId,
+                    schemaId: $schemaId
                 );
 
                 if (empty($objects)) {
@@ -1796,7 +1796,7 @@ class ObjectCacheService
 
                 // Bulk index documents in SOLR.
                 if (!empty($solrDocuments)) {
-                    $bulkResult = $solrService->bulkIndex($solrDocuments, true);
+                    $bulkResult = $solrService->bulkIndex(documents: $solrDocuments, commit: true);
                     if ($bulkResult === false) {
                         $batchErrors += count($solrDocuments);
                         $this->logger->warning(
@@ -1939,7 +1939,7 @@ class ObjectCacheService
                 $query = 'schema_id_i:'.$schemaId;
             }
 
-            $result = $solrService->deleteByQuery($query, true);
+            $result = $solrService->deleteByQuery(query: $query, commit: true);
 
             $this->logger->info(
                     '🗑️  SOLR INDEX CLEARED',

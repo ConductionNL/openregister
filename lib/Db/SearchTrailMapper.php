@@ -49,7 +49,8 @@ use Symfony\Component\Uid\Uuid;
  * @method SearchTrail find(int|string $id)
  * @method SearchTrail findEntity(IQueryBuilder $query)
  * @method SearchTrail[] findAll(int|null $limit = null, int|null $offset = null)
- * @method SearchTrail[] findEntities(IQueryBuilder $query)
+ * @method list<SearchTrail> findEntities(IQueryBuilder $query)
+ * @psalm-suppress LessSpecificImplementedReturnType - @method annotation is correct, parent returns list<T>
  */
 class SearchTrailMapper extends QBMapper
 {

@@ -67,7 +67,8 @@ use Symfony\Component\Uid\Uuid;
  * @method ObjectEntity find(int|string $id)
  * @method ObjectEntity findEntity(IQueryBuilder $query)
  * @method ObjectEntity[] findAll(int|null $limit = null, int|null $offset = null)
- * @method ObjectEntity[] findEntities(IQueryBuilder $query)
+ * @method list<ObjectEntity> findEntities(IQueryBuilder $query)
+ * @psalm-suppress LessSpecificImplementedReturnType - @method annotation is correct, parent returns list<T>
  */
 class ObjectEntityMapper extends QBMapper
 {
@@ -1606,6 +1607,7 @@ class ObjectEntityMapper extends QBMapper
         $smartBypass = $isSimplePublicRequest && !$rbac; // Only when RBAC explicitly disabled
 
         // Build base query - different for count vs search.
+        /** @psalm-suppress RedundantCondition - PHPCS requires explicit comparison */
         if ($count === true) {
             // For count queries, use COUNT(*) and skip pagination.
             $queryBuilder->selectAlias($queryBuilder->createFunction('COUNT(*)'), 'count')
