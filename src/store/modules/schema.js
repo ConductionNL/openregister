@@ -26,17 +26,20 @@ export const useSchemaStore = defineStore('schema', {
 			this.schemaItem = schemaItem && new Schema(schemaItem)
 			console.log('Active schema item set to ' + (schemaItem?.title || 'null'))
 		},
-		setSchemaList(schemas) {
-			this.schemaList = schemas.map(schema => {
-				const existing = this.schemaList.find(item => item.id === schema.id) || {}
-				return {
-					...schema,
-					// keep previously toggled value if available, otherwise default false
-					showProperties: typeof existing.showProperties === 'boolean' ? existing.showProperties : false,
-				}
-			})
-			console.log('Schema list set to ' + schemas.length + ' items')
-		},
+	setSchemaList(schemas) {
+		this.schemaList = schemas.map(schema => {
+			const existing = this.schemaList.find(item => item.id === schema.id) || {}
+			// Convert properties array to object if needed (backend sometimes returns array when empty)
+			const normalizedProperties = Array.isArray(schema.properties) ? {} : (schema.properties || {})
+			return {
+				...schema,
+				properties: normalizedProperties,
+				// keep previously toggled value if available, otherwise default false
+				showProperties: typeof existing.showProperties === 'boolean' ? existing.showProperties : false,
+			}
+		})
+		console.log('Schema list set to ' + schemas.length + ' items')
+	},
 		/**
 		 * Set pagination details
 		 * @param {number} page - The current page number for pagination
@@ -70,21 +73,25 @@ export const useSchemaStore = defineStore('schema', {
 
 			return { response, data }
 		},
-		// Function to get a single schema
-		async getSchema(id, options = { setItem: false }) {
-			const endpoint = `/index.php/apps/openregister/api/schemas/${id}`
-			try {
-				const response = await fetch(endpoint, {
-					method: 'GET',
-				})
-				const data = await response.json()
-				options.setItem && this.setSchemaItem(data)
-				return data
-			} catch (err) {
-				console.error(err)
-				throw err
+	// Function to get a single schema
+	async getSchema(id, options = { setItem: false }) {
+		const endpoint = `/index.php/apps/openregister/api/schemas/${id}`
+		try {
+			const response = await fetch(endpoint, {
+				method: 'GET',
+			})
+			const data = await response.json()
+			// Convert properties array to object if needed (backend sometimes returns array when empty)
+			if (data && Array.isArray(data.properties)) {
+				data.properties = {}
 			}
-		},
+			options.setItem && this.setSchemaItem(data)
+			return data
+		} catch (err) {
+			console.error(err)
+			throw err
+		}
+	},
 		// New function to get schema statistics
 		async getSchemaStats(id) {
 			console.log('getSchemaStats called with ID:', id)
