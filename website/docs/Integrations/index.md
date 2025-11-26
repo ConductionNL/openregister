@@ -369,7 +369,7 @@ Always have fallback options:
 - [Text Extraction](../features/text-extraction-sources.md)
 - [RAG Implementation](../features/rag-implementation.md)
 - [Entity Extraction](../features/ner-nlp-concepts.md)
-- [AI Features](../features/ai.md)
+- [AI Features](../Features/ai.md)
 
 
 
