@@ -1,5 +1,5 @@
 <?php
-// phpcs:ignoreFile
+// phpcs:ignoreFile.
 /**
  * OpenRegister Migration - Create Search Trails Table
  *
@@ -46,7 +46,7 @@ class Version1Date20250712080102 extends SimpleMigrationStep
      */
     public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
-        // No pre-schema changes required
+        // No pre-schema changes required.
 
     }//end preSchemaChange()
 
@@ -58,7 +58,7 @@ class Version1Date20250712080102 extends SimpleMigrationStep
      * @param Closure(): ISchemaWrapper $schemaClosure
      * @param array                     $options
      *
-     * @return null|ISchemaWrapper
+     * @return ISchemaWrapper
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
@@ -67,68 +67,68 @@ class Version1Date20250712080102 extends SimpleMigrationStep
 
         if ($schema->hasTable('openregister_search_trails') === false) {
             $table = $schema->createTable('openregister_search_trails');
-            
-            // Primary key
+
+            // Primary key.
             $table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true]);
-            
-            // Unique identifier
+
+            // Unique identifier.
             $table->addColumn('uuid', Types::STRING, ['notnull' => true, 'length' => 255]);
-            
-            // Search information
+
+            // Search information.
             $table->addColumn('search_term', Types::STRING, ['notnull' => false, 'length' => 1000]);
             $table->addColumn('query_parameters', Types::JSON, ['notnull' => false]);
             $table->addColumn('filters', Types::JSON, ['notnull' => false]);
             $table->addColumn('sort_parameters', Types::JSON, ['notnull' => false]);
-            
-            // Result information
+
+            // Result information.
             $table->addColumn('result_count', Types::INTEGER, ['notnull' => false]);
             $table->addColumn('total_results', Types::INTEGER, ['notnull' => false]);
-            
-            // Context information
+
+            // Context information.
             $table->addColumn('register', Types::INTEGER, ['notnull' => false]);
             $table->addColumn('schema', Types::INTEGER, ['notnull' => false]);
             $table->addColumn('register_uuid', Types::STRING, ['notnull' => false, 'length' => 255]);
             $table->addColumn('schema_uuid', Types::STRING, ['notnull' => false, 'length' => 255]);
-            
-            // User information
+
+            // User information.
             $table->addColumn('user', Types::STRING, ['notnull' => false, 'length' => 255]);
             $table->addColumn('user_name', Types::STRING, ['notnull' => false, 'length' => 255]);
             $table->addColumn('session', Types::STRING, ['notnull' => false, 'length' => 255]);
-            
-            // Request information
+
+            // Request information.
             $table->addColumn('ip_address', Types::STRING, ['notnull' => false, 'length' => 45]);
             $table->addColumn('user_agent', Types::TEXT, ['notnull' => false]);
             $table->addColumn('request_uri', Types::TEXT, ['notnull' => false]);
             $table->addColumn('http_method', Types::STRING, ['notnull' => false, 'length' => 10]);
-            
-            // Performance information
+
+            // Performance information.
             $table->addColumn('response_time', Types::INTEGER, ['notnull' => false]);
-            
-            // Pagination information
+
+            // Pagination information.
             $table->addColumn('page', Types::INTEGER, ['notnull' => false]);
             $table->addColumn('limit', Types::INTEGER, ['notnull' => false]);
             $table->addColumn('offset', Types::INTEGER, ['notnull' => false]);
-            
-            // Feature flags
+
+            // Feature flags.
             $table->addColumn('facets_requested', Types::BOOLEAN, ['notnull' => false, 'default' => false]);
             $table->addColumn('facetable_requested', Types::BOOLEAN, ['notnull' => false, 'default' => false]);
             $table->addColumn('published_only', Types::BOOLEAN, ['notnull' => false, 'default' => false]);
-            
-            // Execution type
+
+            // Execution type.
             $table->addColumn('execution_type', Types::STRING, ['notnull' => false, 'length' => 10]);
-            
-            // Privacy/compliance fields
+
+            // Privacy/compliance fields.
             $table->addColumn('organisation_id', Types::STRING, ['notnull' => false, 'length' => 255]);
             $table->addColumn('organisation_id_type', Types::STRING, ['notnull' => false, 'length' => 64]);
-            
-            // Timestamps
+
+            // Timestamps.
             $table->addColumn('created', Types::DATETIME, ['notnull' => true, 'default' => 'CURRENT_TIMESTAMP']);
             $table->addColumn('expires', Types::DATETIME, ['notnull' => false]);
-            
-            // Set primary key
+
+            // Set primary key.
             $table->setPrimaryKey(['id']);
-            
-            // Add indexes for performance
+
+            // Add indexes for performance.
             $table->addIndex(['uuid'], 'search_trails_uuid_index');
             $table->addIndex(['search_term'], 'search_trails_search_term_index');
             $table->addIndex(['register'], 'search_trails_register_index');
@@ -138,8 +138,8 @@ class Version1Date20250712080102 extends SimpleMigrationStep
             $table->addIndex(['created'], 'search_trails_created_index');
             $table->addIndex(['expires'], 'search_trails_expires_index');
             $table->addIndex(['execution_type'], 'search_trails_execution_type_index');
-            
-            // Composite indexes for common query patterns
+
+            // Composite indexes for common query patterns.
             $table->addIndex(['register', 'schema'], 'search_trails_register_schema_index');
             $table->addIndex(['created', 'register'], 'search_trails_created_register_index');
             $table->addIndex(['user', 'created'], 'search_trails_user_created_index');
@@ -161,9 +161,9 @@ class Version1Date20250712080102 extends SimpleMigrationStep
      */
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
-        // No post-schema changes required
+        // No post-schema changes required.
 
     }//end postSchemaChange()
 
 
-}//end class 
+}//end class

@@ -1,5 +1,5 @@
 <?php
-// phpcs:ignoreFile
+// phpcs:ignoreFile.
 /**
  * OpenRegister Migration
  *
@@ -53,7 +53,7 @@ class Version1Date20241128221000 extends SimpleMigrationStep
      * @param Closure(): ISchemaWrapper $schemaClosure
      * @param array                     $options
      *
-     * @return null|ISchemaWrapper
+     * @return ISchemaWrapper
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
@@ -62,7 +62,7 @@ class Version1Date20241128221000 extends SimpleMigrationStep
          */
         $schema = $schemaClosure();
 
-        // Update the openregister_objects table
+        // Update the openregister_objects table.
         $table = $schema->getTable('openregister_objects');
         if ($table->hasColumn('uri') === false) {
             $table->addColumn(

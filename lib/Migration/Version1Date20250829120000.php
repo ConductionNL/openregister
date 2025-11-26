@@ -131,7 +131,7 @@ class Version1Date20250829120000 extends SimpleMigrationStep
 
             // Skip the first record (keep original), update the rest.
             foreach (array_slice($duplicates, 1) as $index => $duplicate) {
-                $newSlug = $this->generateUniqueSlug($tableName, $organisation, $originalSlug, ($index + 2));
+                $newSlug = $this->generateUniqueSlug($tableName, $organisation, $originalSlug, ((int) $index + 2));
 
                 // Update the slug.
                 $updateQb = $this->connection->getQueryBuilder();
@@ -204,16 +204,17 @@ class Version1Date20250829120000 extends SimpleMigrationStep
      * @param Closure(): ISchemaWrapper $schemaClosure Schema closure
      * @param array                     $options       Migration options
      *
-     * @return null|ISchemaWrapper
+     * @return ISchemaWrapper
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
         /*
          * @var ISchemaWrapper $schema
          */
+
         $schema = $schemaClosure();
 
-        // 1. Add image column to openregister_objects table
+        // 1. Add image column to openregister_objects table.
         if ($schema->hasTable('openregister_objects') === true) {
             $table = $schema->getTable('openregister_objects');
 
@@ -230,7 +231,7 @@ class Version1Date20250829120000 extends SimpleMigrationStep
             }
         }
 
-        // 2. Add unique constraint for (organisation, slug) on registers table
+        // 2. Add unique constraint for (organisation, slug) on registers table.
         if ($schema->hasTable('openregister_registers') === true) {
             $table = $schema->getTable('openregister_registers');
 
@@ -246,7 +247,7 @@ class Version1Date20250829120000 extends SimpleMigrationStep
             }
         }
 
-        // 3. Add unique constraint for (organisation, slug) on schemas table
+        // 3. Add unique constraint for (organisation, slug) on schemas table.
         if ($schema->hasTable('openregister_schemas') === true) {
             $table = $schema->getTable('openregister_schemas');
 

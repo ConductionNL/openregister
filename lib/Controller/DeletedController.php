@@ -64,6 +64,7 @@ class DeletedController extends Controller
 
     }//end __construct()
 
+
     /**
      * Helper method to extract request parameters for deleted objects
      *
@@ -73,31 +74,43 @@ class DeletedController extends Controller
     {
         $params = $this->request->getParams();
 
-        // Extract pagination parameters
-        $limit  = (int) ($params['limit'] ?? $params['_limit'] ?? 20);
-        $offset = isset($params['offset']) ? (int) $params['offset'] : (isset($params['_offset']) ? (int) $params['_offset'] : null);
-        $page   = isset($params['page']) ? (int) $params['page'] : (isset($params['_page']) ? (int) $params['_page'] : null);
+        // Extract pagination parameters.
+        $limit = (int) ($params['limit'] ?? $params['_limit'] ?? 20);
 
-        // If we have a page but no offset, calculate the offset
+        $offset = null;
+        if (isset($params['offset']) === true) {
+            $offset = (int) $params['offset'];
+        } else if (isset($params['_offset']) === true) {
+            $offset = (int) $params['_offset'];
+        }
+
+        $page = null;
+        if (isset($params['page']) === true) {
+            $page = (int) $params['page'];
+        } else if (isset($params['_page']) === true) {
+            $page = (int) $params['_page'];
+        }
+
+        // If we have a page but no offset, calculate the offset.
         if ($page !== null && $offset === null) {
             $offset = ($page - 1) * $limit;
         }
 
-        // Extract search parameter
+        // Extract search parameter.
         $search = $params['search'] ?? $params['_search'] ?? null;
 
-        // Extract sort parameters
+        // Extract sort parameters.
         $sort = [];
-        if (isset($params['sort']) || isset($params['_sort'])) {
+        if (isset($params['sort']) === true || isset($params['_sort']) === true) {
             $sortField        = $params['sort'] ?? $params['_sort'] ?? 'deleted';
             $sortOrder        = $params['order'] ?? $params['_order'] ?? 'DESC';
             $sort[$sortField] = $sortOrder;
         } else {
             $sort['deleted'] = 'DESC';
-            // Default sort by deletion date
+            // Default sort by deletion date.
         }
 
-        // Filter out special parameters and system fields
+        // Filter out special parameters and system fields.
         $filters = array_filter(
             $params,
             function ($key) {
@@ -149,7 +162,7 @@ class DeletedController extends Controller
         $params = $this->extractRequestParameters();
 
         try {
-            // Get deleted objects using the mapper with includeDeleted = true and filter for only deleted objects
+            // Get deleted objects using the mapper with includeDeleted = true and filter for only deleted objects.
             $params['filters']['@self.deleted'] = 'IS NOT NULL';
 
             $objects = $this->objectEntityMapper->findAll(
@@ -159,26 +172,29 @@ class DeletedController extends Controller
                 sort: $params['sort'],
                 search: $params['search'],
                 includeDeleted: true
-            // Include deleted objects
+            // Include deleted objects.
             );
 
-            // Filter to only show actually deleted objects (extra safety)
+            // Filter to only show actually deleted objects (extra safety).
             $deletedObjects = array_filter(
                     $objects,
                     function ($object) {
                         return $object->getDeleted() !== null;
                     }
-                    );
+            );
 
-            // Get total count for pagination
+            // Get total count for pagination.
             $total = $this->objectEntityMapper->countAll(
                 filters: $params['filters'],
                 search: $params['search'],
                 includeDeleted: true
             );
 
-            // Calculate pagination
-            $pages = $params['limit'] ? ceil($total / $params['limit']) : 1;
+            // Calculate pagination.
+            $pages = 1;
+            if (isset($params['limit']) === true && $params['limit'] > 0) {
+                $pages = ceil($total / $params['limit']);
+            }
 
             return new JSONResponse(
                     [
@@ -213,13 +229,13 @@ class DeletedController extends Controller
     public function statistics(): JSONResponse
     {
         try {
-            // Get total deleted count
+            // Get total deleted count.
             $totalDeleted = $this->objectEntityMapper->countAll(
                 filters: ['@self.deleted' => 'IS NOT NULL'],
                 includeDeleted: true
             );
 
-            // Get deleted today count
+            // Get deleted today count.
             $today        = (new \DateTime())->format('Y-m-d');
             $deletedToday = $this->objectEntityMapper->countAll(
                 filters: [
@@ -229,7 +245,7 @@ class DeletedController extends Controller
                 includeDeleted: true
             );
 
-            // Get deleted this week count
+            // Get deleted this week count.
             $weekAgo         = (new \DateTime())->modify('-7 days')->format('Y-m-d');
             $deletedThisWeek = $this->objectEntityMapper->countAll(
                 filters: [
@@ -239,9 +255,9 @@ class DeletedController extends Controller
                 includeDeleted: true
             );
 
-            // Calculate oldest deletion (placeholder for now)
+            // Calculate oldest deletion (placeholder for now).
             $oldestDays = 0;
-            // TODO: Calculate actual oldest deletion
+            // TODO: Calculate actual oldest deletion.
             return new JSONResponse(
                     [
                         'totalDeleted'    => $totalDeleted,
@@ -273,8 +289,8 @@ class DeletedController extends Controller
     public function topDeleters(): JSONResponse
     {
         try {
-            // TODO: Implement aggregation query to get top deleters from deleted objects
-            // For now, return mock data structure
+            // TODO: Implement aggregation query to get top deleters from deleted objects.
+            // For now, return mock data structure.
             $topDeleters = [
                 ['user' => 'admin', 'count' => 0],
                 ['user' => 'user1', 'count' => 0],
@@ -318,7 +334,7 @@ class DeletedController extends Controller
                         );
             }
 
-            // Clear the deleted status
+            // Clear the deleted status.
             $object->setDeleted(null);
             $this->objectEntityMapper->update($object, true);
 
@@ -356,7 +372,7 @@ class DeletedController extends Controller
     {
         $ids = $this->request->getParam('ids', []);
 
-        if (empty($ids)) {
+        if (empty($ids) === true) {
             return new JSONResponse(
                     [
                         'error' => 'No object IDs provided',
@@ -366,7 +382,7 @@ class DeletedController extends Controller
         }
 
         try {
-            // Use findAll for better database performance - single query instead of multiple
+            // Use findAll for better database performance - single query instead of multiple.
             $objects = $this->objectEntityMapper->findAll(
                 limit: null,
                 offset: null,
@@ -380,12 +396,12 @@ class DeletedController extends Controller
                 includeDeleted: true
             );
 
-            // Track results
+            // Track results.
             $restored = 0;
             $failed   = 0;
             $foundIds = [];
 
-            // Process found objects
+            // Process found objects.
             foreach ($objects as $object) {
                 $foundIds[] = $object->getId();
 
@@ -395,7 +411,7 @@ class DeletedController extends Controller
                         $this->objectEntityMapper->update($object, true);
                         $restored++;
                     } else {
-                        // Object exists but is not deleted
+                        // Object exists but is not deleted.
                         $failed++;
                     }
                 } catch (\Exception $e) {
@@ -403,7 +419,7 @@ class DeletedController extends Controller
                 }
             }
 
-            // Count objects that were requested but not found in database
+            // Count objects that were requested but not found in database.
             $notFound = count(array_diff($ids, $foundIds));
             $failed  += $notFound;
 
@@ -413,7 +429,7 @@ class DeletedController extends Controller
                         'restored' => $restored,
                         'failed'   => $failed,
                         'notFound' => $notFound,
-                        'message'  => "Restored {$restored} objects, {$failed} failed".($notFound > 0 ? " ({$notFound} not found)" : ""),
+                        'message'  => $this->formatRestoreMessage($restored, $failed, $notFound),
                     ]
                     );
         } catch (\Exception $e) {
@@ -452,7 +468,7 @@ class DeletedController extends Controller
                         );
             }
 
-            // Permanently delete the object
+            // Permanently delete the object.
             $this->objectEntityMapper->delete($object);
 
             return new JSONResponse(
@@ -489,7 +505,7 @@ class DeletedController extends Controller
     {
         $ids = $this->request->getParam('ids', []);
 
-        if (empty($ids)) {
+        if (empty($ids) === true) {
             return new JSONResponse(
                     [
                         'error' => 'No object IDs provided',
@@ -499,7 +515,7 @@ class DeletedController extends Controller
         }
 
         try {
-            // Use findAll for better database performance - single query instead of multiple
+            // Use findAll for better database performance - single query instead of multiple.
             $objects = $this->objectEntityMapper->findAll(
                 limit: null,
                 offset: null,
@@ -513,12 +529,12 @@ class DeletedController extends Controller
                 includeDeleted: true
             );
 
-            // Track results
+            // Track results.
             $deleted  = 0;
             $failed   = 0;
             $foundIds = [];
 
-            // Process found objects
+            // Process found objects.
             foreach ($objects as $object) {
                 $foundIds[] = $object->getId();
 
@@ -527,7 +543,7 @@ class DeletedController extends Controller
                         $this->objectEntityMapper->delete($object);
                         $deleted++;
                     } else {
-                        // Object exists but is not deleted
+                        // Object exists but is not deleted.
                         $failed++;
                     }
                 } catch (\Exception $e) {
@@ -535,7 +551,7 @@ class DeletedController extends Controller
                 }
             }
 
-            // Count objects that were requested but not found in database
+            // Count objects that were requested but not found in database.
             $notFound = count(array_diff($ids, $foundIds));
             $failed  += $notFound;
 
@@ -545,7 +561,7 @@ class DeletedController extends Controller
                         'deleted'  => $deleted,
                         'failed'   => $failed,
                         'notFound' => $notFound,
-                        'message'  => "Permanently deleted {$deleted} objects, {$failed} failed".($notFound > 0 ? " ({$notFound} not found)" : ""),
+                        'message'  => $this->formatDeleteMessage($deleted, $failed, $notFound),
                     ]
                     );
         } catch (\Exception $e) {
@@ -558,6 +574,48 @@ class DeletedController extends Controller
         }//end try
 
     }//end destroyMultiple()
+
+
+    /**
+     * Format restore message.
+     *
+     * @param int $restored Number of restored objects.
+     * @param int $failed   Number of failed restorations.
+     * @param int $notFound Number of objects not found.
+     *
+     * @return string Formatted message.
+     */
+    private function formatRestoreMessage(int $restored, int $failed, int $notFound): string
+    {
+        $message = "Restored {$restored} objects, {$failed} failed";
+        if ($notFound > 0) {
+            $message .= " ({$notFound} not found)";
+        }
+
+        return $message;
+
+    }//end formatRestoreMessage()
+
+
+    /**
+     * Format delete message.
+     *
+     * @param int $deleted  Number of deleted objects.
+     * @param int $failed   Number of failed deletions.
+     * @param int $notFound Number of objects not found.
+     *
+     * @return string Formatted message.
+     */
+    private function formatDeleteMessage(int $deleted, int $failed, int $notFound): string
+    {
+        $message = "Permanently deleted {$deleted} objects, {$failed} failed";
+        if ($notFound > 0) {
+            $message .= " ({$notFound} not found)";
+        }
+
+        return $message;
+
+    }//end formatDeleteMessage()
 
 
 }//end class

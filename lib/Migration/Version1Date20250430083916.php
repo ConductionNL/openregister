@@ -1,5 +1,5 @@
 <?php
-// phpcs:ignoreFile
+// phpcs:ignoreFile.
 /**
  * Migration to add and modify columns in various tables and drop unused tables.
  *
@@ -36,32 +36,33 @@ class Version1Date20250430083916 extends SimpleMigrationStep
      *
      * @param IOutput        $output Output for the migration process
      * @param Closure       $schemaClosure The schema closure
-     * @param array<string> $options Migration options
+     * @param array<array-key, mixed> $options Migration options
      *
      * @phpstan-return ISchemaWrapper|null
+     *
      * @psalm-return ISchemaWrapper|null
-     * @return ISchemaWrapper|null The modified schema
+     * @return ISchemaWrapper
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
         /** @var ISchemaWrapper $schema */
         $schema = $schemaClosure();
 
-        // Update the openregister_configurations table
+        // Update the openregister_configurations table.
         $table = $schema->getTable('openregister_schemas');
 
-        // Add the authorization column if it doesn't exist
+        // Add the authorization column if it doesn't exist.
         if (!$table->hasColumn('icon')) {
             $table->addColumn('icon', Types::STRING, [
                 'notnull' => false,
                 'length' => 255,
             ]);
         }
-        
-        
-        // Update the openregister_configurations table
+
+
+        // Update the openregister_configurations table.
         $table = $schema->getTable('openregister_objects');
 
-        // Add the authorization column if it doesn't exist
+        // Add the authorization column if it doesn't exist.
         if (!$table->hasColumn('size')) {
             $table->addColumn('size', Types::INTEGER, [
                 'notnull' => false,
@@ -76,22 +77,22 @@ class Version1Date20250430083916 extends SimpleMigrationStep
             $table->addColumn('depublished', Types::DATETIME, ['notnull' => false]);
         }
 
-        // Update the openregister_registers table
+        // Update the openregister_registers table.
         $table = $schema->getTable('openregister_audit_trails');
 
-        // Add the authorization column if it doesn't exist
+        // Add the authorization column if it doesn't exist.
         if (!$table->hasColumn('size')) {
             $table->addColumn('size', Types::INTEGER, [
                 'notnull' => false,
             ]);
         }
 
-        // drop the files table (deprecated)
+        // drop the files table (deprecated).
         if ($schema->hasTable('openregister_files')) {
             $schema->dropTable('openregister_files');
         }
 
-        // drop the audit log table (deprecated)
+        // drop the audit log table (deprecated).
         if ($schema->hasTable('openregister_object_audit_logs')) {
             $schema->dropTable('openregister_object_audit_logs');
         }
@@ -99,4 +100,4 @@ class Version1Date20250430083916 extends SimpleMigrationStep
 
         return $schema;
     }
-} 
+}

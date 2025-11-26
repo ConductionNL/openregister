@@ -60,6 +60,8 @@ class Notifier implements INotifier
      * Only use [a-z0-9_].
      *
      * @return string The notifier ID
+     *
+     * @psalm-return 'openregister'
      */
     public function getID(): string
     {
@@ -92,7 +94,7 @@ class Notifier implements INotifier
     public function prepare(INotification $notification, string $languageCode): INotification
     {
         if ($notification->getApp() !== 'openregister') {
-            // Not our notification
+            // Not our notification.
             throw new InvalidArgumentException('Unknown app');
         }
 
@@ -103,7 +105,7 @@ class Notifier implements INotifier
                 return $this->prepareConfigurationUpdate($notification, $l);
 
             default:
-                // Unknown subject
+                // Unknown subject.
                 throw new InvalidArgumentException('Unknown subject');
         }//end switch
 
@@ -121,7 +123,7 @@ class Notifier implements INotifier
     private function prepareConfigurationUpdate(INotification $notification, $l): INotification
     {
         $parameters = $notification->getSubjectParameters();
-        
+
         $configurationTitle = $parameters['configurationTitle'] ?? 'Configuration';
         $currentVersion     = $parameters['currentVersion'] ?? 'unknown';
         $newVersion         = $parameters['newVersion'] ?? 'unknown';
@@ -141,7 +143,7 @@ class Notifier implements INotifier
             \OC::$server->getURLGenerator()->imagePath('openregister', 'app.svg')
         );
 
-        // Add action to view the configuration
+        // Add action to view the configuration.
         if (isset($parameters['configurationId']) === true) {
             $action = $notification->createAction();
             $action->setLabel($l->t('View'))
@@ -152,7 +154,7 @@ class Notifier implements INotifier
                     ).'#/configurations/'.$parameters['configurationId'],
                     'GET'
                 );
-            
+
             $notification->addAction($action);
         }
 
@@ -162,5 +164,3 @@ class Notifier implements INotifier
 
 
 }//end class
-
-

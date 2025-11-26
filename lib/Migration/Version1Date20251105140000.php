@@ -1,19 +1,24 @@
 <?php
 
-declare(strict_types=1);
-
 /**
- * Add configuration management columns
+ * OpenRegister Migration - Add Configuration Management Columns
  *
  * This migration adds columns to support remote configuration management,
  * version tracking, GitHub integration, and notification features.
  *
  * @category Migration
  * @package  OCA\OpenRegister\Migration
- * @author   Conduction Development Team <dev@conduction.nl>
- * @license  AGPL-3.0-or-later
- * @link     https://www.openregister.nl
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenRegister.nl
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Migration;
 
@@ -36,30 +41,33 @@ class Version1Date20251105140000 extends SimpleMigrationStep
     /**
      * Add configuration management columns to configurations table
      *
-     * @param IOutput $output The migration output handler
+     * @param IOutput $output        The migration output handler
      * @param Closure $schemaClosure The closure to get the schema
-     * @param array   $options Migration options
+     * @param array   $options       Migration options
      *
      * @return null|ISchemaWrapper The updated schema or null
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /** @var ISchemaWrapper $schema */
-        $schema = $schemaClosure();
+        /*
+         * @var ISchemaWrapper $schema
+         */
+
+        $schema  = $schemaClosure();
         $updated = false;
 
-        // Add new columns to configurations table
+        // Add new columns to configurations table.
         if ($schema->hasTable('openregister_configurations') === true) {
             $table = $schema->getTable('openregister_configurations');
-            
-            // Add sourceType column
+
+            // Add sourceType column.
             if ($table->hasColumn('source_type') === false) {
                 $table->addColumn(
                     'source_type',
                     Types::STRING,
                     [
                         'notnull' => false,
-                        'length' => 64,
+                        'length'  => 64,
                         'default' => 'manual',
                     ]
                 );
@@ -67,7 +75,7 @@ class Version1Date20251105140000 extends SimpleMigrationStep
                 $updated = true;
             }
 
-            // Add sourceUrl column
+            // Add sourceUrl column.
             if ($table->hasColumn('source_url') === false) {
                 $table->addColumn(
                     'source_url',
@@ -81,14 +89,14 @@ class Version1Date20251105140000 extends SimpleMigrationStep
                 $updated = true;
             }
 
-            // Add localVersion column
+            // Add localVersion column.
             if ($table->hasColumn('local_version') === false) {
                 $table->addColumn(
                     'local_version',
                     Types::STRING,
                     [
                         'notnull' => false,
-                        'length' => 255,
+                        'length'  => 255,
                         'default' => null,
                     ]
                 );
@@ -96,14 +104,14 @@ class Version1Date20251105140000 extends SimpleMigrationStep
                 $updated = true;
             }
 
-            // Add remoteVersion column
+            // Add remoteVersion column.
             if ($table->hasColumn('remote_version') === false) {
                 $table->addColumn(
                     'remote_version',
                     Types::STRING,
                     [
                         'notnull' => false,
-                        'length' => 255,
+                        'length'  => 255,
                         'default' => null,
                     ]
                 );
@@ -111,7 +119,7 @@ class Version1Date20251105140000 extends SimpleMigrationStep
                 $updated = true;
             }
 
-            // Add lastChecked column
+            // Add lastChecked column.
             if ($table->hasColumn('last_checked') === false) {
                 $table->addColumn(
                     'last_checked',
@@ -125,7 +133,7 @@ class Version1Date20251105140000 extends SimpleMigrationStep
                 $updated = true;
             }
 
-            // Add autoUpdate column
+            // Add autoUpdate column.
             if ($table->hasColumn('auto_update') === false) {
                 $table->addColumn(
                     'auto_update',
@@ -139,7 +147,7 @@ class Version1Date20251105140000 extends SimpleMigrationStep
                 $updated = true;
             }
 
-            // Add notificationGroups column
+            // Add notificationGroups column.
             if ($table->hasColumn('notification_groups') === false) {
                 $table->addColumn(
                     'notification_groups',
@@ -153,14 +161,14 @@ class Version1Date20251105140000 extends SimpleMigrationStep
                 $updated = true;
             }
 
-            // Add githubRepo column
+            // Add githubRepo column.
             if ($table->hasColumn('github_repo') === false) {
                 $table->addColumn(
                     'github_repo',
                     Types::STRING,
                     [
                         'notnull' => false,
-                        'length' => 255,
+                        'length'  => 255,
                         'default' => null,
                     ]
                 );
@@ -168,14 +176,14 @@ class Version1Date20251105140000 extends SimpleMigrationStep
                 $updated = true;
             }
 
-            // Add githubBranch column
+            // Add githubBranch column.
             if ($table->hasColumn('github_branch') === false) {
                 $table->addColumn(
                     'github_branch',
                     Types::STRING,
                     [
                         'notnull' => false,
-                        'length' => 255,
+                        'length'  => 255,
                         'default' => 'main',
                     ]
                 );
@@ -183,14 +191,14 @@ class Version1Date20251105140000 extends SimpleMigrationStep
                 $updated = true;
             }
 
-            // Add githubPath column
+            // Add githubPath column.
             if ($table->hasColumn('github_path') === false) {
                 $table->addColumn(
                     'github_path',
                     Types::STRING,
                     [
                         'notnull' => false,
-                        'length' => 500,
+                        'length'  => 500,
                         'default' => null,
                     ]
                 );
@@ -198,7 +206,7 @@ class Version1Date20251105140000 extends SimpleMigrationStep
                 $updated = true;
             }
 
-            // Add schemas column if it doesn't exist
+            // Add schemas column if it doesn't exist.
             if ($table->hasColumn('schemas') === false) {
                 $table->addColumn(
                     'schemas',
@@ -212,7 +220,7 @@ class Version1Date20251105140000 extends SimpleMigrationStep
                 $updated = true;
             }
 
-            // Add objects column if it doesn't exist
+            // Add objects column if it doesn't exist.
             if ($table->hasColumn('objects') === false) {
                 $table->addColumn(
                     'objects',
@@ -226,14 +234,14 @@ class Version1Date20251105140000 extends SimpleMigrationStep
                 $updated = true;
             }
 
-            // Add uuid column if it doesn't exist
+            // Add uuid column if it doesn't exist.
             if ($table->hasColumn('uuid') === false) {
                 $table->addColumn(
                     'uuid',
                     Types::STRING,
                     [
                         'notnull' => false,
-                        'length' => 36,
+                        'length'  => 36,
                         'default' => null,
                     ]
                 );
@@ -241,14 +249,14 @@ class Version1Date20251105140000 extends SimpleMigrationStep
                 $updated = true;
             }
 
-            // Add app column if it doesn't exist (replaces owner)
+            // Add app column if it doesn't exist (replaces owner).
             if ($table->hasColumn('app') === false) {
                 $table->addColumn(
                     'app',
                     Types::STRING,
                     [
                         'notnull' => false,
-                        'length' => 64,
+                        'length'  => 64,
                         'default' => null,
                     ]
                 );
@@ -256,7 +264,7 @@ class Version1Date20251105140000 extends SimpleMigrationStep
                 $updated = true;
             }
 
-            // Add organisation column if it doesn't exist
+            // Add organisation column if it doesn't exist.
             if ($table->hasColumn('organisation') === false) {
                 $table->addColumn(
                     'organisation',
@@ -270,7 +278,7 @@ class Version1Date20251105140000 extends SimpleMigrationStep
                 $updated = true;
             }
 
-            // Add indexes for better query performance
+            // Add indexes for better query performance.
             if ($table->hasIndex('openregister_config_source_type_idx') === false) {
                 $table->addIndex(['source_type'], 'openregister_config_source_type_idx');
                 $output->info('Added index for source_type');
@@ -284,11 +292,13 @@ class Version1Date20251105140000 extends SimpleMigrationStep
             }
         }//end if
 
-        return $updated === true ? $schema : null;
+        if ($updated === true) {
+            return $schema;
+        }
+
+        return null;
 
     }//end changeSchema()
 
 
 }//end class
-
-

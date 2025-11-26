@@ -43,47 +43,73 @@ Open Register operates on three fundamental principles:
 4. If valid, the object is stored in the configured backend
 5. The object can be retrieved later, regardless of the storage backend
 
-![Core Concepts](diagrams/core-concept.svg)
+```mermaid
+graph TB
+    Client[Client]
+    API[API Layer]
+    Registry[Schema Registry]
+    Validator[Validation Engine]
+    Adapter[Storage Adapter]
+    Storage[Storage Backends]
+    DB1[Nextcloud DB]
+    DB2[MySQL/MariaDB]
+    DB3[PostgreSQL]
+    DB4[MongoDB]
+    
+    Client -->|Wants to store a JSON object| API
+    API -->|passes incoming JSON objects| Adapter
+    Adapter -->|Validates incoming JSON objects| Validator
+    Validator <--|Obtains schema definitions| Registry
+    Adapter -->|Saves results after validation| Storage
+    Storage --> DB1
+    Storage --> DB2
+    Storage --> DB3
+    Storage --> DB4
+    
+    note1[Validates incoming JSON objects<br/>and stores them in configured<br/>storage backends]
+    Adapter -.-> note1
+```
 
 ## Project Structure
 
-    ```plantuml
-    @startuml
+```mermaid
+graph TB
+    subgraph OpenRegister["Open Register"]
+        Register[Register]
+        Schema[Schema]
+        Object[Object]
+        File[File]
+        Relation[Relation]
+        AuditTrail[AuditTrail]
+        Lock[Lock]
+    end
     
-    package "Open Register" {
-      [Register] o-- [Schema]
-      [Register] o-- [Object]
-      [Object] o-- [File]
-      [Object] o-- [Relation]
-      [Object] o-- [AuditTrail]
-      [Object] o-- [Lock]
-      
-      database "Storage" {
-        [SQL Database]
-        [MongoDB]
-        [Nextcloud DB]
-      }
-      
-      [Object] --> [Storage]
-    }
+    subgraph Storage["Storage"]
+        SQL[SQL Database]
+        MongoDB[MongoDB]
+        NextcloudDB[Nextcloud DB]
+    end
     
-    note right of [Register]
-      Manages collections of related objects
-      with shared schemas and permissions
-    end note
+    Register -->|has| Schema
+    Register -->|contains| Object
+    Object -->|has| File
+    Object -->|has| Relation
+    Object -->|has| AuditTrail
+    Object -->|has| Lock
+    Object -->|stores in| Storage
+    Storage --> SQL
+    Storage --> MongoDB
+    Storage --> NextcloudDB
     
-    note right of [Schema] 
-      JSON Schema definition that validates
-      object structure and data types
-    end note
+    note1[Manages collections of related objects<br/>with shared schemas and permissions]
+    Register -.-> note1
     
-    note right of [Object]
-      Core entity containing the actual data,
-      validated against its schema
-    end note
+    note2[JSON Schema definition that validates<br/>object structure and data types]
+    Schema -.-> note2
     
-    @enduml
-    ```
+    note3[Core entity containing the actual data,<br/>validated against its schema]
+    Object -.-> note3
+```
 
 ## Developer Documentation
 
@@ -96,7 +122,6 @@ For developers working with OpenRegister, see our comprehensive developer guides
 
 ## Troubleshooting & Fixes
 
-For information about recent fixes and solutions to common issues, see the [Fixes section](./fixes/index.md).
 
 ## Contributing
 

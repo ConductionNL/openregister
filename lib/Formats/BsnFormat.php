@@ -55,7 +55,7 @@ class BsnFormat implements Format
                 $multiplier = $reversedIterator;
             }
 
-            $control += ($character * $multiplier);
+            $control += ((int) $character * $multiplier);
             $reversedIterator--;
         }
 

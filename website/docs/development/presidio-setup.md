@@ -499,7 +499,7 @@ Before deploying to production:
 - [ ] Logging level is set to INFO (not DEBUG)
 - [ ] Custom recognizers are loaded (if needed)
 - [ ] Integration tests pass with Dutch text samples
-- [ ] Performance is acceptable (<200ms per 1000 chars)
+- [ ] Performance is acceptable (&lt;200ms per 1000 chars)
 
 ## Alternative: MITIE for Development
 

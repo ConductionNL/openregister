@@ -51,8 +51,8 @@ class ViewHandler
     /**
      * Constructor
      *
-     * @param ViewMapper        $viewMapper The view mapper instance
-     * @param LoggerInterface   $logger     The logger instance
+     * @param ViewMapper      $viewMapper The view mapper instance
+     * @param LoggerInterface $logger     The logger instance
      */
     public function __construct(ViewMapper $viewMapper, LoggerInterface $logger)
     {
@@ -84,15 +84,16 @@ class ViewHandler
      * @param array       $data  The view data
      * @param string|null $owner The owner of the view
      *
-     * @return View|null The imported view or null if skipped
+     * @return View The imported view or null if skipped
+     *
      * @throws Exception If import fails
      */
-    public function import(array $data, ?string $owner = null): ?View
+    public function import(array $data, ?string $owner=null): View
     {
         try {
             unset($data['id'], $data['uuid']);
 
-            // Check if view already exists by name
+            // Check if view already exists by name.
             $existingViews = $this->viewMapper->findAll();
             $existingView  = null;
             foreach ($existingViews as $view) {
@@ -103,7 +104,7 @@ class ViewHandler
             }
 
             if ($existingView !== null) {
-                // Update existing view
+                // Update existing view.
                 $existingView->hydrate($data);
                 if ($owner !== null) {
                     $existingView->setOwner($owner);
@@ -112,7 +113,7 @@ class ViewHandler
                 return $this->viewMapper->update($existingView);
             }
 
-            // Create new view
+            // Create new view.
             $view = new View();
             $view->hydrate($data);
             if ($owner !== null) {
@@ -129,5 +130,3 @@ class ViewHandler
 
 
 }//end class
-
-

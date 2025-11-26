@@ -60,9 +60,9 @@ class NotificationService
     /**
      * Constructor
      *
-     * @param IManager          $notificationManager The notification manager instance
-     * @param IGroupManager     $groupManager        The group manager instance
-     * @param LoggerInterface   $logger              The logger instance
+     * @param IManager        $notificationManager The notification manager instance
+     * @param IGroupManager   $groupManager        The group manager instance
+     * @param LoggerInterface $logger              The logger instance
      */
     public function __construct(
         IManager $notificationManager,
@@ -71,7 +71,7 @@ class NotificationService
     ) {
         $this->notificationManager = $notificationManager;
         $this->groupManager        = $groupManager;
-        $this->logger              = $logger;
+        $this->logger = $logger;
 
     }//end __construct()
 
@@ -84,20 +84,22 @@ class NotificationService
      * @param Configuration $configuration The configuration with available update
      *
      * @return int Number of notifications sent
+     *
+     * @psalm-return int<0, max>
      */
     public function notifyConfigurationUpdate(Configuration $configuration): int
     {
         $this->logger->info("Sending configuration update notification for: {$configuration->getTitle()}");
 
-        // Get notification groups from configuration
+        // Get notification groups from configuration.
         $notificationGroups = $configuration->getNotificationGroups() ?? [];
-        
-        // Always include admin group
+
+        // Always include admin group.
         if (in_array('admin', $notificationGroups, true) === false) {
             $notificationGroups[] = 'admin';
         }
 
-        // Collect all users to notify
+        // Collect all users to notify.
         $usersToNotify = [];
         foreach ($notificationGroups as $groupId) {
             $group = $this->groupManager->get($groupId);
@@ -108,11 +110,12 @@ class NotificationService
 
             $users = $group->getUsers();
             foreach ($users as $user) {
-                $usersToNotify[$user->getUID()] = true; // Use array key to avoid duplicates
+                $usersToNotify[$user->getUID()] = true;
+                // Use array key to avoid duplicates.
             }
         }
 
-        // Send notifications to all users
+        // Send notifications to all users.
         $notificationCount = 0;
         foreach (array_keys($usersToNotify) as $userId) {
             try {
@@ -139,11 +142,11 @@ class NotificationService
     /**
      * Send update notification to a specific user.
      *
-     * @param string      $userId               The user ID to notify
-     * @param string      $configurationTitle   The configuration title
-     * @param int         $configurationId      The configuration ID
-     * @param string|null $currentVersion       The current/local version
-     * @param string|null $newVersion           The new/remote version
+     * @param string      $userId             The user ID to notify
+     * @param string      $configurationTitle The configuration title
+     * @param int         $configurationId    The configuration ID
+     * @param string|null $currentVersion     The current/local version
+     * @param string|null $newVersion         The new/remote version
      *
      * @return void
      */
@@ -155,17 +158,20 @@ class NotificationService
         ?string $newVersion
     ): void {
         $notification = $this->notificationManager->createNotification();
-        
+
         $notification->setApp('openregister')
             ->setUser($userId)
             ->setDateTime(new DateTime())
             ->setObject('configuration', (string) $configurationId)
-            ->setSubject('configuration_update_available', [
-                'configurationTitle' => $configurationTitle,
-                'configurationId'    => $configurationId,
-                'currentVersion'     => $currentVersion ?? 'unknown',
-                'newVersion'         => $newVersion ?? 'unknown',
-            ]);
+            ->setSubject(
+                    'configuration_update_available',
+                    [
+                        'configurationTitle' => $configurationTitle,
+                        'configurationId'    => $configurationId,
+                        'currentVersion'     => $currentVersion ?? 'unknown',
+                        'newVersion'         => $newVersion ?? 'unknown',
+                    ]
+                    );
 
         $this->notificationManager->notify($notification);
 
@@ -184,11 +190,11 @@ class NotificationService
     public function markConfigurationUpdated(Configuration $configuration): void
     {
         $notification = $this->notificationManager->createNotification();
-        
+
         $notification->setApp('openregister')
             ->setObject('configuration', (string) $configuration->getId());
 
-        // This will remove all notifications for this configuration
+        // This will remove all notifications for this configuration.
         $this->notificationManager->markProcessed($notification);
 
         $this->logger->info("Marked configuration {$configuration->getTitle()} notifications as processed");
@@ -197,5 +203,3 @@ class NotificationService
 
 
 }//end class
-
-

@@ -20,6 +20,10 @@
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Event\OrganisationCreatedEvent;
+use OCA\OpenRegister\Event\OrganisationDeletedEvent;
+use OCA\OpenRegister\Event\OrganisationUpdatedEvent;
+use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
@@ -27,6 +31,7 @@ use OCP\IDBConnection;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 
 
+use OCP\EventDispatcher\IEventDispatcher;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 
@@ -38,6 +43,15 @@ use Symfony\Component\Uid\Uuid;
  * Manages CRUD operations and user-organisation relationships.
  *
  * @package OCA\OpenRegister\Db
+ *
+ * @method Organisation insert(Entity $entity)
+ * @method Organisation update(Entity $entity)
+ * @method Organisation insertOrUpdate(Entity $entity)
+ * @method Organisation delete(Entity $entity)
+ * @method Organisation find(int|string $id)
+ * @method Organisation findEntity(IQueryBuilder $query)
+ * @method Organisation[] findAll(int|null $limit = null, int|null $offset = null)
+ * @method Organisation[] findEntities(IQueryBuilder $query)
  */
 class OrganisationMapper extends QBMapper
 {
@@ -46,15 +60,93 @@ class OrganisationMapper extends QBMapper
     /**
      * OrganisationMapper constructor
      *
-     * @param IDBConnection $db Database connection
+     * @param IDBConnection    $db              Database connection
+     * @param LoggerInterface  $logger          Logger interface
+     * @param IEventDispatcher $eventDispatcher Event dispatcher
      */
     public function __construct(
         IDBConnection $db,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly IEventDispatcher $eventDispatcher
     ) {
         parent::__construct($db, 'openregister_organisations', Organisation::class);
 
     }//end __construct()
+
+
+    /**
+     * Insert a new organisation
+     *
+     * @param Entity $entity Organisation entity to insert
+     *
+     * @return Organisation The inserted organisation with updated ID
+     */
+    public function insert(Entity $entity): Entity
+    {
+        if ($entity instanceof Organisation) {
+            // Generate UUID if not set.
+            if (empty($entity->getUuid()) === true) {
+                $entity->setUuid(Uuid::v4()->toRfc4122());
+            }
+
+            // Set timestamps.
+            $entity->setCreated(new \DateTime());
+            $entity->setUpdated(new \DateTime());
+        }
+
+        $entity = parent::insert($entity);
+
+        // Dispatch creation event.
+        $this->eventDispatcher->dispatchTyped(new OrganisationCreatedEvent($entity));
+
+        return $entity;
+
+    }//end insert()
+
+
+    /**
+     * Update an existing organisation
+     *
+     * @param Entity $entity Organisation entity to update
+     *
+     * @return Organisation The updated organisation
+     */
+    public function update(Entity $entity): Entity
+    {
+        // Get old state before update.
+        $oldEntity = $this->find($entity->getId());
+
+        if ($entity instanceof Organisation) {
+            $entity->setUpdated(new \DateTime());
+        }
+
+        $entity = parent::update($entity);
+
+        // Dispatch update event.
+        $this->eventDispatcher->dispatchTyped(new OrganisationUpdatedEvent($entity, $oldEntity));
+
+        return $entity;
+
+    }//end update()
+
+
+    /**
+     * Delete an organisation
+     *
+     * @param Entity $entity Organisation entity to delete
+     *
+     * @return Organisation The deleted organisation
+     */
+    public function delete(Entity $entity): Entity
+    {
+        $entity = parent::delete($entity);
+
+        // Dispatch deletion event.
+        $this->eventDispatcher->dispatchTyped(new OrganisationDeletedEvent($entity));
+
+        return $entity;
+
+    }//end delete()
 
 
     /**
@@ -79,6 +171,7 @@ class OrganisationMapper extends QBMapper
 
     }//end findByUuid()
 
+
     /**
      * Find multiple organisations by UUIDs using a single optimized query
      *
@@ -86,11 +179,12 @@ class OrganisationMapper extends QBMapper
      * significantly improving performance compared to individual queries.
      *
      * @param array $uuids Array of organisation UUIDs to find
+     *
      * @return array Associative array of UUID => Organisation entity
      */
     public function findMultipleByUuid(array $uuids): array
     {
-        if (empty($uuids)) {
+        if (empty($uuids) === true) {
             return [];
         }
 
@@ -101,16 +195,18 @@ class OrganisationMapper extends QBMapper
                 $qb->expr()->in('uuid', $qb->createNamedParameter($uuids, IQueryBuilder::PARAM_STR_ARRAY))
             );
 
-        $result = $qb->execute();
+        $result        = $qb->execute();
         $organisations = [];
-        
-        while ($row = $result->fetch()) {
+
+        $row = $result->fetch();
+        while ($row !== false) {
             $organisation = new Organisation();
             $organisation = $organisation->fromRow($row);
             $organisations[$row['uuid']] = $organisation;
         }
-        
+
         return $organisations;
+
     }//end findMultipleByUuid()
 
 
@@ -149,7 +245,7 @@ class OrganisationMapper extends QBMapper
 
         $organisations = $this->findEntities($qb);
 
-        // Add user count to each organisation
+        // Add user count to each organisation.
         foreach ($organisations as &$organisation) {
             $organisation->userCount = count($organisation->getUserIds());
         }
@@ -170,16 +266,16 @@ class OrganisationMapper extends QBMapper
      */
     public function save(Organisation $organisation): Organisation
     {
-        // Validate UUID if provided
+        // Validate UUID if provided.
         $this->validateUuid($organisation);
 
-        // Generate UUID if not present and not explicitly set
+        // Generate UUID if not present and not explicitly set.
         if ($organisation->getUuid() === null || $organisation->getUuid() === '') {
             $generatedUuid = $this->generateUuid();
             $organisation->setUuid($generatedUuid);
         }
 
-        // Set timestamps
+        // Set timestamps.
         $now = new \DateTime();
         if ($organisation->getId() === null) {
             $organisation->setCreated($now);
@@ -187,7 +283,7 @@ class OrganisationMapper extends QBMapper
 
         $organisation->setUpdated($now);
 
-        // Debug logging before insert/update
+        // Debug logging before insert/update.
         $this->logger->info('[OrganisationMapper] About to save organisation with UUID: '.$organisation->getUuid());
         $this->logger->info(
                 '[OrganisationMapper] Organisation object properties:',
@@ -203,26 +299,26 @@ class OrganisationMapper extends QBMapper
         if ($organisation->getId() === null) {
             $this->logger->info('[OrganisationMapper] Calling insert() method');
 
-            // Debug: Log the entity state before insert
+            // Debug: Log the entity state before insert.
             $this->logger->info(
                     '[OrganisationMapper] Entity state before insert:',
                     [
-                    'id'          => $organisation->getId(),
-                    'uuid'        => $organisation->getUuid(),
-                    'name'        => $organisation->getName(),
-                    'description' => $organisation->getDescription(),
-                    'owner'       => $organisation->getOwner(),
-                    'users'       => $organisation->getUsers(),
-                    'created'     => $organisation->getCreated(),
-                    'updated'     => $organisation->getUpdated(),
-                ]
+                        'id'          => $organisation->getId(),
+                        'uuid'        => $organisation->getUuid(),
+                        'name'        => $organisation->getName(),
+                        'description' => $organisation->getDescription(),
+                        'owner'       => $organisation->getOwner(),
+                        'users'       => $organisation->getUsers(),
+                        'created'     => $organisation->getCreated(),
+                        'updated'     => $organisation->getUpdated(),
+                    ]
                 );
 
             try {
                 $result = $this->insert($organisation);
                 $this->logger->info('[OrganisationMapper] insert() completed successfully');
 
-                // Organization events are now handled by cron job - no event dispatching needed
+                // Organization events are now handled by cron job - no event dispatching needed.
                 return $result;
             } catch (\Exception $e) {
                 $this->logger->error(
@@ -299,18 +395,18 @@ class OrganisationMapper extends QBMapper
 
         if ($uuid === null || $uuid === '') {
             return;
-            // Will be generated in save method
+            // Will be generated in save method.
         }
 
-        // Validate UUID format using Symfony UID
+        // Validate UUID format using Symfony UID.
         try {
             Uuid::fromString($uuid);
         } catch (\InvalidArgumentException $e) {
             throw new \Exception('Invalid UUID format. UUID must be a valid RFC 4122 UUID.');
         }
 
-        // Check for uniqueness
-        if ($this->uuidExists($uuid, $organisation->getId())) {
+        // Check for uniqueness.
+        if ($this->uuidExists($uuid, $organisation->getId()) === true) {
             throw new \Exception('UUID already exists. Please use a different UUID.');
         }
 
@@ -324,6 +420,8 @@ class OrganisationMapper extends QBMapper
      *
      * @return array Array of matching organisations
      */
+
+
     /**
      * Find all organisations with pagination
      *
@@ -381,7 +479,7 @@ class OrganisationMapper extends QBMapper
     {
         $qb = $this->db->getQueryBuilder();
 
-        // Total organisations
+        // Total organisations.
         $qb->select($qb->createFunction('COUNT(*) as total'))
             ->from($this->getTableName());
         $result = $qb->execute();
@@ -458,7 +556,7 @@ class OrganisationMapper extends QBMapper
 
     /**
      * Find the default organisation
-     * 
+     *
      * @deprecated Use OrganisationService::getDefaultOrganisation() instead
      *
      * @return Organisation The default organisation
@@ -467,7 +565,7 @@ class OrganisationMapper extends QBMapper
      */
     public function findDefault(): Organisation
     {
-        // Default organisation is now managed via config, not database
+        // Default organisation is now managed via config, not database.
         throw new \Exception('findDefault() is deprecated. Use OrganisationService::getDefaultOrganisation() instead.');
 
     }//end findDefault()
@@ -476,17 +574,17 @@ class OrganisationMapper extends QBMapper
     /**
      * Find the default organisation for a specific user
      *
-     * @deprecated Use OrganisationService::getDefaultOrganisation() instead
-     *
      * @param string $userId The user ID
      *
      * @return Organisation The default organisation for the user
      *
      * @throws DoesNotExistException If no default organisation found for user
+     *
+     * @deprecated Use OrganisationService::getDefaultOrganisation() instead
      */
     public function findDefaultForUser(string $userId): Organisation
     {
-        // Default organisation is now managed via config, not database
+        // Default organisation is now managed via config, not database.
         throw new \Exception('findDefaultForUser() is deprecated. Use OrganisationService::getDefaultOrganisation() instead.');
 
     }//end findDefaultForUser()
@@ -501,7 +599,7 @@ class OrganisationMapper extends QBMapper
      */
     public function createDefault(): Organisation
     {
-        // Default organisation is now managed via config, not database
+        // Default organisation is now managed via config, not database.
         throw new \Exception('createDefault() is deprecated. Use OrganisationService::createOrganisation() and setDefaultOrganisationId() instead.');
 
     }//end createDefault()
@@ -515,7 +613,7 @@ class OrganisationMapper extends QBMapper
      * @param string $uuid        Specific UUID to use
      * @param string $owner       Owner user ID
      * @param array  $users       Array of user IDs
-     * @param bool   $isDefault   Whether this is the default organisation
+     * @param bool   $isDefault
      *
      * @return Organisation The created organisation
      *
@@ -528,7 +626,7 @@ class OrganisationMapper extends QBMapper
         string $owner='',
         array $users=[]
     ): Organisation {
-        // Debug logging
+        // Debug logging.
         $this->logger->info(
                 '[OrganisationMapper::createWithUuid] Starting with parameters:',
                 [
@@ -546,7 +644,7 @@ class OrganisationMapper extends QBMapper
         $organisation->setOwner($owner);
         $organisation->setUsers($users);
 
-        // Set UUID if provided, otherwise let save() generate one
+        // Set UUID if provided, otherwise let save() generate one.
         if ($uuid !== '') {
             $this->logger->info('[OrganisationMapper::createWithUuid] Setting UUID: '.$uuid);
             $organisation->setUuid($uuid);
@@ -570,7 +668,7 @@ class OrganisationMapper extends QBMapper
      */
     public function setAsDefault(Organisation $organisation): bool
     {
-        // Default organisation is now managed via config, not database
+        // Default organisation is now managed via config, not database.
         throw new \Exception('setAsDefault() is deprecated. Use OrganisationService::setDefaultOrganisationId() instead.');
 
     }//end setAsDefault()
@@ -608,7 +706,7 @@ class OrganisationMapper extends QBMapper
      * - Organisation A (root)
      * - Organisation B (parent: A)
      * - Organisation C (parent: B)
-     * 
+     *
      * findParentChain(C) returns: [B, A]
      *
      * @param string $organisationUuid The starting organisation UUID
@@ -617,39 +715,42 @@ class OrganisationMapper extends QBMapper
      */
     public function findParentChain(string $organisationUuid): array
     {
-        // Use raw SQL for recursive CTE (Common Table Expression)
-        // This is more efficient than multiple queries for hierarchical data
+        // Use raw SQL for recursive CTE (Common Table Expression).
+        // This is more efficient than multiple queries for hierarchical data.
         $sql = "
             WITH RECURSIVE org_hierarchy AS (
                 -- Base case: the organisation itself
                 SELECT uuid, parent, 0 as level
-                FROM " . $this->getTablePrefix() . $this->getTableName() . "
+                FROM ".$this->getTablePrefix().$this->getTableName()."
                 WHERE uuid = :org_uuid
-                
+
                 UNION ALL
-                
+
                 -- Recursive case: get parent organisations
                 SELECT o.uuid, o.parent, oh.level + 1
-                FROM " . $this->getTablePrefix() . $this->getTableName() . " o
+                FROM ".$this->getTablePrefix().$this->getTableName()." o
                 INNER JOIN org_hierarchy oh ON o.uuid = oh.parent
                 WHERE oh.level < 10  -- Prevent infinite loops, max 10 levels
             )
-            SELECT uuid 
-            FROM org_hierarchy 
+            SELECT uuid
+            FROM org_hierarchy
             WHERE level > 0
             ORDER BY level ASC
         ";
-        
+
         try {
             $stmt = $this->db->prepare($sql);
             $stmt->bindValue(':org_uuid', $organisationUuid);
             $result = $stmt->execute();
-            
+
             $parents = [];
-            while ($row = $result->fetch()) {
+            $row     = $result->fetch();
+            while ($row !== false) {
                 $parents[] = $row['uuid'];
+
+                $row = $result->fetch();
             }
-            
+
             $this->logger->debug(
                 'Found parent chain for organisation',
                 [
@@ -658,7 +759,7 @@ class OrganisationMapper extends QBMapper
                     'count'        => count($parents),
                 ]
             );
-            
+
             return $parents;
         } catch (\Exception $e) {
             $this->logger->error(
@@ -668,8 +769,8 @@ class OrganisationMapper extends QBMapper
                     'error'        => $e->getMessage(),
                 ]
             );
-            
-            // Return empty array on error (fail gracefully)
+
+            // Return empty array on error (fail gracefully).
             return [];
         }//end try
 
@@ -688,7 +789,7 @@ class OrganisationMapper extends QBMapper
      * - Organisation B (parent: A)
      * - Organisation C (parent: A)
      * - Organisation D (parent: B)
-     * 
+     *
      * findChildrenChain(A) returns: [B, C, D]
      *
      * @param string $organisationUuid The parent organisation UUID
@@ -697,37 +798,40 @@ class OrganisationMapper extends QBMapper
      */
     public function findChildrenChain(string $organisationUuid): array
     {
-        // Use raw SQL for recursive CTE
+        // Use raw SQL for recursive CTE.
         $sql = "
             WITH RECURSIVE org_hierarchy AS (
                 -- Base case: direct children
                 SELECT uuid, parent, 0 as level
-                FROM " . $this->getTablePrefix() . $this->getTableName() . "
+                FROM ".$this->getTablePrefix().$this->getTableName()."
                 WHERE parent = :org_uuid
-                
+
                 UNION ALL
-                
+
                 -- Recursive case: children of children
                 SELECT o.uuid, o.parent, oh.level + 1
-                FROM " . $this->getTablePrefix() . $this->getTableName() . " o
+                FROM ".$this->getTablePrefix().$this->getTableName()." o
                 INNER JOIN org_hierarchy oh ON o.parent = oh.uuid
                 WHERE oh.level < 10  -- Prevent infinite loops, max 10 levels
             )
-            SELECT uuid 
+            SELECT uuid
             FROM org_hierarchy
             ORDER BY level ASC
         ";
-        
+
         try {
             $stmt = $this->db->prepare($sql);
             $stmt->bindValue(':org_uuid', $organisationUuid);
             $result = $stmt->execute();
-            
+
             $children = [];
-            while ($row = $result->fetch()) {
+            $row      = $result->fetch();
+            while ($row !== false) {
                 $children[] = $row['uuid'];
+
+                $row = $result->fetch();
             }
-            
+
             $this->logger->debug(
                 'Found children chain for organisation',
                 [
@@ -736,7 +840,7 @@ class OrganisationMapper extends QBMapper
                     'count'        => count($children),
                 ]
             );
-            
+
             return $children;
         } catch (\Exception $e) {
             $this->logger->error(
@@ -746,8 +850,8 @@ class OrganisationMapper extends QBMapper
                     'error'        => $e->getMessage(),
                 ]
             );
-            
-            // Return empty array on error (fail gracefully)
+
+            // Return empty array on error (fail gracefully).
             return [];
         }//end try
 
@@ -771,45 +875,46 @@ class OrganisationMapper extends QBMapper
      */
     public function validateParentAssignment(string $organisationUuid, ?string $newParentUuid): void
     {
-        // Allow setting parent to null (removing parent)
+        // Allow setting parent to null (removing parent).
         if ($newParentUuid === null) {
             return;
         }
-        
-        // Prevent self-reference
+
+        // Prevent self-reference.
         if ($organisationUuid === $newParentUuid) {
             throw new \Exception('Organisation cannot be its own parent.');
         }
-        
-        // Check if new parent exists
+
+        // Check if new parent exists.
         try {
             $parentOrg = $this->findByUuid($newParentUuid);
         } catch (\Exception $e) {
             throw new \Exception('Parent organisation not found.');
         }
-        
-        // Check for circular reference: if the new parent has this org in its parent chain
+
+        // Check for circular reference: if the new parent has this org in its parent chain.
         $parentChain = $this->findParentChain($newParentUuid);
-        if (in_array($organisationUuid, $parentChain)) {
+        if (in_array($organisationUuid, $parentChain) === true) {
             throw new \Exception(
                 'Circular reference detected: The new parent organisation is already a descendant of this organisation.'
             );
         }
-        
-        // Check max depth: current parent chain + this org + existing children chain
+
+        // Check max depth: current parent chain + this org + existing children chain.
         $childrenChain = $this->findChildrenChain($organisationUuid);
-        
-        // Calculate maximum depth after assignment
-        $maxDepthAbove = count($parentChain) + 1; // Parent chain + new parent
+
+        // Calculate maximum depth after assignment.
+        $maxDepthAbove = count($parentChain) + 1;
+        // Parent chain + new parent.
         $maxDepthBelow = $this->getMaxDepthInChain($childrenChain, $organisationUuid);
-        $totalDepth = $maxDepthAbove + $maxDepthBelow;
-        
+        $totalDepth    = $maxDepthAbove + $maxDepthBelow;
+
         if ($totalDepth > 10) {
             throw new \Exception(
                 "Maximum hierarchy depth exceeded. Total depth would be {$totalDepth} levels (max 10 allowed)."
             );
         }
-        
+
         $this->logger->debug(
             'Parent assignment validated',
             [
@@ -836,11 +941,11 @@ class OrganisationMapper extends QBMapper
      */
     private function getMaxDepthInChain(array $childrenUuids, string $rootUuid): int
     {
-        if (empty($childrenUuids)) {
+        if (empty($childrenUuids) === true) {
             return 0;
         }
-        
-        // Build parent map for efficient lookup
+
+        // Build parent map for efficient lookup.
         $parentMap = [];
         foreach ($childrenUuids as $childUuid) {
             try {
@@ -849,18 +954,18 @@ class OrganisationMapper extends QBMapper
                     $parentMap[$childUuid] = $child->getParent();
                 }
             } catch (\Exception $e) {
-                // Skip if child not found
+                // Skip if child not found.
                 continue;
             }
         }
-        
-        // Calculate depth for each child
+
+        // Calculate depth for each child.
         $maxDepth = 0;
         foreach ($childrenUuids as $childUuid) {
-            $depth = $this->calculateDepthFromRoot($childUuid, $rootUuid, $parentMap);
+            $depth    = $this->calculateDepthFromRoot($childUuid, $rootUuid, $parentMap);
             $maxDepth = max($maxDepth, $depth);
         }
-        
+
         return $maxDepth;
 
     }//end getMaxDepthInChain()
@@ -877,14 +982,14 @@ class OrganisationMapper extends QBMapper
      */
     private function calculateDepthFromRoot(string $nodeUuid, string $rootUuid, array $parentMap): int
     {
-        $depth = 0;
+        $depth   = 0;
         $current = $nodeUuid;
-        
-        while (isset($parentMap[$current]) && $current !== $rootUuid && $depth < 20) {
+
+        while (isset($parentMap[$current]) === true && $current !== $rootUuid && $depth < 20) {
             $depth++;
             $current = $parentMap[$current];
         }
-        
+
         return $depth;
 
     }//end calculateDepthFromRoot()
@@ -900,8 +1005,8 @@ class OrganisationMapper extends QBMapper
      */
     private function getTablePrefix(): string
     {
-        // Get table prefix from Nextcloud system configuration
-        // Default is 'oc_' but can be customized per installation
+        // Get table prefix from Nextcloud system configuration.
+        // Default is 'oc_' but can be customized per installation.
         return \OC::$server->getSystemConfig()->getValue('dbtableprefix', 'oc_');
 
     }//end getTablePrefix()

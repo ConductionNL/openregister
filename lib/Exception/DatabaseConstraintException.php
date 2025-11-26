@@ -79,7 +79,7 @@ class DatabaseConstraintException extends Exception
         $message     = $dbException->getMessage();
         $userMessage = self::parseConstraintError($message, $entityType);
 
-        return new self($userMessage, $dbException->getCode(), 409, $dbException);
+        return new self($userMessage, (int) $dbException->getCode(), 409, $dbException);
 
     }//end fromDatabaseException()
 

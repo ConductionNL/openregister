@@ -33,9 +33,19 @@ use OCP\IDBConnection;
  * @template-extends QBMapper<Message>
  *
  * @psalm-suppress MissingTemplateParam
+ *
+ * @method Message insert(Entity $entity)
+ * @method Message update(Entity $entity)
+ * @method Message insertOrUpdate(Entity $entity)
+ * @method Message delete(Entity $entity)
+ * @method Message find(int|string $id)
+ * @method Message findEntity(IQueryBuilder $query)
+ * @method Message[] findAll(int|null $limit = null, int|null $offset = null)
+ * @method list<Message> findEntities(IQueryBuilder $query)
  */
 class MessageMapper extends QBMapper
 {
+
 
     /**
      * MessageMapper constructor.
@@ -102,12 +112,14 @@ class MessageMapper extends QBMapper
      * @param int $limit          Maximum number of results
      * @param int $offset         Offset for pagination
      *
-     * @return array Array of Message entities
+     * @return Message[] Array of Message entities
+     *
+     * @psalm-return array<Message>
      */
     public function findByConversation(
         int $conversationId,
-        int $limit = 100,
-        int $offset = 0
+        int $limit=100,
+        int $offset=0
     ): array {
         $qb = $this->db->getQueryBuilder();
 
@@ -131,9 +143,11 @@ class MessageMapper extends QBMapper
      * @param int $conversationId Conversation ID
      * @param int $limit          Number of recent messages to get
      *
-     * @return array Array of Message entities (oldest first)
+     * @return Message[] Array of Message entities (oldest first)
+     *
+     * @psalm-return array<Message>
      */
-    public function findRecentByConversation(int $conversationId, int $limit = 10): array
+    public function findRecentByConversation(int $conversationId, int $limit=10): array
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -144,8 +158,8 @@ class MessageMapper extends QBMapper
             ->setMaxResults($limit);
 
         $messages = $this->findEntities($qb);
-        
-        // Reverse to get oldest-first order
+
+        // Reverse to get oldest-first order.
         return array_reverse($messages);
 
     }//end findRecentByConversation()
@@ -167,7 +181,7 @@ class MessageMapper extends QBMapper
             ->where($qb->expr()->eq('conversation_id', $qb->createNamedParameter($conversationId, IQueryBuilder::PARAM_INT)));
 
         $result = $qb->execute();
-        $count = (int) $result->fetchOne();
+        $count  = (int) $result->fetchOne();
         $result->closeCursor();
 
         return $count;
@@ -193,7 +207,7 @@ class MessageMapper extends QBMapper
             ->andWhere($qb->expr()->eq('role', $qb->createNamedParameter($role, IQueryBuilder::PARAM_STR)));
 
         $result = $qb->execute();
-        $count = (int) $result->fetchOne();
+        $count  = (int) $result->fetchOne();
         $result->closeCursor();
 
         return $count;
@@ -236,9 +250,9 @@ class MessageMapper extends QBMapper
      *
      * @param int $conversationId Conversation ID
      *
-     * @return int Number of messages deleted
+     * @return \OCP\DB\IResult|int Number of messages deleted
      */
-    public function deleteByConversation(int $conversationId): int
+    public function deleteByConversation(int $conversationId): int|\OCP\DB\IResult
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -251,5 +265,3 @@ class MessageMapper extends QBMapper
 
 
 }//end class
-
-

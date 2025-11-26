@@ -57,14 +57,14 @@ The original documentation incorrectly included person-to-person and person-to-o
 
 ## Documentation Files Corrected
 
-1. ✅ **[Text Extraction Database Entities](website/docs/technical/text-extraction-entities.md)**
+1. ✅ **[Text Extraction Database Entities](./text-extraction-entities.md)**
    - Removed person-to-person relationships
    - Removed person-to-organization relationships
    - Updated relationship types constants
    - Updated use case examples
    - Updated knowledge graph queries
 
-2. ✅ **[Enhanced Text Extraction](website/docs/features/text-extraction-enhanced.md)**
+2. ✅ **[Enhanced Text Extraction](../features/text-extraction-enhanced.md)**
    - Updated relationship types
    - Updated example relationships
    - Updated GDPR use case output

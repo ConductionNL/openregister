@@ -1,5 +1,23 @@
 <?php
 
+/**
+ * OpenRegister Performance and Usage Metrics Table Migration
+ *
+ * This migration creates the openregister_metrics table to store
+ * performance and usage metrics.
+ *
+ * @category Migration
+ * @package  OCA\OpenRegister\Migration
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenRegister.nl
+ */
+
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Migration;
@@ -20,111 +38,164 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version002005000Date20251013000000 extends SimpleMigrationStep
 {
-	/**
-	 * @param IOutput $output
-	 * @param Closure $schemaClosure The `\Closure` returns a `ISchemaWrapper`
-	 * @param array   $options
-	 *
-	 * @return null|ISchemaWrapper
-	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
-		/** @var ISchemaWrapper $schema */
-		$schema = $schemaClosure();
 
-		// Create openregister_metrics table for tracking operational metrics
-		if (!$schema->hasTable('openregister_metrics')) {
-			$table = $schema->createTable('openregister_metrics');
-			
-			// Primary key
-			$table->addColumn('id', 'bigint', [
-				'autoincrement' => true,
-				'notnull' => true,
-				'length' => 20,
-			]);
 
-			// Metric type (e.g., 'file_processed', 'embedding_generated', 'search_executed')
-			$table->addColumn('metric_type', 'string', [
-				'notnull' => true,
-				'length' => 64,
-			]);
+    /**
+     * Create metrics table for performance and usage tracking.
+     *
+     * @param IOutput $output        Output interface for logging
+     * @param Closure $schemaClosure Schema retrieval closure
+     * @param array   $options       Migration options
+     *
+     * @return null|ISchemaWrapper Modified schema or null
+     */
+    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
+    {
+        /*
+         * @var ISchemaWrapper $schema
+         */
 
-			// Entity type (e.g., 'file', 'object', 'search')
-			$table->addColumn('entity_type', 'string', [
-				'notnull' => false,
-				'length' => 32,
-				'default' => null,
-			]);
+        $schema = $schemaClosure();
 
-			// Entity ID (if applicable)
-			$table->addColumn('entity_id', 'string', [
-				'notnull' => false,
-				'length' => 64,
-				'default' => null,
-			]);
+        // Create openregister_metrics table for tracking operational metrics.
+        if ($schema->hasTable('openregister_metrics') === false) {
+            $table = $schema->createTable('openregister_metrics');
 
-			// User who triggered the action
-			$table->addColumn('user_id', 'string', [
-				'notnull' => false,
-				'length' => 64,
-				'default' => null,
-			]);
+            // Primary key.
+            $table->addColumn(
+            'id',
+            'bigint',
+            [
+                'autoincrement' => true,
+                'notnull'       => true,
+                'length'        => 20,
+            ]
+            );
 
-			// Success or failure
-			$table->addColumn('status', 'string', [
-				'notnull' => true,
-				'length' => 20,
-				'default' => 'success',
-			]);
+            // Metric type (e.g., 'file_processed', 'embedding_generated', 'search_executed').
+            $table->addColumn(
+            'metric_type',
+            'string',
+            [
+                'notnull' => true,
+                'length'  => 64,
+            ]
+            );
 
-			// Duration in milliseconds
-			$table->addColumn('duration_ms', 'integer', [
-				'notnull' => false,
-				'default' => null,
-			]);
+            // Entity type (e.g., 'file', 'object', 'search').
+            $table->addColumn(
+            'entity_type',
+            'string',
+            [
+                'notnull' => false,
+                'length'  => 32,
+                'default' => null,
+            ]
+            );
 
-			// Additional metadata (JSON)
-			$table->addColumn('metadata', 'text', [
-				'notnull' => false,
-				'default' => null,
-			]);
+            // Entity ID (if applicable).
+            $table->addColumn(
+            'entity_id',
+            'string',
+            [
+                'notnull' => false,
+                'length'  => 64,
+                'default' => null,
+            ]
+            );
 
-			// Error message (if failed)
-			$table->addColumn('error_message', 'text', [
-				'notnull' => false,
-				'default' => null,
-			]);
+            // User who triggered the action.
+            $table->addColumn(
+            'user_id',
+            'string',
+            [
+                'notnull' => false,
+                'length'  => 64,
+                'default' => null,
+            ]
+            );
 
-			// Timestamp
-			$table->addColumn('created_at', 'bigint', [
-				'notnull' => true,
-			]);
+            // Success or failure.
+            $table->addColumn(
+            'status',
+            'string',
+            [
+                'notnull' => true,
+                'length'  => 20,
+                'default' => 'success',
+            ]
+            );
 
-			// Set primary key
-			$table->setPrimaryKey(['id']);
+            // Duration in milliseconds.
+            $table->addColumn(
+            'duration_ms',
+            'integer',
+            [
+                'notnull' => false,
+                'default' => null,
+            ]
+            );
 
-			// Add indexes for common queries
-			$table->addIndex(['metric_type'], 'idx_metrics_type');
-			$table->addIndex(['entity_type'], 'idx_metrics_entity_type');
-			$table->addIndex(['status'], 'idx_metrics_status');
-			$table->addIndex(['created_at'], 'idx_metrics_created');
-			$table->addIndex(['metric_type', 'created_at'], 'idx_metrics_type_created');
-			$table->addIndex(['entity_type', 'created_at'], 'idx_metrics_entity_created');
-		}
+            // Additional metadata (JSON).
+            $table->addColumn(
+            'metadata',
+            'text',
+            [
+                'notnull' => false,
+                'default' => null,
+            ]
+            );
 
-		return $schema;
-	}
+            // Error message (if failed).
+            $table->addColumn(
+            'error_message',
+            'text',
+            [
+                'notnull' => false,
+                'default' => null,
+            ]
+            );
 
-	/**
-	 * Rollback migration
-	 *
-	 * @param IOutput $output
-	 * @param Closure $schemaClosure
-	 * @param array   $options
-	 *
-	 * @return null|ISchemaWrapper
-	 */
-	public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
-		return null;
-	}
-}
+            // Timestamp.
+            $table->addColumn(
+            'created_at',
+            'bigint',
+            [
+                'notnull' => true,
+            ]
+            );
 
+            // Set primary key.
+            $table->setPrimaryKey(['id']);
+
+            // Add indexes for common queries.
+            $table->addIndex(['metric_type'], 'idx_metrics_type');
+            $table->addIndex(['entity_type'], 'idx_metrics_entity_type');
+            $table->addIndex(['status'], 'idx_metrics_status');
+            $table->addIndex(['created_at'], 'idx_metrics_created');
+            $table->addIndex(['metric_type', 'created_at'], 'idx_metrics_type_created');
+            $table->addIndex(['entity_type', 'created_at'], 'idx_metrics_entity_created');
+        }//end if
+
+        return $schema;
+
+    }//end changeSchema()
+
+
+    /**
+     * Rollback migration.
+     *
+     * @param IOutput $output        Output interface for logging
+     * @param Closure $schemaClosure Schema retrieval closure
+     * @param array   $options       Migration options
+     *
+     * @return null Modified schema or null
+     */
+    public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
+    {
+        return null;
+
+    }//end postSchemaChange()
+
+
+}//end class

@@ -39,10 +39,39 @@ use InvalidArgumentException;
  * @category Database
  * @package  OCA\OpenRegister\Db
  *
- * @author   Conduction Development Team <info@conduction.nl>
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @version  GIT: <git_id>
- * @link     https://www.OpenRegister.app
+ * @author  Conduction Development Team <info@conduction.nl>
+ * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version GIT: <git_id>
+ * @link    https://www.OpenRegister.app
+ *
+ * @method string|null getUuid()
+ * @method void setUuid(?string $uuid)
+ * @method string|null getType()
+ * @method void setType(?string $type)
+ * @method string|null getSubjectType()
+ * @method void setSubjectType(?string $subjectType)
+ * @method string|null getSubjectId()
+ * @method void setSubjectId(?string $subjectId)
+ * @method string|null getSchemaUuid()
+ * @method void setSchemaUuid(?string $schemaUuid)
+ * @method string|null getRegisterUuid()
+ * @method void setRegisterUuid(?string $registerUuid)
+ * @method string|null getOrganizationUuid()
+ * @method void setOrganizationUuid(?string $organizationUuid)
+ * @method string|null getAction()
+ * @method void setAction(?string $action)
+ * @method DateTime|null getCreated()
+ * @method void setCreated(?DateTime $created)
+ * @method DateTime|null getUpdated()
+ * @method void setUpdated(?DateTime $updated)
+ * @method string|null getCreatedBy()
+ * @method void setCreatedBy(?string $createdBy)
+ * @method DateTime|null getCreatedAt()
+ * @method void setCreatedAt(?DateTime $createdAt)
+ * @method DateTime|null getUpdatedAt()
+ * @method void setUpdatedAt(?DateTime $updatedAt)
+ * @method bool|null getActive()
+ * @method void setActive(?bool $active)
  */
 class AuthorizationException extends Entity implements JsonSerializable
 {
@@ -56,14 +85,14 @@ class AuthorizationException extends Entity implements JsonSerializable
     /**
      * Subject type constants
      */
-    public const SUBJECT_TYPE_USER = 'user';
+    public const SUBJECT_TYPE_USER  = 'user';
     public const SUBJECT_TYPE_GROUP = 'group';
 
     /**
      * Action constants
      */
     public const ACTION_CREATE = 'create';
-    public const ACTION_READ = 'read';
+    public const ACTION_READ   = 'read';
     public const ACTION_UPDATE = 'update';
     public const ACTION_DELETE = 'delete';
 
@@ -126,14 +155,14 @@ class AuthorizationException extends Entity implements JsonSerializable
     /**
      * Priority for exception resolution (higher = more important).
      *
-     * @var int|null Priority for exception resolution
+     * @var integer|null Priority for exception resolution
      */
     protected ?int $priority = 0;
 
     /**
      * Whether the exception is active.
      *
-     * @var bool|null Whether the exception is active
+     * @var boolean|null Whether the exception is active
      */
     protected ?bool $active = true;
 
@@ -192,7 +221,9 @@ class AuthorizationException extends Entity implements JsonSerializable
     /**
      * Get valid exception types
      *
-     * @return array<string> List of valid exception types
+     * @return string[] List of valid exception types
+     *
+     * @psalm-return list{'inclusion', 'exclusion'}
      */
     public static function getValidTypes(): array
     {
@@ -207,7 +238,9 @@ class AuthorizationException extends Entity implements JsonSerializable
     /**
      * Get valid subject types
      *
-     * @return array<string> List of valid subject types
+     * @return string[] List of valid subject types
+     *
+     * @psalm-return list{'user', 'group'}
      */
     public static function getValidSubjectTypes(): array
     {
@@ -222,7 +255,9 @@ class AuthorizationException extends Entity implements JsonSerializable
     /**
      * Get valid actions
      *
-     * @return array<string> List of valid actions
+     * @return string[] List of valid actions
+     *
+     * @psalm-return list{'create', 'read', 'update', 'delete'}
      */
     public static function getValidActions(): array
     {
@@ -289,12 +324,12 @@ class AuthorizationException extends Entity implements JsonSerializable
      */
     public function setType(?string $type): void
     {
-        if ($type !== null && !$this->isValidType($type)) {
+        if ($type !== null && $this->isValidType($type) === false) {
             throw new InvalidArgumentException(
-                'Invalid exception type: ' . $type . '. Valid types are: ' . implode(', ', self::getValidTypes())
+                'Invalid exception type: '.$type.'. Valid types are: '.implode(', ', self::getValidTypes())
             );
         }
-        
+
         $this->type = $type;
 
     }//end setType()
@@ -311,12 +346,12 @@ class AuthorizationException extends Entity implements JsonSerializable
      */
     public function setSubjectType(?string $subjectType): void
     {
-        if ($subjectType !== null && !$this->isValidSubjectType($subjectType)) {
+        if ($subjectType !== null && $this->isValidSubjectType($subjectType) === false) {
             throw new InvalidArgumentException(
-                'Invalid subject type: ' . $subjectType . '. Valid types are: ' . implode(', ', self::getValidSubjectTypes())
+                'Invalid subject type: '.$subjectType.'. Valid types are: '.implode(', ', self::getValidSubjectTypes())
             );
         }
-        
+
         $this->subjectType = $subjectType;
 
     }//end setSubjectType()
@@ -333,12 +368,12 @@ class AuthorizationException extends Entity implements JsonSerializable
      */
     public function setAction(?string $action): void
     {
-        if ($action !== null && !$this->isValidAction($action)) {
+        if ($action !== null && $this->isValidAction($action) === false) {
             throw new InvalidArgumentException(
-                'Invalid action: ' . $action . '. Valid actions are: ' . implode(', ', self::getValidActions())
+                'Invalid action: '.$action.'. Valid actions are: '.implode(', ', self::getValidActions())
             );
         }
-        
+
         $this->action = $action;
 
     }//end setAction()
@@ -395,12 +430,12 @@ class AuthorizationException extends Entity implements JsonSerializable
     /**
      * Check if this exception matches the given criteria
      *
-     * @param string      $subjectType       The subject type to match
-     * @param string      $subjectId         The subject ID to match
-     * @param string      $action            The action to match
-     * @param string|null $schemaUuid        Optional schema UUID to match
-     * @param string|null $registerUuid      Optional register UUID to match
-     * @param string|null $organizationUuid  Optional organization UUID to match
+     * @param string      $subjectType      The subject type to match
+     * @param string      $subjectId        The subject ID to match
+     * @param string      $action           The action to match
+     * @param string|null $schemaUuid       Optional schema UUID to match
+     * @param string|null $registerUuid     Optional register UUID to match
+     * @param string|null $organizationUuid Optional organization UUID to match
      *
      * @return bool True if this exception matches the criteria
      */
@@ -408,34 +443,34 @@ class AuthorizationException extends Entity implements JsonSerializable
         string $subjectType,
         string $subjectId,
         string $action,
-        ?string $schemaUuid = null,
-        ?string $registerUuid = null,
-        ?string $organizationUuid = null
+        ?string $schemaUuid=null,
+        ?string $registerUuid=null,
+        ?string $organizationUuid=null
     ): bool {
-        // Must be active
-        if (!$this->active) {
+        // Must be active.
+        if ($this->active === false) {
             return false;
         }
 
-        // Check basic criteria
-        if ($this->subjectType !== $subjectType ||
-            $this->subjectId !== $subjectId ||
-            $this->action !== $action
+        // Check basic criteria.
+        if ($this->subjectType !== $subjectType
+            || $this->subjectId !== $subjectId
+            || $this->action !== $action
         ) {
             return false;
         }
 
-        // Check schema UUID (null means applies to all schemas)
+        // Check schema UUID (null means applies to all schemas).
         if ($this->schemaUuid !== null && $this->schemaUuid !== $schemaUuid) {
             return false;
         }
 
-        // Check register UUID (null means applies to all registers)
+        // Check register UUID (null means applies to all registers).
         if ($this->registerUuid !== null && $this->registerUuid !== $registerUuid) {
             return false;
         }
 
-        // Check organization UUID (null means applies to all organizations)
+        // Check organization UUID (null means applies to all organizations).
         if ($this->organizationUuid !== null && $this->organizationUuid !== $organizationUuid) {
             return false;
         }
@@ -448,7 +483,25 @@ class AuthorizationException extends Entity implements JsonSerializable
     /**
      * Serialize the entity to JSON format
      *
-     * @return array<string, mixed> Serialized authorization exception data
+     * @return (bool|int|null|string)[] Serialized authorization exception data
+     *
+     * @psalm-return array{
+     *     id: int,
+     *     uuid: null|string,
+     *     type: null|string,
+     *     subjectType: null|string,
+     *     subjectId: null|string,
+     *     schemaUuid: null|string,
+     *     registerUuid: null|string,
+     *     organizationUuid: null|string,
+     *     action: null|string,
+     *     priority: int|null,
+     *     active: bool|null,
+     *     description: null|string,
+     *     createdBy: null|string,
+     *     createdAt: null|string,
+     *     updatedAt: null|string
+     * }
      */
     public function jsonSerialize(): array
     {
@@ -485,7 +538,7 @@ class AuthorizationException extends Entity implements JsonSerializable
         }
 
         if ($this->id !== null) {
-            return 'AuthorizationException #' . $this->id;
+            return 'AuthorizationException #'.$this->id;
         }
 
         return 'AuthorizationException Entity';
@@ -494,4 +547,3 @@ class AuthorizationException extends Entity implements JsonSerializable
 
 
 }//end class
-

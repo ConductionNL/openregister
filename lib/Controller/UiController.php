@@ -1,5 +1,17 @@
 <?php
 
+/**
+ * UiController
+ *
+ * @category  OpenRegister
+ * @package   OCA\OpenRegister\Controller
+ * @author    Conduction b.v. <info@conduction.nl>
+ * @copyright 2024 Conduction b.v.
+ * @license   https://www.gnu.org/licenses/agpl-3.0.html AGPL-3.0-or-later
+ * @version   1.0.0
+ * @link      https://github.com/conductionnl/openregister
+ */
+
 namespace OCA\OpenRegister\Controller;
 
 use OCP\AppFramework\Controller;
@@ -14,20 +26,30 @@ use OCP\IRequest;
  */
 class UiController extends Controller
 {
+
+
     /**
-     * @param string $appName
-     * @param IRequest $request
+     * Constructor for UiController.
+     *
+     * @param string   $appName The application name.
+     * @param IRequest $request The request object.
+     *
+     * @return void
      */
     public function __construct(string $appName, IRequest $request)
     {
         parent::__construct($appName, $request);
-    }
+
+    }//end __construct()
+
 
     /**
      * Returns the base SPA template response with permissive connect-src for API calls.
      *
+     * @return TemplateResponse The template response.
+     *
      * @phpstan-return TemplateResponse
-     * @psalm-return TemplateResponse
+     * @psalm-return   TemplateResponse
      */
     private function makeSpaResponse(): TemplateResponse
     {
@@ -51,161 +73,242 @@ class UiController extends Controller
                 '500'
             );
         }
-    }
+
+    }//end makeSpaResponse()
+
 
     /**
+     * Returns the registers page template.
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
+     * @return TemplateResponse The template response.
+     *
      * @phpstan-return TemplateResponse
-     * @psalm-return TemplateResponse
+     * @psalm-return   TemplateResponse
      */
     public function registers(): TemplateResponse
     {
         return $this->makeSpaResponse();
-    }
+
+    }//end registers()
+
 
     /**
+     * Returns the register details page template.
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
+     * @return TemplateResponse The template response.
+     *
      * @phpstan-return TemplateResponse
-     * @psalm-return TemplateResponse
+     * @psalm-return   TemplateResponse
      */
     public function registersDetails(): TemplateResponse
     {
         return $this->makeSpaResponse();
-    }
+
+    }//end registersDetails()
+
 
     /**
+     * Returns the schemas page template.
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
+     * @return TemplateResponse The template response.
+     *
      * @phpstan-return TemplateResponse
-     * @psalm-return TemplateResponse
+     * @psalm-return   TemplateResponse
      */
     public function schemas(): TemplateResponse
     {
         return $this->makeSpaResponse();
-    }
+
+    }//end schemas()
+
 
     /**
+     * Returns the schema details page template.
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
+     * @return TemplateResponse The template response.
+     *
      * @phpstan-return TemplateResponse
-     * @psalm-return TemplateResponse
+     * @psalm-return   TemplateResponse
      */
     public function schemasDetails(): TemplateResponse
     {
         return $this->makeSpaResponse();
-    }
+
+    }//end schemasDetails()
+
 
     /**
+     * Returns the sources page template.
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
+     * @return TemplateResponse The template response.
+     *
      * @phpstan-return TemplateResponse
-     * @psalm-return TemplateResponse
+     * @psalm-return   TemplateResponse
      */
     public function sources(): TemplateResponse
     {
         return $this->makeSpaResponse();
-    }
+
+    }//end sources()
+
 
     /**
+     * Returns the organisation page template.
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
+     * @return TemplateResponse The template response.
+     *
      * @phpstan-return TemplateResponse
-     * @psalm-return TemplateResponse
+     * @psalm-return   TemplateResponse
      */
     public function organisation(): TemplateResponse
     {
         return $this->makeSpaResponse();
-    }
+
+    }//end organisation()
+
 
     /**
+     * Returns the objects page template.
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
+     * @return TemplateResponse The template response.
+     *
      * @phpstan-return TemplateResponse
-     * @psalm-return TemplateResponse
+     * @psalm-return   TemplateResponse
      */
     public function objects(): TemplateResponse
     {
         return $this->makeSpaResponse();
-    }
+
+    }//end objects()
+
 
     /**
+     * Returns the tables page template.
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
+     * @return TemplateResponse The template response.
+     *
      * @phpstan-return TemplateResponse
-     * @psalm-return TemplateResponse
+     * @psalm-return   TemplateResponse
      */
     public function tables(): TemplateResponse
     {
         return $this->makeSpaResponse();
-    }
+
+    }//end tables()
+
 
     /**
+     * Returns the chat page template.
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
+     * @return TemplateResponse The template response.
+     *
      * @phpstan-return TemplateResponse
-     * @psalm-return TemplateResponse
+     * @psalm-return   TemplateResponse
      */
     public function chat(): TemplateResponse
     {
         return $this->makeSpaResponse();
-    }
+
+    }//end chat()
+
 
     /**
+     * Returns the configurations page template.
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
+     * @return TemplateResponse The template response.
+     *
      * @phpstan-return TemplateResponse
-     * @psalm-return TemplateResponse
+     * @psalm-return   TemplateResponse
      */
     public function configurations(): TemplateResponse
     {
         return $this->makeSpaResponse();
-    }
+
+    }//end configurations()
+
 
     /**
+     * Returns the deleted objects page template.
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
+     * @return TemplateResponse The template response.
+     *
      * @phpstan-return TemplateResponse
-     * @psalm-return TemplateResponse
+     * @psalm-return   TemplateResponse
      */
     public function deleted(): TemplateResponse
     {
         return $this->makeSpaResponse();
-    }
+
+    }//end deleted()
+
 
     /**
+     * Returns the audit trail page template.
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
+     * @return TemplateResponse The template response.
+     *
      * @phpstan-return TemplateResponse
-     * @psalm-return TemplateResponse
+     * @psalm-return   TemplateResponse
      */
     public function auditTrail(): TemplateResponse
     {
         return $this->makeSpaResponse();
-    }
+
+    }//end auditTrail()
+
 
     /**
+     * Returns the search trail page template.
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
+     * @return TemplateResponse The template response.
+     *
      * @phpstan-return TemplateResponse
-     * @psalm-return TemplateResponse
+     * @psalm-return   TemplateResponse
      */
     public function searchTrail(): TemplateResponse
     {
         return $this->makeSpaResponse();
-    }
-}
+
+    }//end searchTrail()
+
+
+}//end class

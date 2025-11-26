@@ -1,5 +1,5 @@
 <?php
-// phpcs:ignoreFile
+// phpcs:ignoreFile.
 
 /**
  * OpenRegister AbstractNodesFolderEventListener
@@ -33,6 +33,8 @@ use OCP\Files\FileInfo;
 
 /**
  * Event listener for node folder events.
+ *
+ * @template-implements IEventListener<Event>
  */
 class AbstractNodesFolderEventListener implements IEventListener
 {
@@ -92,7 +94,7 @@ class AbstractNodesFolderEventListener implements IEventListener
      */
     private function handleNodeCopied(NodeCopiedEvent $event): void
     {
-        // phpcs:ignore
+        // phpcs:ignore.
         // $this->objectService->nodeCopiedEventFunction();
     }//end handleNodeCopied()
 
@@ -106,7 +108,7 @@ class AbstractNodesFolderEventListener implements IEventListener
      */
     private function handleNodeRenamed(NodeRenamedEvent $event): void
     {
-        // phpcs:ignore
+        // phpcs:ignore.
         // $this->objectService->nodeRenamedEventFunction();
     }//end handleNodeRenamed()
 

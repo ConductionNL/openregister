@@ -61,7 +61,7 @@ class Version1Date20250123120000 extends SimpleMigrationStep
      */
     public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
-        // No pre-schema changes required
+        // No pre-schema changes required.
     }
 
     /**
@@ -78,11 +78,11 @@ class Version1Date20250123120000 extends SimpleMigrationStep
         /** @var ISchemaWrapper $schema */
         $schema = $schemaClosure();
 
-        // Add active field to organisations table
+        // Add active field to organisations table.
         if ($schema->hasTable('openregister_organisations')) {
             $table = $schema->getTable('openregister_organisations');
-            
-            // Add active field (boolean flag for active organisation)
+
+            // Add active field (boolean flag for active organisation).
             if (!$table->hasColumn('active')) {
                 $table->addColumn('active', Types::BOOLEAN, [
                     'notnull' => false,
@@ -106,6 +106,6 @@ class Version1Date20250123120000 extends SimpleMigrationStep
      */
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
-        // No post-schema changes required
+        // No post-schema changes required.
     }
-} 
+}

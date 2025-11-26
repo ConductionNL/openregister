@@ -62,20 +62,20 @@ class DepublishObject
         bool $rbac=true,
         bool $multi=true
     ): ObjectEntity {
-        // Get the object
+        // Get the object.
         $object = $this->objectEntityMapper->find($uuid);
         if ($object === null) {
             throw new Exception('Object not found');
         }
 
-        // Set depublication date to now if not specified
+        // Set depublication date to now if not specified.
         $date = $date ?? new DateTime();
 
-        // Set the depublication date directly on the object
+        // Set the depublication date directly on the object.
         $object->setDepublished($date);
         $object->setPublished(null);
 
-        // Update the object in the database
+        // Update the object in the database.
         return $this->objectEntityMapper->update($object);
 
     }//end depublish()

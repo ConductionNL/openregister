@@ -62,20 +62,20 @@ class PublishObject
         bool $rbac=true,
         bool $multi=true
     ): ObjectEntity {
-        // Get the object
+        // Get the object.
         $object = $this->objectEntityMapper->find($uuid);
         if ($object === null) {
             throw new Exception('Object not found');
         }
 
-        // Set publication date to now if not specified
+        // Set publication date to now if not specified.
         $date = $date ?? new DateTime();
 
-        // Set the publication date directly on the object
+        // Set the publication date directly on the object.
         $object->setPublished($date);
         $object->setDepublished(null);
 
-        // Update the object in the database
+        // Update the object in the database.
         return $this->objectEntityMapper->update($object);
 
     }//end publish()

@@ -1,5 +1,5 @@
 <?php
-// phpcs:ignoreFile
+// phpcs:ignoreFile.
 /**
  * OpenRegister Migration
  *
@@ -53,7 +53,7 @@ class Version1Date20241227153853 extends SimpleMigrationStep
      * @param Closure(): ISchemaWrapper $schemaClosure
      * @param array                     $options
      *
-     * @return null|ISchemaWrapper
+     * @return ISchemaWrapper
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
@@ -62,7 +62,7 @@ class Version1Date20241227153853 extends SimpleMigrationStep
          */
         $schema = $schemaClosure();
 
-        // Update the openregister_schemas table
+        // Update the openregister_schemas table.
         $table = $schema->getTable('openregister_schemas');
         if ($table->hasColumn('max_depth') === false) {
             $table->addColumn(name: 'max_depth', typeName: Types::INTEGER, options: ['notnull' => true])->setDefault(default: 0);

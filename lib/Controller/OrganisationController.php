@@ -87,6 +87,7 @@ class OrganisationController extends Controller
 
     }//end __construct()
 
+
     /**
      * Get user's organisations and active organisation
      *
@@ -124,25 +125,29 @@ class OrganisationController extends Controller
     /**
      * Set the active organisation for the current user
      *
+     * @param string $uuid Organisation UUID to set as active.
+     *
+     * @return JSONResponse Success or error response.
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
-     *
-     * @param string $uuid Organisation UUID to set as active
-     *
-     * @return JSONResponse Success or error response
      */
     public function setActive(string $uuid): JSONResponse
     {
         try {
             $success = $this->organisationService->setActiveOrganisation($uuid);
 
-            if ($success) {
-                $activeOrg = $this->organisationService->getActiveOrganisation();
+            if ($success === true) {
+                $activeOrg     = $this->organisationService->getActiveOrganisation();
+                $activeOrgData = null;
+                if ($activeOrg !== null) {
+                    $activeOrgData = $activeOrg->jsonSerialize();
+                }
 
                 return new JSONResponse(
                         [
                             'message'            => 'Active organisation set successfully',
-                            'activeOrganisation' => $activeOrg ? $activeOrg->jsonSerialize() : null,
+                            'activeOrganisation' => $activeOrgData,
                         ],
                         Http::STATUS_OK
                         );
@@ -153,7 +158,7 @@ class OrganisationController extends Controller
                         ],
                         Http::STATUS_BAD_REQUEST
                         );
-            }
+            }//end if
         } catch (Exception $e) {
             $this->logger->error(
                     'Failed to set active organisation',
@@ -187,9 +192,14 @@ class OrganisationController extends Controller
         try {
             $activeOrg = $this->organisationService->getActiveOrganisation();
 
+            $activeOrgData = null;
+            if ($activeOrg !== null) {
+                $activeOrgData = $activeOrg->jsonSerialize();
+            }
+
             return new JSONResponse(
                     [
-                        'activeOrganisation' => $activeOrg ? $activeOrg->jsonSerialize() : null,
+                        'activeOrganisation' => $activeOrgData,
                     ],
                     Http::STATUS_OK
                     );
@@ -215,19 +225,19 @@ class OrganisationController extends Controller
     /**
      * Create a new organisation
      *
+     * @param string $name        Organisation name.
+     * @param string $description Organisation description (optional).
+     *
+     * @return JSONResponse Created organisation data.
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
-     *
-     * @param string $name        Organisation name
-     * @param string $description Organisation description (optional)
-     *
-     * @return JSONResponse Created organisation data
      */
     public function create(string $name, string $description=''): JSONResponse
     {
         try {
-            // Validate input
-            if (empty(trim($name))) {
+            // Validate input.
+            if (empty(trim($name)) === true) {
                 return new JSONResponse(
                         [
                             'error' => 'Organisation name is required',
@@ -236,7 +246,7 @@ class OrganisationController extends Controller
                         );
             }
 
-            // Get UUID from request body if provided
+            // Get UUID from request body if provided.
             $requestData = $this->request->getParams();
             $uuid        = $requestData['uuid'] ?? '';
 
@@ -272,24 +282,24 @@ class OrganisationController extends Controller
     /**
      * Join an organisation by UUID
      *
+     * @param string $uuid Organisation UUID to join.
+     *
+     * @return JSONResponse Success or error response.
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
-     *
-     * @param string $uuid Organisation UUID to join
-     *
-     * @return JSONResponse Success or error response
      */
     public function join(string $uuid): JSONResponse
     {
         try {
-            // Get optional userId from request body
+            // Get optional userId from request body.
             $requestData = $this->request->getParams();
-            $userId = $requestData['userId'] ?? null;
+            $userId      = $requestData['userId'] ?? null;
 
-            // Join organisation with optional userId parameter
+            // Join organisation with optional userId parameter.
             $success = $this->organisationService->joinOrganisation($uuid, $userId);
 
-            if ($success) {
+            if ($success === true) {
                 return new JSONResponse(
                         [
                             'message' => 'Successfully joined organisation',
@@ -308,9 +318,9 @@ class OrganisationController extends Controller
             $this->logger->error(
                     'Failed to join organisation',
                     [
-                        'uuid'  => $uuid,
+                        'uuid'   => $uuid,
                         'userId' => $requestData['userId'] ?? 'current_user',
-                        'error' => $e->getMessage(),
+                        'error'  => $e->getMessage(),
                     ]
                     );
 
@@ -328,26 +338,28 @@ class OrganisationController extends Controller
     /**
      * Leave an organisation by UUID (or remove specified user from organisation)
      *
+     * @param string $uuid Organisation UUID to leave.
+     *
+     * @return JSONResponse Success or error response.
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
-     *
-     * @param string $uuid Organisation UUID to leave
-     *
-     * @return JSONResponse Success or error response
      */
     public function leave(string $uuid): JSONResponse
     {
         try {
-            // Check if a specific userId is provided in the request body
-            $data = $this->request->getParams();
+            // Check if a specific userId is provided in the request body.
+            $data   = $this->request->getParams();
             $userId = $data['userId'] ?? null;
-            
+
             $success = $this->organisationService->leaveOrganisation($uuid, $userId);
 
-            if ($success) {
-                $message = $userId 
-                    ? "Successfully removed user from organisation" 
-                    : "Successfully left organisation";
+            if ($success === true) {
+                $message = "Successfully left organisation";
+                if ($userId !== null) {
+                    $message = "Successfully removed user from organisation";
+                }
+
                 return new JSONResponse(
                         [
                             'message' => $message,
@@ -366,9 +378,9 @@ class OrganisationController extends Controller
             $this->logger->error(
                     'Failed to leave organisation',
                     [
-                        'uuid'  => $uuid,
+                        'uuid'   => $uuid,
                         'userId' => $userId ?? 'current-user',
-                        'error' => $e->getMessage(),
+                        'error'  => $e->getMessage(),
                     ]
                     );
 
@@ -386,18 +398,18 @@ class OrganisationController extends Controller
     /**
      * Get organisation details by UUID
      *
+     * @param string $uuid Organisation UUID.
+     *
+     * @return JSONResponse Organisation data.
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
-     *
-     * @param string $uuid Organisation UUID
-     *
-     * @return JSONResponse Organisation data
      */
     public function show(string $uuid): JSONResponse
     {
         try {
-            // Check if user has access to this organisation
-            if (!$this->organisationService->hasAccessToOrganisation($uuid)) {
+            // Check if user has access to this organisation.
+            if ($this->organisationService->hasAccessToOrganisation($uuid) === false) {
                 return new JSONResponse(
                         [
                             'error' => 'Access denied to this organisation',
@@ -407,8 +419,8 @@ class OrganisationController extends Controller
             }
 
             $organisation = $this->organisationMapper->findByUuid($uuid);
-            
-            // Load children for this organisation
+
+            // Load children for this organisation.
             $children = $this->organisationMapper->findChildrenChain($uuid);
             $organisation->setChildren($children);
 
@@ -441,18 +453,18 @@ class OrganisationController extends Controller
     /**
      * Update organisation details
      *
+     * @param string $uuid Organisation UUID.
+     *
+     * @return JSONResponse Updated organisation data.
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
-     *
-     * @param string $uuid Organisation UUID
-     *
-     * @return JSONResponse Updated organisation data
      */
     public function update(string $uuid): JSONResponse
     {
         try {
-            // Check if user has access to this organisation
-            if (!$this->organisationService->hasAccessToOrganisation($uuid)) {
+            // Check if user has access to this organisation.
+            if ($this->organisationService->hasAccessToOrganisation($uuid) === false) {
                 return new JSONResponse(
                         [
                             'error' => 'Access denied to this organisation',
@@ -462,86 +474,93 @@ class OrganisationController extends Controller
             }
 
             $organisation = $this->organisationMapper->findByUuid($uuid);
-            
-            // Get all parameters from request body
+
+            // Get all parameters from request body.
             $data = $this->request->getParams();
             unset($data['_route']);
 
-            // Update fields if provided
-            if (isset($data['name']) && !empty(trim($data['name']))) {
+            // Update fields if provided.
+            if (isset($data['name']) === true && empty(trim($data['name'])) === false) {
                 $organisation->setName(trim($data['name']));
-                
-                // Auto-generate slug from name if slug is not provided or is empty
-                if (!isset($data['slug']) || empty(trim($data['slug']))) {
+
+                // Auto-generate slug from name if slug is not provided or is empty.
+                if (isset($data['slug']) === false || empty(trim($data['slug'])) === true) {
                     $slug = $this->generateSlug(trim($data['name']));
                     $organisation->setSlug($slug);
                 }
             }
 
-            if (isset($data['description'])) {
+            if (isset($data['description']) === true) {
                 $organisation->setDescription(trim($data['description']));
             }
-            
-            // Only set slug if it's provided and not empty
-            // Empty strings should not override existing slug
-            if (isset($data['slug']) && trim($data['slug']) !== '') {
+
+            // Only set slug if it's provided and not empty.
+            // Empty strings should not override existing slug.
+            if (isset($data['slug']) === true && trim($data['slug']) !== '') {
                 $organisation->setSlug(trim($data['slug']));
             }
-            
-            if (isset($data['active'])) {
-                // Handle empty string as false
-                $active = $data['active'] === '' ? false : (bool)$data['active'];
+
+            if (isset($data['active']) === true) {
+                // Handle empty string as false.
+                $active = false;
+                if ($data['active'] !== '') {
+                    $active = (bool) $data['active'];
+                }
+
                 $organisation->setActive($active);
             }
-            
-            if (isset($data['storageQuota'])) {
+
+            if (isset($data['storageQuota']) === true) {
                 $organisation->setStorageQuota($data['storageQuota']);
             }
-            
-            if (isset($data['bandwidthQuota'])) {
+
+            if (isset($data['bandwidthQuota']) === true) {
                 $organisation->setBandwidthQuota($data['bandwidthQuota']);
             }
-            
-            if (isset($data['requestQuota'])) {
+
+            if (isset($data['requestQuota']) === true) {
                 $organisation->setRequestQuota($data['requestQuota']);
             }
-            
-        if (isset($data['groups']) && is_array($data['groups'])) {
-            $organisation->setGroups($data['groups']);
-        }
-        
-        if (isset($data['authorization']) && is_array($data['authorization'])) {
-            $organisation->setAuthorization($data['authorization']);
-        }
-        
-        // Handle parent organisation update with validation
-        if (array_key_exists('parent', $data)) {
-            $newParent = $data['parent'] === '' || $data['parent'] === null ? null : $data['parent'];
-            
-            // Validate parent assignment to prevent circular references
-            try {
-                $this->organisationMapper->validateParentAssignment($uuid, $newParent);
-                $organisation->setParent($newParent);
-            } catch (Exception $e) {
-                $this->logger->warning(
+
+            if (isset($data['groups']) === true && is_array($data['groups']) === true) {
+                $organisation->setGroups($data['groups']);
+            }
+
+            if (isset($data['authorization']) === true && is_array($data['authorization']) === true) {
+                $organisation->setAuthorization($data['authorization']);
+            }
+
+            // Handle parent organisation update with validation.
+            if (array_key_exists('parent', $data) === true) {
+                $newParent = null;
+                if ($data['parent'] !== '' && $data['parent'] !== null) {
+                    $newParent = $data['parent'];
+                }
+
+                // Validate parent assignment to prevent circular references.
+                try {
+                    $this->organisationMapper->validateParentAssignment($uuid, $newParent);
+                    $organisation->setParent($newParent);
+                } catch (Exception $e) {
+                    $this->logger->warning(
                     'Parent assignment validation failed',
                     [
                         'organisationUuid' => $uuid,
-                        'newParent' => $newParent,
-                        'error' => $e->getMessage(),
+                        'newParent'        => $newParent,
+                        'error'            => $e->getMessage(),
                     ]
-                );
-                
-                return new JSONResponse(
+                    );
+
+                    return new JSONResponse(
                     [
                         'error' => $e->getMessage(),
                     ],
                     Http::STATUS_BAD_REQUEST
-                );
-            }
-        }
+                    );
+                }
+            }//end if
 
-        $updated = $this->organisationMapper->save($organisation);
+            $updated = $this->organisationMapper->save($organisation);
 
             return new JSONResponse($updated->jsonSerialize(), Http::STATUS_OK);
         } catch (Exception $e) {
@@ -556,7 +575,7 @@ class OrganisationController extends Controller
 
             return new JSONResponse(
                     [
-                        'error' => 'Failed to update organisation: ' . $e->getMessage(),
+                        'error' => 'Failed to update organisation: '.$e->getMessage(),
                     ],
                     Http::STATUS_BAD_REQUEST
                     );
@@ -568,12 +587,12 @@ class OrganisationController extends Controller
     /**
      * Patch organisation details (alias for update)
      *
+     * @param string $uuid Organisation UUID.
+     *
+     * @return JSONResponse Updated organisation data.
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
-     *
-     * @param string $uuid Organisation UUID
-     *
-     * @return JSONResponse Updated organisation data
      */
     public function patch(string $uuid): JSONResponse
     {
@@ -588,37 +607,38 @@ class OrganisationController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @param string $query Search query
+     * @param string $query Search query.
      *
-     * @return JSONResponse List of matching organisations with pagination info
+     * @return JSONResponse List of matching organisations with pagination info.
      */
     public function search(string $query=''): JSONResponse
     {
         try {
-            // Get pagination parameters from request
+            // Get pagination parameters from request.
             $limit  = (int) $this->request->getParam('_limit', 50);
             $offset = (int) $this->request->getParam('_offset', 0);
 
-            // Validate pagination parameters
-            $limit  = max(1, min($limit, 100)); // Between 1 and 100
+            // Validate pagination parameters.
+            $limit = max(1, min($limit, 100));
+            // Between 1 and 100.
             $offset = max(0, $offset);
 
-            // If query is empty, return all organisations
-            // Otherwise search by name
-            if (empty(trim($query))) {
+            // If query is empty, return all organisations.
+            // Otherwise search by name.
+            if (empty(trim($query)) === true) {
                 $organisations = $this->organisationMapper->findAll($limit, $offset);
             } else {
                 $organisations = $this->organisationMapper->findByName(trim($query), $limit, $offset);
             }
 
-            // Remove user information for privacy
+            // Remove user information for privacy.
             $publicData = array_map(
                     function ($org) {
                         $data = $org->jsonSerialize();
                         unset($data['users']);
-                        // Don't expose user list
+                        // Don't expose user list.
                         unset($data['owner']);
-                        // Don't expose owner
+                        // Don't expose owner.
                         return $data;
                     },
                     $organisations
@@ -738,18 +758,18 @@ class OrganisationController extends Controller
      */
     private function generateSlug(string $name): string
     {
-        // Convert to lowercase
+        // Convert to lowercase.
         $slug = strtolower($name);
-        
-        // Replace spaces and special characters with hyphens
+
+        // Replace spaces and special characters with hyphens.
         $slug = preg_replace('/[^a-z0-9]+/', '-', $slug);
-        
-        // Remove leading/trailing hyphens
+
+        // Remove leading/trailing hyphens.
         $slug = trim($slug, '-');
-        
-        // Limit length to 100 characters
+
+        // Limit length to 100 characters.
         $slug = substr($slug, 0, 100);
-        
+
         return $slug;
 
     }//end generateSlug()

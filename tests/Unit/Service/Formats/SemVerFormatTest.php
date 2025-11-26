@@ -177,7 +177,7 @@ class SemVerFormatTest extends TestCase
      */
     public function testSemVerEdgeCases(): void
     {
-        // Test edge cases that should be invalid
+        // Test edge cases that should be invalid.
         $edgeCases = [
             '1.0.0-',        // Trailing dash
             '1.0.0+',        // Trailing plus
@@ -194,7 +194,7 @@ class SemVerFormatTest extends TestCase
             );
         }
 
-        // Test edge cases that should be valid
+        // Test edge cases that should be valid.
         $validEdgeCases = [
             '0.0.0',         // All zeros
             '999.999.999',   // Large numbers

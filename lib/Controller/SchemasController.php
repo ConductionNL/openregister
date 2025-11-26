@@ -51,19 +51,19 @@ class SchemasController extends Controller
     /**
      * Constructor for the SchemasController
      *
-     * @param string              $appName             The name of the app
-     * @param IRequest            $request             The request object
-     * @param IAppConfig          $config              The app configuration object
-     * @param SchemaMapper        $schemaMapper        The schema mapper
-     * @param ObjectEntityMapper  $objectEntityMapper  The object entity mapper
-     * @param DownloadService     $downloadService     The download service
-     * @param UploadService       $uploadService       The upload service
-     * @param AuditTrailMapper           $auditTrailMapper           The audit trail mapper
-     * @param OrganisationService        $organisationService        The organisation service
-     * @param SchemaCacheService         $schemaCacheService         Schema cache service for schema operations
-     * @param SchemaFacetCacheService    $schemaFacetCacheService    Schema facet cache service for facet operations
-     * @param SchemaService              $schemaService              Schema service for exploration operations
-     * @param LoggerInterface            $logger                     Logger for debugging
+     * @param string                  $appName                 The name of the app
+     * @param IRequest                $request                 The request object
+     * @param IAppConfig              $config                  The app configuration object
+     * @param SchemaMapper            $schemaMapper            The schema mapper
+     * @param ObjectEntityMapper      $objectEntityMapper      The object entity mapper
+     * @param DownloadService         $downloadService         The download service
+     * @param UploadService           $uploadService           The upload service
+     * @param AuditTrailMapper        $auditTrailMapper        The audit trail mapper
+     * @param OrganisationService     $organisationService     The organisation service
+     * @param SchemaCacheService      $schemaCacheService      Schema cache service for schema operations
+     * @param SchemaFacetCacheService $schemaFacetCacheService Schema facet cache service for facet operations
+     * @param SchemaService           $schemaService           Schema service for exploration operations
+     * @param LoggerInterface         $logger                  Logger for debugging
      *
      * @return void
      */
@@ -86,6 +86,7 @@ class SchemasController extends Controller
 
     }//end __construct()
 
+
     /**
      * Retrieves a list of all schemas
      *
@@ -97,11 +98,12 @@ class SchemasController extends Controller
      *
      * @NoCSRFRequired
      */
-    public function index(): JSONResponse {
+    public function index(): JSONResponse
+    {
         // Get request parameters for filtering and searching.
         $params = $this->request->getParams();
-        
-        // Extract pagination and search parameters
+
+        // Extract pagination and search parameters.
         $limit  = isset($params['_limit']) ? (int) $params['_limit'] : null;
         $offset = isset($params['_offset']) ? (int) $params['_offset'] : null;
         $page   = isset($params['_page']) ? (int) $params['_page'] : null;
@@ -110,13 +112,13 @@ class SchemasController extends Controller
         if (is_string($extend)) {
             $extend = [$extend];
         }
-        
-        // Convert page to offset if provided
+
+        // Convert page to offset if provided.
         if ($page !== null && $limit !== null) {
             $offset = ($page - 1) * $limit;
         }
-        
-        // Extract filters
+
+        // Extract filters.
         $filters = $params['filters'] ?? [];
 
         $schemas    = $this->schemaMapper->findAll(
@@ -128,24 +130,25 @@ class SchemasController extends Controller
             extend: []
         );
         $schemasArr = array_map(fn($schema) => $schema->jsonSerialize(), $schemas);
-        
-        // Add extendedBy property to each schema showing UUIDs of schemas that extend it
+
+        // Add extendedBy property to each schema showing UUIDs of schemas that extend it.
         foreach ($schemasArr as &$schema) {
             $schema['@self'] = $schema['@self'] ?? [];
             $schema['@self']['extendedBy'] = $this->schemaMapper->findExtendedBy($schema['id']);
         }
-        unset($schema); // Break the reference
-        
-        // If '@self.stats' is requested, attach statistics to each schema
+
+        unset($schema);
+        // Break the reference.
+        // If '@self.stats' is requested, attach statistics to each schema.
         if (in_array('@self.stats', $extend, true)) {
-            // Get register counts for all schemas in one call
+            // Get register counts for all schemas in one call.
             $registerCounts = $this->schemaMapper->getRegisterCountPerSchema();
             foreach ($schemasArr as &$schema) {
                 $schema['stats'] = [
                     'objects'   => $this->objectEntityMapper->getStatistics(null, $schema['id']),
                     'logs'      => $this->auditTrailMapper->getStatistics(null, $schema['id']),
                     'files'     => [ 'total' => 0, 'size' => 0 ],
-                    // Add the number of registers referencing this schema
+                    // Add the number of registers referencing this schema.
                     'registers' => $registerCounts[$schema['id']] ?? 0,
                 ];
             }
@@ -175,20 +178,20 @@ class SchemasController extends Controller
 
         $schema    = $this->schemaMapper->find($id, []);
         $schemaArr = $schema->jsonSerialize();
-        
-        // Add extendedBy property showing UUIDs of schemas that extend this schema
+
+        // Add extendedBy property showing UUIDs of schemas that extend this schema.
         $schemaArr['@self'] = $schemaArr['@self'] ?? [];
         $schemaArr['@self']['extendedBy'] = $this->schemaMapper->findExtendedBy($id);
-        
-        // If '@self.stats' is requested, attach statistics to the schema
+
+        // If '@self.stats' is requested, attach statistics to the schema.
         if (in_array('@self.stats', $extend, true)) {
-            // Get register counts for all schemas in one call
+            // Get register counts for all schemas in one call.
             $registerCounts     = $this->schemaMapper->getRegisterCountPerSchema();
             $schemaArr['stats'] = [
                 'objects'   => $this->objectEntityMapper->getStatistics(null, $schemaArr['id']),
                 'logs'      => $this->auditTrailMapper->getStatistics(null, $schemaArr['id']),
                 'files'     => [ 'total' => 0, 'size' => 0 ],
-                // Add the number of registers referencing this schema
+                // Add the number of registers referencing this schema.
                 'registers' => $registerCounts[$schemaArr['id']] ?? 0,
             ];
         }
@@ -230,7 +233,7 @@ class SchemasController extends Controller
             // Create a new schema from the data.
             $schema = $this->schemaMapper->createFromArray(object: $data);
 
-            // Set organisation from active organisation for multi-tenancy (if not already set)
+            // Set organisation from active organisation for multi-tenancy (if not already set).
             if ($schema->getOrganisation() === null || $schema->getOrganisation() === '') {
                 $organisationUuid = $this->organisationService->getOrganisationForNewEntity();
                 $schema->setOrganisation($organisationUuid);
@@ -239,21 +242,24 @@ class SchemasController extends Controller
 
             return new JSONResponse($schema, 201);
         } catch (DBException $e) {
-            // Handle database constraint violations with user-friendly messages
+            // Handle database constraint violations with user-friendly messages.
             $constraintException = DatabaseConstraintException::fromDatabaseException($e, 'schema');
             return new JSONResponse(data: ['error' => $constraintException->getMessage()], statusCode: $constraintException->getHttpStatusCode());
         } catch (DatabaseConstraintException $e) {
-            // Handle our custom database constraint exceptions
+            // Handle our custom database constraint exceptions.
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: $e->getHttpStatusCode());
         } catch (Exception $e) {
-            // Log the actual error for debugging
-            $this->logger->error('Schema creation failed', [
-                'error_message' => $e->getMessage(),
-                'error_code' => $e->getCode(),
-                'trace' => $e->getTraceAsString()
-            ]);
+            // Log the actual error for debugging.
+            $this->logger->error(
+                    'Schema creation failed',
+                    [
+                        'error_message' => $e->getMessage(),
+                        'error_code'    => $e->getCode(),
+                        'trace'         => $e->getTraceAsString(),
+                    ]
+                    );
 
-            // Check if this is a validation error by examining the message
+            // Check if this is a validation error by examining the message.
             if (str_contains($e->getMessage(), 'Invalid')
                 || str_contains($e->getMessage(), 'must be')
                 || str_contains($e->getMessage(), 'required')
@@ -261,11 +267,11 @@ class SchemasController extends Controller
                 || str_contains($e->getMessage(), 'Property at')
                 || str_contains($e->getMessage(), 'authorization')
             ) {
-                // Return 400 Bad Request for validation errors with actual error message
+                // Return 400 Bad Request for validation errors with actual error message.
                 return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
             }
 
-            // For database constraint violations, return 409 Conflict
+            // For database constraint violations, return 409 Conflict.
             if (str_contains($e->getMessage(), 'constraint')
                 || str_contains($e->getMessage(), 'duplicate')
                 || str_contains($e->getMessage(), 'unique')
@@ -273,7 +279,7 @@ class SchemasController extends Controller
                 return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 409);
             }
 
-            // Return 500 for other unexpected errors with actual error message
+            // Return 500 for other unexpected errors with actual error message.
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }//end try
 
@@ -305,7 +311,7 @@ class SchemasController extends Controller
             }
         }
 
-        // Remove immutable fields to prevent tampering
+        // Remove immutable fields to prevent tampering.
         unset($data['id']);
         unset($data['organisation']);
         unset($data['owner']);
@@ -314,29 +320,32 @@ class SchemasController extends Controller
         try {
             // Update the schema with the provided data.
             $updatedSchema = $this->schemaMapper->updateFromArray(id: $id, object: $data);
-            
-            // **CACHE INVALIDATION**: Clear all schema-related caches when schema is updated
+
+            // **CACHE INVALIDATION**: Clear all schema-related caches when schema is updated.
             $this->schemaCacheService->invalidateForSchemaChange($updatedSchema->getId(), 'update');
             $this->schemaFacetCacheService->invalidateForSchemaChange($updatedSchema->getId(), 'update');
-            
+
             return new JSONResponse($updatedSchema);
         } catch (DBException $e) {
-            // Handle database constraint violations with user-friendly messages
+            // Handle database constraint violations with user-friendly messages.
             $constraintException = DatabaseConstraintException::fromDatabaseException($e, 'schema');
             return new JSONResponse(['error' => $constraintException->getMessage()], $constraintException->getHttpStatusCode());
         } catch (DatabaseConstraintException $e) {
-            // Handle our custom database constraint exceptions
+            // Handle our custom database constraint exceptions.
             return new JSONResponse(['error' => $e->getMessage()], $e->getHttpStatusCode());
         } catch (Exception $e) {
-            // Log the actual error for debugging
-            $this->logger->error('Schema update failed', [
-                'schema_id' => $id,
-                'error_message' => $e->getMessage(),
-                'error_code' => $e->getCode(),
-                'trace' => $e->getTraceAsString()
-            ]);
+            // Log the actual error for debugging.
+            $this->logger->error(
+                    'Schema update failed',
+                    [
+                        'schema_id'     => $id,
+                        'error_message' => $e->getMessage(),
+                        'error_code'    => $e->getCode(),
+                        'trace'         => $e->getTraceAsString(),
+                    ]
+                    );
 
-            // Check if this is a validation error by examining the message
+            // Check if this is a validation error by examining the message.
             if (str_contains($e->getMessage(), 'Invalid')
                 || str_contains($e->getMessage(), 'must be')
                 || str_contains($e->getMessage(), 'required')
@@ -344,11 +353,11 @@ class SchemasController extends Controller
                 || str_contains($e->getMessage(), 'Property at')
                 || str_contains($e->getMessage(), 'authorization')
             ) {
-                // Return 400 Bad Request for validation errors with actual error message
+                // Return 400 Bad Request for validation errors with actual error message.
                 return new JSONResponse(['error' => $e->getMessage()], 400);
             }
 
-            // For database constraint violations, return 409 Conflict
+            // For database constraint violations, return 409 Conflict.
             if (str_contains($e->getMessage(), 'constraint')
                 || str_contains($e->getMessage(), 'duplicate')
                 || str_contains($e->getMessage(), 'unique')
@@ -356,7 +365,7 @@ class SchemasController extends Controller
                 return new JSONResponse(['error' => $e->getMessage()], 409);
             }
 
-            // Return 500 for other unexpected errors with actual error message
+            // Return 500 for other unexpected errors with actual error message.
             return new JSONResponse(['error' => $e->getMessage()], 500);
         }//end try
 
@@ -398,21 +407,21 @@ class SchemasController extends Controller
     public function destroy(int $id): JSONResponse
     {
         try {
-            // Find the schema by ID, delete it, and invalidate caches
+            // Find the schema by ID, delete it, and invalidate caches.
             $schemaToDelete = $this->schemaMapper->find(id: $id);
             $this->schemaMapper->delete($schemaToDelete);
-            
-            // **CACHE INVALIDATION**: Clear all schema-related caches when schema is deleted
+
+            // **CACHE INVALIDATION**: Clear all schema-related caches when schema is deleted.
             $this->schemaCacheService->invalidateForSchemaChange($schemaToDelete->getId(), 'delete');
             $this->schemaFacetCacheService->invalidateForSchemaChange($schemaToDelete->getId(), 'delete');
 
             // Return an empty response.
             return new JSONResponse([]);
         } catch (\OCA\OpenRegister\Exception\ValidationException $e) {
-            // Return 409 Conflict for cascade protection (objects still attached)
+            // Return 409 Conflict for cascade protection (objects still attached).
             return new JSONResponse(['error' => $e->getMessage()], 409);
         } catch (\Exception $e) {
-            // Return 500 for other errors
+            // Return 500 for other errors.
             return new JSONResponse(['error' => $e->getMessage()], 500);
         }
 
@@ -491,43 +500,46 @@ class SchemasController extends Controller
                 // Insert a new schema if no ID is set.
                 $schema = $this->schemaMapper->insert($schema);
 
-                // Set organisation from active organisation for multi-tenancy (if not already set)
+                // Set organisation from active organisation for multi-tenancy (if not already set).
                 if ($schema->getOrganisation() === null || $schema->getOrganisation() === '') {
                     $organisationUuid = $this->organisationService->getOrganisationForNewEntity();
                     $schema->setOrganisation($organisationUuid);
                     $schema = $this->schemaMapper->update($schema);
                 }
-                
-                // **CACHE INVALIDATION**: Clear all schema-related caches when schema is created
+
+                // **CACHE INVALIDATION**: Clear all schema-related caches when schema is created.
                 $this->schemaCacheService->invalidateForSchemaChange($schema->getId(), 'create');
                 $this->schemaFacetCacheService->invalidateForSchemaChange($schema->getId(), 'create');
             } else {
                 // Update the existing schema.
                 $schema = $this->schemaMapper->update($schema);
-                
-                // **CACHE INVALIDATION**: Clear all schema-related caches when schema is updated
+
+                // **CACHE INVALIDATION**: Clear all schema-related caches when schema is updated.
                 $this->schemaCacheService->invalidateForSchemaChange($schema->getId(), 'update');
                 $this->schemaFacetCacheService->invalidateForSchemaChange($schema->getId(), 'update');
-            }
+            }//end if
 
             return new JSONResponse($schema);
         } catch (DBException $e) {
-            // Handle database constraint violations with user-friendly messages
+            // Handle database constraint violations with user-friendly messages.
             $constraintException = DatabaseConstraintException::fromDatabaseException($e, 'schema');
             return new JSONResponse(['error' => $constraintException->getMessage()], $constraintException->getHttpStatusCode());
         } catch (DatabaseConstraintException $e) {
-            // Handle our custom database constraint exceptions
+            // Handle our custom database constraint exceptions.
             return new JSONResponse(['error' => $e->getMessage()], $e->getHttpStatusCode());
         } catch (Exception $e) {
-            // Log the actual error for debugging
-            $this->logger->error('Schema upload failed', [
-                'schema_id' => $id,
-                'error_message' => $e->getMessage(),
-                'error_code' => $e->getCode(),
-                'trace' => $e->getTraceAsString()
-            ]);
+            // Log the actual error for debugging.
+            $this->logger->error(
+                    'Schema upload failed',
+                    [
+                        'schema_id'     => $id,
+                        'error_message' => $e->getMessage(),
+                        'error_code'    => $e->getCode(),
+                        'trace'         => $e->getTraceAsString(),
+                    ]
+                    );
 
-            // Check if this is a validation error by examining the message
+            // Check if this is a validation error by examining the message.
             if (str_contains($e->getMessage(), 'Invalid')
                 || str_contains($e->getMessage(), 'must be')
                 || str_contains($e->getMessage(), 'required')
@@ -535,11 +547,11 @@ class SchemasController extends Controller
                 || str_contains($e->getMessage(), 'Property at')
                 || str_contains($e->getMessage(), 'authorization')
             ) {
-                // Return 400 Bad Request for validation errors with actual error message
+                // Return 400 Bad Request for validation errors with actual error message.
                 return new JSONResponse(['error' => $e->getMessage()], 400);
             }
 
-            // For database constraint violations, return 409 Conflict
+            // For database constraint violations, return 409 Conflict.
             if (str_contains($e->getMessage(), 'constraint')
                 || str_contains($e->getMessage(), 'duplicate')
                 || str_contains($e->getMessage(), 'unique')
@@ -547,7 +559,7 @@ class SchemasController extends Controller
                 return new JSONResponse(['error' => $e->getMessage()], 409);
             }
 
-            // Return 500 for other unexpected errors with actual error message
+            // Return 500 for other unexpected errors with actual error message.
             return new JSONResponse(['error' => $e->getMessage()], 500);
         }//end try
 
@@ -603,22 +615,22 @@ class SchemasController extends Controller
     public function related(int|string $id): JSONResponse
     {
         try {
-            // Find related schemas using the SchemaMapper (incoming references)
+            // Find related schemas using the SchemaMapper (incoming references).
             $incomingSchemas      = $this->schemaMapper->getRelated($id);
             $incomingSchemasArray = array_map(fn($schema) => $schema->jsonSerialize(), $incomingSchemas);
 
-            // Find outgoing references: schemas that this schema refers to
+            // Find outgoing references: schemas that this schema refers to.
             $targetSchema    = $this->schemaMapper->find($id);
             $properties      = $targetSchema->getProperties() ?? [];
             $allSchemas      = $this->schemaMapper->findAll();
             $outgoingSchemas = [];
             foreach ($allSchemas as $schema) {
-                // Skip self
+                // Skip self.
                 if ($schema->getId() === $targetSchema->getId()) {
                     continue;
                 }
 
-                // Use the same reference logic as getRelated, but reversed
+                // Use the same reference logic as getRelated, but reversed.
                 if ($this->schemaMapper->hasReferenceToSchema($properties, (string) $schema->getId(), $schema->getUuid(), $schema->getSlug())) {
                     $outgoingSchemas[$schema->getId()] = $schema;
                 }
@@ -634,10 +646,10 @@ class SchemasController extends Controller
                     ]
                     );
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-            // Return a 404 error if the target schema doesn't exist
+            // Return a 404 error if the target schema doesn't exist.
             return new JSONResponse(['error' => 'Schema not found'], 404);
         } catch (Exception $e) {
-            // Return a 500 error for other exceptions
+            // Return a 500 error for other exceptions.
             return new JSONResponse(['error' => 'Internal server error: '.$e->getMessage()], 500);
         }//end try
 
@@ -657,31 +669,34 @@ class SchemasController extends Controller
     public function stats(int $id): JSONResponse
     {
         try {
-            // Get the schema
+            // Get the schema.
             $schema = $this->schemaMapper->find($id);
 
-            if (!$schema) {
+            if ($schema === null) {
                 return new JSONResponse(['error' => 'Schema not found'], 404);
             }
 
-            // Get detailed object statistics for this schema using the existing method
+            // Get detailed object statistics for this schema using the existing method.
             $objectStats = $this->objectEntityMapper->getStatistics(null, $id);
 
-            // Calculate comprehensive statistics for this schema
+            // Calculate comprehensive statistics for this schema.
             $stats = [
-                'objectCount' => $objectStats['total'], // Keep for backward compatibility
-                'objects_count' => $objectStats['total'], // Alternative field name for compatibility
-                'objects' => [
-                    'total' => $objectStats['total'],
-                    'invalid' => $objectStats['invalid'],
-                    'deleted' => $objectStats['deleted'],
+                'objectCount'   => $objectStats['total'],
+            // Keep for backward compatibility.
+                'objects_count' => $objectStats['total'],
+            // Alternative field name for compatibility.
+                'objects'       => [
+                    'total'     => $objectStats['total'],
+                    'invalid'   => $objectStats['invalid'],
+                    'deleted'   => $objectStats['deleted'],
                     'published' => $objectStats['published'],
-                    'locked' => $objectStats['locked'],
-                    'size' => $objectStats['size'],
+                    'locked'    => $objectStats['locked'],
+                    'size'      => $objectStats['size'],
                 ],
-                'logs' => $this->auditTrailMapper->getStatistics(null, $id),
-                'files' => ['total' => 0, 'size' => 0], // Placeholder for future file statistics
-                'registers' => $this->schemaMapper->getRegisterCountPerSchema()[$id] ?? 0,
+                'logs'          => $this->auditTrailMapper->getStatistics(null, $id),
+                'files'         => ['total' => 0, 'size' => 0],
+                // Placeholder for future file statistics.
+                'registers'     => $this->schemaMapper->getRegisterCountPerSchema()[$id] ?? 0,
             ];
 
             return new JSONResponse($stats);
@@ -712,19 +727,19 @@ class SchemasController extends Controller
     public function explore(int $id): JSONResponse
     {
         try {
-            $this->logger->info('Starting schema exploration for schema ID: ' . $id);
-            
+            $this->logger->info('Starting schema exploration for schema ID: '.$id);
+
             $explorationResults = $this->schemaService->exploreSchemaProperties($id);
-            
+
             $this->logger->info('Schema exploration completed successfully');
-            
+
             return new JSONResponse($explorationResults);
-            
         } catch (\Exception $e) {
-            $this->logger->error('Schema exploration failed: ' . $e->getMessage());
+            $this->logger->error('Schema exploration failed: '.$e->getMessage());
             return new JSONResponse(['error' => $e->getMessage()], 500);
         }
-    }
+
+    }//end explore()
 
 
     /**
@@ -743,33 +758,35 @@ class SchemasController extends Controller
     public function updateFromExploration(int $id): JSONResponse
     {
         try {
-            // Get property updates from request
+            // Get property updates from request.
             $propertyUpdates = $this->request->getParam('properties', []);
-            
+
             if (empty($propertyUpdates)) {
                 return new JSONResponse(['error' => 'No property updates provided'], 400);
             }
-            
-            $this->logger->info('Updating schema ' . $id . ' with ' . count($propertyUpdates) . ' property updates');
-            
+
+            $this->logger->info('Updating schema '.$id.' with '.count($propertyUpdates).' property updates');
+
             $updatedSchema = $this->schemaService->updateSchemaFromExploration($id, $propertyUpdates);
-            
-            // Clear schema cache to ensure fresh data
+
+            // Clear schema cache to ensure fresh data.
             $this->schemaCacheService->clearSchemaCache($id);
-            
-            $this->logger->info('Schema ' . $id . ' successfully updated with exploration results');
-            
-            return new JSONResponse([
-                'success' => true,
-                'schema' => $updatedSchema->jsonSerialize(),
-                'message' => 'Schema updated successfully with ' . count($propertyUpdates) . ' properties'
-            ]);
-            
+
+            $this->logger->info('Schema '.$id.' successfully updated with exploration results');
+
+            return new JSONResponse(
+                    [
+                        'success' => true,
+                        'schema'  => $updatedSchema->jsonSerialize(),
+                        'message' => 'Schema updated successfully with '.count($propertyUpdates).' properties',
+                    ]
+                    );
         } catch (\Exception $e) {
-            $this->logger->error('Failed to update schema from exploration: ' . $e->getMessage());
+            $this->logger->error('Failed to update schema from exploration: '.$e->getMessage());
             return new JSONResponse(['error' => $e->getMessage()], 500);
-        }
-    }
+        }//end try
+
+    }//end updateFromExploration()
 
 
 }//end class

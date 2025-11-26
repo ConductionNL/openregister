@@ -12,22 +12,19 @@ OpenRegister now includes comprehensive documentation for enhanced text extracti
 ## 🎯 I want to...
 
 ### Learn about text extraction
-→ Read **[Enhanced Text Extraction & GDPR Entity Tracking](website/docs/features/text-extraction-enhanced.md)**
+→ Read **[Enhanced Text Extraction & GDPR Entity Tracking](../features/text-extraction-enhanced.md)**
 
 ### Understand Files vs Objects processing
-→ Read **[Text Extraction Sources: Files vs Objects](website/docs/features/text-extraction-sources.md)**
+→ Read **[Text Extraction Sources: Files vs Objects](../features/text-extraction-sources.md)**
 
 ### Learn about archiving and classification
-→ Read **[Archiving and Metadata Classification](website/docs/features/archiving-and-metadata.md)** *(new feature - not yet implemented)*
+→ Read **[Archiving and Metadata Classification](../features/archiving-and-metadata.md)** *(new feature - not yet implemented)*
 
 ### Review the database design
-→ Read **[Text Extraction Database Entities](website/docs/technical/text-extraction-entities.md)** *(includes multi-tenancy)*
+→ Read **[Text Extraction Database Entities](./text-extraction-entities.md)** *(includes multi-tenancy)*
 
 ### Plan the implementation
 → Read **[Enhanced Text Extraction Implementation Plan](./enhanced-text-extraction-implementation-plan.md)**
-
-### Get a quick summary
-→ Read **[Documentation Summary](../Features/documentation-summary.md)**
 
 ## 🚀 Quick Start
 
@@ -127,11 +124,11 @@ GET  /api/gdpr/report
 
 ## 📈 Performance Targets
 
-- Object text extraction: <100ms
-- Chunk creation: <50ms per 100KB
-- Language detection: <10ms per chunk (local)
-- Entity extraction: <100ms per chunk (local)
-- GDPR report: <5s for 10,000 entities
+- Object text extraction: &lt;100ms
+- Chunk creation: &lt;50ms per 100KB
+- Language detection: &lt;10ms per chunk (local)
+- Entity extraction: &lt;100ms per chunk (local)
+- GDPR report: &lt;5s for 10,000 entities
 
 ## 🧪 Testing
 
@@ -145,11 +142,10 @@ GET  /api/gdpr/report
 
 | Document | Location | Purpose |
 |----------|----------|---------|
-| **Enhanced Text Extraction** | `website/docs/features/text-extraction-enhanced.md` | User/admin guide |
-| **Files vs Objects** | `website/docs/features/text-extraction-sources.md` | Source comparison |
-| **Database Entities** | `website/docs/technical/text-extraction-entities.md` | Technical schema |
-| **Implementation Plan** | 'website/docs/technical/enhanced-text-extraction-implementation-plan.md' | Development roadmap |
-| **Documentation Summary** | 'website/docs/Features/documentation-summary.md' | Complete overview |
+| **Enhanced Text Extraction** | `../features/text-extraction-enhanced.md` | User/admin guide |
+| **Files vs Objects** | `../features/text-extraction-sources.md` | Source comparison |
+| **Database Entities** | `./text-extraction-entities.md` | Technical schema |
+| **Implementation Plan** | `./enhanced-text-extraction-implementation-plan.md` | Development roadmap |
 
 ## 💡 Tips
 
@@ -167,7 +163,7 @@ See **[Implementation Plan - Questions for Stakeholders](./enhanced-text-extract
 
 - ✅ 100% of files and objects chunked
 - ✅ >90% entity detection accuracy
-- ✅ <5min to process 1000 files
+- ✅ &lt;5min to process 1000 files
 - ✅ GDPR register used for data subject requests
 - ✅ Pass GDPR compliance audit
 

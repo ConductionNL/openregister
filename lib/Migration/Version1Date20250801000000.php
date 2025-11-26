@@ -63,7 +63,7 @@ class Version1Date20250801000000 extends SimpleMigrationStep
      */
     public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
-        // No pre-schema changes required
+        // No pre-schema changes required.
 
     }//end preSchemaChange()
 
@@ -81,11 +81,11 @@ class Version1Date20250801000000 extends SimpleMigrationStep
         /** @var ISchemaWrapper $schema */
         $schema = $schemaClosure();
 
-        // 1. Add new fields to organisations table
+        // 1. Add new fields to organisations table.
         if ($schema->hasTable('openregister_organisations')) {
             $table = $schema->getTable('openregister_organisations');
-            
-            // Add users field (JSON array of user IDs)
+
+            // Add users field (JSON array of user IDs).
             if (!$table->hasColumn('users')) {
                 $table->addColumn('users', Types::JSON, [
                     'notnull' => false,
@@ -94,7 +94,7 @@ class Version1Date20250801000000 extends SimpleMigrationStep
                 $output->info('Added users column to organisations table');
             }
 
-            // Add owner field (user ID who owns the organisation)
+            // Add owner field (user ID who owns the organisation).
             if (!$table->hasColumn('owner')) {
                 $table->addColumn('owner', Types::STRING, [
                     'notnull' => false,
@@ -103,7 +103,7 @@ class Version1Date20250801000000 extends SimpleMigrationStep
                 $output->info('Added owner column to organisations table');
             }
 
-            // Add slug field (URL-friendly identifier)
+            // Add slug field (URL-friendly identifier).
             if (!$table->hasColumn('slug')) {
                 $table->addColumn('slug', Types::STRING, [
                     'notnull' => false,
@@ -112,7 +112,7 @@ class Version1Date20250801000000 extends SimpleMigrationStep
                 $output->info('Added slug column to organisations table');
             }
 
-            // Add unique constraints for uuid and slug
+            // Add unique constraints for uuid and slug.
             if ($table->hasColumn('uuid') && !$table->hasIndex('organisations_uuid_unique')) {
                 $table->addUniqueIndex(['uuid'], 'organisations_uuid_unique');
                 $output->info('Added unique constraint on uuid column');
@@ -139,7 +139,7 @@ class Version1Date20250801000000 extends SimpleMigrationStep
      */
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
-        // No post-schema changes required
+        // No post-schema changes required.
 
     }//end postSchemaChange()
-} 
+}

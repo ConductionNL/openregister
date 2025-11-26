@@ -40,27 +40,30 @@ class Version1Date20250813140000 extends SimpleMigrationStep
 
 
     /**
-     * @param IOutput $output
-     * @param Closure $schemaClosure The `\Closure` returns a `ISchemaWrapper`
-     * @param array   $options
+     * Add slug column to objects table
      *
-     * @return null|ISchemaWrapper
+     * @param IOutput                 $output        Migration output interface
+     * @param Closure                 $schemaClosure Schema closure that returns ISchemaWrapper
+     * @param array<array-key, mixed> $options       Migration options
+     *
+     * @return null|ISchemaWrapper Updated schema or null
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
         /*
          * @var ISchemaWrapper $schema
          */
+
         $schema = $schemaClosure();
 
-        // Check if the objects table exists
+        // Check if the objects table exists.
         if ($schema->hasTable('openregister_objects') === false) {
             return null;
         }
 
         $table = $schema->getTable('openregister_objects');
 
-        // Add slug column if it doesn't exist
+        // Add slug column if it doesn't exist.
         if ($table->hasColumn('slug') === false) {
             $table->addColumn(
                     'slug',
@@ -75,8 +78,8 @@ class Version1Date20250813140000 extends SimpleMigrationStep
             $output->info('Added slug column to openregister_objects table');
         }
 
-        // Skip complex index creation for now to avoid MySQL key length issues
-        // TODO: Add indexes after app is enabled
+        // Skip complex index creation for now to avoid MySQL key length issues.
+        // TODO: Add indexes after app is enabled.
         $output->info('Skipping complex index creation to avoid MySQL key length issues');
 
         return $schema;

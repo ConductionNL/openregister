@@ -51,8 +51,8 @@ class SourceHandler
     /**
      * Constructor
      *
-     * @param SourceMapper      $sourceMapper The source mapper instance
-     * @param LoggerInterface   $logger       The logger instance
+     * @param SourceMapper    $sourceMapper The source mapper instance
+     * @param LoggerInterface $logger       The logger instance
      */
     public function __construct(SourceMapper $sourceMapper, LoggerInterface $logger)
     {
@@ -68,6 +68,8 @@ class SourceHandler
      * @param Source $source The source to export
      *
      * @return array The exported source data
+     *
+     * @psalm-return array<string, mixed>
      */
     public function export(Source $source): array
     {
@@ -84,15 +86,16 @@ class SourceHandler
      * @param array       $data  The source data
      * @param string|null $owner The owner of the source
      *
-     * @return Source|null The imported source or null if skipped
+     * @return Source The imported source or null if skipped
+     *
      * @throws Exception If import fails
      */
-    public function import(array $data, ?string $owner = null): ?Source
+    public function import(array $data, ?string $owner=null): Source
     {
         try {
             unset($data['id'], $data['uuid']);
 
-            // Check if source already exists by name
+            // Check if source already exists by name.
             $existingSources = $this->sourceMapper->findAll();
             $existingSource  = null;
             foreach ($existingSources as $source) {
@@ -103,7 +106,7 @@ class SourceHandler
             }
 
             if ($existingSource !== null) {
-                // Update existing source
+                // Update existing source.
                 $existingSource->hydrate($data);
                 if ($owner !== null) {
                     $existingSource->setOwner($owner);
@@ -112,7 +115,7 @@ class SourceHandler
                 return $this->sourceMapper->update($existingSource);
             }
 
-            // Create new source
+            // Create new source.
             $source = new Source();
             $source->hydrate($data);
             if ($owner !== null) {
@@ -129,5 +132,3 @@ class SourceHandler
 
 
 }//end class
-
-

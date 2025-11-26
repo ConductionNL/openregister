@@ -1,25 +1,45 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * Mapper for chunk entities.
  *
  * @category Db
  * @package  OCA\OpenRegister\Db
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version   GIT: <git-id>
+ * @link      https://www.OpenRegister.nl
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 
 /**
  * Class ChunkMapper
+ *
+ * @method Chunk insert(Entity $entity)
+ * @method Chunk update(Entity $entity)
+ * @method Chunk insertOrUpdate(Entity $entity)
+ * @method Chunk delete(Entity $entity)
+ * @method Chunk find(int|string $id)
+ * @method Chunk findEntity(IQueryBuilder $query)
+ * @method Chunk[] findAll(int|null $limit = null, int|null $offset = null)
+ * @method list<Chunk> findEntities(IQueryBuilder $query)
+ *
+ * @template-extends QBMapper<Chunk>
  */
 class ChunkMapper extends QBMapper
 {
+
+
     /**
      * Constructor.
      *
@@ -28,7 +48,9 @@ class ChunkMapper extends QBMapper
     public function __construct(IDBConnection $db)
     {
         parent::__construct($db, 'openregister_chunks', Chunk::class);
-    }
+
+    }//end __construct()
+
 
     /**
      * Find chunks by source reference.
@@ -37,7 +59,7 @@ class ChunkMapper extends QBMapper
      * @param int    $sourceId   Source identifier.
      *
      * @phpstan-param non-empty-string $sourceType
-     * @psalm-param non-empty-string   $sourceType
+     * @psalm-param   non-empty-string   $sourceType
      *
      * @return Chunk[]
      */
@@ -55,7 +77,9 @@ class ChunkMapper extends QBMapper
             ->orderBy('chunk_index', 'ASC');
 
         return $this->findEntities($qb);
-    }
+
+    }//end findBySource()
+
 
     /**
      * Delete chunks by source reference.
@@ -64,7 +88,7 @@ class ChunkMapper extends QBMapper
      * @param int    $sourceId   Source identifier.
      *
      * @phpstan-param non-empty-string $sourceType
-     * @psalm-param non-empty-string   $sourceType
+     * @psalm-param   non-empty-string   $sourceType
      *
      * @return void
      */
@@ -79,7 +103,9 @@ class ChunkMapper extends QBMapper
                 )
             )
             ->executeStatement();
-    }
+
+    }//end deleteBySource()
+
 
     /**
      * Get the latest updated timestamp for a source's chunks.
@@ -88,7 +114,7 @@ class ChunkMapper extends QBMapper
      * @param int    $sourceId   Source identifier.
      *
      * @phpstan-param non-empty-string $sourceType
-     * @psalm-param non-empty-string   $sourceType
+     * @psalm-param   non-empty-string   $sourceType
      *
      * @return int|null Unix timestamp of the latest update or null when unavailable.
      */
@@ -105,7 +131,7 @@ class ChunkMapper extends QBMapper
             );
 
         $result = $qb->executeQuery();
-        $value = $result->fetchOne();
+        $value  = $result->fetchOne();
         $result->closeCursor();
 
         if ($value === false || $value === null) {
@@ -114,8 +140,13 @@ class ChunkMapper extends QBMapper
 
         $timestamp = strtotime((string) $value);
 
-        return $timestamp === false ? null : $timestamp;
-    }
-}
+        if ($timestamp === false) {
+            return null;
+        }
+
+        return $timestamp;
+
+    }//end getLatestUpdatedTimestamp()
 
 
+}//end class

@@ -10,10 +10,8 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * @version GIT: <git_id>
- *
- * @link https://www.OpenRegister.app
+ * @version   GIT: <git_id>
+ * @link      https://www.OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Service;
@@ -116,14 +114,14 @@ class OasService
         // If specific register, update info while preserving contact and license.
         if ($registerId !== null) {
             $register = $registers[0];
-            
-            // Build enhanced description
+
+            // Build enhanced description.
             $description = $register->getDescription();
             if (empty($description)) {
                 $description = 'API for '.$register->getTitle().' register providing CRUD operations, filtering, and search capabilities.';
             }
-            
-            // Update info while preserving base contact and license
+
+            // Update info while preserving base contact and license.
             $this->oas['info'] = array_merge($this->oas['info'], [
                 'title'       => $register->getTitle().' API',
                 'version'     => $register->getVersion(),
@@ -136,17 +134,17 @@ class OasService
 
         // Add schemas to components and create tags.
         foreach ($schemas as $schema) {
-            // Ensure schema has valid title
+            // Ensure schema has valid title.
             $schemaTitle = $schema->getTitle();
             if (empty($schemaTitle)) {
                 continue;
             }
-            
+
             // Add schema to components with sanitized name.
             $schemaDefinition = $this->enrichSchema($schema);
             $sanitizedSchemaName = $this->sanitizeSchemaName($schemaTitle);
-            
-            // Validate schema definition before adding
+
+            // Validate schema definition before adding.
             if (!empty($schemaDefinition) && is_array($schemaDefinition)) {
                 $this->oas['components']['schemas'][$sanitizedSchemaName] = $schemaDefinition;
 
@@ -177,9 +175,9 @@ class OasService
             }
         }
 
-        // Validate the final OpenAPI specification before returning
+        // Validate the final OpenAPI specification before returning.
         $this->validateOasIntegrity();
-        
+
         return $this->oas;
 
     }//end createOas()
@@ -212,15 +210,15 @@ class OasService
     /**
      * Extended endpoints that should be included in OAS generation
      * This whitelist ensures only stable, public-facing endpoints are documented
-     * 
+     *
      * @var array<string>
      */
     private const INCLUDED_EXTENDED_ENDPOINTS = [
-        // Only include stable, public-facing endpoints
-        // 'audit-trails' - Internal audit functionality, not for public API
-        // 'files' - File management, may be too complex for basic API consumers  
-        // 'lock' - Locking mechanism, typically used internally
-        // 'unlock' - Unlocking mechanism, typically used internally
+        // Only include stable, public-facing endpoints.
+        // 'audit-trails' - Internal audit functionality, not for public API.
+        // 'files' - File management, may be too complex for basic API consumers.
+        // 'lock' - Locking mechanism, typically used internally.
+        // 'unlock' - Unlocking mechanism, typically used internally.
     ];
 
     /**
@@ -236,8 +234,8 @@ class OasService
     private function enrichSchema(object $schema): array
     {
         $schemaProperties = $schema->getProperties();
-        
-        // Start with core API properties
+
+        // Start with core API properties.
         $cleanProperties = [
             '@self' => [
                 '$ref'        => '#/components/schemas/@self',
@@ -253,7 +251,7 @@ class OasService
             ],
         ];
 
-        // Process schema-defined properties and ensure they're valid OAS
+        // Process schema-defined properties and ensure they're valid OAS.
         foreach ($schemaProperties as $propertyName => $propertyDefinition) {
             $cleanProperties[$propertyName] = $this->sanitizePropertyDefinition($propertyDefinition);
         }
@@ -269,7 +267,7 @@ class OasService
 
     /**
      * Sanitize property definition to be valid OpenAPI schema
-     * 
+     *
      * This method ensures property definitions conform to OpenAPI 3.1 standards
      * by removing invalid properties and normalizing the structure.
      *
@@ -279,7 +277,7 @@ class OasService
      */
     private function sanitizePropertyDefinition($propertyDefinition): array
     {
-        // If it's not an array, convert to basic string type
+        // If it's not an array, convert to basic string type.
         if (!is_array($propertyDefinition)) {
             return [
                 'type' => 'string',
@@ -287,54 +285,54 @@ class OasService
             ];
         }
 
-        // Start with a clean definition
+        // Start with a clean definition.
         $cleanDef = [];
 
-        // Standard OpenAPI schema keywords that are allowed
+        // Standard OpenAPI schema keywords that are allowed.
         $allowedSchemaKeywords = [
-            'type', 'format', 'description', 'example', 'examples', 
-            'default', 'enum', 'const', 'multipleOf', 'maximum', 
-            'exclusiveMaximum', 'minimum', 'exclusiveMinimum', 
-            'maxLength', 'minLength', 'pattern', 'maxItems', 
+            'type', 'format', 'description', 'example', 'examples',
+            'default', 'enum', 'const', 'multipleOf', 'maximum',
+            'exclusiveMaximum', 'minimum', 'exclusiveMinimum',
+            'maxLength', 'minLength', 'pattern', 'maxItems',
             'minItems', 'uniqueItems', 'maxProperties', 'minProperties',
             'required', 'properties', 'items', 'additionalProperties',
             'allOf', 'anyOf', 'oneOf', 'not', '$ref', 'nullable',
             'readOnly', 'writeOnly', 'title'
         ];
 
-        // Copy only valid OpenAPI schema keywords
+        // Copy only valid OpenAPI schema keywords.
         foreach ($allowedSchemaKeywords as $keyword) {
             if (isset($propertyDefinition[$keyword])) {
                 $cleanDef[$keyword] = $propertyDefinition[$keyword];
             }
         }
 
-        // Remove invalid/empty values that violate OpenAPI spec
-        // oneOf must have at least 1 item, remove if empty
+        // Remove invalid/empty values that violate OpenAPI spec.
+        // oneOf must have at least 1 item, remove if empty.
         if (isset($cleanDef['oneOf']) && (empty($cleanDef['oneOf']) || !is_array($cleanDef['oneOf']))) {
             unset($cleanDef['oneOf']);
         }
 
-        // anyOf must have at least 1 item, remove if empty  
+        // anyOf must have at least 1 item, remove if empty.
         if (isset($cleanDef['anyOf']) && (empty($cleanDef['anyOf']) || !is_array($cleanDef['anyOf']))) {
             unset($cleanDef['anyOf']);
         }
 
-        // allOf must have at least 1 item, remove if empty or invalid
+        // allOf must have at least 1 item, remove if empty or invalid.
         if (isset($cleanDef['allOf'])) {
             if (!is_array($cleanDef['allOf']) || empty($cleanDef['allOf'])) {
                 unset($cleanDef['allOf']);
             } else {
-                // Validate each allOf element
+                // Validate each allOf element.
                 $validAllOfItems = [];
                 foreach ($cleanDef['allOf'] as $item) {
-                    // Each allOf item must be an object/array
+                    // Each allOf item must be an object/array.
                     if (is_array($item) && !empty($item)) {
                         $validAllOfItems[] = $item;
                     }
                 }
-                
-                // If no valid items remain, remove allOf
+
+                // If no valid items remain, remove allOf.
                 if (empty($validAllOfItems)) {
                     unset($cleanDef['allOf']);
                 } else {
@@ -348,17 +346,17 @@ class OasService
             unset($cleanDef['$ref']);
         }
 
-        // enum must have at least 1 item, remove if empty
+        // enum must have at least 1 item, remove if empty.
         if (isset($cleanDef['enum']) && (empty($cleanDef['enum']) || !is_array($cleanDef['enum']))) {
             unset($cleanDef['enum']);
         }
 
-        // Ensure we have at least a type
+        // Ensure we have at least a type.
         if (!isset($cleanDef['type']) && !isset($cleanDef['$ref'])) {
             $cleanDef['type'] = 'string';
         }
 
-        // Add basic description if missing
+        // Add basic description if missing.
         if (!isset($cleanDef['description']) && !isset($cleanDef['$ref'])) {
             $cleanDef['description'] = 'Property value';
         }
@@ -411,7 +409,7 @@ class OasService
     {
         $basePath = '/'.$this->slugify($register->getTitle()).'/'.$this->slugify($schema->getTitle());
 
-        // Only add whitelisted extended endpoints
+        // Only add whitelisted extended endpoints.
         foreach (self::INCLUDED_EXTENDED_ENDPOINTS as $endpoint) {
             switch ($endpoint) {
                 case 'audit-trails':
@@ -441,9 +439,9 @@ class OasService
             }
         }
 
-        // Note: By default, NO extended endpoints are included
-        // To include them, add them to INCLUDED_EXTENDED_ENDPOINTS constant
-        // This ensures a clean, minimal API specification focused on core CRUD operations
+        // Note: By default, NO extended endpoints are included.
+        // To include them, add them to INCLUDED_EXTENDED_ENDPOINTS constant.
+        // This ensures a clean, minimal API specification focused on core CRUD operations.
 
     }//end addExtendedPaths()
 
@@ -509,12 +507,12 @@ class OasService
             if ($schema !== null) {
                 $schemaProperties = $schema->getProperties();
                 foreach ($schemaProperties as $propertyName => $propertyDefinition) {
-                    // Skip metadata properties and internal system properties
+                    // Skip metadata properties and internal system properties.
                     if (str_starts_with($propertyName, '@')) {
                         continue;
                     }
 
-                    // Skip the id property as it's already handled as a path parameter
+                    // Skip the id property as it's already handled as a path parameter.
                     if ($propertyName === 'id') {
                         continue;
                     }
@@ -522,12 +520,12 @@ class OasService
                     // Get property type from definition.
                     $propertyType = $this->getPropertyType($propertyDefinition);
 
-                    // Build schema for parameter
+                    // Build schema for parameter.
                     $paramSchema = [
                         'type' => $propertyType,
                     ];
 
-                    // Array types require an items field
+                    // Array types require an items field.
                     if ($propertyType === 'array') {
                         $paramSchema['items'] = [
                             'type' => 'string', // Default array item type for query parameters
@@ -594,19 +592,19 @@ class OasService
      */
     private function createGetCollectionOperation(object $schema): array
     {
-        // Ensure schema has a valid title before proceeding
+        // Ensure schema has a valid title before proceeding.
         $schemaTitle = $schema->getTitle();
         if (empty($schemaTitle)) {
             $schemaTitle = 'UnknownSchema';
         }
-        
+
         $sanitizedSchemaName = $this->sanitizeSchemaName($schemaTitle);
-        
-        // Validate that we have a proper schema reference
+
+        // Validate that we have a proper schema reference.
         if (empty($sanitizedSchemaName)) {
             $sanitizedSchemaName = 'UnknownSchema';
         }
-        
+
         return [
             'summary'     => 'Get all '.$schemaTitle.' objects',
             'operationId' => 'getAll'.$this->pascalCase($schemaTitle),
@@ -1173,7 +1171,7 @@ class OasService
     /**
      * Sanitize schema names to be OpenAPI compliant
      *
-     * OpenAPI schema names must match pattern ^[a-zA-Z0-9._-]+$ 
+     * OpenAPI schema names must match pattern ^[a-zA-Z0-9._-]+$
      * This method converts titles with spaces and special characters to valid schema names.
      *
      * @param string|null $title The schema title to sanitize
@@ -1182,37 +1180,37 @@ class OasService
      */
     private function sanitizeSchemaName(?string $title): string
     {
-        // Handle null or empty titles
+        // Handle null or empty titles.
         if (empty($title)) {
             return 'UnknownSchema';
         }
 
-        // Replace spaces and invalid characters with underscores
+        // Replace spaces and invalid characters with underscores.
         $sanitized = preg_replace('/[^a-zA-Z0-9._-]/', '_', $title);
-        
-        // Remove multiple consecutive underscores
+
+        // Remove multiple consecutive underscores.
         $sanitized = preg_replace('/_+/', '_', $sanitized);
-        
-        // Remove leading/trailing underscores
+
+        // Remove leading/trailing underscores.
         $sanitized = trim($sanitized, '_');
-        
-        // Handle edge case where sanitization results in empty string
+
+        // Handle edge case where sanitization results in empty string.
         if (empty($sanitized)) {
             return 'UnknownSchema';
         }
-        
-        // Ensure it starts with a letter (prepend 'Schema_' if it starts with number)
+
+        // Ensure it starts with a letter (prepend 'Schema_' if it starts with number).
         if (preg_match('/^[0-9]/', $sanitized)) {
             $sanitized = 'Schema_' . $sanitized;
         }
-        
+
         return $sanitized;
     }//end sanitizeSchemaName()
 
-    
+
     /**
      * Validate OpenAPI specification integrity
-     * 
+     *
      * This method checks for common issues that could cause ReDoc or other
      * OpenAPI tools to fail when parsing the specification.
      *
@@ -1220,7 +1218,7 @@ class OasService
      */
     private function validateOasIntegrity(): void
     {
-        // Check for invalid $ref references in schemas
+        // Check for invalid $ref references in schemas.
         if (isset($this->oas['components']['schemas'])) {
             foreach ($this->oas['components']['schemas'] as $schemaName => &$schema) {
                 if (is_array($schema)) {
@@ -1228,8 +1226,8 @@ class OasService
                 }
             }
         }
-        
-        // Check for invalid allOf constructs in paths
+
+        // Check for invalid allOf constructs in paths.
         if (isset($this->oas['paths'])) {
             foreach ($this->oas['paths'] as $pathName => &$path) {
                 foreach ($path as $method => &$operation) {
@@ -1244,8 +1242,8 @@ class OasService
             }
         }
     }//end validateOasIntegrity()
-    
-    
+
+
     /**
      * Validate schema references recursively
      *
@@ -1256,7 +1254,7 @@ class OasService
      */
     private function validateSchemaReferences(array &$schema, string $context): void
     {
-        // Check allOf constructs
+        // Check allOf constructs.
         if (isset($schema['allOf'])) {
             if (!is_array($schema['allOf']) || empty($schema['allOf'])) {
                 unset($schema['allOf']);
@@ -1265,7 +1263,7 @@ class OasService
                 foreach ($schema['allOf'] as $index => $item) {
                     if (!is_array($item) || empty($item)) {
                     } else {
-                        // Validate each allOf item has required structure
+                        // Validate each allOf item has required structure.
                         if (isset($item['$ref']) && !empty($item['$ref']) && is_string($item['$ref'])) {
                             $validAllOfItems[] = $item;
                         } elseif (isset($item['type']) || isset($item['properties'])) {
@@ -1274,8 +1272,8 @@ class OasService
                         }
                     }
                 }
-                
-                // If no valid items remain, remove allOf
+
+                // If no valid items remain, remove allOf.
                 if (empty($validAllOfItems)) {
                     unset($schema['allOf']);
                 } else {
@@ -1283,21 +1281,21 @@ class OasService
                 }
             }
         }
-        
-        // Check $ref validity
+
+        // Check $ref validity.
         if (isset($schema['$ref'])) {
             if (empty($schema['$ref']) || !is_string($schema['$ref'])) {
                 unset($schema['$ref']);
             } else {
-                // Check if reference points to existing schema
+                // Check if reference points to existing schema.
                 $refPath = str_replace('#/components/schemas/', '', $schema['$ref']);
-                if (strpos($schema['$ref'], '#/components/schemas/') === 0 && 
+                if (strpos($schema['$ref'], '#/components/schemas/') === 0 &&
                     !isset($this->oas['components']['schemas'][$refPath])) {
                 }
             }
         }
-        
-        // Recursively check nested schemas
+
+        // Recursively check nested schemas.
         if (isset($schema['properties'])) {
             foreach ($schema['properties'] as $propName => $property) {
                 if (is_array($property)) {
@@ -1305,7 +1303,7 @@ class OasService
                 }
             }
         }
-        
+
         if (isset($schema['items']) && is_array($schema['items'])) {
             $this->validateSchemaReferences($schema['items'], "{$context}.items");
         }

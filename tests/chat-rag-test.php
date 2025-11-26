@@ -12,11 +12,11 @@ require_once '/var/www/html/lib/base.php';
 
 echo "=== RAG Semantic Search Test ===\n\n";
 
-// Get services
+// Get services.
 $container = \OC::$server->get(\OCP\IServerContainer::class);
 $vectorService = $container->get(\OCA\OpenRegister\Service\VectorEmbeddingService::class);
 
-// Test queries
+// Test queries.
 $queries = [
     'Wat is de kleur van mokum?',
     'Wat is de kleur van utrecht?',
@@ -28,7 +28,7 @@ foreach ($queries as $query) {
     echo str_repeat('-', 80) . "\n";
     
     try {
-        // Perform semantic search
+        // Perform semantic search.
         $results = $vectorService->semanticSearch($query, 5, []);
         
         echo "Found " . count($results) . " results:\n\n";

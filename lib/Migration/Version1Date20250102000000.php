@@ -64,7 +64,7 @@ class Version1Date20250102000000 extends SimpleMigrationStep
      */
     public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
-        // No pre-schema changes required
+        // No pre-schema changes required.
 
     }//end preSchemaChange()
 
@@ -82,11 +82,11 @@ class Version1Date20250102000000 extends SimpleMigrationStep
         /** @var ISchemaWrapper $schema */
         $schema = $schemaClosure();
 
-        // Add groups field to organisations table
+        // Add groups field to organisations table.
         if ($schema->hasTable('openregister_organisations')) {
             $table = $schema->getTable('openregister_organisations');
-            
-            // Add groups field (JSON array of Nextcloud group IDs)
+
+            // Add groups field (JSON array of Nextcloud group IDs).
             if (!$table->hasColumn('groups')) {
                 $table->addColumn('groups', Types::JSON, [
                     'notnull' => false,
@@ -112,15 +112,15 @@ class Version1Date20250102000000 extends SimpleMigrationStep
      */
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
-        // Initialize groups to empty array for existing organisations
+        // Initialize groups to empty array for existing organisations.
         $qb = $this->connection->getQueryBuilder();
-        
+
         $qb->update('openregister_organisations')
             ->set('groups', $qb->createNamedParameter('[]'))
             ->where($qb->expr()->isNull('groups'));
-        
+
         $affected = $qb->executeStatement();
-        
+
         if ($affected > 0) {
             $output->info("Initialized groups field for {$affected} existing organisations");
         }

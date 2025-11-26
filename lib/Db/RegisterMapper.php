@@ -39,6 +39,15 @@ use OCA\OpenRegister\Db\ObjectEntityMapper;
  * Handles database operations for Register entities with multi-tenancy support.
  *
  * @package OCA\OpenRegister\Db
+ *
+ * @method Register insert(Entity $entity)
+ * @method Register update(Entity $entity)
+ * @method Register insertOrUpdate(Entity $entity)
+ * @method Register delete(Entity $entity)
+ * @method Register find(int|string $id)
+ * @method Register findEntity(IQueryBuilder $query)
+ * @method Register[] findAll(int|null $limit = null, int|null $offset = null)
+ * @method Register[] findEntities(IQueryBuilder $query)
  */
 class RegisterMapper extends QBMapper
 {
@@ -76,13 +85,13 @@ class RegisterMapper extends QBMapper
     /**
      * Constructor for RegisterMapper
      *
-     * @param IDBConnection        $db                  The database connection
-     * @param SchemaMapper         $schemaMapper        The schema mapper
-     * @param IEventDispatcher     $eventDispatcher     The event dispatcher
-     * @param ObjectEntityMapper   $objectEntityMapper  The object entity mapper
-     * @param OrganisationService  $organisationService The organisation service (for multi-tenancy)
-     * @param IUserSession         $userSession         The user session (for multi-tenancy)
-     * @param IGroupManager        $groupManager        The group manager (for RBAC)
+     * @param IDBConnection       $db                  The database connection
+     * @param SchemaMapper        $schemaMapper        The schema mapper
+     * @param IEventDispatcher    $eventDispatcher     The event dispatcher
+     * @param ObjectEntityMapper  $objectEntityMapper  The object entity mapper
+     * @param OrganisationService $organisationService The organisation service (for multi-tenancy)
+     * @param IUserSession        $userSession         The user session (for multi-tenancy)
+     * @param IGroupManager       $groupManager        The group manager (for RBAC)
      *
      * @return void
      */
@@ -99,8 +108,8 @@ class RegisterMapper extends QBMapper
         $this->schemaMapper       = $schemaMapper;
         $this->eventDispatcher    = $eventDispatcher;
         $this->objectEntityMapper = $objectEntityMapper;
-        
-        // Initialize multi-tenancy trait dependencies
+
+        // Initialize multi-tenancy trait dependencies.
         $this->organisationService = $organisationService;
         $this->userSession         = $userSession;
         $this->groupManager        = $groupManager;
@@ -173,18 +182,20 @@ class RegisterMapper extends QBMapper
 
     }//end findMultiple()
 
+
     /**
      * Find multiple registers by IDs using a single optimized query
      *
      * This method performs a single database query to fetch multiple registers,
      * significantly improving performance compared to individual queries.
      *
-     * @param array $ids Array of register IDs to find
-     * @return array Associative array of ID => Register entity
+     * @param array $ids Array of register IDs to find.
+     *
+     * @return array Associative array of ID => Register entity.
      */
     public function findMultipleOptimized(array $ids): array
     {
-        if (empty($ids)) {
+        if ($ids === []) {
             return [];
         }
 
@@ -195,16 +206,17 @@ class RegisterMapper extends QBMapper
                 $qb->expr()->in('id', $qb->createNamedParameter($ids, IQueryBuilder::PARAM_INT_ARRAY))
             );
 
-        $result = $qb->executeQuery();
+        $result    = $qb->executeQuery();
         $registers = [];
-        
-        while ($row = $result->fetch()) {
+
+        while (($row = $result->fetch()) !== false) {
             $register = new Register();
             $register = $register->fromRow($row);
             $registers[$row['id']] = $register;
         }
-        
+
         return $registers;
+
     }//end findMultipleOptimized()
 
 
@@ -257,7 +269,7 @@ class RegisterMapper extends QBMapper
             }
         }
 
-        // Just return the entities; do not attach stats here
+        // Just return the entities; do not attach stats here.
         return $this->findEntities(query: $qb);
 
     }//end findAll()
@@ -279,7 +291,7 @@ class RegisterMapper extends QBMapper
         // Verify RBAC permission to create registers
         // $this->verifyRbacPermission('create', 'register');
 
-        // Auto-set organisation from active session
+        // Auto-set organisation from active session.
         $this->setOrganisationOnCreate($entity);
 
         $entity = parent::insert($entity);
@@ -368,10 +380,10 @@ class RegisterMapper extends QBMapper
         // Verify RBAC permission to update registers
         // $this->verifyRbacPermission('update', 'register');
 
-        // Verify entity belongs to active organisation
+        // Verify entity belongs to active organisation.
         $this->verifyOrganisationAccess($entity);
 
-        // Fetch old entity directly without organisation filter for event comparison
+        // Fetch old entity directly without organisation filter for event comparison.
         $qb = $this->db->getQueryBuilder();
         $qb->select('*')
             ->from('openregister_registers')
@@ -436,17 +448,22 @@ class RegisterMapper extends QBMapper
         // Verify RBAC permission to delete registers
         // $this->verifyRbacPermission('delete', 'register');
 
-        // Verify entity belongs to active organisation
+        // Verify entity belongs to active organisation.
         $this->verifyOrganisationAccess($entity);
 
-        // Check for attached objects before deleting
-        $registerId = method_exists($entity, 'getId') ? $entity->getId() : $entity->id;
-        $stats      = $this->objectEntityMapper->getStatistics($registerId, null);
+        // Check for attached objects before deleting.
+        if (method_exists($entity, 'getId') === true) {
+            $registerId = $entity->getId();
+        } else {
+            $registerId = $entity->id;
+        }
+
+        $stats = $this->objectEntityMapper->getStatistics($registerId, null);
         if (($stats['total'] ?? 0) > 0) {
             throw new \OCA\OpenRegister\Exception\ValidationException('Cannot delete register: objects are still attached.');
         }
 
-        // Proceed with deletion if no objects are attached
+        // Proceed with deletion if no objects are attached.
         $result = parent::delete($entity);
 
         // Dispatch deletion event.
@@ -491,14 +508,15 @@ class RegisterMapper extends QBMapper
      * a regular expression for exact word matching. If a match is found, the ID
      * of the first such register is returned. Otherwise, it returns null.
      *
-     * @param  int $schemaId The ID of the schema to search for.
+     * @param int $schemaId The ID of the schema to search for.
+     *
      * @return int|null The ID of the first matching register, or null if none found.
      */
     public function getFirstRegisterWithSchema(int $schemaId): ?int
     {
         $qb = $this->db->getQueryBuilder();
 
-        // REGEXP: match number with optional whitespace and newlines
+        // REGEXP: match number with optional whitespace and newlines.
         $pattern = '[[:<:]]'.$schemaId.'[[:>:]]';
 
         $qb->select('id')
@@ -509,7 +527,11 @@ class RegisterMapper extends QBMapper
 
         $result = $qb->executeQuery()->fetchOne();
 
-        return $result !== false ? (int) $result : null;
+        if ($result !== false) {
+            return (int) $result;
+        }
+
+        return null;
 
     }//end getFirstRegisterWithSchema()
 
@@ -551,7 +573,7 @@ class RegisterMapper extends QBMapper
 
         $result   = $qb->executeQuery();
         $mappings = [];
-        while ($row = $result->fetch()) {
+        while (($row = $result->fetch()) !== false) {
             $mappings[$row['id']] = $row['slug'];
         }
 
@@ -573,7 +595,7 @@ class RegisterMapper extends QBMapper
 
         $result   = $qb->executeQuery();
         $mappings = [];
-        while ($row = $result->fetch()) {
+        while (($row = $result->fetch()) !== false) {
             $mappings[$row['slug']] = $row['id'];
         }
 

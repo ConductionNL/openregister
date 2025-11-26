@@ -29,6 +29,41 @@ use OCP\AppFramework\Db\Entity;
  * Manages register-related data and operations
  *
  * @package OCA\OpenRegister\Db
+ *
+ * @method string|null getUuid()
+ * @method void setUuid(?string $uuid)
+ * @method string|null getSlug()
+ * @method void setSlug(?string $slug)
+ * @method string|null getTitle()
+ * @method void setTitle(?string $title)
+ * @method string|null getVersion()
+ * @method void setVersion(?string $version)
+ * @method string|null getDescription()
+ * @method void setDescription(?string $description)
+ * @method array|null getSchemas()
+ * @method static setSchemas(array|string $schemas)
+ * @method string|null getSource()
+ * @method void setSource(?string $source)
+ * @method string|null getTablePrefix()
+ * @method void setTablePrefix(?string $tablePrefix)
+ * @method string|null getFolder()
+ * @method void setFolder(?string $folder)
+ * @method DateTime|null getUpdated()
+ * @method void setUpdated(?DateTime $updated)
+ * @method DateTime|null getCreated()
+ * @method void setCreated(?DateTime $created)
+ * @method string|null getOwner()
+ * @method void setOwner(?string $owner)
+ * @method string|null getApplication()
+ * @method void setApplication(?string $application)
+ * @method string|null getOrganisation()
+ * @method void setOrganisation(?string $organisation)
+ * @method array|null getAuthorization()
+ * @method void setAuthorization(?array $authorization)
+ * @method array|null getGroups()
+ * @method void setGroups(?array $groups)
+ * @method DateTime|null getDeleted()
+ * @method void setDeleted(?DateTime $deleted)
  */
 class Register extends Entity implements JsonSerializable
 {
@@ -212,19 +247,24 @@ class Register extends Entity implements JsonSerializable
      *
      * @param array|string $schemas Array of schema IDs or JSON string
      *
-     * @return self
+     * @return static Returns self for method chaining
      */
-    public function setSchemas($schemas): self
+    public function setSchemas($schemas): static
     {
-        if (is_string($schemas)) {
-            $schemas = json_decode($schemas, true) ?: [];
+        if (is_string($schemas) === true) {
+            $decoded = json_decode($schemas, true);
+            if ($decoded === null) {
+                $schemas = [];
+            } else {
+                $schemas = $decoded;
+            }
         }
 
-        if (!is_array($schemas)) {
+        if (is_array($schemas) === false) {
             $schemas = [];
         }
 
-        // Only keep IDs (int or string)
+        // Only keep IDs (int or string).
         $schemas = array_filter(
                 $schemas,
                 function ($item) {
@@ -244,7 +284,9 @@ class Register extends Entity implements JsonSerializable
      *
      * Returns all fields that are of type 'json'
      *
-     * @return array<string> List of JSON field names
+     * @return string[] List of JSON field names
+     *
+     * @psalm-return list<string>
      */
     public function getJsonFields(): array
     {
@@ -267,9 +309,9 @@ class Register extends Entity implements JsonSerializable
      *
      * @param array $object The data array to hydrate from
      *
-     * @return self Returns $this for method chaining
+     * @return static Returns $this for method chaining
      */
-    public function hydrate(array $object): self
+    public function hydrate(array $object): static
     {
         $jsonFields = $this->getJsonFields();
 
@@ -301,7 +343,42 @@ class Register extends Entity implements JsonSerializable
      *
      * Prepares the entity data for JSON serialization
      *
-     * @return array<string, mixed> Array of serializable entity data
+     * @return ((int|mixed|null|string|string[])[]|int|null|string)[] Array of serializable entity data
+     *
+     * @psalm-return array{
+     *     id: int,
+     *     uuid: null|string,
+     *     slug: null|string,
+     *     title: null|string,
+     *     version: null|string,
+     *     description: null|string,
+     *     schemas: array<int|string>,
+     *     source: null|string,
+     *     tablePrefix: null|string,
+     *     folder: null|string,
+     *     updated: null|string,
+     *     created: null|string,
+     *     owner: null|string,
+     *     application: null|string,
+     *     organisation: null|string,
+     *     authorization: array|null,
+     *     groups: array<string, list<string>>,
+     *     quota: array{
+     *         storage: null,
+     *         bandwidth: null,
+     *         requests: null,
+     *         users: null,
+     *         groups: null
+     *     },
+     *     usage: array{
+     *         storage: 0,
+     *         bandwidth: 0,
+     *         requests: 0,
+     *         users: 0,
+     *         groups: int<0, max>
+     *     },
+     *     deleted: null|string
+     * }
      */
     public function jsonSerialize(): array
     {
@@ -320,7 +397,7 @@ class Register extends Entity implements JsonSerializable
             $deleted = $this->deleted->format('c');
         }
 
-        // Always return schemas as array of IDs (int/string)
+        // Always return schemas as array of IDs (int/string).
         $schemas = array_filter(
                 $this->schemas ?? [],
                 function ($item) {
@@ -349,17 +426,26 @@ class Register extends Entity implements JsonSerializable
             'authorization' => $this->authorization,
             'groups'        => $groups,
             'quota'         => [
-                'storage'   => null, // To be set via admin configuration
-                'bandwidth' => null, // To be set via admin configuration
-                'requests'  => null, // To be set via admin configuration
-                'users'     => null, // To be set via admin configuration
-                'groups'    => null, // To be set via admin configuration
+                'storage'   => null,
+        // To be set via admin configuration.
+                'bandwidth' => null,
+        // To be set via admin configuration.
+                'requests'  => null,
+        // To be set via admin configuration.
+                'users'     => null,
+        // To be set via admin configuration.
+                'groups'    => null,
+        // To be set via admin configuration.
             ],
             'usage'         => [
-                'storage'   => 0, // To be calculated from actual usage
-                'bandwidth' => 0, // To be calculated from actual usage
-                'requests'  => 0, // To be calculated from actual usage
-                'users'     => 0, // Registers don't have direct users
+                'storage'   => 0,
+            // To be calculated from actual usage.
+                'bandwidth' => 0,
+            // To be calculated from actual usage.
+                'requests'  => 0,
+            // To be calculated from actual usage.
+                'users'     => 0,
+            // Registers don't have direct users.
                 'groups'    => count($groups),
             ],
             'deleted'       => $deleted,
@@ -378,17 +464,19 @@ class Register extends Entity implements JsonSerializable
      */
     public function __toString(): string
     {
-        // Return the register title if available, otherwise return a descriptive string
+        // Return the register title if available, otherwise return a descriptive string.
         if ($this->title !== null && $this->title !== '') {
             return $this->title;
         }
 
-        // Fallback to slug if title is not available
+        // Fallback to slug if title is not available.
         if ($this->slug !== null && $this->slug !== '') {
             return $this->slug;
         }
 
-        // Final fallback with ID
+        // Final fallback with ID.
+        // Suppress redundant property initialization check.
+        // @psalm-suppress RedundantPropertyInitializationCheck.
         return 'Register #'.($this->id ?? 'unknown');
 
     }//end __toString()

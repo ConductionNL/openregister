@@ -77,10 +77,10 @@ class CoreIntegrationTest extends TestCase
 
     protected function tearDown(): void
     {
-        // Clean up created objects FIRST (before schema/register deletion)
+        // Clean up created objects FIRST (before schema/register deletion).
         foreach ($this->createdObjectIds as $id) {
             try {
-                // Try all known schema slugs to find which one this object belongs to
+                // Try all known schema slugs to find which one this object belongs to.
                 $schemaSlugs = [
                     $this->documentSchemaSlug ?? null,
                     $this->strictPdfSchemaSlug ?? null,
@@ -92,20 +92,20 @@ class CoreIntegrationTest extends TestCase
                         $this->client->delete("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$schemaSlug}/{$id}");
                         break;
                     } catch (\Exception $e) {
-                        // Try next schema
+                        // Try next schema.
                     }
                 }
             } catch (\Exception $e) {
-                // Ignore cleanup errors
+                // Ignore cleanup errors.
             }
         }
 
-        // Clean up created schemas SECOND (after objects are deleted)
+        // Clean up created schemas SECOND (after objects are deleted).
         foreach ($this->createdSchemaIds as $schemaId) {
             try {
                 $this->client->delete("/index.php/apps/openregister/api/schemas/{$schemaId}");
             } catch (\Exception $e) {
-                // Ignore cleanup errors
+                // Ignore cleanup errors.
             }
         }
 
@@ -149,10 +149,10 @@ class CoreIntegrationTest extends TestCase
         $this->assertArrayHasKey('id', $registerData);
         $this->registerId = $registerData['id'];
 
-        // Generate unique schema slugs to avoid conflicts with previous test runs
+        // Generate unique schema slugs to avoid conflicts with previous test runs.
         $uniqueId = substr($this->registerSlug, -13); // Use the unique part from register slug
 
-        // Main schema (document)
+        // Main schema (document).
         $schemaResponse = $this->client->post('/index.php/apps/openregister/api/schemas', [
             'json' => [
                 'register' => $this->registerId,
@@ -170,7 +170,7 @@ class CoreIntegrationTest extends TestCase
         $this->createdSchemaIds[] = $schemaData['id'];
         $this->documentSchemaSlug = $schemaData['slug'];
 
-        // Strict PDF schema
+        // Strict PDF schema.
         $strictPdfResponse = $this->client->post('/index.php/apps/openregister/api/schemas', [
             'json' => [
                 'register' => $this->registerId,
@@ -192,7 +192,7 @@ class CoreIntegrationTest extends TestCase
         $this->createdSchemaIds[] = $strictPdfData['id'];
         $this->strictPdfSchemaSlug = $strictPdfData['slug'];
 
-        // Multi-type schema
+        // Multi-type schema.
         $multiTypeResponse = $this->client->post('/index.php/apps/openregister/api/schemas', [
             'json' => [
                 'register' => $this->registerId,
@@ -217,7 +217,7 @@ class CoreIntegrationTest extends TestCase
         $this->createdSchemaIds[] = $multiTypeData['id'];
         $this->multiTypeSchemaSlug = $multiTypeData['slug'];
 
-        // Gallery schema
+        // Gallery schema.
         $galleryResponse = $this->client->post('/index.php/apps/openregister/api/schemas', [
             'json' => [
                 'register' => $this->registerId,
@@ -241,9 +241,9 @@ class CoreIntegrationTest extends TestCase
         $this->gallerySchemaSlug = $galleryData['slug'];
     }
 
-    // ========================================
-    // FILE UPLOAD TESTS (1-12)
-    // ========================================
+    // ========================================.
+    // FILE UPLOAD TESTS (1-12).
+    // ========================================.
 
     public function testMultipartUploadSinglePdf(): void
     {
@@ -528,9 +528,9 @@ class CoreIntegrationTest extends TestCase
         fclose($pdfTmp);
     }
 
-    // ========================================
-    // CASCADE PROTECTION TESTS (13-15)
-    // ========================================
+    // ========================================.
+    // CASCADE PROTECTION TESTS (13-15).
+    // ========================================.
 
     public function testCannotDeleteRegisterWithObjects(): void
     {
@@ -594,9 +594,9 @@ class CoreIntegrationTest extends TestCase
         $this->assertContains($deleteRegisterResponse->getStatusCode(), [200, 204], 'Should allow deleting register after cleanup');
     }
 
-    // ========================================
-    // NEW FEATURE TESTS (16-20)
-    // ========================================
+    // ========================================.
+    // NEW FEATURE TESTS (16-20).
+    // ========================================.
 
     public function testAuthenticatedUrlsForNonSharedFiles(): void
     {
@@ -604,7 +604,7 @@ class CoreIntegrationTest extends TestCase
         fwrite($pdfTmp, '%PDF-1.4 test non-shared');
         $pdfPath = stream_get_meta_data($pdfTmp)['uri'];
 
-        // Create object with file (not shared)
+        // Create object with file (not shared).
         $createResponse = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->documentSchemaSlug}", [
             'multipart' => [
                 ['name' => 'title', 'contents' => 'Non-Shared File Test'],
@@ -616,7 +616,7 @@ class CoreIntegrationTest extends TestCase
         $object = json_decode($createResponse->getBody(), true);
         $this->createdObjectIds[] = $object['id'];
 
-        // Verify file object has authenticated URLs
+        // Verify file object has authenticated URLs.
         $this->assertArrayHasKey('attachment', $object);
         $file = $object['attachment'];
         $this->assertIsArray($file);
@@ -625,7 +625,7 @@ class CoreIntegrationTest extends TestCase
         $this->assertNotNull($file['accessUrl']);
         $this->assertNotNull($file['downloadUrl']);
 
-        // Verify URLs contain /api/files/ for authenticated access
+        // Verify URLs contain /api/files/ for authenticated access.
         $this->assertStringContainsString('/api/files/', $file['downloadUrl']);
 
         fclose($pdfTmp);
@@ -633,7 +633,7 @@ class CoreIntegrationTest extends TestCase
 
     public function testAutoShareFileProperty(): void
     {
-        // Create schema with autoPublish enabled
+        // Create schema with autoPublish enabled.
         $autoPublishSchemaResponse = $this->client->post('/index.php/apps/openregister/api/schemas', [
             'json' => [
                 'register' => $this->registerId,
@@ -656,7 +656,7 @@ class CoreIntegrationTest extends TestCase
         fwrite($pdfTmp, '%PDF-1.4 auto-share test');
         $pdfPath = stream_get_meta_data($pdfTmp)['uri'];
 
-        // Create object with file
+        // Create object with file.
         $createResponse = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$autoPublishSchema['slug']}", [
             'multipart' => [
                 ['name' => 'title', 'contents' => 'Auto-Share Test'],
@@ -668,14 +668,14 @@ class CoreIntegrationTest extends TestCase
         $object = json_decode($createResponse->getBody(), true);
         $this->createdObjectIds[] = $object['id'];
 
-        // Verify file is publicly shared
+        // Verify file is publicly shared.
         $this->assertArrayHasKey('document', $object);
         $file = $object['document'];
         $this->assertIsArray($file);
         $this->assertArrayHasKey('published', $file);
         $this->assertNotNull($file['published'], 'File should be published when autoPublish is enabled');
 
-        // Verify public share URL
+        // Verify public share URL.
         $this->assertArrayHasKey('accessUrl', $file);
         $this->assertStringContainsString('/index.php/s/', $file['accessUrl'], 'Should have public share URL');
 
@@ -684,7 +684,7 @@ class CoreIntegrationTest extends TestCase
 
     public function testLogoMetadataFromFileProperty(): void
     {
-        // Create schema with logo configuration pointing to a file property
+        // Create schema with logo configuration pointing to a file property.
         $logoSchemaResponse = $this->client->post('/index.php/apps/openregister/api/schemas', [
             'json' => [
                 'register' => $this->registerId,
@@ -711,7 +711,7 @@ class CoreIntegrationTest extends TestCase
         fwrite($imageTmp, "\xFF\xD8\xFF\xE0");
         $imagePath = stream_get_meta_data($imageTmp)['uri'];
 
-        // Create object with logo file
+        // Create object with logo file.
         $createResponse = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$logoSchema['slug']}", [
             'multipart' => [
                 ['name' => 'title', 'contents' => 'Logo Test'],
@@ -723,7 +723,7 @@ class CoreIntegrationTest extends TestCase
         $object = json_decode($createResponse->getBody(), true);
         $this->createdObjectIds[] = $object['id'];
 
-        // Verify @self.image contains the downloadUrl
+        // Verify @self.image contains the downloadUrl.
         $this->assertArrayHasKey('@self', $object);
         $this->assertArrayHasKey('image', $object['@self']);
         $this->assertIsString($object['@self']['image']);
@@ -735,8 +735,8 @@ class CoreIntegrationTest extends TestCase
 
     public function testImageMetadataFromFileArrayProperty(): void
     {
-        // Create schema with objectImageField pointing to an array property
-        // Should use the first file in the array as the image
+        // Create schema with objectImageField pointing to an array property.
+        // Should use the first file in the array as the image.
         $arrayImageSchemaResponse = $this->client->post('/index.php/apps/openregister/api/schemas', [
             'json' => [
                 'register' => $this->registerId,
@@ -770,7 +770,7 @@ class CoreIntegrationTest extends TestCase
         fwrite($image2Tmp, "\xFF\xD8\xFF\xE0\x00\x20");
         $image2Path = stream_get_meta_data($image2Tmp)['uri'];
 
-        // Create object with multiple photos
+        // Create object with multiple photos.
         $createResponse = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$arrayImageSchema['slug']}", [
             'multipart' => [
                 ['name' => 'title', 'contents' => 'Array Image Test'],
@@ -783,16 +783,16 @@ class CoreIntegrationTest extends TestCase
         $object = json_decode($createResponse->getBody(), true);
         $this->createdObjectIds[] = $object['id'];
 
-        // Verify photos array has 2 files
+        // Verify photos array has 2 files.
         $this->assertArrayHasKey('photos', $object);
         $this->assertIsArray($object['photos']);
         $this->assertCount(2, $object['photos']);
 
-        // Verify @self.image uses the FIRST photo's downloadUrl
+        // Verify @self.image uses the FIRST photo's downloadUrl.
         $this->assertArrayHasKey('@self', $object);
         $this->assertArrayHasKey('image', $object['@self']);
         $this->assertIsString($object['@self']['image']);
-        // Should contain the first file's download URL (public share)
+        // Should contain the first file's download URL (public share).
         $this->assertStringContainsString('/index.php/s/', $object['@self']['image'], 'Image metadata should use first file from array');
         $this->assertStringContainsString('/download', $object['@self']['image'], 'Image should use downloadUrl for public access');
 
@@ -806,7 +806,7 @@ class CoreIntegrationTest extends TestCase
         fwrite($pdfTmp, '%PDF-1.4 to be deleted');
         $pdfPath = stream_get_meta_data($pdfTmp)['uri'];
 
-        // Create object with file
+        // Create object with file.
         $createResponse = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->documentSchemaSlug}", [
             'multipart' => [
                 ['name' => 'title', 'contents' => 'Delete Test'],
@@ -819,11 +819,11 @@ class CoreIntegrationTest extends TestCase
         $objectId = $object['id'];
         $this->createdObjectIds[] = $objectId;
 
-        // Verify file exists
+        // Verify file exists.
         $this->assertArrayHasKey('attachment', $object);
         $this->assertNotNull($object['attachment']);
 
-        // Update object with null to delete file
+        // Update object with null to delete file.
         $updateResponse = $this->client->put("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->documentSchemaSlug}/{$objectId}", [
             'json' => [
                 'title' => 'Delete Test Updated',
@@ -834,7 +834,7 @@ class CoreIntegrationTest extends TestCase
         $this->assertEquals(200, $updateResponse->getStatusCode());
         $updatedObject = json_decode($updateResponse->getBody(), true);
 
-        // Verify file is deleted (property is null)
+        // Verify file is deleted (property is null).
         $this->assertArrayHasKey('attachment', $updatedObject);
         $this->assertNull($updatedObject['attachment'], 'Attachment should be null after deletion');
 
@@ -847,7 +847,7 @@ class CoreIntegrationTest extends TestCase
         fwrite($image1Tmp, "\xFF\xD8\xFF\xE0");
         $image1Path = stream_get_meta_data($image1Tmp)['uri'];
 
-        // Create object with files array
+        // Create object with files array.
         $createResponse = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->gallerySchemaSlug}", [
             'multipart' => [
                 ['name' => 'title', 'contents' => 'Delete Array Test'],
@@ -860,12 +860,12 @@ class CoreIntegrationTest extends TestCase
         $objectId = $object['id'];
         $this->createdObjectIds[] = $objectId;
 
-        // Verify files exist
+        // Verify files exist.
         $this->assertArrayHasKey('images', $object);
         $this->assertIsArray($object['images']);
         $this->assertNotEmpty($object['images']);
 
-        // Update object with empty array to delete all files
+        // Update object with empty array to delete all files.
         $updateResponse = $this->client->put("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->gallerySchemaSlug}/{$objectId}", [
             'json' => [
                 'title' => 'Delete Array Test Updated',
@@ -876,7 +876,7 @@ class CoreIntegrationTest extends TestCase
         $this->assertEquals(200, $updateResponse->getStatusCode());
         $updatedObject = json_decode($updateResponse->getBody(), true);
 
-        // Verify files array is empty
+        // Verify files array is empty.
         $this->assertArrayHasKey('images', $updatedObject);
         $this->assertIsArray($updatedObject['images']);
         $this->assertEmpty($updatedObject['images'], 'Images array should be empty after deletion');
@@ -884,9 +884,9 @@ class CoreIntegrationTest extends TestCase
         fclose($image1Tmp);
     }
 
-    // ========================================
-    // ARRAY FILTERING TESTS (21-28)
-    // ========================================
+    // ========================================.
+    // ARRAY FILTERING TESTS (21-28).
+    // ========================================.
 
     /**
      * Test 21: Default AND logic for metadata array filters
@@ -896,7 +896,7 @@ class CoreIntegrationTest extends TestCase
      */
     public function testMetadataArrayFilterDefaultAndLogic(): void
     {
-        // Create two additional registers for filtering tests
+        // Create two additional registers for filtering tests.
         $reg1Response = $this->client->post('/index.php/apps/openregister/api/registers', [
             'json' => ['slug' => 'filter-test-1-' . uniqid(), 'title' => 'Filter Test Register 1']
         ]);
@@ -909,7 +909,7 @@ class CoreIntegrationTest extends TestCase
         $this->assertEquals(201, $reg2Response->getStatusCode());
         $reg2 = json_decode($reg2Response->getBody(), true);
 
-        // Create schemas in both registers
+        // Create schemas in both registers.
         $schema1Response = $this->client->post('/index.php/apps/openregister/api/schemas', [
             'json' => [
                 'register' => $reg1['id'],
@@ -932,7 +932,7 @@ class CoreIntegrationTest extends TestCase
         $this->assertEquals(201, $schema2Response->getStatusCode());
         $schema2 = json_decode($schema2Response->getBody(), true);
 
-        // Create objects in each register
+        // Create objects in each register.
         $this->client->post("/index.php/apps/openregister/api/objects/{$reg1['slug']}/{$schema1['slug']}", [
             'json' => ['title' => 'Object in Register 1']
         ]);
@@ -940,8 +940,8 @@ class CoreIntegrationTest extends TestCase
             'json' => ['title' => 'Object in Register 2']
         ]);
 
-        // Test: Filter with AND logic (default) - should return zero results
-        // Use bracket notation: @self[register][] since PHP converts dots to underscores in query params
+        // Test: Filter with AND logic (default) - should return zero results.
+        // Use bracket notation: @self[register][] since PHP converts dots to underscores in query params.
         $url = "/index.php/apps/openregister/api/objects?@self[register][]={$reg1['id']}&@self[register][]={$reg2['id']}";
         $filterResponse = $this->client->get($url);
         
@@ -949,7 +949,7 @@ class CoreIntegrationTest extends TestCase
         $result = json_decode($filterResponse->getBody(), true);
         $this->assertEquals(0, $result['total'], 'AND logic should return zero results for single-value fields');
 
-        // Cleanup
+        // Cleanup.
         $this->client->delete("/index.php/apps/openregister/api/schemas/{$schema1['id']}");
         $this->client->delete("/index.php/apps/openregister/api/schemas/{$schema2['id']}");
         $this->client->delete("/index.php/apps/openregister/api/registers/{$reg1['id']}");
@@ -963,7 +963,7 @@ class CoreIntegrationTest extends TestCase
      */
     public function testMetadataArrayFilterExplicitOrLogicWithDotNotation(): void
     {
-        // Create two registers
+        // Create two registers.
         $reg1Response = $this->client->post('/index.php/apps/openregister/api/registers', [
             'json' => ['slug' => 'or-test-1-' . uniqid(), 'title' => 'OR Test Register 1']
         ]);
@@ -974,7 +974,7 @@ class CoreIntegrationTest extends TestCase
         ]);
         $reg2 = json_decode($reg2Response->getBody(), true);
 
-        // Create schemas
+        // Create schemas.
         $schema1Response = $this->client->post('/index.php/apps/openregister/api/schemas', [
             'json' => [
                 'register' => $reg1['id'],
@@ -995,7 +995,7 @@ class CoreIntegrationTest extends TestCase
         ]);
         $schema2 = json_decode($schema2Response->getBody(), true);
 
-        // Create objects
+        // Create objects.
         $obj1Response = $this->client->post("/index.php/apps/openregister/api/objects/{$reg1['slug']}/{$schema1['slug']}", [
             'json' => ['title' => 'Object in Register 1']
         ]);
@@ -1006,8 +1006,8 @@ class CoreIntegrationTest extends TestCase
         ]);
         $obj2 = json_decode($obj2Response->getBody(), true);
 
-        // Test: Filter with OR logic using bracket notation
-        // Use bracket notation: @self[register][or] since PHP converts dots to underscores
+        // Test: Filter with OR logic using bracket notation.
+        // Use bracket notation: @self[register][or] since PHP converts dots to underscores.
         $url = "/index.php/apps/openregister/api/objects?@self[register][or]={$reg1['id']},{$reg2['id']}";
         $filterResponse = $this->client->get($url);
         
@@ -1019,7 +1019,7 @@ class CoreIntegrationTest extends TestCase
         $this->assertContains($obj1['id'], $returnedIds);
         $this->assertContains($obj2['id'], $returnedIds);
 
-        // Cleanup
+        // Cleanup.
         $this->client->delete("/index.php/apps/openregister/api/schemas/{$schema1['id']}");
         $this->client->delete("/index.php/apps/openregister/api/schemas/{$schema2['id']}");
         $this->client->delete("/index.php/apps/openregister/api/registers/{$reg1['id']}");
@@ -1033,7 +1033,7 @@ class CoreIntegrationTest extends TestCase
      */
     public function testObjectArrayPropertyDefaultAndLogic(): void
     {
-        // Create schema with array property
+        // Create schema with array property.
         $schemaResponse = $this->client->post('/index.php/apps/openregister/api/schemas', [
             'json' => [
                 'register' => $this->registerId,
@@ -1051,7 +1051,7 @@ class CoreIntegrationTest extends TestCase
         $schema = json_decode($schemaResponse->getBody(), true);
         $this->createdSchemaIds[] = $schema['id'];
 
-        // Create objects with different color combinations
+        // Create objects with different color combinations.
         $obj1Response = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$schema['slug']}", [
             'json' => ['title' => 'Red and Blue Product', 'availableColours' => ['red', 'blue']]
         ]);
@@ -1070,7 +1070,7 @@ class CoreIntegrationTest extends TestCase
         $obj3 = json_decode($obj3Response->getBody(), true);
         $this->createdObjectIds[] = $obj3['id'];
 
-        // Test: Filter with AND logic (default)
+        // Test: Filter with AND logic (default).
         $url = "/index.php/apps/openregister/api/objects?availableColours[]=red&availableColours[]=blue";
         $filterResponse = $this->client->get($url);
         
@@ -1090,7 +1090,7 @@ class CoreIntegrationTest extends TestCase
      */
     public function testObjectArrayPropertyExplicitOrLogic(): void
     {
-        // Create schema
+        // Create schema.
         $schemaResponse = $this->client->post('/index.php/apps/openregister/api/schemas', [
             'json' => [
                 'register' => $this->registerId,
@@ -1108,7 +1108,7 @@ class CoreIntegrationTest extends TestCase
         $schema = json_decode($schemaResponse->getBody(), true);
         $this->createdSchemaIds[] = $schema['id'];
 
-        // Create objects
+        // Create objects.
         $obj1Response = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$schema['slug']}", [
             'json' => ['title' => 'Red Product', 'availableColours' => ['red']]
         ]);
@@ -1127,7 +1127,7 @@ class CoreIntegrationTest extends TestCase
         $obj3 = json_decode($obj3Response->getBody(), true);
         $this->createdObjectIds[] = $obj3['id'];
 
-        // Test: Filter with OR logic
+        // Test: Filter with OR logic.
         $url = "/index.php/apps/openregister/api/objects?availableColours[or]=red,blue";
         $filterResponse = $this->client->get($url);
         
@@ -1147,7 +1147,7 @@ class CoreIntegrationTest extends TestCase
      */
     public function testDotNotationSyntaxForMetadataFilters(): void
     {
-        // Test dot notation with simple equality
+        // Test dot notation with simple equality.
         $url = "/index.php/apps/openregister/api/objects?@self.register={$this->registerId}";
         $response = $this->client->get($url);
         
@@ -1155,7 +1155,7 @@ class CoreIntegrationTest extends TestCase
         $result = json_decode($response->getBody(), true);
         $this->assertArrayHasKey('results', $result);
         
-        // All returned objects should be from our test register
+        // All returned objects should be from our test register.
         foreach ($result['results'] as $obj) {
             $this->assertEquals($this->registerId, $obj['@self']['register']);
         }
@@ -1168,7 +1168,7 @@ class CoreIntegrationTest extends TestCase
      */
     public function testDotNotationWithOperators(): void
     {
-        // Create an object
+        // Create an object.
         $createResponse = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->documentSchemaSlug}", [
             'json' => ['title' => 'Date Filter Test']
         ]);
@@ -1176,7 +1176,7 @@ class CoreIntegrationTest extends TestCase
         $object = json_decode($createResponse->getBody(), true);
         $this->createdObjectIds[] = $object['id'];
 
-        // Test dot notation with date operator
+        // Test dot notation with date operator.
         $yesterday = date('Y-m-d\TH:i:s', strtotime('-1 day'));
         $url = "/index.php/apps/openregister/api/objects?@self.created[gte]={$yesterday}";
         $response = $this->client->get($url);
@@ -1193,14 +1193,14 @@ class CoreIntegrationTest extends TestCase
      */
     public function testMixedDotNotationAndRegularFilters(): void
     {
-        // Create test object
+        // Create test object.
         $createResponse = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->documentSchemaSlug}", [
             'json' => ['title' => 'Mixed Filter Test']
         ]);
         $object = json_decode($createResponse->getBody(), true);
         $this->createdObjectIds[] = $object['id'];
 
-        // Test mixed filters: dot notation for metadata + regular filter for property
+        // Test mixed filters: dot notation for metadata + regular filter for property.
         $url = "/index.php/apps/openregister/api/objects?@self.register={$this->registerId}&title=Mixed Filter Test";
         $response = $this->client->get($url);
         
@@ -1216,7 +1216,7 @@ class CoreIntegrationTest extends TestCase
      */
     public function testComplexFilteringScenario(): void
     {
-        // Create schema with tags
+        // Create schema with tags.
         $schemaResponse = $this->client->post('/index.php/apps/openregister/api/schemas', [
             'json' => [
                 'register' => $this->registerId,
@@ -1235,14 +1235,14 @@ class CoreIntegrationTest extends TestCase
         $schema = json_decode($schemaResponse->getBody(), true);
         $this->createdSchemaIds[] = $schema['id'];
 
-        // Create test objects
+        // Create test objects.
         $obj1Response = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$schema['slug']}", [
             'json' => ['title' => 'Urgent Task', 'tags' => ['urgent', 'important'], 'priority' => 1]
         ]);
         $obj1 = json_decode($obj1Response->getBody(), true);
         $this->createdObjectIds[] = $obj1['id'];
 
-        // Test complex filter: tags (AND) + priority (gte)
+        // Test complex filter: tags (AND) + priority (gte).
         $url = "/index.php/apps/openregister/api/objects?tags[and]=urgent,important&priority[gte]=1";
         $response = $this->client->get($url);
         
@@ -1253,9 +1253,9 @@ class CoreIntegrationTest extends TestCase
         $this->assertContains($obj1['id'], $returnedIds, 'Should find object matching all criteria');
     }
 
-    // ========================================
-    // SOLR SEARCH & ORDERING TESTS (29-35)
-    // ========================================
+    // ========================================.
+    // SOLR SEARCH & ORDERING TESTS (29-35).
+    // ========================================.
 
     /**
      * Test 29: Case-insensitive search - lowercase
@@ -1266,7 +1266,7 @@ class CoreIntegrationTest extends TestCase
      */
     public function testCaseInsensitiveSearchLowercase(): void
     {
-        // Create test object with specific title
+        // Create test object with specific title.
         $createResponse = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->documentSchemaSlug}", [
             'json' => ['title' => 'SOFTWARE Testing Document']
         ]);
@@ -1274,7 +1274,7 @@ class CoreIntegrationTest extends TestCase
         $object = json_decode($createResponse->getBody(), true);
         $this->createdObjectIds[] = $object['id'];
 
-        // Search with lowercase - should find the object
+        // Search with lowercase - should find the object.
         $searchResponse = $this->client->get("/index.php/apps/openregister/api/objects?_source=index&_search=software");
         $this->assertEquals(200, $searchResponse->getStatusCode());
         
@@ -1294,7 +1294,7 @@ class CoreIntegrationTest extends TestCase
      */
     public function testCaseInsensitiveSearchUppercase(): void
     {
-        // Create test object with lowercase title
+        // Create test object with lowercase title.
         $createResponse = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->documentSchemaSlug}", [
             'json' => ['title' => 'integration testing guide']
         ]);
@@ -1302,7 +1302,7 @@ class CoreIntegrationTest extends TestCase
         $object = json_decode($createResponse->getBody(), true);
         $this->createdObjectIds[] = $object['id'];
 
-        // Search with uppercase - should find the object
+        // Search with uppercase - should find the object.
         $searchResponse = $this->client->get("/index.php/apps/openregister/api/objects?_source=index&_search=INTEGRATION");
         $this->assertEquals(200, $searchResponse->getStatusCode());
         
@@ -1322,7 +1322,7 @@ class CoreIntegrationTest extends TestCase
      */
     public function testCaseInsensitiveSearchMixedCase(): void
     {
-        // Create test object
+        // Create test object.
         $createResponse = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->documentSchemaSlug}", [
             'json' => ['title' => 'Documentation Manual']
         ]);
@@ -1330,7 +1330,7 @@ class CoreIntegrationTest extends TestCase
         $object = json_decode($createResponse->getBody(), true);
         $this->createdObjectIds[] = $object['id'];
 
-        // Search with mixed case - should find the object
+        // Search with mixed case - should find the object.
         $searchResponse = $this->client->get("/index.php/apps/openregister/api/objects?_source=index&_search=DoCuMeNtAtIoN");
         $this->assertEquals(200, $searchResponse->getStatusCode());
         
@@ -1350,7 +1350,7 @@ class CoreIntegrationTest extends TestCase
      */
     public function testOrderingByNameAscending(): void
     {
-        // Create multiple objects with different names
+        // Create multiple objects with different names.
         $obj1Response = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->documentSchemaSlug}", [
             'json' => ['title' => 'Zebra Document']
         ]);
@@ -1369,19 +1369,19 @@ class CoreIntegrationTest extends TestCase
         $obj3 = json_decode($obj3Response->getBody(), true);
         $this->createdObjectIds[] = $obj3['id'];
 
-        // Query with ascending order by name
+        // Query with ascending order by name.
         $orderResponse = $this->client->get("/index.php/apps/openregister/api/objects?_source=index&_order[@self.name]=asc&_limit=10");
         $this->assertEquals(200, $orderResponse->getStatusCode());
         
         $result = json_decode($orderResponse->getBody(), true);
         $this->assertGreaterThanOrEqual(3, $result['total']);
 
-        // Get names from results
+        // Get names from results.
         $names = array_map(function($obj) {
             return $obj['@self']['name'] ?? '';
         }, $result['results']);
 
-        // Verify they are in ascending alphabetical order
+        // Verify they are in ascending alphabetical order.
         $sortedNames = $names;
         sort($sortedNames, SORT_STRING | SORT_FLAG_CASE);
         
@@ -1397,7 +1397,7 @@ class CoreIntegrationTest extends TestCase
      */
     public function testOrderingByNameDescending(): void
     {
-        // Create multiple objects with different names
+        // Create multiple objects with different names.
         $obj1Response = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->documentSchemaSlug}", [
             'json' => ['title' => 'First Document']
         ]);
@@ -1416,19 +1416,19 @@ class CoreIntegrationTest extends TestCase
         $obj3 = json_decode($obj3Response->getBody(), true);
         $this->createdObjectIds[] = $obj3['id'];
 
-        // Query with descending order by name
+        // Query with descending order by name.
         $orderResponse = $this->client->get("/index.php/apps/openregister/api/objects?_source=index&_order[@self.name]=desc&_limit=10");
         $this->assertEquals(200, $orderResponse->getStatusCode());
         
         $result = json_decode($orderResponse->getBody(), true);
         $this->assertGreaterThanOrEqual(3, $result['total']);
 
-        // Get names from results
+        // Get names from results.
         $names = array_map(function($obj) {
             return $obj['@self']['name'] ?? '';
         }, $result['results']);
 
-        // Verify they are in descending alphabetical order
+        // Verify they are in descending alphabetical order.
         $sortedNames = $names;
         rsort($sortedNames, SORT_STRING | SORT_FLAG_CASE);
         
@@ -1444,7 +1444,7 @@ class CoreIntegrationTest extends TestCase
      */
     public function testOrderingByPublishedAscending(): void
     {
-        // Create objects with different published dates
+        // Create objects with different published dates.
         $yesterday = new \DateTime('-1 day');
         $today = new \DateTime();
         $tomorrow = new \DateTime('+1 day');
@@ -1476,20 +1476,20 @@ class CoreIntegrationTest extends TestCase
         $obj3 = json_decode($obj3Response->getBody(), true);
         $this->createdObjectIds[] = $obj3['id'];
 
-        // Query with ascending order by published date
+        // Query with ascending order by published date.
         $orderResponse = $this->client->get("/index.php/apps/openregister/api/objects?_source=index&_order[@self.published]=asc&_limit=10");
         $this->assertEquals(200, $orderResponse->getStatusCode());
         
         $result = json_decode($orderResponse->getBody(), true);
         
-        // Get published dates from results
+        // Get published dates from results.
         $publishedDates = array_map(function($obj) {
             return $obj['@self']['published'] ?? '';
         }, array_filter($result['results'], function($obj) {
             return !empty($obj['@self']['published']);
         }));
 
-        // Verify dates are in ascending order
+        // Verify dates are in ascending order.
         $sortedDates = $publishedDates;
         sort($sortedDates);
         
@@ -1505,7 +1505,7 @@ class CoreIntegrationTest extends TestCase
      */
     public function testOrderingByPublishedDescending(): void
     {
-        // Create objects with different published dates
+        // Create objects with different published dates.
         $yesterday = new \DateTime('-1 day');
         $today = new \DateTime();
 
@@ -1527,20 +1527,20 @@ class CoreIntegrationTest extends TestCase
         $obj2 = json_decode($obj2Response->getBody(), true);
         $this->createdObjectIds[] = $obj2['id'];
 
-        // Query with descending order by published date
+        // Query with descending order by published date.
         $orderResponse = $this->client->get("/index.php/apps/openregister/api/objects?_source=index&_order[@self.published]=desc&_limit=10");
         $this->assertEquals(200, $orderResponse->getStatusCode());
         
         $result = json_decode($orderResponse->getBody(), true);
         
-        // Get published dates from results
+        // Get published dates from results.
         $publishedDates = array_map(function($obj) {
             return $obj['@self']['published'] ?? '';
         }, array_filter($result['results'], function($obj) {
             return !empty($obj['@self']['published']);
         }));
 
-        // Verify dates are in descending order
+        // Verify dates are in descending order.
         $sortedDates = $publishedDates;
         rsort($sortedDates);
         
@@ -1556,7 +1556,7 @@ class CoreIntegrationTest extends TestCase
      */
     public function testFacetUuidResolution(): void
     {
-        // Create schema with relation field
+        // Create schema with relation field.
         $schemaResponse = $this->client->post('/index.php/apps/openregister/api/schemas', [
             'json' => [
                 'register' => $this->registerId,
@@ -1574,7 +1574,7 @@ class CoreIntegrationTest extends TestCase
         $schema = json_decode($schemaResponse->getBody(), true);
         $this->createdSchemaIds[] = $schema['id'];
 
-        // Create some objects to reference
+        // Create some objects to reference.
         $refObj1Response = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$this->documentSchemaSlug}", [
             'json' => ['title' => 'Referenced Object Alpha']
         ]);
@@ -1587,7 +1587,7 @@ class CoreIntegrationTest extends TestCase
         $refObj2 = json_decode($refObj2Response->getBody(), true);
         $this->createdObjectIds[] = $refObj2['id'];
 
-        // Create objects with references
+        // Create objects with references.
         $obj1Response = $this->client->post("/index.php/apps/openregister/api/objects/{$this->registerSlug}/{$schema['slug']}", [
             'json' => [
                 'title' => 'Main Object 1',
@@ -1606,35 +1606,35 @@ class CoreIntegrationTest extends TestCase
         $obj2 = json_decode($obj2Response->getBody(), true);
         $this->createdObjectIds[] = $obj2['id'];
 
-        // Query with facets
+        // Query with facets.
         $facetResponse = $this->client->get("/index.php/apps/openregister/api/objects?_source=index&_limit=0&_facets=extend");
         $this->assertEquals(200, $facetResponse->getStatusCode());
         
         $result = json_decode($facetResponse->getBody(), true);
         $this->assertArrayHasKey('facets', $result);
 
-        // Check if relatedObjects facet exists
+        // Check if relatedObjects facet exists.
         if (isset($result['facets']['object_fields']['relatedObjects'])) {
             $facet = $result['facets']['object_fields']['relatedObjects'];
             $this->assertArrayHasKey('data', $facet);
             $this->assertArrayHasKey('buckets', $facet['data']);
 
-            // Verify facet buckets have labels
+            // Verify facet buckets have labels.
             foreach ($facet['data']['buckets'] as $bucket) {
                 $this->assertArrayHasKey('value', $bucket);
                 $this->assertArrayHasKey('label', $bucket);
                 $this->assertArrayHasKey('count', $bucket);
 
-                // If value is a UUID, label should ideally be resolved
-                // (This test documents current behavior - UUID resolution should work)
+                // If value is a UUID, label should ideally be resolved.
+                // (This test documents current behavior - UUID resolution should work).
                 if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $bucket['value'])) {
-                    // Label should be different from value if resolution worked
-                    // Or same as value if object not found (acceptable fallback)
+                    // Label should be different from value if resolution worked.
+                    // Or same as value if object not found (acceptable fallback).
                     $this->assertIsString($bucket['label']);
                 }
             }
 
-            // Verify facets are sorted alphabetically by label
+            // Verify facets are sorted alphabetically by label.
             $labels = array_column($facet['data']['buckets'], 'label');
             $sortedLabels = $labels;
             sort($sortedLabels, SORT_STRING | SORT_FLAG_CASE);

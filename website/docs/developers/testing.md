@@ -7,15 +7,133 @@ keywords:
   - Integration Tests
   - Test Groups
   - PHPUnit
+  - Psalm
+  - PHPStan
+  - PHP CodeSniffer
 ---
 
 # Testing
 
-OpenRegister uses comprehensive integration tests to ensure functionality works correctly across all components.
+OpenRegister uses a comprehensive testing stack to ensure code quality, type safety, and functionality across all components.
 
-## Test Strategy
+## Testing Stack
+
+OpenRegister employs multiple testing and analysis tools:
+
+### Static Analysis Tools
+
+#### Psalm
+**Type-safe static analysis for PHP**
+
+Psalm performs deep static analysis to catch type errors, undefined methods, and logical issues before runtime.
+
+**Running Psalm:**
+```bash
+# From workspace root
+cd openregister
+composer psalm
+
+# Or using vendor binary
+./vendor/bin/psalm --threads=1 --no-cache
+
+# Check specific file
+./vendor/bin/psalm --threads=1 --no-cache lib/Service/ObjectService.php
+```
+
+**Configuration:**
+- Location: `openregister/psalm.xml`
+- Level: Baseline with incremental improvements
+- Excludes: Migration files
+
+**Common Psalm Fixes:**
+- Add proper type hints to method parameters
+- Update docblock return types to match actual return types
+- Use dependency injection instead of static service locators
+- Add null checks for nullable properties
+
+#### PHPStan
+**PHP Static Analysis Tool**
+
+PHPStan provides additional static analysis with different rules and detection capabilities than Psalm.
+
+**Running PHPStan:**
+```bash
+# From workspace root
+cd openregister
+composer phpstan
+
+# Or using vendor binary
+./vendor/bin/phpstan analyse
+
+# Check specific file
+./vendor/bin/phpstan analyse lib/Service/ObjectService.php
+```
+
+**Configuration:**
+- Location: `openregister/phpstan.neon`
+- Level: 5
+- Paths: `lib/` directory
+- Excludes: `lib/Migration/*`
+
+**Common PHPStan Fixes:**
+- Correct parameter type mismatches
+- Fix undefined method calls
+- Handle null safety properly
+- Add proper return type declarations
+
+#### PHP CodeSniffer (phpcs)
+**Coding standards enforcement**
+
+PHP CodeSniffer checks code against defined coding standards (PSR-12, Nextcloud standards).
+
+**Running phpcs:**
+```bash
+# Check all files
+./vendor/bin/phpcs --standard=phpcs.xml
+
+# Check specific file
+./vendor/bin/phpcs --standard=phpcs.xml lib/Service/ObjectService.php
+
+# Auto-fix issues (where possible)
+./vendor/bin/phpcbf --standard=phpcs.xml lib/Service/ObjectService.php
+```
+
+**Configuration:**
+- Location: `openregister/phpcs.xml`
+- Standards: PSR-12, Nextcloud coding standards
+- Enforces: Naming conventions, formatting, documentation
+
+**Common phpcs Requirements:**
+- Add docblocks to all classes, methods, and properties
+- Add return types to all methods
+- Add type hints to all method parameters
+- Use proper indentation and spacing
+- Follow PSR-12 naming conventions
+- Add inline comments ending with proper punctuation (full-stop, exclamation, question mark)
 
 ### Integration Testing
+
+PHPUnit integration tests verify functionality across components.
+
+### Workflow Integration
+
+All testing tools work together in the development workflow:
+
+1. **During Development**: Run phpcs and Psalm/PHPStan frequently to catch issues early
+2. **Before Commit**: Ensure all static analysis tools pass with zero errors
+3. **In CI/CD**: Automated checks run on all pull requests
+4. **Pre-Release**: Full integration test suite runs
+
+**Quick Check All Tools:**
+```bash
+# Run all static analysis tools
+cd openregister
+composer psalm && composer phpstan && ./vendor/bin/phpcs --standard=phpcs.xml
+```
+
+## Integration Test Strategy
+
+### Overview
 
 Integration tests verify that different parts of the system work together correctly by testing against a running Docker environment with:
 - Nextcloud container
@@ -597,9 +715,83 @@ Planned additional test groups:
 - **Solr Integration Tests**: Search engine functionality
 - **Performance Tests**: Bulk operations and optimization
 
+## Best Practices
+
+### Code Quality Standards
+
+1. **Zero Errors Policy**: All code must pass all static analysis tools with zero errors
+2. **Warnings Are OK**: Warnings are tracked but do not block development
+3. **Fix Before Commit**: Run all tools before committing changes
+4. **Incremental Improvements**: Address warnings gradually in separate commits
+
+### Static Analysis Workflow
+
+```bash
+# 1. Check for errors only
+./vendor/bin/phpcs --standard=phpcs.xml --error-severity=1 --warning-severity=0 lib/
+
+# 2. Run Psalm
+./vendor/bin/psalm --threads=1 --no-cache
+
+# 3. Run PHPStan
+./vendor/bin/phpstan analyse
+
+# 4. If all pass, commit changes
+git add .
+git commit -m "feat: implement feature X"
+```
+
+### Common Patterns
+
+#### Dependency Injection vs Static Calls
+
+**Bad (triggers Psalm/PHPStan errors):**
+```php
+$mapper = \OC::$server->get('OCA\OpenRegister\Db\ObjectMapper');
+```
+
+**Good (passes all checks):**
+```php
+public function __construct(
+    private readonly ObjectMapper $objectMapper
+) {
+}
+```
+
+#### Nullable Return Types
+
+**Bad:**
+```php
+/**
+ * @return ValidationError
+ */
+public function getErrors(): ?ValidationError
+```
+
+**Good:**
+```php
+/**
+ * @return ValidationError|null Returns validation errors or null if none exist.
+ */
+public function getErrors(): ?ValidationError
+```
+
+#### Type Casting for Operations
+
+**Bad:**
+```php
+$control += ($character * $multiplier); // String * int triggers error
+```
+
+**Good:**
+```php
+$control += ((int) $character * $multiplier); // Explicit cast
+```
+
 ## See Also
 
 - [Search Documentation](../Features/search.md) - Array filtering details
 - [File Management](../Features/files.md) - File upload specifications
 - [API Documentation](../api/objects.md) - API endpoint reference
+- [Coding Standards](https://docs.nextcloud.com/server/latest/developer_manual/digging_deeper/codingguidelines.html) - Nextcloud coding guidelines
 

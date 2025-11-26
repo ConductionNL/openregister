@@ -36,7 +36,7 @@ use OCP\AppFramework\Http\JSONResponse;
  * - The mapper must inject IGroupManager ($this->groupManager - for RBAC)
  * - The mapper must inject IUserSession ($this->userSession - for current user)
  * - The mapper must have access to IDBConnection via $this->db (from QBMapper parent)
- * 
+ *
  * Optional dependencies for advanced features:
  * - IAppConfig ($this->appConfig) - for multitenancy config settings
  * - LoggerInterface ($this->logger) - for debug logging
@@ -54,6 +54,9 @@ trait MultiTenancyTrait
      */
     protected function getActiveOrganisationUuid(): ?string
     {
+        /*
+         * @psalm-suppress RedundantPropertyInitializationCheck
+         */
         if (!isset($this->organisationService)) {
             return null;
         }
@@ -66,19 +69,22 @@ trait MultiTenancyTrait
 
     /**
      * Get active organisation UUIDs (active + all parents)
-     * 
+     *
      * Returns array of organisation UUIDs that the current user can access.
      * Includes the active organisation and all parent organisations in the hierarchy.
      * Used for filtering queries to allow access to parent resources.
-     * 
+     *
      * @return array Array of organisation UUIDs
      */
     protected function getActiveOrganisationUuids(): array
     {
+        /*
+         * @psalm-suppress RedundantPropertyInitializationCheck
+         */
         if (!isset($this->organisationService)) {
             return [];
         }
-        
+
         return $this->organisationService->getUserActiveOrganisations();
 
     }//end getActiveOrganisationUuids()
@@ -91,6 +97,9 @@ trait MultiTenancyTrait
      */
     protected function getCurrentUserId(): ?string
     {
+        /*
+         * @psalm-suppress RedundantPropertyInitializationCheck
+         */
         if (!isset($this->userSession)) {
             return null;
         }
@@ -113,6 +122,9 @@ trait MultiTenancyTrait
             return false;
         }
 
+        /*
+         * @psalm-suppress RedundantPropertyInitializationCheck
+         */
         if (!isset($this->groupManager)) {
             return false;
         }
@@ -171,24 +183,25 @@ trait MultiTenancyTrait
         if (isset($this->appConfig)) {
             $multitenancyConfig = $this->appConfig->getValueString('openregister', 'multitenancy', '');
             if (!empty($multitenancyConfig)) {
-                $multitenancyData = json_decode($multitenancyConfig, true);
+                $multitenancyData    = json_decode($multitenancyConfig, true);
                 $multitenancyEnabled = $multitenancyData['enabled'] ?? true;
-                
-                if (!$multitenancyEnabled) {
-                    // Multitenancy is disabled, no filtering
+
+                if ($multitenancyEnabled === false) {
+                    // Multitenancy is disabled, no filtering.
                     if (isset($this->logger)) {
                         $this->logger->debug('[MultiTenancyTrait] Multitenancy disabled, skipping filter');
                     }
+
                     return;
                 }
             }
         }
-        
-        // Get current user
-        $user = $this->userSession->getUser();
+
+        // Get current user.
+        $user   = $this->userSession->getUser();
         $userId = $user ? $user->getUID() : null;
 
-        // For unauthenticated requests, no automatic access
+        // For unauthenticated requests, no automatic access.
         if ($userId === null) {
             if (isset($this->logger)) {
                 $this->logger->debug('[MultiTenancyTrait] Unauthenticated request, no automatic access');
@@ -197,48 +210,51 @@ trait MultiTenancyTrait
             //return $qb;
         }
 
-        // Get active organisation UUIDs (active + all parents)
+        // Get active organisation UUIDs (active + all parents).
         $activeOrganisationUuids = $this->getActiveOrganisationUuids();
-        
-        // Build fully qualified column name
-        $organisationColumn = $tableAlias ? $tableAlias . '.' . $columnName : $columnName;
-        
-        // Check if published objects should bypass multi-tenancy (objects table only)
+
+        // Build fully qualified column name.
+        $organisationColumn = $tableAlias ? $tableAlias.'.'.$columnName : $columnName;
+
+        // Check if published objects should bypass multi-tenancy (objects table only).
         $publishedBypassEnabled = false;
         if ($enablePublished && isset($this->appConfig)) {
             $multitenancyConfig = $this->appConfig->getValueString('openregister', 'multitenancy', '');
             if (!empty($multitenancyConfig)) {
-                $multitenancyData = json_decode($multitenancyConfig, true);
+                $multitenancyData       = json_decode($multitenancyConfig, true);
                 $publishedBypassEnabled = $multitenancyData['publishedObjectsBypassMultiTenancy'] ?? false;
             }
         }
-        
-        // CASE 1: No active organisation set
+
+        // CASE 1: No active organisation set.
         if (empty($activeOrganisationUuids)) {
             if (isset($this->logger)) {
-                $this->logger->debug('[MultiTenancyTrait] No active organisation', [
-                    'publishedBypassEnabled' => $publishedBypassEnabled
-                ]);
+                $this->logger->debug(
+                        '[MultiTenancyTrait] No active organisation',
+                        [
+                            'publishedBypassEnabled' => $publishedBypassEnabled,
+                        ]
+                        );
             }
-            
-            // Build conditions for users without active organisation
+
+            // Build conditions for users without active organisation.
             $orgConditions = $qb->expr()->orX();
 
-            // Check if user is admin
+            // Check if user is admin.
             $userGroups = $this->groupManager->getUserGroupIds($user);
-            $isAdmin = in_array('admin', $userGroups);
+            $isAdmin    = in_array('admin', $userGroups);
 
-            // Admins can see NULL organisation entities (legacy data)
+            // Admins can see NULL organisation entities (legacy data).
             if ($isAdmin && $allowNullOrg) {
                 $orgConditions->add($qb->expr()->isNull($organisationColumn));
             }
 
-            // Include published objects if bypass is enabled (objects table only)
+            // Include published objects if bypass is enabled (objects table only).
             if ($publishedBypassEnabled && $enablePublished) {
                 $now = (new \DateTime())->format('Y-m-d H:i:s');
-                $publishedColumn = $tableAlias ? $tableAlias . '.published' : 'published';
-                $depublishedColumn = $tableAlias ? $tableAlias . '.depublished' : 'depublished';
-                
+                $publishedColumn   = $tableAlias ? $tableAlias.'.published' : 'published';
+                $depublishedColumn = $tableAlias ? $tableAlias.'.depublished' : 'depublished';
+
                 $orgConditions->add(
                     $qb->expr()->andX(
                         $qb->expr()->isNotNull($publishedColumn),
@@ -251,78 +267,88 @@ trait MultiTenancyTrait
                 );
             }
 
-            // If no conditions were added, deny all access
+            // If no conditions were added, deny all access.
             if ($orgConditions->count() === 0) {
-                $qb->andWhere($qb->expr()->eq('1', $qb->createNamedParameter('0'))); // Always false
+                $qb->andWhere($qb->expr()->eq('1', $qb->createNamedParameter('0')));
+                // Always false.
             } else {
                 $qb->andWhere($orgConditions);
             }
+
             return;
-        }
-        
-        // CASE 2: Active organisation(s) set - check for system default organisation
-        // Get default organisation UUID from configuration (not deprecated is_default column)
+        }//end if
+
+        // CASE 2: Active organisation(s) set - check for system default organisation.
+        // Get default organisation UUID from configuration (not deprecated is_default column).
         $systemDefaultOrgUuid = null;
+        /*
+         * @psalm-suppress RedundantPropertyInitializationCheck
+         */
         if (isset($this->organisationService)) {
             $systemDefaultOrgUuid = $this->organisationService->getDefaultOrganisationId();
         }
 
-        // Check if active organisation is the system default
-        $isSystemDefaultOrg = $systemDefaultOrgUuid !== null && 
+        // Check if active organisation is the system default.
+        $isSystemDefaultOrg = $systemDefaultOrgUuid !== null &&
                              in_array($systemDefaultOrgUuid, $activeOrganisationUuids);
 
-        // Check admin status and admin override setting
+        // Check admin status and admin override setting.
         $userGroups = $this->groupManager->getUserGroupIds($user);
-        $isAdmin = in_array('admin', $userGroups);
-        
+        $isAdmin    = in_array('admin', $userGroups);
+
         $adminOverrideEnabled = false;
         if ($isAdmin && isset($this->appConfig)) {
             $multitenancyConfig = $this->appConfig->getValueString('openregister', 'multitenancy', '');
             if (!empty($multitenancyConfig)) {
-                $multitenancyData = json_decode($multitenancyConfig, true);
+                $multitenancyData     = json_decode($multitenancyConfig, true);
                 $adminOverrideEnabled = $multitenancyData['adminOverride'] ?? false;
             }
         }
-        
-        // Apply admin override logic
+
+        // Apply admin override logic.
         if ($isAdmin && $adminOverrideEnabled) {
-            // Admin override enabled - admins see everything
+            // Admin override enabled - admins see everything.
             if (isset($this->logger)) {
                 $this->logger->debug('[MultiTenancyTrait] Admin override enabled, no filtering');
             }
+
             return;
         }
-        
-        // If admin has system default organisation, they see everything (backward compatibility)
+
+        // If admin has system default organisation, they see everything (backward compatibility).
         if ($isAdmin && $isSystemDefaultOrg) {
             if (isset($this->logger)) {
                 $this->logger->debug('[MultiTenancyTrait] Admin with default org, no filtering');
             }
+
             return;
         }
 
-        // Build organisation filter conditions
+        // Build organisation filter conditions.
         $orgConditions = $qb->expr()->orX();
 
-        // Include entities from active organisation(s) and parents
+        // Include entities from active organisation(s) and parents.
         $orgConditions->add(
             $qb->expr()->in($organisationColumn, $qb->createNamedParameter($activeOrganisationUuids, IQueryBuilder::PARAM_STR_ARRAY))
         );
-        
+
         if (isset($this->logger)) {
-            $this->logger->debug('[MultiTenancyTrait] Added organisation filter', [
-                'organisationCount' => count($activeOrganisationUuids),
-                'columnName' => $columnName,
-                'tableAlias' => $tableAlias
-            ]);
+            $this->logger->debug(
+                    '[MultiTenancyTrait] Added organisation filter',
+                    [
+                        'organisationCount' => count($activeOrganisationUuids),
+                        'columnName'        => $columnName,
+                        'tableAlias'        => $tableAlias,
+                    ]
+                    );
         }
 
-        // Include published objects if bypass is enabled (objects table only)
+        // Include published objects if bypass is enabled (objects table only).
         if ($publishedBypassEnabled && $enablePublished) {
             $now = (new \DateTime())->format('Y-m-d H:i:s');
-            $publishedColumn = $tableAlias ? $tableAlias . '.published' : 'published';
-            $depublishedColumn = $tableAlias ? $tableAlias . '.depublished' : 'depublished';
-            
+            $publishedColumn   = $tableAlias ? $tableAlias.'.published' : 'published';
+            $depublishedColumn = $tableAlias ? $tableAlias.'.depublished' : 'depublished';
+
             $orgConditions->add(
                 $qb->expr()->andX(
                     $qb->expr()->isNotNull($publishedColumn),
@@ -333,22 +359,30 @@ trait MultiTenancyTrait
                     )
                 )
             );
-            
+
             if (isset($this->logger)) {
                 $this->logger->debug('[MultiTenancyTrait] Added published objects bypass');
             }
         }
 
-        // Include NULL organisation entities for admins with default org (legacy data)
-        if ($isSystemDefaultOrg && $isAdmin && $allowNullOrg) {
+        // Include NULL organisation entities for admins with default org (legacy data).
+        // Note: This code path is unreachable if $isAdmin && $isSystemDefaultOrg is true
+        // because we return early at line 303-309. However, keeping this for clarity
+        // and potential future logic changes where $allowNullOrg might be checked differently.
+        // At this point in execution, we know that either !$isAdmin or !$isSystemDefaultOrg.
+        /*
+         * @psalm-suppress TypeDoesNotContainType,ParadoxicalCondition - This condition is unreachable due to early return above,
+         * but kept for documentation and potential future logic changes.
+         */
+        if ($allowNullOrg && $isSystemDefaultOrg && $isAdmin) {
             $orgConditions->add($qb->expr()->isNull($organisationColumn));
-            
+
             if (isset($this->logger)) {
                 $this->logger->debug('[MultiTenancyTrait] Added NULL org access for admin with default org');
             }
         }
 
-        // Apply the conditions
+        // Apply the conditions.
         $qb->andWhere($orgConditions);
 
     }//end applyOrganisationFilter()
@@ -367,12 +401,12 @@ trait MultiTenancyTrait
      */
     protected function setOrganisationOnCreate(Entity $entity): void
     {
-        // Only set organisation if the entity has an organisation property
+        // Only set organisation if the entity has an organisation property.
         if (!method_exists($entity, 'getOrganisation') || !method_exists($entity, 'setOrganisation')) {
             return;
         }
 
-        // SECURITY: Always use active organisation from session, ignore frontend input
+        // SECURITY: Always use active organisation from session, ignore frontend input.
         $activeOrgUuid = $this->getActiveOrganisationUuid();
         if ($activeOrgUuid !== null) {
             $entity->setOrganisation($activeOrgUuid);
@@ -395,7 +429,7 @@ trait MultiTenancyTrait
      */
     protected function verifyOrganisationAccess(Entity $entity): void
     {
-        // Check if entity has organisation property
+        // Check if entity has organisation property.
         if (!method_exists($entity, 'getOrganisation')) {
             return;
         }
@@ -403,12 +437,12 @@ trait MultiTenancyTrait
         $entityOrgUuid = $entity->getOrganisation();
         $activeOrgUuid = $this->getActiveOrganisationUuid();
 
-        // If entity has no organisation set, allow it
+        // If entity has no organisation set, allow it.
         if ($entityOrgUuid === null) {
             return;
         }
 
-        // Verify the organisations match (applies to everyone including admins)
+        // Verify the organisations match (applies to everyone including admins).
         if ($entityOrgUuid !== $activeOrgUuid) {
             throw new \Exception(
                 'Security violation: You do not have permission to access this resource from a different organisation.',
@@ -436,49 +470,58 @@ trait MultiTenancyTrait
      *   }
      * }
      *
-     * @param string $action      The action to check (create, read, update, delete)
-     * @param string $entityType  The type of entity (e.g., 'schema', 'register', 'configuration')
+     * @param string $action     The action to check (create, read, update, delete)
+     * @param string $entityType The type of entity (e.g., 'schema', 'register', 'configuration')
      *
      * @return bool True if user has permission, false otherwise
      */
     protected function hasRbacPermission(string $action, string $entityType): bool
     {
-        // Admins always have all permissions
+        // Admins always have all permissions.
         if ($this->isCurrentUserAdmin()) {
             return true;
         }
 
-        // Get current user
+        // Get current user.
         $userId = $this->getCurrentUserId();
         if ($userId === null) {
-            // No user logged in, deny access
+            // No user logged in, deny access.
             return false;
         }
 
-        // Get active organisation
+        // Get active organisation.
+        /*
+         * @psalm-suppress RedundantPropertyInitializationCheck
+         */
         if (!isset($this->organisationService)) {
-            // No organisation service, allow access (backward compatibility)
+            // No organisation service, allow access (backward compatibility).
             return true;
         }
 
         $activeOrg = $this->organisationService->getActiveOrganisation();
         if ($activeOrg === null) {
-            // No active organisation, deny access
+            // No active organisation, deny access.
             return false;
         }
 
-        // Check if user is in the organisation's users list
+        // Check if user is in the organisation's users list.
         $orgUsers = $activeOrg->getUserIds();
+        /*
+         * @psalm-suppress RedundantCondition
+         */
         if (is_array($orgUsers) && in_array($userId, $orgUsers)) {
-            // User is explicitly listed in the organisation - check authorization
+            // User is explicitly listed in the organisation - check authorization.
         } else {
-            // User is not in the organisation
+            // User is not in the organisation.
             return false;
         }
 
-        // Get user's groups
+        // Get user's groups.
+        /*
+         * @psalm-suppress RedundantPropertyInitializationCheck
+         */
         if (!isset($this->groupManager)) {
-            // No group manager, allow access (backward compatibility)
+            // No group manager, allow access (backward compatibility).
             return true;
         }
 
@@ -489,45 +532,45 @@ trait MultiTenancyTrait
 
         $userGroups = $this->groupManager->getUserGroupIds($user);
 
-        // Get organisation's authorization configuration
+        // Get organisation's authorization configuration.
         $authorization = $activeOrg->getAuthorization();
         if ($authorization === null || empty($authorization)) {
-            // No RBAC configured, allow access (backward compatibility)
+            // No RBAC configured, allow access (backward compatibility).
             return true;
         }
 
-        // Check if the entity type exists in authorization
+        // Check if the entity type exists in authorization.
         if (!isset($authorization[$entityType])) {
-            // Entity type not in authorization, allow access (backward compatibility)
+            // Entity type not in authorization, allow access (backward compatibility).
             return true;
         }
 
-        // Check if the action exists for this entity type
+        // Check if the action exists for this entity type.
         if (!isset($authorization[$entityType][$action])) {
-            // Action not configured, allow access (backward compatibility)
+            // Action not configured, allow access (backward compatibility).
             return true;
         }
 
         $allowedGroups = $authorization[$entityType][$action];
 
-        // If the array is empty, it means no restrictions (allow all)
+        // If the array is empty, it means no restrictions (allow all).
         if (empty($allowedGroups)) {
             return true;
         }
 
-        // Check if user is in any of the allowed groups
+        // Check if user is in any of the allowed groups.
         foreach ($userGroups as $groupId) {
             if (in_array($groupId, $allowedGroups)) {
                 return true;
             }
         }
 
-        // Check for wildcard group
+        // Check for wildcard group.
         if (in_array('*', $allowedGroups)) {
             return true;
         }
 
-        // No matching permission found
+        // No matching permission found.
         return false;
 
     }//end hasRbacPermission()
@@ -556,5 +599,3 @@ trait MultiTenancyTrait
 
 
 }//end trait
-
-

@@ -1,7 +1,4 @@
 <?php
-
-declare(strict_types=1);
-
 /**
  * Class Chunk
  *
@@ -9,12 +6,17 @@ declare(strict_types=1);
  *
  * @category Db
  * @package  OCA\OpenRegister\Db
- * @author   Conduction Development Team <dev@conduction.nl>
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @version  GIT: <git-id>
- * @link     https://www.openregister.nl
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://www.openregister.nl
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
@@ -68,26 +70,147 @@ use OCP\AppFramework\Db\Entity;
  */
 class Chunk extends Entity implements JsonSerializable
 {
+
+    /**
+     * UUID.
+     *
+     * @var string|null
+     */
     protected ?string $uuid = null;
+
+    /**
+     * Source type.
+     *
+     * @var string|null
+     */
     protected ?string $sourceType = null;
+
+    /**
+     * Source ID.
+     *
+     * @var integer|null
+     */
     protected ?int $sourceId = null;
+
+    /**
+     * Text content.
+     *
+     * @var string|null
+     */
     protected ?string $textContent = null;
+
+    /**
+     * Start offset.
+     *
+     * @var integer
+     */
     protected int $startOffset = 0;
+
+    /**
+     * End offset.
+     *
+     * @var integer
+     */
     protected int $endOffset = 0;
+
+    /**
+     * Chunk index.
+     *
+     * @var integer
+     */
     protected int $chunkIndex = 0;
+
+    /**
+     * Position reference.
+     *
+     * @var array|null
+     */
     protected ?array $positionReference = null;
+
+    /**
+     * Language.
+     *
+     * @var string|null
+     */
     protected ?string $language = null;
+
+    /**
+     * Language level.
+     *
+     * @var string|null
+     */
     protected ?string $languageLevel = null;
+
+    /**
+     * Language confidence.
+     *
+     * @var float|null
+     */
     protected ?float $languageConfidence = null;
+
+    /**
+     * Detection method.
+     *
+     * @var string|null
+     */
     protected ?string $detectionMethod = null;
+
+    /**
+     * Indexed flag.
+     *
+     * @var boolean
+     */
     protected bool $indexed = false;
+
+    /**
+     * Vectorized flag.
+     *
+     * @var boolean
+     */
     protected bool $vectorized = false;
+
+    /**
+     * Embedding provider.
+     *
+     * @var string|null
+     */
     protected ?string $embeddingProvider = null;
+
+    /**
+     * Overlap size.
+     *
+     * @var integer
+     */
     protected int $overlapSize = 0;
+
+    /**
+     * Owner.
+     *
+     * @var string|null
+     */
     protected ?string $owner = null;
+
+    /**
+     * Organisation.
+     *
+     * @var string|null
+     */
     protected ?string $organisation = null;
+
+    /**
+     * Created at timestamp.
+     *
+     * @var DateTime|null
+     */
     protected ?DateTime $createdAt = null;
+
+    /**
+     * Updated at timestamp.
+     *
+     * @var DateTime|null
+     */
     protected ?DateTime $updatedAt = null;
+
 
     /**
      * Constructor.
@@ -114,7 +237,9 @@ class Chunk extends Entity implements JsonSerializable
         $this->addType('organisation', 'string');
         $this->addType('createdAt', 'datetime');
         $this->addType('updatedAt', 'datetime');
-    }
+
+    }//end __construct()
+
 
     /**
      * JSON serialization.
@@ -124,27 +249,28 @@ class Chunk extends Entity implements JsonSerializable
     public function jsonSerialize(): array
     {
         return [
-            'id' => $this->id,
-            'uuid' => $this->uuid,
-            'sourceType' => $this->sourceType,
-            'sourceId' => $this->sourceId,
-            'chunkIndex' => $this->chunkIndex,
-            'startOffset' => $this->startOffset,
-            'endOffset' => $this->endOffset,
-            'language' => $this->language,
-            'languageLevel' => $this->languageLevel,
+            'id'                 => $this->id,
+            'uuid'               => $this->uuid,
+            'sourceType'         => $this->sourceType,
+            'sourceId'           => $this->sourceId,
+            'chunkIndex'         => $this->chunkIndex,
+            'startOffset'        => $this->startOffset,
+            'endOffset'          => $this->endOffset,
+            'language'           => $this->language,
+            'languageLevel'      => $this->languageLevel,
             'languageConfidence' => $this->languageConfidence,
-            'indexed' => $this->indexed,
-            'vectorized' => $this->vectorized,
-            'embeddingProvider' => $this->embeddingProvider,
-            'overlapSize' => $this->overlapSize,
-            'owner' => $this->owner,
-            'organisation' => $this->organisation,
-            'createdAt' => $this->createdAt?->format(DateTime::ATOM),
-            'updatedAt' => $this->updatedAt?->format(DateTime::ATOM),
-            'positionReference' => $this->positionReference,
+            'indexed'            => $this->indexed,
+            'vectorized'         => $this->vectorized,
+            'embeddingProvider'  => $this->embeddingProvider,
+            'overlapSize'        => $this->overlapSize,
+            'owner'              => $this->owner,
+            'organisation'       => $this->organisation,
+            'createdAt'          => $this->createdAt?->format(DateTime::ATOM),
+            'updatedAt'          => $this->updatedAt?->format(DateTime::ATOM),
+            'positionReference'  => $this->positionReference,
         ];
-    }
-}
+
+    }//end jsonSerialize()
 
 
+}//end class

@@ -1,31 +1,0 @@
-  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100  2829  100  2829    0     0   2763      0  0:00:01  0:00:01 --:--:--  2765100  2829  100  2829    0     0   2762      0  0:00:01  0:00:01 --:--:--  2765
-[1;39m{
-  [0m[34;1m"deelnemers"[0m[1;39m: [0m[1;39m{
-    [0m[34;1m"type"[0m[1;39m: [0m[0;32m"array"[0m[1;39m,
-    [0m[34;1m"title"[0m[1;39m: [0m[0;32m"deelnemers"[0m[1;39m,
-    [0m[34;1m"description"[0m[1;39m: [0m[0;32m"Organisaties die deelnemen aan deze community"[0m[1;39m,
-    [0m[34;1m"items"[0m[1;39m: [0m[1;39m{
-      [0m[34;1m"type"[0m[1;39m: [0m[0;32m"object"[0m[1;39m,
-      [0m[34;1m"objectConfiguration"[0m[1;39m: [0m[1;39m{
-        [0m[34;1m"handling"[0m[1;39m: [0m[0;32m"related-object"[0m[1;39m
-      [1;39m}[0m[1;39m,
-      [0m[34;1m"$ref"[0m[1;39m: [0m[0;32m"#/components/schemas/organisatie"[0m[1;39m,
-      [0m[34;1m"inversedBy"[0m[1;39m: [0m[0;32m"deelnames"[0m[1;39m,
-      [0m[34;1m"writeBack"[0m[1;39m: [0m[0;39mtrue[0m[1;39m,
-      [0m[34;1m"removeAfterWriteBack"[0m[1;39m: [0m[0;39mtrue[0m[1;39m
-    [1;39m}[0m[1;39m,
-    [0m[34;1m"facetable"[0m[1;39m: [0m[0;39mfalse[0m[1;39m
-  [1;39m}[0m[1;39m,
-  [0m[34;1m"deelnames"[0m[1;39m: [0m[1;39m{
-    [0m[34;1m"type"[0m[1;39m: [0m[0;32m"array"[0m[1;39m,
-    [0m[34;1m"title"[0m[1;39m: [0m[0;32m"deelnames"[0m[1;39m,
-    [0m[34;1m"description"[0m[1;39m: [0m[0;32m"UUIDs van communities waar deze organisatie aan deelneemt"[0m[1;39m,
-    [0m[34;1m"items"[0m[1;39m: [0m[1;39m{
-      [0m[34;1m"type"[0m[1;39m: [0m[0;32m"string"[0m[1;39m,
-      [0m[34;1m"format"[0m[1;39m: [0m[0;32m"uuid"[0m[1;39m
-    [1;39m}[0m[1;39m,
-    [0m[34;1m"facetable"[0m[1;39m: [0m[0;39mfalse[0m[1;39m
-  [1;39m}[0m[1;39m
-[1;39m}[0m

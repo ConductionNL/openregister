@@ -1,5 +1,5 @@
 <?php
-// phpcs:ignoreFile
+// phpcs:ignoreFile.
 /**
  * OpenRegister Migration
  *
@@ -50,7 +50,7 @@ class Version1Date20241019205009 extends SimpleMigrationStep
      * @param Closure(): ISchemaWrapper $schemaClosure
      * @param array                     $options
      *
-     * @return null|ISchemaWrapper
+     * @return ISchemaWrapper
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
@@ -59,7 +59,7 @@ class Version1Date20241019205009 extends SimpleMigrationStep
          */
         $schema = $schemaClosure();
 
-        // Update the openregister_sources table
+        // Update the openregister_sources table.
         $table = $schema->getTable('openregister_sources');
         if (!$table->hasColumn('uuid')) {
             $table->addColumn(name: 'uuid', typeName: Types::STRING, options: ['notnull' => true, 'length' => 255]);
@@ -70,14 +70,14 @@ class Version1Date20241019205009 extends SimpleMigrationStep
             $table->addColumn(name: 'version', typeName: Types::STRING, options: ['notnull' => true, 'length' => 255, 'default' => '0.0.1']);
         }
 
-        // Update the openregister_schemas table
+        // Update the openregister_schemas table.
         $table = $schema->getTable('openregister_schemas');
         if (!$table->hasColumn('uuid')) {
             $table->addColumn(name: 'uuid', typeName: Types::STRING, options: ['notnull' => true, 'length' => 255]);
             $table->addIndex(['uuid'], 'openregister_schemas_uuid_index');
         }
 
-        // Update the openregister_registers table
+        // Update the openregister_registers table.
         $table = $schema->getTable('openregister_registers');
         if (!$table->hasColumn('uuid')) {
             $table->addColumn(name: 'uuid', typeName: Types::STRING, options: ['notnull' => true, 'length' => 255]);
@@ -88,7 +88,7 @@ class Version1Date20241019205009 extends SimpleMigrationStep
             $table->addColumn(name: 'version', typeName: Types::STRING, options: ['notnull' => true, 'length' => 255, 'default' => '0.0.1']);
         }
 
-        // Update the openregister_objects table
+        // Update the openregister_objects table.
         $table = $schema->getTable('openregister_objects');
         if (!$table->hasColumn('version')) {
             $table->addColumn(name: 'version', typeName: Types::STRING, options: ['notnull' => true, 'length' => 255, 'default' => '0.0.1']);

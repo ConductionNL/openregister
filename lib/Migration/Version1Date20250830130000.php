@@ -37,9 +37,9 @@ class Version1Date20250830130000 extends SimpleMigrationStep
     /**
      * Change the database schema
      *
-     * @param IOutput       $output        Output for the migration process
-     * @param Closure       $schemaClosure The schema closure
-     * @param array<string> $options       Migration options
+     * @param IOutput                 $output        Output for the migration process
+     * @param Closure                 $schemaClosure The schema closure
+     * @param array<array-key, mixed> $options       Migration options
      *
      * @return ISchemaWrapper|null The modified schema
      */
@@ -48,13 +48,14 @@ class Version1Date20250830130000 extends SimpleMigrationStep
         /*
          * @var ISchemaWrapper $schema
          */
+
         $schema = $schemaClosure();
 
-        // Check if the objects table exists
+        // Check if the objects table exists.
         if ($schema->hasTable('openregister_objects') === true) {
             $table = $schema->getTable('openregister_objects');
 
-            // Add schemaVersion column if it doesn't exist
+            // Add schemaVersion column if it doesn't exist.
             if ($table->hasColumn('schemaVersion') === false) {
                 $table->addColumn(
                         'schemaVersion',

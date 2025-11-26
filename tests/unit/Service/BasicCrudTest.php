@@ -145,7 +145,7 @@ class BasicCrudTest extends TestCase
         'active' => true
     ];
 
-    // =================== REGISTER CRUD TESTS ===================
+    // =================== REGISTER CRUD TESTS ===================.
 
     /**
      * Test creating a new register
@@ -171,16 +171,16 @@ class BasicCrudTest extends TestCase
     {
         $register = new Register();
         
-        // Test required fields
+        // Test required fields.
         $register->setTitle('Valid Title');
         $this->assertNotEmpty($register->getTitle());
         
-        // Test title length constraints
+        // Test title length constraints.
         $longTitle = str_repeat('a', 300);
         $register->setTitle($longTitle);
         $this->assertEquals($longTitle, $register->getTitle());
         
-        // Test version format
+        // Test version format.
         $register->setVersion('2.1.0');
         $this->assertEquals('2.1.0', $register->getVersion());
     }
@@ -194,7 +194,7 @@ class BasicCrudTest extends TestCase
         $register->setTitle('Original Title');
         $register->setDescription('Original Description');
 
-        // Update properties
+        // Update properties.
         $register->setTitle('Updated Title');
         $register->setDescription('Updated Description');
         $register->setVersion('2.0.0');
@@ -204,7 +204,7 @@ class BasicCrudTest extends TestCase
         $this->assertEquals('2.0.0', $register->getVersion());
     }
 
-    // =================== SCHEMA CRUD TESTS ===================
+    // =================== SCHEMA CRUD TESTS ===================.
 
     /**
      * Test creating a new schema
@@ -255,7 +255,7 @@ class BasicCrudTest extends TestCase
         $schema = new Schema();
         $schema->setTitle('Property Test Schema');
         
-        // Test valid property structure
+        // Test valid property structure.
         $validProperties = [
             'name' => [
                 'type' => 'string',
@@ -279,7 +279,7 @@ class BasicCrudTest extends TestCase
         $schema = new Schema();
         $schema->setTitle('Authorization Update Test');
         
-        // Start with basic authorization
+        // Start with basic authorization.
         $initialAuth = [
             'read' => ['public'],
             'create' => ['users']
@@ -287,7 +287,7 @@ class BasicCrudTest extends TestCase
         $schema->setAuthorization($initialAuth);
         $this->assertEquals($initialAuth, $schema->getAuthorization());
         
-        // Update authorization
+        // Update authorization.
         $updatedAuth = [
             'create' => ['editors'],
             'read' => ['viewers', 'editors'],
@@ -306,7 +306,7 @@ class BasicCrudTest extends TestCase
     {
         $schema = new Schema();
         
-        // Test valid authorization
+        // Test valid authorization.
         $validAuth = [
             'create' => ['editors'],
             'read' => ['public', 'users'],
@@ -316,16 +316,16 @@ class BasicCrudTest extends TestCase
         $schema->setAuthorization($validAuth);
         $this->assertTrue($schema->validateAuthorization());
         
-        // Test empty authorization (should be valid - means open access)
+        // Test empty authorization (should be valid - means open access).
         $schema->setAuthorization([]);
         $this->assertTrue($schema->validateAuthorization());
         
-        // Test null authorization (should be valid)
+        // Test null authorization (should be valid).
         $schema->setAuthorization(null);
         $this->assertTrue($schema->validateAuthorization());
     }
 
-    // =================== BASIC OBJECT TESTS ===================
+    // =================== BASIC OBJECT TESTS ===================.
 
     /**
      * Test creating a basic object
@@ -336,7 +336,7 @@ class BasicCrudTest extends TestCase
         $object->setObject($this->testObjectData);
         $object->setOwner('testuser');
 
-        // ObjectEntity automatically adds some fields, so we need to check the core data
+        // ObjectEntity automatically adds some fields, so we need to check the core data.
         $objectData = $object->getObject();
         $this->assertEquals('John Doe', $objectData['name']);
         $this->assertEquals('john.doe@example.com', $objectData['email']);
@@ -355,7 +355,7 @@ class BasicCrudTest extends TestCase
         $object = new ObjectEntity();
         $object->setObject($this->testObjectData);
         
-        // Update object data
+        // Update object data.
         $updatedData = $this->testObjectData;
         $updatedData['name'] = 'Jane Smith';
         $updatedData['age'] = 25;
@@ -363,7 +363,7 @@ class BasicCrudTest extends TestCase
         
         $object->setObject($updatedData);
         
-        // Test individual fields since ObjectEntity may add extra fields
+        // Test individual fields since ObjectEntity may add extra fields.
         $objectData = $object->getObject();
         $this->assertEquals('Jane Smith', $objectData['name']);
         $this->assertEquals(25, $objectData['age']);
@@ -380,18 +380,18 @@ class BasicCrudTest extends TestCase
         $object->setObject($this->testObjectData);
         $object->setOwner('testuser');
         
-        // Mock IUserSession
+        // Mock IUserSession.
         $mockUser = $this->createMock(\OCP\IUser::class);
         $mockUser->method('getUID')->willReturn('testuser');
         
         $mockUserSession = $this->createMock(\OCP\IUserSession::class);
         $mockUserSession->method('getUser')->willReturn($mockUser);
         
-        // Test initial state (deleted is initialized as empty array, not null)
+        // Test initial state (deleted is initialized as empty array, not null).
         $initialDeleted = $object->getDeleted();
         $this->assertTrue($initialDeleted === [] || $initialDeleted === null);
         
-        // Perform soft delete
+        // Perform soft delete.
         $object->delete($mockUserSession, 'Testing soft deletion', 30);
         
         $deletedData = $object->getDeleted();
@@ -402,7 +402,7 @@ class BasicCrudTest extends TestCase
         $this->assertArrayHasKey('deleted', $deletedData);
     }
 
-    // =================== PERMISSION INTEGRATION TESTS ===================
+    // =================== PERMISSION INTEGRATION TESTS ===================.
 
     /**
      * Test basic permission integration
@@ -418,7 +418,7 @@ class BasicCrudTest extends TestCase
             'delete' => ['managers']
         ]);
 
-        // Test basic permission checks
+        // Test basic permission checks.
         $this->assertTrue($schema->hasPermission('editors', 'create'));
         $this->assertTrue($schema->hasPermission('viewers', 'read'));
         $this->assertTrue($schema->hasPermission('editors', 'update'));
@@ -440,13 +440,13 @@ class BasicCrudTest extends TestCase
             'delete' => ['managers']
         ]);
 
-        // Admin should have access to everything
+        // Admin should have access to everything.
         $this->assertTrue($schema->hasPermission('admin', 'create'));
         $this->assertTrue($schema->hasPermission('admin', 'read'));
         $this->assertTrue($schema->hasPermission('admin', 'update'));
         $this->assertTrue($schema->hasPermission('admin', 'delete'));
         
-        // Test admin through userGroup parameter
+        // Test admin through userGroup parameter.
         $this->assertTrue($schema->hasPermission('anygroup', 'create', 'admin-user', 'admin'));
         $this->assertTrue($schema->hasPermission('anygroup', 'delete', 'admin-user', 'admin'));
     }
@@ -464,17 +464,17 @@ class BasicCrudTest extends TestCase
             'delete' => ['managers']
         ]);
 
-        // Object owner should have access to their own objects
+        // Object owner should have access to their own objects.
         $this->assertTrue($schema->hasPermission('staff', 'read', 'user123', null, 'user123'));
         $this->assertTrue($schema->hasPermission('staff', 'update', 'user123', null, 'user123'));
         $this->assertTrue($schema->hasPermission('staff', 'delete', 'user123', null, 'user123'));
         
-        // But not to other users' objects
+        // But not to other users' objects.
         $this->assertFalse($schema->hasPermission('staff', 'read', 'user123', null, 'user456'));
         $this->assertFalse($schema->hasPermission('staff', 'update', 'user123', null, 'user456'));
     }
 
-    // =================== DATA INTEGRITY TESTS ===================
+    // =================== DATA INTEGRITY TESTS ===================.
 
     /**
      * Test entity initialization and basic properties
@@ -488,7 +488,7 @@ class BasicCrudTest extends TestCase
         $object1 = new ObjectEntity();
         $object2 = new ObjectEntity();
 
-        // All entities should initialize properly
+        // All entities should initialize properly.
         $this->assertInstanceOf(Register::class, $register1);
         $this->assertInstanceOf(Register::class, $register2);
         $this->assertInstanceOf(Schema::class, $schema1);
@@ -496,7 +496,7 @@ class BasicCrudTest extends TestCase
         $this->assertInstanceOf(ObjectEntity::class, $object1);
         $this->assertInstanceOf(ObjectEntity::class, $object2);
 
-        // UUIDs should be null initially (generated by mappers during save)
+        // UUIDs should be null initially (generated by mappers during save).
         $this->assertNull($register1->getUuid());
         $this->assertNull($register2->getUuid());
         $this->assertNull($schema1->getUuid());
@@ -510,25 +510,25 @@ class BasicCrudTest extends TestCase
      */
     public function testDataConsistency(): void
     {
-        // Create a register
+        // Create a register.
         $register = new Register();
         $register->setTitle('Consistency Test Register');
         
-        // Create a schema
+        // Create a schema.
         $schema = new Schema();
         $schema->setTitle('Consistency Test Schema');
         $schema->setProperties($this->testSchemaData['properties']);
         
-        // Create an object
+        // Create an object.
         $object = new ObjectEntity();
         $object->setObject($this->testObjectData);
         $object->setOwner('consistency-user');
 
-        // All entities should maintain their data consistently
+        // All entities should maintain their data consistently.
         $this->assertEquals('Consistency Test Register', $register->getTitle());
         $this->assertEquals('Consistency Test Schema', $schema->getTitle());
         
-        // Test object data consistency (checking individual fields since ObjectEntity adds extras)
+        // Test object data consistency (checking individual fields since ObjectEntity adds extras).
         $objectData = $object->getObject();
         $this->assertEquals('John Doe', $objectData['name']);
         $this->assertEquals('john.doe@example.com', $objectData['email']);
@@ -536,7 +536,7 @@ class BasicCrudTest extends TestCase
         $this->assertTrue($objectData['active']);
         $this->assertEquals('consistency-user', $object->getOwner());
         
-        // UUIDs should remain null consistently (until saved by mapper)
+        // UUIDs should remain null consistently (until saved by mapper).
         $registerUuid = $register->getUuid();
         $schemaUuid = $schema->getUuid();
         $objectUuid = $object->getUuid();
@@ -554,14 +554,14 @@ class BasicCrudTest extends TestCase
      */
     public function testComplexScenarioIntegration(): void
     {
-        // Create a complete scenario: Register -> Schema -> Object with RBAC
+        // Create a complete scenario: Register -> Schema -> Object with RBAC.
         
-        // 1. Create register
+        // 1. Create register.
         $register = new Register();
         $register->setTitle('Integration Test Register');
         $register->setDescription('Full integration test scenario');
         
-        // 2. Create schema with RBAC
+        // 2. Create schema with RBAC.
         $schema = new Schema();
         $schema->setTitle('Integration Test Schema');
         $schema->setDescription('Schema for integration testing');
@@ -577,7 +577,7 @@ class BasicCrudTest extends TestCase
             'delete' => ['editors']
         ]);
         
-        // 3. Create object following schema
+        // 3. Create object following schema.
         $object = new ObjectEntity();
         $object->setObject([
             'title' => 'Integration Test Item',
@@ -586,20 +586,20 @@ class BasicCrudTest extends TestCase
         ]);
         $object->setOwner('integration-user');
         
-        // 4. Verify all components work together
+        // 4. Verify all components work together.
         $this->assertEquals('Integration Test Register', $register->getTitle());
         $this->assertEquals('Integration Test Schema', $schema->getTitle());
         $this->assertTrue($schema->validateAuthorization());
         $this->assertEquals('Integration Test Item', $object->getObject()['title']);
         $this->assertEquals('integration-user', $object->getOwner());
         
-        // 5. Test RBAC permissions
+        // 5. Test RBAC permissions.
         $this->assertTrue($schema->hasPermission('contributors', 'create'));
         $this->assertTrue($schema->hasPermission('public', 'read'));
         $this->assertTrue($schema->hasPermission('editors', 'delete'));
         $this->assertFalse($schema->hasPermission('public', 'create'));
         
-        // 6. Test object owner can access regardless of group restrictions
+        // 6. Test object owner can access regardless of group restrictions.
         $this->assertTrue($schema->hasPermission('random-group', 'delete', 'integration-user', null, 'integration-user'));
     }
 } 

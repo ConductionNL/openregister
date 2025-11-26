@@ -84,18 +84,18 @@ class OptimizedFacetHandler
     public function getBatchedFacets(array $facetConfig, array $baseQuery = []): array
     {
         $results = [];
-        
-        // Generate cache key for this facet combination
+
+        // Generate cache key for this facet combination.
         $cacheKey = $this->generateCacheKey($facetConfig, $baseQuery);
-        
+
         if (isset($this->facetCache[$cacheKey])) {
             return $this->facetCache[$cacheKey];
         }
 
-        // Separate metadata facets from JSON field facets
+        // Separate metadata facets from JSON field facets.
         $metadataFacets = [];
         $jsonFieldFacets = [];
-        
+
         foreach ($facetConfig as $facetName => $config) {
             if ($facetName === '@self' && is_array($config)) {
                 $metadataFacets = $config;
@@ -104,22 +104,22 @@ class OptimizedFacetHandler
             }
         }
 
-        // Process metadata facets (fast - use table indexes)
+        // Process metadata facets (fast - use table indexes).
         if (!empty($metadataFacets)) {
             $results['@self'] = $this->getBatchedMetadataFacets($metadataFacets, $baseQuery);
         }
 
-        // Process JSON field facets (slower - but optimized where possible)
+        // Process JSON field facets (slower - but optimized where possible).
         foreach ($jsonFieldFacets as $fieldName => $config) {
             $type = $config['type'] ?? 'terms';
-            
+
             if ($type === 'terms') {
                 $results[$fieldName] = $this->getOptimizedJsonTermsFacet($fieldName, $baseQuery);
             }
-            // Add other facet types as needed
+            // Add other facet types as needed.
         }
 
-        // Cache results for future requests
+        // Cache results for future requests.
         $this->facetCache[$cacheKey] = $results;
 
         return $results;
@@ -149,14 +149,14 @@ class OptimizedFacetHandler
     private function getBatchedMetadataFacets(array $metadataConfig, array $baseQuery): array
     {
         $results = [];
-        
+
         foreach ($metadataConfig as $field => $config) {
             $type = $config['type'] ?? 'terms';
-            
+
             if ($type === 'terms') {
                 $results[$field] = $this->getOptimizedMetadataTermsFacet($field, $baseQuery);
             }
-            // Add other facet types as needed (date_histogram, range)
+            // Add other facet types as needed (date_histogram, range).
         }
 
         return $results;
@@ -187,7 +187,7 @@ class OptimizedFacetHandler
     {
         $queryBuilder = $this->db->getQueryBuilder();
 
-        // Build optimized aggregation query
+        // Build optimized aggregation query.
         $queryBuilder->select($field)
             ->selectAlias($queryBuilder->createFunction('COUNT(*)'), 'doc_count')
             ->from('openregister_objects')
@@ -196,7 +196,7 @@ class OptimizedFacetHandler
             ->orderBy('doc_count', 'DESC')
             ->setMaxResults(100); // Limit results for performance
 
-        // Apply optimized base filters
+        // Apply optimized base filters.
         $this->applyOptimizedBaseFilters($queryBuilder, $baseQuery);
 
         $result = $queryBuilder->executeQuery();
@@ -245,10 +245,10 @@ class OptimizedFacetHandler
         $queryBuilder = $this->db->getQueryBuilder();
         $jsonPath = '$.' . $field;
 
-        // Check if we should skip this facet due to too much data
+        // Check if we should skip this facet due to too much data.
         $estimatedRows = $this->estimateRowCount($baseQuery);
         if ($estimatedRows > 50000) {
-            // Return empty result for very large datasets to avoid timeouts
+            // Return empty result for very large datasets to avoid timeouts.
             return [
                 'type'    => 'terms',
                 'buckets' => [],
@@ -256,7 +256,7 @@ class OptimizedFacetHandler
             ];
         }
 
-        // Use optimized JSON query with limits
+        // Use optimized JSON query with limits.
         $queryBuilder->selectAlias(
                 $queryBuilder->createFunction("JSON_UNQUOTE(JSON_EXTRACT(object, " . $queryBuilder->createNamedParameter($jsonPath) . "))"),
                 'field_value'
@@ -272,7 +272,7 @@ class OptimizedFacetHandler
             ->orderBy('doc_count', 'DESC')
             ->setMaxResults(50); // Limit results for performance
 
-        // Apply optimized base filters
+        // Apply optimized base filters.
         $this->applyOptimizedBaseFilters($queryBuilder, $baseQuery);
 
         $result = $queryBuilder->executeQuery();
@@ -315,25 +315,25 @@ class OptimizedFacetHandler
      */
     private function applyOptimizedBaseFilters(IQueryBuilder $queryBuilder, array $baseQuery): void
     {
-        // Apply filters in order of index selectivity (most selective first)
-        
-        // 1. Most selective: ID-based filters
+        // Apply filters in order of index selectivity (most selective first).
+
+        // 1. Most selective: ID-based filters.
         if (isset($baseQuery['_ids']) && is_array($baseQuery['_ids']) && !empty($baseQuery['_ids'])) {
             $queryBuilder->andWhere(
                 $queryBuilder->expr()->in('id', $queryBuilder->createNamedParameter($baseQuery['_ids'], \Doctrine\DBAL\Connection::PARAM_INT_ARRAY))
             );
         }
 
-        // 2. High selectivity: register/schema filters
+        // 2. High selectivity: register/schema filters.
         if (isset($baseQuery['@self']['register'])) {
             $queryBuilder->andWhere($queryBuilder->expr()->eq('register', $queryBuilder->createNamedParameter($baseQuery['@self']['register'])));
         }
-        
+
         if (isset($baseQuery['@self']['schema'])) {
             $queryBuilder->andWhere($queryBuilder->expr()->eq('schema', $queryBuilder->createNamedParameter($baseQuery['@self']['schema'])));
         }
 
-        // 3. Medium selectivity: lifecycle filters (use composite indexes)
+        // 3. Medium selectivity: lifecycle filters (use composite indexes).
         $includeDeleted = $baseQuery['_includeDeleted'] ?? false;
         if ($includeDeleted === false) {
             $queryBuilder->andWhere($queryBuilder->expr()->isNull('deleted'));
@@ -354,13 +354,13 @@ class OptimizedFacetHandler
             );
         }
 
-        // 4. Low selectivity: organization filters
+        // 4. Low selectivity: organization filters.
         if (isset($baseQuery['@self']['organisation'])) {
             $queryBuilder->andWhere($queryBuilder->expr()->eq('organisation', $queryBuilder->createNamedParameter($baseQuery['@self']['organisation'])));
         }
 
-        // Skip expensive operations like full-text search for faceting to improve performance
-        // These can be applied in the main query but not in facet calculations
+        // Skip expensive operations like full-text search for faceting to improve performance.
+        // These can be applied in the main query but not in facet calculations.
 
     }//end applyOptimizedBaseFilters()
 
@@ -381,19 +381,19 @@ class OptimizedFacetHandler
     private function estimateRowCount(array $baseQuery): int
     {
         $queryBuilder = $this->db->getQueryBuilder();
-        
+
         $queryBuilder->selectAlias($queryBuilder->createFunction('COUNT(*)'), 'row_count')
             ->from('openregister_objects');
-        
-        // Apply only the most selective filters for estimation
+
+        // Apply only the most selective filters for estimation.
         if (isset($baseQuery['@self']['register'])) {
             $queryBuilder->andWhere($queryBuilder->expr()->eq('register', $queryBuilder->createNamedParameter($baseQuery['@self']['register'])));
         }
-        
+
         if (isset($baseQuery['@self']['schema'])) {
             $queryBuilder->andWhere($queryBuilder->expr()->eq('schema', $queryBuilder->createNamedParameter($baseQuery['@self']['schema'])));
         }
-        
+
         $includeDeleted = $baseQuery['_includeDeleted'] ?? false;
         if ($includeDeleted === false) {
             $queryBuilder->andWhere($queryBuilder->expr()->isNull('deleted'));
@@ -442,7 +442,7 @@ class OptimizedFacetHandler
      */
     private function getFieldLabel(string $field, mixed $value): string
     {
-        // For register and schema fields, try to get the actual name from database
+        // For register and schema fields, try to get the actual name from database.
         if ($field === 'register' && is_numeric($value)) {
             try {
                 $qb = $this->db->getQueryBuilder();
@@ -471,7 +471,7 @@ class OptimizedFacetHandler
             }
         }
 
-        // For other fields, return the value as-is
+        // For other fields, return the value as-is.
         return (string) $value;
 
     }//end getFieldLabel()

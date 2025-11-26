@@ -5,16 +5,13 @@
  * This file contains the controller for handling dashboard related operations
  * in the OpenRegister application.
  *
- * @category Controller
- * @package  OCA\OpenRegister\AppInfo
- *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @category  Controller
+ * @package   OCA\OpenRegister\Controller
+ * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * @version GIT: <git-id>
- *
- * @link https://OpenRegister.app
+ * @version   GIT: <git-id>
+ * @link      https://OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Controller;
@@ -107,12 +104,6 @@ class DashboardController extends Controller
      *
      * This method returns a JSON response containing dashboard data.
      *
-     * @param int|null   $limit            Optional limit for the number of results
-     * @param int|null   $offset           Optional offset for pagination
-     * @param array|null $filters          Optional filters to apply
-     * @param array|null $searchConditions Optional search conditions
-     * @param array|null $searchParams     Optional search parameters
-     *
      * @return JSONResponse A JSON response containing the dashboard data
      *
      * @NoAdminRequired
@@ -185,8 +176,17 @@ class DashboardController extends Controller
     public function getAuditTrailActionChart(?string $from=null, ?string $till=null, ?int $registerId=null, ?int $schemaId=null): JSONResponse
     {
         try {
-            $fromDate = $from ? new \DateTime($from) : null;
-            $tillDate = $till ? new \DateTime($till) : null;
+            if ($from !== null) {
+                $fromDate = new \DateTime($from);
+            } else {
+                $fromDate = null;
+            }
+
+            if ($till !== null) {
+                $tillDate = new \DateTime($till);
+            } else {
+                $tillDate = null;
+            }
 
             $data = $this->dashboardService->getAuditTrailActionChartData($fromDate, $tillDate, $registerId, $schemaId);
             return new JSONResponse($data);

@@ -1,5 +1,5 @@
 <?php
-// phpcs:ignoreFile
+// phpcs:ignoreFile.
 /**
  * OpenRegister Migration
  *
@@ -53,7 +53,7 @@ class Version1Date20241030131427 extends SimpleMigrationStep
      * @param Closure(): ISchemaWrapper $schemaClosure
      * @param array                     $options
      *
-     * @return null|ISchemaWrapper
+     * @return ISchemaWrapper
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
@@ -62,7 +62,7 @@ class Version1Date20241030131427 extends SimpleMigrationStep
          */
         $schema = $schemaClosure();
 
-        // Update the openregister_schemas table
+        // Update the openregister_schemas table.
         $table = $schema->getTable('openregister_schemas');
         if ($table->hasColumn('hard_validation') === false) {
             $table->addColumn(name: 'hard_validation', typeName: Types::BOOLEAN, options: ['notnull' => true])->setDefault(default: false);
@@ -76,7 +76,7 @@ class Version1Date20241030131427 extends SimpleMigrationStep
             $table->addColumn(name: 'source', typeName: Types::STRING, options: ['notnull' => false])->setDefault(default: '');
         }
 
-        // Update the openregister_registers table
+        // Update the openregister_registers table.
         $table = $schema->getTable('openregister_registers');
         if ($table->hasColumn('source') === true) {
             $column = $table->getColumn('source');

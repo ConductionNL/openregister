@@ -107,7 +107,7 @@ class OrganisationCrudTest extends TestCase
     {
         parent::setUp();
         
-        // Create mock objects
+        // Create mock objects.
         $this->organisationMapper = $this->createMock(OrganisationMapper::class);
         $this->userSession = $this->createMock(IUserSession::class);
         $this->session = $this->createMock(ISession::class);
@@ -115,7 +115,7 @@ class OrganisationCrudTest extends TestCase
         $this->logger = $this->createMock(LoggerInterface::class);
         $this->mockUser = $this->createMock(IUser::class);
         
-        // Create service instance with mocked dependencies
+        // Create service instance with mocked dependencies.
         $this->organisationService = new OrganisationService(
             $this->organisationMapper,
             $this->userSession,
@@ -123,7 +123,7 @@ class OrganisationCrudTest extends TestCase
             $this->logger
         );
         
-        // Create controller instance with mocked dependencies
+        // Create controller instance with mocked dependencies.
         $this->organisationController = new OrganisationController(
             'openregister',
             $this->request,
@@ -163,18 +163,18 @@ class OrganisationCrudTest extends TestCase
      */
     public function testCreateNewOrganisation(): void
     {
-        // Arrange: Mock user session
+        // Arrange: Mock user session.
         $this->mockUser->method('getUID')->willReturn('alice');
         $this->userSession->method('getUser')->willReturn($this->mockUser);
         
-        // Mock: Request parameters
+        // Mock: Request parameters.
         $this->request->method('getParam')
             ->willReturnMap([
                 ['name', '', 'Acme Corporation'],
                 ['description', '', 'Test organisation for ACME Inc.']
             ]);
         
-        // Mock: Created organisation
+        // Mock: Created organisation.
         $createdOrg = new Organisation();
         $createdOrg->setName('Acme Corporation');
         $createdOrg->setDescription('Test organisation for ACME Inc.');
@@ -198,10 +198,10 @@ class OrganisationCrudTest extends TestCase
             }))
             ->willReturn($createdOrg);
 
-        // Act: Create organisation via controller
+        // Act: Create organisation via controller.
         $response = $this->organisationController->create('Acme Corporation', 'Test organisation for ACME Inc.');
 
-        // Assert: Response is successful
+        // Assert: Response is successful.
         $this->assertInstanceOf(JSONResponse::class, $response);
         $this->assertEquals(200, $response->getStatus());
         
@@ -224,13 +224,13 @@ class OrganisationCrudTest extends TestCase
      */
     public function testGetOrganisationDetails(): void
     {
-        // Arrange: Mock user session
+        // Arrange: Mock user session.
         $this->mockUser->method('getUID')->willReturn('alice');
         $this->userSession->method('getUser')->willReturn($this->mockUser);
         
         $organisationUuid = 'acme-uuid-123';
         
-        // Mock: Organisation exists and user has access
+        // Mock: Organisation exists and user has access.
         $organisation = new Organisation();
         $organisation->setName('Acme Corporation');
         $organisation->setDescription('Test organisation for ACME Inc.');
@@ -244,10 +244,10 @@ class OrganisationCrudTest extends TestCase
             ->with($organisationUuid)
             ->willReturn($organisation);
 
-        // Act: Get organisation details via service
+        // Act: Get organisation details via service.
         $result = $this->organisationService->getOrganisation($organisationUuid);
 
-        // Assert: Organisation details returned correctly
+        // Assert: Organisation details returned correctly.
         $this->assertInstanceOf(Organisation::class, $result);
         $this->assertEquals('Acme Corporation', $result->getName());
         $this->assertEquals('Test organisation for ACME Inc.', $result->getDescription());
@@ -268,13 +268,13 @@ class OrganisationCrudTest extends TestCase
      */
     public function testUpdateOrganisation(): void
     {
-        // Arrange: Mock user session (alice is owner)
+        // Arrange: Mock user session (alice is owner).
         $this->mockUser->method('getUID')->willReturn('alice');
         $this->userSession->method('getUser')->willReturn($this->mockUser);
         
         $organisationUuid = 'acme-uuid-123';
         
-        // Mock: Existing organisation
+        // Mock: Existing organisation.
         $existingOrg = new Organisation();
         $existingOrg->setName('Acme Corporation');
         $existingOrg->setDescription('Test organisation for ACME Inc.');
@@ -282,7 +282,7 @@ class OrganisationCrudTest extends TestCase
         $existingOrg->setOwner('alice');
         $existingOrg->addUser('alice');
         
-        // Mock: Updated organisation
+        // Mock: Updated organisation.
         $updatedOrg = clone $existingOrg;
         $updatedOrg->setName('ACME Corporation Ltd');
         $updatedOrg->setDescription('Updated description');
@@ -304,10 +304,10 @@ class OrganisationCrudTest extends TestCase
             }))
             ->willReturn($updatedOrg);
 
-        // Act: Update organisation via controller
+        // Act: Update organisation via controller.
         $response = $this->organisationController->update($organisationUuid, 'ACME Corporation Ltd', 'Updated description');
 
-        // Assert: Update successful
+        // Assert: Update successful.
         $this->assertInstanceOf(JSONResponse::class, $response);
         $this->assertEquals(200, $response->getStatus());
         
@@ -326,11 +326,11 @@ class OrganisationCrudTest extends TestCase
      */
     public function testSearchOrganisations(): void
     {
-        // Arrange: Mock user session
+        // Arrange: Mock user session.
         $this->mockUser->method('getUID')->willReturn('bob');
         $this->userSession->method('getUser')->willReturn($this->mockUser);
         
-        // Mock: Search results
+        // Mock: Search results.
         $acmeOrg = new Organisation();
         $acmeOrg->setName('ACME Corporation');
         $acmeOrg->setDescription('ACME Inc. organisation');
@@ -343,10 +343,10 @@ class OrganisationCrudTest extends TestCase
             ->with('ACME')
             ->willReturn([$acmeOrg]);
 
-        // Act: Search organisations via controller
+        // Act: Search organisations via controller.
         $response = $this->organisationController->search('ACME');
 
-        // Assert: Search results returned
+        // Assert: Search results returned.
         $this->assertInstanceOf(JSONResponse::class, $response);
         $this->assertEquals(200, $response->getStatus());
         
@@ -354,7 +354,7 @@ class OrganisationCrudTest extends TestCase
         $this->assertCount(1, $responseData);
         $this->assertEquals('ACME Corporation', $responseData[0]['name']);
         $this->assertEquals('ACME Inc. organisation', $responseData[0]['description']);
-        // Sensitive data like users should not be included in search results
+        // Sensitive data like users should not be included in search results.
         $this->assertArrayNotHasKey('users', $responseData[0]);
     }
 
@@ -368,11 +368,11 @@ class OrganisationCrudTest extends TestCase
      */
     public function testCreateOrganisationWithEmptyName(): void
     {
-        // Arrange: Mock user session
+        // Arrange: Mock user session.
         $this->mockUser->method('getUID')->willReturn('alice');
         $this->userSession->method('getUser')->willReturn($this->mockUser);
 
-        // Act & Assert: Attempt to create organisation with empty name should fail
+        // Act & Assert: Attempt to create organisation with empty name should fail.
         $response = $this->organisationController->create('', 'Invalid test');
 
         $this->assertInstanceOf(JSONResponse::class, $response);
@@ -393,14 +393,14 @@ class OrganisationCrudTest extends TestCase
      */
     public function testAccessOrganisationWithoutMembership(): void
     {
-        // Arrange: Mock user session (bob trying to access alice's org)
+        // Arrange: Mock user session (bob trying to access alice's org).
         $bobUser = $this->createMock(IUser::class);
         $bobUser->method('getUID')->willReturn('bob');
         $this->userSession->method('getUser')->willReturn($bobUser);
         
         $organisationUuid = 'alice-private-org-uuid';
         
-        // Mock: Organisation exists but bob is not a member
+        // Mock: Organisation exists but bob is not a member.
         $aliceOrg = new Organisation();
         $aliceOrg->setName('Alice Private Org');
         $aliceOrg->setOwner('alice');
@@ -412,10 +412,10 @@ class OrganisationCrudTest extends TestCase
             ->with($organisationUuid)
             ->willReturn($aliceOrg);
 
-        // Act: Attempt to access organisation via controller
+        // Act: Attempt to access organisation via controller.
         $response = $this->organisationController->show($organisationUuid);
 
-        // Assert: Access denied
+        // Assert: Access denied.
         $this->assertInstanceOf(JSONResponse::class, $response);
         $this->assertEquals(403, $response->getStatus());
         
@@ -434,14 +434,14 @@ class OrganisationCrudTest extends TestCase
      */
     public function testUpdateOrganisationWithoutAccess(): void
     {
-        // Arrange: Mock user session (bob trying to update alice's org)
+        // Arrange: Mock user session (bob trying to update alice's org).
         $bobUser = $this->createMock(IUser::class);
         $bobUser->method('getUID')->willReturn('bob');
         $this->userSession->method('getUser')->willReturn($bobUser);
         
         $organisationUuid = 'alice-org-uuid';
         
-        // Mock: Organisation exists, bob is member but not owner
+        // Mock: Organisation exists, bob is member but not owner.
         $aliceOrg = new Organisation();
         $aliceOrg->setName('Alice Organization');
         $aliceOrg->setOwner('alice'); // Alice is owner, not Bob
@@ -453,10 +453,10 @@ class OrganisationCrudTest extends TestCase
             ->with($organisationUuid)
             ->willReturn($aliceOrg);
 
-        // Act: Attempt to update organisation via controller
+        // Act: Attempt to update organisation via controller.
         $response = $this->organisationController->update($organisationUuid, 'Hacked Name', 'Unauthorized update');
 
-        // Assert: Update denied
+        // Assert: Update denied.
         $this->assertInstanceOf(JSONResponse::class, $response);
         $this->assertEquals(403, $response->getStatus());
         
@@ -475,11 +475,11 @@ class OrganisationCrudTest extends TestCase
      */
     public function testOrganisationCreationMetadata(): void
     {
-        // Arrange: Mock user session
+        // Arrange: Mock user session.
         $this->mockUser->method('getUID')->willReturn('diana');
         $this->userSession->method('getUser')->willReturn($this->mockUser);
         
-        // Mock: Organisation creation
+        // Mock: Organisation creation.
         $createdOrg = new Organisation();
         $createdOrg->setName('Diana Corp');
         $createdOrg->setDescription('Diana\'s organisation');
@@ -496,10 +496,10 @@ class OrganisationCrudTest extends TestCase
             ->method('insert')
             ->willReturn($createdOrg);
 
-        // Act: Create organisation
+        // Act: Create organisation.
         $response = $this->organisationController->create('Diana Corp', 'Diana\'s organisation');
 
-        // Assert: Metadata is properly set
+        // Assert: Metadata is properly set.
         $this->assertInstanceOf(JSONResponse::class, $response);
         $responseData = $response->getData();
         
@@ -522,7 +522,7 @@ class OrganisationCrudTest extends TestCase
      */
     public function testOrganisationSearchMultipleResults(): void
     {
-        // Arrange: Mock multiple search results
+        // Arrange: Mock multiple search results.
         $tech1 = new Organisation();
         $tech1->setName('Tech Startup');
         $tech1->setDescription('Technology startup');
@@ -539,17 +539,17 @@ class OrganisationCrudTest extends TestCase
             ->with('Tech')
             ->willReturn([$tech1, $tech2]);
 
-        // Act: Search for 'Tech'
+        // Act: Search for 'Tech'.
         $response = $this->organisationController->search('Tech');
 
-        // Assert: Multiple results returned
+        // Assert: Multiple results returned.
         $this->assertInstanceOf(JSONResponse::class, $response);
         $this->assertEquals(200, $response->getStatus());
         
         $responseData = $response->getData();
         $this->assertCount(2, $responseData);
         
-        // Verify both results present
+        // Verify both results present.
         $names = array_column($responseData, 'name');
         $this->assertContains('Tech Startup', $names);
         $this->assertContains('Tech Solutions', $names);
@@ -565,7 +565,7 @@ class OrganisationCrudTest extends TestCase
      */
     public function testOrganisationNotFound(): void
     {
-        // Arrange: Mock organisation not found
+        // Arrange: Mock organisation not found.
         $nonExistentUuid = 'non-existent-uuid';
         
         $this->organisationMapper
@@ -574,10 +574,10 @@ class OrganisationCrudTest extends TestCase
             ->with($nonExistentUuid)
             ->willThrowException(new DoesNotExistException('Organisation not found'));
 
-        // Act: Attempt to get non-existent organisation
+        // Act: Attempt to get non-existent organisation.
         $response = $this->organisationController->show($nonExistentUuid);
 
-        // Assert: Not found error
+        // Assert: Not found error.
         $this->assertInstanceOf(JSONResponse::class, $response);
         $this->assertEquals(404, $response->getStatus());
         
@@ -596,26 +596,26 @@ class OrganisationCrudTest extends TestCase
      */
     public function testOrganisationToString(): void
     {
-        // Test 1: Organisation with name
+        // Test 1: Organisation with name.
         $org1 = new Organisation();
         $org1->setName('Test Organisation');
         $this->assertEquals('Test Organisation', (string) $org1);
 
-        // Test 2: Organisation with slug but no name
+        // Test 2: Organisation with slug but no name.
         $org2 = new Organisation();
         $org2->setSlug('test-org');
         $this->assertEquals('test-org', (string) $org2);
 
-        // Test 3: Organisation with neither name nor slug
+        // Test 3: Organisation with neither name nor slug.
         $org3 = new Organisation();
         $this->assertEquals('Organisation #unknown', (string) $org3);
 
-        // Test 4: Organisation with ID
+        // Test 4: Organisation with ID.
         $org4 = new Organisation();
         $org4->setId(123);
         $this->assertEquals('Organisation #123', (string) $org4);
 
-        // Test 5: Organisation with name and slug (should prioritize name)
+        // Test 5: Organisation with name and slug (should prioritize name).
         $org5 = new Organisation();
         $org5->setName('Priority Name');
         $org5->setSlug('priority-slug');

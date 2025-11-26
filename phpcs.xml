@@ -3,6 +3,11 @@
     <description>The coding standard for PHP_CodeSniffer itself, for more config -> for https://github.com/squizlabs/PHP_CodeSniffer/wiki/Configuration-Options.</description>
 
     <file>lib</file>
+    
+    <!-- Exclude external and vendor files -->
+    <exclude-pattern>*/vendor/*</exclude-pattern>
+    <exclude-pattern>*/node_modules/*</exclude-pattern>
+    <exclude-pattern>composer-setup.php</exclude-pattern>
 
     <arg name="basepath" value="."/>
     <arg name="colors"/>

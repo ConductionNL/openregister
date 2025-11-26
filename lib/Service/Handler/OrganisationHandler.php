@@ -57,7 +57,7 @@ class OrganisationHandler
     public function __construct(OrganisationMapper $organisationMapper, LoggerInterface $logger)
     {
         $this->organisationMapper = $organisationMapper;
-        $this->logger             = $logger;
+        $this->logger = $logger;
 
     }//end __construct()
 
@@ -84,15 +84,16 @@ class OrganisationHandler
      * @param array       $data  The organisation data
      * @param string|null $owner The owner of the organisation
      *
-     * @return Organisation|null The imported organisation or null if skipped
+     * @return Organisation The imported organisation or null if skipped
+     *
      * @throws Exception If import fails
      */
-    public function import(array $data, ?string $owner = null): ?Organisation
+    public function import(array $data, ?string $owner=null): Organisation
     {
         try {
             unset($data['id'], $data['uuid']);
 
-            // Check if organisation already exists by title
+            // Check if organisation already exists by title.
             $existingOrganisations = $this->organisationMapper->findAll();
             $existingOrganisation  = null;
             foreach ($existingOrganisations as $organisation) {
@@ -103,7 +104,7 @@ class OrganisationHandler
             }
 
             if ($existingOrganisation !== null) {
-                // Update existing organisation
+                // Update existing organisation.
                 $existingOrganisation->hydrate($data);
                 if ($owner !== null) {
                     $existingOrganisation->setOwner($owner);
@@ -112,7 +113,7 @@ class OrganisationHandler
                 return $this->organisationMapper->update($existingOrganisation);
             }
 
-            // Create new organisation
+            // Create new organisation.
             $organisation = new Organisation();
             $organisation->hydrate($data);
             if ($owner !== null) {
@@ -129,5 +130,3 @@ class OrganisationHandler
 
 
 }//end class
-
-

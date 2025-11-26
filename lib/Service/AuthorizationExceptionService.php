@@ -38,10 +38,10 @@ use InvalidArgumentException;
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
- * @author   Conduction Development Team <info@conduction.nl>
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @version  GIT: <git_id>
- * @link     https://www.OpenRegister.app
+ * @author  Conduction Development Team <info@conduction.nl>
+ * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version GIT: <git_id>
+ * @link    https://www.OpenRegister.app
  */
 class AuthorizationExceptionService
 {
@@ -117,7 +117,7 @@ class AuthorizationExceptionService
         IUserSession $userSession,
         IGroupManager $groupManager,
         LoggerInterface $logger,
-        ?ICacheFactory $cacheFactory = null
+        ?ICacheFactory $cacheFactory=null
     ) {
         $this->mapper       = $mapper;
         $this->userSession  = $userSession;
@@ -125,14 +125,17 @@ class AuthorizationExceptionService
         $this->logger       = $logger;
         $this->cacheFactory = $cacheFactory;
 
-        // Initialize cache if available
+        // Initialize cache if available.
         if ($this->cacheFactory !== null) {
             try {
                 $this->cache = $this->cacheFactory->createDistributed('openregister_auth_exceptions');
             } catch (\Exception $e) {
-                $this->logger->warning('Failed to initialize authorization exception cache', [
-                    'exception' => $e->getMessage(),
-                ]);
+                $this->logger->warning(
+                        'Failed to initialize authorization exception cache',
+                        [
+                            'exception' => $e->getMessage(),
+                        ]
+                        );
                 $this->cache = null;
             }
         }
@@ -162,22 +165,22 @@ class AuthorizationExceptionService
         string $subjectType,
         string $subjectId,
         string $action,
-        ?string $schemaUuid = null,
-        ?string $registerUuid = null,
-        ?string $organizationUuid = null,
-        int $priority = 0,
-        ?string $description = null
+        ?string $schemaUuid=null,
+        ?string $registerUuid=null,
+        ?string $organizationUuid=null,
+        int $priority=0,
+        ?string $description=null
     ): AuthorizationException {
-        // Get current user
+        // Get current user.
         $user = $this->userSession->getUser();
         if ($user === null) {
             throw new InvalidArgumentException('No authenticated user to create authorization exception');
         }
 
-        // Validate input parameters
+        // Validate input parameters.
         $this->validateExceptionParameters($type, $subjectType, $subjectId, $action);
 
-        // Create the exception entity
+        // Create the exception entity.
         $exception = new AuthorizationException();
         $exception->setType($type);
         $exception->setSubjectType($subjectType);
@@ -189,18 +192,21 @@ class AuthorizationExceptionService
         $exception->setPriority($priority);
         $exception->setDescription($description);
 
-        // Save to database
+        // Save to database.
         $createdException = $this->mapper->createException($exception, $user->getUID());
 
-        $this->logger->info('Authorization exception created', [
-            'uuid'             => $createdException->getUuid(),
-            'type'             => $type,
-            'subject_type'     => $subjectType,
-            'subject_id'       => $subjectId,
-            'action'           => $action,
-            'schema_uuid'      => $schemaUuid,
-            'created_by'       => $user->getUID(),
-        ]);
+        $this->logger->info(
+                'Authorization exception created',
+                [
+                    'uuid'         => $createdException->getUuid(),
+                    'type'         => $type,
+                    'subject_type' => $subjectType,
+                    'subject_id'   => $subjectId,
+                    'action'       => $action,
+                    'schema_uuid'  => $schemaUuid,
+                    'created_by'   => $user->getUID(),
+                ]
+                );
 
         return $createdException;
 
@@ -226,14 +232,14 @@ class AuthorizationExceptionService
     public function evaluateUserPermissionOptimized(
         string $userId,
         string $action,
-        ?string $schemaUuid = null,
-        ?string $registerUuid = null,
-        ?string $organizationUuid = null
+        ?string $schemaUuid=null,
+        ?string $registerUuid=null,
+        ?string $organizationUuid=null
     ): ?bool {
-        // Create cache key for this specific permission check
+        // Create cache key for this specific permission check.
         $cacheKey = $this->buildPermissionCacheKey($userId, $action, $schemaUuid, $registerUuid, $organizationUuid);
-        
-        // Try distributed cache first
+
+        // Try distributed cache first.
         if ($this->cache !== null) {
             $cached = $this->cache->get($cacheKey);
             if ($cached !== null) {
@@ -241,10 +247,10 @@ class AuthorizationExceptionService
             }
         }
 
-        // If not cached, evaluate and cache result
+        // If not cached, evaluate and cache result.
         $result = $this->evaluateUserPermission($userId, $action, $schemaUuid, $registerUuid, $organizationUuid);
-        
-        // Cache the result for future requests (5 minutes TTL)
+
+        // Cache the result for future requests (5 minutes TTL).
         if ($this->cache !== null) {
             $cacheValue = $result === true ? 'true' : ($result === false ? 'false' : 'null');
             $this->cache->set($cacheKey, $cacheValue, 300);
@@ -269,11 +275,11 @@ class AuthorizationExceptionService
     private function buildPermissionCacheKey(
         string $userId,
         string $action,
-        ?string $schemaUuid = null,
-        ?string $registerUuid = null,
-        ?string $organizationUuid = null
+        ?string $schemaUuid=null,
+        ?string $registerUuid=null,
+        ?string $organizationUuid=null
     ): string {
-        return 'auth_perm_' . md5($userId . '_' . $action . '_' . ($schemaUuid ?? '') . '_' . ($registerUuid ?? '') . '_' . ($organizationUuid ?? ''));
+        return 'auth_perm_'.md5($userId.'_'.$action.'_'.($schemaUuid ?? '').'_'.($registerUuid ?? '').'_'.($organizationUuid ?? ''));
 
     }//end buildPermissionCacheKey()
 
@@ -287,13 +293,13 @@ class AuthorizationExceptionService
      */
     public function userHasExceptionsOptimized(string $userId): bool
     {
-        // Check in-memory cache first
+        // Check in-memory cache first.
         if (isset($this->userExceptionCache[$userId])) {
             return !empty($this->userExceptionCache[$userId]);
         }
 
-        // Check distributed cache
-        $cacheKey = 'user_has_exceptions_' . $userId;
+        // Check distributed cache.
+        $cacheKey = 'user_has_exceptions_'.$userId;
         if ($this->cache !== null) {
             $cached = $this->cache->get($cacheKey);
             if ($cached !== null) {
@@ -301,9 +307,9 @@ class AuthorizationExceptionService
             }
         }
 
-        // Compute and cache result
+        // Compute and cache result.
         $hasExceptions = $this->userHasExceptions($userId);
-        
+
         if ($this->cache !== null) {
             $this->cache->set($cacheKey, $hasExceptions ? 'true' : 'false', 300);
         }
@@ -322,15 +328,15 @@ class AuthorizationExceptionService
      */
     private function getUserGroupsCached(string $userId): array
     {
-        // Check in-memory cache first
+        // Check in-memory cache first.
         if (isset($this->groupMembershipCache[$userId])) {
             return $this->groupMembershipCache[$userId];
         }
 
-        // Get user object and groups
-        $userObj = $this->groupManager->get($userId);
+        // Get user object and groups.
+        $userObj    = $this->groupManager->get($userId);
         $userGroups = [];
-        
+
         if ($userObj !== null) {
             $groups = $this->groupManager->getUserGroups($userObj);
             foreach ($groups as $group) {
@@ -338,7 +344,7 @@ class AuthorizationExceptionService
             }
         }
 
-        // Cache in memory for this request
+        // Cache in memory for this request.
         $this->groupMembershipCache[$userId] = $userGroups;
 
         return $userGroups;
@@ -357,32 +363,35 @@ class AuthorizationExceptionService
      *
      * @return void
      */
-    public function preloadUserExceptions(array $userIds, string $action = ''): void
+    public function preloadUserExceptions(array $userIds, string $action=''): void
     {
         if (empty($userIds)) {
             return;
         }
 
-        $this->logger->debug('Preloading exceptions for users', [
-            'user_count' => count($userIds),
-            'action' => $action,
-        ]);
+        $this->logger->debug(
+                'Preloading exceptions for users',
+                [
+                    'user_count' => count($userIds),
+                    'action'     => $action,
+                ]
+                );
 
-        // Load user exceptions in batch
+        // Load user exceptions in batch.
         foreach ($userIds as $userId) {
             if (!isset($this->userExceptionCache[$userId])) {
                 $this->userExceptionCache[$userId] = $this->mapper->findBySubject(
-                    AuthorizationException::SUBJECT_TYPE_USER, 
+                    AuthorizationException::SUBJECT_TYPE_USER,
                     $userId
                 );
             }
         }
 
-        // Also preload group exceptions for all users
+        // Also preload group exceptions for all users.
         foreach ($userIds as $userId) {
             $userGroups = $this->getUserGroupsCached($userId);
             foreach ($userGroups as $groupId) {
-                $groupCacheKey = 'group_' . $groupId;
+                $groupCacheKey = 'group_'.$groupId;
                 if (!isset($this->userExceptionCache[$groupCacheKey])) {
                     $this->userExceptionCache[$groupCacheKey] = $this->mapper->findBySubject(
                         AuthorizationException::SUBJECT_TYPE_GROUP,
@@ -402,9 +411,9 @@ class AuthorizationExceptionService
      */
     public function clearCache(): void
     {
-        $this->userExceptionCache = [];
+        $this->userExceptionCache   = [];
         $this->groupMembershipCache = [];
-        
+
         if ($this->cache !== null) {
             $this->cache->clear();
         }
@@ -422,10 +431,10 @@ class AuthorizationExceptionService
     public function getPerformanceMetrics(): array
     {
         return [
-            'memory_cache_entries' => count($this->userExceptionCache),
-            'group_cache_entries' => count($this->groupMembershipCache),
+            'memory_cache_entries'        => count($this->userExceptionCache),
+            'group_cache_entries'         => count($this->groupMembershipCache),
             'distributed_cache_available' => $this->cache !== null,
-            'cache_factory_available' => $this->cacheFactory !== null,
+            'cache_factory_available'     => $this->cacheFactory !== null,
         ];
 
     }//end getPerformanceMetrics()
@@ -451,11 +460,11 @@ class AuthorizationExceptionService
     public function evaluateUserPermission(
         string $userId,
         string $action,
-        ?string $schemaUuid = null,
-        ?string $registerUuid = null,
-        ?string $organizationUuid = null
+        ?string $schemaUuid=null,
+        ?string $registerUuid=null,
+        ?string $organizationUuid=null
     ): ?bool {
-        // Get all applicable exceptions for this user
+        // Get all applicable exceptions for this user.
         $userExceptions = $this->mapper->findApplicableExceptions(
             AuthorizationException::SUBJECT_TYPE_USER,
             $userId,
@@ -465,12 +474,12 @@ class AuthorizationExceptionService
             $organizationUuid
         );
 
-        // Get user's groups using cached method and find applicable group exceptions
-        $userGroups = $this->getUserGroupsCached($userId);
+        // Get user's groups using cached method and find applicable group exceptions.
+        $userGroups      = $this->getUserGroupsCached($userId);
         $groupExceptions = [];
-        
+
         foreach ($userGroups as $groupId) {
-            $exceptions = $this->mapper->findApplicableExceptions(
+            $exceptions      = $this->mapper->findApplicableExceptions(
                 AuthorizationException::SUBJECT_TYPE_GROUP,
                 $groupId,
                 $action,
@@ -481,42 +490,52 @@ class AuthorizationExceptionService
             $groupExceptions = array_merge($groupExceptions, $exceptions);
         }
 
-        // Combine all exceptions and sort by priority
+        // Combine all exceptions and sort by priority.
         $allExceptions = array_merge($userExceptions, $groupExceptions);
-        usort($allExceptions, function (AuthorizationException $a, AuthorizationException $b): int {
-            return $b->getPriority() <=> $a->getPriority(); // Sort by priority descending
-        });
+        usort(
+                $allExceptions,
+                function (AuthorizationException $a, AuthorizationException $b): int {
+                    return $b->getPriority() <=> $a->getPriority();
+                    // Sort by priority descending.
+                }
+                );
 
-        // Evaluate exceptions in priority order
+        // Evaluate exceptions in priority order.
         foreach ($allExceptions as $exception) {
             if ($exception->isExclusion()) {
-                // Exclusion found - user is denied access
-                $this->logger->debug('Authorization exclusion applied', [
-                    'user_id'          => $userId,
-                    'action'           => $action,
-                    'exception_uuid'   => $exception->getUuid(),
-                    'subject_type'     => $exception->getSubjectType(),
-                    'subject_id'       => $exception->getSubjectId(),
-                    'priority'         => $exception->getPriority(),
-                ]);
+                // Exclusion found - user is denied access.
+                $this->logger->debug(
+                        'Authorization exclusion applied',
+                        [
+                            'user_id'        => $userId,
+                            'action'         => $action,
+                            'exception_uuid' => $exception->getUuid(),
+                            'subject_type'   => $exception->getSubjectType(),
+                            'subject_id'     => $exception->getSubjectId(),
+                            'priority'       => $exception->getPriority(),
+                        ]
+                        );
                 return false;
             }
 
             if ($exception->isInclusion()) {
-                // Inclusion found - user is granted access
-                $this->logger->debug('Authorization inclusion applied', [
-                    'user_id'          => $userId,
-                    'action'           => $action,
-                    'exception_uuid'   => $exception->getUuid(),
-                    'subject_type'     => $exception->getSubjectType(),
-                    'subject_id'       => $exception->getSubjectId(),
-                    'priority'         => $exception->getPriority(),
-                ]);
+                // Inclusion found - user is granted access.
+                $this->logger->debug(
+                        'Authorization inclusion applied',
+                        [
+                            'user_id'        => $userId,
+                            'action'         => $action,
+                            'exception_uuid' => $exception->getUuid(),
+                            'subject_type'   => $exception->getSubjectType(),
+                            'subject_id'     => $exception->getSubjectId(),
+                            'priority'       => $exception->getPriority(),
+                        ]
+                        );
                 return true;
             }
-        }
+        }//end foreach
 
-        // No applicable exceptions found - fall back to normal RBAC
+        // No applicable exceptions found - fall back to normal RBAC.
         return null;
 
     }//end evaluateUserPermission()
@@ -532,12 +551,12 @@ class AuthorizationExceptionService
     public function userHasExceptions(string $userId): bool
     {
         $userExceptions = $this->mapper->findBySubject(AuthorizationException::SUBJECT_TYPE_USER, $userId);
-        
+
         if (count($userExceptions) > 0) {
             return true;
         }
 
-        // Check group exceptions using cached group lookup
+        // Check group exceptions using cached group lookup.
         $userGroups = $this->getUserGroupsCached($userId);
         foreach ($userGroups as $groupId) {
             $groupExceptions = $this->mapper->findBySubject(AuthorizationException::SUBJECT_TYPE_GROUP, $groupId);
@@ -560,23 +579,26 @@ class AuthorizationExceptionService
      */
     public function getUserExceptions(string $userId): array
     {
-        // Get direct user exceptions
+        // Get direct user exceptions.
         $userExceptions = $this->mapper->findBySubject(AuthorizationException::SUBJECT_TYPE_USER, $userId);
 
-        // Get group exceptions using cached group lookup
-        $userGroups = $this->getUserGroupsCached($userId);
+        // Get group exceptions using cached group lookup.
+        $userGroups      = $this->getUserGroupsCached($userId);
         $groupExceptions = [];
-        
+
         foreach ($userGroups as $groupId) {
-            $exceptions = $this->mapper->findBySubject(AuthorizationException::SUBJECT_TYPE_GROUP, $groupId);
+            $exceptions      = $this->mapper->findBySubject(AuthorizationException::SUBJECT_TYPE_GROUP, $groupId);
             $groupExceptions = array_merge($groupExceptions, $exceptions);
         }
 
-        // Combine and sort by priority
+        // Combine and sort by priority.
         $allExceptions = array_merge($userExceptions, $groupExceptions);
-        usort($allExceptions, function (AuthorizationException $a, AuthorizationException $b): int {
-            return $b->getPriority() <=> $a->getPriority();
-        });
+        usort(
+                $allExceptions,
+                function (AuthorizationException $a, AuthorizationException $b): int {
+                    return $b->getPriority() <=> $a->getPriority();
+                }
+                );
 
         return $allExceptions;
 
@@ -601,33 +623,33 @@ class AuthorizationExceptionService
         string $subjectId,
         string $action
     ): void {
-        // Validate type
+        // Validate type.
         if (!in_array($type, AuthorizationException::getValidTypes(), true)) {
             throw new InvalidArgumentException(
-                'Invalid exception type: ' . $type . '. Valid types: ' . implode(', ', AuthorizationException::getValidTypes())
+                'Invalid exception type: '.$type.'. Valid types: '.implode(', ', AuthorizationException::getValidTypes())
             );
         }
 
-        // Validate subject type
+        // Validate subject type.
         if (!in_array($subjectType, AuthorizationException::getValidSubjectTypes(), true)) {
             throw new InvalidArgumentException(
-                'Invalid subject type: ' . $subjectType . '. Valid types: ' . implode(', ', AuthorizationException::getValidSubjectTypes())
+                'Invalid subject type: '.$subjectType.'. Valid types: '.implode(', ', AuthorizationException::getValidSubjectTypes())
             );
         }
 
-        // Validate action
+        // Validate action.
         if (!in_array($action, AuthorizationException::getValidActions(), true)) {
             throw new InvalidArgumentException(
-                'Invalid action: ' . $action . '. Valid actions: ' . implode(', ', AuthorizationException::getValidActions())
+                'Invalid action: '.$action.'. Valid actions: '.implode(', ', AuthorizationException::getValidActions())
             );
         }
 
-        // Validate subject exists
+        // Validate subject exists.
         if ($subjectType === AuthorizationException::SUBJECT_TYPE_USER) {
-            // @todo Could add user existence validation here
-        } elseif ($subjectType === AuthorizationException::SUBJECT_TYPE_GROUP) {
+            // @todo Could add user existence validation here.
+        } else if ($subjectType === AuthorizationException::SUBJECT_TYPE_GROUP) {
             if (!$this->groupManager->groupExists($subjectId)) {
-                throw new InvalidArgumentException('Group does not exist: ' . $subjectId);
+                throw new InvalidArgumentException('Group does not exist: '.$subjectId);
             }
         }
 
@@ -635,4 +657,3 @@ class AuthorizationExceptionService
 
 
 }//end class
-

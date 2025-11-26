@@ -22,40 +22,71 @@ use DateTime;
 use JsonSerializable;
 use OCP\AppFramework\Db\Entity;
 
+/**
+ * DataAccessProfile entity class.
+ *
+ * @method string|null getUuid()
+ * @method void setUuid(?string $uuid)
+ * @method string|null getName()
+ * @method void setName(?string $name)
+ * @method string|null getDescription()
+ * @method void setDescription(?string $description)
+ * @method array|null getPermissions()
+ * @method void setPermissions(?array $permissions)
+ * @method DateTime|null getCreated()
+ * @method void setCreated(?DateTime $created)
+ * @method DateTime|null getUpdated()
+ * @method void setUpdated(?DateTime $updated)
+ */
 class DataAccessProfile extends Entity implements JsonSerializable
 {
 
     /**
+     * UUID.
+     *
      * @var string|null
      */
     protected ?string $uuid = null;
 
     /**
+     * Name.
+     *
      * @var string|null
      */
     protected ?string $name = null;
 
     /**
+     * Description.
+     *
      * @var string|null
      */
     protected ?string $description = null;
 
     /**
+     * Permissions.
+     *
      * @var array|null
      */
     protected ?array $permissions = [];
 
     /**
+     * Created timestamp.
+     *
      * @var DateTime|null
      */
     protected ?DateTime $created = null;
 
     /**
+     * Updated timestamp.
+     *
      * @var DateTime|null
      */
     protected ?DateTime $updated = null;
 
 
+    /**
+     * Constructor.
+     */
     public function __construct()
     {
         $this->addType('uuid', 'string');
@@ -68,16 +99,31 @@ class DataAccessProfile extends Entity implements JsonSerializable
     }//end __construct()
 
 
+    /**
+     * JSON serialization.
+     *
+     * @return array<string,mixed>
+     */
     public function jsonSerialize(): array
     {
+        $created = null;
+        if ($this->created !== null) {
+            $created = $this->created->format('c');
+        }
+
+        $updated = null;
+        if ($this->updated !== null) {
+            $updated = $this->updated->format('c');
+        }
+
         return [
             'id'          => $this->id,
             'uuid'        => $this->uuid,
             'name'        => $this->name,
             'description' => $this->description,
             'permissions' => $this->permissions,
-            'created'     => $this->created ? $this->created->format('c') : null,
-            'updated'     => $this->updated ? $this->updated->format('c') : null,
+            'created'     => $created,
+            'updated'     => $updated,
         ];
 
     }//end jsonSerialize()
@@ -93,22 +139,22 @@ class DataAccessProfile extends Entity implements JsonSerializable
      */
     public function __toString(): string
     {
-        // Return the name if available, otherwise return a descriptive string
+        // Return the name if available, otherwise return a descriptive string.
         if ($this->name !== null && $this->name !== '') {
             return $this->name;
         }
 
-        // Fallback to UUID if available
+        // Fallback to UUID if available.
         if ($this->uuid !== null && $this->uuid !== '') {
             return $this->uuid;
         }
 
-        // Fallback to ID if available
+        // Fallback to ID if available.
         if ($this->id !== null) {
             return 'DataAccessProfile #'.$this->id;
         }
 
-        // Final fallback
+        // Final fallback.
         return 'Data Access Profile';
 
     }//end __toString()

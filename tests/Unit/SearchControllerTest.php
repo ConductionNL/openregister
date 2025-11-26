@@ -40,29 +40,29 @@ class SearchControllerTest extends TestCase
      */
     public function testSearchWithSingleTerm(): void
     {
-        // Create mock objects
+        // Create mock objects.
         $request = $this->createMock(IRequest::class);
         $searchService = $this->createMock(ISearch::class);
 
-        // Set up request mock to return a single search term
+        // Set up request mock to return a single search term.
         $request->expects($this->once())
             ->method('getParam')
             ->with('query', '')
             ->willReturn('test');
 
-        // Set up search service mock to return empty results
+        // Set up search service mock to return empty results.
         $searchService->expects($this->once())
             ->method('search')
             ->with('*test*')
             ->willReturn([]);
 
-        // Create controller instance
+        // Create controller instance.
         $controller = new SearchController('openregister', $request, $searchService);
 
-        // Execute search
+        // Execute search.
         $response = $controller->search();
 
-        // Verify response
+        // Verify response.
         $this->assertInstanceOf(JSONResponse::class, $response);
         $this->assertEquals([], $response->getData());
 
@@ -76,11 +76,11 @@ class SearchControllerTest extends TestCase
      */
     public function testSearchWithCommaSeparatedTerms(): void
     {
-        // Create mock objects
+        // Create mock objects.
         $request = $this->createMock(IRequest::class);
         $searchService = $this->createMock(ISearch::class);
 
-        // Set up request mock to return comma-separated search terms
+        // Set up request mock to return comma-separated search terms.
         $request->expects($this->exactly(2))
             ->method('getParam')
             ->willReturnMap([
@@ -88,19 +88,19 @@ class SearchControllerTest extends TestCase
                 ['_search', [], []]
             ]);
 
-        // Set up search service mock to return empty results
+        // Set up search service mock to return empty results.
         $searchService->expects($this->once())
             ->method('search')
             ->with('*customer* OR *service* OR *important*')
             ->willReturn([]);
 
-        // Create controller instance
+        // Create controller instance.
         $controller = new SearchController('openregister', $request, $searchService);
 
-        // Execute search
+        // Execute search.
         $response = $controller->search();
 
-        // Verify response
+        // Verify response.
         $this->assertInstanceOf(JSONResponse::class, $response);
         $this->assertEquals([], $response->getData());
 
@@ -114,11 +114,11 @@ class SearchControllerTest extends TestCase
      */
     public function testSearchWithArrayParameter(): void
     {
-        // Create mock objects
+        // Create mock objects.
         $request = $this->createMock(IRequest::class);
         $searchService = $this->createMock(ISearch::class);
 
-        // Set up request mock to return array search terms
+        // Set up request mock to return array search terms.
         $request->expects($this->exactly(2))
             ->method('getParam')
             ->willReturnMap([
@@ -126,19 +126,19 @@ class SearchControllerTest extends TestCase
                 ['_search', [], ['customer', 'service', 'important']]
             ]);
 
-        // Set up search service mock to return empty results
+        // Set up search service mock to return empty results.
         $searchService->expects($this->once())
             ->method('search')
             ->with('*customer* OR *service* OR *important*')
             ->willReturn([]);
 
-        // Create controller instance
+        // Create controller instance.
         $controller = new SearchController('openregister', $request, $searchService);
 
-        // Execute search
+        // Execute search.
         $response = $controller->search();
 
-        // Verify response
+        // Verify response.
         $this->assertInstanceOf(JSONResponse::class, $response);
         $this->assertEquals([], $response->getData());
 
@@ -152,11 +152,11 @@ class SearchControllerTest extends TestCase
      */
     public function testSearchWithCaseInsensitiveTerms(): void
     {
-        // Create mock objects
+        // Create mock objects.
         $request = $this->createMock(IRequest::class);
         $searchService = $this->createMock(ISearch::class);
 
-        // Set up request mock to return mixed case search terms
+        // Set up request mock to return mixed case search terms.
         $request->expects($this->exactly(2))
             ->method('getParam')
             ->willReturnMap([
@@ -164,19 +164,19 @@ class SearchControllerTest extends TestCase
                 ['_search', [], []]
             ]);
 
-        // Set up search service mock to return empty results
+        // Set up search service mock to return empty results.
         $searchService->expects($this->once())
             ->method('search')
             ->with('*test* OR *user* OR *admin*')
             ->willReturn([]);
 
-        // Create controller instance
+        // Create controller instance.
         $controller = new SearchController('openregister', $request, $searchService);
 
-        // Execute search
+        // Execute search.
         $response = $controller->search();
 
-        // Verify response
+        // Verify response.
         $this->assertInstanceOf(JSONResponse::class, $response);
         $this->assertEquals([], $response->getData());
 
@@ -190,11 +190,11 @@ class SearchControllerTest extends TestCase
      */
     public function testSearchWithEmptyTerms(): void
     {
-        // Create mock objects
+        // Create mock objects.
         $request = $this->createMock(IRequest::class);
         $searchService = $this->createMock(ISearch::class);
 
-        // Set up request mock to return empty search terms
+        // Set up request mock to return empty search terms.
         $request->expects($this->exactly(2))
             ->method('getParam')
             ->willReturnMap([
@@ -202,19 +202,19 @@ class SearchControllerTest extends TestCase
                 ['_search', [], []]
             ]);
 
-        // Set up search service mock to return empty results
+        // Set up search service mock to return empty results.
         $searchService->expects($this->once())
             ->method('search')
             ->with('')
             ->willReturn([]);
 
-        // Create controller instance
+        // Create controller instance.
         $controller = new SearchController('openregister', $request, $searchService);
 
-        // Execute search
+        // Execute search.
         $response = $controller->search();
 
-        // Verify response
+        // Verify response.
         $this->assertInstanceOf(JSONResponse::class, $response);
         $this->assertEquals([], $response->getData());
 
@@ -228,11 +228,11 @@ class SearchControllerTest extends TestCase
      */
     public function testSearchWithPartialMatches(): void
     {
-        // Create mock objects
+        // Create mock objects.
         $request = $this->createMock(IRequest::class);
         $searchService = $this->createMock(ISearch::class);
 
-        // Set up request mock to return partial search terms
+        // Set up request mock to return partial search terms.
         $request->expects($this->exactly(2))
             ->method('getParam')
             ->willReturnMap([
@@ -240,19 +240,19 @@ class SearchControllerTest extends TestCase
                 ['_search', [], []]
             ]);
 
-        // Set up search service mock to return empty results
+        // Set up search service mock to return empty results.
         $searchService->expects($this->once())
             ->method('search')
             ->with('*tes* OR *use* OR *adm*')
             ->willReturn([]);
 
-        // Create controller instance
+        // Create controller instance.
         $controller = new SearchController('openregister', $request, $searchService);
 
-        // Execute search
+        // Execute search.
         $response = $controller->search();
 
-        // Verify response
+        // Verify response.
         $this->assertInstanceOf(JSONResponse::class, $response);
         $this->assertEquals([], $response->getData());
 
@@ -266,11 +266,11 @@ class SearchControllerTest extends TestCase
      */
     public function testSearchWithExistingWildcards(): void
     {
-        // Create mock objects
+        // Create mock objects.
         $request = $this->createMock(IRequest::class);
         $searchService = $this->createMock(ISearch::class);
 
-        // Set up request mock to return search terms with existing wildcards
+        // Set up request mock to return search terms with existing wildcards.
         $request->expects($this->exactly(2))
             ->method('getParam')
             ->willReturnMap([
@@ -278,19 +278,19 @@ class SearchControllerTest extends TestCase
                 ['_search', [], []]
             ]);
 
-        // Set up search service mock to return empty results
+        // Set up search service mock to return empty results.
         $searchService->expects($this->once())
             ->method('search')
             ->with('*test* OR *user* OR *admin*')
             ->willReturn([]);
 
-        // Create controller instance
+        // Create controller instance.
         $controller = new SearchController('openregister', $request, $searchService);
 
-        // Execute search
+        // Execute search.
         $response = $controller->search();
 
-        // Verify response
+        // Verify response.
         $this->assertInstanceOf(JSONResponse::class, $response);
         $this->assertEquals([], $response->getData());
 
@@ -304,11 +304,11 @@ class SearchControllerTest extends TestCase
      */
     public function testSearchWithResults(): void
     {
-        // Create mock objects
+        // Create mock objects.
         $request = $this->createMock(IRequest::class);
         $searchService = $this->createMock(ISearch::class);
 
-        // Set up request mock to return a search term
+        // Set up request mock to return a search term.
         $request->expects($this->exactly(2))
             ->method('getParam')
             ->willReturnMap([
@@ -316,7 +316,7 @@ class SearchControllerTest extends TestCase
                 ['_search', [], []]
             ]);
 
-        // Create mock search results
+        // Create mock search results.
         $mockResult1 = $this->createMock(Result::class);
         $mockResult1->method('getId')->willReturn('1');
         $mockResult1->method('getName')->willReturn('Customer Service');
@@ -331,19 +331,19 @@ class SearchControllerTest extends TestCase
         $mockResult2->method('getUrl')->willReturn('/objects/2');
         $mockResult2->method('getSource')->willReturn('openregister');
 
-        // Set up search service mock to return results
+        // Set up search service mock to return results.
         $searchService->expects($this->once())
             ->method('search')
             ->with('*customer*')
             ->willReturn([$mockResult1, $mockResult2]);
 
-        // Create controller instance
+        // Create controller instance.
         $controller = new SearchController('openregister', $request, $searchService);
 
-        // Execute search
+        // Execute search.
         $response = $controller->search();
 
-        // Verify response
+        // Verify response.
         $this->assertInstanceOf(JSONResponse::class, $response);
         $expectedData = [
             [

@@ -19,12 +19,16 @@
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
+use OCA\OpenRegister\Event\ConfigurationCreatedEvent;
+use OCA\OpenRegister\Event\ConfigurationDeletedEvent;
+use OCA\OpenRegister\Event\ConfigurationUpdatedEvent;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 use OCP\IGroupManager;
 use OCP\ISession;
@@ -40,6 +44,15 @@ use OCP\IUserSession;
  * @template-extends QBMapper<Configuration>
  *
  * @psalm-suppress MissingTemplateParam
+ *
+ * @method Configuration insert(Entity $entity)
+ * @method Configuration update(Entity $entity)
+ * @method Configuration insertOrUpdate(Entity $entity)
+ * @method Configuration delete(Entity $entity)
+ * @method Configuration find(int|string $id)
+ * @method Configuration findEntity(IQueryBuilder $query)
+ * @method Configuration[] findAll(int|null $limit = null, int|null $offset = null)
+ * @method list<Configuration> findEntities(IQueryBuilder $query)
  */
 class ConfigurationMapper extends QBMapper
 {
@@ -74,11 +87,19 @@ class ConfigurationMapper extends QBMapper
     private ISession $session;
 
     /**
+     * Event dispatcher for dispatching configuration events
+     *
+     * @var IEventDispatcher
+     */
+    private IEventDispatcher $eventDispatcher;
+
+    /**
      * Session key prefix for storing configurations
      *
      * @var string
      */
     private const SESSION_KEY_PREFIX = 'openregister_configurations_';
+
 
     /**
      * ConfigurationMapper constructor.
@@ -88,19 +109,22 @@ class ConfigurationMapper extends QBMapper
      * @param IUserSession        $userSession         User session
      * @param IGroupManager       $groupManager        Group manager for RBAC
      * @param ISession            $session             Session for caching
+     * @param IEventDispatcher    $eventDispatcher     Event dispatcher
      */
     public function __construct(
         IDBConnection $db,
         OrganisationService $organisationService,
         IUserSession $userSession,
         IGroupManager $groupManager,
-        ISession $session
+        ISession $session,
+        IEventDispatcher $eventDispatcher
     ) {
         parent::__construct($db, 'openregister_configurations', Configuration::class);
         $this->organisationService = $organisationService;
         $this->userSession         = $userSession;
         $this->groupManager        = $groupManager;
-        $this->session             = $session;
+        $this->session         = $session;
+        $this->eventDispatcher = $eventDispatcher;
 
     }//end __construct()
 
@@ -118,7 +142,7 @@ class ConfigurationMapper extends QBMapper
      */
     public function find(int $id): Configuration
     {
-        // Verify RBAC permission to read
+        // Verify RBAC permission to read.
         $this->verifyRbacPermission('read', 'configuration');
 
         $qb = $this->db->getQueryBuilder();
@@ -127,7 +151,7 @@ class ConfigurationMapper extends QBMapper
             ->from($this->tableName)
             ->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
 
-        // Apply organisation filter (all users including admins must have active org)
+        // Apply organisation filter (all users including admins must have active org).
         $this->applyOrganisationFilter($qb);
 
         return $this->findEntity($qb);
@@ -147,7 +171,7 @@ class ConfigurationMapper extends QBMapper
      */
     public function findByType(string $type, int $limit=50, int $offset=0): array
     {
-        // Verify RBAC permission to read
+        // Verify RBAC permission to read.
         $this->verifyRbacPermission('read', 'configuration');
 
         $qb = $this->db->getQueryBuilder();
@@ -159,7 +183,7 @@ class ConfigurationMapper extends QBMapper
             ->setFirstResult($offset)
             ->orderBy('created', 'DESC');
 
-        // Apply organisation filter
+        // Apply organisation filter.
         $this->applyOrganisationFilter($qb);
 
         return $this->findEntities($qb);
@@ -179,7 +203,7 @@ class ConfigurationMapper extends QBMapper
      */
     public function findByApp(string $app, int $limit=50, int $offset=0): array
     {
-        // Verify RBAC permission to read
+        // Verify RBAC permission to read.
         $this->verifyRbacPermission('read', 'configuration');
 
         $qb = $this->db->getQueryBuilder();
@@ -191,7 +215,7 @@ class ConfigurationMapper extends QBMapper
             ->setFirstResult($offset)
             ->orderBy('created', 'DESC');
 
-        // Apply organisation filter
+        // Apply organisation filter.
         $this->applyOrganisationFilter($qb);
 
         return $this->findEntities($qb);
@@ -214,7 +238,7 @@ class ConfigurationMapper extends QBMapper
      */
     public function findBySourceUrl(string $sourceUrl): ?Configuration
     {
-        // Verify RBAC permission to read
+        // Verify RBAC permission to read.
         $this->verifyRbacPermission('read', 'configuration');
 
         $qb = $this->db->getQueryBuilder();
@@ -225,13 +249,13 @@ class ConfigurationMapper extends QBMapper
             ->orderBy('created', 'DESC')
             ->setMaxResults(1);
 
-        // Apply organisation filter
+        // Apply organisation filter.
         $this->applyOrganisationFilter($qb);
 
         try {
             return $this->findEntity($qb);
         } catch (DoesNotExistException $e) {
-            // No configuration found with this source URL
+            // No configuration found with this source URL.
             return null;
         }
 
@@ -251,9 +275,9 @@ class ConfigurationMapper extends QBMapper
      *
      * @since 0.2.10
      */
-    public function findBySyncEnabled(int $limit = 50, int $offset = 0): array
+    public function findBySyncEnabled(int $limit=50, int $offset=0): array
     {
-        // Verify RBAC permission to read
+        // Verify RBAC permission to read.
         $this->verifyRbacPermission('read', 'configuration');
 
         $qb = $this->db->getQueryBuilder();
@@ -261,11 +285,12 @@ class ConfigurationMapper extends QBMapper
         $qb->select('*')
             ->from($this->tableName)
             ->where($qb->expr()->eq('sync_enabled', $qb->createNamedParameter(true, IQueryBuilder::PARAM_BOOL)))
-            ->orderBy('last_sync_date', 'ASC') // Oldest first for priority sync
+            ->orderBy('last_sync_date', 'ASC')
+        // Oldest first for priority sync.
             ->setMaxResults($limit)
             ->setFirstResult($offset);
 
-        // Apply organisation filter
+        // Apply organisation filter.
         $this->applyOrganisationFilter($qb);
 
         return $this->findEntities($qb);
@@ -276,18 +301,18 @@ class ConfigurationMapper extends QBMapper
     /**
      * Find configurations by local/external status
      *
-     * @param bool $isLocal  True for local configurations, false for external
-     * @param int  $limit    Maximum number of results
-     * @param int  $offset   Offset for pagination
+     * @param bool $isLocal True for local configurations, false for external
+     * @param int  $limit   Maximum number of results
+     * @param int  $offset  Offset for pagination
      *
      * @return Configuration[] Array of configuration entities
      * @throws \Exception If user doesn't have read permission
      *
      * @since 0.2.10
      */
-    public function findByIsLocal(bool $isLocal, int $limit = 50, int $offset = 0): array
+    public function findByIsLocal(bool $isLocal, int $limit=50, int $offset=0): array
     {
-        // Verify RBAC permission to read
+        // Verify RBAC permission to read.
         $this->verifyRbacPermission('read', 'configuration');
 
         $qb = $this->db->getQueryBuilder();
@@ -299,7 +324,7 @@ class ConfigurationMapper extends QBMapper
             ->setMaxResults($limit)
             ->setFirstResult($offset);
 
-        // Apply organisation filter
+        // Apply organisation filter.
         $this->applyOrganisationFilter($qb);
 
         return $this->findEntities($qb);
@@ -310,19 +335,19 @@ class ConfigurationMapper extends QBMapper
     /**
      * Update synchronization status for a configuration
      *
-     * @param int       $id          Configuration ID
-     * @param string    $status      Sync status: 'success', 'failed', 'pending'
-     * @param \DateTime $syncDate    Synchronization timestamp
-     * @param string    $message     Optional message about the sync result
+     * @param int       $id       Configuration ID
+     * @param string    $status   Sync status: 'success', 'failed', 'pending'
+     * @param \DateTime $syncDate Synchronization timestamp
+     * @param string    $message  Optional message about the sync result
      *
      * @return Configuration The updated configuration
      * @throws \Exception If configuration not found or user doesn't have permission
      *
      * @since 0.2.10
      */
-    public function updateSyncStatus(int $id, string $status, \DateTime $syncDate, string $message = ''): Configuration
+    public function updateSyncStatus(int $id, string $status, \DateTime $syncDate, string $message=''): Configuration
     {
-        // Verify RBAC permission to update
+        // Verify RBAC permission to update.
         $this->verifyRbacPermission('update', 'configuration');
 
         $configuration = $this->find($id);
@@ -345,39 +370,42 @@ class ConfigurationMapper extends QBMapper
      */
     public function insert(Entity $entity): Entity
     {
-        // Verify RBAC permission to create
+        // Verify RBAC permission to create.
         $this->verifyRbacPermission('create', 'configuration');
 
         if ($entity instanceof Configuration) {
-            // Generate UUID if not set
-            if (empty($entity->getUuid())) {
+            // Generate UUID if not set.
+            if (empty($entity->getUuid()) === true) {
                 $entity->setUuid(\Symfony\Component\Uid\Uuid::v4()->toRfc4122());
             }
-            
-            // Set default type if not provided (required by database)
-            if (empty($entity->getType())) {
+
+            // Set default type if not provided (required by database).
+            if (empty($entity->getType()) === true) {
                 $entity->setType('default');
             }
 
-            // Auto-set owner to current user if not already set
-            if (empty($entity->getOwner())) {
+            // Auto-set owner to current user if not already set.
+            if (empty($entity->getOwner()) === true) {
                 $currentUserId = $this->getCurrentUserId();
                 if ($currentUserId !== null) {
                     $entity->setOwner($currentUserId);
                 }
             }
-            
+
             $entity->setCreated(new DateTime());
             $entity->setUpdated(new DateTime());
-        }
+        }//end if
 
-        // Auto-set organisation from active session
+        // Auto-set organisation from active session.
         $this->setOrganisationOnCreate($entity);
 
         $result = parent::insert($entity);
 
-        // Invalidate configuration cache
+        // Invalidate configuration cache.
         $this->invalidateConfigurationCache();
+
+        // Dispatch creation event.
+        $this->eventDispatcher->dispatchTyped(new ConfigurationCreatedEvent($result));
 
         return $result;
 
@@ -394,20 +422,27 @@ class ConfigurationMapper extends QBMapper
      */
     public function update(Entity $entity): Entity
     {
-        // Verify RBAC permission to update
+        // Verify RBAC permission to update.
         $this->verifyRbacPermission('update', 'configuration');
 
-        // Verify user has access to this organisation
+        // Verify user has access to this organisation.
         $this->verifyOrganisationAccess($entity);
 
+        // Get old state before update.
+        $oldEntity = $this->find($entity->getId());
+
+        // @psalm-suppress RedundantCondition
         if ($entity instanceof Configuration) {
             $entity->setUpdated(new DateTime());
         }
 
         $result = parent::update($entity);
 
-        // Invalidate configuration cache
+        // Invalidate configuration cache.
         $this->invalidateConfigurationCache();
+
+        // Dispatch update event.
+        $this->eventDispatcher->dispatchTyped(new ConfigurationUpdatedEvent($result, $oldEntity));
 
         return $result;
 
@@ -424,16 +459,19 @@ class ConfigurationMapper extends QBMapper
      */
     public function delete(Entity $entity): Entity
     {
-        // Verify RBAC permission to delete
+        // Verify RBAC permission to delete.
         $this->verifyRbacPermission('delete', 'configuration');
 
-        // Verify user has access to this organisation
+        // Verify user has access to this organisation.
         $this->verifyOrganisationAccess($entity);
 
         $result = parent::delete($entity);
 
-        // Invalidate configuration cache
+        // Invalidate configuration cache.
         $this->invalidateConfigurationCache();
+
+        // Dispatch deletion event.
+        $this->eventDispatcher->dispatchTyped(new ConfigurationDeletedEvent($result));
 
         return $result;
 
@@ -553,7 +591,7 @@ class ConfigurationMapper extends QBMapper
         ?array $searchConditions=[],
         ?array $searchParams=[]
     ): array {
-        // Verify RBAC permission to read
+        // Verify RBAC permission to read.
         $this->verifyRbacPermission('read', 'configuration');
 
         $qb = $this->db->getQueryBuilder();
@@ -584,7 +622,7 @@ class ConfigurationMapper extends QBMapper
             }
         }
 
-        // Apply organisation filter (all users including admins must have active org)
+        // Apply organisation filter (all users including admins must have active org).
         $this->applyOrganisationFilter($qb);
 
         // Execute the query and return the results.
@@ -608,10 +646,10 @@ class ConfigurationMapper extends QBMapper
             return;
         }
 
-        $orgUuid = $activeOrg->getUuid();
+        $orgUuid    = $activeOrg->getUuid();
         $sessionKey = self::SESSION_KEY_PREFIX.$orgUuid;
 
-        // Remove from session
+        // Remove from session.
         $this->session->remove($sessionKey);
 
     }//end invalidateConfigurationCache()

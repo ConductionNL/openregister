@@ -123,8 +123,8 @@ class ObjectsProvider implements IFilteringProvider
      *
      * Lower values appear first in search results
      *
-     * @param string $route The route/context for which to get the order
-     * @param array $routeParameters Parameters for the route
+     * @param string $route           The route/context for which to get the order
+     * @param array  $routeParameters Parameters for the route
      *
      * @return int|null Order priority (0-100, lower = higher priority) or null for default
      */
@@ -181,9 +181,9 @@ class ObjectsProvider implements IFilteringProvider
      *
      * @return FilterDefinition[] List of custom filter definitions
      *
-     * @psalm-return array<FilterDefinition>
+     * @psalm-return list<\OCP\Search\FilterDefinition>
      *
-     * @phpstan-return array<FilterDefinition>
+     * @phpstan-return list<\OCP\Search\FilterDefinition>
      */
     public function getCustomFilters(): array
     {
@@ -255,15 +255,15 @@ class ObjectsProvider implements IFilteringProvider
         $offset = null;
         $order  = null;
 
-        // Build search query for searchObjectsPaginated
+        // Build search query for searchObjectsPaginated.
         $searchQuery = [];
 
-        // Add search term if provided
+        // Add search term if provided.
         if (!empty($search)) {
             $searchQuery['_search'] = $search;
         }
 
-        // Add filters to @self metadata section
+        // Add filters to @self metadata section.
         if (!empty($register)) {
             $searchQuery['@self']['register'] = (int) $register;
         }
@@ -272,7 +272,7 @@ class ObjectsProvider implements IFilteringProvider
             $searchQuery['@self']['schema'] = (int) $schema;
         }
 
-        // Add date filters if provided
+        // Add date filters if provided.
         if ($since !== null) {
             $searchQuery['@self']['created'] = ['$gte' => $since];
         }
@@ -285,30 +285,40 @@ class ObjectsProvider implements IFilteringProvider
             }
         }
 
-        // Set pagination limits for Nextcloud search
-        $searchQuery['_limit'] = $limit ?? 25; // Default limit for search interface
+        // Set pagination limits for Nextcloud search.
+        /*
+         * @psalm-suppress TypeDoesNotContainType We intend null-coalescing for future when pagination is implemented
+         */
+        $searchQuery['_limit'] = $limit ?? 25;
+        // Default limit for search interface.
+        /*
+         * @psalm-suppress TypeDoesNotContainType We intend null-coalescing for future when pagination is implemented
+         */
         $searchQuery['_offset'] = $offset ?? 0;
 
-        $this->logger->debug('OpenRegister search requested', [
-            'search_query' => $searchQuery,
-            'has_search' => !empty($search)
-        ]);
+        $this->logger->debug(
+                'OpenRegister search requested',
+                [
+                    'search_query' => $searchQuery,
+                    'has_search'   => !empty($search),
+                ]
+                );
 
-        // Use searchObjectsPaginated for optimal performance
+        // Use searchObjectsPaginated for optimal performance.
         $searchResults = $this->objectService->searchObjectsPaginated($searchQuery, rbac: true, multi: true);
 
-        // Convert results to SearchResultEntry format
+        // Convert results to SearchResultEntry format.
         $searchResultEntries = [];
         if (!empty($searchResults['results'])) {
             foreach ($searchResults['results'] as $result) {
-                // Generate URLs for the object
+                // Generate URLs for the object.
                 $objectUrl = $this->urlGenerator->linkToRoute(
                     'openregister.objects.show',
                     ['id' => $result['uuid']]
                 );
 
-                // Create descriptive title and description
-                $title = $result['title'] ?? $result['name'] ?? $result['uuid'] ?? 'Unknown Object';
+                // Create descriptive title and description.
+                $title       = $result['title'] ?? $result['name'] ?? $result['uuid'] ?? 'Unknown Object';
                 $description = $this->buildDescription($result);
 
                 $searchResultEntries[] = new SearchResultEntry(
@@ -319,12 +329,15 @@ class ObjectsProvider implements IFilteringProvider
                     'icon-openregister'
                 );
             }
-        }
+        }//end if
 
-        $this->logger->debug('OpenRegister search completed', [
-            'results_count' => count($searchResultEntries),
-            'total_results' => $searchResults['total'] ?? 0
-        ]);
+        $this->logger->debug(
+                'OpenRegister search completed',
+                [
+                    'results_count' => count($searchResultEntries),
+                    'total_results' => $searchResults['total'] ?? 0,
+                ]
+                );
 
         return SearchResult::complete(
             $this->l10n->t('Open Register Objects'),
@@ -345,23 +358,23 @@ class ObjectsProvider implements IFilteringProvider
     {
         $parts = [];
 
-        // Add schema/register information if available
+        // Add schema/register information if available.
         if (!empty($object['schema'])) {
             $parts[] = $this->l10n->t('Schema: %s', [$object['schema']]);
         }
-        
+
         if (!empty($object['register'])) {
             $parts[] = $this->l10n->t('Register: %s', [$object['register']]);
         }
 
-        // Add summary/description if available
+        // Add summary/description if available.
         if (!empty($object['summary'])) {
             $parts[] = $object['summary'];
-        } elseif (!empty($object['description'])) {
-            $parts[] = substr($object['description'], 0, 100) . (strlen($object['description']) > 100 ? '...' : '');
+        } else if (!empty($object['description'])) {
+            $parts[] = substr($object['description'], 0, 100).(strlen($object['description']) > 100 ? '...' : '');
         }
 
-        // Add last updated info if available
+        // Add last updated info if available.
         if (!empty($object['updated'])) {
             $parts[] = $this->l10n->t('Updated: %s', [date('Y-m-d H:i', strtotime($object['updated']))]);
         }

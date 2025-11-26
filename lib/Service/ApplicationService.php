@@ -51,15 +51,15 @@ class ApplicationService
     /**
      * Constructor for ApplicationService
      *
-     * @param ApplicationMapper  $applicationMapper  The application mapper
-     * @param LoggerInterface    $logger            The logger instance
+     * @param ApplicationMapper $applicationMapper The application mapper
+     * @param LoggerInterface   $logger            The logger instance
      */
     public function __construct(
         ApplicationMapper $applicationMapper,
         LoggerInterface $logger
     ) {
         $this->applicationMapper = $applicationMapper;
-        $this->logger = $logger;
+        $this->logger            = $logger;
 
     }//end __construct()
 
@@ -99,13 +99,13 @@ class ApplicationService
     /**
      * Get applications by organisation
      *
-     * @param int $organisationId Organisation ID
-     * @param int $limit          Maximum number of results
-     * @param int $offset         Offset for pagination
+     * @param string $organisationId Organisation UUID
+     * @param int    $limit          Maximum number of results
+     * @param int    $offset         Offset for pagination
      *
      * @return Application[] Array of applications
      */
-    public function findByOrganisation(int $organisationId, int $limit=50, int $offset=0): array
+    public function findByOrganisation(string $organisationId, int $limit=50, int $offset=0): array
     {
         return $this->applicationMapper->findByOrganisation($organisationId, $limit, $offset);
 
@@ -179,11 +179,11 @@ class ApplicationService
     /**
      * Count applications by organisation
      *
-     * @param int $organisationId Organisation ID
+     * @param string $organisationId Organisation UUID
      *
      * @return int Number of applications
      */
-    public function countByOrganisation(int $organisationId): int
+    public function countByOrganisation(string $organisationId): int
     {
         return $this->applicationMapper->countByOrganisation($organisationId);
 
@@ -203,4 +203,3 @@ class ApplicationService
 
 
 }//end class
-

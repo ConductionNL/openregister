@@ -32,26 +32,85 @@ use OCP\IUserSession;
  *
  * This class handles storage and manipulation of objects including their metadata,
  * locking mechanisms, and serialization for API responses.
- * 
+ *
  * ⚠️  BULK OPERATIONS INTEGRATION:
  * When adding new database fields to this entity, consider whether they should be
  * excluded from bulk operation change detection in:
  * - OptimizedBulkOperations::buildMassiveInsertOnDuplicateKeyUpdateSQL()
- * 
+ *
  * Database-managed fields (auto-populated/controlled by DB) should be added to the
  * $databaseManagedFields array to prevent false change detection:
  * - id, uuid: Primary identifiers (never change)
- * - created: Set by database DEFAULT CURRENT_TIMESTAMP  
+ * - created: Set by database DEFAULT CURRENT_TIMESTAMP
  * - updated: Set by database ON UPDATE CURRENT_TIMESTAMP
  * - published: Auto-managed by schema autoPublish logic
- * 
+ *
  * User/application-managed fields that CAN trigger updates:
- * - name, description, summary, image: Extracted metadata 
+ * - name, description, summary, image: Extracted metadata
  * - object: The actual data payload
  * - register, schema: Context fields
  * - owner, organisation: Ownership fields
- * 
+ *
  * Adding fields? Check if they should trigger change detection or be database-managed.
+ *
+ * @method string|null getUuid()
+ * @method void setUuid(?string $uuid)
+ * @method string|null getSlug()
+ * @method void setSlug(?string $slug)
+ * @method string|null getUri()
+ * @method void setUri(?string $uri)
+ * @method string|null getVersion()
+ * @method void setVersion(?string $version)
+ * @method string|null getRegister()
+ * @method void setRegister(?string $register)
+ * @method string|null getSchema()
+ * @method void setSchema(?string $schema)
+ * @method array|null getObject()
+ * @method void setObject(?array $object)
+ * @method array|null getFiles()
+ * @method void setFiles(?array $files)
+ * @method array|null getRelations()
+ * @method void setRelations(?array $relations)
+ * @method array|null getLocked()
+ * @method void setLocked(?array $locked)
+ * @method string|null getOwner()
+ * @method void setOwner(?string $owner)
+ * @method array|null getAuthorization()
+ * @method void setAuthorization(?array $authorization)
+ * @method string|null getFolder()
+ * @method void setFolder(?string $folder)
+ * @method string|null getApplication()
+ * @method void setApplication(?string $application)
+ * @method string|null getOrganisation()
+ * @method void setOrganisation(?string $organisation)
+ * @method array|null getValidation()
+ * @method void setValidation(?array $validation)
+ * @method array|null getDeleted()
+ * @method void setDeleted(?array $deleted)
+ * @method array|null getGeo()
+ * @method void setGeo(?array $geo)
+ * @method array|null getRetention()
+ * @method void setRetention(?array $retention)
+ * @method int|null getSize()
+ * @method void setSize(?int $size)
+ * @method string|null getName()
+ * @method void setName(?string $name)
+ * @method string|null getDescription()
+ * @method void setDescription(?string $description)
+ * @method string|null getSummary()
+ * @method void setSummary(?string $summary)
+ * @method string|null getImage()
+ * @method void setImage(?string $image)
+ * @method string|null getLabels()
+ * @method void setLabels(?string $labels)
+ * @method DateTime|null getCreated()
+ * @method void setCreated(?DateTime $created)
+ * @method DateTime|null getUpdated()
+ * @method void setUpdated(?DateTime $updated)
+ * @method DateTime|null getPublished()
+ * @method void setPublished(?DateTime $published)
+ * @method DateTime|null getModified()
+ * @method void setModified(?DateTime $modified)
  */
 class ObjectEntity extends Entity implements JsonSerializable
 {
@@ -70,8 +129,9 @@ class ObjectEntity extends Entity implements JsonSerializable
      * Configure in schema: { "configuration": { "objectSlugField": "naam" } }
      * The field value will be converted to a URL-friendly slug format.
      *
-     * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
      * @var string|null URL-friendly slug for the object, unique within register+schema combination
+     *
+     * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
      */
     protected ?string $slug = null;
 
@@ -210,7 +270,7 @@ class ObjectEntity extends Entity implements JsonSerializable
 
     /**
      * Last update timestamp.
-     * 
+     *
      * 🔒 DATABASE-MANAGED: Set by database ON UPDATE CURRENT_TIMESTAMP
      * This field should NOT be set during bulk preparation to avoid false change detection.
      *
@@ -220,8 +280,8 @@ class ObjectEntity extends Entity implements JsonSerializable
 
     /**
      * Creation timestamp.
-     * 
-     * 🔒 DATABASE-MANAGED: Set by database DEFAULT CURRENT_TIMESTAMP  
+     *
+     * 🔒 DATABASE-MANAGED: Set by database DEFAULT CURRENT_TIMESTAMP
      * This field should NOT be set during bulk preparation to avoid false change detection.
      *
      * @var DateTime|null Creation timestamp
@@ -234,12 +294,13 @@ class ObjectEntity extends Entity implements JsonSerializable
      * This field can be automatically populated via schema metadata mapping configuration.
      * Configure in schema: { "configuration": { "objectPublishedField": "publicatieDatum" } }
      * Supports various datetime formats which will be parsed to DateTime objects.
-     * 
+     *
      * ⚠️  PARTIALLY DATABASE-MANAGED: Auto-publish logic sets this for NEW objects only.
      * Excluded from bulk change detection to avoid false updates on existing objects.
      *
-     * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
      * @var DateTime|null Published timestamp
+     *
+     * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
      */
     protected ?DateTime $published = null;
 
@@ -250,8 +311,9 @@ class ObjectEntity extends Entity implements JsonSerializable
      * Configure in schema: { "configuration": { "objectDepublishedField": "einddatum" } }
      * Supports various datetime formats which will be parsed to DateTime objects.
      *
-     * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
      * @var DateTime|null Depublished timestamp
+     *
+     * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
      */
     protected ?DateTime $depublished = null;
 
@@ -271,8 +333,9 @@ class ObjectEntity extends Entity implements JsonSerializable
      * Configure in schema: { "configuration": { "objectNameField": "naam" } } or
      * with twig-like concatenation: { "objectNameField": "{{ voornaam }} {{ achternaam }}" }
      *
-     * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
      * @var string|null Name of the object
+     *
+     * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
      */
     protected ?string $name = null;
 
@@ -283,8 +346,9 @@ class ObjectEntity extends Entity implements JsonSerializable
      * Configure in schema: { "configuration": { "objectDescriptionField": "beschrijving" } }
      * Supports dot notation for nested fields: "contact.beschrijving"
      *
-     * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
      * @var string|null Description of the object
+     *
+     * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
      */
     protected ?string $description = null;
 
@@ -295,8 +359,9 @@ class ObjectEntity extends Entity implements JsonSerializable
      * Configure in schema: { "configuration": { "objectSummaryField": "beschrijvingKort" } }
      * Supports twig-like templates for combining fields.
      *
-     * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
      * @var string|null Summary of the object
+     *
+     * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
      */
     protected ?string $summary = null;
 
@@ -307,8 +372,9 @@ class ObjectEntity extends Entity implements JsonSerializable
      * Configure in schema: { "configuration": { "objectImageField": "afbeelding" } }
      * Can reference file fields or contain base64 encoded image data.
      *
-     * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
      * @var string|null Image of the object (base64 encoded or file reference)
+     *
+     * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
      */
     protected ?string $image = null;
 
@@ -383,10 +449,10 @@ class ObjectEntity extends Entity implements JsonSerializable
 
     /**
      * Override getter to provide default empty arrays for JSON array fields
-     * 
+     *
      * We only override this one method from parent Entity - everything else
      * (setters, type conversion, change tracking) uses parent's implementation.
-     * 
+     *
      * The ONLY difference: we return [] instead of null for specific JSON fields
      * that represent collections, making code cleaner throughout the app.
      *
@@ -396,7 +462,7 @@ class ObjectEntity extends Entity implements JsonSerializable
      */
     protected function getter(string $name): mixed
     {
-        // Array fields that should return [] instead of null when unset
+        // Array fields that should return [] instead of null when unset.
         $arrayFieldsWithEmptyDefault = [
             'files',
             'relations',
@@ -408,12 +474,12 @@ class ObjectEntity extends Entity implements JsonSerializable
             'retention',
         ];
 
-        // If this is an array field and it's null, return empty array
-        if (in_array($name, $arrayFieldsWithEmptyDefault) && property_exists($this, $name)) {
+        // If this is an array field and it's null, return empty array.
+        if (in_array($name, $arrayFieldsWithEmptyDefault) === true && property_exists($this, $name) === true) {
             return $this->$name ?? [];
         }
 
-        // Otherwise, delegate to parent's standard getter behavior
+        // Otherwise, delegate to parent's standard getter behavior.
         return parent::getter($name);
 
     }//end getter()
@@ -429,10 +495,10 @@ class ObjectEntity extends Entity implements JsonSerializable
      */
     public function getObject(): array
     {
-        // Initialize the object data with an empty array if null
+        // Initialize the object data with an empty array if null.
         $objectData = $this->object ?? [];
 
-        // Ensure 'id' is the first field by setting it before merging with object data
+        // Ensure 'id' is the first field by setting it before merging with object data.
         $objectData = array_merge(['id' => $this->uuid], $objectData);
 
         return $objectData;
@@ -492,6 +558,7 @@ class ObjectEntity extends Entity implements JsonSerializable
 
     }//end hydrate()
 
+
     /**
      * Hydrate the entity from an serialized array of data
      *
@@ -501,18 +568,19 @@ class ObjectEntity extends Entity implements JsonSerializable
      */
     public function hydrateObject(array $object): self
     {
-        // Lets grap the metadata fields and remove them from the object
+        // Lets grap the metadata fields and remove them from the object.
         $metaDataFields = $object['@self'];
         unset($object['@self']);
 
-        // Hydrate the entity with the metadata fields
+        // Hydrate the entity with the metadata fields.
         $this->hydrate($metaDataFields);
         $this->setObject($object);
 
-        // Return the hydrated entity
+        // Return the hydrated entity.
         return $this;
 
-    }//end hydrate()
+    }//end hydrateObject()
+
 
     /**
      * Serialize the entity to JSON format
@@ -525,12 +593,17 @@ class ObjectEntity extends Entity implements JsonSerializable
     public function jsonSerialize(): array
     {
         // Backwards compatibility for old objects.
-        $object = ($this->object ?? []);
+        if (isset($this->object) === true) {
+            $object = $this->object;
+        } else {
+            $object = [];
+        }
+
         // Default to an empty array if $this->object is null.
         $object['@self'] = $this->getObjectArray($object);
 
-        // Check if name is empty and set uuid as fallback
-        if (empty($object['@self']['name'])) {
+        // Check if name is empty and set uuid as fallback.
+        if (empty($object['@self']['name']) === true) {
             $object['@self']['name'] = $this->uuid;
         }
 
@@ -543,12 +616,14 @@ class ObjectEntity extends Entity implements JsonSerializable
     /**
      * Get array representation of all object properties
      *
+     * @param array $object Object array parameter
+     *
      * @return array Array containing all object properties
      */
     public function getObjectArray(array $object=[]): array
     {
         // Initialize the object array with default properties.
-        // Use getters to ensure our custom getter logic is applied (e.g., [] for null arrays)
+        // Use getters to ensure our custom getter logic is applied (e.g., [] for null arrays).
         $objectArray = [
             'id'            => $this->uuid,
             'slug'          => $this->slug,
@@ -820,7 +895,8 @@ class ObjectEntity extends Entity implements JsonSerializable
     /**
      * Set the last log entry for this object (runtime only)
      *
-     * @param         array|null $log The log entry to set
+     * @param array|null $log The log entry to set
+     *
      * @phpstan-param array<string, mixed>|null $log
      * @psalm-param   array<string, mixed>|null $log
      *
@@ -843,17 +919,17 @@ class ObjectEntity extends Entity implements JsonSerializable
      */
     public function __toString(): string
     {
-        // Return the UUID if available, otherwise return a descriptive string
+        // Return the UUID if available, otherwise return a descriptive string.
         if ($this->uuid !== null && $this->uuid !== '') {
             return $this->uuid;
         }
 
-        // Fallback to ID if UUID is not available
+        // Fallback to ID if UUID is not available.
         if ($this->id !== null) {
             return 'Object #'.$this->id;
         }
 
-        // Final fallback
+        // Final fallback.
         return 'Object Entity';
 
     }//end __toString()

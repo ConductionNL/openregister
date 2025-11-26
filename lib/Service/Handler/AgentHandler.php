@@ -51,8 +51,8 @@ class AgentHandler
     /**
      * Constructor
      *
-     * @param AgentMapper       $agentMapper The agent mapper instance
-     * @param LoggerInterface   $logger      The logger instance
+     * @param AgentMapper     $agentMapper The agent mapper instance
+     * @param LoggerInterface $logger      The logger instance
      */
     public function __construct(AgentMapper $agentMapper, LoggerInterface $logger)
     {
@@ -68,6 +68,8 @@ class AgentHandler
      * @param Agent $agent The agent to export
      *
      * @return array The exported agent data
+     *
+     * @psalm-return array<string, mixed>
      */
     public function export(Agent $agent): array
     {
@@ -84,15 +86,16 @@ class AgentHandler
      * @param array       $data  The agent data
      * @param string|null $owner The owner of the agent
      *
-     * @return Agent|null The imported agent or null if skipped
+     * @return Agent The imported agent or null if skipped
+     *
      * @throws Exception If import fails
      */
-    public function import(array $data, ?string $owner = null): ?Agent
+    public function import(array $data, ?string $owner=null): Agent
     {
         try {
             unset($data['id'], $data['uuid']);
 
-            // Check if agent already exists by name
+            // Check if agent already exists by name.
             $existingAgents = $this->agentMapper->findAll();
             $existingAgent  = null;
             foreach ($existingAgents as $agent) {
@@ -103,7 +106,7 @@ class AgentHandler
             }
 
             if ($existingAgent !== null) {
-                // Update existing agent
+                // Update existing agent.
                 $existingAgent->hydrate($data);
                 if ($owner !== null) {
                     $existingAgent->setOwner($owner);
@@ -112,7 +115,7 @@ class AgentHandler
                 return $this->agentMapper->update($existingAgent);
             }
 
-            // Create new agent
+            // Create new agent.
             $agent = new Agent();
             $agent->hydrate($data);
             if ($owner !== null) {
@@ -129,5 +132,3 @@ class AgentHandler
 
 
 }//end class
-
-

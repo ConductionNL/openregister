@@ -43,33 +43,33 @@ class NamedParametersSniff implements Sniff
     {
         $tokens = $phpcsFile->getTokens();
         
-        // Check if this is a function call (look for opening parenthesis after the function name)
+        // Check if this is a function call (look for opening parenthesis after the function name).
         $next = $phpcsFile->findNext(T_WHITESPACE, ($stackPtr + 1), null, true);
         if ($next === false || $tokens[$next]['code'] !== T_OPEN_PARENTHESIS) {
             return;
         }
         
-        // Skip function definitions - look for 'function' keyword before this token
-        // We need to check if this T_STRING is part of a function declaration
+        // Skip function definitions - look for 'function' keyword before this token.
+        // We need to check if this T_STRING is part of a function declaration.
         $prev = $stackPtr - 1;
         while ($prev >= 0 && isset($tokens[$prev])) {
             if ($tokens[$prev]['code'] === T_FUNCTION) {
-                // This is a function definition, skip it
+                // This is a function definition, skip it.
                 return;
             }
             if ($tokens[$prev]['code'] === T_SEMICOLON || 
                 $tokens[$prev]['code'] === T_OPEN_CURLY_BRACKET ||
                 $tokens[$prev]['code'] === T_CLOSE_CURLY_BRACKET) {
-                // We've gone past a statement boundary, this is likely a function call
+                // We've gone past a statement boundary, this is likely a function call.
                 break;
             }
             $prev--;
         }
         
-        // Find the closing parenthesis
+        // Find the closing parenthesis.
         $closer = $tokens[$next]['parenthesis_closer'];
         
-        // Check if there are parameters
+        // Check if there are parameters.
         $paramStart = $next + 1;
         $paramEnd = $closer - 1;
         
@@ -77,7 +77,7 @@ class NamedParametersSniff implements Sniff
             return; // No parameters
         }
         
-        // Count parameters by counting commas + 1 (if there are any non-whitespace tokens)
+        // Count parameters by counting commas + 1 (if there are any non-whitespace tokens).
         $parameterCount = 0;
         $hasNamedParameters = false;
         $hasContent = false;
@@ -100,46 +100,46 @@ class NamedParametersSniff implements Sniff
             }
         }
         
-        // Suggest named parameters for functions with 1+ parameters (they might have defaults)
+        // Suggest named parameters for functions with 1+ parameters (they might have defaults).
         if ($parameterCount >= 1 && !$hasNamedParameters) {
             $functionName = $tokens[$stackPtr]['content'];
             
-            // Skip built-in functions that commonly don't benefit from named parameters
+            // Skip built-in functions that commonly don't benefit from named parameters.
             $skipFunctions = [
-                // Basic output functions
+                // Basic output functions.
                 
-                // Type checking functions
+                // Type checking functions.
                 'empty', 'isset', 'is_null', 'is_array', 'is_string', 'is_int', 'is_bool',
                 'is_object', 'is_numeric', 'is_callable', 'is_resource',
                 
-                // String functions (simple ones)
+                // String functions (simple ones).
                 'strlen', 'trim', 'ltrim', 'rtrim', 'strtolower', 'strtoupper', 'ucfirst',
                 'ucwords', 'lcfirst', 'ord', 'chr', 'md5', 'sha1', 'crc32',
                 
-                // Array functions (simple ones)
+                // Array functions (simple ones).
                 'count', 'sizeof', 'array_push', 'array_pop', 'array_shift', 'array_unshift',
                 'array_keys', 'array_values', 'array_reverse', 'array_unique', 'array_sum',
                 'array_product', 'min', 'max', 'end', 'reset', 'key', 'current', 'next', 'prev',
                 
-                // Array functions that commonly use callbacks (might benefit from named params but often don't)
+                // Array functions that commonly use callbacks (might benefit from named params but often don't).
                 'array_filter', 'array_map', 'array_reduce', 'array_walk', 'usort', 'uksort',
                 'uasort', 'array_search', 'array_key_exists', 'in_array',
                 
-                // String manipulation that's usually obvious
+                // String manipulation that's usually obvious.
                 'implode', 'explode', 'str_repeat', 'str_pad', 'wordwrap',
                 
-                // Serialization
+                // Serialization.
                 'json_encode', 'json_decode', 'serialize', 'unserialize',
                 
-                // Math functions
+                // Math functions.
                 'abs', 'ceil', 'floor', 'round', 'sqrt', 'pow', 'log', 'sin', 'cos', 'tan',
                 'rand', 'mt_rand', 'srand', 'mt_srand',
                 
-                // File functions (simple ones)
+                // File functions (simple ones).
                 'file_exists', 'is_file', 'is_dir', 'is_readable', 'is_writable',
                 'filesize', 'filemtime', 'filectime', 'fileatime', 'dirname', 'basename',
                 
-                // DateTime (simple constructors)
+                // DateTime (simple constructors).
                 'time', 'microtime', 'date', 'gmdate', 'mktime', 'gmmktime'
             ];
             

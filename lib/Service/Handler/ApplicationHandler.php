@@ -84,15 +84,16 @@ class ApplicationHandler
      * @param array       $data  The application data
      * @param string|null $owner The owner of the application
      *
-     * @return Application|null The imported application or null if skipped
+     * @return Application The imported application or null if skipped
+     *
      * @throws Exception If import fails
      */
-    public function import(array $data, ?string $owner = null): ?Application
+    public function import(array $data, ?string $owner=null): Application
     {
         try {
             unset($data['id'], $data['uuid']);
 
-            // Check if application already exists by name
+            // Check if application already exists by name.
             $existingApplications = $this->applicationMapper->findAll();
             $existingApplication  = null;
             foreach ($existingApplications as $application) {
@@ -103,7 +104,7 @@ class ApplicationHandler
             }
 
             if ($existingApplication !== null) {
-                // Update existing application
+                // Update existing application.
                 $existingApplication->hydrate($data);
                 if ($owner !== null) {
                     $existingApplication->setOwner($owner);
@@ -112,7 +113,7 @@ class ApplicationHandler
                 return $this->applicationMapper->update($existingApplication);
             }
 
-            // Create new application
+            // Create new application.
             $application = new Application();
             $application->hydrate($data);
             if ($owner !== null) {
@@ -129,5 +130,3 @@ class ApplicationHandler
 
 
 }//end class
-
-

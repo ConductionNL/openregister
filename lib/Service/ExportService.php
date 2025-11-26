@@ -91,8 +91,13 @@ class ExportService
      * @param IGroupManager      $groupManager       The group manager
      * @param ObjectService      $objectService      The object service
      */
-    public function __construct(ObjectEntityMapper $objectEntityMapper, RegisterMapper $registerMapper, IUserManager $userManager, IGroupManager $groupManager, ObjectService $objectService)
-    {
+    public function __construct(
+        ObjectEntityMapper $objectEntityMapper,
+        RegisterMapper $registerMapper,
+        IUserManager $userManager,
+        IGroupManager $groupManager,
+        ObjectService $objectService
+    ) {
         $this->objectEntityMapper = $objectEntityMapper;
         $this->registerMapper     = $registerMapper;
         $this->userManager        = $userManager;
@@ -112,16 +117,19 @@ class ExportService
     private function isUserAdmin(?IUser $user): bool
     {
         if ($user === null) {
-            return false; // Anonymous users are never admin
+            return false;
+            // Anonymous users are never admin.
         }
 
-        // Check if user is in admin group
+        // Check if user is in admin group.
         $adminGroup = $this->groupManager->get('admin');
         if ($adminGroup === null) {
-            return false; // Admin group doesn't exist
+            return false;
+            // Admin group doesn't exist.
         }
 
         return $adminGroup->inGroup($user);
+
     }//end isUserAdmin()
 
 
@@ -132,14 +140,19 @@ class ExportService
      * @param Schema|null   $schema   Optional schema to filter by
      * @param array         $filters  Additional filters to apply
      *
-     * @return PromiseInterface<Spreadsheet> Promise that resolves with the generated spreadsheet
+     * @return Promise Promise that resolves with the generated spreadsheet
+     *
+     * @psalm-return Promise<mixed>
      */
-    public function exportToExcelAsync(?Register $register=null, ?Schema $schema=null, array $filters=[]): PromiseInterface
+    public function exportToExcelAsync(?Register $register=null, ?Schema $schema=null, array $filters=[]): Promise
     {
         return new Promise(
                 function (callable $resolve, callable $reject) use ($register, $schema, $filters) {
                     try {
                         $spreadsheet = $this->exportToExcel(register: $register, schema: $schema, filters: $filters);
+                        /*
+                         * @psalm-suppress InvalidArgument
+                         */
                         $resolve($spreadsheet);
                     } catch (\Throwable $e) {
                         $reject($e);
@@ -153,9 +166,10 @@ class ExportService
     /**
      * Export data to Excel format
      *
-     * @param Register|null $register Optional register to export
-     * @param Schema|null   $schema   Optional schema to export
-     * @param array         $filters  Optional filters to apply
+     * @param Register|null $register    Optional register to export
+     * @param Schema|null   $schema      Optional schema to export
+     * @param array         $filters     Optional filters to apply
+     * @param IUser|null    $currentUser Current user for permission checks
      *
      * @return Spreadsheet
      */
@@ -190,14 +204,19 @@ class ExportService
      * @param Schema|null   $schema   Optional schema to filter by
      * @param array         $filters  Additional filters to apply
      *
-     * @return PromiseInterface<string> Promise that resolves with the CSV content
+     * @return Promise Promise that resolves with the CSV content
+     *
+     * @psalm-return Promise<mixed>
      */
-    public function exportToCsvAsync(?Register $register=null, ?Schema $schema=null, array $filters=[]): PromiseInterface
+    public function exportToCsvAsync(?Register $register=null, ?Schema $schema=null, array $filters=[]): Promise
     {
         return new Promise(
                 function (callable $resolve, callable $reject) use ($register, $schema, $filters) {
                     try {
                         $csv = $this->exportToCsv(register: $register, schema: $schema, filters: $filters);
+                        /*
+                         * @psalm-suppress InvalidArgument
+                         */
                         $resolve($csv);
                     } catch (\Throwable $e) {
                         $reject($e);
@@ -211,18 +230,19 @@ class ExportService
     /**
      * Export data to CSV format
      *
-     * @param Register|null $register Optional register to export
-     * @param Schema|null   $schema   Optional schema to export
-     * @param array         $filters  Optional filters to apply
+     * @param Register|null $register    Optional register to export
+     * @param Schema|null   $schema      Optional schema to export
+     * @param array         $filters     Optional filters to apply
+     * @param IUser|null    $currentUser Current user for permission checks
      *
      * @return string CSV content
      *
-     * @throws InvalidArgumentException If trying to export multiple schemas to CSV
+     * @throws \InvalidArgumentException If trying to export multiple schemas to CSV
      */
     public function exportToCsv(?Register $register=null, ?Schema $schema=null, array $filters=[], ?IUser $currentUser=null): string
     {
         if ($register !== null && $schema === null) {
-            throw new InvalidArgumentException('Cannot export multiple schemas to CSV format.');
+            throw new \InvalidArgumentException('Cannot export multiple schemas to CSV format.');
         }
 
         $spreadsheet = $this->exportToExcel(register: $register, schema: $schema, filters: $filters, currentUser: $currentUser);
@@ -242,6 +262,7 @@ class ExportService
      * @param Register|null $register    Optional register to export
      * @param Schema|null   $schema      Optional schema to export
      * @param array         $filters     Optional filters to apply
+     * @param IUser|null    $currentUser Current user for permission checks
      *
      * @return void
      */
@@ -270,49 +291,53 @@ class ExportService
 
         $row++;
 
-        // Export data using optimized ObjectEntityMapper query for raw ObjectEntity objects
-        // Build filters for ObjectEntityMapper->findAll() method 
+        // Export data using optimized ObjectEntityMapper query for raw ObjectEntity objects.
+        // Build filters for ObjectEntityMapper->findAll() method.
         $objectFilters = [];
-        
+
         if ($register !== null) {
             $objectFilters['register'] = $register->getId();
         }
-        
+
         if ($schema !== null) {
             $objectFilters['schema'] = $schema->getId();
         }
-        
-        // Apply additional filters
+
+        // Apply additional filters.
         foreach ($filters as $key => $value) {
-            if (!str_starts_with($key, '@self.')) {
-                // These are JSON object property filters - not supported by findAll
-                // For now, we'll skip them to get basic functionality working
-                // TODO: Add support for JSON property filtering in ObjectEntityMapper
+            if (str_starts_with($key, '@self.') === false) {
+                // These are JSON object property filters - not supported by findAll.
+                // For now, we'll skip them to get basic functionality working.
+                // TODO: Add support for JSON property filtering in ObjectEntityMapper.
                 continue;
             } else {
-                // Metadata filter - remove @self. prefix
+                // Metadata filter - remove @self. prefix.
                 $metaField = substr($key, 6);
                 $objectFilters[$metaField] = $value;
             }
         }
-        
-        // Use ObjectService::searchObjects directly with proper RBAC and multi-tenancy filtering
-        // Set a very high limit to get all objects (export needs all data)
+
+        // Use ObjectService::searchObjects directly with proper RBAC and multi-tenancy filtering.
+        // Set a very high limit to get all objects (export needs all data).
         $query = [
-            '@self' => $objectFilters,
-            '_limit' => 999999, // Very high limit to get all objects
-            '_published' => false, // Export all objects, not just published ones
-            '_includeDeleted' => false
+            '@self'           => $objectFilters,
+            '_limit'          => 999999,
+        // Very high limit to get all objects.
+            '_published'      => false,
+        // Export all objects, not just published ones.
+            '_includeDeleted' => false,
         ];
-        
+
         $objects = $this->objectService->searchObjects(
             query: $query,
-            rbac: true,  // Apply RBAC filtering
-            multi: true, // Apply multi-tenancy filtering
+            rbac: true,
+        // Apply RBAC filtering.
+            multi: true,
+        // Apply multi-tenancy filtering.
             ids: null,
             uses: null
         );
-        
+
         foreach ($objects as $object) {
             foreach ($headers as $col => $header) {
                 $value = $this->getObjectValue(object: $object, header: $header);
@@ -328,10 +353,13 @@ class ExportService
     /**
      * Get headers for export
      *
-     * @param Register|null $register Optional register to export
-     * @param Schema|null   $schema   Optional schema to export
+     * @param Register|null $register    Optional register to export
+     * @param Schema|null   $schema      Optional schema to export
+     * @param IUser|null    $currentUser Current user for permission checks
      *
-     * @return array Headers indexed by column letter with property key as value
+     * @return (mixed|string)[] Headers indexed by column letter with property key as value
+     *
+     * @psalm-return array<mixed|string>
      */
     private function getHeaders(?Register $register=null, ?Schema $schema=null, ?IUser $currentUser=null): array
     {
@@ -356,12 +384,15 @@ class ExportService
 
                 // Always use the property key as the header to ensure consistent data access.
                 $headers[$col] = $fieldName;
+                /*
+                 * @psalm-suppress StringIncrement - Intentional Excel column increment (B->C->D...).
+                 */
                 $col++;
             }
         }
 
-        // REQUIREMENT: Add @self metadata fields only if user is admin
-        if ($this->isUserAdmin($currentUser)) {
+        // REQUIREMENT: Add @self metadata fields only if user is admin.
+        if ($this->isUserAdmin($currentUser) === true) {
             $metadataFields = [
                 'created',
                 'updated',
@@ -392,7 +423,7 @@ class ExportService
                 $headers[$col] = '@self.'.$field;
                 $col++;
             }
-        }
+        }//end if
 
         return $headers;
 

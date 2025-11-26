@@ -213,9 +213,9 @@ Dynamically discovered from JSON object data:
 The discovery system automatically filters out:
 - System fields (starting with @ or _)
 - Nested objects and arrays of objects
-- High cardinality string fields (>50 unique values)
-- Fields appearing in &lt;10% of objects
-- Fields with inconsistent types (&lt;70% type consistency)
+- High cardinality string fields (more than 50 unique values)
+- Fields appearing in less than 10% of objects
+- Fields with inconsistent types (less than 70% type consistency)
 
 ### API Integration
 
@@ -247,7 +247,7 @@ Use discovery results to build facet configurations:
 ```javascript
 // Frontend example: Build facet config from discovery
 const buildFacetConfig = (facetableFields) => {
-    const config = { _facets: { '@self': {}, ...{} } };
+    const config = { _facets: { '@self': {} } };
     
     // Add metadata facets
     Object.entries(facetableFields['@self']).forEach(([field, info]) => {
@@ -594,6 +594,91 @@ $facets = $objectService->getFacetsForObjects($query);
 // without losing the ability to see other options
 ```
 
+## Schema-Based Facet Configuration
+
+The faceting system supports schema-driven facet discovery, allowing you to define which fields are facetable directly in your schema definitions.
+
+### Schema Property Configuration
+
+Fields are marked as facetable in schema properties using the `facetable` flag:
+
+```json
+{
+  "properties": {
+    "status": {
+      "type": "string",
+      "title": "Status",
+      "description": "Current status of the item",
+      "facetable": true,
+      "example": "active"
+    },
+    "priority": {
+      "type": "integer",
+      "title": "Priority Level",
+      "description": "Priority from 1 to 10",
+      "facetable": true,
+      "minimum": 1,
+      "maximum": 10
+    },
+    "created_date": {
+      "type": "string",
+      "format": "date",
+      "title": "Creation Date",
+      "description": "When the item was created",
+      "facetable": true
+    },
+    "internal_notes": {
+      "type": "string",
+      "title": "Internal Notes",
+      "description": "Notes for internal use only",
+      "facetable": false
+    }
+  }
+}
+```
+
+### Automatic Facet Type Detection
+
+Based on schema property definitions, the system automatically determines appropriate facet types:
+
+- **String fields**: 
+  - Regular strings → `terms` facet
+  - Date/datetime format → `date_histogram` and `range` facets
+  - Email/URI/UUID format → `terms` facet
+
+- **Numeric fields** (integer/number): `range` and `terms` facets
+
+- **Boolean fields**: `terms` facet
+
+- **Array fields**: `terms` facet
+
+### Schema-Based Discovery Benefits
+
+**Performance Advantages:**
+- No object data analysis required - discovery is instant
+- Consistent behavior - facets always available based on schema design
+- No sampling overhead - works regardless of data volume
+- Efficient - eliminates runtime field discovery queries
+
+**Consistency:**
+- Facets are always available based on schema, not data content
+- No need to worry about sample sizes for discovery
+- Predictable facet availability across all registers
+
+### Backend Implementation
+
+The system uses schema-based facet discovery through:
+
+1. **Schema Analysis**: Pre-computes facet configuration when schema is saved
+2. **Facet Configuration Storage**: Stores facet metadata in schema entity
+3. **Efficient Retrieval**: Fast lookup without object data analysis
+
+**Core Components:**
+- `ObjectEntityMapper::getFacetableFieldsFromSchemas()` - Schema-based discovery
+- `Schema::regenerateFacetsFromProperties()` - Automatic facet configuration
+- `MariaDbFacetHandler` - Handles JSON object field facets
+- `MetaDataFacetHandler` - Handles database table column facets
+
 ## Performance Considerations
 
 ### Performance Impact
@@ -666,7 +751,33 @@ $results = $objectService->searchObjectsPaginated($query);
 2. **Indexed fields** - Metadata facets use indexed table columns
 3. **Disjunctive queries** - Optimized to exclude only the relevant filter
 4. **Count optimization** - Uses COUNT(*) instead of selecting all data
-5. **Sample-based analysis** - Facetable discovery analyzes subset of data for performance
+5. **Schema-based discovery** - No object data analysis required, instant discovery
+6. **Database indexes** - Critical indexes on `deleted`, `published`, `created`, `updated`, `organisation`, `owner`
+7. **Query batching** - Combines multiple facets where possible to reduce database round trips
+
+### Database Index Optimization
+
+For optimal facet performance, ensure these indexes exist:
+
+**Critical Indexes:**
+- `deleted` - Used in every query for lifecycle filtering
+- `published` - Used for publication status filtering
+- `created`, `updated` - Common facet fields
+- `organisation`, `owner` - Common facet fields
+- Composite indexes for filter combinations
+
+**Performance Targets:**
+- **With Indexes**: 0.5-1 second for complex facet queries
+- **Without Indexes**: 7+ seconds for same queries
+- **Register/Schema/Organisation facets**: 50-100ms each (with proper indexes)
+- **JSON field facets**: Performance varies by dataset size
+
+**Quick Performance Wins:**
+1. Apply database migrations to add critical indexes
+2. Use schema-based discovery instead of object analysis
+3. Limit facet scope to essential fields
+4. Use `_limit=0` for facet-only queries
+5. Remove `_facetable=true` if not needed (saves ~15ms)
 
 ### Best Practices
 
@@ -741,7 +852,7 @@ const DynamicFacetInterface = ({ baseQuery }) => {
       // Get actual facet data
       const facetResponse = await fetch('/api/objects', {
         method: 'POST',
-        body: JSON.stringify({ ...baseQuery, ...facetConfig })
+        body: JSON.stringify(Object.assign({}, baseQuery, facetConfig))
       });
       const facetData = await facetResponse.json();
       setFacetData(facetData.facets);
@@ -786,8 +897,8 @@ const DynamicFacetInterface = ({ baseQuery }) => {
       {/* Metadata facets */}
       {Object.entries(facetData['@self'] || {}).map(([field, facet]) => (
         <FacetFilter 
-          key={`@self.${field}`}
-          field={`@self.${field}`}
+          key={'@self.' + field}
+          field={'@self.' + field}
           facet={facet}
           fieldInfo={facetableFields['@self'][field]}
           onFilterChange={handleFilterChange}
@@ -1064,7 +1175,7 @@ class FacetingTest extends TestCase
 
     public function testFacetableFieldAppearanceThreshold(): void
     {
-        // Create objects where some fields appear in <10% of objects
+        // Create objects where some fields appear in less than 10% of objects
         $this->createTestObjects(['common_field' => 'value1'], 50);  // 100% appearance
         $this->createTestObjects(['rare_field' => 'value2'], 2);     // 4% appearance
         

@@ -41,12 +41,14 @@ use Psr\Log\LoggerInterface;
  */
 class RegisterTool extends AbstractTool
 {
+
     /**
      * Register service
      *
      * @var RegisterService
      */
     private RegisterService $registerService;
+
 
     /**
      * Constructor
@@ -62,129 +64,142 @@ class RegisterTool extends AbstractTool
     ) {
         parent::__construct($userSession, $logger);
         $this->registerService = $registerService;
-    }
+
+    }//end __construct()
+
 
     /**
      * Get tool name
      *
      * @return string Tool name
+     *
+     * @psalm-return 'register'
      */
     public function getName(): string
     {
         return 'register';
-    }
+
+    }//end getName()
+
 
     /**
      * Get tool description
      *
      * @return string Tool description
+     *
+     * @psalm-return 'Manage registers: list, view, create, update, or delete registers. Registers organize schemas and objects.'
      */
     public function getDescription(): string
     {
-        return 'Manage registers in OpenRegister. Registers are collections that organize schemas and objects. '
-             . 'Use this tool to list, view, create, update, or delete registers.';
-    }
+        return 'Manage registers: list, view, create, update, or delete registers. Registers organize schemas and objects.';
+
+    }//end getDescription()
+
 
     /**
      * Get function definitions for LLphant
      *
-     * @return array Array of function definitions
+     * @return (((string|string[])[]|string)[]|string)[][] Array of function definitions
+     *
+     * @psalm-return list<array<string, mixed>>
      */
     public function getFunctions(): array
     {
         return [
             [
-                'name' => 'list_registers',
+                'name'        => 'list_registers',
                 'description' => 'Get a list of all accessible registers',
-                'parameters' => [
-                    'type' => 'object',
+                'parameters'  => [
+                    'type'       => 'object',
                     'properties' => [
-                        'limit' => [
-                            'type' => 'integer',
+                        'limit'  => [
+                            'type'        => 'integer',
                             'description' => 'Maximum number of registers to return (default: 100)',
                         ],
                         'offset' => [
-                            'type' => 'integer',
+                            'type'        => 'integer',
                             'description' => 'Number of registers to skip for pagination (default: 0)',
                         ],
                     ],
-                    'required' => [],
+                    'required'   => [],
                 ],
             ],
             [
-                'name' => 'get_register',
+                'name'        => 'get_register',
                 'description' => 'Get details about a specific register by ID or slug',
-                'parameters' => [
-                    'type' => 'object',
+                'parameters'  => [
+                    'type'       => 'object',
                     'properties' => [
                         'id' => [
-                            'type' => 'string',
+                            'type'        => 'string',
                             'description' => 'The register ID or slug to retrieve',
                         ],
                     ],
-                    'required' => ['id'],
+                    'required'   => ['id'],
                 ],
             ],
             [
-                'name' => 'create_register',
+                'name'        => 'create_register',
                 'description' => 'Create a new register',
-                'parameters' => [
-                    'type' => 'object',
+                'parameters'  => [
+                    'type'       => 'object',
                     'properties' => [
-                        'title' => [
-                            'type' => 'string',
+                        'title'       => [
+                            'type'        => 'string',
                             'description' => 'The title of the register',
                         ],
                         'description' => [
-                            'type' => 'string',
+                            'type'        => 'string',
                             'description' => 'A description of what this register is for',
                         ],
-                        'slug' => [
-                            'type' => 'string',
+                        'slug'        => [
+                            'type'        => 'string',
                             'description' => 'URL-friendly identifier (optional, generated from title if not provided)',
                         ],
                     ],
-                    'required' => ['title'],
+                    'required'   => ['title'],
                 ],
             ],
             [
-                'name' => 'update_register',
+                'name'        => 'update_register',
                 'description' => 'Update an existing register',
-                'parameters' => [
-                    'type' => 'object',
+                'parameters'  => [
+                    'type'       => 'object',
                     'properties' => [
-                        'id' => [
-                            'type' => 'string',
+                        'id'          => [
+                            'type'        => 'string',
                             'description' => 'The register ID to update',
                         ],
-                        'title' => [
-                            'type' => 'string',
+                        'title'       => [
+                            'type'        => 'string',
                             'description' => 'New title for the register',
                         ],
                         'description' => [
-                            'type' => 'string',
+                            'type'        => 'string',
                             'description' => 'New description for the register',
                         ],
                     ],
-                    'required' => ['id'],
+                    'required'   => ['id'],
                 ],
             ],
             [
-                'name' => 'delete_register',
+                'name'        => 'delete_register',
                 'description' => 'Delete a register (only if it has no objects)',
-                'parameters' => [
-                    'type' => 'object',
+                'parameters'  => [
+                    'type'       => 'object',
                     'properties' => [
                         'id' => [
-                            'type' => 'string',
+                            'type'        => 'string',
                             'description' => 'The register ID to delete',
                         ],
                     ],
-                    'required' => ['id'],
+                    'required'   => ['id'],
                 ],
             ],
         ];
-    }
+
+    }//end getFunctions()
+
 
     /**
      * Execute a function
@@ -197,25 +212,27 @@ class RegisterTool extends AbstractTool
      *
      * @throws \Exception If function execution fails
      */
-    public function executeFunction(string $functionName, array $parameters, ?string $userId = null): array
+    public function executeFunction(string $functionName, array $parameters, ?string $userId=null): array
     {
         $this->log($functionName, $parameters);
 
-        if (!$this->hasUserContext($userId)) {
+        if ($this->hasUserContext($userId) === false) {
             return $this->formatError('No user context available. Tool cannot execute without user session.');
         }
 
         try {
-            // Convert snake_case to camelCase for PSR compliance
+            // Convert snake_case to camelCase for PSR compliance.
             $methodName = lcfirst(str_replace('_', '', ucwords($functionName, '_')));
-            
-            // Call the method directly (LLPhant-compatible)
+
+            // Call the method directly (LLPhant-compatible).
             return $this->$methodName(...array_values($parameters));
         } catch (\Exception $e) {
             $this->log($functionName, $parameters, 'error', $e->getMessage());
             return $this->formatError($e->getMessage());
         }
-    }
+
+    }//end executeFunction()
+
 
     /**
      * List registers
@@ -227,7 +244,7 @@ class RegisterTool extends AbstractTool
      *
      * @return array Result with list of registers
      */
-    public function listRegisters(int $limit = 100, int $offset = 0): array
+    public function listRegisters(int $limit=100, int $offset=0): array
     {
 
         $filters = [];
@@ -235,23 +252,28 @@ class RegisterTool extends AbstractTool
 
         $registers = $this->registerService->findAll($limit, $offset, $filters);
 
-        $registerList = array_map(function ($register) {
-            return [
-                'id' => $register->getId(),
-                'uuid' => $register->getUuid(),
-                'title' => $register->getTitle(),
-                'description' => $register->getDescription(),
-                'slug' => $register->getSlug(),
-            ];
-        }, $registers);
+        $registerList = array_map(
+                function ($register) {
+                    return [
+                        'id'          => $register->getId(),
+                        'uuid'        => $register->getUuid(),
+                        'title'       => $register->getTitle(),
+                        'description' => $register->getDescription(),
+                        'slug'        => $register->getSlug(),
+                    ];
+                },
+                $registers
+                );
 
         return $this->formatSuccess($registerList, sprintf('Found %d registers', count($registerList)));
-    }
+
+    }//end listRegisters()
+
 
     /**
      * Get a specific register
      *
-     * @param array $parameters Function parameters
+     * @param string $id Register ID
      *
      * @return array Result with register details
      *
@@ -263,33 +285,37 @@ class RegisterTool extends AbstractTool
 
         return $this->formatSuccess(
             [
-                'id' => $register->getId(),
-                'uuid' => $register->getUuid(),
-                'title' => $register->getTitle(),
-                'description' => $register->getDescription(),
-                'slug' => $register->getSlug(),
-                'folder' => $register->getFolder(),
+                'id'           => $register->getId(),
+                'uuid'         => $register->getUuid(),
+                'title'        => $register->getTitle(),
+                'description'  => $register->getDescription(),
+                'slug'         => $register->getSlug(),
+                'folder'       => $register->getFolder(),
                 'organisation' => $register->getOrganisation(),
-                'created' => $register->getCreated()?->format('Y-m-d H:i:s'),
-                'updated' => $register->getUpdated()?->format('Y-m-d H:i:s'),
+                'created'      => $register->getCreated()?->format('Y-m-d H:i:s'),
+                'updated'      => $register->getUpdated()?->format('Y-m-d H:i:s'),
             ],
             'Register retrieved successfully'
         );
-    }
+
+    }//end getRegister()
+
 
     /**
      * Create a new register
      *
-     * @param array $parameters Function parameters
+     * @param string      $title       Register title
+     * @param string      $description Register description
+     * @param string|null $slug        Register slug
      *
      * @return array Result with created register
      *
      * @throws \Exception If creation fails
      */
-    public function createRegister(string $title, string $description = '', ?string $slug = null): array
+    public function createRegister(string $title, string $description='', ?string $slug=null): array
     {
         $data = [
-            'title' => $title,
+            'title'       => $title,
             'description' => $description,
         ];
 
@@ -301,36 +327,41 @@ class RegisterTool extends AbstractTool
 
         return $this->formatSuccess(
             [
-                'id' => $register->getId(),
-                'uuid' => $register->getUuid(),
-                'title' => $register->getTitle(),
+                'id'          => $register->getId(),
+                'uuid'        => $register->getUuid(),
+                'title'       => $register->getTitle(),
                 'description' => $register->getDescription(),
-                'slug' => $register->getSlug(),
+                'slug'        => $register->getSlug(),
             ],
             'Register created successfully'
         );
-    }
+
+    }//end createRegister()
+
 
     /**
      * Update an existing register
      *
-     * @param array $parameters Function parameters
+     * @param string      $id          Register ID
+     * @param string|null $title       Register title
+     * @param string|null $description Register description
      *
      * @return array Result with updated register
      *
      * @throws \Exception If update fails
      */
-    public function updateRegister(string $id, ?string $title = null, ?string $description = null): array
+    public function updateRegister(string $id, ?string $title=null, ?string $description=null): array
     {
         $data = [];
         if ($title !== null) {
             $data['title'] = $title;
         }
+
         if ($description !== null) {
             $data['description'] = $description;
         }
 
-        if (empty($data)) {
+        if ($data === []) {
             throw new \InvalidArgumentException('No update data provided');
         }
 
@@ -338,20 +369,22 @@ class RegisterTool extends AbstractTool
 
         return $this->formatSuccess(
             [
-                'id' => $register->getId(),
-                'uuid' => $register->getUuid(),
-                'title' => $register->getTitle(),
+                'id'          => $register->getId(),
+                'uuid'        => $register->getUuid(),
+                'title'       => $register->getTitle(),
                 'description' => $register->getDescription(),
-                'slug' => $register->getSlug(),
+                'slug'        => $register->getSlug(),
             ],
             'Register updated successfully'
         );
-    }
+
+    }//end updateRegister()
+
 
     /**
      * Delete a register
      *
-     * @param array $parameters Function parameters
+     * @param string $id Register ID
      *
      * @return array Result of deletion
      *
@@ -366,6 +399,8 @@ class RegisterTool extends AbstractTool
             ['id' => $id],
             'Register deleted successfully'
         );
-    }
-}
 
+    }//end deleteRegister()
+
+
+}//end class

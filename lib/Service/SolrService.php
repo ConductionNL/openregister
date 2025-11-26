@@ -102,14 +102,14 @@ class SolrService
         'description' => 2.0,
         'summary' => 2.0,
         'content' => 1.0,
-        '_text_' => 1.0, // Catch-all text field
+        '_text_' => 1.0, // Catch-all text field.
     ];
 
     /**
      * Constructor for SolrService
      *
      * @param SettingsService        $settingsService  Settings service for configuration
-     * @param LoggerInterface        $logger           Logger for debugging and monitoring  
+     * @param LoggerInterface        $logger           Logger for debugging and monitoring
      * @param ObjectEntityMapper     $objectMapper     Object mapper for database operations
      * @param IConfig               $config           Nextcloud configuration interface
      */
@@ -120,7 +120,7 @@ class SolrService
         private readonly IConfig $config
     ) {
         $this->tenantId = $this->generateTenantId();
-        // Lazy initialization - only initialize when actually used
+        // Lazy initialization - only initialize when actually used.
     }
 
     /**
@@ -133,20 +133,20 @@ class SolrService
      */
     private function generateTenantId(): string
     {
-        // First try to get tenant_id from SOLR settings
+        // First try to get tenant_id from SOLR settings.
         $solrSettings = $this->settingsService->getSolrSettings();
-        if (!empty($solrSettings['tenantId'])) {
+        if (empty($solrSettings['tenantId']) === false) {
             return $solrSettings['tenantId'];
         }
-        
-        // Fallback to generating from instance configuration
+
+        // Fallback to generating from instance configuration.
         $instanceId = $this->config->getSystemValue('instanceid', 'default');
         $overwriteHost = $this->config->getSystemValue('overwrite.cli.url', '');
-        
-        if (!empty($overwriteHost)) {
+
+        if (empty($overwriteHost) === false) {
             return 'nc_' . hash('crc32', $overwriteHost);
         }
-        
+
         return 'nc_' . substr($instanceId, 0, 8);
     }
 
@@ -161,9 +161,9 @@ class SolrService
      */
     private function getTenantSpecificCoreName(string $baseCollectionName): string
     {
-        // SOLR CLOUD: Use collection names, not core names
-        // Format: openregister_nc_f0e53393 (collection)
-        // Underlying core: openregister_nc_f0e53393_shard1_replica_n1 (handled by SolrCloud)
+        // SOLR CLOUD: Use collection names, not core names.
+        // Format: openregister_nc_f0e53393 (collection).
+        // Underlying core: openregister_nc_f0e53393_shard1_replica_n1 (handled by SolrCloud).
         return $baseCollectionName . '_' . $this->tenantId;
     }
 
@@ -179,24 +179,24 @@ class SolrService
     private function ensureTenantCollectionExists(string $collectionName): bool
     {
         $this->ensureClientInitialized();
-        
-        if (!$this->client) {
+
+        if ($this->client === null) {
             $this->logger->warning('Cannot check collection existence: Solr client not initialized');
             return false;
         }
-        
+
         try {
-            // Check if collection already exists using Collections API (SolrCloud)
-            if ($this->collectionExists($collectionName)) {
+            // Check if collection already exists using Collections API (SolrCloud).
+            if ($this->collectionExists($collectionName) === true) {
                 $this->logger->info("Solr collection '{$collectionName}' already exists", [
                     'tenant_id' => $this->tenantId
                 ]);
                 return true;
             }
-            
-            // Collection doesn't exist, attempt to create it
+
+            // Collection doesn't exist, attempt to create it.
             return $this->createTenantCollection($collectionName);
-            
+
         } catch (\Exception $e) {
             $this->logger->error('Failed to check/create Solr collection', [
                 'collection' => $collectionName,
@@ -219,13 +219,13 @@ class SolrService
     private function createTenantCollection(string $collectionName): bool
     {
         try {
-            // Use the base configSet name (same as base collection)
-            $baseConfigSet = 'openregister'; // This should match the configSet name from SolrSetup
-            
-            // Create collection using Collections API
+            // Use the base configSet name (same as base collection).
+            $baseConfigSet = 'openregister'; // This should match the configSet name from SolrSetup.
+
+            // Create collection using Collections API.
             $success = $this->createCollection($collectionName, $baseConfigSet);
-            
-            if ($success) {
+
+            if ($success === true) {
                 $this->logger->info("Successfully created Solr collection '{$collectionName}' for tenant", [
                     'tenant_id' => $this->tenantId,
                     'configSet' => $baseConfigSet
@@ -238,7 +238,7 @@ class SolrService
                 ]);
                 return false;
             }
-            
+
         } catch (\Exception $e) {
             $this->logger->error('Exception while creating Solr collection', [
                 'collection' => $collectionName,
@@ -260,15 +260,15 @@ class SolrService
     public function runSolrSetup(): bool
     {
         try {
-            // Ensure we have SOLR configuration loaded
+            // Ensure we have SOLR configuration loaded.
             $solrSettings = $this->settingsService->getSolrSettings();
-            
-            if (!$solrSettings['enabled']) {
+
+            if (($solrSettings['enabled'] ?? false) === false) {
                 $this->logger->info('SOLR is disabled, skipping setup');
                 return false;
             }
-            
-            // Pass the loaded settings to setup
+
+            // Pass the loaded settings to setup.
             $setup = new SolrSetup($solrSettings, $this->logger);
             return $setup->setupSolr();
         } catch (\Exception $e) {
@@ -286,7 +286,7 @@ class SolrService
      */
     private function ensureClientInitialized(): void
     {
-        if (!$this->clientInitialized) {
+        if ($this->clientInitialized === false) {
             $this->initializeClient();
             $this->clientInitialized = true;
         }
@@ -305,33 +305,33 @@ class SolrService
     {
         try {
             $solrSettings = $this->settingsService->getSolrSettings();
-            
-            if (!$solrSettings['enabled']) {
+
+            if (($solrSettings['enabled'] ?? false) === false) {
                 $this->client = null;
                 return;
             }
-            
+
             $this->solrConfig = $solrSettings;
-            
-            // Generate tenant-specific core name for proper isolation
+
+            // Generate tenant-specific core name for proper isolation.
             $baseCoreName = $this->solrConfig['core'];
             $tenantSpecificCore = $this->getTenantSpecificCoreName($baseCoreName);
-            
-            // Initialize client first (required for collection management)
+
+            // Initialize client first (required for collection management).
             $adapter = new Curl();
             $eventDispatcher = new EventDispatcher();
             $this->client = new Client($adapter, $eventDispatcher);
-            
-            // Default to base collection initially
+
+            // Default to base collection initially.
             $coreToUse = $baseCoreName;
-            
-            // SOLR CLOUD: Check if tenant-specific collection exists
+
+            // SOLR CLOUD: Check if tenant-specific collection exists.
             $tenantSpecificCollection = $this->getTenantSpecificCoreName($baseCoreName);
             $collectionExists = $this->collectionExists($tenantSpecificCollection);
-            
-            if (!$collectionExists) {
-                // FALLBACK: Use base collection
-                if ($this->collectionExists($baseCoreName)) {
+
+            if ($collectionExists === false) {
+                // FALLBACK: Use base collection.
+                if ($this->collectionExists($baseCoreName) === true) {
                     $coreToUse = $baseCoreName;
                     $this->logger->warning('Using base collection as fallback (no tenant isolation)', [
                         'tenant_id' => $this->tenantId,
@@ -344,18 +344,18 @@ class SolrService
                         'base_collection' => $baseCoreName,
                         'tenant_id' => $this->tenantId
                     ]);
-                    $coreToUse = $baseCoreName; // Last resort
+                    $coreToUse = $baseCoreName; // Last resort.
                 }
             } else {
-                // SUCCESS: Use tenant-specific collection
+                // SUCCESS: Use tenant-specific collection.
                 $coreToUse = $tenantSpecificCollection;
                 $this->logger->info('Using tenant-specific collection for proper isolation', [
                     'tenant_id' => $this->tenantId,
                     'collection' => $tenantSpecificCollection
                 ]);
             }
-            
-            // Build SOLR endpoint configuration with determined collection
+
+            // Build SOLR endpoint configuration with determined collection.
             $endpointConfig = [
                 'key' => 'default',
                 'scheme' => $this->solrConfig['scheme'],
@@ -365,17 +365,17 @@ class SolrService
                 'core' => $coreToUse,
                 'timeout' => $this->solrConfig['timeout'],
             ];
-            
-            // Add authentication if configured
-            if (!empty($this->solrConfig['username']) && !empty($this->solrConfig['password'])) {
+
+            // Add authentication if configured.
+            if (empty($this->solrConfig['username']) === false && empty($this->solrConfig['password']) === false) {
                 $endpointConfig['username'] = $this->solrConfig['username'];
                 $endpointConfig['password'] = $this->solrConfig['password'];
             }
-            
-            // Create and configure endpoint
+
+            // Create and configure endpoint.
             $endpoint = $this->client->createEndpoint($endpointConfig);
             $this->client->setDefaultEndpoint($endpoint);
-            
+
             $this->logger->info('SOLR client initialized successfully', [
                 'host' => $this->solrConfig['host'],
                 'port' => $this->solrConfig['port'],
@@ -383,7 +383,7 @@ class SolrService
                 'active_collection' => $coreToUse,
                 'tenant' => $this->tenantId
             ]);
-            
+
         } catch (\Exception $e) {
             $this->client = null;
             $this->stats['errors']++;
@@ -402,7 +402,7 @@ class SolrService
     public function isAvailable(): bool
     {
         $this->ensureClientInitialized();
-        return $this->client !== null && !empty($this->solrConfig['enabled']);
+        return $this->client !== null && empty($this->solrConfig['enabled']) === false;
     }
 
     /**
@@ -415,7 +415,7 @@ class SolrService
     public function testConnection(): array
     {
         $this->ensureClientInitialized();
-        if (!$this->isAvailable()) {
+        if ($this->isAvailable() === false) {
             return [
                 'success' => false,
                 'message' => 'SOLR is not enabled or configured',
@@ -425,13 +425,13 @@ class SolrService
 
         try {
             $startTime = microtime(true);
-            
-            // Create ping query
+
+            // Create ping query.
             $ping = $this->client->createPing();
             $result = $this->client->ping($ping);
-            
+
             $responseTime = (microtime(true) - $startTime) * 1000;
-            
+
             return [
                 'success' => true,
                 'message' => 'SOLR connection successful',
@@ -442,7 +442,7 @@ class SolrService
                     'status' => $result->getData()
                 ]
             ];
-            
+
         } catch (HttpException $e) {
             $this->stats['errors']++;
             return [
@@ -477,38 +477,38 @@ class SolrService
     public function indexObject(ObjectEntity $object, bool $commit = false): bool
     {
         $this->ensureClientInitialized();
-        if (!$this->isAvailable()) {
+        if ($this->isAvailable() === false) {
             return false;
         }
 
         try {
             $startTime = microtime(true);
-            
-            // Create update query
+
+            // Create update query.
             $update = $this->client->createUpdate();
-            
-            // Create document
+
+            // Create document.
             $doc = $this->createSolrDocument($update, $object);
-            
-            // Add document to update query
+
+            // Add document to update query.
             $update->addDocument($doc);
-            
-            // Set commit options based on configuration
-            if ($commit || $this->solrConfig['autoCommit']) {
+
+            // Set commit options based on configuration.
+            if ($commit === true || $this->solrConfig['autoCommit'] === true) {
                 if ($this->solrConfig['commitWithin'] > 0) {
                     $update->addCommit(false, false, false, $this->solrConfig['commitWithin']);
                 } else {
                     $update->addCommit();
                 }
             }
-            
-            // Execute update
+
+            // Execute update.
             $result = $this->client->update($update);
-            
+
             $this->stats['indexes']++;
             $this->stats['index_time'] += (microtime(true) - $startTime);
-            
-            if ($this->solrConfig['enableLogging']) {
+
+            if ($this->solrConfig['enableLogging'] === true) {
                 $this->logger->debug('Object indexed in SOLR', [
                     'object_id' => $object->getId(),
                     'object_uuid' => $object->getUuid(),
@@ -518,9 +518,9 @@ class SolrService
                     'execution_time_ms' => round((microtime(true) - $startTime) * 1000, 2)
                 ]);
             }
-            
+
             return $result->getStatus() === 0;
-            
+
         } catch (\Exception $e) {
             $this->stats['errors']++;
             $this->logger->error('Failed to index object in SOLR', [
@@ -546,7 +546,7 @@ class SolrService
     public function bulkIndexObjects(array $objects, bool $commit = true): array
     {
         $this->ensureClientInitialized();
-        if (!$this->isAvailable() || empty($objects)) {
+        if ($this->isAvailable() === false || empty($objects) === true) {
             return ['indexed' => 0, 'errors' => 0, 'execution_time_ms' => 0.0];
         }
 
@@ -555,16 +555,16 @@ class SolrService
         $errors = 0;
 
         try {
-            // Create update query
+            // Create update query.
             $update = $this->client->createUpdate();
-            
-            // Convert objects to SOLR documents
+
+            // Convert objects to SOLR documents.
             foreach ($objects as $object) {
-                if (!$object instanceof ObjectEntity) {
+                if (($object instanceof ObjectEntity) === false) {
                     $errors++;
                     continue;
                 }
-                
+
                 try {
                     $doc = $this->createSolrDocument($update, $object);
                     $update->addDocument($doc);
@@ -577,31 +577,31 @@ class SolrService
                     ]);
                 }
             }
-            
+
             if ($indexed > 0) {
-                // Set commit options
-                if ($commit) {
+                // Set commit options.
+                if ($commit === true) {
                 if ($this->solrConfig['commitWithin'] > 0) {
                     $update->addCommit(false, false, false, $this->solrConfig['commitWithin']);
                     } else {
                         $update->addCommit();
                     }
                 }
-                
-                // Execute bulk update
+
+                // Execute bulk update.
                 $result = $this->client->update($update);
-                
+
                 if ($result->getStatus() !== 0) {
                     $errors = $indexed;
                     $indexed = 0;
                 }
             }
-            
+
             $executionTime = (microtime(true) - $startTime) * 1000;
             $this->stats['indexes'] += $indexed;
             $this->stats['errors'] += $errors;
             $this->stats['index_time'] += ($executionTime / 1000);
-            
+
             $this->logger->info('Bulk SOLR indexing completed', [
                 'total_objects' => count($objects),
                 'indexed' => $indexed,
@@ -609,13 +609,13 @@ class SolrService
                 'execution_time_ms' => round($executionTime, 2),
                 'tenant_id' => $this->tenantId
             ]);
-            
+
             return [
                 'indexed' => $indexed,
                 'errors' => $errors,
                 'execution_time_ms' => round($executionTime, 2)
             ];
-            
+
         } catch (\Exception $e) {
             $this->stats['errors'] += count($objects);
             $this->logger->error('Bulk SOLR indexing failed', [
@@ -623,7 +623,7 @@ class SolrService
                 'error' => $e->getMessage(),
                 'tenant_id' => $this->tenantId
             ]);
-            
+
             return [
                 'indexed' => 0,
                 'errors' => count($objects),
@@ -645,43 +645,43 @@ class SolrService
     public function deleteObject(string|int $objectId, bool $commit = false): bool
     {
         $this->ensureClientInitialized();
-        if (!$this->isAvailable()) {
+        if ($this->isAvailable() === false) {
             return false;
         }
 
         try {
             $startTime = microtime(true);
-            
-            // Create update query
+
+            // Create update query.
             $update = $this->client->createUpdate();
-            
-            // Create delete query with tenant isolation
+
+            // Create delete query with tenant isolation.
             $deleteQuery = sprintf(
                 'id:%s AND tenant_id:%s',
                 $this->escapeSolrValue($objectId),
                 $this->escapeSolrValue($this->tenantId)
             );
-            
+
             $update->addDeleteQuery($deleteQuery);
-            
-            if ($commit || $this->solrConfig['autoCommit']) {
+
+            if ($commit === true || $this->solrConfig['autoCommit'] === true) {
                 $update->addCommit();
             }
-            
+
             $result = $this->client->update($update);
-            
+
             $this->stats['deletes']++;
-            
-            if ($this->solrConfig['enableLogging']) {
+
+            if ($this->solrConfig['enableLogging'] === true) {
                 $this->logger->debug('Object deleted from SOLR', [
                     'object_id' => $objectId,
                     'tenant_id' => $this->tenantId,
                     'execution_time_ms' => round((microtime(true) - $startTime) * 1000, 2)
                 ]);
             }
-            
+
             return $result->getStatus() === 0;
-            
+
         } catch (\Exception $e) {
             $this->stats['errors']++;
             $this->logger->error('Failed to delete object from SOLR', [
@@ -719,47 +719,47 @@ class SolrService
     public function searchObjects(array $searchParams): array
     {
         $this->ensureClientInitialized();
-        if (!$this->isAvailable()) {
+        if ($this->isAvailable() === false) {
             return ['objects' => [], 'facets' => [], 'total' => 0, 'execution_time_ms' => 0.0];
         }
 
         try {
             $startTime = microtime(true);
-            
-            // Create select query
+
+            // Create select query.
             $query = $this->client->createSelect();
-            
-            // Build query string with tenant isolation
+
+            // Build query string with tenant isolation.
             $queryString = $this->buildQueryString($searchParams);
             $query->setQuery($queryString);
-            
-            // Set pagination
+
+            // Set pagination.
             $query->setStart($searchParams['start'] ?? 0);
             $query->setRows($searchParams['rows'] ?? 10);
-            
-            // Add filter queries
+
+            // Add filter queries.
             $this->addFilterQueries($query, $searchParams);
-            
-            // Add sorting
+
+            // Add sorting.
             $this->addSorting($query, $searchParams);
-            
-            // Add faceting
+
+            // Add faceting.
             $this->addFaceting($query, $searchParams);
-            
-            // Execute search
+
+            // Execute search.
             $resultSet = $this->client->select($query);
-            
-            // Convert SOLR documents back to ObjectEntity objects
+
+            // Convert SOLR documents back to ObjectEntity objects.
             $objects = $this->convertSolrResultsToObjects($resultSet);
-            
-            // Extract facets
+
+            // Extract facets.
             $facets = $this->extractFacets($resultSet);
-            
+
             $executionTime = (microtime(true) - $startTime) * 1000;
             $this->stats['searches']++;
             $this->stats['search_time'] += ($executionTime / 1000);
-            
-            if ($this->solrConfig['enableLogging']) {
+
+            if ($this->solrConfig['enableLogging'] === true) {
                 $this->logger->debug('SOLR search executed', [
                     'query' => $queryString,
                     'total_found' => $resultSet->getNumFound(),
@@ -768,14 +768,14 @@ class SolrService
                     'tenant_id' => $this->tenantId
                 ]);
             }
-            
+
             return [
                 'objects' => $objects,
                 'facets' => $facets,
                 'total' => $resultSet->getNumFound(),
                 'execution_time_ms' => round($executionTime, 2)
             ];
-            
+
         } catch (\Exception $e) {
             $this->stats['errors']++;
             $this->logger->error('SOLR search failed', [
@@ -783,7 +783,7 @@ class SolrService
                 'error' => $e->getMessage(),
                 'tenant_id' => $this->tenantId
             ]);
-            
+
             return ['objects' => [], 'facets' => [], 'total' => 0, 'execution_time_ms' => 0.0];
         }
     }
@@ -799,26 +799,26 @@ class SolrService
     public function clearIndex(): bool
     {
         $this->ensureClientInitialized();
-        if (!$this->isAvailable()) {
+        if ($this->isAvailable() === false) {
             return false;
         }
 
         try {
             $update = $this->client->createUpdate();
-            
-            // Delete all documents for this tenant
+
+            // Delete all documents for this tenant.
             $deleteQuery = sprintf('tenant_id:%s', $this->escapeSolrValue($this->tenantId));
             $update->addDeleteQuery($deleteQuery);
             $update->addCommit();
-            
+
             $result = $this->client->update($update);
-            
+
             $this->logger->warning('SOLR index cleared for tenant', [
                 'tenant_id' => $this->tenantId
             ]);
-            
+
             return $result->getStatus() === 0;
-            
+
         } catch (\Exception $e) {
             $this->stats['errors']++;
             $this->logger->error('Failed to clear SOLR index', [
@@ -840,16 +840,42 @@ class SolrService
             'available' => $this->isAvailable(),
             'tenant_id' => $this->tenantId,
             'config' => array_merge($this->solrConfig, ['password' => '[HIDDEN]']),
-            'avg_search_time' => $this->stats['searches'] > 0 ? 
-                round($this->stats['search_time'] / $this->stats['searches'], 4) : 0,
-            'avg_index_time' => $this->stats['indexes'] > 0 ? 
-                round($this->stats['index_time'] / $this->stats['indexes'], 4) : 0,
+            'avg_search_time' => $this->getAverageSearchTime(),
+            'avg_index_time' => $this->getAverageIndexTime(),
         ]);
     }
 
     /**
+     * Get average search time.
+     *
+     * @return float Average search time in seconds.
+     */
+    private function getAverageSearchTime(): float
+    {
+        if ($this->stats['searches'] > 0) {
+            return round($this->stats['search_time'] / $this->stats['searches'], 4);
+        }
+
+        return 0.0;
+    }
+
+    /**
+     * Get average index time.
+     *
+     * @return float Average index time in seconds.
+     */
+    private function getAverageIndexTime(): float
+    {
+        if ($this->stats['indexes'] > 0) {
+            return round($this->stats['index_time'] / $this->stats['indexes'], 4);
+        }
+
+        return 0.0;
+    }
+
+    /**
      * Get comprehensive SOLR dashboard statistics
-     * 
+     *
      * Provides detailed metrics for the SOLR Search Management dashboard
      * including core statistics, performance metrics, and health indicators.
      *
@@ -858,29 +884,39 @@ class SolrService
     public function getDashboardStats(): array
     {
         $this->ensureClientInitialized();
-        
+
         $baseStats = $this->getStats();
         $connection = $this->testConnection();
-        
-        // Core overview statistics
+
+        // Core overview statistics.
+        $connectionStatus = 'error';
+        if ($connection['success'] === true) {
+            $connectionStatus = 'healthy';
+        }
+
         $overview = [
             'available' => $this->isAvailable(),
-            'connection_status' => $connection['success'] ? 'healthy' : 'error',
+            'connection_status' => $connectionStatus,
             'response_time_ms' => $connection['details']['response_time_ms'] ?? 0,
             'total_documents' => $this->getDocumentCount(),
             'index_size' => $this->getIndexSize(),
             'last_commit' => $this->getLastCommitTime(),
         ];
-        
-        // Core information
+
+        // Core information.
+        $coreStatus = 'inactive';
+        if ($connection['success'] === true) {
+            $coreStatus = 'active';
+        }
+
         $cores = [
             'active_core' => $this->solrConfig['core'] ?? 'unknown',
-            'core_status' => $connection['success'] ? 'active' : 'inactive',
+            'core_status' => $coreStatus,
             'tenant_id' => $this->tenantId,
             'endpoint_url' => $this->buildSolrUrl(),
         ];
-        
-        // Performance metrics
+
+        // Performance metrics.
         $performance = [
             'total_searches' => $baseStats['searches'],
             'total_indexes' => $baseStats['indexes'],
@@ -892,8 +928,8 @@ class SolrService
             'operations_per_sec' => $this->calculateOperationsPerSecond(),
             'error_rate' => $this->calculateErrorRate(),
         ];
-        
-        // Health indicators
+
+        // Health indicators.
         $health = [
             'status' => $this->getHealthStatus(),
             'uptime' => $this->getUptime(),
@@ -902,15 +938,15 @@ class SolrService
             'warnings' => $this->getHealthWarnings(),
             'last_optimization' => $this->getLastOptimization(),
         ];
-        
-        // Recent operations
+
+        // Recent operations.
         $operations = [
             'recent_activity' => $this->getRecentActivity(),
             'queue_status' => $this->getQueueStatus(),
             'commit_frequency' => $this->getCommitFrequency(),
             'optimization_needed' => $this->isOptimizationNeeded(),
         ];
-        
+
         return [
             'overview' => $overview,
             'cores' => $cores,
@@ -928,7 +964,7 @@ class SolrService
      */
     public function getDocumentCount(): int
     {
-        if (!$this->isAvailable()) {
+        if ($this->isAvailable() === false) {
             return 0;
         }
 
@@ -936,10 +972,10 @@ class SolrService
             $query = $this->client->createSelect();
             $query->setQuery(sprintf('tenant_id:%s', $this->escapeSolrValue($this->tenantId)));
             $query->setRows(0); // Only count, don't return documents
-            
+
             $resultSet = $this->client->select($query);
             return $resultSet->getNumFound();
-            
+
         } catch (\Exception $e) {
             $this->logger->error('Failed to get document count from SOLR', ['error' => $e->getMessage()]);
             return 0;
@@ -953,17 +989,17 @@ class SolrService
      */
     public function getIndexSize(): string
     {
-        if (!$this->isAvailable()) {
+        if ($this->isAvailable() === false) {
             return '0 B';
         }
 
         try {
-            // This is an approximation - actual size would require SOLR admin API
+            // This is an approximation - actual size would require SOLR admin API.
             $docCount = $this->getDocumentCount();
             $estimatedSize = $docCount * 1024; // Rough estimate of 1KB per document
-            
+
             return $this->formatBytes($estimatedSize);
-            
+
         } catch (\Exception $e) {
             return '0 B';
         }
@@ -976,8 +1012,8 @@ class SolrService
      */
     public function getLastCommitTime(): string
     {
-        // In a real implementation, this would query SOLR admin API
-        // For now, return a reasonable placeholder
+        // In a real implementation, this would query SOLR admin API.
+        // For now, return a reasonable placeholder.
         return date('c', time() - 300); // Assume last commit was 5 minutes ago
     }
 
@@ -990,8 +1026,12 @@ class SolrService
     {
         $totalOps = $this->stats['searches'] + $this->stats['indexes'] + $this->stats['deletes'];
         $totalTime = $this->stats['search_time'] + $this->stats['index_time'];
-        
-        return $totalTime > 0 ? round($totalOps / $totalTime, 2) : 0.0;
+
+        if ($totalTime > 0) {
+            return round($totalOps / $totalTime, 2);
+        }
+
+        return 0.0;
     }
 
     /**
@@ -1002,8 +1042,12 @@ class SolrService
     private function calculateErrorRate(): float
     {
         $totalOps = $this->stats['searches'] + $this->stats['indexes'] + $this->stats['deletes'];
-        
-        return $totalOps > 0 ? round(($this->stats['errors'] / ($totalOps + $this->stats['errors'])) * 100, 2) : 0.0;
+
+        if ($totalOps > 0) {
+            return round(($this->stats['errors'] / ($totalOps + $this->stats['errors'])) * 100, 2);
+        }
+
+        return 0.0;
     }
 
     /**
@@ -1013,22 +1057,22 @@ class SolrService
      */
     private function getHealthStatus(): string
     {
-        if (!$this->isAvailable()) {
+        if ($this->isAvailable() === false) {
             return 'critical';
         }
-        
+
         $connection = $this->testConnection();
-        if (!$connection['success']) {
+        if (($connection['success'] ?? false) === false) {
             return 'critical';
         }
-        
+
         $errorRate = $this->calculateErrorRate();
         if ($errorRate > 10) {
             return 'critical';
         } elseif ($errorRate > 5) {
             return 'warning';
         }
-        
+
         return 'healthy';
     }
 
@@ -1039,7 +1083,7 @@ class SolrService
      */
     private function getUptime(): string
     {
-        // Placeholder - would need SOLR admin API for real uptime
+        // Placeholder - would need SOLR admin API for real uptime.
         return '24h 15m';
     }
 
@@ -1050,7 +1094,7 @@ class SolrService
      */
     private function getMemoryUsage(): array
     {
-        // Placeholder - would need SOLR admin API for real memory stats
+        // Placeholder - would need SOLR admin API for real memory stats.
         return [
             'used' => '256 MB',
             'max' => '1 GB',
@@ -1065,10 +1109,10 @@ class SolrService
      */
     private function getDiskUsage(): array
     {
-        // Placeholder - would need SOLR admin API for real disk stats
+        // Placeholder - would need SOLR admin API for real disk stats.
         return [
             'used' => '1.2 GB',
-            'available' => '8.8 GB', 
+            'available' => '8.8 GB',
             'percentage' => 12.0
         ];
     }
@@ -1081,19 +1125,19 @@ class SolrService
     private function getHealthWarnings(): array
     {
         $warnings = [];
-        
-        if (!$this->isAvailable()) {
+
+        if ($this->isAvailable() === false) {
             $warnings[] = 'SOLR service is not available';
         }
-        
+
         if ($this->calculateErrorRate() > 5) {
             $warnings[] = 'High error rate detected';
         }
-        
-        if ($this->isOptimizationNeeded()) {
+
+        if ($this->isOptimizationNeeded() === true) {
             $warnings[] = 'Index optimization recommended';
         }
-        
+
         return $warnings;
     }
 
@@ -1104,7 +1148,7 @@ class SolrService
      */
     private function getLastOptimization(): string
     {
-        // Placeholder - would track this in real implementation
+        // Placeholder - would track this in real implementation.
         return date('c', time() - 86400); // Assume last optimization was 1 day ago
     }
 
@@ -1172,7 +1216,7 @@ class SolrService
      */
     private function isOptimizationNeeded(): bool
     {
-        // Simple heuristic - optimize if we have many documents and haven't optimized recently
+        // Simple heuristic - optimize if we have many documents and haven't optimized recently.
         $docCount = $this->getDocumentCount();
         return $docCount > 10000; // Suggest optimization for large indexes
     }
@@ -1187,11 +1231,11 @@ class SolrService
     private function formatBytes(int $bytes): string
     {
         $units = ['B', 'KB', 'MB', 'GB', 'TB'];
-        
+
         for ($i = 0; $bytes > 1024 && $i < count($units) - 1; $i++) {
             $bytes /= 1024;
         }
-        
+
         return round($bytes, 2) . ' ' . $units[$i];
     }
 
@@ -1200,13 +1244,13 @@ class SolrService
      *
      * @param array $schemas Array of Schema entities to mirror (optional)
      * @param int   $maxObjects Maximum number of objects to index per schema (0 = all)
-     * 
+     *
      * @return array{success: bool, operations: array, execution_time_ms: float} Warmup results
      */
     public function warmupIndex(array $schemas = [], int $maxObjects = 0, string $mode = 'serial', bool $collectErrors = false): array
     {
         $this->ensureClientInitialized();
-        if (!$this->isAvailable()) {
+        if ($this->isAvailable() === false) {
             return [
                 'success' => false,
                 'operations' => [],
@@ -1218,38 +1262,38 @@ class SolrService
         $overallStartTime = microtime(true);
         $operations = [];
         $timing = [];
-        
+
         try {
-            // 1. Test connection
+            // 1. Test connection.
             $stageStart = microtime(true);
             $this->logger->info('🔗 SOLR WARMUP - Stage 1: Testing connection');
-            
+
             $connectionTest = $this->testConnection();
             $operations['connection_test'] = $connectionTest['success'];
-            
+
             $stageEnd = microtime(true);
             $timing['connection_test'] = round(($stageEnd - $stageStart) * 1000, 2) . 'ms';
             $this->logger->info('✅ Connection test complete', [
                 'success' => $connectionTest['success'],
                 'duration' => $timing['connection_test']
             ]);
-            
-            // 2. Mirror schemas to SOLR (if schemas provided)
-            if (!empty($schemas)) {
+
+            // 2. Mirror schemas to SOLR (if schemas provided).
+            if (empty($schemas) === false) {
                 $stageStart = microtime(true);
                 $this->logger->info('🏗️  SOLR WARMUP - Stage 2: Mirroring schemas', [
                     'schema_count' => count($schemas)
                 ]);
-                
+
                 $mirrorResult = $this->mirrorSchemasToSolr($schemas);
                 $operations['schema_mirroring'] = $mirrorResult['success'];
                 $operations['schemas_processed'] = $mirrorResult['schemas_processed'];
                 $operations['fields_created'] = $mirrorResult['fields_created'];
-                
-                if (!$mirrorResult['success']) {
+
+                if (($mirrorResult['success'] ?? false) === false) {
                     $operations['mirror_errors'] = $mirrorResult['errors'];
                 }
-                
+
                 $stageEnd = microtime(true);
                 $timing['schema_mirroring'] = round(($stageEnd - $stageStart) * 1000, 2) . 'ms';
                 $this->logger->info('✅ Schema mirroring complete', [
@@ -1261,16 +1305,16 @@ class SolrService
                 $timing['schema_mirroring'] = '0ms (skipped)';
                 $this->logger->info('⏭️  Schema mirroring skipped (no schemas provided)');
             }
-            
-            // 3. Batch index objects from database (if maxObjects > 0)
+
+            // 3. Batch index objects from database (if maxObjects > 0).
             if ($maxObjects > 0) {
                 $stageStart = microtime(true);
                 $this->logger->info('📦 SOLR WARMUP - Stage 3: Bulk indexing objects', [
                     'max_objects' => $maxObjects
                 ]);
-                
+
                 try {
-                    // **MODE SWITCHING**: Use serial or parallel based on mode parameter
+                    // **MODE SWITCHING**: Use serial or parallel based on mode parameter.
                     if ($mode === 'parallel') {
                         $this->logger->info('Using PARALLEL bulk indexing mode');
                         $indexResult = $this->guzzleSolrService->bulkIndexFromDatabaseParallel(1000, $maxObjects, 5);
@@ -1278,14 +1322,14 @@ class SolrService
                         $this->logger->info('Using SERIAL bulk indexing mode');
                         $indexResult = $this->guzzleSolrService->bulkIndexFromDatabase(1000, $maxObjects);
                     }
-                    
+
                     $operations['object_indexing'] = $indexResult['success'] ?? true;
                     $operations['objects_indexed'] = $indexResult['indexed'] ?? 0;
                     $operations['total_objects_found'] = $indexResult['total'] ?? 0;
                     $operations['batches_processed'] = $indexResult['batches'] ?? 0;
                     $operations['execution_mode'] = $mode;
-                    
-                    if (isset($indexResult['errors']) && !empty($indexResult['errors'])) {
+
+                    if (isset($indexResult['errors']) === true && empty($indexResult['errors']) === false) {
                         $operations['indexing_errors'] = $indexResult['errors'];
                     }
                 } catch (\Exception $e) {
@@ -1295,10 +1339,10 @@ class SolrService
                         'error' => $e->getMessage(),
                         'trace' => $e->getTraceAsString()
                     ]);
-                    
-                    // **ERROR COLLECTION MODE**: Collect errors instead of re-throwing
-                    if ($collectErrors) {
-                        if (!isset($operations['collected_errors'])) {
+
+                    // **ERROR COLLECTION MODE**: Collect errors instead of re-throwing.
+                    if ($collectErrors === true) {
+                        if (isset($operations['collected_errors']) === false) {
                             $operations['collected_errors'] = [];
                         }
                         $operations['collected_errors'][] = [
@@ -1310,11 +1354,11 @@ class SolrService
                             'timestamp' => date('c')
                         ];
                     } else {
-                        // **DEFAULT BEHAVIOR**: Re-throw exception for immediate visibility
+                        // **DEFAULT BEHAVIOR**: Re-throw exception for immediate visibility.
                         throw $e;
                     }
                 }
-                
+
                 $stageEnd = microtime(true);
                 $timing['object_indexing'] = round(($stageEnd - $stageStart) * 1000, 2) . 'ms';
                 $this->logger->info('✅ Object indexing complete', [
@@ -1328,17 +1372,17 @@ class SolrService
                 $timing['object_indexing'] = '0ms (skipped)';
                 $this->logger->info('⏭️  Object indexing skipped (maxObjects = 0)');
             }
-            
-            // 4. Perform sample search queries to warm caches
+
+            // 4. Perform sample search queries to warm caches.
             $stageStart = microtime(true);
             $this->logger->info('🔥 SOLR WARMUP - Stage 4: Cache warming with sample queries');
-            
+
             $warmupQueries = [
                 ['q' => '*:*', 'rows' => 1],
                 ['q' => '*:*', 'rows' => 10, 'facet' => ['register_id', 'schema_id']],
                 ['q' => 'name:*', 'rows' => 5],
             ];
-            
+
             $successfulQueries = 0;
             foreach ($warmupQueries as $i => $query) {
                 try {
@@ -1350,7 +1394,7 @@ class SolrService
                     $this->logger->warning("Warmup query $i failed", ['error' => $e->getMessage()]);
                 }
             }
-            
+
             $stageEnd = microtime(true);
             $timing['cache_warming'] = round(($stageEnd - $stageStart) * 1000, 2) . 'ms';
             $this->logger->info('✅ Cache warming complete', [
@@ -1358,17 +1402,17 @@ class SolrService
                 'total_queries' => count($warmupQueries),
                 'duration' => $timing['cache_warming']
             ]);
-            
-            // 5. Final commit and optimization
+
+            // 5. Final commit and optimization.
             $stageStart = microtime(true);
             $this->logger->info('💾 SOLR WARMUP - Stage 5: Final commit and optimization');
-            
+
             $operations['commit'] = $this->commit();
-            
+
             if ($maxObjects > 1000) { // Only optimize for large datasets
                 $operations['optimize'] = $this->optimize();
             }
-            
+
             $stageEnd = microtime(true);
             $timing['commit_optimize'] = round(($stageEnd - $stageStart) * 1000, 2) . 'ms';
             $this->logger->info('✅ Commit and optimization complete', [
@@ -1376,18 +1420,18 @@ class SolrService
                 'optimize_performed' => isset($operations['optimize']),
                 'duration' => $timing['commit_optimize']
             ]);
-            
+
             $overallEndTime = microtime(true);
             $overallDuration = round(($overallEndTime - $overallStartTime) * 1000, 2);
             $timing['total'] = $overallDuration . 'ms';
-            
+
             $this->logger->info('🎯 SOLR WARMUP - FINAL RESULTS', [
                 'overall_duration' => $overallDuration . 'ms',
                 'objects_indexed' => $operations['objects_indexed'] ?? 0,
                 'timing_breakdown' => $timing,
                 'tenant_id' => $this->tenantId
             ]);
-            
+
             return [
                 'success' => true,
                 'operations' => $operations,
@@ -1402,14 +1446,14 @@ class SolrService
                     'duration' => $overallDuration . 'ms'
                 ]
             ];
-            
+
         } catch (\Exception $e) {
             $this->stats['errors']++;
             $this->logger->error('SOLR complete warmup failed', [
                 'error' => $e->getMessage(),
                 'tenant_id' => $this->tenantId
             ]);
-            
+
             return [
                 'success' => false,
                 'operations' => $operations,
@@ -1446,15 +1490,15 @@ class SolrService
         foreach ($schemas as $schema) {
             try {
                 $schemaResult = $this->mirrorSingleSchemaToSolr($schema);
-                
+
                 $results['schemas_processed']++;
                 $results['fields_created'] += $schemaResult['fields_created'];
                 $results['fields_updated'] += $schemaResult['fields_updated'];
-                
-                if (!$schemaResult['success']) {
+
+                if (($schemaResult['success'] ?? false) === false) {
                     $results['errors'] = array_merge($results['errors'], $schemaResult['errors']);
                 }
-                
+
             } catch (\Exception $e) {
                 $results['errors'][] = [
                     'schema_id' => $schema->getId(),
@@ -1469,7 +1513,7 @@ class SolrService
         }
 
         $results['success'] = empty($results['errors']);
-        
+
         $this->logger->info('Schema mirroring completed', [
             'schemas_processed' => $results['schemas_processed'],
             'fields_created' => $results['fields_created'],
@@ -1496,8 +1540,8 @@ class SolrService
         ];
 
         $properties = $schema->getProperties();
-        
-        if (empty($properties)) {
+
+        if (empty($properties) === true) {
             $this->logger->debug('Schema has no properties to mirror', [
                 'schema_id' => $schema->getId(),
                 'schema_title' => $schema->getTitle()
@@ -1508,10 +1552,10 @@ class SolrService
         foreach ($properties as $propertyName => $propertyDefinition) {
             try {
                 $fieldDefinitions = $this->generateSolrFieldDefinitions($propertyName, $propertyDefinition);
-                
+
                 foreach ($fieldDefinitions as $fieldDef) {
-                    // For now, we rely on SOLR's schemaless mode to auto-create fields
-                    // In the future, we could explicitly create fields via SOLR Schema API
+                    // For now, we rely on SOLR's schemaless mode to auto-create fields.
+                    // In the future, we could explicitly create fields via SOLR Schema API.
                     $this->logger->debug('Field definition prepared for SOLR', [
                         'schema_id' => $schema->getId(),
                         'property' => $propertyName,
@@ -1519,9 +1563,9 @@ class SolrService
                         'field_type' => $fieldDef['type']
                     ]);
                 }
-                
+
                 $result['fields_created'] += count($fieldDefinitions);
-                
+
             } catch (\Exception $e) {
                 $result['errors'][] = [
                     'property' => $propertyName,
@@ -1615,7 +1659,7 @@ class SolrService
                         'description' => 'Multi-valued float field for ' . $propertyName
                     ];
                 } else {
-                    // Complex array - store as JSON
+                    // Complex array - store as JSON.
                     $fieldDefinitions[] = [
                         'name' => $propertyName . '_json',
                         'type' => 'text_general',
@@ -1625,15 +1669,15 @@ class SolrService
                 break;
 
             case 'object':
-                // Check if it's a reference object (has UUID)
-                if (isset($propertyDefinition['properties']['value'])) {
+                // Check if it's a reference object (has UUID).
+                if (isset($propertyDefinition['properties']['value']) === true) {
                     $fieldDefinitions[] = [
                         'name' => $propertyName . '_ref',
                         'type' => 'string',
                         'description' => 'Reference UUID field for ' . $propertyName
                     ];
                 } else {
-                    // Complex object - store as JSON
+                    // Complex object - store as JSON.
                     $fieldDefinitions[] = [
                         'name' => $propertyName . '_json',
                         'type' => 'text_general',
@@ -1661,7 +1705,7 @@ class SolrService
                 break;
 
             default:
-                // Unknown type - default to string
+                // Unknown type - default to string.
                 $fieldDefinitions[] = [
                     'name' => $propertyName . '_s',
                     'type' => 'string',
@@ -1672,9 +1716,9 @@ class SolrService
         return $fieldDefinitions;
     }
 
-    // ========================================
-    // FAST COLLECTION METHODS FOR HIGH PERFORMANCE
-    // ========================================
+    // ========================================.
+    // FAST COLLECTION METHODS FOR HIGH PERFORMANCE.
+    // ========================================.
 
     /**
      * Fast bulk indexing with optimized chunking for large collections
@@ -1692,7 +1736,7 @@ class SolrService
     public function fastBulkIndex(array $objects, int $chunkSize = 1000, int $commitEvery = 5, bool $optimize = false): array
     {
         $this->ensureClientInitialized();
-        if (!$this->isAvailable() || empty($objects)) {
+        if ($this->isAvailable() === false || empty($objects) === true) {
             return ['total' => 0, 'indexed' => 0, 'errors' => 0, 'batches' => 0, 'execution_time_ms' => 0.0, 'throughput_per_sec' => 0.0];
         }
 
@@ -1702,22 +1746,22 @@ class SolrService
         $totalErrors = 0;
         $batchCount = 0;
 
-        // Process in optimized chunks
+        // Process in optimized chunks.
         $chunks = array_chunk($objects, $chunkSize);
-        
+
         foreach ($chunks as $chunk) {
             $batchCount++;
-            
+
             try {
-                $result = $this->bulkIndexObjects($chunk, false); // Don't commit each batch
+                $result = $this->bulkIndexObjects($chunk, false); // Don't commit each batch.
                 $totalIndexed += $result['indexed'];
                 $totalErrors += $result['errors'];
-                
-                // Commit periodically for memory management
+
+                // Commit periodically for memory management.
                 if ($batchCount % $commitEvery === 0) {
                     $this->commit();
                 }
-                
+
             } catch (\Exception $e) {
                 $totalErrors += count($chunk);
                 $this->logger->error('Fast bulk index batch failed', [
@@ -1727,11 +1771,11 @@ class SolrService
                 ]);
             }
         }
-        
-        // Final commit and optional optimize
+
+        // Final commit and optional optimize.
         try {
             $this->commit();
-            if ($optimize) {
+            if ($optimize === true) {
                 $this->optimize();
             }
         } catch (\Exception $e) {
@@ -1739,7 +1783,10 @@ class SolrService
         }
 
         $executionTime = (microtime(true) - $startTime) * 1000;
-        $throughput = $totalIndexed > 0 ? round($totalIndexed / ($executionTime / 1000), 2) : 0.0;
+        $throughput = 0.0;
+        if ($totalIndexed > 0) {
+            $throughput = round($totalIndexed / ($executionTime / 1000), 2);
+        }
 
         $this->logger->info('Fast bulk indexing completed', [
             'total_objects' => $totalObjects,
@@ -1777,47 +1824,47 @@ class SolrService
     public function fastSearchIds(array $searchParams, array $fields = ['id', 'object_id', 'uuid'], int $maxResults = 10000): array
     {
         $this->ensureClientInitialized();
-        if (!$this->isAvailable()) {
+        if ($this->isAvailable() === false) {
             return ['ids' => [], 'total' => 0, 'execution_time_ms' => 0.0];
         }
 
         try {
             $startTime = microtime(true);
-            
-            // Create lightweight select query
+
+            // Create lightweight select query.
             $query = $this->client->createSelect();
-            
-            // Build query string with tenant isolation
+
+            // Build query string with tenant isolation.
             $queryString = $this->buildQueryString($searchParams);
             $query->setQuery($queryString);
-            
-            // Only request essential fields for speed
+
+            // Only request essential fields for speed.
             $query->setFields($fields);
-            
-            // Set reasonable limits for performance
+
+            // Set reasonable limits for performance.
             $query->setStart(0);
             $query->setRows(min($maxResults, 50000)); // Cap at 50K for safety
-            
-            // Add filter queries but skip faceting and complex sorting
+
+            // Add filter queries but skip faceting and complex sorting.
             $this->addFilterQueries($query, $searchParams);
-            
-            // Simple relevance sorting for speed
+
+            // Simple relevance sorting for speed.
             $query->addSort('score', 'desc');
-            
-            // Execute search
+
+            // Execute search.
             $resultSet = $this->client->select($query);
-            
-            // Extract just the IDs
+
+            // Extract just the IDs.
             $ids = [];
             foreach ($resultSet as $document) {
                 $ids[] = $document->object_id ?? $document->uuid ?? $document->id;
             }
-            
+
             $executionTime = (microtime(true) - $startTime) * 1000;
             $this->stats['searches']++;
             $this->stats['search_time'] += ($executionTime / 1000);
-            
-            if ($this->solrConfig['enableLogging']) {
+
+            if ($this->solrConfig['enableLogging'] === true) {
                 $this->logger->debug('Fast SOLR ID search completed', [
                     'query' => $queryString,
                     'total_found' => $resultSet->getNumFound(),
@@ -1826,13 +1873,13 @@ class SolrService
                     'tenant_id' => $this->tenantId
                 ]);
             }
-            
+
             return [
                 'ids' => array_filter($ids), // Remove null values
                 'total' => $resultSet->getNumFound(),
                 'execution_time_ms' => round($executionTime, 2)
             ];
-            
+
         } catch (\Exception $e) {
             $this->stats['errors']++;
             $this->logger->error('Fast SOLR ID search failed', [
@@ -1840,7 +1887,7 @@ class SolrService
                 'error' => $e->getMessage(),
                 'tenant_id' => $this->tenantId
             ]);
-            
+
             return ['ids' => [], 'total' => 0, 'execution_time_ms' => 0.0];
         }
     }
@@ -1860,7 +1907,7 @@ class SolrService
     public function streamSearch(array $searchParams, callable $processor, int $batchSize = 1000): array
     {
         $this->ensureClientInitialized();
-        if (!$this->isAvailable()) {
+        if ($this->isAvailable() === false) {
             return ['processed' => 0, 'batches' => 0, 'execution_time_ms' => 0.0];
         }
 
@@ -1870,7 +1917,7 @@ class SolrService
         $offset = 0;
 
         try {
-            // First, get total count
+            // First, get total count.
             $countResult = $this->fastSearchIds(array_merge($searchParams, ['rows' => 0]), ['id'], 1);
             $totalResults = $countResult['total'];
 
@@ -1878,7 +1925,7 @@ class SolrService
                 return ['processed' => 0, 'batches' => 0, 'execution_time_ms' => 0.0];
             }
 
-            // Stream in batches
+            // Stream in batches.
             while ($offset < $totalResults) {
                 $batchSearchParams = array_merge($searchParams, [
                     'start' => $offset,
@@ -1886,18 +1933,18 @@ class SolrService
                 ]);
 
                 $batchResult = $this->fastSearchIds($batchSearchParams, ['object_id', 'uuid'], $batchSize);
-                
-                if (!empty($batchResult['ids'])) {
-                    // Process this batch
+
+                if (empty($batchResult['ids']) === false) {
+                    // Process this batch.
                     call_user_func($processor, $batchResult['ids']);
-                    
+
                     $totalProcessed += count($batchResult['ids']);
                     $batchCount++;
                 }
 
                 $offset += $batchSize;
 
-                // Safety break to prevent infinite loops
+                // Safety break to prevent infinite loops.
                 if ($offset > 100000) { // Max 100K results for streaming
                     $this->logger->warning('Stream search safety limit reached', [
                         'total_results' => $totalResults,
@@ -1908,7 +1955,7 @@ class SolrService
             }
 
             $executionTime = (microtime(true) - $startTime) * 1000;
-            
+
             $this->logger->info('Stream search completed', [
                 'total_results' => $totalResults,
                 'processed' => $totalProcessed,
@@ -1950,7 +1997,7 @@ class SolrService
     public function commit(): bool
     {
         $this->ensureClientInitialized();
-        if (!$this->isAvailable()) {
+        if ($this->isAvailable() === false) {
             return false;
         }
 
@@ -1973,7 +2020,7 @@ class SolrService
     public function optimize(): bool
     {
         $this->ensureClientInitialized();
-        if (!$this->isAvailable()) {
+        if ($this->isAvailable() === false) {
             return false;
         }
 
@@ -1988,9 +2035,9 @@ class SolrService
         }
     }
 
-    // ========================================
-    // PRIVATE HELPER METHODS
-    // ========================================
+    // ========================================.
+    // PRIVATE HELPER METHODS.
+    // ========================================.
 
     /**
      * Create SOLR document from ObjectEntity with schema-aware mapping
@@ -2004,14 +2051,17 @@ class SolrService
     private function createSolrDocument(UpdateQuery $update, ObjectEntity $object, ?\OCA\OpenRegister\Db\Schema $schema = null): \Solarium\QueryType\Update\Query\Document
     {
         $doc = $update->createDocument();
-        
-        $uuid = $object->getUuid() ?: $object->getId();
-        
-        // Set core identification fields
+
+        $uuid = $object->getUuid();
+        if ($uuid === null || $uuid === '') {
+            $uuid = $object->getId();
+        }
+
+        // Set core identification fields.
         $doc->setField('id', $uuid);
         $doc->setField('tenant_id', $this->tenantId);
-        
-        // Add metadata fields with self_ prefix for consistency
+
+        // Add metadata fields with self_ prefix for consistency.
         $doc->setField('self_id', $uuid);
         $doc->setField('self_object_id', $object->getId());
         $doc->setField('self_uuid', $uuid);
@@ -2030,39 +2080,88 @@ class SolrService
         $doc->setField('self_locked', $object->getLocked());
         $doc->setField('self_folder', $object->getFolder());
         $doc->setField('self_application', $object->getApplication());
-        
-        // DateTime fields
-        $doc->setField('self_created', $object->getCreated() ? $object->getCreated()->format('Y-m-d\TH:i:s\Z') : null);
-        $doc->setField('self_updated', $object->getModified() ? $object->getModified()->format('Y-m-d\TH:i:s\Z') : null);
-        $doc->setField('self_published', $object->getPublished() ? $object->getPublished()->format('Y-m-d\TH:i:s\Z') : null);
-        $doc->setField('self_depublished', $object->getDepublished() ? $object->getDepublished()->format('Y-m-d\TH:i:s\Z') : null);
-        
-        // Complex fields as JSON
-        $doc->setField('self_authorization', $object->getAuthorization() ? json_encode($object->getAuthorization()) : null);
-        $doc->setField('self_deleted', $object->getDeleted() ? json_encode($object->getDeleted()) : null);
-        $doc->setField('self_validation', $object->getValidation() ? json_encode($object->getValidation()) : null);
-        $doc->setField('self_groups', $object->getGroups() ? json_encode($object->getGroups()) : null);
-        
-        // Index object data with schema-aware mapping if schema is provided
-        $objectData = $object->getObject() ?: [];
-        if ($schema) {
-            // Schema-aware mapping: only properties defined in schema
+
+        // DateTime fields.
+        $created = $object->getCreated();
+        if ($created !== null) {
+            $doc->setField('self_created', $created->format('Y-m-d\TH:i:s\Z'));
+        } else {
+            $doc->setField('self_created', null);
+        }
+
+        $modified = $object->getModified();
+        if ($modified !== null) {
+            $doc->setField('self_updated', $modified->format('Y-m-d\TH:i:s\Z'));
+        } else {
+            $doc->setField('self_updated', null);
+        }
+
+        $published = $object->getPublished();
+        if ($published !== null) {
+            $doc->setField('self_published', $published->format('Y-m-d\TH:i:s\Z'));
+        } else {
+            $doc->setField('self_published', null);
+        }
+
+        $depublished = $object->getDepublished();
+        if ($depublished !== null) {
+            $doc->setField('self_depublished', $depublished->format('Y-m-d\TH:i:s\Z'));
+        } else {
+            $doc->setField('self_depublished', null);
+        }
+
+        // Complex fields as JSON.
+        $authorization = $object->getAuthorization();
+        if ($authorization !== null) {
+            $doc->setField('self_authorization', json_encode($authorization));
+        } else {
+            $doc->setField('self_authorization', null);
+        }
+
+        $deleted = $object->getDeleted();
+        if ($deleted !== null) {
+            $doc->setField('self_deleted', json_encode($deleted));
+        } else {
+            $doc->setField('self_deleted', null);
+        }
+
+        $validation = $object->getValidation();
+        if ($validation !== null) {
+            $doc->setField('self_validation', json_encode($validation));
+        } else {
+            $doc->setField('self_validation', null);
+        }
+
+        $groups = $object->getGroups();
+        if ($groups !== null) {
+            $doc->setField('self_groups', json_encode($groups));
+        } else {
+            $doc->setField('self_groups', null);
+        }
+
+        // Index object data with schema-aware mapping if schema is provided.
+        $objectData = $object->getObject();
+        if ($objectData === null || $objectData === false) {
+            $objectData = [];
+        }
+        if ($schema !== null) {
+            // Schema-aware mapping: only properties defined in schema.
             $mappedProperties = $this->mapPropertiesUsingSchema($objectData, $schema->getProperties());
             foreach ($mappedProperties as $fieldName => $value) {
                 $doc->setField($fieldName, $value);
             }
         } else {
-            // Fallback: dynamic field mapping for backward compatibility
+            // Fallback: dynamic field mapping for backward compatibility.
             $this->addObjectDataToDocument($doc, $objectData);
         }
-        
-        // Store complete object data as JSON for exact reconstruction
+
+        // Store complete object data as JSON for exact reconstruction.
         $doc->setField('self_object', json_encode($objectData));
-        
-        // Create full-text search field
+
+        // Create full-text search field.
         $textContent = $this->extractTextContent($object, $objectData);
         $doc->setField('_text_', $textContent);
-        
+
         return $doc;
     }
 
@@ -2081,35 +2180,35 @@ class SolrService
             if ($value === null || $value === '') {
                 continue;
             }
-            
+
             $fieldName = $prefix . $key;
-            
-            if (is_array($value)) {
-                // Handle arrays and nested objects
-                if ($this->isAssociativeArray($value)) {
-                    // Nested object - recurse with prefix
+
+            if (is_array($value) === true) {
+                // Handle arrays and nested objects.
+                if ($this->isAssociativeArray($value) === true) {
+                    // Nested object - recurse with prefix.
                     $this->addObjectDataToDocument($doc, $value, $fieldName . '_');
                 } else {
-                    // Simple array - add as multi-valued field
+                    // Simple array - add as multi-valued field.
                     foreach ($value as $item) {
-                        if (is_scalar($item)) {
+                        if (is_scalar($item) === true) {
                             $doc->addField($fieldName . '_ss', (string)$item);
                         }
                     }
                 }
-            } elseif (is_bool($value)) {
+            } elseif (is_bool($value) === true) {
                 $doc->setField($fieldName . '_b', $value);
-            } elseif (is_int($value)) {
+            } elseif (is_int($value) === true) {
                 $doc->setField($fieldName . '_i', $value);
-            } elseif (is_float($value)) {
+            } elseif (is_float($value) === true) {
                 $doc->setField($fieldName . '_f', $value);
-            } elseif ($this->isDateString($value)) {
+            } elseif ($this->isDateString($value) === true) {
                 $doc->setField($fieldName . '_dt', $this->formatDateForSolr($value));
             } else {
-                // String value
+                // String value.
                 $doc->setField($fieldName . '_s', (string)$value);
-                
-                // Also add to text fields for searching
+
+                // Also add to text fields for searching.
                 if (strlen((string)$value) > 5) {
                     $doc->addField($fieldName . '_txt', (string)$value);
                 }
@@ -2128,20 +2227,22 @@ class SolrService
     private function extractTextContent(ObjectEntity $object, array $objectData): string
     {
         $textParts = [];
-        
-        // Add name
-        if ($object->getName()) {
-            $textParts[] = $object->getName();
+
+        // Add name.
+        $name = $object->getName();
+        if ($name !== null && $name !== '') {
+            $textParts[] = $name;
         }
-        
-        // Add UUID
-        if ($object->getUuid()) {
-            $textParts[] = $object->getUuid();
+
+        // Add UUID.
+        $uuid = $object->getUuid();
+        if ($uuid !== null && $uuid !== '') {
+            $textParts[] = $uuid;
         }
-        
-        // Extract text from object data
+
+        // Extract text from object data.
         $this->extractTextFromData($objectData, $textParts);
-        
+
         return implode(' ', array_filter($textParts));
     }
 
@@ -2156,9 +2257,9 @@ class SolrService
     private function extractTextFromData(array $data, array &$textParts): void
     {
         foreach ($data as $value) {
-            if (is_string($value) && strlen($value) > 2) {
+            if (is_string($value) === true && strlen($value) > 2) {
                 $textParts[] = $value;
-            } elseif (is_array($value)) {
+            } elseif (is_array($value) === true) {
                 $this->extractTextFromData($value, $textParts);
             }
         }
@@ -2182,17 +2283,17 @@ class SolrService
     {
         $mappedProperties = [];
 
-        // Process each property defined in the schema
+        // Process each property defined in the schema.
         foreach ($schemaProperties as $propertyName => $propertyDefinition) {
-            // Skip if property not present in object data
-            if (!array_key_exists($propertyName, $objectData)) {
+            // Skip if property not present in object data.
+            if (array_key_exists($propertyName, $objectData) === false) {
                 continue;
             }
 
             $value = $objectData[$propertyName];
             $propertyType = $propertyDefinition['type'] ?? 'string';
 
-            // Map property based on its schema type
+            // Map property based on its schema type.
             $mappedFields = $this->mapPropertyByType($propertyName, $value, $propertyDefinition);
             $mappedProperties = array_merge($mappedProperties, $mappedFields);
         }
@@ -2248,7 +2349,7 @@ class SolrService
                 break;
 
             default:
-                // Unknown type - treat as string
+                // Unknown type - treat as string.
                 $mappedFields = $this->mapStringProperty($propertyName, $value, null);
                 $this->logger->warning('Unknown property type - defaulting to string', [
                     'property' => $propertyName,
@@ -2270,18 +2371,18 @@ class SolrService
      */
     private function mapStringProperty(string $propertyName, $value, ?string $format): array
     {
-        if (!is_string($value) && $value !== null) {
+        if (is_string($value) === false && $value !== null) {
             $value = (string) $value;
         }
 
         $fields = [];
 
         if ($value !== null && $value !== '') {
-            // Handle date/datetime formats specially
+            // Handle date/datetime formats specially.
             if ($format === 'date' || $format === 'date-time' || $format === 'datetime') {
                 $fields[$propertyName . '_dt'] = $this->formatDateForSolr($value);
             } else {
-                // Regular string field
+                // Regular string field.
                 $fields[$propertyName . '_s'] = $value;  // String field for exact matching
                 $fields[$propertyName . '_t'] = $value;  // Text field for full-text search
             }
@@ -2303,7 +2404,7 @@ class SolrService
     {
         $fields = [];
 
-        if ($value !== null && is_numeric($value)) {
+        if ($value !== null && is_numeric($value) === true) {
             if ($type === 'integer') {
                 $fields[$propertyName . '_i'] = (int) $value;
             } else {
@@ -2346,33 +2447,65 @@ class SolrService
     {
         $fields = [];
 
-        if (!is_array($value)) {
+        if (is_array($value) === false) {
             return $fields;
         }
 
-        // Handle array of simple values
+        // Handle array of simple values.
         $itemType = $definition['items']['type'] ?? 'string';
-        
+
         if ($itemType === 'string') {
             $stringValues = array_filter($value, 'is_string');
-            if (!empty($stringValues)) {
+            if (empty($stringValues) === false) {
                 $fields[$propertyName . '_ss'] = $stringValues;  // Multi-valued string field
             }
         } elseif ($itemType === 'integer' || $itemType === 'number') {
             $numericValues = array_filter($value, 'is_numeric');
-            if (!empty($numericValues)) {
-                $suffix = $itemType === 'integer' ? '_is' : '_fs';
+            if (empty($numericValues) === false) {
+                $suffix = $this->getItemTypeSuffix($itemType);
                 $fields[$propertyName . $suffix] = array_map(
-                    $itemType === 'integer' ? 'intval' : 'floatval',
+                    $this->getItemTypeMapper($itemType),
                     $numericValues
                 );
             }
         } else {
-            // Complex array - store as JSON
+            // Complex array - store as JSON.
             $fields[$propertyName . '_json'] = json_encode($value);
         }
 
         return $fields;
+    }
+
+    /**
+     * Get SOLR field suffix for item type.
+     *
+     * @param string $itemType The item type.
+     *
+     * @return string The SOLR field suffix.
+     */
+    private function getItemTypeSuffix(string $itemType): string
+    {
+        if ($itemType === 'integer') {
+            return '_is';
+        }
+
+        return '_fs';
+    }
+
+    /**
+     * Get mapper function name for item type.
+     *
+     * @param string $itemType The item type.
+     *
+     * @return string The mapper function name.
+     */
+    private function getItemTypeMapper(string $itemType): string
+    {
+        if ($itemType === 'integer') {
+            return 'intval';
+        }
+
+        return 'floatval';
     }
 
     /**
@@ -2388,22 +2521,22 @@ class SolrService
     {
         $fields = [];
 
-        if (!is_array($value) && !is_object($value)) {
+        if (is_array($value) === false && is_object($value) === false) {
             return $fields;
         }
 
-        // Convert object to array if needed
-        if (is_object($value)) {
+        // Convert object to array if needed.
+        if (is_object($value) === true) {
             $value = (array) $value;
         }
 
-        // Handle special case: object with UUID reference
-        if (isset($value['value']) && is_string($value['value'])) {
-            // This is a reference object - store the UUID
+        // Handle special case: object with UUID reference.
+        if (isset($value['value']) === true && is_string($value['value']) === true) {
+            // This is a reference object - store the UUID.
             $fields[$propertyName . '_ref'] = $value['value'];
         } else {
-            // Complex object - store as JSON for now
-            // TODO: Could be enhanced to map nested properties based on schema
+            // Complex object - store as JSON for now.
+            // TODO: Could be enhanced to map nested properties based on schema.
             $fields[$propertyName . '_json'] = json_encode($value);
         }
 
@@ -2422,15 +2555,15 @@ class SolrService
     {
         $fields = [];
 
-        if (is_array($value)) {
-            // Store file metadata as JSON
+        if (is_array($value) === true) {
+            // Store file metadata as JSON.
             $fields[$propertyName . '_file'] = json_encode($value);
-            
-            // Extract searchable text if available
-            if (isset($value['name'])) {
+
+            // Extract searchable text if available.
+            if (isset($value['name']) === true) {
                 $fields[$propertyName . '_filename_s'] = $value['name'];
             }
-            if (isset($value['mimeType'])) {
+            if (isset($value['mimeType']) === true) {
                 $fields[$propertyName . '_mimetype_s'] = $value['mimeType'];
             }
         }
@@ -2448,20 +2581,20 @@ class SolrService
     private function buildQueryString(array $searchParams): string
     {
         $query = $searchParams['q'] ?? '*:*';
-        
-        // Always add tenant isolation
+
+        // Always add tenant isolation.
         $tenantFilter = sprintf('tenant_id:%s', $this->escapeSolrValue($this->tenantId));
-        
+
         if ($query === '*:*') {
             return $tenantFilter;
         }
-        
-        // Apply field boosting for text searches
-        if (!empty($query) && $query !== '*:*') {
+
+        // Apply field boosting for text searches.
+        if (empty($query) === false && $query !== '*:*') {
             $boostedQuery = $this->applyFieldBoosting($query, $searchParams['boost'] ?? []);
             return sprintf('(%s) AND %s', $boostedQuery, $tenantFilter);
         }
-        
+
         return sprintf('(%s) AND %s', $query, $tenantFilter);
     }
 
@@ -2477,11 +2610,11 @@ class SolrService
     {
         $fieldBoosts = array_merge(self::DEFAULT_FIELD_BOOSTS, $boosts);
         $boostedFields = [];
-        
+
         foreach ($fieldBoosts as $field => $boost) {
             $boostedFields[] = sprintf('%s:(%s)^%s', $field, $query, $boost);
         }
-        
+
         return '(' . implode(' OR ', $boostedFields) . ')';
     }
 
@@ -2495,22 +2628,22 @@ class SolrService
      */
     private function addFilterQueries(SelectQuery $query, array $searchParams): void
     {
-        // Add custom filter queries
-        if (!empty($searchParams['fq'])) {
+        // Add custom filter queries.
+        if (empty($searchParams['fq']) === false) {
             foreach ($searchParams['fq'] as $filter) {
                 $query->createFilterQuery(md5($filter))->setQuery($filter);
             }
         }
-        
-        // Add register filter
-        if (!empty($searchParams['register'])) {
+
+        // Add register filter.
+        if (empty($searchParams['register']) === false) {
             $filterKey = 'register_' . $searchParams['register'];
             $filterQuery = sprintf('register_id:%d', (int)$searchParams['register']);
             $query->createFilterQuery($filterKey)->setQuery($filterQuery);
         }
-        
-        // Add schema filter
-        if (!empty($searchParams['schema'])) {
+
+        // Add schema filter.
+        if (empty($searchParams['schema']) === false) {
             $filterKey = 'schema_' . $searchParams['schema'];
             $filterQuery = sprintf('schema_id:%d', (int)$searchParams['schema']);
             $query->createFilterQuery($filterKey)->setQuery($filterQuery);
@@ -2528,10 +2661,10 @@ class SolrService
     private function addSorting(SelectQuery $query, array $searchParams): void
     {
         $sortString = $searchParams['sort'] ?? 'score desc';
-        
-        // Parse sort string (format: "field direction,field2 direction2")
+
+        // Parse sort string (format: "field direction,field2 direction2").
         $sortParts = explode(',', $sortString);
-        
+
         foreach ($sortParts as $sortPart) {
             $sortPart = trim($sortPart);
             if (strpos($sortPart, ' ') !== false) {
@@ -2553,12 +2686,12 @@ class SolrService
      */
     private function addFaceting(SelectQuery $query, array $searchParams): void
     {
-        if (empty($searchParams['facet'])) {
+        if (empty($searchParams['facet']) === true) {
             return;
         }
-        
+
         $facetSet = $query->getFacetSet();
-        
+
         foreach ($searchParams['facet'] as $facetField) {
             $facetSet->createFacetField($facetField)->setField($facetField);
         }
@@ -2575,20 +2708,20 @@ class SolrService
     {
         $objects = [];
         $objectIds = [];
-        
-        // Extract object IDs from SOLR results
+
+        // Extract object IDs from SOLR results.
         foreach ($resultSet as $document) {
             $objectId = $document->object_id ?? $document->id;
-            if ($objectId) {
+            if ($objectId !== null && $objectId !== '') {
                 $objectIds[] = $objectId;
             }
         }
-        
-        if (empty($objectIds)) {
+
+        if (empty($objectIds) === true) {
             return [];
         }
-        
-        // Load full ObjectEntity objects from database
+
+        // Load full ObjectEntity objects from database.
         try {
             $objects = $this->objectMapper->findMultiple($objectIds);
         } catch (\Exception $e) {
@@ -2597,7 +2730,7 @@ class SolrService
                 'error' => $e->getMessage()
             ]);
         }
-        
+
         return $objects;
     }
 
@@ -2611,9 +2744,9 @@ class SolrService
     private function extractFacets(\Solarium\QueryType\Select\Result\Result $resultSet): array
     {
         $facets = [];
-        
+
         $facetSet = $resultSet->getFacetSet();
-        if ($facetSet) {
+        if ($facetSet !== null) {
             foreach ($facetSet as $facetKey => $facet) {
                 $facets[$facetKey] = [];
                 foreach ($facet as $value => $count) {
@@ -2621,7 +2754,7 @@ class SolrService
                 }
             }
         }
-        
+
         return $facets;
     }
 
@@ -2651,7 +2784,7 @@ class SolrService
      */
     private function escapeSolrValue(string $value): string
     {
-        // Escape special SOLR characters
+        // Escape special SOLR characters.
         $specialChars = ['\\', '+', '-', '!', '(', ')', '{', '}', '[', ']', '^', '"', '~', '*', '?', ':', '/'];
         $value = str_replace($specialChars, array_map(fn($char) => '\\' . $char, $specialChars), $value);
         return '"' . $value . '"';
@@ -2678,11 +2811,11 @@ class SolrService
      */
     private function isDateString(mixed $value): bool
     {
-        if (!is_string($value)) {
+        if (is_string($value) === false) {
             return false;
         }
-        
-        // Simple date pattern matching
+
+        // Simple date pattern matching.
         return (bool)preg_match('/^\d{4}-\d{2}-\d{2}/', $value);
     }
 
@@ -2705,43 +2838,43 @@ class SolrService
 
     /**
      * Search objects with pagination using OpenRegister query format
-     * 
+     *
      * This method translates OpenRegister query parameters into Solr queries
      * and converts results back to ObjectEntity format for compatibility
      *
      * @param array $query OpenRegister-style query parameters
      * @param bool $rbac Apply role-based access control (currently not implemented in Solr)
-     * @param bool $multi Multi-tenant support (currently not implemented in Solr) 
+     * @param bool $multi Multi-tenant support (currently not implemented in Solr)
      * @return array Paginated results in OpenRegister format
      * @throws \Exception When Solr is not available or query fails
      */
     public function searchObjectsPaginated(array $query = [], bool $rbac = false, bool $multi = false): array
     {
-        if (!$this->isAvailable()) {
+        if ($this->isAvailable() === false) {
             throw new \Exception('Solr service is not available');
         }
 
         $this->ensureClientInitialized();
-        
-        // Translate OpenRegister query to Solr query
+
+        // Translate OpenRegister query to Solr query.
         $solrQuery = $this->translateOpenRegisterQuery($query);
-        
+
         $this->logger->debug('[SolrService] Translated query', [
             'original' => $query,
             'solr' => $solrQuery
         ]);
-        
-        // Execute Solr search
+
+        // Execute Solr search.
         $solrResults = $this->searchObjects($solrQuery);
-        
-        // Convert Solr results back to OpenRegister format
+
+        // Convert Solr results back to OpenRegister format.
         $openRegisterResults = $this->convertSolrResultsToOpenRegisterFormat($solrResults, $query);
-        
+
         $this->logger->debug('[SolrService] Search completed', [
             'found' => $openRegisterResults['total'] ?? 0,
             'returned' => count($openRegisterResults['results'] ?? [])
         ]);
-        
+
         return $openRegisterResults;
     }
 
@@ -2762,55 +2895,58 @@ class SolrService
             'facet.field' => []
         ];
 
-        // Handle search query
-        if (!empty($query['_search'])) {
+        // Handle search query.
+        if (empty($query['_search']) === false) {
             $searchTerm = $this->escapeSolrValue($query['_search']);
             $solrQuery['q'] = "_text_:($searchTerm) OR naam:($searchTerm) OR description:($searchTerm)";
         }
 
-        // Handle pagination
-        if (isset($query['_page'])) {
+        // Handle pagination.
+        if (isset($query['_page']) === true) {
             $page = max(1, (int)$query['_page']);
-            $limit = isset($query['_limit']) ? max(1, (int)$query['_limit']) : 20;
+            $limit = 20;
+            if (isset($query['_limit']) === true) {
+                $limit = max(1, (int)$query['_limit']);
+            }
             $solrQuery['start'] = ($page - 1) * $limit;
             $solrQuery['rows'] = $limit;
-        } elseif (isset($query['_limit'])) {
+        } elseif (isset($query['_limit']) === true) {
             $solrQuery['rows'] = max(1, (int)$query['_limit']);
         }
 
-        // Handle sorting
-        if (!empty($query['_order'])) {
+        // Handle sorting.
+        if (empty($query['_order']) === false) {
             $solrQuery['sort'] = $this->translateSortField($query['_order']);
         }
 
-        // Handle filters
+        // Handle filters.
         $filterQueries = [];
-        
+
         foreach ($query as $key => $value) {
-            if (str_starts_with($key, '_')) {
+            if (str_starts_with($key, '_') === true) {
                 continue; // Skip internal parameters
             }
-            
+
             $solrField = $this->translateFilterField($key);
-            
-            if (is_array($value)) {
-                // Handle array values (OR condition)
+
+            if (is_array($value) === true) {
+                // Handle array values (OR condition).
                 $conditions = array_map(fn($v) => $solrField . ':"' . $this->escapeSolrValue($v) . '"', $value);
                 $filterQueries[] = '(' . implode(' OR ', $conditions) . ')';
             } else {
-                // Handle single values
+                // Handle single values.
                 $filterQueries[] = $solrField . ':"' . $this->escapeSolrValue($value) . '"';
             }
         }
 
-        if (!empty($filterQueries)) {
+        if (empty($filterQueries) === false) {
             $solrQuery['fq'] = $filterQueries;
         }
 
-        // Add faceting for common fields
+        // Add faceting for common fields.
         $solrQuery['facet.field'] = [
             'self_register',
-            'self_schema', 
+            'self_schema',
             'self_organisation',
             'self_owner',
             'type_s',
@@ -2828,13 +2964,13 @@ class SolrService
      */
     private function translateFilterField(string $field): string
     {
-        // Handle @self.* fields (metadata)
-        if (str_starts_with($field, '@self.')) {
+        // Handle @self.* fields (metadata).
+        if (str_starts_with($field, '@self.') === true) {
             $metadataField = substr($field, 6); // Remove '@self.'
             return 'self_' . $metadataField;
         }
-        
-        // Handle special field mappings
+
+        // Handle special field mappings.
         $fieldMappings = [
             'register' => 'self_register',
             'schema' => 'self_schema',
@@ -2845,11 +2981,11 @@ class SolrService
             'published' => 'self_published'
         ];
 
-        if (isset($fieldMappings[$field])) {
+        if (isset($fieldMappings[$field]) === true) {
             return $fieldMappings[$field];
         }
 
-        // For object properties, use the field name directly (now stored at root)
+        // For object properties, use the field name directly (now stored at root).
         return $field;
     }
 
@@ -2861,16 +2997,19 @@ class SolrService
      */
     private function translateSortField(array|string $order): string
     {
-        if (is_string($order)) {
+        if (is_string($order) === true) {
             $field = $this->translateFilterField($order);
             return $field . ' asc';
         }
 
-        if (is_array($order)) {
+        if (is_array($order) === true) {
             $sortParts = [];
             foreach ($order as $field => $direction) {
                 $solrField = $this->translateFilterField($field);
-                $solrDirection = strtolower($direction) === 'desc' ? 'desc' : 'asc';
+                $solrDirection = 'asc';
+                if (strtolower($direction) === 'desc') {
+                    $solrDirection = 'desc';
+                }
                 $sortParts[] = $solrField . ' ' . $solrDirection;
             }
             return implode(', ', $sortParts);
@@ -2890,20 +3029,29 @@ class SolrService
     {
         $results = [];
         $documents = $solrResults['documents'] ?? [];
-        
+
         foreach ($documents as $doc) {
-            // Reconstruct object from Solr document
+            // Reconstruct object from Solr document.
             $objectEntity = $this->reconstructObjectFromSolrDocument($doc);
-            if ($objectEntity) {
+            if ($objectEntity !== null) {
                 $results[] = $objectEntity;
             }
         }
 
-        // Build pagination info
+        // Build pagination info.
         $total = $solrResults['numFound'] ?? count($results);
-        $page = isset($originalQuery['_page']) ? (int)$originalQuery['_page'] : 1;
-        $limit = isset($originalQuery['_limit']) ? (int)$originalQuery['_limit'] : 20;
-        $pages = $limit > 0 ? ceil($total / $limit) : 1;
+        $page = 1;
+        if (isset($originalQuery['_page']) === true) {
+            $page = (int)$originalQuery['_page'];
+        }
+        $limit = 20;
+        if (isset($originalQuery['_limit']) === true) {
+            $limit = (int)$originalQuery['_limit'];
+        }
+        $pages = 1;
+        if ($limit > 0) {
+            $pages = ceil($total / $limit);
+        }
 
         return [
             'results' => $results,
@@ -2918,7 +3066,7 @@ class SolrService
 
     /**
      * Bulk index objects from database to Solr for environment warmup
-     * 
+     *
      * This method processes objects in batches to avoid memory issues
      * and provides progress tracking for large datasets
      *
@@ -2929,12 +3077,12 @@ class SolrService
      */
     public function bulkIndexFromDatabase(int $batchSize = 1000, int $maxObjects = 0): array
     {
-        if (!$this->isAvailable()) {
+        if ($this->isAvailable() === false) {
             throw new \Exception('Solr service is not available');
         }
 
         $this->ensureClientInitialized();
-        
+
         $this->logger->info('[SolrService] Starting bulk index from database', [
             'batch_size' => $batchSize,
             'max_objects' => $maxObjects
@@ -2944,53 +3092,53 @@ class SolrService
         $totalErrors = 0;
         $startTime = microtime(true);
         $lastCommitTime = $startTime;
-        
+
         try {
-            // Get total object count for progress tracking
+            // Get total object count for progress tracking.
             $totalCount = $this->objectMapper->getTotalCount();
-            
+
             if ($maxObjects > 0 && $maxObjects < $totalCount) {
                 $totalCount = $maxObjects;
             }
-            
+
             $this->logger->info('[SolrService] Found objects to index', ['total' => $totalCount]);
-            
+
             $offset = 0;
-            
+
             while (($maxObjects === 0 || $totalProcessed < $maxObjects) && $offset < $totalCount) {
                 $currentBatchSize = $batchSize;
                 if ($maxObjects > 0 && ($totalProcessed + $batchSize) > $maxObjects) {
                     $currentBatchSize = $maxObjects - $totalProcessed;
                 }
-                
-                // Get batch of objects
+
+                // Get batch of objects.
                 $objects = $this->objectMapper->findAllInRange($offset, $currentBatchSize);
-                
-                if (empty($objects)) {
+
+                if (empty($objects) === true) {
                     break;
                 }
-                
+
                 $this->logger->debug('[SolrService] Processing batch', [
                     'offset' => $offset,
                     'batch_size' => count($objects),
                     'progress' => round(($totalProcessed / $totalCount) * 100, 2) . '%'
                 ]);
-                
-                // Index this batch
-                $batchResult = $this->bulkIndexObjects($objects, false); // Don't commit each batch
-                
+
+                // Index this batch.
+                $batchResult = $this->bulkIndexObjects($objects, false); // Don't commit each batch.
+
                 $totalProcessed += count($objects);
                 $totalErrors += $batchResult['errors'] ?? 0;
-                
-                // Commit every 5 batches or at the end
+
+                // Commit every 5 batches or at the end.
                 $currentTime = microtime(true);
                 if (($currentTime - $lastCommitTime) > 30 || // Every 30 seconds
-                    $totalProcessed >= $totalCount || 
+                    $totalProcessed >= $totalCount ||
                     ($totalProcessed % ($batchSize * 5)) === 0) {
-                    
+
                     $this->commit();
                     $lastCommitTime = $currentTime;
-                    
+
                     $this->logger->info('[SolrService] Committed batch progress', [
                         'processed' => $totalProcessed,
                         'total' => $totalCount,
@@ -2998,46 +3146,46 @@ class SolrService
                         'progress' => round(($totalProcessed / $totalCount) * 100, 2) . '%'
                     ]);
                 }
-                
+
                 $offset += $currentBatchSize;
-                
-                // Memory cleanup
+
+                // Memory cleanup.
                 unset($objects, $batchResult);
-                if (function_exists('gc_collect_cycles')) {
+                if (function_exists('gc_collect_cycles') === true) {
                     gc_collect_cycles();
                 }
             }
-            
-            // Final commit
+
+            // Final commit.
             $this->commit();
-            
+
             $endTime = microtime(true);
             $duration = $endTime - $startTime;
-            
+
             $result = [
                 'success' => true,
                 'message' => 'Bulk indexing completed successfully',
                 'statistics' => [
                     'total_processed' => $totalProcessed,
                     'total_errors' => $totalErrors,
-                    'success_rate' => $totalProcessed > 0 ? round((($totalProcessed - $totalErrors) / $totalProcessed) * 100, 2) : 0,
+                    'success_rate' => $this->calculateSuccessRate($totalProcessed, $totalErrors),
                     'duration_seconds' => round($duration, 2),
-                    'objects_per_second' => $duration > 0 ? round($totalProcessed / $duration, 2) : 0,
+                    'objects_per_second' => $this->calculateObjectsPerSecond($totalProcessed, $duration),
                     'batch_size' => $batchSize
                 ]
             ];
-            
+
             $this->logger->info('[SolrService] Bulk indexing completed', $result['statistics']);
-            
+
             return $result;
-            
+
         } catch (\Exception $e) {
             $this->logger->error('[SolrService] Bulk indexing failed', [
                 'error' => $e->getMessage(),
                 'processed' => $totalProcessed,
                 'errors' => $totalErrors
             ]);
-            
+
             throw new \Exception('Bulk indexing failed: ' . $e->getMessage());
         }
     }
@@ -3055,7 +3203,10 @@ class SolrService
     private function extractSolrFieldValue(array $doc, string $fieldName)
     {
         $value = $doc[$fieldName] ?? null;
-        return is_array($value) ? ($value[0] ?? null) : $value;
+        if (is_array($value) === true) {
+            return $value[0] ?? null;
+        }
+        return $value;
     }
 
     /**
@@ -3067,13 +3218,41 @@ class SolrService
     private function reconstructObjectFromSolrDocument(array $doc): ?ObjectEntity
     {
         try {
-            // Extract metadata from self_ fields
-            $object = is_array($doc['self_object'] ?? null) ? ($doc['self_object'][0] ?? null) : ($doc['self_object'] ?? null);
-            $uuid = is_array($doc['self_uuid'] ?? null) ? ($doc['self_uuid'][0] ?? null) : ($doc['self_uuid'] ?? null);
-            $register = is_array($doc['self_register'] ?? null) ? ($doc['self_register'][0] ?? null) : ($doc['self_register'] ?? null);
-            $schema = is_array($doc['self_schema'] ?? null) ? ($doc['self_schema'][0] ?? null) : ($doc['self_schema'] ?? null);
-            
-            if (!$objectId || !$register || !$schema) {
+            // Extract metadata from self_ fields.
+            $selfObject = $doc['self_object'] ?? null;
+            $object = null;
+            if (is_array($selfObject) === true) {
+                $object = $selfObject[0] ?? null;
+            } else {
+                $object = $selfObject;
+            }
+
+            $selfUuid = $doc['self_uuid'] ?? null;
+            $uuid = null;
+            if (is_array($selfUuid) === true) {
+                $uuid = $selfUuid[0] ?? null;
+            } else {
+                $uuid = $selfUuid;
+            }
+
+            $selfRegister = $doc['self_register'] ?? null;
+            $register = null;
+            if (is_array($selfRegister) === true) {
+                $register = $selfRegister[0] ?? null;
+            } else {
+                $register = $selfRegister;
+            }
+
+            $selfSchema = $doc['self_schema'] ?? null;
+            $schema = null;
+            if (is_array($selfSchema) === true) {
+                $schema = $selfSchema[0] ?? null;
+            } else {
+                $schema = $selfSchema;
+            }
+
+            $objectId = $uuid;
+            if ($objectId === null || $objectId === '' || $register === null || $register === '' || $schema === null || $schema === '') {
                 $this->logger->warning('[SolrService] Invalid document missing required fields', [
                     'doc_id' => $doc['id'] ?? 'unknown',
                     'object' => $uuid,
@@ -3083,12 +3262,12 @@ class SolrService
                 return null;
             }
 
-            // Create ObjectEntity instance
+            // Create ObjectEntity instance.
             $entity = new \OCA\OpenRegister\Db\ObjectEntity();
-            $entity->hydrateObject(json_decode($object, true));            
-           
+            $entity->hydrateObject(json_decode($object, true));
+
             return $entity;
-            
+
         } catch (\Exception $e) {
             $this->logger->error('[SolrService] Failed to reconstruct object from Solr document', [
                 'doc_id' => $doc['id'] ?? 'unknown',

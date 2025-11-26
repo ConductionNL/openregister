@@ -1,25 +1,45 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * Mapper for object text entities.
  *
  * @category Db
  * @package  OCA\OpenRegister\Db
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version   GIT: <git-id>
+ * @link      https://www.OpenRegister.nl
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 
 /**
  * Class ObjectTextMapper
+ *
+ * @method ObjectText insert(Entity $entity)
+ * @method ObjectText update(Entity $entity)
+ * @method ObjectText insertOrUpdate(Entity $entity)
+ * @method ObjectText delete(Entity $entity)
+ * @method ObjectText find(int|string $id)
+ * @method ObjectText findEntity(IQueryBuilder $query)
+ * @method ObjectText[] findAll(int|null $limit = null, int|null $offset = null)
+ * @method list<ObjectText> findEntities(IQueryBuilder $query)
+ *
+ * @template-extends QBMapper<ObjectText>
  */
 class ObjectTextMapper extends QBMapper
 {
+
+
     /**
      * Constructor.
      *
@@ -28,7 +48,9 @@ class ObjectTextMapper extends QBMapper
     public function __construct(IDBConnection $db)
     {
         parent::__construct($db, 'openregister_object_texts', ObjectText::class);
-    }
+
+    }//end __construct()
+
 
     /**
      * Find text by object ID.
@@ -47,9 +69,8 @@ class ObjectTextMapper extends QBMapper
             );
 
         return $this->findEntities($qb);
-    }
-}
+
+    }//end findByObjectId()
 
 
-
-
+}//end class

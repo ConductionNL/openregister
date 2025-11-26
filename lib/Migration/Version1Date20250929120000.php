@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * OpenRegister Schema Searchable Property Migration
  *
@@ -12,14 +10,16 @@ declare(strict_types=1);
  * @category Migration
  * @package  OCA\OpenRegister\Migration
  *
- * @author   Conduction Development Team <info@conduction.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version  GIT: <git_id>
+ * @version GIT: <git_id>
  *
- * @link     https://www.OpenRegister.nl
+ * @link https://www.OpenRegister.nl
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Migration;
 
@@ -39,45 +39,53 @@ use OCP\Migration\SimpleMigrationStep;
 class Version1Date20250929120000 extends SimpleMigrationStep
 {
 
+
     /**
      * Add searchable column to schemas table
      *
-     * @param IOutput $output Migration output interface
+     * @param IOutput $output        Migration output interface
      * @param Closure $schemaClosure Schema closure
-     * @param array   $options Migration options
+     * @param array   $options       Migration options
      *
      * @return ISchemaWrapper|null Updated schema
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /** @var ISchemaWrapper $schema */
+        /*
+         * @var ISchemaWrapper $schema
+         */
+
         $schema = $schemaClosure();
 
         $output->info('🔧 Adding searchable column to schemas table...');
 
-        if ($schema->hasTable('openregister_schemas')) {
+        if ($schema->hasTable('openregister_schemas') === true) {
             $table = $schema->getTable('openregister_schemas');
-            
-            if (!$table->hasColumn('searchable')) {
-                $table->addColumn('searchable', Types::BOOLEAN, [
-                    'notnull' => true,
-                    'default' => true,
-                    'comment' => 'Whether objects of this schema should be indexed in SOLR for searching'
-                ]);
-                
+
+            if ($table->hasColumn('searchable') === false) {
+                $table->addColumn(
+                        'searchable',
+                        Types::BOOLEAN,
+                        [
+                            'notnull' => true,
+                            'default' => true,
+                            'comment' => 'Whether objects of this schema should be indexed in SOLR for searching',
+                        ]
+                        );
+
                 $output->info('✅ Added searchable column with default value true');
                 $output->info('🎯 This enables per-schema SOLR indexing control:');
                 $output->info('   • searchable = true → Objects indexed in SOLR (searchable)');
                 $output->info('   • searchable = false → Objects excluded from SOLR (not searchable)');
                 $output->info('🚀 Existing schemas default to searchable for backward compatibility!');
-                
+
                 return $schema;
             } else {
                 $output->info('ℹ️  Searchable column already exists, skipping...');
-            }
+            }//end if
         } else {
             $output->info('⚠️  Schemas table not found, skipping searchable column addition');
-        }
+        }//end if
 
         return null;
 
@@ -87,43 +95,42 @@ class Version1Date20250929120000 extends SimpleMigrationStep
     /**
      * Ensure all existing schemas have searchable set to true
      *
-     * @param IOutput $output Migration output interface
+     * @param IOutput $output        Migration output interface
      * @param Closure $schemaClosure Schema closure
-     * @param array   $options Migration options
+     * @param array   $options       Migration options
      *
      * @return void
      */
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
         $output->info('🔧 Ensuring existing schemas are marked as searchable...');
-        
-        // Since we added the column with default value true and notnull constraint,
-        // all existing records should already have searchable = 1
-        // We'll just verify this with a simple count query
-        
+
+        // Since we added the column with default value true and notnull constraint,.
+        // all existing records should already have searchable = 1.
+        // We'll just verify this with a simple count query.
         $connection = \OC::$server->getDatabaseConnection();
-        
+
         try {
-            // Count schemas to verify the column was added successfully
-            $sql = "SELECT COUNT(*) as total FROM `oc_openregister_schemas`";
-            $result = $connection->executeQuery($sql);
-            $row = $result->fetch();
+            // Count schemas to verify the column was added successfully.
+            $sql          = "SELECT COUNT(*) as total FROM `oc_openregister_schemas`";
+            $result       = $connection->executeQuery($sql);
+            $row          = $result->fetch();
             $totalSchemas = $row['total'] ?? 0;
-            
+
             if ($totalSchemas > 0) {
                 $output->info("✅ Found {$totalSchemas} existing schemas - all automatically set to searchable=true");
             } else {
                 $output->info('ℹ️  No existing schemas found - ready for new schemas with searchable control');
             }
-            
+
             $output->info('🎯 All schemas are now properly configured for SOLR indexing control');
-            
         } catch (\Exception $e) {
-            $output->info('❌ Failed to verify schemas: ' . $e->getMessage());
+            $output->info('❌ Failed to verify schemas: '.$e->getMessage());
             $output->info('⚠️  This may indicate an issue with the searchable column');
             $output->info('💡 Manual check: SELECT searchable FROM oc_openregister_schemas LIMIT 1');
         }
 
     }//end postSchemaChange()
+
 
 }//end class

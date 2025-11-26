@@ -239,6 +239,6 @@ Regular validation helps maintain high-quality API documentation that accurately
 
 ## Related Documentation
 
-- [API Reference](../api/index.md) - API documentation
+- [API Reference](../api/objects.md) - API documentation
 - [Schemas](../Features/schemas.md) - Schema documentation
 

@@ -66,7 +66,7 @@ class ViewService
     {
         $view = $this->viewMapper->find($id);
 
-        // Check if user has access to this view
+        // Check if user has access to this view.
         if ($view->getOwner() !== $owner && $view->getIsPublic() === false) {
             throw new \OCP\AppFramework\Db\DoesNotExistException('View not found or access denied');
         }
@@ -81,7 +81,9 @@ class ViewService
      *
      * @param string $owner The owner user ID
      *
-     * @return array Array of found views
+     * @return View[] Array of found views
+     *
+     * @psalm-return array<View>
      */
     public function findAll(string $owner): array
     {
@@ -113,7 +115,7 @@ class ViewService
         array $query
     ): View {
         try {
-            // If this is set as default, unset any existing default for this user
+            // If this is set as default, unset any existing default for this user.
             if ($isDefault === true) {
                 $this->clearDefaultForUser($owner);
             }
@@ -129,7 +131,7 @@ class ViewService
 
             return $this->viewMapper->insert($view);
         } catch (Exception $e) {
-            $this->logger->error('Error creating view: ' . $e->getMessage());
+            $this->logger->error('Error creating view: '.$e->getMessage());
             throw $e;
         }
 
@@ -146,6 +148,7 @@ class ViewService
      * @param bool       $isPublic    Whether the view is public
      * @param bool       $isDefault   Whether the view is default
      * @param array      $query       The query parameters
+     * @param array|null $favoredBy   Array of user IDs who favor this view
      *
      * @return View The updated view
      *
@@ -159,12 +162,12 @@ class ViewService
         bool $isPublic,
         bool $isDefault,
         array $query,
-        ?array $favoredBy = null
+        ?array $favoredBy=null
     ): View {
         try {
             $view = $this->find($id, $owner);
 
-            // If this is set as default, unset any existing default for this user
+            // If this is set as default, unset any existing default for this user.
             if ($isDefault === true && $view->getIsDefault() === false) {
                 $this->clearDefaultForUser($owner);
             }
@@ -174,17 +177,17 @@ class ViewService
             $view->setIsPublic($isPublic);
             $view->setIsDefault($isDefault);
             $view->setQuery($query);
-            
-            // Update favoredBy if provided
+
+            // Update favoredBy if provided.
             if ($favoredBy !== null) {
                 $view->setFavoredBy($favoredBy);
             }
 
             return $this->viewMapper->update($view);
         } catch (Exception $e) {
-            $this->logger->error('Error updating view: ' . $e->getMessage());
+            $this->logger->error('Error updating view: '.$e->getMessage());
             throw $e;
-        }
+        }//end try
 
     }//end update()
 
@@ -205,7 +208,7 @@ class ViewService
             $view = $this->find($id, $owner);
             $this->viewMapper->delete($view);
         } catch (Exception $e) {
-            $this->logger->error('Error deleting view: ' . $e->getMessage());
+            $this->logger->error('Error deleting view: '.$e->getMessage());
             throw $e;
         }
 
@@ -227,24 +230,26 @@ class ViewService
     {
         try {
             $view = $this->find($id, $owner);
-            $favoredBy = $view->getFavoredBy() ?? [];
+            // GetFavoredBy() always returns an array (non-null), but keeping ?? [] for defensive programming.
+            $favoredBy = $view->getFavoredBy();
 
             if ($favor === true) {
-                // Add user to favoredBy if not already there
-                if (!in_array($owner, $favoredBy)) {
+                // Add user to favoredBy if not already there.
+                if (in_array($owner, $favoredBy, true) === false) {
                     $favoredBy[] = $owner;
                 }
             } else {
-                // Remove user from favoredBy
+                // Remove user from favoredBy.
                 $favoredBy = array_values(array_filter($favoredBy, fn($userId) => $userId !== $owner));
             }
 
+            // End if.
             $view->setFavoredBy($favoredBy);
             return $this->viewMapper->update($view);
         } catch (Exception $e) {
-            $this->logger->error('Error toggling favorite: ' . $e->getMessage());
+            $this->logger->error('Error toggling favorite: '.$e->getMessage());
             throw $e;
-        }
+        }//end try
 
     }//end toggleFavorite()
 
@@ -270,4 +275,3 @@ class ViewService
 
 
 }//end class
-

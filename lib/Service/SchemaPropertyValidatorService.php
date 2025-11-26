@@ -60,11 +60,11 @@ class SchemaPropertyValidatorService
      */
     private array $validStringFormats = [
         '',
-        // Text content formats
+        // Text content formats.
         'text',
         'markdown',
         'html',
-        // Standard JSON Schema formats
+        // Standard JSON Schema formats.
         'date-time',
         'date',
         'time',
@@ -178,7 +178,7 @@ class SchemaPropertyValidatorService
             }
         }
 
-        // Validate file properties if type is file
+        // Validate file properties if type is file.
         if ($property['type'] === 'file') {
             $this->validateFileProperty($property, $path);
         }
@@ -190,17 +190,17 @@ class SchemaPropertyValidatorService
             }
         }
 
-        // Validate visible property if present
+        // Validate visible property if present.
         if (isset($property['visible']) === true && is_bool($property['visible']) === false) {
             throw new Exception("'visible' at '$path' must be a boolean");
         }
 
-        // Validate hideOnCollection property if present
+        // Validate hideOnCollection property if present.
         if (isset($property['hideOnCollection']) === true && is_bool($property['hideOnCollection']) === false) {
             throw new Exception("'hideOnCollection' at '$path' must be a boolean");
         }
 
-        // Validate hideOnForm property if present
+        // Validate hideOnForm property if present.
         if (isset($property['hideOnForm']) === true && is_bool($property['hideOnForm']) === false) {
             throw new Exception("'hideOnForm' at '$path' must be a boolean");
         }
@@ -217,7 +217,8 @@ class SchemaPropertyValidatorService
      * @param string $path       The current path in the schema
      *
      * @throws Exception If any property definition is invalid
-     * @return bool True if all properties are valid
+     *
+     * @return true True if all properties are valid
      */
     public function validateProperties(array $properties, string $path=''): bool
     {
@@ -268,37 +269,40 @@ class SchemaPropertyValidatorService
      * @param string $path     The current path in the schema (for error messages)
      *
      * @throws Exception If the file property configuration is invalid
-     * @return bool True if the file property is valid
      *
-     * @psalm-param    array<string, mixed> $property
-     * @phpstan-param  array<string, mixed> $property
+     * @return true
+     *
+     * @psalm-param array<string, mixed> $property
+     *
+     * @phpstan-param array<string, mixed> $property
+     *
      * @psalm-return   bool
      * @phpstan-return bool
      */
     private function validateFileProperty(array $property, string $path): bool
     {
-        // Validate allowedTypes if present
-        if (isset($property['allowedTypes'])) {
-            if (!is_array($property['allowedTypes'])) {
+        // Validate allowedTypes if present.
+        if (isset($property['allowedTypes']) === true) {
+            if (is_array($property['allowedTypes']) === false) {
                 throw new Exception("'allowedTypes' at '$path' must be an array");
             }
 
-            // Validate each MIME type
+            // Validate each MIME type.
             foreach ($property['allowedTypes'] as $index => $mimeType) {
-                if (!is_string($mimeType)) {
+                if (is_string($mimeType) === false) {
                     throw new Exception("'allowedTypes[$index]' at '$path' must be a string");
                 }
 
-                // Basic MIME type validation (type/subtype)
-                if (!preg_match('/^[a-zA-Z0-9][a-zA-Z0-9!#$&\-\^_]*\/[a-zA-Z0-9][a-zA-Z0-9!#$&\-\^_.]*$/', $mimeType)) {
+                // Basic MIME type validation (type/subtype).
+                if (preg_match('/^[a-zA-Z0-9][a-zA-Z0-9!#$&\-\^_]*\/[a-zA-Z0-9][a-zA-Z0-9!#$&\-\^_.]*$/', $mimeType) === 0) {
                     throw new Exception("'allowedTypes[$index]' at '$path' contains invalid MIME type format: '$mimeType'");
                 }
             }
         }
 
-        // Validate maxSize if present
-        if (isset($property['maxSize'])) {
-            if (!is_int($property['maxSize']) && !is_numeric($property['maxSize'])) {
+        // Validate maxSize if present.
+        if (isset($property['maxSize']) === true) {
+            if (is_int($property['maxSize']) === false && is_numeric($property['maxSize']) === false) {
                 throw new Exception("'maxSize' at '$path' must be a numeric value");
             }
 
@@ -307,24 +311,24 @@ class SchemaPropertyValidatorService
                 throw new Exception("'maxSize' at '$path' must be a positive number");
             }
 
-            // Reasonable upper limit (100MB)
+            // Reasonable upper limit (100MB).
             if ($maxSize > 104857600) {
                 throw new Exception("'maxSize' at '$path' exceeds maximum allowed size (100MB)");
             }
         }
 
-        // Validate allowedTags if present
-        if (isset($property['allowedTags'])) {
-            if (!is_array($property['allowedTags'])) {
+        // Validate allowedTags if present.
+        if (isset($property['allowedTags']) === true) {
+            if (is_array($property['allowedTags']) === false) {
                 throw new Exception("'allowedTags' at '$path' must be an array");
             }
 
             foreach ($property['allowedTags'] as $index => $tag) {
-                if (!is_string($tag)) {
+                if (is_string($tag) === false) {
                     throw new Exception("'allowedTags[$index]' at '$path' must be a string");
                 }
 
-                // Basic tag validation (no empty strings, reasonable length)
+                // Basic tag validation (no empty strings, reasonable length).
                 if (trim($tag) === '') {
                     throw new Exception("'allowedTags[$index]' at '$path' cannot be empty");
                 }
@@ -335,18 +339,18 @@ class SchemaPropertyValidatorService
             }
         }
 
-        // Validate autoTags if present
-        if (isset($property['autoTags'])) {
-            if (!is_array($property['autoTags'])) {
+        // Validate autoTags if present.
+        if (isset($property['autoTags']) === true) {
+            if (is_array($property['autoTags']) === false) {
                 throw new Exception("'autoTags' at '$path' must be an array");
             }
 
             foreach ($property['autoTags'] as $index => $tag) {
-                if (!is_string($tag)) {
+                if (is_string($tag) === false) {
                     throw new Exception("'autoTags[$index]' at '$path' must be a string");
                 }
 
-                // Basic tag validation (no empty strings, reasonable length)
+                // Basic tag validation (no empty strings, reasonable length).
                 if (trim($tag) === '') {
                     throw new Exception("'autoTags[$index]' at '$path' cannot be empty");
                 }

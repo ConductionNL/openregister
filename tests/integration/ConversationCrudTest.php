@@ -30,7 +30,7 @@ class ConversationCrudTest extends TestCase
         $this->conversationMapper = new ConversationMapper($this->db, \OC::$server->get(ITimeFactory::class));
         $this->agentMapper = new AgentMapper($this->db);
 
-        // Create a test agent
+        // Create a test agent.
         $this->testAgent = new Agent();
         $this->testAgent->setUuid('test-agent-' . uniqid());
         $this->testAgent->setName('Test Agent');
@@ -42,13 +42,13 @@ class ConversationCrudTest extends TestCase
 
     protected function tearDown(): void
     {
-        // Clean up test data
+        // Clean up test data.
         try {
             if (isset($this->testAgent)) {
                 $this->agentMapper->delete($this->testAgent);
             }
         } catch (\Exception $e) {
-            // Ignore cleanup errors
+            // Ignore cleanup errors.
         }
 
         parent::tearDown();
@@ -73,7 +73,7 @@ class ConversationCrudTest extends TestCase
         $this->assertEquals($this->testAgent->getId(), $created->getAgentId());
         $this->assertNull($created->getDeletedAt());
 
-        // Cleanup
+        // Cleanup.
         $this->conversationMapper->delete($created);
     }
 
@@ -88,16 +88,16 @@ class ConversationCrudTest extends TestCase
 
         $created = $this->conversationMapper->insert($conversation);
 
-        // Read by ID
+        // Read by ID.
         $found = $this->conversationMapper->find($created->getId());
         $this->assertEquals($created->getUuid(), $found->getUuid());
         $this->assertEquals('Test Read', $found->getTitle());
 
-        // Read by UUID
+        // Read by UUID.
         $foundByUuid = $this->conversationMapper->findByUuid($created->getUuid());
         $this->assertEquals($created->getId(), $foundByUuid->getId());
 
-        // Cleanup
+        // Cleanup.
         $this->conversationMapper->delete($created);
     }
 
@@ -112,7 +112,7 @@ class ConversationCrudTest extends TestCase
 
         $created = $this->conversationMapper->insert($conversation);
 
-        // Update
+        // Update.
         $created->setTitle('Updated Title');
         $created->setMetadata(['updated' => true]);
         $updated = $this->conversationMapper->update($created);
@@ -120,7 +120,7 @@ class ConversationCrudTest extends TestCase
         $this->assertEquals('Updated Title', $updated->getTitle());
         $this->assertEquals(['updated' => true], $updated->getMetadata());
 
-        // Cleanup
+        // Cleanup.
         $this->conversationMapper->delete($updated);
     }
 
@@ -136,10 +136,10 @@ class ConversationCrudTest extends TestCase
         $created = $this->conversationMapper->insert($conversation);
         $id = $created->getId();
 
-        // Delete
+        // Delete.
         $this->conversationMapper->delete($created);
 
-        // Verify deleted
+        // Verify deleted.
         $this->expectException(\OCP\AppFramework\Db\DoesNotExistException::class);
         $this->conversationMapper->find($id);
     }
@@ -163,7 +163,7 @@ class ConversationCrudTest extends TestCase
         $created1 = $this->conversationMapper->insert($conv1);
         $created2 = $this->conversationMapper->insert($conv2);
 
-        // Find conversations
+        // Find conversations.
         $found = $this->conversationMapper->findByUser('test-user', 1);
 
         $this->assertGreaterThanOrEqual(2, count($found));
@@ -172,7 +172,7 @@ class ConversationCrudTest extends TestCase
         $this->assertContains($created1->getUuid(), $uuids);
         $this->assertContains($created2->getUuid(), $uuids);
 
-        // Cleanup
+        // Cleanup.
         $this->conversationMapper->delete($created1);
         $this->conversationMapper->delete($created2);
     }
@@ -193,7 +193,7 @@ class ConversationCrudTest extends TestCase
         $newCount = $this->conversationMapper->countByUser('test-user-count', 1);
         $this->assertEquals($initialCount + 1, $newCount);
 
-        // Cleanup
+        // Cleanup.
         $this->conversationMapper->delete($created);
     }
 }

@@ -143,7 +143,7 @@ class RbacComprehensiveTest extends TestCase
     public function rbacScenarioProvider(): array
     {
         return [
-            // OPEN ACCESS SCHEMA (12 scenarios)
+            // OPEN ACCESS SCHEMA (12 scenarios).
             ['open_access', 'admin', 'create', true, 'Open Access - Admin can create'],
             ['open_access', 'admin', 'read', true, 'Open Access - Admin can read'],
             ['open_access', 'admin', 'update', true, 'Open Access - Admin can update'],
@@ -157,7 +157,7 @@ class RbacComprehensiveTest extends TestCase
             ['open_access', 'editors', 'update', true, 'Open Access - Custom user can update'],
             ['open_access', 'editors', 'delete', true, 'Open Access - Custom user can delete'],
             
-            // PUBLIC READ SCHEMA (20 scenarios)
+            // PUBLIC READ SCHEMA (20 scenarios).
             ['public_read', 'admin', 'create', true, 'Public Read - Admin override (create)'],
             ['public_read', 'admin', 'read', true, 'Public Read - Admin override (read)'],
             ['public_read', 'admin', 'update', true, 'Public Read - Admin override (update)'],
@@ -179,7 +179,7 @@ class RbacComprehensiveTest extends TestCase
             ['public_read', 'viewers', 'update', false, 'Public Read - Viewer blocked from update'],
             ['public_read', 'viewers', 'delete', false, 'Public Read - Viewer blocked from delete'],
             
-            // STAFF ONLY SCHEMA (16 scenarios)
+            // STAFF ONLY SCHEMA (16 scenarios).
             ['staff_only', 'admin', 'create', true, 'Staff Only - Admin override (create)'],
             ['staff_only', 'admin', 'read', true, 'Staff Only - Admin override (read)'],
             ['staff_only', 'admin', 'update', true, 'Staff Only - Admin override (update)'],
@@ -197,7 +197,7 @@ class RbacComprehensiveTest extends TestCase
             ['staff_only', 'managers', 'update', false, 'Staff Only - Manager blocked from update'],
             ['staff_only', 'managers', 'delete', true, 'Staff Only - Manager can delete'],
             
-            // COLLABORATIVE SCHEMA (16 scenarios)
+            // COLLABORATIVE SCHEMA (16 scenarios).
             ['collaborative', 'admin', 'create', true, 'Collaborative - Admin override (create)'],
             ['collaborative', 'admin', 'read', true, 'Collaborative - Admin override (read)'],
             ['collaborative', 'admin', 'update', true, 'Collaborative - Admin override (update)'],
@@ -234,18 +234,18 @@ class RbacComprehensiveTest extends TestCase
         bool $expectedResult,
         string $description
     ): void {
-        // Create schema with specified configuration
+        // Create schema with specified configuration.
         $schema = new Schema();
         $schema->setTitle("Test Schema - {$schemaType}");
         $schema->setAuthorization($this->schemaConfigs[$schemaType]);
 
-        // Determine if this is an admin scenario
+        // Determine if this is an admin scenario.
         $userGroup = $userType === 'admin' ? 'admin' : null;
         
-        // Test the permission
+        // Test the permission.
         $actualResult = $schema->hasPermission($userType, $operation, null, $userGroup);
         
-        // Assert the result with detailed failure message
+        // Assert the result with detailed failure message.
         $this->assertEquals(
             $expectedResult,
             $actualResult,
@@ -277,18 +277,18 @@ class RbacComprehensiveTest extends TestCase
         string $operation,
         string $description
     ): void {
-        // Create schema with specified configuration
+        // Create schema with specified configuration.
         $schema = new Schema();
         $schema->setTitle("Owner Test - {$schemaType}");
         $schema->setAuthorization($this->schemaConfigs[$schemaType]);
 
-        // Test that user normally wouldn't have permission
+        // Test that user normally wouldn't have permission.
         $normalResult = $schema->hasPermission($userType, $operation);
         
-        // Test that object owner always has permission
+        // Test that object owner always has permission.
         $ownerResult = $schema->hasPermission($userType, $operation, 'testuser', null, 'testuser');
         
-        // Object owner should always have access regardless of normal permissions
+        // Object owner should always have access regardless of normal permissions.
         $this->assertTrue(
             $ownerResult,
             sprintf(
@@ -314,7 +314,7 @@ class RbacComprehensiveTest extends TestCase
     public function ownerPrivilegeProvider(): array
     {
         return [
-            // Test owner privilege for restricted operations across schema types
+            // Test owner privilege for restricted operations across schema types.
             ['public_read', 'viewers', 'create', 'Owner override - Viewer can create their objects'],
             ['public_read', 'viewers', 'update', 'Owner override - Viewer can update their objects'],
             ['public_read', 'viewers', 'delete', 'Owner override - Viewer can delete their objects'],
@@ -343,19 +343,19 @@ class RbacComprehensiveTest extends TestCase
             'delete' => ['managers']
         ]);
 
-        // Scenario 1: User in multiple groups - should have permissions from any group
+        // Scenario 1: User in multiple groups - should have permissions from any group.
         $this->assertTrue($schema->hasPermission('editors', 'read')); // Editor can read via editors group
         $this->assertTrue($schema->hasPermission('viewers', 'read')); // Viewer can read via viewers group
         $this->assertFalse($schema->hasPermission('viewers', 'create')); // Viewer cannot create
 
-        // Scenario 2: Admin override in complex schema
+        // Scenario 2: Admin override in complex schema.
         $this->assertTrue($schema->hasPermission('any-group', 'delete', 'admin-user', 'admin')); // Admin can delete anything
         
-        // Scenario 3: Object owner vs group permissions
+        // Scenario 3: Object owner vs group permissions.
         $this->assertFalse($schema->hasPermission('staff', 'read')); // Staff not in viewers/editors groups
         $this->assertTrue($schema->hasPermission('staff', 'read', 'user1', null, 'user1')); // But owner can read their object
         
-        // Scenario 4: Missing action (should be open)
+        // Scenario 4: Missing action (should be open).
         $this->assertTrue($schema->hasPermission('anyone', 'publish')); // Unspecified actions are open
     }
 
@@ -369,11 +369,11 @@ class RbacComprehensiveTest extends TestCase
             'read' => ['editors']
         ]);
 
-        // Empty inputs
+        // Empty inputs.
         $this->assertFalse($schema->hasPermission('', 'read')); // Empty group ID
         $this->assertTrue($schema->hasPermission('editors', '')); // Empty action (unspecified = open)
         
-        // Group vs owner permissions
+        // Group vs owner permissions.
         $this->assertTrue($schema->hasPermission('editors', 'read', 'user1', null, 'user2')); // Editors can read regardless of owner
         $this->assertFalse($schema->hasPermission('viewers', 'read', 'user1', null, 'user2')); // Viewers can't read (not authorized)
         $this->assertTrue($schema->hasPermission('viewers', 'read', 'user1', null, 'user1')); // But object owner can read their own
@@ -387,7 +387,7 @@ class RbacComprehensiveTest extends TestCase
         $provider = $this->rbacScenarioProvider();
         $this->assertCount(64, $provider, 'Should have exactly 64 test scenarios as defined in our test matrix');
         
-        // Count scenarios by schema type
+        // Count scenarios by schema type.
         $counts = [];
         foreach ($provider as $scenario) {
             $schemaType = $scenario[0];

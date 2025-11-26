@@ -103,8 +103,8 @@ class GetObject
             $object = $this->hydrateFiles($object, $this->fileService->getFiles($object));
         }
 
-        // Create an audit trail for the 'read' action if audit trails are enabled
-        if ($this->isAuditTrailsEnabled()) {
+        // Create an audit trail for the 'read' action if audit trails are enabled.
+        if ($this->isAuditTrailsEnabled() === true) {
             $log = $this->auditTrailMapper->createAuditTrail(null, $object, 'read');
             $object->setLastLog($log->jsonSerialize());
         }
@@ -147,7 +147,7 @@ class GetObject
             $object = $this->hydrateFiles($object, $this->fileService->getFiles($object));
         }
 
-        // No audit trail creation - this is a silent read
+        // No audit trail creation - this is a silent read.
         return $object;
 
     }//end findSilent()
@@ -171,7 +171,9 @@ class GetObject
      * @param bool          $rbac      Whether to apply RBAC checks (default: true).
      * @param bool          $multi     Whether to apply multitenancy filtering (default: true).
      *
-     * @return array The found objects.
+     * @return ObjectEntity[] The found objects.
+     *
+     * @psalm-return array<ObjectEntity>
      */
     public function findAll(
         ?int $limit=null,
@@ -259,7 +261,7 @@ class GetObject
     public function findRelated(ObjectEntity $object): array
     {
         // Get the relations of the object.
-        $relatedObjects = $object->getObject()->getRelations();
+        $relatedObjects = $object->getRelations() ?? [];
 
         // Iterate over each related object.
         foreach ($relatedObjects as $propertyName => $id) {
@@ -319,6 +321,7 @@ class GetObject
         ?Schema $schema=null
     ): array {
         // First find all objects that reference this object's URI or UUID.
+        // @psalm-suppress UndefinedMethod.
         $referencingObjects = $this->objectEntityMapper->findByRelationUri(
             search: $object->getUri() ?? $object->getUuid(),
             partialMatch: $partialMatch
@@ -377,7 +380,9 @@ class GetObject
      * @param bool         $rbac    Whether to apply RBAC checks (default: true).
      * @param bool         $multi   Whether to apply multitenancy filtering (default: true).
      *
-     * @return array Array of log entries
+     * @return \OCA\OpenRegister\Db\AuditTrail[] Array of log entries
+     *
+     * @psalm-return array<\OCA\OpenRegister\Db\AuditTrail>
      */
     public function findLogs(
         ObjectEntity $object,
@@ -415,9 +420,10 @@ class GetObject
             $retentionSettings = $this->settingsService->getRetentionSettingsOnly();
             return $retentionSettings['auditTrailsEnabled'] ?? true;
         } catch (\Exception $e) {
-            // If we can't get settings, default to enabled for safety
+            // If we can't get settings, default to enabled for safety.
             return true;
         }
+
     }//end isAuditTrailsEnabled()
 
 

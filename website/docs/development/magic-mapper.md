@@ -167,7 +167,7 @@ Enable for schemas with:
 - **Complex filtering**: Multiple property filters
 
 Keep disabled for:
-- **Low volume**: <1,000 objects
+- **Low volume**: &lt;1,000 objects
 - **Simple schemas**: Few properties, minimal filtering
 - **Development**: When schema structure changes frequently
 
@@ -320,5 +320,4 @@ php examples/magic_mapper_demo.php
 
 - [Schemas](../Features/schemas.md) - Schema documentation
 - [Schema Technical Documentation](../technical/schemas.md) - Technical schema details
-- [Database Setup](../technical/database-setup.md) - Database configuration
 

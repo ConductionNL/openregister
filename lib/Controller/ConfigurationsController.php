@@ -40,13 +40,13 @@ class ConfigurationsController extends Controller
 
 
     /**
-     * Constructor for ConfigurationController
+     * Constructor for ConfigurationController.
      *
      * @param string               $appName              The name of the app
      * @param IRequest             $request              The request object
-     * @param ConfigurationMapper  $configurationMapper  The configuration mapper
-     * @param ConfigurationService $configurationService The configuration service
-     * @param UploadService        $uploadService        The upload service
+     * @param ConfigurationMapper  $configurationMapper  The configuration mapper instance
+     * @param ConfigurationService $configurationService The configuration service instance
+     * @param UploadService        $uploadService        The upload service instance
      */
     public function __construct(
         string $appName,
@@ -59,6 +59,7 @@ class ConfigurationsController extends Controller
 
     }//end __construct()
 
+
     /**
      * List all configurations
      *
@@ -70,15 +71,13 @@ class ConfigurationsController extends Controller
     public function index(): JSONResponse
     {
         // Get request parameters for filtering and searching.
-        $filters        = $this->request->getParams();
+        $filters = $this->request->getParams();
 
         unset($filters['_route']);
 
         $searchParams     = [];
         $searchConditions = [];
         $filters          = $filters;
-
-
 
         // Return all configurations that match the search conditions.
         return new JSONResponse(
@@ -144,21 +143,21 @@ class ConfigurationsController extends Controller
             $data['uuid'] = Uuid::v4();
         }
 
-        // Set default values for new local configurations
-        // If sourceType is not provided, assume it's a local configuration
-        if (!isset($data['sourceType']) || $data['sourceType'] === null || $data['sourceType'] === '') {
+        // Set default values for new local configurations.
+        // If sourceType is not provided, assume it's a local configuration.
+        if (isset($data['sourceType']) === false || $data['sourceType'] === null || $data['sourceType'] === '') {
             $data['sourceType'] = 'local';
         }
-        
-        // Set isLocal based on sourceType (enforce consistency)
-        // Local configurations: sourceType === 'local' or 'manual' → isLocal = true
-        // External configurations: sourceType === 'github', 'gitlab', or 'url' → isLocal = false
-        if (in_array($data['sourceType'], ['local', 'manual'], true)) {
+
+        // Set isLocal based on sourceType (enforce consistency).
+        // Local configurations: sourceType === 'local' or 'manual' → isLocal = true.
+        // External configurations: sourceType === 'github', 'gitlab', or 'url' → isLocal = false.
+        if (in_array($data['sourceType'], ['local', 'manual'], true) === true) {
             $data['isLocal'] = true;
-        } elseif (in_array($data['sourceType'], ['github', 'gitlab', 'url'], true)) {
+        } else if (in_array($data['sourceType'], ['github', 'gitlab', 'url'], true) === true) {
             $data['isLocal'] = false;
-        } elseif (!isset($data['isLocal'])) {
-            // Fallback: if sourceType is something else and isLocal not set, default to true
+        } else if (isset($data['isLocal']) === false) {
+            // Fallback: if sourceType is something else and isLocal not set, default to true.
             $data['isLocal'] = true;
         }
 
@@ -197,17 +196,17 @@ class ConfigurationsController extends Controller
             }
         }
 
-        // Remove immutable fields to prevent tampering
+        // Remove immutable fields to prevent tampering.
         unset($data['id']);
         unset($data['organisation']);
         unset($data['owner']);
         unset($data['created']);
 
-        // Enforce consistency between sourceType and isLocal
-        if (isset($data['sourceType'])) {
-            if (in_array($data['sourceType'], ['local', 'manual'], true)) {
+        // Enforce consistency between sourceType and isLocal.
+        if (isset($data['sourceType']) === true) {
+            if (in_array($data['sourceType'], ['local', 'manual'], true) === true) {
                 $data['isLocal'] = true;
-            } elseif (in_array($data['sourceType'], ['github', 'gitlab', 'url'], true)) {
+            } else if (in_array($data['sourceType'], ['github', 'gitlab', 'url'], true) === true) {
                 $data['isLocal'] = false;
             }
         }
@@ -227,14 +226,14 @@ class ConfigurationsController extends Controller
 
 
     /**
-     * Patch (partially update) a configuration
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
+     * Patch (partially update) a configuration.
      *
      * @param int $id The ID of the configuration to patch
      *
      * @return JSONResponse The updated configuration data
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
      */
     public function patch(int $id): JSONResponse
     {

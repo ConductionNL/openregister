@@ -40,27 +40,30 @@ class Version1Date20250831130000 extends SimpleMigrationStep
 
 
     /**
-     * @param IOutput $output
-     * @param Closure $schemaClosure The `\Closure` returns a `ISchemaWrapper`
-     * @param array   $options
+     * Add tags column to objects table
      *
-     * @return null|ISchemaWrapper
+     * @param IOutput                 $output        Migration output interface
+     * @param Closure                 $schemaClosure Schema closure that returns ISchemaWrapper
+     * @param array<array-key, mixed> $options       Migration options
+     *
+     * @return null|ISchemaWrapper Updated schema or null
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
         /*
          * @var ISchemaWrapper $schema
          */
+
         $schema = $schemaClosure();
 
-        // Check if the objects table exists
+        // Check if the objects table exists.
         if ($schema->hasTable('openregister_objects') === false) {
             return null;
         }
 
         $table = $schema->getTable('openregister_objects');
 
-        // Add expires column if it doesn't exist
+        // Add expires column if it doesn't exist.
         if ($table->hasColumn('expires') === false) {
             $table->addColumn(
                     'expires',

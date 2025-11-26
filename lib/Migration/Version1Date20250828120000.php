@@ -41,19 +41,20 @@ class Version1Date20250828120000 extends SimpleMigrationStep
 
 
     /**
-     * Apply database schema changes for faceting performance
+     * Apply database schema changes for faceting performance.
      *
-     * @param IOutput $output
-     * @param Closure $schemaClosure The `\Closure` returns a `ISchemaWrapper`
-     * @param array   $options
+     * @param IOutput $output        Output interface for logging
+     * @param Closure $schemaClosure Schema retrieval closure
+     * @param array   $options       Migration options
      *
-     * @return null|ISchemaWrapper
+     * @return null|ISchemaWrapper Modified schema or null
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /**
+        /*
          * @var ISchemaWrapper $schema
          */
+
         $schema = $schemaClosure();
 
         if ($schema->hasTable('openregister_objects') === false) {
@@ -62,77 +63,80 @@ class Version1Date20250828120000 extends SimpleMigrationStep
 
         $table = $schema->getTable('openregister_objects');
 
-        // 1. Critical single-column indexes for common faceting fields
+        // 1. Critical single-column indexes for common faceting fields.
         $singleIndexes = [
-            'deleted' => 'objects_deleted_idx',
-            'published' => 'objects_published_idx', 
-            'depublished' => 'objects_depublished_idx',
-            'created' => 'objects_created_idx',
-            'updated' => 'objects_updated_idx',
-            'owner' => 'objects_owner_idx',
+            'deleted'      => 'objects_deleted_idx',
+            'published'    => 'objects_published_idx',
+            'depublished'  => 'objects_depublished_idx',
+            'created'      => 'objects_created_idx',
+            'updated'      => 'objects_updated_idx',
+            'owner'        => 'objects_owner_idx',
             'organisation' => 'objects_organisation_idx',
         ];
 
         foreach ($singleIndexes as $column => $indexName) {
-            if ($table->hasColumn($column) && !$table->hasIndex($indexName)) {
+            if ($table->hasColumn($column) === true && $table->hasIndex($indexName) === false) {
                 $table->addIndex([$column], $indexName);
                 $output->info("Added index {$indexName} on column {$column}");
             }
         }
 
-        // 2. Critical composite indexes for common filter combinations
-        // Note: Using raw SQL for composite indexes to handle MySQL key length limits
-        $connection = \OC::$server->getDatabaseConnection();
+        // 2. Critical composite indexes for common filter combinations.
+        // Note: Using raw SQL for composite indexes to handle MySQL key length limits.
+        $connection  = \OC::$server->getDatabaseConnection();
         $tablePrefix = \OC::$server->getConfig()->getSystemValue('dbtableprefix', 'oc_');
-        $tableName = $tablePrefix . 'openregister_objects';
+        $tableName   = $tablePrefix.'openregister_objects';
 
         $compositeIndexes = [
-            // For base filtering (deleted + published state)
-            'objects_deleted_published_idx' => ['deleted', 'published'],
-            'objects_lifecycle_idx' => ['deleted', 'published', 'depublished'],
-            
-            // For register/schema filtering with lifecycle (with length prefixes for text columns)
+            // For base filtering (deleted + published state).
+            'objects_deleted_published_idx'       => ['deleted', 'published'],
+            'objects_lifecycle_idx'               => ['deleted', 'published', 'depublished'],
+
+            // For register/schema filtering with lifecycle (with length prefixes for text columns).
             'objects_register_schema_deleted_idx' => ['register(20)', 'schema(20)', 'deleted'],
-            'objects_register_lifecycle_idx' => ['register(20)', 'deleted', 'published'],
-            'objects_schema_lifecycle_idx' => ['schema(20)', 'deleted', 'published'],
-            
-            // For organisation-based filtering (with length prefix for text column)
-            'objects_org_lifecycle_idx' => ['organisation(20)', 'deleted', 'published'],
-            
-            // For date range queries on faceting
-            'objects_created_deleted_idx' => ['created', 'deleted'],
-            'objects_updated_deleted_idx' => ['updated', 'deleted'],
+            'objects_register_lifecycle_idx'      => ['register(20)', 'deleted', 'published'],
+            'objects_schema_lifecycle_idx'        => ['schema(20)', 'deleted', 'published'],
+
+            // For organisation-based filtering (with length prefix for text column).
+            'objects_org_lifecycle_idx'           => ['organisation(20)', 'deleted', 'published'],
+
+            // For date range queries on faceting.
+            'objects_created_deleted_idx'         => ['created', 'deleted'],
+            'objects_updated_deleted_idx'         => ['updated', 'deleted'],
         ];
 
         foreach ($compositeIndexes as $indexName => $columns) {
-            // Check if index already exists
-            if ($table->hasIndex($indexName)) {
+            // Check if index already exists.
+            if ($table->hasIndex($indexName) === true) {
                 continue;
             }
 
-            // Check all base columns exist (without length prefixes)
-            $baseColumns = array_map(function($col) {
-                return preg_replace('/\(\d+\)/', '', $col);
-            }, $columns);
-            
+            // Check all base columns exist (without length prefixes).
+            $baseColumns = array_map(
+                    function ($col) {
+                        return preg_replace('/\(\d+\)/', '', $col);
+                    },
+                    $columns
+                    );
+
             $allColumnsExist = true;
             foreach ($baseColumns as $column) {
-                if (!$table->hasColumn($column)) {
+                if ($table->hasColumn($column) === false) {
                     $allColumnsExist = false;
                     break;
                 }
             }
-            
-            if ($allColumnsExist) {
+
+            if ($allColumnsExist === true) {
                 try {
-                    $sql = "CREATE INDEX {$indexName} ON {$tableName} (" . implode(', ', $columns) . ")";
+                    $sql = "CREATE INDEX {$indexName} ON {$tableName} (".implode(', ', $columns).")";
                     $connection->executeStatement($sql);
-                    $output->info("Added composite index {$indexName} on columns: " . implode(', ', $columns));
+                    $output->info("Added composite index {$indexName} on columns: ".implode(', ', $columns));
                 } catch (\Exception $e) {
-                    $output->info("Failed to create index {$indexName}: " . $e->getMessage());
+                    $output->info("Failed to create index {$indexName}: ".$e->getMessage());
                 }
             }
-        }
+        }//end foreach
 
         return $schema;
 

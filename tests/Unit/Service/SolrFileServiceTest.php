@@ -20,7 +20,7 @@ class SolrFileServiceTest extends TestCase
 	{
 		parent::setUp();
 		
-		// Create partial mock to test private methods
+		// Create partial mock to test private methods.
 		$guzzleSolr = $this->createMock(\OCA\OpenRegister\Service\GuzzleSolrService::class);
 		$settings = $this->createMock(\OCA\OpenRegister\Service\SettingsService::class);
 		$logger = $this->createMock(\Psr\Log\LoggerInterface::class);
@@ -35,7 +35,7 @@ class SolrFileServiceTest extends TestCase
 		$text = 'ABCDEFGHIJ'; // 10 characters
 		$chunks = $this->invokePrivate('chunkFixedSize', [$text, 4, 1]);
 		
-		// Should create: [ABCD, DEFG, GHIJ]
+		// Should create: [ABCD, DEFG, GHIJ].
 		$this->assertCount(3, $chunks);
 		$this->assertEquals('ABCD', $chunks[0]);
 		$this->assertEquals('DEFG', $chunks[1]);
@@ -50,7 +50,7 @@ class SolrFileServiceTest extends TestCase
 		$this->assertIsArray($chunks);
 		$this->assertGreaterThan(1, count($chunks));
 		
-		// Verify overlap exists
+		// Verify overlap exists.
 		if (count($chunks) >= 2) {
 			$endOfFirst = substr($chunks[0], -3);
 			$startOfSecond = substr($chunks[1], 0, 3);
@@ -65,7 +65,7 @@ class SolrFileServiceTest extends TestCase
 		
 		$this->assertGreaterThanOrEqual(3, count($chunks));
 		
-		// Each chunk (except last) should be approximately chunk_size
+		// Each chunk (except last) should be approximately chunk_size.
 		for ($i = 0; $i < count($chunks) - 1; $i++) {
 			$this->assertLessThanOrEqual(600, strlen($chunks[$i]));
 		}
@@ -84,7 +84,7 @@ class SolrFileServiceTest extends TestCase
 		$text = "Line 1\n\n\n\nLine 2\n\n\nLine 3";
 		$clean = $this->invokePrivate('cleanText', [$text]);
 		
-		// Should reduce multiple newlines to max 2
+		// Should reduce multiple newlines to max 2.
 		$this->assertStringNotContainsString("\n\n\n", $clean);
 	}
 	
@@ -190,13 +190,13 @@ class SolrFileServiceTest extends TestCase
 	
 	public function testChunkRecursiveLongParagraph()
 	{
-		// Single long paragraph that needs to be split
+		// Single long paragraph that needs to be split.
 		$text = str_repeat('Word ', 100); // 500 characters
 		$chunks = $this->invokePrivate('chunkRecursive', [$text, 50, [". ", " "]]);
 		
 		$this->assertGreaterThan(1, count($chunks));
 		
-		// Each chunk should be relatively close to chunk_size
+		// Each chunk should be relatively close to chunk_size.
 		foreach ($chunks as $chunk) {
 			$this->assertLessThanOrEqual(100, strlen($chunk)); // Some tolerance
 		}

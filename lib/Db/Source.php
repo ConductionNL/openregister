@@ -27,6 +27,25 @@ use OCP\AppFramework\Db\Entity;
  * Source entity class
  *
  * Represents a source in the OpenRegister application
+ *
+ * @method string|null getUuid()
+ * @method void setUuid(?string $uuid)
+ * @method string|null getTitle()
+ * @method void setTitle(?string $title)
+ * @method string|null getVersion()
+ * @method void setVersion(?string $version)
+ * @method string|null getDescription()
+ * @method void setDescription(?string $description)
+ * @method string|null getDatabaseUrl()
+ * @method void setDatabaseUrl(?string $databaseUrl)
+ * @method string|null getType()
+ * @method void setType(?string $type)
+ * @method string|null getOrganisation()
+ * @method void setOrganisation(?string $organisation)
+ * @method DateTime|null getUpdated()
+ * @method void setUpdated(?DateTime $updated)
+ * @method DateTime|null getCreated()
+ * @method void setCreated(?DateTime $created)
  */
 class Source extends Entity implements JsonSerializable
 {
@@ -127,7 +146,9 @@ class Source extends Entity implements JsonSerializable
      *
      * Returns all fields that are of type 'json'
      *
-     * @return array<string> List of JSON field names
+     * @return string[] List of JSON field names
+     *
+     * @psalm-return list<string>
      */
     public function getJsonFields(): array
     {
@@ -150,9 +171,9 @@ class Source extends Entity implements JsonSerializable
      *
      * @param array $object The data array to hydrate from
      *
-     * @return self Returns $this for method chaining
+     * @return static Returns $this for method chaining
      */
-    public function hydrate(array $object): self
+    public function hydrate(array $object): static
     {
         $jsonFields = $this->getJsonFields();
 
@@ -211,7 +232,21 @@ class Source extends Entity implements JsonSerializable
      *
      * Prepares the entity data for JSON serialization
      *
-     * @return array<string, mixed> Array of serializable entity data
+     * @return (array|int|null|string)[] Array of serializable entity data
+     *
+     * @psalm-return array{
+     *     id: int,
+     *     uuid: null|string,
+     *     title: null|string,
+     *     version: null|string,
+     *     description: null|string,
+     *     databaseUrl: null|string,
+     *     type: null|string,
+     *     organisation: null|string,
+     *     updated: null|string,
+     *     created: null|string,
+     *     managedByConfiguration: array<string, mixed>|null
+     * }
      */
     public function jsonSerialize(): array
     {
@@ -226,21 +261,17 @@ class Source extends Entity implements JsonSerializable
         }
 
         return [
-            'id'           => $this->id,
-            'uuid'         => $this->uuid,
-            'title'        => $this->title,
-            'version'      => $this->version,
-            'description'  => $this->description,
-            'databaseUrl'  => $this->databaseUrl,
-            'type'         => $this->type,
-            'organisation' => $this->organisation,
-            'updated'      => $updated,
-            'created'      => $created,
-            'managedByConfiguration' => $this->managedByConfiguration !== null ? [
-                'id' => $this->managedByConfiguration->getId(),
-                'uuid' => $this->managedByConfiguration->getUuid(),
-                'title' => $this->managedByConfiguration->getTitle(),
-            ] : null,
+            'id'                     => $this->id,
+            'uuid'                   => $this->uuid,
+            'title'                  => $this->title,
+            'version'                => $this->version,
+            'description'            => $this->description,
+            'databaseUrl'            => $this->databaseUrl,
+            'type'                   => $this->type,
+            'organisation'           => $this->organisation,
+            'updated'                => $updated,
+            'created'                => $created,
+            'managedByConfiguration' => $this->getManagedByConfigurationData(),
         ];
 
     }//end jsonSerialize()
@@ -256,22 +287,22 @@ class Source extends Entity implements JsonSerializable
      */
     public function __toString(): string
     {
-        // Return the title if available, otherwise return a descriptive string
+        // Return the title if available, otherwise return a descriptive string.
         if ($this->title !== null && $this->title !== '') {
             return $this->title;
         }
 
-        // Fallback to UUID if available
+        // Fallback to UUID if available.
         if ($this->uuid !== null && $this->uuid !== '') {
             return $this->uuid;
         }
 
-        // Fallback to ID if available
+        // Fallback to ID if available.
         if ($this->id !== null) {
             return 'Source #'.$this->id;
         }
 
-        // Final fallback
+        // Final fallback.
         return 'Source';
 
     }//end __toString()
@@ -306,7 +337,8 @@ class Source extends Entity implements JsonSerializable
     /**
      * Check if this source is managed by a configuration
      *
-     * Returns true if this source's ID appears in any of the provided configurations' sources arrays.
+     * Returns true if this source's ID appears in any of the provided
+     * configurations' sources arrays.
      *
      * @param array<Configuration> $configurations Array of Configuration entities to check against
      *
@@ -362,6 +394,28 @@ class Source extends Entity implements JsonSerializable
         return null;
 
     }//end getManagedByConfiguration()
+
+
+    /**
+     * Get managed by configuration data as array or null
+     *
+     * @return (int|null|string)[]|null Configuration data or null
+     *
+     * @psalm-return array{id: int, uuid: null|string, title: null|string}|null
+     */
+    private function getManagedByConfigurationData(): array|null
+    {
+        if ($this->managedByConfiguration !== null) {
+            return [
+                'id'    => $this->managedByConfiguration->getId(),
+                'uuid'  => $this->managedByConfiguration->getUuid(),
+                'title' => $this->managedByConfiguration->getTitle(),
+            ];
+        }
+
+        return null;
+
+    }//end getManagedByConfigurationData()
 
 
 }//end class

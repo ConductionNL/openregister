@@ -45,7 +45,7 @@ docker logs -f master-nextcloud-1 | grep "PERFORMANCE"
 **Benefits:**
 - Frontend shows response as it's generated
 - Perceived performance improvement of 10x+
-- User sees first tokens in <1s instead of waiting for complete response
+- User sees first tokens in &lt;1s instead of waiting for complete response
 
 **Implementation:**
 - `ChatController::sendMessage()` can return SSE stream
@@ -256,7 +256,7 @@ time curl -X POST /api/chat/send -d '{"message": "Hello"}'
 With optimizations applied:
 - **Simple query:** 2-5s (down from 15-20s)
 - **Tool query:** 8-15s (down from 50s+)
-- **With streaming:** Perceived as <1s (first tokens immediate)
+- **With streaming:** Perceived as &lt;1s (first tokens immediate)
 - **With GPU:** 0.5-2s (down from 15-20s)
 
 ## Priority Order
@@ -275,7 +275,7 @@ For vector search operations, database choice significantly impacts performance:
 - **MariaDB/MySQL**: Vector similarity calculated in PHP (slower)
 - **PostgreSQL + pgvector**: Database-level vector operations (10-100x faster)
 
-See [Database Status Tile](../features/configurations.md#database-status-tile) in LLM Configuration settings for current database status and recommendations.
+See [Database Status Tile](../Features/configurations.md#database-status-tile) in LLM Configuration settings for current database status and recommendations.
 
 ## Database Index Optimization
 
@@ -326,8 +326,8 @@ docker exec -u 33 master-nextcloud-1 mysql -u nextcloud -p nextcloud \
 
 | Endpoint | Before | After | Improvement |
 |----------|---------|--------|-------------|
-| `/api/objects/voorzieningen/product` | 30s | <1s | **97% faster** |
-| `/api/objects/voorzieningen/organisatie` | 30s | <1s | **97% faster** |
+| `/api/objects/voorzieningen/product` | 30s | &lt;1s | **97% faster** |
+| `/api/objects/voorzieningen/organisatie` | 30s | &lt;1s | **97% faster** |
 | General object searches | 5-15s | 0.1-0.5s | **95% faster** |
 
 **After Cache Fix:**

@@ -19,11 +19,15 @@
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Event\ViewCreatedEvent;
+use OCA\OpenRegister\Event\ViewDeletedEvent;
+use OCA\OpenRegister\Event\ViewUpdatedEvent;
 use OCA\OpenRegister\Service\ConfigurationCacheService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 use OCP\IGroupManager;
 use OCP\IUserSession;
@@ -35,6 +39,17 @@ use Symfony\Component\Uid\Uuid;
  * Mapper for View entities with multi-tenancy and RBAC support.
  *
  * @package OCA\OpenRegister\Db
+ *
+ * @method View insert(Entity $entity)
+ * @method View update(Entity $entity)
+ * @method View insertOrUpdate(Entity $entity)
+ * @method View delete(Entity $entity)
+ * @method View find(int|string $id)
+ * @method View findEntity(IQueryBuilder $query)
+ * @method View[] findAll(int|null $limit = null, int|null $offset = null)
+ * @method list<View> findEntities(IQueryBuilder $query)
+ *
+ * @template-extends QBMapper<View>
  */
 class ViewMapper extends QBMapper
 {
@@ -69,13 +84,22 @@ class ViewMapper extends QBMapper
     private ConfigurationCacheService $configurationCacheService;
 
     /**
+     * Event dispatcher for dispatching view events
+     *
+     * @var IEventDispatcher
+     */
+    private IEventDispatcher $eventDispatcher;
+
+
+    /**
      * Constructor for ViewMapper
      *
-     * @param IDBConnection                $db                           The database connection
-     * @param OrganisationService          $organisationService          Organisation service for multi-tenancy
-     * @param IUserSession                 $userSession                  User session
-     * @param IGroupManager                $groupManager                 Group manager for RBAC
-     * @param ConfigurationCacheService    $configurationCacheService    Configuration cache service
+     * @param IDBConnection             $db                        The database connection
+     * @param OrganisationService       $organisationService       Organisation service for multi-tenancy
+     * @param IUserSession              $userSession               User session
+     * @param IGroupManager             $groupManager              Group manager for RBAC
+     * @param ConfigurationCacheService $configurationCacheService Configuration cache service
+     * @param IEventDispatcher          $eventDispatcher           Event dispatcher
      *
      * @return void
      */
@@ -84,13 +108,16 @@ class ViewMapper extends QBMapper
         OrganisationService $organisationService,
         IUserSession $userSession,
         IGroupManager $groupManager,
-        ConfigurationCacheService $configurationCacheService
+        ConfigurationCacheService $configurationCacheService,
+        IEventDispatcher $eventDispatcher
     ) {
         parent::__construct($db, 'openregister_view');
-        $this->organisationService          = $organisationService;
-        $this->userSession                  = $userSession;
-        $this->groupManager                 = $groupManager;
-        $this->configurationCacheService    = $configurationCacheService;
+        $this->organisationService = $organisationService;
+        $this->userSession         = $userSession;
+        $this->groupManager        = $groupManager;
+        $this->configurationCacheService = $configurationCacheService;
+        $this->eventDispatcher           = $eventDispatcher;
+
     }//end __construct()
 
 
@@ -106,7 +133,7 @@ class ViewMapper extends QBMapper
      */
     public function find($id): View
     {
-        // Verify RBAC permission to read
+        // Verify RBAC permission to read.
         $this->verifyRbacPermission('read', 'view');
 
         $qb = $this->db->getQueryBuilder();
@@ -120,15 +147,16 @@ class ViewMapper extends QBMapper
                 )
             );
 
-        // Apply organisation filter (all users including admins must have active org)
+        // Apply organisation filter (all users including admins must have active org).
         $this->applyOrganisationFilter($qb);
 
         $entity = $this->findEntity(query: $qb);
 
-        // Enrich with configuration management info
+        // Enrich with configuration management info.
         $this->enrichWithConfigurationInfo($entity);
 
         return $entity;
+
     }//end find()
 
 
@@ -140,9 +168,9 @@ class ViewMapper extends QBMapper
      * @return array Array of View entities
      * @throws \Exception If user doesn't have read permission
      */
-    public function findAll(?string $owner = null): array
+    public function findAll(?string $owner=null): array
     {
-        // Verify RBAC permission to read
+        // Verify RBAC permission to read.
         $this->verifyRbacPermission('read', 'view');
 
         $qb = $this->db->getQueryBuilder();
@@ -161,17 +189,18 @@ class ViewMapper extends QBMapper
 
         $qb->orderBy('created', 'DESC');
 
-        // Apply organisation filter (all users including admins must have active org)
+        // Apply organisation filter (all users including admins must have active org).
         $this->applyOrganisationFilter($qb);
 
         $entities = $this->findEntities(query: $qb);
 
-        // Enrich all entities with configuration management info
+        // Enrich all entities with configuration management info.
         foreach ($entities as $entity) {
             $this->enrichWithConfigurationInfo($entity);
         }
 
         return $entities;
+
     }//end findAll()
 
 
@@ -185,22 +214,28 @@ class ViewMapper extends QBMapper
      */
     public function insert(Entity $entity): View
     {
-        // Verify RBAC permission to create
+        // Verify RBAC permission to create.
         $this->verifyRbacPermission('create', 'view');
 
-        // Generate UUID if not present
+        // Generate UUID if not present.
         if (empty($entity->getUuid()) === true) {
             $entity->setUuid(Uuid::v4());
         }
 
-        // Set timestamps
+        // Set timestamps.
         $entity->setCreated(new \DateTime());
         $entity->setUpdated(new \DateTime());
 
-        // Auto-set organisation from active session
+        // Auto-set organisation from active session.
         $this->setOrganisationOnCreate($entity);
 
-        return parent::insert(entity: $entity);
+        $entity = parent::insert(entity: $entity);
+
+        // Dispatch creation event.
+        $this->eventDispatcher->dispatchTyped(new ViewCreatedEvent($entity));
+
+        return $entity;
+
     }//end insert()
 
 
@@ -214,16 +249,25 @@ class ViewMapper extends QBMapper
      */
     public function update(Entity $entity): View
     {
-        // Verify RBAC permission to update
+        // Verify RBAC permission to update.
         $this->verifyRbacPermission('update', 'view');
 
-        // Verify user has access to this organisation
+        // Verify user has access to this organisation.
         $this->verifyOrganisationAccess($entity);
 
-        // Update timestamp
+        // Get old state before update.
+        $oldEntity = $this->find($entity->getId());
+
+        // Update timestamp.
         $entity->setUpdated(new \DateTime());
 
-        return parent::update(entity: $entity);
+        $entity = parent::update(entity: $entity);
+
+        // Dispatch update event.
+        $this->eventDispatcher->dispatchTyped(new ViewUpdatedEvent($entity, $oldEntity));
+
+        return $entity;
+
     }//end update()
 
 
@@ -232,18 +276,24 @@ class ViewMapper extends QBMapper
      *
      * @param Entity $entity The view entity to delete
      *
-     * @return Entity The deleted view
+     * @return View The deleted view
      * @throws \Exception If user doesn't have delete permission or access to this organisation
      */
-    public function delete(Entity $entity): Entity
+    public function delete(Entity $entity): View
     {
-        // Verify RBAC permission to delete
+        // Verify RBAC permission to delete.
         $this->verifyRbacPermission('delete', 'view');
 
-        // Verify user has access to this organisation
+        // Verify user has access to this organisation.
         $this->verifyOrganisationAccess($entity);
 
-        return parent::delete($entity);
+        $entity = parent::delete($entity);
+
+        // Dispatch deletion event.
+        $this->eventDispatcher->dispatchTyped(new ViewDeletedEvent($entity));
+
+        return $entity;
+
     }//end delete()
 
 
@@ -261,6 +311,7 @@ class ViewMapper extends QBMapper
     {
         $entity = $this->find($id);
         $this->delete($entity);
+
     }//end deleteById()
 
 
@@ -277,10 +328,10 @@ class ViewMapper extends QBMapper
      */
     private function enrichWithConfigurationInfo(View $view): void
     {
-        // Get configurations from cache for the active organisation
+        // Get configurations from cache for the active organisation.
         $configurations = $this->configurationCacheService->getConfigurationsForActiveOrganisation();
 
-        // Check if this view is managed by any configuration
+        // Check if this view is managed by any configuration.
         $managedBy = $view->getManagedByConfiguration($configurations);
         if ($managedBy !== null) {
             $view->setManagedByConfigurationEntity($managedBy);
@@ -290,5 +341,3 @@ class ViewMapper extends QBMapper
 
 
 }//end class
-
-

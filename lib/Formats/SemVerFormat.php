@@ -1,5 +1,20 @@
 <?php
 
+/**
+ * Semantic Version Format Validator
+ *
+ * Validates semantic version strings according to SemVer specification.
+ *
+ * @category Formats
+ * @package  OCA\OpenRegister\Formats
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version   GIT: <git-id>
+ * @link      https://www.OpenRegister.nl
+ */
+
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Formats;
@@ -36,12 +51,16 @@ class SemVerFormat implements Format
     /**
      * Regular expression pattern for Semantic Versioning
      *
-     * Based on the official SemVer regex from semver.org:
-     * ^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$
+     * Based on the official SemVer regex from semver.org.
      *
      * @var string
      */
-    private const SEMVER_PATTERN = '/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/';
+    private const SEMVER_PATTERN = <<<'REGEX'
+/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)
+(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)
+(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?
+(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
+REGEX;
 
 
     /**
@@ -55,12 +74,12 @@ class SemVerFormat implements Format
      */
     public function validate(mixed $data): bool
     {
-        // Only validate strings
-        if (!is_string($data)) {
+        // Only validate strings.
+        if (is_string($data) === false) {
             return false;
         }
 
-        // Validate against SemVer pattern
+        // Validate against SemVer pattern.
         return preg_match(self::SEMVER_PATTERN, $data) === 1;
 
     }//end validate()

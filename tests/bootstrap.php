@@ -16,25 +16,25 @@
 
 declare(strict_types=1);
 
-// Define that we're running PHPUnit
+// Define that we're running PHPUnit.
 define('PHPUNIT_RUN', 1);
 
-// Include Composer's autoloader
+// Include Composer's autoloader.
 require_once __DIR__ . '/../vendor/autoload.php';
 
-// Bootstrap Nextcloud if not already done
+// Bootstrap Nextcloud if not already done.
 if (!defined('OC_CONSOLE')) {
-    // Try to include the main Nextcloud bootstrap
+    // Try to include the main Nextcloud bootstrap.
     if (file_exists(__DIR__ . '/../../../lib/base.php')) {
         require_once __DIR__ . '/../../../lib/base.php';
     }
     
-    // Load all enabled apps
+    // Load all enabled apps.
     \OC_App::loadApps();
     
-    // Load our specific app
+    // Load our specific app.
     \OC_App::loadApp('openregister');
     
-    // Clear hooks for testing
+    // Clear hooks for testing.
     OC_Hook::clear();
 } 

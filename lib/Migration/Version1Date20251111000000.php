@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * Vector Embedding Model Tracking Migration
  *
@@ -22,14 +20,16 @@ declare(strict_types=1);
  * @category Migration
  * @package  OCA\OpenRegister\Migration
  *
- * @author   Conduction Development Team <dev@conduction.nl>
+ * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2025 Conduction B.V.
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version  GIT: <git_id>
+ * @version GIT: <git_id>
  *
- * @link     https://www.OpenRegister.nl
+ * @link https://www.OpenRegister.nl
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Migration;
 
@@ -52,51 +52,59 @@ use OCP\Migration\SimpleMigrationStep;
 class Version1Date20251111000000 extends SimpleMigrationStep
 {
 
+
     /**
      * Add embedding_model column to vectors table
      *
-     * @param IOutput $output Migration output interface
+     * @param IOutput $output        Migration output interface
      * @param Closure $schemaClosure Schema closure
-     * @param array   $options Migration options
+     * @param array   $options       Migration options
      *
      * @return ISchemaWrapper|null Updated schema or null if no changes
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /** @var ISchemaWrapper $schema */
-        $schema = $schemaClosure();
+        /*
+         * @var ISchemaWrapper $schema
+         */
+
+        $schema  = $schemaClosure();
         $updated = false;
 
         $output->info('🏗️  Adding embedding model tracking to vectors...');
 
-        // ============================================================
-        // Add embedding_model to openregister_vectors
-        // ============================================================
-        if ($schema->hasTable('openregister_vectors')) {
+        // ============================================================.
+        // Add embedding_model to openregister_vectors.
+        // ============================================================.
+        if ($schema->hasTable('openregister_vectors') === true) {
             $table = $schema->getTable('openregister_vectors');
-            
-            if (!$table->hasColumn('embedding_model')) {
+
+            if ($table->hasColumn('embedding_model') === false) {
                 $output->info('  📝 Adding vectors.embedding_model column');
-                
-                $table->addColumn('embedding_model', Types::STRING, [
-                    'notnull' => false,
-                    'length'  => 255,
-                    'default' => null,
-                    'comment' => 'Embedding model used to generate this vector (e.g., text-embedding-ada-002, nomic-embed-text)',
-                ]);
-                
+
+                $table->addColumn(
+                        'embedding_model',
+                        Types::STRING,
+                        [
+                            'notnull' => false,
+                            'length'  => 255,
+                            'default' => null,
+                            'comment' => 'Embedding model used to generate this vector (e.g., text-embedding-ada-002, nomic-embed-text)',
+                        ]
+                        );
+
                 $output->info('    ✅ vectors.embedding_model column added');
                 $updated = true;
             } else {
                 $output->info('  ℹ️  vectors.embedding_model column already exists');
             }
-            
-            // Add index for filtering by model
-            if (!$table->hasIndex('embedding_model_idx')) {
+
+            // Add index for filtering by model.
+            if ($table->hasIndex('embedding_model_idx') === false) {
                 $output->info('  📝 Adding index on embedding_model column');
-                
+
                 $table->addIndex(['embedding_model'], 'embedding_model_idx');
-                
+
                 $output->info('    ✅ Index on embedding_model column added');
                 $updated = true;
             } else {
@@ -104,9 +112,9 @@ class Version1Date20251111000000 extends SimpleMigrationStep
             }
         } else {
             $output->warning('  ⚠️  vectors table not found - skipping model tracking migration');
-        }
+        }//end if
 
-        if ($updated) {
+        if ($updated === true) {
             $output->info('');
             $output->info('🎉 Embedding model tracking added successfully!');
             $output->info('');
@@ -128,9 +136,13 @@ class Version1Date20251111000000 extends SimpleMigrationStep
         } else {
             $output->info('');
             $output->info('ℹ️  No changes needed - embedding model tracking already configured');
+        }//end if
+
+        if ($updated === true) {
+            return $schema;
         }
 
-        return $updated === true ? $schema : null;
+        return null;
 
     }//end changeSchema()
 
@@ -138,9 +150,9 @@ class Version1Date20251111000000 extends SimpleMigrationStep
     /**
      * Post-schema change operations
      *
-     * @param IOutput $output Migration output interface
+     * @param IOutput $output        Migration output interface
      * @param Closure $schemaClosure Schema closure
-     * @param array   $options Migration options
+     * @param array   $options       Migration options
      *
      * @return void
      */
@@ -159,8 +171,3 @@ class Version1Date20251111000000 extends SimpleMigrationStep
 
 
 }//end class
-
-
-
-
-

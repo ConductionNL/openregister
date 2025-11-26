@@ -54,12 +54,12 @@ Users can select which backend to use based on what's available in their environ
 - Returns top N matches
 
 **Performance**:
-- Suitable for small datasets (<500 vectors)
+- Suitable for small datasets (&lt;500 vectors)
 - Current temporary optimization: Limited to 500 most recent vectors
 - Scales linearly: O(n) complexity
 
 **Use When**:
-- Small dataset (<500 vectors)
+- Small dataset (&lt;500 vectors)
 - No PostgreSQL or Solr available
 - Testing/development environment
 
@@ -429,7 +429,7 @@ Returns Solr availability, version, and collections.
 
 ## Related Documentation
 
-- [Vectorization Architecture](./vectorization-architecture.md) - How vectors are generated and stored
+- [Vectorization Architecture](../Technical/vectorization-architecture.md) - How vectors are generated and stored
 - [Performance Optimization](../development/performance-optimization.md) - General performance tuning
 - [Solr Setup Configuration](./solr-setup-configuration.md) - Solr configuration details
 

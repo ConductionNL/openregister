@@ -1,11 +1,22 @@
 <?php
+/**
+ * OpenRegister FileText Mapper
+ *
+ * Mapper for FileText entities to handle database operations.
+ *
+ * @category Database
+ * @package  OCA\OpenRegister\Db
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://www.OpenRegister.app
+ */
 
 declare(strict_types=1);
-
-/**
- * SPDX-FileCopyrightText: 2024 Nextcloud GmbH and Nextcloud contributors
- * SPDX-License-Identifier: AGPL-3.0-or-later
- */
 
 namespace OCA\OpenRegister\Db;
 
@@ -18,18 +29,29 @@ use OCP\IDBConnection;
 
 /**
  * FileTextMapper
- * 
+ *
  * Mapper for FileText entities to handle database operations.
- * 
+ *
  * @category Db
  * @package  OCA\OpenRegister\Db
  * @author   OpenRegister Team
  * @license  AGPL-3.0-or-later
- * 
+ *
  * @template-extends QBMapper<FileText>
+ *
+ * @method FileText insert(Entity $entity)
+ * @method FileText update(Entity $entity)
+ * @method FileText insertOrUpdate(Entity $entity)
+ * @method FileText delete(Entity $entity)
+ * @method FileText find(int|string $id)
+ * @method FileText findEntity(IQueryBuilder $query)
+ * @method FileText[] findAll(int|null $limit = null, int|null $offset = null)
+ * @method FileText[] findEntities(IQueryBuilder $query)
  */
 class FileTextMapper extends QBMapper
 {
+
+
     /**
      * Constructor
      *
@@ -38,13 +60,15 @@ class FileTextMapper extends QBMapper
     public function __construct(IDBConnection $db)
     {
         parent::__construct($db, 'openregister_file_texts', FileText::class);
-    }
+
+    }//end __construct()
+
 
     /**
      * Find file text by file ID
      *
      * @param int $fileId Nextcloud file ID
-     * 
+     *
      * @return FileText
      * @throws DoesNotExistException If not found
      * @throws MultipleObjectsReturnedException If multiple found
@@ -58,13 +82,15 @@ class FileTextMapper extends QBMapper
             ->where($qb->expr()->eq('file_id', $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)));
 
         return $this->findEntity($qb);
-    }
+
+    }//end findByFileId()
+
 
     /**
      * Check if file text exists for file ID
      *
      * @param int $fileId Nextcloud file ID
-     * 
+     *
      * @return bool True if exists
      */
     public function existsByFileId(int $fileId): bool
@@ -75,7 +101,9 @@ class FileTextMapper extends QBMapper
         } catch (DoesNotExistException $e) {
             return false;
         }
-    }
+
+    }//end existsByFileId()
+
 
     /**
      * Insert a new file text entity
@@ -87,27 +115,31 @@ class FileTextMapper extends QBMapper
     public function insert(Entity $entity): Entity
     {
         if ($entity instanceof FileText) {
-            // Generate UUID if not set
-            if (empty($entity->getUuid())) {
-                $entity->setUuid(\OC::$server->get(\OCP\Security\ISecureRandom::class)->generate(
+            // Generate UUID if not set.
+            if (empty($entity->getUuid()) === true) {
+                $entity->setUuid(
+                        \OC::$server->get(\OCP\Security\ISecureRandom::class)->generate(
                     36,
                     \OCP\Security\ISecureRandom::CHAR_ALPHANUMERIC
-                ));
+                )
+                        );
             }
         }
 
         return parent::insert($entity);
-    }
+
+    }//end insert()
+
 
     /**
      * Find all file texts with pagination, excluding directories
      *
      * @param int|null $limit  Maximum number of results
      * @param int|null $offset Offset for pagination
-     * 
+     *
      * @return array<FileText>
      */
-    public function findAll(?int $limit = 100, ?int $offset = 0): array
+    public function findAll(?int $limit=100, ?int $offset=0): array
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -127,7 +159,9 @@ class FileTextMapper extends QBMapper
         }
 
         return $this->findEntities($qb);
-    }
+
+    }//end findAll()
+
 
     /**
      * Find all files with specific extraction status, excluding directories
@@ -135,10 +169,10 @@ class FileTextMapper extends QBMapper
      * @param string $status Status to filter by (pending, processing, completed, failed)
      * @param int    $limit  Maximum number of results
      * @param int    $offset Offset for pagination
-     * 
+     *
      * @return array<FileText>
      */
-    public function findByStatus(string $status, int $limit = 100, int $offset = 0): array
+    public function findByStatus(string $status, int $limit=100, int $offset=0): array
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -153,16 +187,18 @@ class FileTextMapper extends QBMapper
             ->orderBy('ft.created_at', 'ASC');
 
         return $this->findEntities($qb);
-    }
+
+    }//end findByStatus()
+
 
     /**
      * Find files that need extraction (pending or failed with old timestamp)
      *
      * @param int $limit Maximum number of results
-     * 
+     *
      * @return array<FileText>
      */
-    public function findPendingExtractions(int $limit = 100): array
+    public function findPendingExtractions(int $limit=100): array
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -181,16 +217,18 @@ class FileTextMapper extends QBMapper
             ->orderBy('created_at', 'ASC');
 
         return $this->findEntities($qb);
-    }
+
+    }//end findPendingExtractions()
+
 
     /**
      * Find completed extractions
      *
      * @param int|null $limit Maximum number of results (null = no limit)
-     * 
+     *
      * @return array<FileText>
      */
-    public function findCompleted(?int $limit = null): array
+    public function findCompleted(?int $limit=null): array
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -204,16 +242,18 @@ class FileTextMapper extends QBMapper
         }
 
         return $this->findEntities($qb);
-    }
+
+    }//end findCompleted()
+
 
     /**
      * Find files not yet indexed in SOLR
      *
      * @param int $limit Maximum number of results
-     * 
+     *
      * @return array<FileText>
      */
-    public function findNotIndexedInSolr(int $limit = 100): array
+    public function findNotIndexedInSolr(int $limit=100): array
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -229,16 +269,18 @@ class FileTextMapper extends QBMapper
             ->orderBy('extracted_at', 'ASC');
 
         return $this->findEntities($qb);
-    }
+
+    }//end findNotIndexedInSolr()
+
 
     /**
      * Find files not yet vectorized
      *
      * @param int $limit Maximum number of results
-     * 
+     *
      * @return array<FileText>
      */
-    public function findNotVectorized(int $limit = 100): array
+    public function findNotVectorized(int $limit=100): array
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -254,13 +296,15 @@ class FileTextMapper extends QBMapper
             ->orderBy('extracted_at', 'ASC');
 
         return $this->findEntities($qb);
-    }
+
+    }//end findNotVectorized()
+
 
     /**
      * Count files by status
      *
      * @param string $status Status to count
-     * 
+     *
      * @return int Count of files
      */
     public function countByStatus(string $status): int
@@ -272,11 +316,13 @@ class FileTextMapper extends QBMapper
             ->where($qb->expr()->eq('extraction_status', $qb->createNamedParameter($status, IQueryBuilder::PARAM_STR)));
 
         $result = $qb->execute();
-        $count = (int) $result->fetchOne();
+        $count  = (int) $result->fetchOne();
         $result->closeCursor();
 
         return $count;
-    }
+
+    }//end countByStatus()
+
 
     /**
      * Get extraction statistics
@@ -287,25 +333,27 @@ class FileTextMapper extends QBMapper
     {
         $qb = $this->db->getQueryBuilder();
 
-        // Total count
+        // Total count.
         $qb->select($qb->createFunction('COUNT(*) as total'))
             ->from($this->getTableName());
         $result = $qb->execute();
-        $total = (int) $result->fetchOne();
+        $total  = (int) $result->fetchOne();
         $result->closeCursor();
 
         return [
-            'total' => $total,
-            'pending' => $this->countByStatus('pending'),
-            'processing' => $this->countByStatus('processing'),
-            'completed' => $this->countByStatus('completed'),
-            'failed' => $this->countByStatus('failed'),
-            'indexed' => $this->countIndexed(),
-            'vectorized' => $this->countVectorized(),
+            'total'           => $total,
+            'pending'         => $this->countByStatus('pending'),
+            'processing'      => $this->countByStatus('processing'),
+            'completed'       => $this->countByStatus('completed'),
+            'failed'          => $this->countByStatus('failed'),
+            'indexed'         => $this->countIndexed(),
+            'vectorized'      => $this->countVectorized(),
             'total_text_size' => $this->getTotalTextSize(),
-            'totalChunks' => $this->getTotalChunks(),
+            'totalChunks'     => $this->getTotalChunks(),
         ];
-    }
+
+    }//end getStats()
+
 
     /**
      * Get total number of chunks across all files
@@ -321,15 +369,17 @@ class FileTextMapper extends QBMapper
             ->where($qb->expr()->eq('extraction_status', $qb->createNamedParameter('completed', IQueryBuilder::PARAM_STR)));
 
         $result = $qb->execute();
-        $count = (int) $result->fetchOne();
+        $count  = (int) $result->fetchOne();
         $result->closeCursor();
 
         return $count;
-    }
+
+    }//end getTotalChunks()
+
 
     /**
      * Get file types with their file and chunk counts
-     * 
+     *
      * Only returns file types that have completed extractions with chunks
      *
      * @return array Array of file types with counts
@@ -348,13 +398,13 @@ class FileTextMapper extends QBMapper
             ->orderBy('file_count', 'DESC');
 
         $result = $qb->executeQuery();
-        $types = [];
+        $types  = [];
 
-        while ($row = $result->fetch()) {
+        while (($row = $result->fetch()) !== false) {
             $types[] = [
-                'mime' => $row['mime_type'],
-                'name' => $this->formatMimeType($row['mime_type']),
-                'fileCount' => (int) $row['file_count'],
+                'mime'       => $row['mime_type'],
+                'name'       => $this->formatMimeType($row['mime_type']),
+                'fileCount'  => (int) $row['file_count'],
                 'chunkCount' => (int) $row['chunk_count'],
             ];
         }
@@ -362,33 +412,38 @@ class FileTextMapper extends QBMapper
         $result->closeCursor();
 
         return $types;
-    }
+
+    }//end getFileTypeStats()
+
 
     /**
      * Format MIME type for display
      *
      * @param string $mimeType MIME type
+     *
      * @return string Formatted name
      */
     private function formatMimeType(string $mimeType): string
     {
         $mimeTypeMap = [
-            'application/pdf' => 'PDF',
+            'application/pdf'                                                         => 'PDF',
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => 'DOCX',
-            'application/msword' => 'DOC',
-            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' => 'XLSX',
-            'application/vnd.ms-excel' => 'XLS',
-            'text/plain' => 'Text',
-            'text/markdown' => 'Markdown',
-            'text/html' => 'HTML',
-            'application/json' => 'JSON',
-            'text/xml' => 'XML',
-            'application/xml' => 'XML',
-            'text/csv' => 'CSV',
+            'application/msword'                                                      => 'DOC',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'       => 'XLSX',
+            'application/vnd.ms-excel'                                                => 'XLS',
+            'text/plain'                                                              => 'Text',
+            'text/markdown'                                                           => 'Markdown',
+            'text/html'                                                               => 'HTML',
+            'application/json'                                                        => 'JSON',
+            'text/xml'                                                                => 'XML',
+            'application/xml'                                                         => 'XML',
+            'text/csv'                                                                => 'CSV',
         ];
 
         return $mimeTypeMap[$mimeType] ?? strtoupper(explode('/', $mimeType)[1] ?? 'Unknown');
-    }
+
+    }//end formatMimeType()
+
 
     /**
      * Count indexed files
@@ -404,11 +459,13 @@ class FileTextMapper extends QBMapper
             ->where($qb->expr()->eq('indexed_in_solr', $qb->createNamedParameter(true, IQueryBuilder::PARAM_BOOL)));
 
         $result = $qb->execute();
-        $count = (int) $result->fetchOne();
+        $count  = (int) $result->fetchOne();
         $result->closeCursor();
 
         return $count;
-    }
+
+    }//end countIndexed()
+
 
     /**
      * Count vectorized files
@@ -424,11 +481,13 @@ class FileTextMapper extends QBMapper
             ->where($qb->expr()->eq('vectorized', $qb->createNamedParameter(true, IQueryBuilder::PARAM_BOOL)));
 
         $result = $qb->execute();
-        $count = (int) $result->fetchOne();
+        $count  = (int) $result->fetchOne();
         $result->closeCursor();
 
         return $count;
-    }
+
+    }//end countVectorized()
+
 
     /**
      * Get total text size stored
@@ -443,17 +502,19 @@ class FileTextMapper extends QBMapper
             ->from($this->getTableName());
 
         $result = $qb->execute();
-        $size = (int) $result->fetchOne();
+        $size   = (int) $result->fetchOne();
         $result->closeCursor();
 
         return $size;
-    }
+
+    }//end getTotalTextSize()
+
 
     /**
      * Delete by file ID
      *
      * @param int $fileId Nextcloud file ID
-     * 
+     *
      * @return void
      */
     public function deleteByFileId(int $fileId): void
@@ -464,7 +525,9 @@ class FileTextMapper extends QBMapper
             ->where($qb->expr()->eq('file_id', $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)));
 
         $qb->execute();
-    }
+
+    }//end deleteByFileId()
+
 
     /**
      * Clean up invalid file_texts entries
@@ -481,28 +544,29 @@ class FileTextMapper extends QBMapper
     {
         $deleted = 0;
         $reasons = [
-            'file_not_found' => 0,
-            'is_directory' => 0,
-            'system_file' => 0,
+            'file_not_found'   => 0,
+            'is_directory'     => 0,
+            'system_file'      => 0,
             'non_user_storage' => 0,
         ];
 
-        // Find entries where file doesn't exist in filecache
+        // Find entries where file doesn't exist in filecache.
         $qb = $this->db->getQueryBuilder();
         $qb->select('ft.id', 'ft.file_id')
             ->from($this->getTableName(), 'ft')
             ->leftJoin('ft', 'filecache', 'fc', $qb->expr()->eq('ft.file_id', 'fc.fileid'))
             ->where($qb->expr()->isNull('fc.fileid'));
 
-        $result = $qb->executeQuery();
+        $result      = $qb->executeQuery();
         $idsToDelete = [];
-        while ($row = $result->fetch()) {
+        while (($row = $result->fetch()) !== false) {
             $idsToDelete[] = $row['id'];
             $reasons['file_not_found']++;
         }
+
         $result->closeCursor();
 
-        // Find entries that are directories
+        // Find entries that are directories.
         $qb = $this->db->getQueryBuilder();
         $qb->select('ft.id')
             ->from($this->getTableName(), 'ft')
@@ -511,15 +575,19 @@ class FileTextMapper extends QBMapper
             ->where($qb->expr()->eq('mt.mimetype', $qb->createNamedParameter('httpd/unix-directory', IQueryBuilder::PARAM_STR)));
 
         $result = $qb->executeQuery();
-        while ($row = $result->fetch()) {
-            if (!in_array($row['id'], $idsToDelete)) {
+        $row    = $result->fetch();
+        while ($row !== false) {
+            if (in_array($row['id'], $idsToDelete) === false) {
                 $idsToDelete[] = $row['id'];
                 $reasons['is_directory']++;
             }
+
+            $row = $result->fetch();
         }
+
         $result->closeCursor();
 
-        // Find entries from non-user storages or system paths
+        // Find entries from non-user storages or system paths.
         $qb = $this->db->getQueryBuilder();
         $qb->select('ft.id')
             ->from($this->getTableName(), 'ft')
@@ -527,7 +595,10 @@ class FileTextMapper extends QBMapper
             ->leftJoin('fc', 'storages', 'st', $qb->expr()->eq('fc.storage', 'st.numeric_id'))
             ->where(
                 $qb->expr()->orX(
-                    $qb->expr()->notLike('st.id', $qb->createNamedParameter('home::%', IQueryBuilder::PARAM_STR)),
+                    $qb->expr()->notLike(
+                        'st.id',
+                        $qb->createNamedParameter('home::%', IQueryBuilder::PARAM_STR)
+                    ),
                     $qb->expr()->like('fc.path', $qb->createNamedParameter('%files_trashbin%', IQueryBuilder::PARAM_STR)),
                     $qb->expr()->like('fc.path', $qb->createNamedParameter('appdata_%', IQueryBuilder::PARAM_STR)),
                     $qb->expr()->like('fc.path', $qb->createNamedParameter('%files_versions%', IQueryBuilder::PARAM_STR)),
@@ -537,17 +608,21 @@ class FileTextMapper extends QBMapper
             );
 
         $result = $qb->executeQuery();
-        while ($row = $result->fetch()) {
-            if (!in_array($row['id'], $idsToDelete)) {
+        $row    = $result->fetch();
+        while ($row !== false) {
+            if (in_array($row['id'], $idsToDelete) === false) {
                 $idsToDelete[] = $row['id'];
                 $reasons['system_file']++;
             }
+
+            $row = $result->fetch();
         }
+
         $result->closeCursor();
 
-        // Delete all collected IDs
-        if (!empty($idsToDelete)) {
-            // Delete in batches of 1000 to avoid query size limits
+        // Delete all collected IDs.
+        if (empty($idsToDelete) === false) {
+            // Delete in batches of 1000 to avoid query size limits.
             $chunks = array_chunk($idsToDelete, 1000);
             foreach ($chunks as $chunk) {
                 $qb = $this->db->getQueryBuilder();
@@ -561,6 +636,8 @@ class FileTextMapper extends QBMapper
             'deleted' => $deleted,
             'reasons' => $reasons,
         ];
-    }
-}
 
+    }//end cleanupInvalidEntries()
+
+
+}//end class

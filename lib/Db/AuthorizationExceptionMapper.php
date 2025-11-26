@@ -20,6 +20,7 @@
 
 namespace OCA\OpenRegister\Db;
 
+use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -37,10 +38,21 @@ use Symfony\Component\Uid\Uuid;
  * @category Database
  * @package  OCA\OpenRegister\Db
  *
- * @author   Conduction Development Team <info@conduction.nl>
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @version  GIT: <git_id>
- * @link     https://www.OpenRegister.app
+ * @author  Conduction Development Team <info@conduction.nl>
+ * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version GIT: <git_id>
+ * @link    https://www.OpenRegister.app
+ *
+ * @method AuthorizationException insert(Entity $entity)
+ * @method AuthorizationException update(Entity $entity)
+ * @method AuthorizationException insertOrUpdate(Entity $entity)
+ * @method AuthorizationException delete(Entity $entity)
+ * @method AuthorizationException find(int|string $id)
+ * @method AuthorizationException findEntity(IQueryBuilder $query)
+ * @method AuthorizationException[] findAll(int|null $limit = null, int|null $offset = null)
+ * @method list<AuthorizationException> findEntities(IQueryBuilder $query)
+ *
+ * @template-extends QBMapper<AuthorizationException>
  */
 class AuthorizationExceptionMapper extends QBMapper
 {
@@ -80,12 +92,12 @@ class AuthorizationExceptionMapper extends QBMapper
      */
     public function createException(AuthorizationException $exception, string $userId): AuthorizationException
     {
-        // Generate UUID if not set
+        // Generate UUID if not set.
         if ($exception->getUuid() === null) {
             $exception->setUuid(Uuid::v4()->toRfc4122());
         }
 
-        // Set creation metadata
+        // Set creation metadata.
         $exception->setCreatedBy($userId);
         $exception->setCreatedAt(new \DateTime());
         $exception->setUpdatedAt(new \DateTime());
@@ -107,7 +119,7 @@ class AuthorizationExceptionMapper extends QBMapper
      */
     public function updateException(AuthorizationException $exception): AuthorizationException
     {
-        // Update the timestamp
+        // Update the timestamp.
         $exception->setUpdatedAt(new \DateTime());
 
         return $this->update($exception);
@@ -147,7 +159,7 @@ class AuthorizationExceptionMapper extends QBMapper
      *
      * @return array<AuthorizationException> Array of authorization exceptions
      */
-    public function findBySubject(string $subjectType, string $subjectId, bool $activeOnly = true): array
+    public function findBySubject(string $subjectType, string $subjectId, bool $activeOnly=true): array
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -171,13 +183,13 @@ class AuthorizationExceptionMapper extends QBMapper
      * This method finds all authorization exceptions that match the given criteria,
      * ordered by priority (highest first) for proper exception resolution.
      *
-     * @param string      $subjectType       The subject type (user or group)
-     * @param string      $subjectId         The subject ID
-     * @param string      $action            The action (create, read, update, delete)
-     * @param string|null $schemaUuid        Optional schema UUID
-     * @param string|null $registerUuid      Optional register UUID
-     * @param string|null $organizationUuid  Optional organization UUID
-     * @param bool        $activeOnly        Whether to return only active exceptions
+     * @param string      $subjectType      The subject type (user or group)
+     * @param string      $subjectId        The subject ID
+     * @param string      $action           The action (create, read, update, delete)
+     * @param string|null $schemaUuid       Optional schema UUID
+     * @param string|null $registerUuid     Optional register UUID
+     * @param string|null $organizationUuid Optional organization UUID
+     * @param bool        $activeOnly       Whether to return only active exceptions
      *
      * @return array<AuthorizationException> Array of matching authorization exceptions
      */
@@ -185,26 +197,26 @@ class AuthorizationExceptionMapper extends QBMapper
         string $subjectType,
         string $subjectId,
         string $action,
-        ?string $schemaUuid = null,
-        ?string $registerUuid = null,
-        ?string $organizationUuid = null,
-        bool $activeOnly = true
+        ?string $schemaUuid=null,
+        ?string $registerUuid=null,
+        ?string $organizationUuid=null,
+        bool $activeOnly=true
     ): array {
         $qb = $this->db->getQueryBuilder();
 
-        // Base conditions
+        // Base conditions.
         $qb->select('*')
             ->from($this->getTableName())
             ->where($qb->expr()->eq('subject_type', $qb->createNamedParameter($subjectType)))
             ->andWhere($qb->expr()->eq('subject_id', $qb->createNamedParameter($subjectId)))
             ->andWhere($qb->expr()->eq('action', $qb->createNamedParameter($action)));
 
-        // Active filter
+        // Active filter.
         if ($activeOnly === true) {
             $qb->andWhere($qb->expr()->eq('active', $qb->createNamedParameter(true, IQueryBuilder::PARAM_BOOL)));
         }
 
-        // Schema filter (null means applies to all schemas)
+        // Schema filter (null means applies to all schemas).
         if ($schemaUuid !== null) {
             $qb->andWhere(
                 $qb->expr()->orX(
@@ -214,7 +226,7 @@ class AuthorizationExceptionMapper extends QBMapper
             );
         }
 
-        // Register filter (null means applies to all registers)
+        // Register filter (null means applies to all registers).
         if ($registerUuid !== null) {
             $qb->andWhere(
                 $qb->expr()->orX(
@@ -224,7 +236,7 @@ class AuthorizationExceptionMapper extends QBMapper
             );
         }
 
-        // Organization filter (null means applies to all organizations)
+        // Organization filter (null means applies to all organizations).
         if ($organizationUuid !== null) {
             $qb->andWhere(
                 $qb->expr()->orX(
@@ -234,7 +246,7 @@ class AuthorizationExceptionMapper extends QBMapper
             );
         }
 
-        // Order by priority (highest first), then by creation date (newest first)
+        // Order by priority (highest first), then by creation date (newest first).
         $qb->orderBy('priority', 'DESC')
             ->addOrderBy('created_at', 'DESC');
 
@@ -251,7 +263,7 @@ class AuthorizationExceptionMapper extends QBMapper
      *
      * @return array<AuthorizationException> Array of authorization exceptions
      */
-    public function findBySchema(string $schemaUuid, bool $activeOnly = true): array
+    public function findBySchema(string $schemaUuid, bool $activeOnly=true): array
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -279,7 +291,7 @@ class AuthorizationExceptionMapper extends QBMapper
      *
      * @return array<AuthorizationException> Array of authorization exceptions
      */
-    public function findByRegister(string $registerUuid, bool $activeOnly = true): array
+    public function findByRegister(string $registerUuid, bool $activeOnly=true): array
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -307,7 +319,7 @@ class AuthorizationExceptionMapper extends QBMapper
      *
      * @return array<AuthorizationException> Array of authorization exceptions
      */
-    public function findByOrganization(string $organizationUuid, bool $activeOnly = true): array
+    public function findByOrganization(string $organizationUuid, bool $activeOnly=true): array
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -335,7 +347,7 @@ class AuthorizationExceptionMapper extends QBMapper
      *
      * @return array<AuthorizationException> Array of authorization exceptions
      */
-    public function findByType(string $type, bool $activeOnly = true): array
+    public function findByType(string $type, bool $activeOnly=true): array
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -372,7 +384,7 @@ class AuthorizationExceptionMapper extends QBMapper
     {
         $exception = $this->findByUuid($uuid);
         $exception->setActive(false);
-        
+
         return $this->updateException($exception);
 
     }//end deactivateException()
@@ -394,7 +406,7 @@ class AuthorizationExceptionMapper extends QBMapper
     {
         $exception = $this->findByUuid($uuid);
         $exception->setActive(true);
-        
+
         return $this->updateException($exception);
 
     }//end activateException()
@@ -413,7 +425,7 @@ class AuthorizationExceptionMapper extends QBMapper
     public function deleteByUuid(string $uuid): AuthorizationException
     {
         $exception = $this->findByUuid($uuid);
-        
+
         return $this->delete($exception);
 
     }//end deleteByUuid()
@@ -426,46 +438,45 @@ class AuthorizationExceptionMapper extends QBMapper
      *
      * @return int The number of matching authorization exceptions
      */
-    public function countByCriteria(array $criteria = []): int
+    public function countByCriteria(array $criteria=[]): int
     {
         $qb = $this->db->getQueryBuilder();
-        
+
         $qb->select($qb->func()->count('*'))
             ->from($this->getTableName());
 
-        // Apply criteria filters
-        if (isset($criteria['type']) && $criteria['type'] !== '') {
+        // Apply criteria filters.
+        if (isset($criteria['type']) === true && $criteria['type'] !== '') {
             $qb->andWhere($qb->expr()->eq('type', $qb->createNamedParameter($criteria['type'])));
         }
 
-        if (isset($criteria['subject_type']) && $criteria['subject_type'] !== '') {
+        if (isset($criteria['subject_type']) === true && $criteria['subject_type'] !== '') {
             $qb->andWhere($qb->expr()->eq('subject_type', $qb->createNamedParameter($criteria['subject_type'])));
         }
 
-        if (isset($criteria['subject_id']) && $criteria['subject_id'] !== '') {
+        if (isset($criteria['subject_id']) === true && $criteria['subject_id'] !== '') {
             $qb->andWhere($qb->expr()->eq('subject_id', $qb->createNamedParameter($criteria['subject_id'])));
         }
 
-        if (isset($criteria['action']) && $criteria['action'] !== '') {
+        if (isset($criteria['action']) === true && $criteria['action'] !== '') {
             $qb->andWhere($qb->expr()->eq('action', $qb->createNamedParameter($criteria['action'])));
         }
 
-        if (isset($criteria['schema_uuid']) && $criteria['schema_uuid'] !== '') {
+        if (isset($criteria['schema_uuid']) === true && $criteria['schema_uuid'] !== '') {
             $qb->andWhere($qb->expr()->eq('schema_uuid', $qb->createNamedParameter($criteria['schema_uuid'])));
         }
 
-        if (isset($criteria['active']) && is_bool($criteria['active'])) {
+        if (isset($criteria['active']) === true && is_bool($criteria['active']) === true) {
             $qb->andWhere($qb->expr()->eq('active', $qb->createNamedParameter($criteria['active'], IQueryBuilder::PARAM_BOOL)));
         }
 
         $result = $qb->execute();
-        $count = $result->fetchOne();
+        $count  = $result->fetchOne();
         $result->closeCursor();
-        
+
         return (int) $count;
 
     }//end countByCriteria()
 
 
 }//end class
-

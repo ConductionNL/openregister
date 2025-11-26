@@ -83,7 +83,7 @@ class OrganisationService
     /**
      * Timestamp when default organisation was cached
      *
-     * @var int|null
+     * @var integer|null
      */
     private static ?int $defaultOrganisationCacheTimestamp = null;
 
@@ -147,14 +147,14 @@ class OrganisationService
     /**
      * OrganisationService constructor
      *
-     * @param OrganisationMapper $organisationMapper Organisation database mapper
-     * @param IUserSession       $userSession        User session service
-     * @param ISession           $session            Session storage service for caching
-     * @param IConfig            $config             Configuration service for persistent storage
-     * @param IGroupManager      $groupManager       Group manager service
-     * @param IUserManager       $userManager        User manager service
-     * @param LoggerInterface    $logger             Logger service
-     * @param SettingsService|null $settingsService  Settings service (optional to avoid circular dependency)
+     * @param OrganisationMapper   $organisationMapper Organisation database mapper
+     * @param IUserSession         $userSession        User session service
+     * @param ISession             $session            Session storage service for caching
+     * @param IConfig              $config             Configuration service for persistent storage
+     * @param IGroupManager        $groupManager       Group manager service
+     * @param IUserManager         $userManager        User manager service
+     * @param LoggerInterface      $logger             Logger service
+     * @param SettingsService|null $settingsService    Settings service (optional to avoid circular dependency)
      */
     public function __construct(
         OrganisationMapper $organisationMapper,
@@ -170,10 +170,10 @@ class OrganisationService
         $this->organisationMapper = $organisationMapper;
         $this->userSession        = $userSession;
         $this->session            = $session;
-        $this->config       = $config;
-        $this->groupManager = $groupManager;
-        $this->userManager = $userManager;
-        $this->logger       = $logger;
+        $this->config          = $config;
+        $this->groupManager    = $groupManager;
+        $this->userManager     = $userManager;
+        $this->logger          = $logger;
         $this->settingsService = $settingsService;
 
     }//end __construct()
@@ -187,18 +187,21 @@ class OrganisationService
      */
     public function ensureDefaultOrganisation(): Organisation
     {
-        // Check static cache first (shared across all instances)
+        // Check static cache first (shared across all instances).
         if (self::$defaultOrganisationCache !== null && self::$defaultOrganisationCacheTimestamp !== null) {
             $age = time() - self::$defaultOrganisationCacheTimestamp;
             if ($age < self::CACHE_TIMEOUT) {
-                $this->logger->debug('Retrieved default organisation from static cache', [
-                    'cacheAge' => $age
-                ]);
+                $this->logger->debug(
+                        'Retrieved default organisation from static cache',
+                        [
+                            'cacheAge' => $age,
+                        ]
+                        );
                 return self::$defaultOrganisationCache;
             }
         }
 
-        // Cache miss or expired - fetch from database
+        // Cache miss or expired - fetch from database.
         $defaultOrg = $this->fetchDefaultOrganisationFromDatabase();
 
         // Cache the result
@@ -265,7 +268,7 @@ class OrganisationService
      */
     private function fetchDefaultOrganisationFromDatabase(): Organisation
     {
-        // Try to get default organisation UUID from settings
+        // Try to get default organisation UUID from settings.
         $defaultOrgUuid = null;
         if ($this->settingsService !== null) {
             $defaultOrgUuid = $this->settingsService->getDefaultOrganisationUuid();
@@ -274,19 +277,25 @@ class OrganisationService
         }
 
         try {
-            // If we have a UUID in settings, fetch that organisation
+            // If we have a UUID in settings, fetch that organisation.
             if ($defaultOrgUuid !== null) {
                 try {
                     $defaultOrg = $this->organisationMapper->findByUuid($defaultOrgUuid);
-                    $this->logger->info('Found default organisation from settings', [
-                        'uuid' => $defaultOrgUuid,
-                        'name' => $defaultOrg->getName(),
-                    ]);
+                    $this->logger->info(
+                            'Found default organisation from settings',
+                            [
+                                'uuid' => $defaultOrgUuid,
+                                'name' => $defaultOrg->getName(),
+                            ]
+                            );
                 } catch (DoesNotExistException $e) {
-                    $this->logger->warning('Default organisation UUID in settings not found, falling back to creation', [
-                        'uuid' => $defaultOrgUuid,
-                    ]);
-                    // UUID in settings doesn't exist, create new default
+                    $this->logger->warning(
+                            'Default organisation UUID in settings not found, falling back to creation',
+                            [
+                                'uuid' => $defaultOrgUuid,
+                            ]
+                            );
+                    // UUID in settings doesn't exist, create new default.
                     $defaultOrg = $this->createOrganisation('Default Organisation', 'Auto-generated default organisation', false);
 
                     // Update settings with new UUID
@@ -295,9 +304,9 @@ class OrganisationService
                     }
 
                     $this->setDefaultOrganisationId($defaultOrg->getUuid());
-                }
+                }//end try
             } else {
-                // No UUID in settings, create a new default organisation
+                // No UUID in settings, create a new default organisation.
                 $this->logger->info('No default organisation found in settings, creating new one');
                 $defaultOrg = $this->createOrganisation('Default Organisation', 'Auto-generated default organisation', false);
 
@@ -307,20 +316,20 @@ class OrganisationService
                 }
 
                 $this->setDefaultOrganisationId($defaultOrg->getUuid());
-            }
+            }//end if
 
-            // Ensure admin users are added to existing default organisation
+            // Ensure admin users are added to existing default organisation.
             $adminUsers = $this->getAdminGroupUsers();
             $updated    = false;
 
             foreach ($adminUsers as $adminUserId) {
-                if (!$defaultOrg->hasUser($adminUserId)) {
+                if ($defaultOrg->hasUser($adminUserId) === false) {
                     $defaultOrg->addUser($adminUserId);
                     $updated = true;
                 }
             }
 
-            if ($updated) {
+            if ($updated === true) {
                 $defaultOrg = $this->organisationMapper->update($defaultOrg);
                 $this->logger->info(
                         'Added admin users to existing default organisation',
@@ -328,16 +337,19 @@ class OrganisationService
                             'adminUsersAdded' => $adminUsers,
                         ]
                         );
-                // Clear cache since we updated the organisation
+                // Clear cache since we updated the organisation.
                 $this->clearDefaultOrganisationCache();
             }
 
             return $defaultOrg;
         } catch (\Exception $e) {
-            $this->logger->error('Failed to fetch or create default organisation', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
+            $this->logger->error(
+                    'Failed to fetch or create default organisation',
+                    [
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString(),
+                    ]
+                    );
             throw $e;
         }//end try
 
@@ -353,7 +365,7 @@ class OrganisationService
      */
     private function cacheDefaultOrganisation(Organisation $organisation): void
     {
-        self::$defaultOrganisationCache = $organisation;
+        self::$defaultOrganisationCache          = $organisation;
         self::$defaultOrganisationCacheTimestamp = time();
 
         $this->logger->debug('Cached default organisation in static memory', [
@@ -363,8 +375,15 @@ class OrganisationService
 
     }//end cacheDefaultOrganisation()
 
+        $this->logger->debug(
+                'Cached default organisation in static memory',
+                [
+                    'organisationUuid' => $organisation->getUuid(),
+                    'organisationName' => $organisation->getName(),
+                ]
+                );
 
-
+    }//end cacheDefaultOrganisation()
 
 
     /**
@@ -382,7 +401,8 @@ class OrganisationService
     /**
      * Get organisations for the current user
      *
-     * @param  bool $useCache Whether to use session cache (temporarily disabled)
+     * @param bool $useCache Whether to use session cache (temporarily disabled)
+     *
      * @return array Array of Organisation objects
      */
     public function getUserOrganisations(bool $useCache=true): array
@@ -394,13 +414,13 @@ class OrganisationService
 
         $userId = $user->getUID();
 
-        // Temporarily disable caching to avoid serialization issues
-        // TODO: Implement proper object serialization/deserialization later
-        // Get from database
+        // Temporarily disable caching to avoid serialization issues.
+        // TODO: Implement proper object serialization/deserialization later.
+        // Get from database.
         $organisations = $this->organisationMapper->findByUserId($userId);
 
-        // If user has no organisations, add them to default
-        if (empty($organisations)) {
+        // If user has no organisations, add them to default.
+        if ($organisations === []) {
             $defaultOrg = $this->ensureDefaultOrganisation();
             $defaultOrg->addUser($userId);
             $this->organisationMapper->update($defaultOrg);
@@ -449,7 +469,7 @@ class OrganisationService
             }
         }
 
-        // Cache miss or expired - fetch from database
+        // Cache miss or expired - fetch from database.
         $organisation = $this->fetchActiveOrganisationFromDatabase($userId);
 
         // Cache the result if we have an organisation
@@ -467,7 +487,7 @@ class OrganisationService
      *
      * @param string $organisationUuid The organisation UUID to set as active
      *
-     * @return bool True if successfully set, false otherwise
+     * @return true True if successfully set, false otherwise
      *
      * @throws Exception If user doesn't belong to the organisation
      */
@@ -480,18 +500,18 @@ class OrganisationService
 
         $userId = $user->getUID();
 
-        // Verify user belongs to this organisation
+        // Verify user belongs to this organisation.
         try {
             $organisation = $this->organisationMapper->findByUuid($organisationUuid);
         } catch (DoesNotExistException $e) {
             throw new Exception('Organisation not found');
         }
 
-        if (!$organisation->hasUser($userId)) {
+        if ($organisation->hasUser($userId) === false) {
             throw new Exception('User does not belong to this organisation');
         }
 
-        // Set in user configuration (persistent across sessions)
+        // Set in user configuration (persistent across sessions).
         $this->config->setUserValue(
             $userId,
             self::APP_NAME,
@@ -499,7 +519,7 @@ class OrganisationService
             $organisationUuid
         );
 
-        // Clear cached organisations and active organisation to force refresh
+        // Clear cached organisations and active organisation to force refresh.
         $orgCacheKey = self::SESSION_USER_ORGANISATIONS.'_'.$userId;
         $this->session->remove($orgCacheKey);
         $this->clearActiveOrganisationCache($userId);
@@ -524,46 +544,46 @@ class OrganisationService
     /**
      * Add a user to an organisation
      *
-     * @param string $organisationUuid The organisation UUID
-     * @param string|null $targetUserId Optional user ID to add. If null, current user is added.
+     * @param string      $organisationUuid The organisation UUID
+     * @param string|null $targetUserId     Optional user ID to add. If null, current user is added.
      *
-     * @return bool True if successfully added
+     * @return true True if successfully added
      *
      * @throws Exception If organisation not found, user not logged in, or target user does not exist
      */
-    public function joinOrganisation(string $organisationUuid, ?string $targetUserId = null): bool
+    public function joinOrganisation(string $organisationUuid, ?string $targetUserId=null): bool
     {
-        // Get current user (for authentication)
+        // Get current user (for authentication).
         $currentUser = $this->getCurrentUser();
         if ($currentUser === null) {
             throw new Exception('No user logged in');
         }
 
-        // Determine which user to add
-        // If targetUserId is provided, use it; otherwise use current user
+        // Determine which user to add.
+        // If targetUserId is provided, use it; otherwise use current user.
         $userId = $targetUserId ?? $currentUser->getUID();
 
         try {
-            // Validate that target user exists if different from current user
+            // Validate that target user exists if different from current user.
             if ($targetUserId !== null && $targetUserId !== $currentUser->getUID()) {
-                // Check if target user exists
+                // Check if target user exists.
                 $targetUser = $this->userManager->get($targetUserId);
                 if ($targetUser === null) {
                     throw new Exception('Target user not found');
                 }
             }
 
-            // Add user to organisation
+            // Add user to organisation.
             $this->organisationMapper->addUserToOrganisation($organisationUuid, $userId);
 
-            // Clear cached organisations to force refresh for the affected user
+            // Clear cached organisations to force refresh for the affected user.
             $cacheKey = self::SESSION_USER_ORGANISATIONS.'_'.$userId;
             $this->session->remove($cacheKey);
 
             return true;
         } catch (DoesNotExistException $e) {
             throw new Exception('Organisation not found');
-        }
+        }//end try
 
     }//end joinOrganisation()
 
@@ -571,29 +591,29 @@ class OrganisationService
     /**
      * Remove current user or specified user from an organisation
      *
-     * @param string $organisationUuid The organisation UUID
-     * @param string|null $targetUserId Optional user ID to remove. If null, current user is removed.
+     * @param string      $organisationUuid The organisation UUID
+     * @param string|null $targetUserId     Optional user ID to remove. If null, current user is removed.
      *
-     * @return bool True if successfully removed
+     * @return true True if successfully removed
      *
      * @throws Exception If organisation not found, user not logged in, or trying to leave last organisation
      */
-    public function leaveOrganisation(string $organisationUuid, ?string $targetUserId = null): bool
+    public function leaveOrganisation(string $organisationUuid, ?string $targetUserId=null): bool
     {
         $currentUser = $this->getCurrentUser();
         if ($currentUser === null) {
             throw new Exception('No user logged in');
         }
 
-        // Determine which user to remove
-        // If targetUserId is provided, use it; otherwise use current user
+        // Determine which user to remove.
+        // If targetUserId is provided, use it; otherwise use current user.
         $userId = $targetUserId ?? $currentUser->getUID();
 
         // If removing current user, check if it's their last organisation
         if ($userId === $currentUser->getUID()) {
             $userOrgs = $this->getUserOrganisations(false);
-            // Don't use cache
-            // Prevent user from leaving all organisations
+            // Don't use cache.
+            // Prevent user from leaving all organisations.
             if (count($userOrgs) <= 1) {
                 throw new Exception('Cannot leave last organisation');
             }
@@ -602,18 +622,18 @@ class OrganisationService
         try {
             $organisation = $this->organisationMapper->removeUserFromOrganisation($organisationUuid, $userId);
 
-            // If this was the active organisation, clear cache and reset
+            // If this was the active organisation, clear cache and reset.
             $activeOrg = $this->getActiveOrganisation();
-            if ($activeOrg && $activeOrg->getUuid() === $organisationUuid) {
-                // Clear active organisation cache and config
+            if ($activeOrg !== null && $activeOrg->getUuid() === $organisationUuid) {
+                // Clear active organisation cache and config.
                 $this->clearActiveOrganisationCache($userId);
                 $this->config->deleteUserValue($userId, self::APP_NAME, self::CONFIG_ACTIVE_ORGANISATION);
 
-                // Set another organisation as active (this will auto-set the oldest remaining org)
+                // Set another organisation as active (this will auto-set the oldest remaining org).
                 $this->getActiveOrganisation();
             }
 
-            // Clear cached organisations to force refresh
+            // Clear cached organisations to force refresh.
             $cacheKey = self::SESSION_USER_ORGANISATIONS.'_'.$userId;
             $this->session->remove($cacheKey);
 
@@ -634,7 +654,7 @@ class OrganisationService
      */
     private function generateSlug(string $name): string
     {
-        // Convert to lowercase
+        // Convert to lowercase.
         $slug = strtolower($name);
 
         // Replace spaces and special characters with hyphens
@@ -665,11 +685,11 @@ class OrganisationService
      */
     public function createOrganisation(string $name, string $description='', bool $addCurrentUser=true, string $uuid=''): Organisation
     {
-        $user = $this->getCurrentUser();
+        $user   = $this->getCurrentUser();
         $userId = null;
 
-        // Validate UUID if provided
-        if ($uuid !== '' && !Organisation::isValidUuid($uuid)) {
+        // Validate UUID if provided.
+        if ($uuid !== '' && Organisation::isValidUuid($uuid) === false) {
             throw new Exception('Invalid UUID format. UUID must be a 32-character hexadecimal string.');
         }
 
@@ -680,32 +700,32 @@ class OrganisationService
         // Auto-generate slug from name if not provided
         $organisation->setSlug($this->generateSlug($name));
 
-        // Set UUID if provided
+        // Set UUID if provided.
         if ($uuid !== '') {
             $organisation->setUuid($uuid);
         }
 
         if ($user !== null) {
             $userId = $user->getUID();
-            if ($addCurrentUser) {
+            if ($addCurrentUser === true) {
                 $organisation->setOwner($userId);
                 $organisation->setUsers([$userId]);
             }
         }
 
-        // Add all admin group users to the organisation
+        // Add all admin group users to the organisation.
         $organisation = $this->addAdminUsersToOrganisation($organisation);
 
         $saved = $this->organisationMapper->save($organisation);
 
         // If there's no default organisation set, make this one the default
         $defaultOrgId = $this->config->getAppValue('openregister', 'defaultOrganisation', '');
-        if (empty($defaultOrgId)) {
+        if ($defaultOrgId === '') {
             $this->config->setAppValue('openregister', 'defaultOrganisation', $saved->getUuid());
         }
 
-        // Clear cached organisations and active organisation cache to force refresh
-        if ($addCurrentUser && $userId !== null) {
+        // Clear cached organisations and active organisation cache to force refresh.
+        if ($addCurrentUser === true && $userId !== null) {
             $cacheKey = self::SESSION_USER_ORGANISATIONS.'_'.$userId;
             $this->session->remove($cacheKey);
             $this->clearActiveOrganisationCache($userId);
@@ -763,8 +783,8 @@ class OrganisationService
                 return false;
             }
 
-            // Admin users have access to all organisations
-            if ($this->groupManager->isAdmin($user->getUID())) {
+            // Admin users have access to all organisations.
+            if ($this->groupManager->isAdmin($user->getUID()) === true) {
                 return true;
             }
 
@@ -779,7 +799,9 @@ class OrganisationService
     /**
      * Get user organisation statistics
      *
-     * @return array Statistics about user's organisations
+     * @return (array|int|null)[] Statistics about user's organisations
+     *
+     * @psalm-return array{total: int<0, max>, active: array|null, results: array}
      */
     public function getUserOrganisationStats(): array
     {
@@ -791,9 +813,15 @@ class OrganisationService
         $organisations = $this->getUserOrganisations();
         $activeOrg     = $this->getActiveOrganisation();
 
+        if ($activeOrg !== null) {
+            $activeOrgData = $activeOrg->jsonSerialize();
+        } else {
+            $activeOrgData = null;
+        }
+
         return [
             'total'   => count($organisations),
-            'active'  => $activeOrg ? $activeOrg->jsonSerialize() : null,
+            'active'  => $activeOrgData,
             'results' => array_map(
                     function ($org) {
                         return $org->jsonSerialize();
@@ -812,7 +840,7 @@ class OrganisationService
      */
     public function clearDefaultOrganisationCache(): void
     {
-        self::$defaultOrganisationCache = null;
+        self::$defaultOrganisationCache          = null;
         self::$defaultOrganisationCacheTimestamp = null;
 
         $this->logger->info('Cleared default organisation static cache');
@@ -823,7 +851,8 @@ class OrganisationService
     /**
      * Clear all organisation cache for current user
      *
-     * @param  bool $clearPersistent Whether to also clear persistent active organisation setting
+     * @param bool $clearPersistent Whether to also clear persistent active organisation setting
+     *
      * @return bool True if cache cleared
      */
     public function clearCache(bool $clearPersistent=false): bool
@@ -835,15 +864,15 @@ class OrganisationService
 
         $userId = $user->getUID();
 
-        // Clear session-based cache for organisations and active organisation
+        // Clear session-based cache for organisations and active organisation.
         $this->session->remove(self::SESSION_USER_ORGANISATIONS.'_'.$userId);
         $this->clearActiveOrganisationCache($userId);
 
         // Clear static default organisation cache as well
         $this->clearDefaultOrganisationCache();
 
-        // Clear persistent configuration if requested
-        if ($clearPersistent) {
+        // Clear persistent configuration if requested.
+        if ($clearPersistent === true) {
             $this->config->deleteUserValue($userId, self::APP_NAME, self::CONFIG_ACTIVE_ORGANISATION);
         }
 
@@ -855,7 +884,9 @@ class OrganisationService
     /**
      * Get all users in the admin group
      *
-     * @return array Array of user IDs in the admin group
+     * @return string[] Array of user IDs in the admin group
+     *
+     * @psalm-return array<string>
      */
     private function getAdminGroupUsers(): array
     {
@@ -895,8 +926,8 @@ class OrganisationService
             $organisation->addUser($adminUserId);
         }
 
-        // Clear default organisation cache if we modified the default organisation
-        if ($isDefaultOrg) {
+        // Clear default organisation cache if we modified the default organisation.
+        if ($isDefaultOrg === true) {
             $this->clearDefaultOrganisationCache();
         }
 
@@ -925,7 +956,7 @@ class OrganisationService
      */
     private function fetchActiveOrganisationFromDatabase(string $userId): ?Organisation
     {
-        // Get active organisation UUID from user configuration (persistent)
+        // Get active organisation UUID from user configuration (persistent).
         $activeUuid = $this->config->getUserValue(
             $userId,
             self::APP_NAME,
@@ -937,11 +968,11 @@ class OrganisationService
             try {
                 $organisation = $this->organisationMapper->findByUuid($activeUuid);
 
-                // Verify user still has access to this organisation
-                if ($organisation->hasUser($userId)) {
+                // Verify user still has access to this organisation.
+                if ($organisation->hasUser($userId) === true) {
                     return $organisation;
                 } else {
-                    // User no longer has access, clear the setting and cache
+                    // User no longer has access, clear the setting and cache.
                     $this->config->deleteUserValue($userId, self::APP_NAME, self::CONFIG_ACTIVE_ORGANISATION);
                     $this->clearActiveOrganisationCache($userId);
                     $this->logger->info(
@@ -953,7 +984,7 @@ class OrganisationService
                             );
                 }
             } catch (DoesNotExistException $e) {
-                // Active organisation no longer exists, clear from config and cache
+                // Active organisation no longer exists, clear from config and cache.
                 $this->config->deleteUserValue($userId, self::APP_NAME, self::CONFIG_ACTIVE_ORGANISATION);
                 $this->clearActiveOrganisationCache($userId);
                 $this->logger->info(
@@ -966,10 +997,10 @@ class OrganisationService
             }//end try
         }//end if
 
-        // No valid active organisation set, try to set the oldest one from user's organisations
+        // No valid active organisation set, try to set the oldest one from user's organisations.
         $organisations = $this->getUserOrganisations();
-        if (!empty($organisations)) {
-            // Sort by created date and take the oldest
+        if (empty($organisations) === false) {
+            // Sort by created date and take the oldest.
             usort(
                     $organisations,
                     function ($a, $b) {
@@ -979,7 +1010,7 @@ class OrganisationService
 
             $oldestOrg = $organisations[0];
 
-            // Set in user configuration
+            // Set in user configuration.
             $this->config->setUserValue(
                 $userId,
                 self::APP_NAME,
@@ -1020,14 +1051,14 @@ class OrganisationService
         // Store organisation data as array to avoid serialization issues
         // Convert DateTime objects to ISO strings for proper caching
         $orgData = [
-            'id' => $organisation->getId(),
-            'uuid' => $organisation->getUuid(),
-            'name' => $organisation->getName(),
+            'id'          => $organisation->getId(),
+            'uuid'        => $organisation->getUuid(),
+            'name'        => $organisation->getName(),
             'description' => $organisation->getDescription(),
-            'owner' => $organisation->getOwner(),
-            'users' => $organisation->getUsers(),
-            'created' => $organisation->getCreated() ? $organisation->getCreated()->format('Y-m-d H:i:s') : null,
-            'updated' => $organisation->getUpdated() ? $organisation->getUpdated()->format('Y-m-d H:i:s') : null
+            'owner'       => $organisation->getOwner(),
+            'users'       => $organisation->getUsers(),
+            'created'     => $this->formatCreatedDate($organisation),
+            'updated'     => $this->formatUpdatedDate($organisation),
         ];
 
         $this->session->set($cacheKey, $orgData);
@@ -1057,34 +1088,41 @@ class OrganisationService
         if (isset($cachedData['id'])) {
             $organisation->setId($cachedData['id']);
         }
-        if (isset($cachedData['uuid'])) {
+
+        if (isset($cachedData['uuid']) === true) {
             $organisation->setUuid($cachedData['uuid']);
         }
-        if (isset($cachedData['name'])) {
+
+        if (isset($cachedData['name']) === true) {
             $organisation->setName($cachedData['name']);
         }
-        if (isset($cachedData['description'])) {
+
+        if (isset($cachedData['description']) === true) {
             $organisation->setDescription($cachedData['description']);
         }
-        if (isset($cachedData['owner'])) {
+
+        if (isset($cachedData['owner']) === true) {
             $organisation->setOwner($cachedData['owner']);
         }
-        if (isset($cachedData['users'])) {
+
+        if (isset($cachedData['users']) === true) {
             $organisation->setUsers($cachedData['users']);
         }
-        if (isset($cachedData['created']) && $cachedData['created'] !== null) {
-            // Convert string back to DateTime if needed
-            if (is_string($cachedData['created'])) {
+
+        if (isset($cachedData['created']) === true && $cachedData['created'] !== null) {
+            // Convert string back to DateTime if needed.
+            if (is_string($cachedData['created']) === true) {
                 $organisation->setCreated(new \DateTime($cachedData['created']));
-            } elseif ($cachedData['created'] instanceof \DateTime) {
+            } else if ($cachedData['created'] instanceof \DateTime) {
                 $organisation->setCreated($cachedData['created']);
             }
         }
-        if (isset($cachedData['updated']) && $cachedData['updated'] !== null) {
-            // Convert string back to DateTime if needed
-            if (is_string($cachedData['updated'])) {
+
+        if (isset($cachedData['updated']) === true && $cachedData['updated'] !== null) {
+            // Convert string back to DateTime if needed.
+            if (is_string($cachedData['updated']) === true) {
                 $organisation->setUpdated(new \DateTime($cachedData['updated']));
-            } elseif ($cachedData['updated'] instanceof \DateTime) {
+            } else if ($cachedData['updated'] instanceof \DateTime) {
                 $organisation->setUpdated($cachedData['updated']);
             }
         }
@@ -1120,9 +1158,9 @@ class OrganisationService
      * Get the organisation UUID to use for creating new entities
      * Uses the active organisation or falls back to default
      *
-     * @return string The organisation UUID to use
+     * @return null|string The organisation UUID to use
      */
-    public function getOrganisationForNewEntity(): string
+    public function getOrganisationForNewEntity(): string|null
     {
         $activeOrg = $this->getActiveOrganisation();
 
@@ -1130,7 +1168,7 @@ class OrganisationService
             return $activeOrg->getUuid();
         }
 
-        // Fallback to default organisation
+        // Fallback to default organisation.
         $defaultOrg = $this->ensureDefaultOrganisation();
         return $defaultOrg->getUuid();
 
@@ -1140,14 +1178,56 @@ class OrganisationService
     /**
      * Get the default organisation UUID from config
      *
-     * @return string|null The UUID of the default organisation, or null if not set
+     * @return null|string The UUID of the default organisation, or null if not set
      */
-    public function getDefaultOrganisationId(): ?string
+    public function getDefaultOrganisationId(): string|null
     {
         $defaultOrgId = $this->config->getAppValue('openregister', 'defaultOrganisation', '');
-        return $defaultOrgId !== '' ? $defaultOrgId : null;
+        if ($defaultOrgId !== '') {
+            return $defaultOrgId;
+        }
+
+        return null;
 
     }//end getDefaultOrganisationId()
+
+
+    /**
+     * Format created date for JSON serialization
+     *
+     * @param Organisation $organisation Organisation object
+     *
+     * @return string|null Formatted date or null
+     */
+    private function formatCreatedDate(Organisation $organisation): ?string
+    {
+        $created = $organisation->getCreated();
+        if ($created !== null) {
+            return $created->format('Y-m-d H:i:s');
+        }
+
+        return null;
+
+    }//end formatCreatedDate()
+
+
+    /**
+     * Format updated date for JSON serialization
+     *
+     * @param Organisation $organisation Organisation object
+     *
+     * @return string|null Formatted date or null
+     */
+    private function formatUpdatedDate(Organisation $organisation): ?string
+    {
+        $updated = $organisation->getUpdated();
+        if ($updated !== null) {
+            return $updated->format('Y-m-d H:i:s');
+        }
+
+        return null;
+
+    }//end formatUpdatedDate()
 
 
     /**
@@ -1180,10 +1260,13 @@ class OrganisationService
         try {
             return $this->organisationMapper->findByUuid($defaultOrgId);
         } catch (\Exception $e) {
-            $this->logger->warning('Default organisation not found', [
-                'uuid' => $defaultOrgId,
-                'error' => $e->getMessage()
-            ]);
+            $this->logger->warning(
+                    'Default organisation not found',
+                    [
+                        'uuid'  => $defaultOrgId,
+                        'error' => $e->getMessage(),
+                    ]
+                    );
             return null;
         }
 
@@ -1206,7 +1289,9 @@ class OrganisationService
      *
      * This is used by MultiTenancyTrait for filtering queries to include parent resources.
      *
-     * @return array Array of organisation UUIDs (active org + all parents)
+     * @return (mixed|null|string)[] Array of organisation UUIDs (active org + all parents)
+     *
+     * @psalm-return array{0?: mixed|null|string,...}
      */
     public function getUserActiveOrganisations(): array
     {
@@ -1229,11 +1314,11 @@ class OrganisationService
         $this->logger->debug(
             'Retrieved active organisations (including parents)',
             [
-                'activeOrg' => $activeOrg->getUuid(),
-                'activeOrgName' => $activeOrg->getName(),
-                'parents' => $parents,
+                'activeOrg'          => $activeOrg->getUuid(),
+                'activeOrgName'      => $activeOrg->getName(),
+                'parents'            => $parents,
                 'totalOrganisations' => count($orgUuids),
-                'allUuids' => $orgUuids,
+                'allUuids'           => $orgUuids,
             ]
         );
 

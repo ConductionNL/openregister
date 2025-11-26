@@ -11,7 +11,19 @@ keywords:
 
 # Enhanced Validation Errors
 
-Open Register has been enhanced with improved validation error messages that provide much clearer and more user-friendly feedback compared to the standard JSON Schema validation library errors.
+OpenRegister provides clear, actionable validation error messages that help users quickly identify and fix issues when creating or updating objects.
+
+## Overview
+
+When objects fail validation against their schema, OpenRegister returns detailed error messages that specify exactly what needs to be fixed, rather than generic error codes or unclear messages.
+
+## Key Benefits
+
+- **Clear Messages**: Users know exactly which properties have issues
+- **Actionable Feedback**: Error messages explain what needs to be fixed
+- **Faster Development**: Developers can quickly identify validation problems
+- **Better API Integration**: Clear error responses help with API integration
+- **Reduced Support**: Fewer questions about unclear error messages
 
 ## Problem
 

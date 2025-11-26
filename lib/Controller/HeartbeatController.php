@@ -28,55 +28,52 @@ use OCP\IRequest;
  */
 class HeartbeatController extends Controller
 {
-	/**
-	 * HeartbeatController constructor.
-	 *
-	 * @param string   $appName The name of the app
-	 * @param IRequest $request The request object
-	 */
-	public function __construct(
-		string $appName,
-		IRequest $request,
-	) {
-		parent::__construct($appName, $request);
-	}
-
-	/**
-	 * Heartbeat endpoint to keep connections alive during long operations
-	 *
-	 * This lightweight endpoint is called periodically during long-running operations
-	 * (like imports) to prevent nginx gateway timeouts. It simply returns a success
-	 * response with minimal server processing.
-	 *
-	 * @NoAdminRequired
-	 * @NoCSRFRequired
-	 *
-	 * @return JSONResponse Simple success response
-	 */
-	public function heartbeat(): JSONResponse
-	{
-		return new JSONResponse([
-			'status' => 'alive',
-			'timestamp' => time(),
-			'message' => 'Heartbeat successful - connection kept alive'
-		]);
-	}
-}
 
 
+    /**
+     * HeartbeatController constructor.
+     *
+     * @param string   $appName The name of the app
+     * @param IRequest $request The request object
+     */
+    public function __construct(
+        string $appName,
+        IRequest $request,
+    ) {
+        parent::__construct($appName, $request);
+
+    }//end __construct()
 
 
+    /**
+     * Heartbeat endpoint to keep connections alive during long operations
+     *
+     * This lightweight endpoint is called periodically during long-running operations
+     * (like imports) to prevent nginx gateway timeouts. It simply returns a success
+     * response with minimal server processing.
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Simple success response
+     *
+     * @psalm-return JSONResponse<200,
+     *     array{status: 'alive', timestamp: int<1, max>,
+     *     message: 'Heartbeat successful - connection kept alive'},
+     *     array<never, never>>
+     */
+    public function heartbeat(): JSONResponse
+    {
+        return new JSONResponse(
+          [
+              'status'    => 'alive',
+              'timestamp' => time(),
+              'message'   => 'Heartbeat successful - connection kept alive',
+          ]
+          );
+
+    }//end heartbeat()
 
 
-
-
-
-
-
-
-
-
-
-
-
-
+}//end class

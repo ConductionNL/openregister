@@ -96,7 +96,7 @@ class SaveObjectTest extends TestCase
     {
         parent::setUp();
 
-        // Create mocks for all dependencies
+        // Create mocks for all dependencies.
         $this->objectEntityMapper = $this->createMock(ObjectEntityMapper::class);
         $this->fileService = $this->createMock(FileService::class);
         $this->userSession = $this->createMock(IUserSession::class);
@@ -106,12 +106,12 @@ class SaveObjectTest extends TestCase
         $this->urlGenerator = $this->createMock(IURLGenerator::class);
         $this->arrayLoader = $this->createMock(ArrayLoader::class);
 
-        // Create mock entities
+        // Create mock entities.
         $this->mockRegister = $this->createMock(Register::class);
         $this->mockSchema = $this->createMock(Schema::class);
         $this->mockUser = $this->createMock(IUser::class);
 
-        // Set up basic mock returns
+        // Set up basic mock returns.
         $this->mockRegister->method('getId')->willReturn(1);
         $this->mockRegister->method('getSlug')->willReturn('test-register');
         
@@ -124,7 +124,7 @@ class SaveObjectTest extends TestCase
         $this->mockUser->method('getUID')->willReturn('testuser');
         $this->userSession->method('getUser')->willReturn($this->mockUser);
 
-        // Create SaveObject instance
+        // Create SaveObject instance.
         $this->saveObject = new SaveObject(
             $this->objectEntityMapper,
             $this->fileService,
@@ -147,13 +147,13 @@ class SaveObjectTest extends TestCase
         $uuid = Uuid::v4()->toRfc4122();
         $data = ['name' => 'Test Object'];
 
-        // Mock that UUID doesn't exist in database
+        // Mock that UUID doesn't exist in database.
         $this->objectEntityMapper
             ->method('find')
             ->with($uuid)
             ->willThrowException(new DoesNotExistException('Object not found'));
 
-        // Mock successful creation
+        // Mock successful creation.
         $newObject = new ObjectEntity();
         $newObject->setId(1);
         $newObject->setUuid($uuid);
@@ -173,10 +173,10 @@ class SaveObjectTest extends TestCase
             ->method('linkToRoute')
             ->willReturn('/object/' . $uuid);
 
-        // Execute test
+        // Execute test.
         $result = $this->saveObject->saveObject($this->mockRegister, $this->mockSchema, $data, $uuid);
 
-        // Assertions
+        // Assertions.
         $this->assertInstanceOf(ObjectEntity::class, $result);
         $this->assertEquals($uuid, $result->getUuid());
         $this->assertEquals($data, $result->getObject());
@@ -192,7 +192,7 @@ class SaveObjectTest extends TestCase
         $uuid = Uuid::v4()->toRfc4122();
         $data = ['name' => 'Updated Object'];
 
-        // Mock existing object
+        // Mock existing object.
         $existingObject = new ObjectEntity();
         $existingObject->setId(1);
         $existingObject->setUuid($uuid);
@@ -205,7 +205,7 @@ class SaveObjectTest extends TestCase
             ->with($uuid)
             ->willReturn($existingObject);
 
-        // Mock successful update
+        // Mock successful update.
         $updatedObject = clone $existingObject;
         $updatedObject->setObject($data);
 
@@ -213,10 +213,10 @@ class SaveObjectTest extends TestCase
             ->method('update')
             ->willReturn($updatedObject);
 
-        // Execute test
+        // Execute test.
         $result = $this->saveObject->saveObject($this->mockRegister, $this->mockSchema, $data, $uuid);
 
-        // Assertions
+        // Assertions.
         $this->assertInstanceOf(ObjectEntity::class, $result);
         $this->assertEquals($uuid, $result->getUuid());
         $this->assertEquals($data, $result->getObject());
@@ -231,7 +231,7 @@ class SaveObjectTest extends TestCase
     {
         $data = ['name' => 'New Object'];
 
-        // Mock successful creation
+        // Mock successful creation.
         $newObject = new ObjectEntity();
         $newObject->setId(1);
         $newObject->setRegister(1);
@@ -250,10 +250,10 @@ class SaveObjectTest extends TestCase
             ->method('linkToRoute')
             ->willReturn('/object/generated-uuid');
 
-        // Execute test
+        // Execute test.
         $result = $this->saveObject->saveObject($this->mockRegister, $this->mockSchema, $data);
 
-        // Assertions
+        // Assertions.
         $this->assertInstanceOf(ObjectEntity::class, $result);
         $this->assertNotNull($result->getUuid());
         $this->assertEquals($data, $result->getObject());
@@ -277,7 +277,7 @@ class SaveObjectTest extends TestCase
             ]
         ];
 
-        // Mock schema with cascading property
+        // Mock schema with cascading property.
         $schemaProperties = [
             'child' => [
                 'type' => 'object',
@@ -296,7 +296,7 @@ class SaveObjectTest extends TestCase
                 'properties' => $schemaProperties
             ]);
 
-        // Mock parent object
+        // Mock parent object.
         $parentObject = new ObjectEntity();
         $parentObject->setId(1);
         $parentObject->setUuid($parentUuid);
@@ -308,7 +308,7 @@ class SaveObjectTest extends TestCase
             ->with($parentUuid)
             ->willReturn($parentObject);
 
-        // Mock child object creation/update
+        // Mock child object creation/update.
         $childObject = new ObjectEntity();
         $childObject->setId(2);
         $childObject->setUuid($childUuid);
@@ -319,13 +319,13 @@ class SaveObjectTest extends TestCase
             'parent' => $parentUuid
         ]);
 
-        // Mock schema resolution
+        // Mock schema resolution.
         $this->schemaMapper
             ->method('findBySlug')
             ->with('ChildSchema')
             ->willReturn($this->mockSchema);
 
-        // Mock successful operations
+        // Mock successful operations.
         $this->objectEntityMapper
             ->method('insert')
             ->willReturn($childObject);
@@ -342,14 +342,14 @@ class SaveObjectTest extends TestCase
             ->method('linkToRoute')
             ->willReturn('/object/test');
 
-        // Execute test
+        // Execute test.
         $result = $this->saveObject->saveObject($this->mockRegister, $this->mockSchema, $data, $parentUuid);
 
-        // Assertions
+        // Assertions.
         $this->assertInstanceOf(ObjectEntity::class, $result);
         $this->assertEquals($parentUuid, $result->getUuid());
         
-        // Child should be empty in parent (cascaded)
+        // Child should be empty in parent (cascaded).
         $resultData = $result->getObject();
         $this->assertEmpty($resultData['child']);
     }
@@ -379,7 +379,7 @@ class SaveObjectTest extends TestCase
             ]
         ];
 
-        // Mock schema with cascading array property
+        // Mock schema with cascading array property.
         $schemaProperties = [
             'children' => [
                 'type' => 'array',
@@ -401,7 +401,7 @@ class SaveObjectTest extends TestCase
                 'properties' => $schemaProperties
             ]);
 
-        // Mock parent object
+        // Mock parent object.
         $parentObject = new ObjectEntity();
         $parentObject->setId(1);
         $parentObject->setUuid($parentUuid);
@@ -413,7 +413,7 @@ class SaveObjectTest extends TestCase
             ->with($parentUuid)
             ->willReturn($parentObject);
 
-        // Mock child objects
+        // Mock child objects.
         $child1Object = new ObjectEntity();
         $child1Object->setId(2);
         $child1Object->setUuid($child1Uuid);
@@ -422,13 +422,13 @@ class SaveObjectTest extends TestCase
         $child2Object->setId(3);
         $child2Object->setUuid($child2Uuid);
 
-        // Mock schema resolution
+        // Mock schema resolution.
         $this->schemaMapper
             ->method('findBySlug')
             ->with('ChildSchema')
             ->willReturn($this->mockSchema);
 
-        // Mock successful operations
+        // Mock successful operations.
         $this->objectEntityMapper
             ->method('insert')
             ->willReturnOnConsecutiveCalls($child1Object, $child2Object);
@@ -445,14 +445,14 @@ class SaveObjectTest extends TestCase
             ->method('linkToRoute')
             ->willReturn('/object/test');
 
-        // Execute test
+        // Execute test.
         $result = $this->saveObject->saveObject($this->mockRegister, $this->mockSchema, $data, $parentUuid);
 
-        // Assertions
+        // Assertions.
         $this->assertInstanceOf(ObjectEntity::class, $result);
         $this->assertEquals($parentUuid, $result->getUuid());
         
-        // Children should be empty array in parent (cascaded)
+        // Children should be empty array in parent (cascaded).
         $resultData = $result->getObject();
         $this->assertEmpty($resultData['children']);
     }
@@ -474,7 +474,7 @@ class SaveObjectTest extends TestCase
             ]
         ];
 
-        // Mock schema with cascading property WITHOUT inversedBy
+        // Mock schema with cascading property WITHOUT inversedBy.
         $schemaProperties = [
             'child' => [
                 'type' => 'object',
@@ -492,7 +492,7 @@ class SaveObjectTest extends TestCase
                 'properties' => $schemaProperties
             ]);
 
-        // Mock parent object
+        // Mock parent object.
         $parentObject = new ObjectEntity();
         $parentObject->setId(1);
         $parentObject->setUuid($parentUuid);
@@ -504,7 +504,7 @@ class SaveObjectTest extends TestCase
             ->with($parentUuid)
             ->willReturn($parentObject);
 
-        // Mock child object creation (no UUID provided, new object)
+        // Mock child object creation (no UUID provided, new object).
         $childObject = new ObjectEntity();
         $childObject->setId(2);
         $childObject->setUuid($childUuid);
@@ -512,13 +512,13 @@ class SaveObjectTest extends TestCase
         $childObject->setSchema(2);
         $childObject->setObject(['name' => 'Child Object']);
 
-        // Mock schema resolution
+        // Mock schema resolution.
         $this->schemaMapper
             ->method('findBySlug')
             ->with('ChildSchema')
             ->willReturn($this->mockSchema);
 
-        // Mock successful operations
+        // Mock successful operations.
         $this->objectEntityMapper
             ->method('insert')
             ->willReturn($childObject);
@@ -535,14 +535,14 @@ class SaveObjectTest extends TestCase
             ->method('linkToRoute')
             ->willReturn('/object/test');
 
-        // Execute test
+        // Execute test.
         $result = $this->saveObject->saveObject($this->mockRegister, $this->mockSchema, $data, $parentUuid);
 
-        // Assertions
+        // Assertions.
         $this->assertInstanceOf(ObjectEntity::class, $result);
         $this->assertEquals($parentUuid, $result->getUuid());
         
-        // Child should contain the UUID of the created object
+        // Child should contain the UUID of the created object.
         $resultData = $result->getObject();
         $this->assertEquals($childUuid, $resultData['child']);
     }
@@ -566,7 +566,7 @@ class SaveObjectTest extends TestCase
             ]
         ];
 
-        // Mock schema with cascading array property WITHOUT inversedBy
+        // Mock schema with cascading array property WITHOUT inversedBy.
         $schemaProperties = [
             'children' => [
                 'type' => 'array',
@@ -587,7 +587,7 @@ class SaveObjectTest extends TestCase
                 'properties' => $schemaProperties
             ]);
 
-        // Mock parent object
+        // Mock parent object.
         $parentObject = new ObjectEntity();
         $parentObject->setId(1);
         $parentObject->setUuid($parentUuid);
@@ -599,7 +599,7 @@ class SaveObjectTest extends TestCase
             ->with($parentUuid)
             ->willReturn($parentObject);
 
-        // Mock child objects
+        // Mock child objects.
         $child1Object = new ObjectEntity();
         $child1Object->setId(2);
         $child1Object->setUuid($child1Uuid);
@@ -608,13 +608,13 @@ class SaveObjectTest extends TestCase
         $child2Object->setId(3);
         $child2Object->setUuid($child2Uuid);
 
-        // Mock schema resolution
+        // Mock schema resolution.
         $this->schemaMapper
             ->method('findBySlug')
             ->with('ChildSchema')
             ->willReturn($this->mockSchema);
 
-        // Mock successful operations
+        // Mock successful operations.
         $this->objectEntityMapper
             ->method('insert')
             ->willReturnOnConsecutiveCalls($child1Object, $child2Object);
@@ -631,14 +631,14 @@ class SaveObjectTest extends TestCase
             ->method('linkToRoute')
             ->willReturn('/object/test');
 
-        // Execute test
+        // Execute test.
         $result = $this->saveObject->saveObject($this->mockRegister, $this->mockSchema, $data, $parentUuid);
 
-        // Assertions
+        // Assertions.
         $this->assertInstanceOf(ObjectEntity::class, $result);
         $this->assertEquals($parentUuid, $result->getUuid());
         
-        // Children should contain array of UUIDs
+        // Children should contain array of UUIDs.
         $resultData = $result->getObject();
         $this->assertIsArray($resultData['children']);
         $this->assertContains($child1Uuid, $resultData['children']);
@@ -667,7 +667,7 @@ class SaveObjectTest extends TestCase
             ]
         ];
 
-        // Mock schema with mixed cascading properties
+        // Mock schema with mixed cascading properties.
         $schemaProperties = [
             'related' => [
                 'type' => 'object',
@@ -694,7 +694,7 @@ class SaveObjectTest extends TestCase
                 'properties' => $schemaProperties
             ]);
 
-        // Mock parent object
+        // Mock parent object.
         $parentObject = new ObjectEntity();
         $parentObject->setId(1);
         $parentObject->setUuid($parentUuid);
@@ -706,17 +706,17 @@ class SaveObjectTest extends TestCase
             ->with($parentUuid)
             ->willReturn($parentObject);
 
-        // Mock related object (with inversedBy)
+        // Mock related object (with inversedBy).
         $relatedObject = new ObjectEntity();
         $relatedObject->setId(2);
         $relatedObject->setUuid($relatedUuid);
 
-        // Mock owned object (without inversedBy)
+        // Mock owned object (without inversedBy).
         $ownedObject = new ObjectEntity();
         $ownedObject->setId(3);
         $ownedObject->setUuid($ownedUuid);
 
-        // Mock schema resolution
+        // Mock schema resolution.
         $this->schemaMapper
             ->method('findBySlug')
             ->willReturnMap([
@@ -724,7 +724,7 @@ class SaveObjectTest extends TestCase
                 ['OwnedSchema', $this->mockSchema]
             ]);
 
-        // Mock successful operations
+        // Mock successful operations.
         $this->objectEntityMapper
             ->method('insert')
             ->willReturnOnConsecutiveCalls($relatedObject, $ownedObject);
@@ -741,19 +741,19 @@ class SaveObjectTest extends TestCase
             ->method('linkToRoute')
             ->willReturn('/object/test');
 
-        // Execute test
+        // Execute test.
         $result = $this->saveObject->saveObject($this->mockRegister, $this->mockSchema, $data, $parentUuid);
 
-        // Assertions
+        // Assertions.
         $this->assertInstanceOf(ObjectEntity::class, $result);
         $this->assertEquals($parentUuid, $result->getUuid());
         
         $resultData = $result->getObject();
         
-        // Related should be empty (cascaded with inversedBy)
+        // Related should be empty (cascaded with inversedBy).
         $this->assertEmpty($resultData['related']);
         
-        // Owned should contain UUID (cascaded without inversedBy)
+        // Owned should contain UUID (cascaded without inversedBy).
         $this->assertEquals($ownedUuid, $resultData['owned']);
     }
 
@@ -773,7 +773,7 @@ class SaveObjectTest extends TestCase
             ]
         ];
 
-        // Mock schema with invalid reference
+        // Mock schema with invalid reference.
         $schemaProperties = [
             'invalid' => [
                 'type' => 'object',
@@ -791,7 +791,7 @@ class SaveObjectTest extends TestCase
                 'properties' => $schemaProperties
             ]);
 
-        // Mock parent object
+        // Mock parent object.
         $parentObject = new ObjectEntity();
         $parentObject->setId(1);
         $parentObject->setUuid($parentUuid);
@@ -801,13 +801,13 @@ class SaveObjectTest extends TestCase
             ->with($parentUuid)
             ->willReturn($parentObject);
 
-        // Mock schema resolution failure
+        // Mock schema resolution failure.
         $this->schemaMapper
             ->method('findBySlug')
             ->with('NonExistentSchema')
             ->willThrowException(new DoesNotExistException('Schema not found'));
 
-        // Execute test and expect exception
+        // Execute test and expect exception.
         $this->expectException(Exception::class);
         $this->expectExceptionMessage('Invalid schema reference');
 
@@ -830,7 +830,7 @@ class SaveObjectTest extends TestCase
             'id_only_child' => ['id' => '']
         ];
 
-        // Mock schema with cascading properties
+        // Mock schema with cascading properties.
         $schemaProperties = [
             'empty_child' => [
                 'type' => 'object',
@@ -864,7 +864,7 @@ class SaveObjectTest extends TestCase
                 'properties' => $schemaProperties
             ]);
 
-        // Mock parent object
+        // Mock parent object.
         $parentObject = new ObjectEntity();
         $parentObject->setId(1);
         $parentObject->setUuid($parentUuid);
@@ -888,16 +888,16 @@ class SaveObjectTest extends TestCase
             ->method('linkToRoute')
             ->willReturn('/object/test');
 
-        // Execute test
+        // Execute test.
         $result = $this->saveObject->saveObject($this->mockRegister, $this->mockSchema, $data, $parentUuid);
 
-        // Assertions
+        // Assertions.
         $this->assertInstanceOf(ObjectEntity::class, $result);
         $this->assertEquals($parentUuid, $result->getUuid());
         
         $resultData = $result->getObject();
         
-        // All empty objects should remain as they were (not cascaded)
+        // All empty objects should remain as they were (not cascaded).
         $this->assertEquals([], $resultData['empty_child']);
         $this->assertNull($resultData['null_child']);
         $this->assertEquals(['id' => ''], $resultData['id_only_child']);
@@ -923,7 +923,7 @@ class SaveObjectTest extends TestCase
             ]
         ];
 
-        // Mock schema with cascading property
+        // Mock schema with cascading property.
         $schemaProperties = [
             'child' => [
                 'type' => 'object',
@@ -942,7 +942,7 @@ class SaveObjectTest extends TestCase
                 'properties' => $schemaProperties
             ]);
 
-        // Mock parent object
+        // Mock parent object.
         $parentObject = new ObjectEntity();
         $parentObject->setId(1);
         $parentObject->setUuid($parentUuid);
@@ -954,7 +954,7 @@ class SaveObjectTest extends TestCase
             ->with($parentUuid)
             ->willReturn($parentObject);
 
-        // Mock child object with existing array
+        // Mock child object with existing array.
         $childObject = new ObjectEntity();
         $childObject->setId(2);
         $childObject->setUuid($childUuid);
@@ -965,13 +965,13 @@ class SaveObjectTest extends TestCase
             'parents' => [$existingParentUuid, $parentUuid] // Should add parent UUID to array
         ]);
 
-        // Mock schema resolution
+        // Mock schema resolution.
         $this->schemaMapper
             ->method('findBySlug')
             ->with('ChildSchema')
             ->willReturn($this->mockSchema);
 
-        // Mock successful operations
+        // Mock successful operations.
         $this->objectEntityMapper
             ->method('insert')
             ->willReturn($childObject);
@@ -988,18 +988,18 @@ class SaveObjectTest extends TestCase
             ->method('linkToRoute')
             ->willReturn('/object/test');
 
-        // Execute test
+        // Execute test.
         $result = $this->saveObject->saveObject($this->mockRegister, $this->mockSchema, $data, $parentUuid);
 
-        // Assertions
+        // Assertions.
         $this->assertInstanceOf(ObjectEntity::class, $result);
         $this->assertEquals($parentUuid, $result->getUuid());
         
-        // Child should be empty in parent (cascaded)
+        // Child should be empty in parent (cascaded).
         $resultData = $result->getObject();
         $this->assertEmpty($resultData['child']);
         
-        // The child object should have both parent UUIDs in its parents array
+        // The child object should have both parent UUIDs in its parents array.
         $childData = $childObject->getObject();
         $this->assertIsArray($childData['parents']);
         $this->assertContains($existingParentUuid, $childData['parents']);
@@ -1018,7 +1018,7 @@ class SaveObjectTest extends TestCase
             'description' => 'Test Description'
         ];
 
-        // Mock schema with configuration
+        // Mock schema with configuration.
         $schemaProperties = [
             'name' => ['type' => 'string'],
             'description' => ['type' => 'string']
@@ -1045,7 +1045,7 @@ class SaveObjectTest extends TestCase
             ->method('linkToRoute')
             ->willReturn('/object/test');
 
-        // Mock user session
+        // Mock user session.
         $this->userSession
             ->method('getUser')
             ->willReturn($this->mockUser);
@@ -1054,21 +1054,21 @@ class SaveObjectTest extends TestCase
             ->method('getUID')
             ->willReturn('testuser');
 
-        // Execute test - should not persist to database
+        // Execute test - should not persist to database.
         $result = $this->saveObject->prepareObject(
             register: $this->mockRegister,
             schema: $this->mockSchema,
             data: $data
         );
 
-        // Assertions
+        // Assertions.
         $this->assertInstanceOf(ObjectEntity::class, $result);
         $this->assertNotEmpty($result->getUuid());
         $this->assertEquals('Test Object', $result->getName());
         $this->assertEquals('Test Description', $result->getDescription());
         $this->assertEquals('testuser', $result->getOwner());
         
-        // Verify that the object was not saved to database
+        // Verify that the object was not saved to database.
         $this->objectEntityMapper->expects($this->never())->method('insert');
         $this->objectEntityMapper->expects($this->never())->method('update');
     }
@@ -1084,7 +1084,7 @@ class SaveObjectTest extends TestCase
             'title' => 'Test Object Title'
         ];
 
-        // Mock schema with slug configuration
+        // Mock schema with slug configuration.
         $schemaProperties = [
             'title' => ['type' => 'string'],
             'slug' => ['type' => 'string']
@@ -1110,7 +1110,7 @@ class SaveObjectTest extends TestCase
             ->method('linkToRoute')
             ->willReturn('/object/test');
 
-        // Mock user session
+        // Mock user session.
         $this->userSession
             ->method('getUser')
             ->willReturn($this->mockUser);
@@ -1119,19 +1119,19 @@ class SaveObjectTest extends TestCase
             ->method('getUID')
             ->willReturn('testuser');
 
-        // Execute test
+        // Execute test.
         $result = $this->saveObject->prepareObject(
             register: $this->mockRegister,
             schema: $this->mockSchema,
             data: $data
         );
 
-        // Assertions
+        // Assertions.
         $this->assertInstanceOf(ObjectEntity::class, $result);
         $this->assertNotEmpty($result->getSlug());
         $this->assertStringContainsString('test-object-title', $result->getSlug());
         
-        // Verify that the object was not saved to database
+        // Verify that the object was not saved to database.
         $this->objectEntityMapper->expects($this->never())->method('insert');
         $this->objectEntityMapper->expects($this->never())->method('update');
     }
