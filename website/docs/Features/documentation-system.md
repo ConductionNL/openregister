@@ -57,12 +57,12 @@ graph TB
 
 **Essential features every user should understand:**
 
-- **[Objects](../features/objects.md)** - Core data entities
-- **[Registers](../features/registers.md)** - Data containers
-- **[Schemas](../features/schemas.md)** - Data structure definitions
-- **[Search](../features/search.md)** - Search and filtering capabilities
-- **[Faceting](../features/faceting.md)** - Dynamic filtering system
-- **[Applications](../features/applications.md)** - Application management and access control
+- **[Objects](./objects.md)** - Core data entities
+- **[Registers](./registers.md)** - Data containers
+- **[Schemas](./schemas.md)** - Data structure definitions
+- **[Search](./search.md)** - Search and filtering capabilities
+- **[Faceting](./faceting.md)** - Dynamic filtering system
+- **[Applications](./applications.md)** - Application management and access control
 
 ### Advanced Features
 
@@ -72,16 +72,16 @@ graph TB
 - **[Text Extraction Sources](../features/text-extraction-sources.md)** - Files vs Objects processing
 - **[RAG Implementation](../features/rag-implementation.md)** - Retrieval Augmented Generation
 - **[Entity Extraction](../features/ner-nlp-concepts.md)** - GDPR entity tracking
-- **[Multi-Tenancy](../features/multi-tenancy.md)** - Multi-tenant support
-- **[Access Control](../features/access-control.md)** - Role-based access control
+- **[Multi-Tenancy](./multi-tenancy.md)** - Multi-tenant support
+- **[Access Control](./access-control.md)** - Role-based access control
 - **[Views](../features/views.md)** - Saved search views
-- **[Files](../features/files.md)** - File management and processing
+- **[Files](./files.md)** - File management and processing
 
 ### User Experience Features
 
 **Features that improve user experience:**
 
-- **[Enhanced Validation Errors](../features/enhanced-validation-errors.md)** - Clear validation messages
+- **[Enhanced Validation Errors](./enhanced-validation-errors.md)** - Clear validation messages
 
 ## Technical Documentation
 
@@ -89,7 +89,7 @@ graph TB
 
 - **[Text Extraction Entities](../technical/text-extraction.md#database-schema)** - Database schema
 - **[Unified Faceting System](../technical/unified-faceting-system.md)** - Faceting architecture
-- **[Vectorization Architecture](../technical/vectorization-architecture.md)** - Vector embeddings
+- **[Vectorization Architecture](../Technical/vectorization-architecture.md)** - Vector embeddings
 
 ### Implementation
 
@@ -130,9 +130,9 @@ See the **[Integrations Overview](../Integrations/index.md)** for a complete ove
 ### For End Users
 
 **Start Here:**
-1. [Objects](../features/objects.md) - Understanding core concepts
-2. [Search](../features/search.md) - Finding content
-3. [Applications](../features/applications.md) - Using applications
+1. [Objects](./objects.md) - Understanding core concepts
+2. [Search](./search.md) - Finding content
+3. [Applications](./applications.md) - Using applications
 
 **Key Topics:**
 - Creating and managing objects
@@ -143,10 +143,10 @@ See the **[Integrations Overview](../Integrations/index.md)** for a complete ove
 ### For Administrators
 
 **Start Here:**
-1. [Registers](../features/registers.md) - Setting up data containers
-2. [Schemas](../features/schemas.md) - Defining data structures
-3. [Multi-Tenancy](../features/multi-tenancy.md) - Multi-tenant configuration
-4. [Access Control](../features/access-control.md) - Security and permissions
+1. [Registers](./registers.md) - Setting up data containers
+2. [Schemas](./schemas.md) - Defining data structures
+3. [Multi-Tenancy](./multi-tenancy.md) - Multi-tenant configuration
+4. [Access Control](./access-control.md) - Security and permissions
 
 **Key Topics:**
 - Register and schema management
@@ -227,8 +227,8 @@ Use the sidebar navigation to browse features by category:
 
 **AI & Search:**
 - [RAG Implementation](../features/rag-implementation.md)
-- [Search](../features/search.md)
-- [Faceting](../features/faceting.md)
+- [Search](./search.md)
+- [Faceting](./faceting.md)
 - [Ollama Integration](../Integrations/ollama.md)
 
 **Automation:**
@@ -237,9 +237,9 @@ Use the sidebar navigation to browse features by category:
 - [Custom Webhooks](../Integrations/custom-webhooks.md)
 
 **Multi-Tenancy:**
-- [Multi-Tenancy](../features/multi-tenancy.md)
-- [Applications](../features/applications.md)
-- [Access Control](../features/access-control.md)
+- [Multi-Tenancy](./multi-tenancy.md)
+- [Applications](./applications.md)
+- [Access Control](./access-control.md)
 
 ## Documentation Statistics
 
@@ -476,7 +476,7 @@ npm install --legacy-peer-deps
 
 ## Related Documentation
 
-- [Features Index](../features/index.md) - Browse all features
+- [Features Index](./index.md) - Browse all features
 - [Technical Documentation](../technical/schemas.md) - Implementation details
 - [Integrations](../Integrations/index.md) - Integration guides
 - [API Reference](../api/objects.md) - API documentation
