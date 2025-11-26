@@ -57,7 +57,7 @@ The original documentation incorrectly included person-to-person and person-to-o
 
 ## Documentation Files Corrected
 
-1. ✅ **[Text Extraction Database Entities](./text-extraction-entities.md)**
+1. ✅ **[Text Extraction Database Entities](./text-extraction.md#database-schema)**
    - Removed person-to-person relationships
    - Removed person-to-organization relationships
    - Updated relationship types constants

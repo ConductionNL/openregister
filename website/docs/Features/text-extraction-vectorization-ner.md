@@ -851,8 +851,8 @@ Content-Type: application/json
 ## Related Documentation
 
 ### Feature Documentation
-- [Text Extraction Sources](./text-extraction-sources.md) - Detailed source-specific documentation
-- [Enhanced Text Extraction](./text-extraction-enhanced.md) - GDPR and language features
+- [Text Extraction Sources](../features/text-extraction-sources.md) - Detailed source-specific documentation
+- [Enhanced Text Extraction](../features/text-extraction-enhanced.md) - GDPR and language features
 - [AI Chat Interface](./ai.md) - RAG and semantic search usage
 - [Search Features](./search.md) - Search capabilities
 - [Files Feature](./files.md) - File management

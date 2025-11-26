@@ -280,7 +280,7 @@ Example:
 }
 ```
 
-For detailed information about @self metadata handling, see [Self Metadata Handling](../developers/self-metadata-handling.md).
+For detailed information about @self metadata handling, see [Self Metadata Handling](../development/self-metadata-handling.md).
 
 ## Security
 

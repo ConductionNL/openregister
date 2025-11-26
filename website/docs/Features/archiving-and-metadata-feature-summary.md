@@ -505,6 +505,6 @@ The feature documentation includes:
 **Related Documentation**:
 - [Enhanced Text Extraction](../features/text-extraction-enhanced.md)
 - [Text Extraction Sources](../features/text-extraction-sources.md)
-- [Database Entities](../technical/text-extraction-entities.md)
+- [Database Entities](../technical/text-extraction.md#database-schema)
 - [Implementation Plan](../technical/enhanced-text-extraction-implementation-plan.md)
 

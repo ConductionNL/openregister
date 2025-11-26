@@ -333,7 +333,7 @@ docker exec openregister-dolphin-vlm nvidia-smi
 ## Further Reading
 
 - [Docker Setup](../development/docker-setup.md) - Docker setup with Hugging Face profile
-- [Text Extraction Implementation](../technical/text-extraction-implementation.md)
+- [Text Extraction Implementation](../technical/text-extraction.md)
 - [Dolphin GitHub Repository](https://github.com/bytedance/Dolphin)
 - [Hugging Face Dolphin Model](https://huggingface.co/ByteDance/Dolphin-1.5)
 

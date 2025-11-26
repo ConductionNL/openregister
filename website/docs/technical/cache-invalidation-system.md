@@ -491,12 +491,12 @@ $results = $objectService->searchObjectsPaginated($query);
 
 **Performance Impact**: External apps can see **10-30x performance improvements** with proper app context.
 
-For detailed implementation guide, see: [External App Cache Optimization](../developers/external-app-optimization.md)
+For detailed implementation guide, see: [External App Cache Optimization](../development/external-app-optimization.md)
 
 ---
 
 **Related Documentation**:
-- [External App Cache Optimization](../developers/external-app-optimization.md)
+- [External App Cache Optimization](../development/external-app-optimization.md)
 - [Schema-Based Facets](./schema-based-facets.md)
 - [Bulk Operations Implementation](./bulk-operations-implementation.md)
-- [Object Handlers](../developers/object-handlers.md)
+- [Object Handlers](../development/object-handlers.md)

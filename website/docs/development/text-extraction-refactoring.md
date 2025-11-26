@@ -121,6 +121,6 @@ Text extraction has been refactored to be **completely independent of SOLR**. Pr
 
 ## Related Documentation
 
-- [Text Extraction Implementation](../technical/text-extraction-implementation.md) - Current text extraction implementation
+- [Text Extraction Implementation](../technical/text-extraction.md) - Current text extraction implementation
 - [LLPhant Refactor](./llphant-refactor.md) - Future refactoring plan using LLPhant
 

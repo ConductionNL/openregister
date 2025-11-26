@@ -25,7 +25,7 @@ This document outlines the implementation plan for adding entity extraction, lan
    - Comparison and combined use cases
    - Configuration options
 
-3. **[Text Extraction Database Entities](./text-extraction-entities.md)**
+3. **[Text Extraction Database Entities](./text-extraction.md#database-schema)**
    - Complete database schema
    - Entity relationship diagrams
    - PHP entity classes
