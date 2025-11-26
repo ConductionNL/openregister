@@ -285,6 +285,23 @@ class ObjectEntityMapper extends QBMapper
         return $rbacData['adminOverride'] ?? true;
     }//end isAdminOverrideEnabled()
 
+
+    /**
+     * Check if multitenancy admin override is enabled in app configuration
+     *
+     * @return bool True if multitenancy admin override is enabled, false otherwise
+     */
+    private function isMultitenancyAdminOverrideEnabled(): bool
+    {
+        $multitenancyConfig = $this->appConfig->getValueString('openregister', 'multitenancy', '');
+        if (empty($multitenancyConfig) === true) {
+            return true; // Default to true if no multitenancy config exists
+        }
+
+        $multitenancyData = json_decode($multitenancyConfig, true);
+        return $multitenancyData['adminOverride'] ?? true;
+    }//end isMultitenancyAdminOverrideEnabled()
+
     /**
      * Initialize the max packet size buffer based on database configuration
      */
@@ -820,8 +837,8 @@ class ObjectEntityMapper extends QBMapper
 
             // Check if user is admin and admin override is enabled.
             if (in_array('admin', $userGroups) === true) {
-                // If admin override is enabled, admin users see all objects regardless of organization.
-                if ($this->isAdminOverrideEnabled() === true) {
+                // If multitenancy admin override is enabled, admin users see all objects regardless of organization.
+                if ($this->isMultitenancyAdminOverrideEnabled() === true) {
                     return; // No filtering for admin users when override is enabled
                 }
 
