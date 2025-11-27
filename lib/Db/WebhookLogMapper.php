@@ -61,6 +61,29 @@ class WebhookLogMapper extends QBMapper
 
 
     /**
+     * Find a webhook log by ID
+     *
+     * @param int $id Log entry ID
+     *
+     * @return WebhookLog
+     *
+     * @throws \OCP\AppFramework\Db\DoesNotExistException
+     * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException
+     */
+    public function find(int $id): WebhookLog
+    {
+        $qb = $this->db->getQueryBuilder();
+
+        $qb->select('*')
+            ->from($this->getTableName())
+            ->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
+
+        return $this->findEntity($qb);
+
+    }//end find()
+
+
+    /**
      * Find logs for a specific webhook
      *
      * @param int      $webhookId Webhook ID
