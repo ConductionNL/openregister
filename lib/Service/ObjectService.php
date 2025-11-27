@@ -1364,7 +1364,7 @@ class ObjectService
             register: $this->currentRegister,
             schema: $this->currentSchema,
             uuid: $uuid,
-            folderId: null,
+            originalObjectId: null,
             rbac: $rbac,
             multi: $multi
         );
@@ -2222,7 +2222,7 @@ class ObjectService
             $this->logger->debug(message: 'Ultra-fast rendering completed', context: [
                 'renderTime' => $simpleRenderTime . 'ms',
                 'objectCount' => count($objects),
-                'avgPerObject' => $this->calculateAvgPerObject(objectCount: count($objects), renderTime: $simpleRenderTime),
+                'avgPerObject' => $this->calculateAvgPerObject(count($objects), $simpleRenderTime),
                 'pathType' => 'ultra-fast-minimal'
             ]);
 
@@ -2622,7 +2622,7 @@ class ObjectService
     public function getFacetableFields(array $baseQuery=[], int $sampleSize=100): array
     {
         // **ARCHITECTURAL IMPROVEMENT**: Delegate to dedicated FacetService.
-        return $this->facetService->getFacetableFields(baseQuery: $baseQuery, sampleSize: $sampleSize);
+        return $this->facetService->getFacetableFields($baseQuery, $sampleSize);
 
     }//end getFacetableFields()
 
@@ -4822,7 +4822,7 @@ class ObjectService
                     );
 
                     // Delete original file from source.
-                    $this->fileService->deleteFile(file: $file, objectEntity: $sourceObject);
+                    $this->fileService->deleteFile(file: $file, object: $sourceObject);
 
                     $result['files'][] = [
                         'name'    => $fileName,
@@ -5521,13 +5521,13 @@ class ObjectService
             // Only create search trail if search trails are enabled.
             if ($this->isSearchTrailsEnabled() === true) {
                 // Create the search trail entry using the service with actual execution time.
-                $this->searchTrailService->createSearchTrail(
-                    query: $query,
-                    resultCount: $resultCount,
-                    totalResults: $totalResults,
-                    executionTime: $executionTime,
-                    executionType: $executionType
-                );
+        $this->searchTrailService->createSearchTrail(
+            query: $query,
+            resultCount: $resultCount,
+            totalResults: $totalResults,
+            responseTime: $executionTime,
+            executionType: $executionType
+        );
             }
         } catch (\Exception $e) {
             // Log the error but don't fail the request.

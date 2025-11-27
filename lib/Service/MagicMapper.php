@@ -1642,7 +1642,7 @@ class MagicMapper
 
                     // Handle datetime fields.
                     if (in_array($metadataField, ['created', 'updated', 'published', 'depublished', 'expires']) && $value) {
-                        $value = new \DateTime(datetime: $value);
+                        $value = new \DateTime($value);
                     }
 
                     // Handle JSON fields.

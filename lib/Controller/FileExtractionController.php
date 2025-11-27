@@ -93,12 +93,11 @@ class FileExtractionController extends Controller
      *     array<never, never>
      * >
      */
-    public function index(?int $limit=100, ?int $offset=0, ?string $status=null, ?string $search=null): JSONResponse
+    public function index(): JSONResponse
     {
         try {
             // TextExtractionService doesn't have findByStatus, use discoverUntrackedFiles or extractPendingFiles instead.
             // For now, return empty array as this endpoint needs to be redesigned for chunk-based architecture.
-            // Note: Search filtering removed as it's not applicable to empty array
 
             return new JSONResponse(
                     data: [

@@ -2510,8 +2510,8 @@ class ObjectEntityMapper extends QBMapper
 
         $newObject->hydrate($object);
 
-        // Prepare the object before updating.
-        return $this->update($this->prepareEntity($newObject));
+        // Update the object.
+        return $this->update($newObject);
 
     }//end updateFromArray()
 

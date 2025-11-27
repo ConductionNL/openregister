@@ -1624,32 +1624,6 @@ class SettingsService
                     'working_endpoint' => str_replace($baseUrl, '', $testUrl)
                 ]
             ];
-            } else {
-                // For standalone admin ping test
-                if (!isset($data['status']) || $data['status'] !== 'OK') {
-                    return [
-                        'success' => false,
-                        'message' => 'SOLR admin ping failed',
-                        'details' => [
-                            'url' => $testUrl,
-                            'test_type' => $testType,
-                            'response' => $data,
-                            'response_time_ms' => round($responseTime, 2)
-                        ]
-                    ];
-                }
-                
-                return [
-                    'success' => true,
-                    'message' => 'SOLR standalone server responding correctly',
-                    'details' => [
-                        'url' => $testUrl,
-                        'test_type' => $testType,
-                        'response_time_ms' => round($responseTime, 2),
-                        'solr_version' => $data['lucene']['solr-spec-version'] ?? 'unknown'
-                    ]
-                ];
-            }
             
         } catch (Exception $e) {
             return [

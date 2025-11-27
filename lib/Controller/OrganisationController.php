@@ -252,7 +252,7 @@ class OrganisationController extends Controller
             $requestData = $this->request->getParams();
             $uuid        = $requestData['uuid'] ?? '';
 
-            $organisation = $this->organisationService->createOrganisation(name: $name, description: $description, isPublic: true, uuid: $uuid);
+            $organisation = $this->organisationService->createOrganisation(name: $name, description: $description, addCurrentUser: true, uuid: $uuid);
 
             return new JSONResponse(
                     data: [
@@ -541,7 +541,7 @@ class OrganisationController extends Controller
 
                 // Validate parent assignment to prevent circular references.
                 try {
-                    $this->organisationMapper->validateParentAssignment(organisationUuid: $uuid, parentUuid: $newParent);
+                    $this->organisationMapper->validateParentAssignment(organisationUuid: $uuid, newParentUuid: $newParent);
                     $organisation->setParent($newParent);
                 } catch (Exception $e) {
                     $this->logger->warning(

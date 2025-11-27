@@ -141,6 +141,14 @@
 									</NcActionButton>
 									<NcActionButton
 										close-after-click
+										@click="viewLogs(webhook.id)">
+										<template #icon>
+											<FileDocumentOutline :size="20" />
+										</template>
+										{{ t('openregister', 'View Logs') }}
+									</NcActionButton>
+									<NcActionButton
+										close-after-click
 										@click="toggleWebhook(webhook)">
 										<template #icon>
 											<PauseCircleOutline v-if="webhook.enabled" :size="20" />
@@ -222,6 +230,7 @@ import PauseCircleOutline from 'vue-material-design-icons/PauseCircleOutline.vue
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import DeleteOutline from 'vue-material-design-icons/DeleteOutline.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
+import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
 
 /**
  * Main view for managing webhooks
@@ -243,6 +252,7 @@ export default {
 		Pencil,
 		DeleteOutline,
 		Plus,
+		FileDocumentOutline,
 		WebhooksSidebar,
 	},
 	data() {
@@ -424,14 +434,36 @@ export default {
 		 */
 		async testWebhook(webhookId) {
 			try {
-				await axios.post(
+				const response = await axios.post(
 					generateUrl(`/apps/openregister/api/webhooks/${webhookId}/test`),
 				)
-				showSuccess(t('openregister', 'Test webhook sent successfully'))
+				// Check if the test was successful based on response data.
+				if (response.data && response.data.success === true) {
+					showSuccess(t('openregister', 'Test webhook sent successfully'))
+				} else {
+					const message = response.data?.message || response.data?.error || t('openregister', 'Test webhook delivery failed')
+					showError(message)
+				}
+				// Always refresh webhook list to show updated statistics (last triggered, success rate).
+				this.loadWebhooks()
 			} catch (error) {
 				console.error('Failed to test webhook:', error)
-				showError(t('openregister', 'Failed to test webhook'))
+				const errorMessage = error.response?.data?.error || error.response?.data?.message || t('openregister', 'Failed to test webhook')
+				showError(errorMessage)
+				// Refresh even on error to show any partial updates.
+				this.loadWebhooks()
 			}
+		},
+
+		/**
+		 * View logs for a webhook
+		 *
+		 * @param {number} webhookId - Webhook ID
+		 * @return {void}
+		 */
+		viewLogs(webhookId) {
+			navigationStore.setTransferData({ webhookId })
+			this.$router.push('/webhooks/logs')
 		},
 
 		/**

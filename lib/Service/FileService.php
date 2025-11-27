@@ -440,10 +440,17 @@ class FileService
         // Check if folder ID is already set and valid (not legacy string).
         if ($folderProperty !== null && $folderProperty !== '' && is_string($folderProperty) === false) {
             try {
-                $existingFolder = $this->getNodeById((int) $folderProperty);
-                if ($existingFolder !== null && $existingFolder instanceof Folder) {
-                    $this->logger->info(message: "Register folder already exists with ID: " . $folderProperty);
-                    return $existingFolder;
+                // Type assertion: after checking it's not a string, it should be numeric (int or float)
+                /** @var int|float $folderProperty */
+                if (is_numeric($folderProperty)) {
+                    $folderId = (int) $folderProperty;
+                    $existingFolder = $this->getNodeById($folderId);
+                    if ($existingFolder !== null && $existingFolder instanceof Folder) {
+                        $this->logger->info(message: "Register folder already exists with ID: " . $folderProperty);
+                        return $existingFolder;
+                    }
+                } else {
+                    throw new Exception('Invalid folder ID type');
                 }
             } catch (Exception $e) {
                 $this->logger->warning(message: "Stored folder ID invalid, creating new folder: " . $e->getMessage());
@@ -500,10 +507,17 @@ class FileService
         // Check if folder ID is already set and valid (not legacy string).
         if ($folderProperty !== null && $folderProperty !== '' && is_string($folderProperty) === false) {
             try {
-                $existingFolder = $this->getNodeById((int) $folderProperty);
-                if ($existingFolder !== null && $existingFolder instanceof Folder) {
-                    $this->logger->info(message: "Object folder already exists with ID: " . $folderProperty);
-                    return $existingFolder;
+                // Type assertion: after checking it's not a string, it should be numeric (int or float)
+                /** @var int|float $folderProperty */
+                if (is_numeric($folderProperty)) {
+                    $folderId = (int) $folderProperty;
+                    $existingFolder = $this->getNodeById($folderId);
+                    if ($existingFolder !== null && $existingFolder instanceof Folder) {
+                        $this->logger->info(message: "Object folder already exists with ID: " . $folderProperty);
+                        return $existingFolder;
+                    }
+                } else {
+                    throw new Exception('Invalid folder ID type');
                 }
             } catch (Exception $e) {
                 $this->logger->warning(message: "Stored folder ID invalid, creating new folder: " . $e->getMessage());
@@ -680,7 +694,14 @@ class FileService
         }
 
         // Try to get folder by ID.
-        $folder = $this->getNodeById((int) $folderProperty);
+        /** @var int|float $folderProperty */
+        if (is_numeric($folderProperty)) {
+            $folderId = (int) $folderProperty;
+            $folder = $this->getNodeById($folderId);
+        } else {
+            $this->logger->warning(message: "Invalid folder ID type for register {$register->getId()}, creating new folder");
+            return $this->createRegisterFolderById(register: $register);
+        }
 
         if ($folder instanceof Folder) {
             return $folder;
@@ -1656,9 +1677,9 @@ class FileService
         try {
             // Check if a share already exists with this user.
             $existingShares = $this->shareManager->getSharesBy(
-                sharedBy: $this->getUser()->getUID(),
+                userId: $this->getUser()->getUID(),
                 shareType: \OCP\Share\IShare::TYPE_USER,
-                node: $file
+                path: $file
             );
 
             foreach ($existingShares as $share) {
