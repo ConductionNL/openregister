@@ -820,7 +820,8 @@ class WebhooksController extends Controller
     public function logs(int $id): JSONResponse
     {
         try {
-            $webhook = $this->webhookMapper->find($id);
+            // Validate webhook exists by attempting to find it.
+            $this->webhookMapper->find($id);
 
             $limit  = (int) ($this->request->getParam('limit') ?? 50);
             $offset = (int) ($this->request->getParam('offset') ?? 0);
@@ -876,7 +877,8 @@ class WebhooksController extends Controller
     public function logStats(int $id): JSONResponse
     {
         try {
-            $webhook = $this->webhookMapper->find($id);
+            // Validate webhook exists by attempting to find it.
+            $this->webhookMapper->find($id);
             $stats   = $this->webhookLogMapper->getStatistics($id);
 
             // Count pending retries.

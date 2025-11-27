@@ -12,6 +12,10 @@ jobs:
   deploy:
     name: Deploy Documentation
     runs-on: ubuntu-latest
+    # Only deploy on push, not on pull requests
+    if: github.event_name == 'push'
+    permissions:
+      contents: write
     steps:
       # https://github.com/marketplace/actions/checkout
       - uses: actions/checkout@v4
@@ -38,14 +42,24 @@ jobs:
           rm -rf build
           npm run ci
 
+      - name: Create .nojekyll file
+        run: |
+          cd website/build
+          touch .nojekyll
+          echo "Created .nojekyll to prevent Jekyll processing"
+
       # Deploy to GitHub Pages
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./website/build
+          publish_branch: gh-pages
+          destination_dir: /
           user_name: ${{ github.actor }}
           user_email: ${{ github.event.pusher.email || github.actor }}
+          force_orphan: false
+          cname: openregisters.app
 
       # https://github.com/marketplace/actions/create-an-issue
       - name: Create issue on failure
