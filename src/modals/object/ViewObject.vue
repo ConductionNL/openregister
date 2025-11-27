@@ -774,6 +774,8 @@ export default {
 			isDepublishing: false,
 			selectedProperty: null,
 			isSaving: false,
+			propertyChangeDebounceTimers: {}, // Track debounce timers per property
+			pendingNotifications: {}, // Store pending notification info per property
 		}
 	},
 	computed: {
@@ -1265,6 +1267,13 @@ export default {
 			this.depublishDate = null
 			this.isPublishing = false
 			this.isDepublishing = false
+
+			// Clear debounce timers
+			Object.values(this.propertyChangeDebounceTimers).forEach(timer => {
+				if (timer) clearTimeout(timer)
+			})
+			this.propertyChangeDebounceTimers = {}
+			this.pendingNotifications = {}
 
 			// Clear any timeouts
 			clearTimeout(this.closeModalTimeout)
@@ -2037,14 +2046,48 @@ export default {
 			// Update the form data using Vue 3 reactivity
 			this.formData = { ...this.formData, [key]: convertedValue }
 
-			// Show notification if value actually changed
+			// Show notification if value actually changed (debounced)
 			if (oldValue !== convertedValue) {
-				this.showPropertyChangeNotification(key, oldValue, convertedValue)
+				// Store pending notification info
+				this.pendingNotifications[key] = {
+					oldValue,
+					newValue: convertedValue,
+				}
+
+				// Clear existing debounce timer for this property
+				if (this.propertyChangeDebounceTimers[key]) {
+					clearTimeout(this.propertyChangeDebounceTimers[key])
+				}
+
+				// Set new debounce timer (500ms delay)
+				this.propertyChangeDebounceTimers[key] = setTimeout(() => {
+					const notification = this.pendingNotifications[key]
+					if (notification) {
+						this.showPropertyChangeNotification(key, notification.oldValue, notification.newValue)
+						delete this.pendingNotifications[key]
+					}
+					delete this.propertyChangeDebounceTimers[key]
+				}, 500)
 			}
 		},
+		/**
+		 * Remove all existing toast notifications
+		 */
+		clearAllToasts() {
+			const toasts = document.querySelectorAll('.property-change-toast, .property-warning-toast')
+			toasts.forEach(toast => {
+				if (toast.parentNode) {
+					toast.parentNode.removeChild(toast)
+				}
+			})
+		},
 		showPropertyChangeNotification(key, oldValue, newValue) {
+			// Clear any existing toasts before showing a new one
+			this.clearAllToasts()
+
 			// Create a simple notification - you could replace this with a proper toast library
 			const notification = document.createElement('div')
+			notification.className = 'property-change-toast'
 			notification.style.cssText = `
 				position: fixed;
 				top: 20px;
@@ -2237,8 +2280,12 @@ export default {
 			return value
 		},
 		showWarningNotification(warning) {
+			// Clear any existing toasts before showing a new one
+			this.clearAllToasts()
+
 			// Create a warning notification
 			const notification = document.createElement('div')
+			notification.className = 'property-warning-toast'
 			notification.style.cssText = `
 				position: fixed;
 				top: 20px;
