@@ -162,22 +162,26 @@ trait MultiTenancyTrait
         bool $enablePublished = false,
         bool $multiTenancyEnabled = true
     ): void {
-        // If multitenancy is disabled, skip all filtering
+        // If multitenancy is explicitly disabled via parameter, skip all filtering immediately
         if ($multiTenancyEnabled === false) {
+            if (isset($this->logger)) {
+                $this->logger->debug('[MultiTenancyTrait] Multitenancy disabled via parameter, skipping filter');
+            }
             return;
         }
         
         // Check if multitenancy is enabled (if appConfig is available)
+        // Only check app config if parameter was not explicitly set to false
         if (isset($this->appConfig)) {
             $multitenancyConfig = $this->appConfig->getValueString('openregister', 'multitenancy', '');
             if (!empty($multitenancyConfig)) {
                 $multitenancyData = json_decode($multitenancyConfig, true);
-                $multitenancyEnabled = $multitenancyData['enabled'] ?? true;
+                $configMultitenancyEnabled = $multitenancyData['enabled'] ?? true;
                 
-                if (!$multitenancyEnabled) {
-                    // Multitenancy is disabled, no filtering
+                if (!$configMultitenancyEnabled) {
+                    // Multitenancy is disabled in config, no filtering
                     if (isset($this->logger)) {
-                        $this->logger->debug('[MultiTenancyTrait] Multitenancy disabled, skipping filter');
+                        $this->logger->debug('[MultiTenancyTrait] Multitenancy disabled in config, skipping filter');
                     }
                     return;
                 }
@@ -224,9 +228,12 @@ trait MultiTenancyTrait
             // Build conditions for users without active organisation
             $orgConditions = $qb->expr()->orX();
 
-            // Check if user is admin
-            $userGroups = $this->groupManager->getUserGroupIds($user);
-            $isAdmin = in_array('admin', $userGroups);
+            // Check if user is admin - only if user exists
+            $isAdmin = false;
+            if ($user !== null && isset($this->groupManager)) {
+                $userGroups = $this->groupManager->getUserGroupIds($user);
+                $isAdmin = in_array('admin', $userGroups);
+            }
 
             // Admins can see NULL organisation entities (legacy data)
             if ($isAdmin && $allowNullOrg) {
@@ -271,9 +278,12 @@ trait MultiTenancyTrait
         $isSystemDefaultOrg = $systemDefaultOrgUuid !== null && 
                              in_array($systemDefaultOrgUuid, $activeOrganisationUuids);
 
-        // Check admin status and admin override setting
-        $userGroups = $this->groupManager->getUserGroupIds($user);
-        $isAdmin = in_array('admin', $userGroups);
+        // Check admin status and admin override setting - only if user exists
+        $isAdmin = false;
+        if ($user !== null && isset($this->groupManager)) {
+            $userGroups = $this->groupManager->getUserGroupIds($user);
+            $isAdmin = in_array('admin', $userGroups);
+        }
         
         $adminOverrideEnabled = false;
         if ($isAdmin && isset($this->appConfig)) {
