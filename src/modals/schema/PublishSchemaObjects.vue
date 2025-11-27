@@ -1,5 +1,5 @@
 <template>
-	<NcDialog v-if="navigationStore.modal === 'publishSchemaObjects'"
+	<NcDialog v-if="navigationStore.dialog === 'publishSchemaObjects'"
 		name="Publish Schema Objects"
 		size="normal"
 		:can-close="false">
@@ -152,11 +152,11 @@ export default {
 			immediate: true,
 		},
 		// Watch for dialog state changes to load count when modal becomes visible
-		'navigationStore.modal': {
-			handler(newModal) {
-				console.info('Modal changed to:', newModal)
-				if (newModal === 'publishSchemaObjects' && schemaStore.schemaItem?.id) {
-					console.info('PublishSchemaObjects modal opened, loading object count')
+		'navigationStore.dialog': {
+			handler(newDialog) {
+				console.info('Dialog changed to:', newDialog)
+				if (newDialog === 'publishSchemaObjects' && schemaStore.schemaItem?.id) {
+					console.info('PublishSchemaObjects dialog opened, loading object count')
 					this.loadObjectCount()
 				}
 			},
@@ -164,7 +164,7 @@ export default {
 		},
 	},
 	async mounted() {
-		console.info('PublishSchemaObjects modal mounted, schemaItem:', schemaStore.schemaItem)
+		console.info('PublishSchemaObjects dialog mounted, schemaItem:', schemaStore.schemaItem)
 		await this.loadObjectCount()
 	},
 	methods: {
@@ -199,7 +199,7 @@ export default {
 				// Find the register that contains this schema
 				await registerStore.refreshRegisterList()
 				const register = registerStore.registerList.find(reg =>
-					reg.schemas.includes(schemaStore.schemaItem.id),
+					reg.schemas.some(regSchema => regSchema.id === schemaStore.schemaItem.id),
 				)
 
 				if (!register) {
@@ -241,7 +241,7 @@ export default {
 		},
 
 		closeDialog() {
-			navigationStore.setModal(false)
+			navigationStore.setDialog(false)
 			this.loading = false
 			this.error = false
 			this.success = false
