@@ -62,6 +62,7 @@ use OCA\OpenRegister\Service\SolrObjectService;
 use OCP\AppFramework\IAppContainer;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
+use function React\Promise\all;
 
 /**
  * Primary Object Management Service for OpenRegister
@@ -923,6 +924,7 @@ class ObjectService
         }
 
         // Delegate the findAll operation to the handler.
+        /** @var $objects ObjectEntity[] **/
         $objects = $this->getHandler->findAll(
             limit: $config['limit'] ?? null,
             offset: $config['offset'] ?? null,
@@ -963,18 +965,30 @@ class ObjectService
 
         //@TODO: Parallelise
         // Render each object through the object service.
+        $promises = [];
         foreach ($objects as $key => $object) {
-            $objects[$key] = $this->renderHandler->renderEntity(
-                entity: $object,
-                extend: $config['extend'] ?? [],
-                filter: $config['unset'] ?? null,
-                fields: $config['fields'] ?? null,
-                registers: $registers,
-                schemas: $schemas,
-                rbac: $rbac,
-                multi: $multi
+            $promises[$key] = new Promise(
+                function ($resolve, $reject) use ($object, $config, $registers, $schemas, $rbac, $multi) {
+                    try {
+                        $renderedObject = $this->renderHandler->renderEntity(
+                            entity: $object,
+                            extend: $config['extend'] ?? [],
+                            filter: $config['unset'] ?? null,
+                            fields: $config['fields'] ?? null,
+                            registers: $registers,
+                            schemas: $schemas,
+                            rbac: $rbac,
+                            multi: $multi
+                        );
+                        $resolve($renderedObject);
+                    } catch(\Throwable $e) {
+                        $reject($e);
+                    }
+                }
             );
         }
+
+        $objects = Async\await(all($promises));
 
         return $objects;
 
