@@ -21,6 +21,7 @@ namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
+use OCP\IAppConfig;
 use OCP\IUserSession;
 use OCP\IUser;
 use OCP\IUserManager;
@@ -209,6 +210,55 @@ class OrganisationService
 
     }//end ensureDefaultOrganisation()
 
+    /**
+     * Get Organisation settings only
+     *
+     * @return array Organisation configuration
+     * @throws \RuntimeException If Organisation settings retrieval fails
+     */
+    public function getOrganisationSettingsOnly(): array
+    {
+        try {
+            $organisationConfig = $this->appConfig->getValueString('openregister', 'organisation', '');
+
+            $organisationData = [];
+            if (empty($organisationConfig)) {
+                $organisationData = [
+                    'default_organisation'              => null,
+                    'auto_create_default_organisation' => true,
+                ];
+            } else {
+                $storedData = json_decode($organisationConfig, true);
+                $organisationData = [
+                    'default_organisation'              => $storedData['default_organisation'] ?? null,
+                    'auto_create_default_organisation' => $storedData['auto_create_default_organisation'] ?? true,
+                ];
+            }
+
+            return [
+                'organisation' => $organisationData,
+            ];
+        } catch (Exception $e) {
+            throw new \RuntimeException('Failed to retrieve Organisation settings: '.$e->getMessage());
+        }
+    }
+
+    /**
+     * Get default organisation UUID from settings
+     *
+     * @return string|null Default organisation UUID or null if not set
+     */
+    public function getDefaultOrganisationUuid(): ?string
+    {
+        try {
+            $settings = $this->getOrganisationSettingsOnly();
+            return $settings['organisation']['default_organisation'] ?? null;
+        } catch (Exception $e) {
+            $this->logger->warning('Failed to get default organisation UUID: '.$e->getMessage());
+            return null;
+        }
+    }
+
 
     /**
      * Fetch default organisation from database (cache miss fallback)
@@ -221,6 +271,8 @@ class OrganisationService
         $defaultOrgUuid = null;
         if ($this->settingsService !== null) {
             $defaultOrgUuid = $this->settingsService->getDefaultOrganisationUuid();
+        } else {
+            $defaultOrgUuid = $this->getDefaultOrganisationUuid();
         }
 
         try {
