@@ -476,13 +476,15 @@ class NamedEntityRecognitionService
                 ->andWhere($qb->expr()->eq('value', $qb->createNamedParameter($value)))
                 ->setMaxResults(1);
 
-            $existing = $this->entityMapper->findEntity($qb);
-
-            // Update timestamp.
-            $existing->setUpdatedAt(new DateTime());
-            $this->entityMapper->update($existing);
-
-            return $existing;
+            $existingEntities = $this->entityMapper->findEntities($qb);
+            if (empty($existingEntities) === false) {
+                $existing = $existingEntities[0];
+                // Update timestamp.
+                $existing->setUpdatedAt(new DateTime());
+                $this->entityMapper->update($existing);
+                return $existing;
+            }
+            throw new DoesNotExistException('Entity not found');
         } catch (DoesNotExistException $e) {
             // Entity doesn't exist, create new one.
             $entity = new GdprEntity();

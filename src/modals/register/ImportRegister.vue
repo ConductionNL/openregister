@@ -37,8 +37,8 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 						</tr>
 					</thead>
 					<tbody>
-						<template v-for="(sheetSummary, sheetKey) in importResults">
-							<tr :key="sheetKey">
+						<template v-for="(sheetSummary, sheetKey) in importResults" :key="sheetKey">
+							<tr>
 								<td class="sheetName">
 									{{ sheetKey }}
 									<div v-if="sheetSummary.schema" class="schemaInfo">
@@ -146,6 +146,7 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 								</td>
 							</tr>
 						</template>
+						<!-- eslint-enable vue/no-v-for-template-key -->
 					</tbody>
 				</table>
 			</div>
@@ -670,17 +671,13 @@ export default {
 				try {
 					// Load all schemas to ensure we have the ones for this register
 					await schemaStore.refreshSchemaList()
-					console.log('ImportRegister: Loaded schemas, register has', registerSchemas.length, 'schemas, schemaList has', schemaStore.schemaList.length, 'schemas')
-					console.log('ImportRegister: Register schema IDs:', registerSchemas)
-					console.log('ImportRegister: Available schema IDs:', schemaStore.schemaList.map(s => s.id))
 				} catch (error) {
-					console.error('ImportRegister: Error loading schemas for register:', error)
+					// Error loading schemas - schema list may be incomplete.
 				} finally {
 					this.schemaLoading = false
 				}
 			} else {
-				// Register has no schemas
-				console.log('ImportRegister: Register has no schemas')
+				// Register has no schemas.
 			}
 		},
 		async handleSchemaChange(option) {
