@@ -963,7 +963,6 @@ class ObjectService
             $registers   = array_combine(array_map(fn($register) => $register->getId(), $registers), $registers);
         }
 
-        //@TODO: Parallelise
         // Render each object through the object service.
         $promises = [];
         foreach ($objects as $key => $object) {
