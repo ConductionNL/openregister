@@ -22,6 +22,7 @@ use OCP\AppFramework\Http\ContentSecurityPolicy;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\IRequest;
+use Psr\Log\LoggerInterface;
 
 /**
  * Class DashboardController
@@ -41,6 +42,13 @@ class DashboardController extends Controller
      */
     private DashboardService $dashboardService;
 
+    /**
+     * Logger instance
+     *
+     * @var LoggerInterface
+     */
+    private LoggerInterface $logger;
+
 
     /**
      * Constructor for the DashboardController
@@ -48,16 +56,19 @@ class DashboardController extends Controller
      * @param string           $appName          The name of the app
      * @param IRequest         $request          The request object
      * @param DashboardService $dashboardService The dashboard service instance
+     * @param LoggerInterface  $logger           Logger instance
      *
      * @return void
      */
     public function __construct(
         string $appName,
         IRequest $request,
-        DashboardService $dashboardService
+        DashboardService $dashboardService,
+        LoggerInterface $logger
     ) {
         parent::__construct(appName: $appName, request: $request);
         $this->dashboardService = $dashboardService;
+        $this->logger           = $logger;
 
     }//end __construct()
 
@@ -67,15 +78,13 @@ class DashboardController extends Controller
      *
      * This method renders the dashboard page of the application, adding any necessary data to the template.
      *
-     * @param string|null $getParameter Optional parameter for the page request
-     *
      * @return TemplateResponse The rendered template response
      *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      */
-    public function page(?string $getParameter=null): TemplateResponse
+    public function page(): TemplateResponse
     {
         try {
             $response = new TemplateResponse(
@@ -335,8 +344,24 @@ class DashboardController extends Controller
             $data = $this->dashboardService->getMostActiveObjects(registerId: $registerId, schemaId: $schemaId, limit: $limit, hours: $hours);
             return new JSONResponse(data: $data);
         } catch (\Exception $e) {
-            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
-        }
+            $this->logger->error(
+                    message: 'Error retrieving most active objects: '.$e->getMessage(),
+                    context: [
+                        'register_id' => $registerId,
+                        'schema_id'   => $schemaId,
+                        'limit'        => $limit,
+                        'hours'        => $hours,
+                        'trace'        => $e->getTraceAsString(),
+                    ]
+                    );
+
+            return new JSONResponse(
+                data: [
+                    'error' => 'Failed to retrieve most active objects: '.$e->getMessage(),
+                ],
+                statusCode: 500
+            );
+        }//end try
 
     }//end getMostActiveObjects()
 

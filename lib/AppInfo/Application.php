@@ -615,6 +615,7 @@ class Application extends App implements IBootstrap
                     $container->get(EntityRelationMapper::class),
                     $container->get(ChunkMapper::class),
                     $container->get(SettingsService::class),
+                    $container->get(id: 'OCP\IDBConnection'),
                     $container->get(id: 'Psr\Log\LoggerInterface')
                     );
                 }

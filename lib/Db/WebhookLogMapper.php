@@ -61,6 +61,29 @@ class WebhookLogMapper extends QBMapper
 
 
     /**
+     * Find a webhook log by ID
+     *
+     * @param int $id Log entry ID
+     *
+     * @return WebhookLog
+     *
+     * @throws \OCP\AppFramework\Db\DoesNotExistException
+     * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException
+     */
+    public function find(int $id): WebhookLog
+    {
+        $qb = $this->db->getQueryBuilder();
+
+        $qb->select('*')
+            ->from($this->getTableName())
+            ->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
+
+        return $this->findEntity($qb);
+
+    }//end find()
+
+
+    /**
      * Find logs for a specific webhook
      *
      * @param int      $webhookId Webhook ID
@@ -89,6 +112,35 @@ class WebhookLogMapper extends QBMapper
         return $this->findEntities($qb);
 
     }//end findByWebhook()
+
+
+    /**
+     * Find all webhook logs
+     *
+     * @param int|null $limit  Limit results
+     * @param int|null $offset Offset results
+     *
+     * @return WebhookLog[]
+     */
+    public function findAll(?int $limit = null, ?int $offset = null): array
+    {
+        $qb = $this->db->getQueryBuilder();
+
+        $qb->select('*')
+            ->from($this->getTableName())
+            ->orderBy('created', 'DESC');
+
+        if ($limit !== null) {
+            $qb->setMaxResults($limit);
+        }
+
+        if ($offset !== null) {
+            $qb->setFirstResult($offset);
+        }
+
+        return $this->findEntities($qb);
+
+    }//end findAll()
 
 
     /**
@@ -126,9 +178,8 @@ class WebhookLogMapper extends QBMapper
     public function insert(Entity $entity): Entity
     {
         if ($entity instanceof WebhookLog) {
-            if ($entity->getCreated() === null) {
-                $entity->setCreated(new DateTime());
-            }
+            // Always set created timestamp to ensure it's properly marked for insertion.
+            $entity->setCreated(new DateTime());
         }
 
         return parent::insert($entity);

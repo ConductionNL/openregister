@@ -526,10 +526,12 @@ class SolrObjectService
                     'collection' => $collection,
                     'maxObjects' => $maxObjects,
                     'batchSize'  => $batchSize,
+                    'schemaIds'  => $schemaIds,
                 ]
                 );
 
-        // TODO: Move reindex logic to use collection parameter.
+        // Note: schemaIds parameter is logged but not yet used in reindexAll
+        // Future enhancement: filter reindexing by specific schema IDs
         return $this->guzzleSolrService->reindexAll(maxObjects: $maxObjects, batchSize: $batchSize);
 
     }//end reindexObjects()
@@ -688,7 +690,6 @@ class SolrObjectService
                 'Starting batch object vectorization',
                 [
                     'total_objects' => count($objects),
-                    // @psalm-suppress UndefinedMethod.
                     'provider'      => $this->getProviderOrDefault($provider),
                 ]
                 );
@@ -813,6 +814,19 @@ class SolrObjectService
         ];
 
     }//end vectorizeObjects()
+
+
+    /**
+     * Get provider or return default value.
+     *
+     * @param string|null $provider Optional provider name.
+     *
+     * @return string Provider name or 'default' if not provided.
+     */
+    private function getProviderOrDefault(?string $provider): string
+    {
+        return $provider ?? 'default';
+    }//end getProviderOrDefault()
 
 
 }//end class

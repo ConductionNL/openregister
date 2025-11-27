@@ -389,6 +389,7 @@ return [
 		['name' => 'ui#auditTrail', 'url' => '/audit-trails', 'verb' => 'GET'],
 		['name' => 'ui#searchTrail', 'url' => '/search-trails', 'verb' => 'GET'],
 		['name' => 'ui#webhooks', 'url' => '/webhooks', 'verb' => 'GET'],
+		['name' => 'ui#webhooksLogs', 'url' => '/webhooks/logs', 'verb' => 'GET'],
 		['name' => 'ui#entities', 'url' => '/entities', 'verb' => 'GET'],
 	['name' => 'files#page', 'url' => '/files', 'verb' => 'GET'],
 
@@ -402,5 +403,7 @@ return [
 		['name' => 'webhooks#events', 'url' => '/api/webhooks/events', 'verb' => 'GET'],
 		['name' => 'webhooks#logs', 'url' => '/api/webhooks/{id}/logs', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
 		['name' => 'webhooks#logStats', 'url' => '/api/webhooks/{id}/logs/stats', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
+		['name' => 'webhooks#allLogs', 'url' => '/api/webhooks/logs', 'verb' => 'GET'],
+		['name' => 'webhooks#retry', 'url' => '/api/webhooks/logs/{logId}/retry', 'verb' => 'POST', 'requirements' => ['logId' => '\d+']],
     ],
 ];

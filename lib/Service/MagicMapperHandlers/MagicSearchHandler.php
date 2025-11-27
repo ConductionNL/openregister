@@ -513,7 +513,7 @@ class MagicSearchHandler
         $countQuery           = $query;
         $countQuery['_count'] = true;
 
-        return $this->searchObjects(query: $countQuery, activeOrganisationUuid: $register, rbac: $schema, multi: $tableName);
+        return $this->searchObjects($countQuery, $register, $schema, $tableName);
 
     }//end countObjects()
 

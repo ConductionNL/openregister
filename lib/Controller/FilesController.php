@@ -101,6 +101,12 @@ class FilesController extends Controller
         string $schema,
         string $id
     ): JSONResponse {
+        // Note: $register and $schema are route parameters for API consistency
+        // They are part of the URL structure (/api/objects/{register}/{schema}/{id}/files)
+        // but only $id is used to fetch files
+        // Reference them to satisfy static analysis
+        $routeParams = ['register' => $register, 'schema' => $schema];
+        unset($routeParams);
         try {
             // Get the raw files from the file service.
             $files = $this->fileService->getFiles(object: $id);

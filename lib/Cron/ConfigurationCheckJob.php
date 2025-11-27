@@ -100,7 +100,7 @@ class ConfigurationCheckJob extends TimedJob
         $this->logger = $logger;
 
         // Set interval based on app configuration (default 3600 seconds = 1 hour).
-        $interval = (int) $this->appConfig->getValueString(appId: 'openregister', key: 'configuration_check_interval', default: '3600');
+        $interval = (int) $this->appConfig->getValueString('openregister', 'configuration_check_interval', '3600');
 
         // If interval is 0, disable the job by setting a very long interval.
         if ($interval === 0) {
@@ -130,7 +130,7 @@ class ConfigurationCheckJob extends TimedJob
         $this->logger->info('Starting configuration check job');
 
         // Check if the job is disabled.
-        $interval = (int) $this->appConfig->getValueString(appId: 'openregister', key: 'configuration_check_interval', default: '3600');
+        $interval = (int) $this->appConfig->getValueString('openregister', 'configuration_check_interval', '3600');
         if ($interval === 0) {
             $this->logger->info('Configuration check job is disabled, skipping');
             return;

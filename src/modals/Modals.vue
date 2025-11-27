@@ -53,6 +53,7 @@ import { navigationStore } from '../store/store.js'
 		<EditAgent v-if="navigationStore.modal === 'editAgent'" />
 		<DeleteAgent />
 		<EditWebhook v-if="navigationStore.modal === 'editWebhook'" />
+		<ViewWebhookLog v-if="navigationStore.modal === 'viewWebhookLog'" />
 	</div>
 </template>
 
@@ -104,6 +105,7 @@ import EditApplication from './application/EditApplication.vue'
 import EditAgent from './agent/EditAgent.vue'
 import DeleteAgent from './agent/DeleteAgent.vue'
 import EditWebhook from './webhook/EditWebhook.vue'
+import ViewWebhookLog from './webhook/ViewWebhookLog.vue'
 export default {
 	name: 'Modals',
 	components: {
@@ -154,6 +156,7 @@ export default {
 		EditAgent,
 		DeleteAgent,
 		EditWebhook,
+		ViewWebhookLog,
 	},
 }
 </script>

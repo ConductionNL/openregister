@@ -207,19 +207,51 @@ class WebhookService
 
             return true;
         } catch (RequestException $e) {
-            // Log failure.
-            $webhookLog->setSuccess(false);
-            $webhookLog->setErrorMessage($e->getMessage());
+            // Build detailed error message from Guzzle exception.
+            $errorMessage = $e->getMessage();
+            $errorDetails = [];
 
             // Get status code from exception if available.
             if ($e->hasResponse() === true) {
-                $webhookLog->setStatusCode($e->getResponse()->getStatusCode());
+                $response = $e->getResponse();
+                $statusCode = $response->getStatusCode();
+                $webhookLog->setStatusCode($statusCode);
+                $errorDetails['status_code'] = $statusCode;
+
                 try {
-                    $webhookLog->setResponseBody((string) $e->getResponse()->getBody());
+                    $responseBody = (string) $response->getBody();
+                    $webhookLog->setResponseBody($responseBody);
+                    $errorDetails['response_body'] = $responseBody;
+
+                    // Try to parse JSON response for better error message.
+                    $jsonResponse = json_decode($responseBody, true);
+                    if ($jsonResponse !== null && isset($jsonResponse['message'])) {
+                        $errorMessage .= ': '.$jsonResponse['message'];
+                    } elseif ($jsonResponse !== null && isset($jsonResponse['error'])) {
+                        $errorMessage .= ': '.$jsonResponse['error'];
+                    }
                 } catch (\Exception $bodyException) {
                     // Ignore body reading errors.
                 }
+            } else {
+                // Connection error or timeout.
+                $errorDetails['connection_error'] = true;
+                if ($e->getCode() !== 0) {
+                    $errorDetails['error_code'] = $e->getCode();
+                }
             }
+
+            // Add request details to error message.
+            $errorDetails['request_url'] = $webhook->getUrl();
+            $errorDetails['request_method'] = $webhook->getMethod();
+            $errorDetails['timeout'] = $webhook->getTimeout();
+
+            // Store request body as JSON for retry purposes (only on failure).
+            $webhookLog->setRequestBody(json_encode($webhookPayload));
+
+            // Log failure with detailed context.
+            $webhookLog->setSuccess(false);
+            $webhookLog->setErrorMessage($errorMessage);
 
             $this->logger->error(
                     message: 'Webhook delivery failed',
@@ -227,9 +259,13 @@ class WebhookService
                         'webhook_id'   => $webhook->getId(),
                         'webhook_name' => $webhook->getName(),
                         'event'        => $eventName,
-                        'error'        => $e->getMessage(),
+                        'error'        => $errorMessage,
+                        'error_details' => $errorDetails,
                         'attempt'      => $attempt,
                         'max_retries'  => $webhook->getMaxRetries(),
+                        'exception_class' => get_class($e),
+                        'exception_code' => $e->getCode(),
+                        'trace' => $e->getTraceAsString(),
                     ]
                     );
 
@@ -380,9 +416,16 @@ class WebhookService
 
         $options = [
             'headers' => $headers,
-            'json'    => $payload,
             'timeout' => $webhook->getTimeout(),
         ];
+
+        // For GET requests, use query parameters instead of JSON body.
+        if (strtoupper($webhook->getMethod()) === 'GET') {
+            $options['query'] = $payload;
+        } else {
+            // For POST, PUT, PATCH, DELETE, send JSON body.
+            $options['json'] = $payload;
+        }
 
         $response = $this->client->request(
             method: $webhook->getMethod(),

@@ -33,14 +33,14 @@
 					</span>
 				</div>
 				<div class="viewActions">
-				<NcButton
-					type="primary"
-					@click="openCreateDialog">
-					<template #icon>
-						<Plus :size="20" />
-					</template>
-					{{ t('openregister', 'Create Webhook') }}
-				</NcButton>
+					<NcButton
+						type="primary"
+						@click="openCreateDialog">
+						<template #icon>
+							<Plus :size="20" />
+						</template>
+						{{ t('openregister', 'Create Webhook') }}
+					</NcButton>
 					<NcActions
 						:force-name="true"
 						:inline="1"
@@ -58,8 +58,10 @@
 			</div>
 
 			<!-- Webhooks Table -->
-			<div class="tableContainer">
-				<NcLoadingIcon v-if="loading" :size="64" />
+			<div class="tableContainer" :class="{ 'is-loading': loading }">
+				<div v-if="loading" class="loadingWrapper">
+					<NcLoadingIcon :size="64" />
+				</div>
 
 				<NcEmptyContent
 					v-else-if="!webhooksList.length"
@@ -141,6 +143,14 @@
 									</NcActionButton>
 									<NcActionButton
 										close-after-click
+										@click="viewLogs(webhook.id)">
+										<template #icon>
+											<FileDocumentOutline :size="20" />
+										</template>
+										{{ t('openregister', 'View Logs') }}
+									</NcActionButton>
+									<NcActionButton
+										close-after-click
 										@click="toggleWebhook(webhook)">
 										<template #icon>
 											<PauseCircleOutline v-if="webhook.enabled" :size="20" />
@@ -192,7 +202,6 @@
 				@update:search="handleSearchUpdate"
 				@update:enabled="handleEnabledUpdate" />
 		</template>
-
 	</NcAppContent>
 </template>
 
@@ -222,6 +231,7 @@ import PauseCircleOutline from 'vue-material-design-icons/PauseCircleOutline.vue
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import DeleteOutline from 'vue-material-design-icons/DeleteOutline.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
+import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
 
 /**
  * Main view for managing webhooks
@@ -243,6 +253,7 @@ export default {
 		Pencil,
 		DeleteOutline,
 		Plus,
+		FileDocumentOutline,
 		WebhooksSidebar,
 	},
 	data() {
@@ -279,7 +290,7 @@ export default {
 		/**
 		 * Get properties for selected events
 		 *
-		 * @return {array} Array of property options
+		 * @return {Array} Array of property options
 		 */
 		selectedEventProperties() {
 			if (!this.newWebhook.events || this.newWebhook.events.length === 0) {
@@ -424,14 +435,36 @@ export default {
 		 */
 		async testWebhook(webhookId) {
 			try {
-				await axios.post(
+				const response = await axios.post(
 					generateUrl(`/apps/openregister/api/webhooks/${webhookId}/test`),
 				)
-				showSuccess(t('openregister', 'Test webhook sent successfully'))
+				// Check if the test was successful based on response data.
+				if (response.data && response.data.success === true) {
+					showSuccess(t('openregister', 'Test webhook sent successfully'))
+				} else {
+					const message = response.data?.message || response.data?.error || t('openregister', 'Test webhook delivery failed')
+					showError(message)
+				}
+				// Always refresh webhook list to show updated statistics (last triggered, success rate).
+				this.loadWebhooks()
 			} catch (error) {
 				console.error('Failed to test webhook:', error)
-				showError(t('openregister', 'Failed to test webhook'))
+				const errorMessage = error.response?.data?.error || error.response?.data?.message || t('openregister', 'Failed to test webhook')
+				showError(errorMessage)
+				// Refresh even on error to show any partial updates.
+				this.loadWebhooks()
 			}
+		},
+
+		/**
+		 * View logs for a webhook
+		 *
+		 * @param {number} webhookId - Webhook ID
+		 * @return {void}
+		 */
+		viewLogs(webhookId) {
+			navigationStore.setTransferData({ webhookId })
+			this.$router.push('/webhooks/logs')
 		},
 
 		/**
@@ -472,7 +505,6 @@ export default {
 				showError(t('openregister', 'Failed to delete webhook'))
 			}
 		},
-
 
 		/**
 		 * Open create webhook dialog
@@ -594,6 +626,22 @@ export default {
 	border-radius: var(--border-radius-large);
 	overflow-x: auto;
 	overflow-y: visible;
+	min-height: 200px;
+}
+
+.tableContainer.is-loading {
+	overflow: hidden;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.loadingWrapper {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	padding: 40px;
 }
 
 .webhooksTable {

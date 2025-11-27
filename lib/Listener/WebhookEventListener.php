@@ -130,7 +130,7 @@ class WebhookEventListener implements IEventListener
                 );
 
         // Dispatch to webhook service.
-        $this->webhookService->dispatchEvent(event: $event, eventClass: $eventClass, payload: $payload);
+        $this->webhookService->dispatchEvent($event, $eventClass, $payload);
 
     }//end handle()
 

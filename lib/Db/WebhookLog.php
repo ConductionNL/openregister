@@ -44,6 +44,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setSuccess(bool $success)
  * @method int|null getStatusCode()
  * @method void setStatusCode(?int $statusCode)
+ * @method string|null getRequestBody()
+ * @method void setRequestBody(?string $requestBody)
  * @method string|null getResponseBody()
  * @method void setResponseBody(?string $responseBody)
  * @method string|null getErrorMessage()
@@ -63,7 +65,7 @@ class WebhookLog extends Entity implements JsonSerializable
      *
      * @var integer
      */
-    protected int $webhookId;
+    protected int $webhookId = 0;
 
     /**
      * Event class name
@@ -106,6 +108,13 @@ class WebhookLog extends Entity implements JsonSerializable
      * @var integer|null
      */
     protected ?int $statusCode = null;
+
+    /**
+     * Request body (stored only on failure)
+     *
+     * @var string|null
+     */
+    protected ?string $requestBody = null;
 
     /**
      * Response body
@@ -157,11 +166,15 @@ class WebhookLog extends Entity implements JsonSerializable
         $this->addType('method', 'string');
         $this->addType('success', 'boolean');
         $this->addType('statusCode', 'integer');
+        $this->addType('requestBody', 'string');
         $this->addType('responseBody', 'string');
         $this->addType('errorMessage', 'string');
         $this->addType('attempt', 'integer');
         $this->addType('nextRetryAt', 'datetime');
         $this->addType('created', 'datetime');
+
+        // Initialize created timestamp.
+        $this->created = new DateTime();
 
     }//end __construct()
 
@@ -217,6 +230,7 @@ class WebhookLog extends Entity implements JsonSerializable
             'method'       => $this->method,
             'success'      => $this->success,
             'statusCode'   => $this->statusCode,
+            'requestBody'  => $this->requestBody,
             'responseBody' => $this->responseBody,
             'errorMessage' => $this->errorMessage,
             'attempt'      => $this->attempt,

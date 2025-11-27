@@ -307,15 +307,12 @@ class ConfigurationsController extends Controller
     /**
      * Import a configuration
      *
-     * @param bool $includeObjects Whether to include objects in the import.
-     * @param bool $force          Force import even if the same or newer version already exists
-     *
      * @return JSONResponse The import result.
      *
      * @NoAdminRequired
      * @NoCSRFRequired
      */
-    public function import(bool $includeObjects=false, bool $force=false): JSONResponse
+    public function import(): JSONResponse
     {
         try {
             // Get the uploaded file from the request if a single file has been uploaded.

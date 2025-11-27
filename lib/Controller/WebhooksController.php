@@ -397,11 +397,35 @@ class WebhooksController extends Controller
                     ]
                 );
             } else {
+                // Get the latest log entry to retrieve error details.
+                $latestLogs = $this->webhookLogMapper->findByWebhook($id, 1, 0);
+                $errorMessage = 'Test webhook delivery failed';
+                $errorDetails = null;
+
+                if (!empty($latestLogs)) {
+                    $latestLog = $latestLogs[0];
+                    if ($latestLog->getErrorMessage() !== null) {
+                        $errorMessage = $latestLog->getErrorMessage();
+                    }
+                    if ($latestLog->getStatusCode() !== null) {
+                        $errorDetails = [
+                            'status_code' => $latestLog->getStatusCode(),
+                            'response_body' => $latestLog->getResponseBody(),
+                        ];
+                    }
+                }
+
+                $responseData = [
+                    'success' => false,
+                    'message' => $errorMessage,
+                ];
+
+                if ($errorDetails !== null) {
+                    $responseData['error_details'] = $errorDetails;
+                }
+
                 return new JSONResponse(
-                    data: [
-                        'success' => false,
-                        'message' => 'Test webhook delivery failed',
-                    ],
+                    data: $responseData,
                     statusCode: 500
                 );
             }//end if
@@ -439,7 +463,7 @@ class WebhooksController extends Controller
 
             return new JSONResponse(
                 data: [
-                    'error' => 'Failed to test webhook',
+                    'error' => 'Failed to test webhook: '.$e->getMessage(),
                 ],
                 statusCode: 500
             );
@@ -887,6 +911,229 @@ class WebhooksController extends Controller
         }//end try
 
     }//end logStats()
+
+
+    /**
+     * Get all webhook logs with optional filtering
+     *
+     * @return JSONResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
+    public function allLogs(): JSONResponse
+    {
+        try {
+            $webhookId = $this->request->getParam('webhook_id');
+            $limit     = (int) ($this->request->getParam('limit') ?? 50);
+            $offset    = (int) ($this->request->getParam('offset') ?? 0);
+            $success   = $this->request->getParam('success');
+
+            // If webhook_id is provided and valid, use findByWebhook method.
+            if ($webhookId !== null && $webhookId !== '' && $webhookId !== '0') {
+                $webhookIdInt = (int) $webhookId;
+                $logs = $this->webhookLogMapper->findByWebhook($webhookIdInt, $limit, $offset);
+                // Get total count for this webhook.
+                $allLogsForWebhook = $this->webhookLogMapper->findByWebhook($webhookIdInt, null, null);
+                $total = count($allLogsForWebhook);
+            } else {
+                // Get all logs.
+                $logs = $this->webhookLogMapper->findAll($limit, $offset);
+                // Get total count for all logs.
+                $allLogs = $this->webhookLogMapper->findAll(null, null);
+                $total = count($allLogs);
+            }
+
+            // Filter by success status if provided.
+            if ($success !== null && $success !== '' && ($success === 'true' || $success === '1' || $success === 'false' || $success === '0')) {
+                $successBool = $success === 'true' || $success === '1';
+                $filteredLogs = array_filter(
+                    $logs,
+                    function ($log) use ($successBool) {
+                        return $log->getSuccess() === $successBool;
+                    }
+                );
+                $logs = array_values($filteredLogs); // Re-index array.
+                // Recalculate total if filtering by success.
+                if ($webhookId !== null && $webhookId !== '' && $webhookId !== '0') {
+                    $webhookIdInt = (int) $webhookId;
+                    $allLogsForWebhook = $this->webhookLogMapper->findByWebhook($webhookIdInt, null, null);
+                    $total = count(array_filter($allLogsForWebhook, function ($log) use ($successBool) {
+                        return $log->getSuccess() === $successBool;
+                    }));
+                } else {
+                    $allLogs = $this->webhookLogMapper->findAll(null, null);
+                    $total = count(array_filter($allLogs, function ($log) use ($successBool) {
+                        return $log->getSuccess() === $successBool;
+                    }));
+                }
+            }
+
+            return new JSONResponse(
+                data: [
+                    'results' => $logs,
+                    'total'   => $total,
+                ],
+                statusCode: 200
+            );
+        } catch (\Exception $e) {
+            $this->logger->error(
+                    message: 'Error retrieving webhook logs: '.$e->getMessage(),
+                    context: [
+                        'trace' => $e->getTraceAsString(),
+                    ]
+                    );
+
+            return new JSONResponse(
+                data: [
+                    'error' => 'Failed to retrieve webhook logs: '.$e->getMessage(),
+                ],
+                statusCode: 500
+            );
+        }//end try
+
+    }//end allLogs()
+
+
+    /**
+     * Retry a failed webhook delivery
+     *
+     * @param int $logId Log entry ID
+     *
+     * @return JSONResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
+    public function retry(int $logId): JSONResponse
+    {
+        try {
+            // Get the log entry.
+            $log = $this->webhookLogMapper->find($logId);
+
+            // Only allow retry for failed webhooks.
+            if ($log->getSuccess() === true) {
+                return new JSONResponse(
+                    data: [
+                        'error' => 'Cannot retry a successful webhook delivery',
+                    ],
+                    statusCode: 400
+                );
+            }
+
+            // Get the webhook.
+            $webhook = $this->webhookMapper->find($log->getWebhookId());
+
+            // Extract payload from request body if available, otherwise use stored payload.
+            $payload = [];
+            if ($log->getRequestBody() !== null) {
+                $decoded = json_decode($log->getRequestBody(), true);
+                if ($decoded !== null) {
+                    $payload = $decoded;
+                }
+            } elseif ($log->getPayload() !== null) {
+                $payload = $log->getPayloadArray();
+            }
+
+            // If no payload found, return error.
+            if (empty($payload)) {
+                return new JSONResponse(
+                    data: [
+                        'error' => 'No payload available for retry',
+                    ],
+                    statusCode: 400
+                );
+            }
+
+            // Extract original event data from payload if available.
+            $eventName = $log->getEventClass();
+            $originalPayload = $payload['data'] ?? $payload;
+
+            // Retry the webhook delivery.
+            $success = $this->webhookService->deliverWebhook(
+                webhook: $webhook,
+                eventName: $eventName,
+                payload: $originalPayload,
+                attempt: $log->getAttempt() + 1
+            );
+
+            if ($success === true) {
+                return new JSONResponse(
+                    data: [
+                        'success' => true,
+                        'message' => 'Webhook retry delivered successfully',
+                    ]
+                );
+            } else {
+                // Get the latest log entry to retrieve error details.
+                $latestLogs = $this->webhookLogMapper->findByWebhook($webhook->getId(), 1, 0);
+                $errorMessage = 'Webhook retry delivery failed';
+                $errorDetails = null;
+
+                if (!empty($latestLogs)) {
+                    $latestLog = $latestLogs[0];
+                    if ($latestLog->getErrorMessage() !== null) {
+                        $errorMessage = $latestLog->getErrorMessage();
+                    }
+                    if ($latestLog->getStatusCode() !== null) {
+                        $errorDetails = [
+                            'status_code' => $latestLog->getStatusCode(),
+                            'response_body' => $latestLog->getResponseBody(),
+                        ];
+                    }
+                }
+
+                $responseData = [
+                    'success' => false,
+                    'message' => $errorMessage,
+                ];
+
+                if ($errorDetails !== null) {
+                    $responseData['error_details'] = $errorDetails;
+                }
+
+                return new JSONResponse(
+                    data: $responseData,
+                    statusCode: 500
+                );
+            }
+        } catch (DoesNotExistException $e) {
+            $this->logger->error(
+                    message: 'Webhook log not found for retry: '.$e->getMessage(),
+                    context: [
+                        'log_id' => $logId,
+                        'trace' => $e->getTraceAsString(),
+                    ]
+                    );
+
+            return new JSONResponse(
+                data: [
+                    'error' => 'Webhook log not found',
+                ],
+                statusCode: 404
+            );
+        } catch (\Exception $e) {
+            $this->logger->error(
+                    message: 'Error retrying webhook: '.$e->getMessage(),
+                    context: [
+                        'log_id' => $logId,
+                        'trace' => $e->getTraceAsString(),
+                    ]
+                    );
+
+            return new JSONResponse(
+                data: [
+                    'error' => 'Failed to retry webhook',
+                ],
+                statusCode: 500
+            );
+        }//end try
+
+    }//end retry()
 
 
 }//end class

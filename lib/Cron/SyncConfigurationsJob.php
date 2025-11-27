@@ -166,8 +166,8 @@ class SyncConfigurationsJob extends TimedJob
                         $this->configurationMapper->updateSyncStatus(
                             id: $configuration->getId(),
                             status: 'failed',
-                            syncedAt: new DateTime(),
-                            errorMessage: $e->getMessage()
+                            syncDate: new DateTime(),
+                            message: $e->getMessage()
                         );
                     } catch (Exception $statusError) {
                         $this->logger->error("Failed to update sync status: ".$statusError->getMessage());
@@ -291,7 +291,7 @@ class SyncConfigurationsJob extends TimedJob
         $this->configurationMapper->updateSyncStatus(
             id: $configuration->getId(),
             status: 'success',
-            syncedAt: new DateTime()
+            syncDate: new DateTime()
         );
 
     }//end syncFromGitHub()
@@ -347,7 +347,7 @@ class SyncConfigurationsJob extends TimedJob
         $this->configurationMapper->updateSyncStatus(
             id: $configuration->getId(),
             status: 'success',
-            syncedAt: new DateTime()
+            syncDate: new DateTime()
         );
 
     }//end syncFromGitLab()
@@ -394,7 +394,7 @@ class SyncConfigurationsJob extends TimedJob
         $this->configurationMapper->updateSyncStatus(
             id: $configuration->getId(),
             status: 'success',
-            syncedAt: new DateTime()
+            syncDate: new DateTime()
         );
 
     }//end syncFromUrl()
@@ -432,7 +432,7 @@ class SyncConfigurationsJob extends TimedJob
         $this->configurationMapper->updateSyncStatus(
             id: $configuration->getId(),
             status: 'success',
-            syncedAt: new DateTime()
+            syncDate: new DateTime()
         );
 
     }//end syncFromLocal()

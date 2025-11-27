@@ -190,6 +190,7 @@ services:
       - solr
       - ollama
       - presidio-analyzer
+      - n8n
     volumes:
       - nextcloud:/var/www/html:rw
       - ./custom_apps:/var/www/html/custom_apps
@@ -206,6 +207,8 @@ services:
       - PHP_MEMORY_LIMIT=4G
       - PHP_UPLOAD_LIMIT=2G
       - PHP_POST_MAX_SIZE=2G
-    # depends_on:
+    depends_on:
+      - db
+      - n8n
     #   init-ubuntu:
     #     condition: service_completed_successfully
