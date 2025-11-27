@@ -3179,7 +3179,7 @@ export default {
 		 */
 		analyzeProperties() {
 		// The current schema is already set in schemaStore, just open the modal
-			navigationStore.setModal('exploreSchema')
+			navigationStore.setDialog('exploreSchema')
 		},
 
 		/**
@@ -3189,7 +3189,7 @@ export default {
 		 */
 		validateObjects() {
 		// The current schema is already set in schemaStore, just open the modal
-			navigationStore.setModal('validateSchema')
+			navigationStore.setDialog('validateSchema')
 		},
 
 		/**
@@ -3198,8 +3198,8 @@ export default {
 		 * @return {void}
 		 */
 		deleteObjects() {
-		// The current schema is already set in schemaStore, just open the modal
-			navigationStore.setModal('deleteSchemaObjects')
+		// The current schema is already set in schemaStore, just open the dialog
+			navigationStore.setDialog('deleteSchemaObjects')
 		},
 
 		/**
@@ -3209,7 +3209,7 @@ export default {
 		 */
 		publishObjects() {
 		// The current schema is already set in schemaStore, just open the modal
-			navigationStore.setModal('publishSchemaObjects')
+			navigationStore.setDialog('publishSchemaObjects')
 		},
 
 		/**
