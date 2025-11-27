@@ -27,6 +27,20 @@ jobs:
         with:
           node-version: '18'
 
+      - name: Copy CONTRIBUTING.md to documentation
+        run: |
+          # Copy CONTRIBUTING.md to website/docs/development/ with Docusaurus frontmatter
+          {
+            echo "---"
+            echo "sidebar_position: 1"
+            echo "title: Contributing"
+            echo "description: Guidelines for contributing to OpenRegister, including PR descriptions and changelog formatting"
+            echo "---"
+            echo ""
+            cat CONTRIBUTING.md
+          } > website/docs/development/contributing.md
+          echo "✓ Copied CONTRIBUTING.md to website/docs/development/contributing.md"
+
       - name: Clear build cache and install dependencies
         timeout-minutes: 3
         run: |
