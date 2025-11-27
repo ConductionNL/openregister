@@ -326,7 +326,7 @@ class SolrManagementCommand extends Command
             foreach ($warmQueries as $query) {
                 $output->write('   🔥 '.$query['description'].'... ');
 
-                $result = $this->solrService->searchObjects(query: $query);
+                $result = $this->solrService->searchObjects(searchParams: $query);
                 if ($result['success'] === true) {
                     $output->writeln('<info>✅</info>');
                     $successCount++;
@@ -395,7 +395,7 @@ class SolrManagementCommand extends Command
             // Basic search test.
             $output->writeln('');
             $output->writeln('🔍 <info>Testing search functionality...</info>');
-            $searchResult = $this->solrService->searchObjects(query: ['q' => '*:*', 'rows' => 1]);
+            $searchResult = $this->solrService->searchObjects(searchParams: ['q' => '*:*', 'rows' => 1]);
             if ($searchResult['success'] === true) {
                 $output->writeln('   ✅ Search working ('.$searchResult['execution_time_ms'].'ms)');
                 $output->writeln('   📊 Total documents: <comment>'.$searchResult['total'].'</comment>');
@@ -469,7 +469,7 @@ class SolrManagementCommand extends Command
             $output->writeln('🔍 Checking field compatibility...');
 
             // Test a document structure.
-            $testResult = $this->solrService->searchObjects(query: ['q' => '*:*', 'rows' => 1]);
+            $testResult = $this->solrService->searchObjects(searchParams: ['q' => '*:*', 'rows' => 1]);
             if ($testResult['success'] === true && empty($testResult['data']) === false) {
                 $sampleDoc       = $testResult['data'][0];
                 $availableFields = array_keys($sampleDoc);

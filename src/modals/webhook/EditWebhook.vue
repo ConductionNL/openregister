@@ -353,9 +353,11 @@ export default {
 			eventOptions: [],
 			loadingEvents: false,
 			httpMethodOptions: [
+				{ value: 'GET', label: 'GET', description: 'HTTP GET method' },
 				{ value: 'POST', label: 'POST', description: 'Standard HTTP POST method' },
 				{ value: 'PUT', label: 'PUT', description: 'HTTP PUT method' },
 				{ value: 'PATCH', label: 'PATCH', description: 'HTTP PATCH method' },
+				{ value: 'DELETE', label: 'DELETE', description: 'HTTP DELETE method' },
 			],
 			retryPolicyOptions: [
 				{ value: 'exponential', label: t('openregister', 'Exponential'), description: t('openregister', 'Delays double with each attempt (2, 4, 8 minutes...)') },
@@ -448,7 +450,8 @@ export default {
 						responseMapping: {},
 					},
 				}
-				this.selectedMethod = this.httpMethodOptions[0] // 'POST'
+				// Default to POST (find it in options since GET is now first).
+				this.selectedMethod = this.httpMethodOptions.find(m => m.value === 'POST') || this.httpMethodOptions[0]
 				this.selectedRetryPolicy = this.retryPolicyOptions[0] // 'exponential'
 				this.selectedEvent = null
 				this.selectedEventProperty = null
@@ -627,7 +630,7 @@ export default {
 				if (item.method) {
 					this.selectedMethod = this.httpMethodOptions.find(
 						m => m.value === item.method,
-					) || this.httpMethodOptions[0]
+					) || this.httpMethodOptions.find(m => m.value === 'POST') || this.httpMethodOptions[0]
 				}
 
 				// Load retry policy.

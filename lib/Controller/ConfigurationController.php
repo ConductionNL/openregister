@@ -626,11 +626,11 @@ class ConfigurationController extends Controller
             // Call appropriate service.
             if ($source === 'github') {
                 $this->logger->info('About to call GitHub search service');
-                $results = $this->githubService->searchConfigurations(query: $search, page: $page);
+                $results = $this->githubService->searchConfigurations(search: $search, page: $page);
                 $this->logger->info('GitHub search completed', ['result_count' => count($results['results'] ?? [])]);
             } else {
                 $this->logger->info('About to call GitLab search service');
-                $results = $this->gitlabService->searchConfigurations(query: $search, page: $page);
+                $results = $this->gitlabService->searchConfigurations(search: $search, page: $page);
                 $this->logger->info('GitLab search completed', ['result_count' => count($results['results'] ?? [])]);
             }
 

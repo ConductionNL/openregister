@@ -63,7 +63,7 @@ class WebhookLog extends Entity implements JsonSerializable
      *
      * @var integer
      */
-    protected int $webhookId;
+    protected int $webhookId = 0;
 
     /**
      * Event class name
@@ -162,6 +162,9 @@ class WebhookLog extends Entity implements JsonSerializable
         $this->addType('attempt', 'integer');
         $this->addType('nextRetryAt', 'datetime');
         $this->addType('created', 'datetime');
+
+        // Initialize created timestamp.
+        $this->created = new DateTime();
 
     }//end __construct()
 

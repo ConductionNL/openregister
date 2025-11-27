@@ -92,6 +92,35 @@ class WebhookLogMapper extends QBMapper
 
 
     /**
+     * Find all webhook logs
+     *
+     * @param int|null $limit  Limit results
+     * @param int|null $offset Offset results
+     *
+     * @return WebhookLog[]
+     */
+    public function findAll(?int $limit = null, ?int $offset = null): array
+    {
+        $qb = $this->db->getQueryBuilder();
+
+        $qb->select('*')
+            ->from($this->getTableName())
+            ->orderBy('created', 'DESC');
+
+        if ($limit !== null) {
+            $qb->setMaxResults($limit);
+        }
+
+        if ($offset !== null) {
+            $qb->setFirstResult($offset);
+        }
+
+        return $this->findEntities($qb);
+
+    }//end findAll()
+
+
+    /**
      * Find failed logs that need retry
      *
      * @param DateTime $before Before timestamp
@@ -126,9 +155,8 @@ class WebhookLogMapper extends QBMapper
     public function insert(Entity $entity): Entity
     {
         if ($entity instanceof WebhookLog) {
-            if ($entity->getCreated() === null) {
-                $entity->setCreated(new DateTime());
-            }
+            // Always set created timestamp to ensure it's properly marked for insertion.
+            $entity->setCreated(new DateTime());
         }
 
         return parent::insert($entity);

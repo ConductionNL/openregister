@@ -44,6 +44,7 @@ use OCP\IGroupManager;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Container\NotFoundExceptionInterface;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ExportService;
@@ -386,7 +387,7 @@ class ObjectsController extends Controller
     {
         try {
             // Resolve slugs to numeric IDs consistently (validation only).
-            $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
+            $resolved = $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
         } catch (\OCA\OpenRegister\Exception\RegisterNotFoundException | \OCA\OpenRegister\Exception\SchemaNotFoundException $e) {
             // Return 404 with clear error message if register or schema not found.
             return new JSONResponse(data: ['message' => $e->getMessage()], statusCode: 404);
@@ -1019,6 +1020,11 @@ class ObjectsController extends Controller
         // Set the schema and register to the object service.
         $objectService->setSchema(schema: $schema);
         $objectService->setRegister(register: $register);
+        
+        // Note: $id is a route parameter for API consistency (/api/objects/{register}/{schema}/{id}/contracts)
+        // Currently returns empty array as contract functionality is not yet implemented
+        $objectId = $id; // Reserved for future use when contract functionality is implemented
+        unset($objectId);
 
         // Get request parameters for filtering and searching.
         $requestParams = $this->request->getParams();

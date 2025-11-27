@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Db\GdprEntity;
 use OCA\OpenRegister\Db\GdprEntityMapper;
 use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 use Ramsey\Uuid\Uuid;
 
@@ -83,7 +84,8 @@ class NamedEntityRecognitionService
      * @param EntityRelationMapper $entityRelationMapper Entity relation mapper.
      * @param ChunkMapper          $chunkMapper          Chunk mapper.
      * @param SettingsService      $settingsService      Settings service.
-     * @param LoggerInterface      $logger               Logger.
+     * @param IDBConnection        $db                  Database connection.
+     * @param LoggerInterface      $logger              Logger.
      */
     public function __construct(
         private readonly GdprEntityMapper $entityMapper,
@@ -92,6 +94,7 @@ class NamedEntityRecognitionService
         private readonly ChunkMapper $chunkMapper,
         /** @psalm-suppress UnusedProperty - Property kept for future use */
         private readonly SettingsService $settingsService,
+        private readonly IDBConnection $db,
         private readonly LoggerInterface $logger
     ) {
 
@@ -466,7 +469,7 @@ class NamedEntityRecognitionService
     {
         // Try to find existing entity by value and type.
         try {
-            $qb = $this->entityMapper->getQueryBuilder();
+            $qb = $this->db->getQueryBuilder();
             $qb->select('*')
                 ->from('openregister_entities')
                 ->where($qb->expr()->eq('type', $qb->createNamedParameter($type)))
