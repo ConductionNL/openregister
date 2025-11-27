@@ -37,6 +37,8 @@
 						:options="webhookOptions"
 						:placeholder="t('openregister', 'Filter by webhook')"
 						:clearable="true"
+						:label-outside="true"
+						:input-label="t('openregister', 'Filter by webhook')"
 						@update:value="handleWebhookFilterChange">
 						<template #option="{ option }">
 							{{ option.label }}
@@ -54,8 +56,10 @@
 			</div>
 
 			<!-- Logs Table -->
-			<div class="tableContainer">
-				<NcLoadingIcon v-if="loading" :size="64" />
+			<div class="tableContainer" :class="{ 'is-loading': loading }">
+				<div v-if="loading" class="loadingWrapper">
+					<NcLoadingIcon :size="64" />
+				</div>
 
 				<NcEmptyContent
 					v-else-if="!logsList.length"
@@ -76,7 +80,9 @@
 							<th>{{ t('openregister', 'Attempt') }}</th>
 							<th>{{ t('openregister', 'Created') }}</th>
 							<th>{{ t('openregister', 'Error') }}</th>
-							<th class="column-actions">{{ t('openregister', 'Actions') }}</th>
+							<th class="column-actions">
+								{{ t('openregister', 'Actions') }}
+							</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -229,7 +235,7 @@ export default {
 				this.webhooksList.map(webhook => ({
 					value: webhook.id,
 					label: webhook.name || webhook.url,
-				}))
+				})),
 			)
 		},
 	},
@@ -241,6 +247,13 @@ export default {
 		}
 		this.loadWebhooks()
 		this.loadLogs()
+
+		// Listen for retry events to refresh logs.
+		window.addEventListener('webhook-log-retried', this.loadLogs)
+	},
+	beforeDestroy() {
+		// Clean up event listener.
+		window.removeEventListener('webhook-log-retried', this.loadLogs)
 	},
 	methods: {
 		/**
@@ -387,8 +400,9 @@ export default {
 		 * @return {void}
 		 */
 		viewLogDetails(log) {
-			// TODO: Open modal with log details.
-			console.log('View log details:', log)
+			// Set log data in navigation store and open modal.
+			navigationStore.setTransferData({ log })
+			navigationStore.setModal('viewWebhookLog')
 		},
 
 		/**
@@ -462,6 +476,22 @@ export default {
 	border-radius: var(--border-radius-large);
 	overflow-x: auto;
 	overflow-y: visible;
+	min-height: 200px;
+}
+
+.tableContainer.is-loading {
+	overflow: hidden;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.loadingWrapper {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	padding: 40px;
 }
 
 .webhooksTable {
@@ -555,4 +585,3 @@ export default {
 	font-weight: 600;
 }
 </style>
-

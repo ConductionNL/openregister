@@ -33,14 +33,14 @@
 					</span>
 				</div>
 				<div class="viewActions">
-				<NcButton
-					type="primary"
-					@click="openCreateDialog">
-					<template #icon>
-						<Plus :size="20" />
-					</template>
-					{{ t('openregister', 'Create Webhook') }}
-				</NcButton>
+					<NcButton
+						type="primary"
+						@click="openCreateDialog">
+						<template #icon>
+							<Plus :size="20" />
+						</template>
+						{{ t('openregister', 'Create Webhook') }}
+					</NcButton>
 					<NcActions
 						:force-name="true"
 						:inline="1"
@@ -58,8 +58,10 @@
 			</div>
 
 			<!-- Webhooks Table -->
-			<div class="tableContainer">
-				<NcLoadingIcon v-if="loading" :size="64" />
+			<div class="tableContainer" :class="{ 'is-loading': loading }">
+				<div v-if="loading" class="loadingWrapper">
+					<NcLoadingIcon :size="64" />
+				</div>
 
 				<NcEmptyContent
 					v-else-if="!webhooksList.length"
@@ -200,7 +202,6 @@
 				@update:search="handleSearchUpdate"
 				@update:enabled="handleEnabledUpdate" />
 		</template>
-
 	</NcAppContent>
 </template>
 
@@ -289,7 +290,7 @@ export default {
 		/**
 		 * Get properties for selected events
 		 *
-		 * @return {array} Array of property options
+		 * @return {Array} Array of property options
 		 */
 		selectedEventProperties() {
 			if (!this.newWebhook.events || this.newWebhook.events.length === 0) {
@@ -505,7 +506,6 @@ export default {
 			}
 		},
 
-
 		/**
 		 * Open create webhook dialog
 		 *
@@ -626,6 +626,22 @@ export default {
 	border-radius: var(--border-radius-large);
 	overflow-x: auto;
 	overflow-y: visible;
+	min-height: 200px;
+}
+
+.tableContainer.is-loading {
+	overflow: hidden;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.loadingWrapper {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	padding: 40px;
 }
 
 .webhooksTable {

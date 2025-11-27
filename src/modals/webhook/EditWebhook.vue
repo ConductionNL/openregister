@@ -1,4 +1,3 @@
-
 <template>
 	<NcDialog
 		v-if="navigationStore.modal === 'editWebhook'"
@@ -289,7 +288,7 @@
 <script>
 import { t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
-import { showError, showSuccess } from '@nextcloud/dialogs'
+import { showSuccess } from '@nextcloud/dialogs'
 import axios from '@nextcloud/axios'
 import { navigationStore } from '../../store/store.js'
 
@@ -411,10 +410,6 @@ export default {
 				.join('\n')
 		},
 	},
-	async created() {
-		await this.loadAvailableEvents()
-		this.initializeWebhook()
-	},
 	watch: {
 		'navigationStore.modal'(newVal) {
 			if (newVal === 'editWebhook') {
@@ -422,6 +417,10 @@ export default {
 				this.initializeWebhook()
 			}
 		},
+	},
+	async created() {
+		await this.loadAvailableEvents()
+		this.initializeWebhook()
 	},
 	methods: {
 		initializeWebhook() {
@@ -618,10 +617,8 @@ export default {
 		},
 		searchEvents(query) {
 			// Filter events based on search query.
-			if (!query || query.trim() === '') {
-				return
-			}
 			// The NcSelect component handles filtering internally.
+			// Empty query is handled by the component itself.
 		},
 		loadExistingSelections() {
 			const item = this.webhookItem
@@ -807,4 +804,3 @@ export default {
 	align-items: center;
 }
 </style>
-

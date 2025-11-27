@@ -246,6 +246,9 @@ class WebhookService
             $errorDetails['request_method'] = $webhook->getMethod();
             $errorDetails['timeout'] = $webhook->getTimeout();
 
+            // Store request body as JSON for retry purposes (only on failure).
+            $webhookLog->setRequestBody(json_encode($webhookPayload));
+
             // Log failure with detailed context.
             $webhookLog->setSuccess(false);
             $webhookLog->setErrorMessage($errorMessage);

@@ -44,6 +44,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setSuccess(bool $success)
  * @method int|null getStatusCode()
  * @method void setStatusCode(?int $statusCode)
+ * @method string|null getRequestBody()
+ * @method void setRequestBody(?string $requestBody)
  * @method string|null getResponseBody()
  * @method void setResponseBody(?string $responseBody)
  * @method string|null getErrorMessage()
@@ -108,6 +110,13 @@ class WebhookLog extends Entity implements JsonSerializable
     protected ?int $statusCode = null;
 
     /**
+     * Request body (stored only on failure)
+     *
+     * @var string|null
+     */
+    protected ?string $requestBody = null;
+
+    /**
      * Response body
      *
      * @var string|null
@@ -157,6 +166,7 @@ class WebhookLog extends Entity implements JsonSerializable
         $this->addType('method', 'string');
         $this->addType('success', 'boolean');
         $this->addType('statusCode', 'integer');
+        $this->addType('requestBody', 'string');
         $this->addType('responseBody', 'string');
         $this->addType('errorMessage', 'string');
         $this->addType('attempt', 'integer');
@@ -220,6 +230,7 @@ class WebhookLog extends Entity implements JsonSerializable
             'method'       => $this->method,
             'success'      => $this->success,
             'statusCode'   => $this->statusCode,
+            'requestBody'  => $this->requestBody,
             'responseBody' => $this->responseBody,
             'errorMessage' => $this->errorMessage,
             'attempt'      => $this->attempt,
