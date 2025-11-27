@@ -1,10 +1,172 @@
 # Webhooks
 
-OpenRegister includes a built-in webhook system that allows you to trigger external workflows and integrations whenever events occur within OpenRegister.
+OpenRegister includes a built-in webhook system that enables two powerful use cases: **event notifications** and **business logic integration**. Webhooks allow you to trigger external workflows and integrations whenever events occur within OpenRegister, enabling seamless integration with external systems and complex business rule validation.
+
+![img.png](img.png)
 
 ## Overview
 
-Webhooks enable real-time integration with external systems by dispatching HTTP requests when specific events occur. OpenRegister's webhook system provides a robust, production-ready solution with automatic retries, event filtering, and comprehensive monitoring.
+Webhooks serve two primary purposes in OpenRegister:
+
+1. **Event Notifications**: Send CloudEvents to external systems when objects experience CRUD operations
+2. **Business Logic Integration**: Add complex business rules and decision-making to the internal flow of registers
+
+OpenRegister's webhook system provides a robust, production-ready solution with automatic retries, event filtering, and comprehensive monitoring.
+
+## Use Case 1: Event Notifications
+
+The simplest use case for webhooks is notifying external systems when objects are created, updated, or deleted. This enables real-time synchronization between OpenRegister and other applications.
+
+### Example: Pet Store Inventory Sync
+
+Imagine a pet store using OpenRegister to manage its inventory. When a new cat is added to the store, the point-of-sale (POS) system needs to be notified so it can include the new product in its product list.
+
+```mermaid
+flowchart LR
+    A[User Creates Cat Object] --> B[ObjectCreatedEvent Triggered]
+    B --> C[Webhook Service]
+    C --> D[POST to POS System]
+    D --> E[POS System Updates Product List]
+    E --> F[Cat Available for Sale]
+    
+    style A fill:#e1f5ff
+    style B fill:#fff4e1
+    style C fill:#e8f5e9
+    style D fill:#f3e5f5
+    style E fill:#e8f5e9
+    style F fill:#e1f5ff
+```
+
+**Configuration**:
+```json
+{
+  "name": "POS Inventory Sync",
+  "url": "https://pos-system.example.com/api/products",
+  "method": "POST",
+  "events": ["OCA\\OpenRegister\\Event\\ObjectCreatedEvent"],
+  "filters": {
+    "objectType": "object",
+    "schema": "pet-store-cat-schema"
+  },
+  "enabled": true
+}
+```
+
+When a cat object is created, OpenRegister automatically sends a CloudEvent to the POS system, which then updates its product catalog in real-time.
+
+## Use Case 2: Business Logic and Decision Making
+
+Webhooks can also be used to add complex business logic and decision-making to the internal flow of registers. This is particularly useful when validation rules are too complex for JSON schema validation.
+
+### Example: Complex Pet Store Rules
+
+Consider a pet store with complex business rules:
+- **Rule 1**: Cannot create cats named "Felix" in the month of December
+- **Rule 2**: Cannot create cats named "Felix" when there are already 5 or more cats with that name in the store
+
+These rules involve:
+- Date-based validation (checking if current month is December)
+- Aggregation logic (counting existing cats with the same name)
+- External data validation (potentially checking against external APIs)
+
+JSON schema validation cannot handle this complexity. Instead, we can use webhooks to register to the object pre-create event and fire a synchronous webhook to an external tool like n8n that allows us to graphically build business logic flows.
+
+```mermaid
+flowchart TD
+    A[User Attempts to Create Cat Named Felix] --> B[ObjectCreatingEvent Triggered]
+    B --> C[Webhook Service]
+    C --> D{Synchronous Webhook to n8n}
+    D --> E[n8n Workflow]
+    
+    E --> F[Check Current Month]
+    F --> G{Is December?}
+    G -->|Yes| H[Reject: No Felix in December]
+    G -->|No| I[Count Existing Felix Cats]
+    
+    I --> J[Query OpenRegister API]
+    J --> K{Count >= 5?}
+    K -->|Yes| L[Reject: Too Many Felix Cats]
+    K -->|No| M[Optional: Check External API]
+    
+    M --> N[External Validation Service]
+    N --> O{Valid?}
+    O -->|No| P[Reject: External Validation Failed]
+    O -->|Yes| Q[Approve: Create Cat]
+    
+    H --> R[Return Error Response]
+    L --> R
+    P --> R
+    Q --> S[Return Success Response]
+    
+    R --> T[OpenRegister Blocks Creation]
+    S --> U[OpenRegister Creates Object]
+    
+    style A fill:#e1f5ff
+    style B fill:#fff4e1
+    style C fill:#e8f5e9
+    style D fill:#f3e5f5
+    style E fill:#fff9c4
+    style F fill:#fff9c4
+    style G fill:#ffccbc
+    style I fill:#fff9c4
+    style J fill:#e1f5ff
+    style K fill:#ffccbc
+    style M fill:#fff9c4
+    style N fill:#e1f5ff
+    style O fill:#ffccbc
+    style Q fill:#c8e6c9
+    style H fill:#ffcdd2
+    style L fill:#ffcdd2
+    style P fill:#ffcdd2
+    style R fill:#ffcdd2
+    style S fill:#c8e6c9
+    style T fill:#ffcdd2
+    style U fill:#c8e6c9
+```
+
+**Configuration**:
+```json
+{
+  "name": "Felix Cat Validation",
+  "url": "http://n8n:5678/webhook/felix-validation",
+  "method": "POST",
+  "events": ["OCA\\OpenRegister\\Event\\ObjectCreatingEvent"],
+  "filters": {
+    "objectType": "object",
+    "schema": "pet-store-cat-schema",
+    "data.@self.name": "Felix"
+  },
+  "enabled": true,
+  "configuration": {
+    "interceptRequests": true,
+    "async": false,
+    "processResponse": true,
+    "responseProcessing": {
+      "mergeStrategy": "merge"
+    }
+  }
+}
+```
+
+**n8n Workflow Capabilities**:
+
+The n8n workflow can perform complex operations that JSON schema cannot:
+
+1. **Date/Time Logic**: Check if current date is in December
+2. **API Queries**: Query OpenRegister API to count existing cats with name "Felix"
+3. **External API Calls**: Validate against external services (e.g., check if Felix is a registered trademark, verify against pet registry databases)
+4. **Data Transformation**: Transform or enrich the request data before validation
+5. **Conditional Logic**: Implement complex if/then/else rules
+6. **Aggregations**: Count, sum, or perform other aggregations on existing data
+
+**Response Handling**:
+
+The n8n workflow returns a response that OpenRegister uses to determine whether to continue:
+
+- **Success Response**: Object creation proceeds
+- **Error Response**: Object creation is blocked, error message shown to user
+
+This enables powerful business logic that would be impossible to implement with JSON schema alone.
 
 ### Key Features
 
@@ -25,6 +187,11 @@ Webhooks enable real-time integration with external systems by dispatching HTTP 
 ## Managing Webhooks
 
 OpenRegister provides a RESTful API for managing webhooks.
+
+![img_1.png](img_1.png)
+![img_2.png](img_2.png)
+![img_3.png](img_3.png)
+![img_4.png](img_4.png)
 
 ### Creating a Webhook
 
@@ -53,7 +220,7 @@ curl -X POST http://localhost:8080/index.php/apps/openregister/api/webhooks \
 |-----------|------|----------|-------------|
 | `name` | string | Yes | Webhook display name |
 | `url` | string | Yes | Target URL to call |
-| `method` | string | No | HTTP method (default: POST) |
+| `method` | string | No | HTTP method: GET, POST, PUT, PATCH, DELETE (default: POST) |
 | `events` | array | No | Event class names (empty = all events) |
 | `enabled` | boolean | No | Enable/disable webhook (default: true) |
 | `headers` | object | No | Custom HTTP headers |
@@ -101,6 +268,9 @@ curl -X DELETE http://localhost:8080/index.php/apps/openregister/api/webhooks/{i
 curl -X POST http://localhost:8080/index.php/apps/openregister/api/webhooks/{id}/test \
   -u 'admin:admin'
 ```
+![img_5.png](img_5.png)
+
+The test endpoint sends a test payload to verify webhook configuration. After testing, the webhook list automatically refreshes to show updated statistics (Last Triggered, Success Rate).
 
 ### Listing Available Events
 
@@ -198,7 +368,11 @@ OpenRegister dispatches events for all entity lifecycle operations. Below is a c
 
 ## Webhook Payload
 
-All webhooks receive a standardized payload:
+All webhooks receive a standardized payload. The format depends on the HTTP method:
+
+### POST, PUT, PATCH, DELETE Methods
+
+For these methods, the payload is sent as JSON in the request body:
 
 ```json
 {
@@ -222,6 +396,16 @@ All webhooks receive a standardized payload:
   "attempt": 1
 }
 ```
+
+### GET Method
+
+For GET requests, the payload is sent as query parameters instead of a JSON body:
+
+```
+GET /webhook-endpoint?event=OCA%5COpenRegister%5CEvent%5CObjectCreatedEvent&webhook[id]=550e8400-e29b-41d4-a716-446655440000&webhook[name]=My%20Webhook&data[objectType]=object&data[action]=created&timestamp=2025-11-20T20:00:00%2B00:00&attempt=1
+```
+
+The query parameters are URL-encoded versions of the same payload structure.
 
 ### Payload Structure
 
@@ -709,6 +893,7 @@ Each log entry contains:
 | `webhookId` | integer | Reference to the webhook |
 | `eventClass` | string | Event class name that triggered the webhook |
 | `payload` | object | Full payload sent to webhook |
+| `requestBody` | string | Request body as JSON (only stored on failure for retry purposes) |
 | `url` | string | Target URL |
 | `method` | string | HTTP method used |
 | `success` | boolean | Whether delivery succeeded |
@@ -719,6 +904,8 @@ Each log entry contains:
 | `nextRetryAt` | datetime | Timestamp for next retry (if failed) |
 | `created` | datetime | When the log entry was created |
 
+**Note**: The `requestBody` field is only stored when a webhook delivery fails. This allows the system to retry failed deliveries with the exact same payload. Successful deliveries do not store the request body to conserve database space.
+
 ### Accessing Logs
 
 Logs can be accessed via the API:
@@ -727,7 +914,31 @@ Logs can be accessed via the API:
 # Get logs for a specific webhook
 curl -X GET http://localhost:8080/index.php/apps/openregister/api/webhooks/{id}/logs \
   -u 'admin:admin'
+
+# Get all webhook logs (with optional filtering)
+curl -X GET 'http://localhost:8080/index.php/apps/openregister/api/webhooks/logs?webhook_id=1&limit=50&offset=0&success=false' \
+  -u 'admin:admin'
 ```
+
+#### Logs API Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `webhook_id` | integer | Filter logs by webhook ID (optional) |
+| `limit` | integer | Maximum number of logs to return (default: 50) |
+| `offset` | integer | Number of logs to skip (default: 0) |
+| `success` | boolean | Filter by success status: true or false (optional) |
+
+#### Retrying Failed Webhooks
+
+You can manually retry a failed webhook delivery using the log entry ID:
+
+```bash
+curl -X POST http://localhost:8080/index.php/apps/openregister/api/webhooks/logs/{logId}/retry \
+  -u 'admin:admin'
+```
+
+This will retry the webhook delivery using the stored request payload from the original failed attempt.
 
 ## Retry Mechanism
 
