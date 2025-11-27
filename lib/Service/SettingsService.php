@@ -39,6 +39,7 @@ use OCA\OpenRegister\Service\ObjectCacheService;
 use OCA\OpenRegister\Service\SchemaCacheService;
 use OCA\OpenRegister\Service\SchemaFacetCacheService;
 use OCP\ICacheFactory;
+use Psr\Log\LoggerInterface;
 
 /**
  * Service for handling settings-related operations.
@@ -139,6 +140,7 @@ class SettingsService
      * @param SchemaCacheService      $schemaCacheService     Schema cache service for cache management.
      * @param SchemaFacetCacheService $schemaFacetCacheService Schema facet cache service for cache management.
      * @param ICacheFactory           $cacheFactory           Cache factory for distributed cache access.
+     * @param LoggerInterface         $logger                 Logger for error and warning logging.
      */
     public function __construct(
         private readonly IAppConfig $config,
@@ -154,7 +156,8 @@ class SettingsService
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly SchemaCacheService $schemaCacheService,
         private readonly SchemaFacetCacheService $schemaFacetCacheService,
-        private readonly ICacheFactory $cacheFactory
+        private readonly ICacheFactory $cacheFactory,
+        private readonly LoggerInterface $logger
     ) {
         // Indulge in setting the application name for identification and configuration purposes.
         $this->appName = 'openregister';
@@ -1301,7 +1304,7 @@ class SettingsService
 
             return [
                 'service' => 'facet',
-                'cleared' => $beforeStats['entries'] - $afterStats['entries'],
+                'cleared' => ($beforeStats['total_entries'] ?? 0) - ($afterStats['total_entries'] ?? 0),
                 'before' => $beforeStats,
                 'after' => $afterStats,
                 'success' => true,
@@ -1319,9 +1322,11 @@ class SettingsService
     /**
      * Clear distributed cache
      *
-     * @param string|null $userId Specific user ID
+     * @param string|null $userId Specific user ID (unused, kept for API compatibility)
      *
      * @return array Clear operation results
+     *
+     * @psalm-suppress UnusedParam
      */
     private function clearDistributedCache(?string $userId = null): array
     {
@@ -1579,34 +1584,33 @@ class SettingsService
             $data = json_decode($response, true);
             
             // Validate admin response - be flexible about response format
-            if ($testType === 'admin_ping') {
-                // Check for successful response - different endpoints have different formats
-                $isValidResponse = false;
-                
-                if (isset($data['status']) && $data['status'] === 'OK') {
-                    // Standard ping response
-                    $isValidResponse = true;
-                } elseif (isset($data['responseHeader']['status']) && $data['responseHeader']['status'] === 0) {
-                    // System info response
-                    $isValidResponse = true;
-                } elseif (is_array($data) && !empty($data)) {
-                    // Any valid JSON response indicates SOLR is responding
-                    $isValidResponse = true;
-                }
-                
-                if (!$isValidResponse) {
-                    return [
-                        'success' => false,
-                        'message' => 'SOLR admin endpoint returned invalid response',
-                        'details' => [
-                            'url' => $testUrl,
-                            'test_type' => $testType,
-                            'response' => $data,
-                            'response_time_ms' => round($responseTime, 2)
-                        ]
-                    ];
-                }
-                
+            // Check for successful response - different endpoints have different formats
+            $isValidResponse = false;
+            
+            if (isset($data['status']) && $data['status'] === 'OK') {
+                // Standard ping response
+                $isValidResponse = true;
+            } elseif (isset($data['responseHeader']['status']) && $data['responseHeader']['status'] === 0) {
+                // System info response
+                $isValidResponse = true;
+            } elseif (is_array($data) && !empty($data)) {
+                // Any valid JSON response indicates SOLR is responding
+                $isValidResponse = true;
+            }
+            
+            if (!$isValidResponse) {
+                return [
+                    'success' => false,
+                    'message' => 'SOLR admin endpoint returned invalid response',
+                    'details' => [
+                        'url' => $testUrl,
+                        'test_type' => $testType,
+                        'response' => $data,
+                        'response_time_ms' => round($responseTime, 2)
+                    ]
+                ];
+            }
+            
             return [
                 'success' => true,
                 'message' => 'SOLR server responding correctly',
@@ -2705,6 +2709,32 @@ class SettingsService
             $this->logger->warning('Failed to get default organisation UUID: '.$e->getMessage());
             return null;
         }
+    }
+
+    /**
+     * Get tenant ID from multitenancy settings
+     *
+     * @return string|null Tenant ID (default user tenant) or null if not set
+     */
+    public function getTenantId(): ?string
+    {
+        try {
+            $multitenancySettings = $this->getMultitenancySettingsOnly();
+            return $multitenancySettings['multitenancy']['defaultUserTenant'] ?? null;
+        } catch (Exception $e) {
+            $this->logger->warning('Failed to get tenant ID: '.$e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Get organisation ID (alias for getDefaultOrganisationUuid)
+     *
+     * @return string|null Organisation ID or null if not set
+     */
+    public function getOrganisationId(): ?string
+    {
+        return $this->getDefaultOrganisationUuid();
     }
 
     /**

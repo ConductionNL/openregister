@@ -704,7 +704,7 @@ class SolrFileService
      */
     private function commandExists(string $command): bool
     {
-        // @psalm-suppress ForbiddenCode - shell_exec needed to check if command exists.
+        /** @psalm-suppress ForbiddenCode */
         $result = shell_exec(sprintf('which %s 2>/dev/null', escapeshellarg($command)));
         return !empty($result);
 
@@ -804,6 +804,28 @@ class SolrFileService
         return trim($text);
 
     }//end cleanText()
+
+
+    /**
+     * Calculate average chunk size from an array of chunks.
+     *
+     * @param array<string> $chunks Array of chunk strings.
+     *
+     * @return float Average chunk size in characters.
+     */
+    private function calculateAvgChunkSize(array $chunks): float
+    {
+        if (count($chunks) === 0) {
+            return 0.0;
+        }
+
+        $totalSize = 0;
+        foreach ($chunks as $chunk) {
+            $totalSize += strlen($chunk);
+        }
+
+        return round($totalSize / count($chunks), 2);
+    }//end calculateAvgChunkSize()
 
 
     /**
@@ -1267,20 +1289,18 @@ class SolrFileService
 
                 if ($result['success'] === true) {
                     $stats['indexed']++;
-                    // @psalm-suppress InvalidArrayOffset
-                    $stats['total_chunks'] += $result['chunks_indexed'];
+                    $stats['total_chunks'] += $result['indexed'] ?? 0;
 
                     $this->logger->info(
                             'Successfully indexed file chunks',
                             [
                                 'file_id' => $fileText->getFileId(),
-                                'chunks'  => $result['chunks_indexed'],
+                                'chunks'  => $result['indexed'] ?? 0,
                             ]
                             );
                 } else {
                     $stats['failed']++;
-                    // @psalm-suppress InvalidArrayOffset
-                    $stats['errors'][$fileText->getFileId()] = $result['message'] ?? 'Unknown error';
+                    $stats['errors'][$fileText->getFileId()] = $result['error'] ?? ($result['message'] ?? 'Unknown error');
                 }//end if
             } catch (\Exception $e) {
                 $stats['failed']++;
@@ -1331,11 +1351,17 @@ class SolrFileService
             throw new \Exception('fileCollection not configured in SOLR settings');
         }
 
+        // Extract chunking options if provided
+        $chunkSize = $options['chunk_size'] ?? null;
+        $chunkOverlap = $options['chunk_overlap'] ?? null;
+
         $this->logger->info(
                 'Processing single extracted file',
                 [
-                    'file_id'    => $fileId,
-                    'collection' => $collection,
+                    'file_id'      => $fileId,
+                    'collection'   => $collection,
+                    'chunk_size'   => $chunkSize,
+                    'chunk_overlap' => $chunkOverlap,
                 ]
                 );
 
@@ -1434,7 +1460,7 @@ class SolrFileService
             'total_extracted'      => $extractionStats['totalFiles'] ?? 0,
             'total_chunks_indexed' => $fileStats['document_count'] ?? 0,
             'unique_files_indexed' => $fileStats['indexed_files'] ?? 0,
-            'pending_indexing'     => max(0, ($extractionStats['completed'] ?? 0) - ($fileStats['indexed_files'] ?? 0)),
+            'pending_indexing'     => max(0, ($extractionStats['totalFiles'] ?? 0) - ($fileStats['indexed_files'] ?? 0)),
         ];
 
     }//end getChunkingStats()

@@ -920,6 +920,17 @@ class GuzzleSolrService
 
 
     /**
+     * Get tenant collection name (alias for getActiveCollectionName)
+     *
+     * @return string|null The tenant collection name or null if no collection exists
+     */
+    public function getTenantCollectionName(): ?string
+    {
+        return $this->getActiveCollectionName();
+    }//end getTenantCollectionName()
+
+
+    /**
      * Create SOLR collection
      *
      * @param string $collectionName    Collection name
