@@ -125,6 +125,14 @@
 								<NcActions>
 									<NcActionButton
 										close-after-click
+										@click="editWebhook(webhook)">
+										<template #icon>
+											<Pencil :size="20" />
+										</template>
+										{{ t('openregister', 'Edit') }}
+									</NcActionButton>
+									<NcActionButton
+										close-after-click
 										@click="testWebhook(webhook.id)">
 										<template #icon>
 											<PlayOutline :size="20" />
@@ -135,7 +143,8 @@
 										close-after-click
 										@click="toggleWebhook(webhook)">
 										<template #icon>
-											<component :is="webhook.enabled ? Close : PlayOutline" :size="20" />
+											<PauseCircleOutline v-if="webhook.enabled" :size="20" />
+											<PlayOutline v-else :size="20" />
 										</template>
 										{{ webhook.enabled ? t('openregister', 'Disable') : t('openregister', 'Enable') }}
 									</NcActionButton>
@@ -209,7 +218,8 @@ import Webhook from 'vue-material-design-icons/Webhook.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import FilterVariant from 'vue-material-design-icons/FilterVariant.vue'
 import PlayOutline from 'vue-material-design-icons/PlayOutline.vue'
-import Close from 'vue-material-design-icons/Close.vue'
+import PauseCircleOutline from 'vue-material-design-icons/PauseCircleOutline.vue'
+import Pencil from 'vue-material-design-icons/Pencil.vue'
 import DeleteOutline from 'vue-material-design-icons/DeleteOutline.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 
@@ -229,7 +239,8 @@ export default {
 		Refresh,
 		FilterVariant,
 		PlayOutline,
-		Close,
+		PauseCircleOutline,
+		Pencil,
 		DeleteOutline,
 		Plus,
 		WebhooksSidebar,
@@ -469,6 +480,18 @@ export default {
 		 * @return {void}
 		 */
 		openCreateDialog() {
+			navigationStore.setTransferData({ webhook: null })
+			navigationStore.setModal('editWebhook')
+		},
+
+		/**
+		 * Open edit webhook dialog
+		 *
+		 * @param {object} webhook - Webhook object to edit
+		 * @return {void}
+		 */
+		editWebhook(webhook) {
+			navigationStore.setTransferData({ webhook })
 			navigationStore.setModal('editWebhook')
 		},
 
@@ -569,12 +592,14 @@ export default {
 .tableContainer {
 	background: var(--color-main-background);
 	border-radius: var(--border-radius-large);
-	overflow: hidden;
+	overflow-x: auto;
+	overflow-y: visible;
 }
 
 .webhooksTable {
 	width: 100%;
 	border-collapse: collapse;
+	min-width: 100%;
 }
 
 .webhooksTable thead {
@@ -595,6 +620,30 @@ export default {
 }
 
 .webhooksTable tbody tr:hover {
+	background: var(--color-background-hover);
+}
+
+.webhooksTable thead .column-actions {
+	position: sticky;
+	right: 0;
+	background: var(--color-background-hover);
+	z-index: 10;
+	min-width: 80px;
+	width: 80px;
+	text-align: right;
+}
+
+.webhooksTable tbody .column-actions {
+	position: sticky;
+	right: 0;
+	background: var(--color-main-background);
+	z-index: 5;
+	min-width: 80px;
+	width: 80px;
+	text-align: right;
+}
+
+.webhooksTable tbody tr:hover .column-actions {
 	background: var(--color-background-hover);
 }
 
@@ -672,7 +721,34 @@ export default {
 }
 
 .column-actions {
-	width: 50px;
+	position: sticky;
+	right: 0;
+	background: var(--color-main-background);
+	z-index: 10;
+	min-width: 80px;
+	width: 80px;
+	text-align: right;
+}
+
+.webhooksTable thead .column-actions {
+	position: sticky;
+	right: 0;
+	background: var(--color-background-hover);
+	z-index: 10;
+	min-width: 80px;
+	width: 80px;
+	text-align: right;
+}
+
+.webhooksTable tbody .column-actions {
+	position: sticky;
+	right: 0;
+	background: var(--color-main-background);
+	z-index: 5;
+}
+
+.webhooksTable tbody tr:hover .column-actions {
+	background: var(--color-background-hover);
 }
 
 .pagination {
