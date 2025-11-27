@@ -29,8 +29,11 @@ export const useSchemaStore = defineStore('schema', {
 		setSchemaList(schemas) {
 			this.schemaList = schemas.map(schema => {
 				const existing = this.schemaList.find(item => item.id === schema.id) || {}
+				// Convert properties array to object if needed (backend sometimes returns array when empty)
+				const normalizedProperties = Array.isArray(schema.properties) ? {} : (schema.properties || {})
 				return {
 					...schema,
+					properties: normalizedProperties,
 					// keep previously toggled value if available, otherwise default false
 					showProperties: typeof existing.showProperties === 'boolean' ? existing.showProperties : false,
 				}
@@ -78,6 +81,10 @@ export const useSchemaStore = defineStore('schema', {
 					method: 'GET',
 				})
 				const data = await response.json()
+				// Convert properties array to object if needed (backend sometimes returns array when empty)
+				if (data && Array.isArray(data.properties)) {
+					data.properties = {}
+				}
 				options.setItem && this.setSchemaItem(data)
 				return data
 			} catch (err) {
