@@ -420,7 +420,12 @@ export default {
 					try {
 						const response = await fetch(`/index.php/apps/openregister/api/schemas/${schemaId}`)
 						if (response.ok) {
-							return await response.json()
+							const schema = await response.json()
+							// Convert properties array to object if needed (backend sometimes returns array when empty)
+							if (schema && Array.isArray(schema.properties)) {
+								schema.properties = {}
+							}
+							return schema
 						}
 						return null
 					} catch (error) {

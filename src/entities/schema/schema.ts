@@ -38,7 +38,8 @@ export class Schema implements TSchema {
 		this.description = schema.description || ''
 		this.summary = schema.summary || ''
 		this.required = schema.required || []
-		this.properties = schema.properties || {}
+		// Convert properties array to object if needed (backend sometimes returns array when empty)
+		this.properties = Array.isArray(schema.properties) ? {} : (schema.properties || {})
 		this.archive = schema.archive || {}
 		this.updated = schema.updated || ''
 		this.created = schema.created || ''
