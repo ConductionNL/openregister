@@ -502,7 +502,7 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 
 				<!-- Close Button (show when results are available) -->
 				<div v-else-if="explorationData && explorationData.suggestions" class="modal-footer">
-					<NcButton type="secondary" @click="closeModal">
+					<NcButton type="secondary" @click="closeDialog">
 						{{ t('openregister', 'Close') }}
 					</NcButton>
 				</div>
@@ -676,10 +676,10 @@ export default {
 	methods: {
 		t,
 		async handleDialogClose() {
-			navigationStore.setModal(false)
-			this.resetModal()
+			navigationStore.setDialog(false)
+			this.resetDialog()
 		},
-		resetModal() {
+		resetDialog() {
 			this.loading = false
 			this.error = null
 			this.success = false
@@ -930,9 +930,9 @@ export default {
 			this.itemsPerPage = pageSize
 			this.currentPage = 1
 		},
-		closeModal() {
-			navigationStore.setModal(false)
-			this.resetModal()
+		closeDialog() {
+			navigationStore.setDialog(false)
+			this.resetDialog()
 		},
 		getIssueDetails(issues) {
 			// Convert issue type strings to more detailed objects
