@@ -961,6 +961,7 @@ class ObjectService
             $registers   = array_combine(array_map(fn($register) => $register->getId(), $registers), $registers);
         }
 
+        //@TODO: Parallelise
         // Render each object through the object service.
         foreach ($objects as $key => $object) {
             $objects[$key] = $this->renderHandler->renderEntity(
@@ -1918,10 +1919,10 @@ class ObjectService
 
                 // Apply search terms
                 if (!empty($viewQuery['searchTerms'])) {
-                    $searchTerms = is_array($viewQuery['searchTerms']) 
-                        ? implode(' ', $viewQuery['searchTerms']) 
+                    $searchTerms = is_array($viewQuery['searchTerms'])
+                        ? implode(' ', $viewQuery['searchTerms'])
                         : $viewQuery['searchTerms'];
-                    
+
                     $existingSearch = $query['_search'] ?? '';
                     $query['_search'] = trim($existingSearch . ' ' . $searchTerms);
                 }
@@ -4051,98 +4052,6 @@ class ObjectService
 
         return $text;
     }//end createSlugHelper()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    /**
-     * Handle post-save writeBack operations for inverse relations
-     *
-     * This method processes writeBack operations after objects have been saved to the database.
-     * It uses the SaveObject handler's writeBack functionality for properties that have
-     * both inversedBy and writeBack enabled.
-     *
-     * @param array $savedObjects Array of saved ObjectEntity objects
-     * @param array $schemaCache  Cached schemas indexed by schema ID
-     *
-     * @return void
-     */
-    private function handlePostSaveInverseRelations(array $savedObjects, array $schemaCache): void
-    {
-        $writeBackCount = 0;
-        $bulkWriteBackUpdates = []; // PERFORMANCE OPTIMIZATION: Collect updates for bulk processing
-
-        foreach ($savedObjects as $savedObject) {
-            $objectData = $savedObject->getObject();
-            $schemaId   = $savedObject->getSchema();
-
-            if (!isset($schemaCache[$schemaId])) {
-                continue;
-            }
-
-            $schema           = $schemaCache[$schemaId];
-            $schemaProperties = $schema->getProperties();
-
-            foreach ($objectData as $property => $value) {
-                if (!isset($schemaProperties[$property])) {
-                    continue;
-                }
-
-                $propertyConfig = $schemaProperties[$property];
-                $items          = $propertyConfig['items'] ?? [];
-
-                // Check for writeBack enabled properties
-                $writeBack  = $propertyConfig['writeBack'] ?? ($items['writeBack'] ?? false);
-                $inversedBy = $propertyConfig['inversedBy'] ?? ($items['inversedBy'] ?? null);
-
-                if ($writeBack && $inversedBy && !empty($value)) {
-                    // Use SaveObject handler's writeBack functionality
-                    try {
-                        // Create a temporary object data array for writeBack processing
-                        $writeBackData = [$property => $value];
-                        $this->saveHandler->handleInverseRelationsWriteBack($savedObject, $schema, $writeBackData);
-                        $writeBackCount++;
-
-                        // After writeBack, update the source object's property with the current value
-                        // This ensures the source object reflects the relationship
-                        $currentObjectData = $savedObject->getObject();
-                        if (!isset($currentObjectData[$property]) || $currentObjectData[$property] !== $value) {
-                            $currentObjectData[$property] = $value;
-                            $savedObject->setObject($currentObjectData);
-
-                            // PERFORMANCE OPTIMIZATION: Collect for bulk update instead of individual UPDATE
-                            $objectUuid = $savedObject->getUuid();
-                            if (!isset($bulkWriteBackUpdates[$objectUuid])) {
-                                $bulkWriteBackUpdates[$objectUuid] = $savedObject;
-                            }
-                        }
-                    } catch (\Exception $e) {
-                    }
-                }//end if
-            }//end foreach
-        }//end foreach
-
-        // PERFORMANCE OPTIMIZATION: Execute all writeBack updates in a single bulk operation
-        if (!empty($bulkWriteBackUpdates)) {
-            $this->performBulkWriteBackUpdates(array_values($bulkWriteBackUpdates));
-        }
-
-
-    }//end handlePostSaveInverseRelations()
-
-
-
-
 
     /**
      * Filter objects based on RBAC and multi-organization permissions
