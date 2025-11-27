@@ -310,7 +310,7 @@ curl http://localhost:11434/api/embeddings -d '{
 - [Ollama Official Documentation](https://ollama.ai/docs)
 - [LLPhant Ollama Integration](../development/ollama.md)
 - [RAG Implementation](../features/rag-implementation.md)
-- [AI Chat Features](../features/ai.md)
+- [AI Chat Features](../Features/ai.md)
 
 ## Support
 

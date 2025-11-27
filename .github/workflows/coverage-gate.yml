@@ -250,7 +250,6 @@ jobs:
           path: nextcloud/apps/openregister/coverage/
           retention-days: 30
           if-no-files-found: ignore
-          if-no-files-found: ignore
 
       - name: Comment PR with coverage results
         if: github.event_name == 'pull_request'

@@ -461,5 +461,5 @@ Configure what data an agent can access:
 
 - [Function Calling](./function-calling.md) - How agents perform actions
 - [Agent Configuration](./agents.md) - Configure agents
-- [AI Configuration](./ai.md) - Provider setup and AI features
+- [AI Configuration](../Features/ai.md) - Provider setup and AI features
 

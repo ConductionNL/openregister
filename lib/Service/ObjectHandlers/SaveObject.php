@@ -1104,7 +1104,7 @@ class SaveObject
             return $property['type'] === 'object'
                 && isset($property['$ref']) === true
                 && (isset($property['inversedBy']) === true ||
-                    (isset($property['objectConfiguration']) && is_array($property['objectConfiguration']) && isset($property['objectConfiguration']['handling']) && $property['objectConfiguration']['handling'] === 'cascade'));
+                    (isset($property['objectConfiguration']['handling']) && $property['objectConfiguration']['handling'] === 'cascade'));
           }
           );
 
@@ -1124,8 +1124,8 @@ class SaveObject
             return $property['type'] === 'array'
                 && (isset($property['$ref']) || isset($property['items']['$ref']))
                 && (isset($property['inversedBy']) === true || isset($property['items']['inversedBy']) === true ||
-                    (isset($property['objectConfiguration']) && is_array($property['objectConfiguration']) && isset($property['objectConfiguration']['handling']) && ($property['objectConfiguration']['handling'] === 'cascade'|| $property['objectConfiguration']['handling'] === 'related-object')) ||
-                    (isset($property['items']['objectConfiguration']) && is_array($property['items']['objectConfiguration']) && isset($property['items']['objectConfiguration']['handling']) && ($property['items']['objectConfiguration']['handling'] === 'cascade' || $property['items']['objectConfiguration']['handling'] === 'related-object')));
+                    (isset($property['objectConfiguration']['handling']) && ($property['objectConfiguration']['handling'] === 'cascade'|| $property['objectConfiguration']['handling'] === 'related-object')) ||
+                    (isset($property['items']['objectConfiguration']['handling']) && ($property['items']['objectConfiguration']['handling'] === 'cascade' || $property['objectConfiguration']['handling'] === 'related-object')));
           }
           );
 

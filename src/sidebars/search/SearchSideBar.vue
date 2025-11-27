@@ -653,7 +653,7 @@ export default {
 			this.selectedRegisters.forEach(registerId => {
 				const register = registerStore.registerList.find(r => r.id === registerId)
 				if (register && register.schemas) {
-					register.schemas.forEach(schemaId => schemaIds.add(schemaId))
+					register.schemas.forEach(schema => schemaIds.add(schema.id))
 				}
 			})
 
@@ -673,27 +673,6 @@ export default {
 					return option.title || option.label || ''
 				},
 			}
-		},
-		oldSchemaOptions() {
-			if (!registerStore.registerItem) return { options: [] }
-
-			return {
-				options: schemaStore.schemaList
-					.filter(schema => registerStore.registerItem.schemas.includes(schema.id))
-					.map(schema => ({
-						value: schema.id,
-						label: schema.title,
-						title: schema.title,
-						schema,
-					})),
-				reduce: option => option.schema,
-				label: 'title',
-				getOptionLabel: option => {
-					return option.title || (option.schema && option.schema.title) || option.label || ''
-				},
-
-			}
-
 		},
 		viewOptions() {
 			return viewsStore.getAllViews.map(view => ({

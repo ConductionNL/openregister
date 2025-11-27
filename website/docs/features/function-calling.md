@@ -280,5 +280,5 @@ All tools respect:
 
 - [RAG Deep Dive](./chat-rag-deepdive.md) - How agents find information
 - [Agent Configuration](./agents.md) - Configure agents and tools
-- [AI Configuration](./ai.md) - Provider setup and AI features
+- [AI Configuration](../Features/ai.md) - Provider setup and AI features
 
