@@ -2240,7 +2240,6 @@ class SettingsController extends Controller
             // Create missing file metadata fields using reflection to call private method.
             $reflection = new \ReflectionClass($solrSchemaService);
             $method     = $reflection->getMethod('ensureFileMetadataFields');
-            $method->setAccessible(true);
             $result = $method->invoke($solrSchemaService, true);
 
             // Restore original collection.
@@ -2375,7 +2374,6 @@ class SettingsController extends Controller
             // Use the existing analyzeAndResolveFieldConflicts method via reflection.
             $reflection = new \ReflectionClass($solrSchemaService);
             $method     = $reflection->getMethod('analyzeAndResolveFieldConflicts');
-            $method->setAccessible(true);
 
             $result = $method->invoke($solrSchemaService, $schemas);
 
@@ -4156,7 +4154,6 @@ class SettingsController extends Controller
             // Use reflection to call the private method (for API access).
             $reflection = new \ReflectionClass($guzzleSolrService);
             $method     = $reflection->getMethod('predictWarmupMemoryUsage');
-            $method->setAccessible(true);
             $prediction = $method->invoke($guzzleSolrService, $maxObjects);
 
             return new JSONResponse(

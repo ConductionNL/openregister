@@ -12,17 +12,25 @@
 				<h3>{{ t('openregister', 'Basic Information') }}</h3>
 				<table class="logDetailsTable">
 					<tr>
-						<td class="logLabel">{{ t('openregister', 'Webhook') }}</td>
-						<td class="logValue">{{ getWebhookName(logItem.webhookId) }}</td>
+						<td class="logLabel">
+							{{ t('openregister', 'Webhook') }}
+						</td>
+						<td class="logValue">
+							{{ getWebhookName(logItem.webhookId) }}
+						</td>
 					</tr>
 					<tr>
-						<td class="logLabel">{{ t('openregister', 'Event') }}</td>
+						<td class="logLabel">
+							{{ t('openregister', 'Event') }}
+						</td>
 						<td class="logValue">
 							<code class="event-class">{{ logItem.eventClass }}</code>
 						</td>
 					</tr>
 					<tr>
-						<td class="logLabel">{{ t('openregister', 'Status') }}</td>
+						<td class="logLabel">
+							{{ t('openregister', 'Status') }}
+						</td>
 						<td class="logValue">
 							<span :class="logItem.success ? 'status-success' : 'status-failed'">
 								{{ logItem.success ? t('openregister', 'Success') : t('openregister', 'Failed') }}
@@ -30,19 +38,29 @@
 						</td>
 					</tr>
 					<tr>
-						<td class="logLabel">{{ t('openregister', 'Status Code') }}</td>
+						<td class="logLabel">
+							{{ t('openregister', 'Status Code') }}
+						</td>
 						<td class="logValue">
 							<span v-if="logItem.statusCode">{{ logItem.statusCode }}</span>
 							<span v-else class="text-muted">-</span>
 						</td>
 					</tr>
 					<tr>
-						<td class="logLabel">{{ t('openregister', 'Attempt') }}</td>
-						<td class="logValue">{{ logItem.attempt }}</td>
+						<td class="logLabel">
+							{{ t('openregister', 'Attempt') }}
+						</td>
+						<td class="logValue">
+							{{ logItem.attempt }}
+						</td>
 					</tr>
 					<tr>
-						<td class="logLabel">{{ t('openregister', 'Created') }}</td>
-						<td class="logValue">{{ formatDate(logItem.created) }}</td>
+						<td class="logLabel">
+							{{ t('openregister', 'Created') }}
+						</td>
+						<td class="logValue">
+							{{ formatDate(logItem.created) }}
+						</td>
 					</tr>
 				</table>
 			</div>
@@ -124,13 +142,10 @@ import Refresh from 'vue-material-design-icons/Refresh.vue'
  * Displays detailed information about a webhook log entry.
  *
  * @module Modals/Webhook
- * @category Modals
- * @package openregister
  * @author Conduction
  * @copyright 2024 Conduction
  * @license AGPL-3.0-or-later
  * @version 1.0.0
- * @link https://github.com/conduction/openregister
  */
 export default {
 	name: 'ViewWebhookLog',
@@ -432,4 +447,3 @@ export default {
 	color: var(--color-text-maxcontrast);
 }
 </style>
-

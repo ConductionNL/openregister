@@ -5124,7 +5124,7 @@ class ObjectService
             $objectData = $result->getObject();
 
             // Look for relationship fields in the object data.
-            foreach ($objectData as $key => $value) {
+            foreach ($objectData as $value) {
                 if (is_array($value) === true) {
                     // Handle array of IDs.
                     foreach ($value as $relatedId) {
