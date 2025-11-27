@@ -37,6 +37,7 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 						</tr>
 					</thead>
 					<tbody>
+						<!-- eslint-disable-next-line vue/no-v-for-template-key -->
 						<template v-for="(sheetSummary, sheetKey) in importResults" :key="sheetKey">
 							<tr>
 								<td class="sheetName">
