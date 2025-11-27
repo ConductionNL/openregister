@@ -22,12 +22,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      # Verify directory structure
-      - name: List directory structure
-        run: |
-          ls -la
-          ls -la website/
-
       - name: Setup Node.js 18
         uses: actions/setup-node@v3
         with:
@@ -45,8 +39,6 @@ jobs:
       - name: Verify build output
         run: |
           cd website/build
-          ls -la
-          echo "Build directory contents verified"
           if [ ! -f index.html ]; then
             echo "ERROR: index.html not found in build directory!"
             exit 1
@@ -57,13 +49,6 @@ jobs:
           cd website/build
           touch .nojekyll
           echo "openregisters.app" > CNAME
-          echo "Created .nojekyll and CNAME files"
-          
-      - name: Show build directory size
-        run: |
-          du -sh website/build
-          find website/build -type f | wc -l
-          echo "Total files to deploy"
 
       # Deploy to GitHub Pages
       - name: Deploy to GitHub Pages
@@ -80,9 +65,8 @@ jobs:
           
       - name: Verify deployment
         run: |
-          echo "Checking if gh-pages branch was updated..."
           git fetch origin gh-pages
-          git log origin/gh-pages --oneline -5
+          echo "✅ Deployment completed. Latest commit: $(git rev-parse origin/gh-pages)"
 
       # https://github.com/marketplace/actions/create-an-issue
       - name: Create issue on failure
