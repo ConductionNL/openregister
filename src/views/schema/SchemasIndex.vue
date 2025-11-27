@@ -487,7 +487,7 @@ export default {
 			if (!schema || !schema.id) return false
 
 			return configurationStore.configurationList.some(
-				config => config.schemas && config.schemas.includes(schema.id),
+				config => config.schemas && config.schemas.some(configSchema => configSchema.id === schema.id),
 			)
 		},
 		/**
@@ -500,7 +500,7 @@ export default {
 			if (!schema || !schema.id) return null
 
 			return configurationStore.configurationList.find(
-				config => config.schemas && config.schemas.includes(schema.id),
+				config => config.schemas && config.schemas.some(configSchema => configSchema.id === schema.id),
 			) || null
 		},
 		/**

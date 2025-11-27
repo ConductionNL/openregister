@@ -94,7 +94,7 @@ export default {
 			}
 
 			for (const reg of registerStore.registerList) {
-				if (reg.schemas.includes(schemaStore.schemaItem.id)) {
+				if (reg.schemas.some(regSchema => regSchema.id === schemaStore.schemaItem.id)) {
 					await objectStore.refreshObjectList({
 						register: reg.id,
 						schema: schemaStore.schemaItem.id,
