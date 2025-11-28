@@ -859,7 +859,7 @@ class Application extends App implements IBootstrap
         // Register event listeners for testing and functionality.
         $container = $context->getAppContainer();
         $container->get(IEventDispatcher::class);
-        $logger    = $container->get(id: 'Psr\Log\LoggerInterface');
+        $logger = $container->get(id: 'Psr\Log\LoggerInterface');
 
         // Log boot process.
         $logger->info(

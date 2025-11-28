@@ -50,11 +50,11 @@ class FileExtractionController extends Controller
     /**
      * Constructor
      *
-     * @param string                $appName              Application name
-     * @param IRequest              $request              HTTP request
+     * @param string                $appName               Application name
+     * @param IRequest              $request               HTTP request
      * @param TextExtractionService $textExtractionService Text extraction service
-     * @param VectorizationService  $vectorizationService Unified vectorization service
-     * @param ChunkMapper           $chunkMapper          Chunk mapper for text chunks
+     * @param VectorizationService  $vectorizationService  Unified vectorization service
+     * @param ChunkMapper           $chunkMapper           Chunk mapper for text chunks
      */
     public function __construct(
         string $appName,
@@ -98,7 +98,6 @@ class FileExtractionController extends Controller
         try {
             // TextExtractionService doesn't have findByStatus, use discoverUntrackedFiles or extractPendingFiles instead.
             // For now, return empty array as this endpoint needs to be redesigned for chunk-based architecture.
-
             return new JSONResponse(
                     data: [
                         'success' => true,
@@ -152,7 +151,7 @@ class FileExtractionController extends Controller
                         data: [
                             'success' => false,
                             'error'   => 'File not found in extraction system',
-                            'message' => 'No chunks found for file ID: ' . $id,
+                            'message' => 'No chunks found for file ID: '.$id,
                         ],
                         statusCode: 404
                     );
@@ -173,7 +172,7 @@ class FileExtractionController extends Controller
                     ],
                     statusCode: 404
                 );
-        }
+        }//end try
 
     }//end show()
 
@@ -323,7 +322,7 @@ class FileExtractionController extends Controller
             return new JSONResponse(
                     data: [
                         'success' => true,
-            'message' => 'Batch extraction completed',
+                        'message' => 'Batch extraction completed',
                         'data'    => $stats,
                     ]
                     );
@@ -371,7 +370,7 @@ class FileExtractionController extends Controller
             return new JSONResponse(
                     data: [
                         'success' => true,
-            'message' => 'Retry completed',
+                        'message' => 'Retry completed',
                         'data'    => $stats,
                     ]
                     );
@@ -417,7 +416,7 @@ class FileExtractionController extends Controller
             return new JSONResponse(
                     data: [
                         'success' => true,
-            'data'    => $stats,
+                        'data'    => $stats,
                     ]
                     );
         } catch (\Exception $e) {
@@ -470,7 +469,7 @@ class FileExtractionController extends Controller
                         'message' => 'Cleanup completed',
                         'data'    => [
                             'deleted' => 0,
-                            'reasons' => []
+                            'reasons' => [],
                         ],
                     ]
                     );
@@ -483,7 +482,7 @@ class FileExtractionController extends Controller
                     ],
                     statusCode: 500
                     );
-        }
+        }//end try
 
     }//end cleanup()
 
@@ -520,7 +519,7 @@ class FileExtractionController extends Controller
             return new JSONResponse(
                     data: [
                         'success' => true,
-            'data'    => $types,
+                        'data'    => $types,
                     ]
                     );
         } catch (\Exception $e) {
@@ -583,14 +582,14 @@ class FileExtractionController extends Controller
             return new JSONResponse(
                     data: [
                         'success' => true,
-            'data'    => $result,
+                        'data'    => $result,
                     ]
                     );
         } catch (\Exception $e) {
             return new JSONResponse(
                     data: [
                         'success' => false,
-            'error'   => 'Vectorization failed',
+                        'error'   => 'Vectorization failed',
                         'message' => $e->getMessage(),
                     ],
                     statusCode: 500

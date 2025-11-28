@@ -251,7 +251,6 @@ class ObjectsProvider implements IFilteringProvider
         $limit  = null;
         $offset = null;
         // Note: order parameter not currently used in search
-
         // Build search query for searchObjectsPaginated.
         $searchQuery = [];
 
@@ -283,10 +282,14 @@ class ObjectsProvider implements IFilteringProvider
         }
 
         // Set pagination limits for Nextcloud search.
-        /** @psalm-suppress TypeDoesNotContainType We intend null-coalescing for future when pagination is implemented */
+        /*
+         * @psalm-suppress TypeDoesNotContainType We intend null-coalescing for future when pagination is implemented
+         */
         $searchQuery['_limit'] = $limit ?? 25;
         // Default limit for search interface.
-        /** @psalm-suppress TypeDoesNotContainType We intend null-coalescing for future when pagination is implemented */
+        /*
+         * @psalm-suppress TypeDoesNotContainType We intend null-coalescing for future when pagination is implemented
+         */
         $searchQuery['_offset'] = $offset ?? 0;
 
         $this->logger->debug(

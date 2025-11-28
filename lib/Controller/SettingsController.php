@@ -2240,7 +2240,7 @@ class SettingsController extends Controller
             // Create missing file metadata fields using reflection to call private method.
             $reflection = new \ReflectionClass($solrSchemaService);
             $method     = $reflection->getMethod('ensureFileMetadataFields');
-            $result = $method->invoke($solrSchemaService, true);
+            $result     = $method->invoke($solrSchemaService, true);
 
             // Restore original collection.
             $guzzleSolrService->setActiveCollection($originalCollection);
@@ -3206,7 +3206,9 @@ class SettingsController extends Controller
     {
         try {
             // Get database platform information.
-            /** @var \Doctrine\DBAL\Platforms\AbstractPlatform $platform */
+            /*
+             * @var \Doctrine\DBAL\Platforms\AbstractPlatform $platform
+             */
             $platform = $this->db->getDatabasePlatform();
             /*
              * @var string $platformName
@@ -4875,8 +4877,8 @@ class SettingsController extends Controller
     {
         try {
             // Get request parameters.
-            $maxFiles    = (int) $this->request->getParam('max_files', 100);
-            $batchSize   = (int) $this->request->getParam('batch_size', 50);
+            $maxFiles  = (int) $this->request->getParam('max_files', 100);
+            $batchSize = (int) $this->request->getParam('batch_size', 50);
             // Note: file_types parameter not currently used
             $skipIndexed = $this->request->getParam('skip_indexed', true);
             $mode        = $this->request->getParam('mode', 'parallel');

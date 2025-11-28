@@ -82,16 +82,21 @@
 					<MagnifyPlus :size="20" />
 				</template>
 			</NcAppNavigationItem>
-			<NcAppNavigationItem :active="$route.path.startsWith('/webhooks')" :name="t('openregister', 'Webhooks')" @click="handleNavigate('/webhooks')">
-				<template #icon>
-					<Webhook :size="20" />
-				</template>
-			</NcAppNavigationItem>
-			<NcAppNavigationItem :active="$route.path.startsWith('/entities')" :name="t('openregister', 'Entities')" @click="handleNavigate('/entities')">
-				<template #icon>
-					<AccountOutline :size="20" />
-				</template>
-			</NcAppNavigationItem>
+		<NcAppNavigationItem :active="$route.path.startsWith('/webhooks')" :name="t('openregister', 'Webhooks')" @click="handleNavigate('/webhooks')">
+			<template #icon>
+				<Webhook :size="20" />
+			</template>
+		</NcAppNavigationItem>
+		<NcAppNavigationItem :active="$route.path.startsWith('/endpoints')" :name="t('openregister', 'Endpoints')" @click="handleNavigate('/endpoints')">
+			<template #icon>
+				<Api :size="20" />
+			</template>
+		</NcAppNavigationItem>
+		<NcAppNavigationItem :active="$route.path.startsWith('/entities')" :name="t('openregister', 'Entities')" @click="handleNavigate('/entities')">
+			<template #icon>
+				<AccountOutline :size="20" />
+			</template>
+		</NcAppNavigationItem>
 		</NcAppNavigationSettings>
 	</NcAppNavigation>
 </template>
@@ -122,6 +127,7 @@ import DeleteRestore from 'vue-material-design-icons/DeleteRestore.vue'
 import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
 import MagnifyPlus from 'vue-material-design-icons/MagnifyPlus.vue'
 import Webhook from 'vue-material-design-icons/Webhook.vue'
+import Api from 'vue-material-design-icons/Api.vue'
 import AccountOutline from 'vue-material-design-icons/AccountOutline.vue'
 
 // Store
@@ -152,6 +158,7 @@ export default {
 		TextBoxOutline,
 		MagnifyPlus,
 		Webhook,
+		Api,
 		AccountOutline,
 	},
 	computed: {

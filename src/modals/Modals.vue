@@ -54,6 +54,8 @@ import { navigationStore } from '../store/store.js'
 		<DeleteAgent />
 		<EditWebhook v-if="navigationStore.modal === 'editWebhook'" />
 		<ViewWebhookLog v-if="navigationStore.modal === 'viewWebhookLog'" />
+		<EditEndpoint v-if="navigationStore.modal === 'editEndpoint'" />
+		<DeleteEndpoint v-if="navigationStore.dialog === 'deleteEndpoint'" />
 	</div>
 </template>
 
@@ -157,6 +159,8 @@ export default {
 		DeleteAgent,
 		EditWebhook,
 		ViewWebhookLog,
+		EditEndpoint,
+		DeleteEndpoint,
 	},
 }
 </script>

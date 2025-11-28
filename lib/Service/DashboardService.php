@@ -105,7 +105,7 @@ class DashboardService
             $webhookLogStats = $this->webhookLogMapper->getStatistics(webhookId: 0);
 
             return [
-                'objects' => [
+                'objects'     => [
                     'total'     => $objectStats['total'],
                     'size'      => $objectStats['size'],
                     'invalid'   => $objectStats['invalid'],
@@ -113,7 +113,7 @@ class DashboardService
                     'locked'    => $objectStats['locked'],
                     'published' => $objectStats['published'],
                 ],
-                'logs'    => [
+                'logs'        => [
                     'total' => $logStats['total'],
                     'size'  => $logStats['size'],
                 ],
@@ -121,7 +121,7 @@ class DashboardService
                     'total' => $webhookLogStats['total'] ?? 0,
                     'size'  => 0,
                 ],
-                'files'   => [
+                'files'       => [
                     'total' => 0,
                     'size'  => 0,
                 ],
@@ -129,7 +129,7 @@ class DashboardService
         } catch (\Exception $e) {
             $this->logger->error(message: 'Failed to get statistics: '.$e->getMessage());
             return [
-                'objects' => [
+                'objects'     => [
                     'total'     => 0,
                     'size'      => 0,
                     'invalid'   => 0,
@@ -137,7 +137,7 @@ class DashboardService
                     'locked'    => 0,
                     'published' => 0,
                 ],
-                'logs'    => [
+                'logs'        => [
                     'total' => 0,
                     'size'  => 0,
                 ],
@@ -145,7 +145,7 @@ class DashboardService
                     'total' => 0,
                     'size'  => 0,
                 ],
-                'files'   => [
+                'files'       => [
                     'total' => 0,
                     'size'  => 0,
                 ],
@@ -543,16 +543,14 @@ class DashboardService
 
             // Build the response.
             $registerScope = $register !== null ? [
-                'id' => $register->getId(),
+                'id'    => $register->getId(),
                 'title' => $register->getTitle(),
             ] : null;
-            $schemaScope = $schema !== null ? [
-                'id' => $schema->getId(),
+            $schemaScope   = $schema !== null ? [
+                'id'    => $schema->getId(),
                 'title' => $schema->getTitle(),
             ] : null;
-            $successRate = $results['total']['processed'] > 0
-                ? round(($results['total']['processed'] - $results['total']['failed']) / $results['total']['processed'] * 100, 2)
-                : 0.0;
+            $successRate   = $results['total']['processed'] > 0 ? round(($results['total']['processed'] - $results['total']['failed']) / $results['total']['processed'] * 100, 2) : 0.0;
 
             $response = [
                 'status'    => 'success',
@@ -583,8 +581,8 @@ class DashboardService
      *
      * @param DateTime|null $from       Start date for the chart data
      * @param DateTime|null $till       End date for the chart data
-     * @param int|null       $registerId Optional register ID to filter by
-     * @param int|null       $schemaId   Optional schema ID to filter by
+     * @param int|null      $registerId Optional register ID to filter by
+     * @param int|null      $schemaId   Optional schema ID to filter by
      *
      * @return array Array containing chart data for audit trail actions
      */

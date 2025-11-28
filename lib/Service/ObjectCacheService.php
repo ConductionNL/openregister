@@ -1071,14 +1071,20 @@ class ObjectCacheService
         // This ensures colleagues see each other's changes immediately.
         $schemaIdInt = null;
         if ($schemaId !== null) {
-            /** @var int|string $schemaId */
+            /*
+             * @var int|string $schemaId
+             */
             $schemaIdInt = is_string($schemaId) ? (int) $schemaId : (int) $schemaId;
         }
+
         $registerIdInt = null;
         if ($registerId !== null) {
-            /** @var int|string $registerId */
+            /*
+             * @var int|string $registerId
+             */
             $registerIdInt = is_string($registerId) ? (int) $registerId : (int) $registerId;
         }
+
         $this->clearSchemaRelatedCaches(schemaId: $schemaIdInt, registerId: $registerIdInt, operation: $operation);
 
         $executionTime = round((microtime(true) - $startTime) * 1000, 2);

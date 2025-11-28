@@ -312,7 +312,9 @@ class FilesController extends Controller
             $uploadedFiles = [];
 
             // Check if multiple files have been uploaded.
-            /** @var array<string, array<int, string>|string|int> $files */
+            /*
+             * @var array<string, array<int, string>|string|int> $files
+             */
             $files = $_FILES['files'] ?? [];
 
             // Lets see if we have files in the request.
@@ -359,7 +361,7 @@ class FilesController extends Controller
                             'tags'     => $tags,
                         ];
                     }
-                }
+                }//end if
             }//end if
 
             // Get the uploaded file from the request if a single file hase been uploaded.

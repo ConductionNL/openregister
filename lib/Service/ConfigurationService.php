@@ -112,7 +112,6 @@ class ConfigurationService
      */
     private $appConfig;
 
-
     /**
      * Logger instance for logging operations.
      *
@@ -147,7 +146,6 @@ class ConfigurationService
      * @var ObjectService The object service instance.
      */
     private ObjectService $objectService;
-
 
 
     /**
@@ -475,7 +473,9 @@ class ConfigurationService
                 if (is_numeric($registerId)) {
                     $registerIdStr = (string) $registerId;
                     if (isset($registerIdsAndSlugsMap[$registerIdStr]) === true) {
-                        /** @var array<int|string, string> $registerIdsAndSlugsMap */
+                        /*
+                         * @var array<int|string, string> $registerIdsAndSlugsMap
+                         */
                         $property['objectConfiguration']['register'] = $registerIdsAndSlugsMap[$registerIdStr];
                     }
                 }
@@ -492,7 +492,9 @@ class ConfigurationService
                 if (is_numeric($schemaId)) {
                     $schemaIdStr = (string) $schemaId;
                     if (isset($schemaIdsAndSlugsMap[$schemaIdStr]) === true) {
-                        /** @var array<int|string, string> $schemaIdsAndSlugsMap */
+                        /*
+                         * @var array<int|string, string> $schemaIdsAndSlugsMap
+                         */
                         $property['objectConfiguration']['schema'] = $schemaIdsAndSlugsMap[$schemaIdStr];
                     }
                 }
@@ -513,11 +515,13 @@ class ConfigurationService
                 if (is_numeric($registerId)) {
                     $registerIdStr = (string) $registerId;
                     if (isset($registerIdsAndSlugsMap[$registerIdStr]) === true) {
-                        /** @var array<int|string, string> $registerIdsAndSlugsMap */
+                        /*
+                         * @var array<int|string, string> $registerIdsAndSlugsMap
+                         */
                         $property['items']['objectConfiguration']['register'] = $registerIdsAndSlugsMap[$registerIdStr];
                     }
                 }
-            }
+            }//end if
 
             // Handle schema ID in array items objectConfiguration (new structure).
             if (isset($property['items']['objectConfiguration']['schema']) === true) {
@@ -534,19 +538,23 @@ class ConfigurationService
                 if (is_numeric($schemaId)) {
                     $schemaIdStr = (string) $schemaId;
                     if (isset($schemaIdsAndSlugsMap[$schemaIdStr]) === true) {
-                        /** @var array<int|string, string> $schemaIdsAndSlugsMap */
+                        /*
+                         * @var array<int|string, string> $schemaIdsAndSlugsMap
+                         */
                         $property['items']['objectConfiguration']['schema'] = $schemaIdsAndSlugsMap[$schemaIdStr];
                     }
                 }
-            }
+            }//end if
 
             // Legacy support: Handle old register property structure.
             if (isset($property['register']) === true) {
                 if (is_string($property['register']) === true) {
-                    $registerId = $this->getLastNumericSegment(url: $property['register']);
+                    $registerId    = $this->getLastNumericSegment(url: $property['register']);
                     $registerIdStr = (string) $registerId;
                     if (isset($registerIdsAndSlugsMap[$registerIdStr]) === true) {
-                        /** @var array<int|string, string> $registerIdsAndSlugsMap */
+                        /*
+                         * @var array<int|string, string> $registerIdsAndSlugsMap
+                         */
                         $property['register'] = $registerIdsAndSlugsMap[$registerIdStr];
                     }
                 }
@@ -559,10 +567,12 @@ class ConfigurationService
                 }
 
                 if (is_string($property['items']['register']) === true) {
-                    $registerId = $this->getLastNumericSegment(url: $property['items']['register']);
+                    $registerId    = $this->getLastNumericSegment(url: $property['items']['register']);
                     $registerIdStr = (string) $registerId;
                     if (isset($registerIdsAndSlugsMap[$registerIdStr]) === true) {
-                        /** @var array<int|string, string> $registerIdsAndSlugsMap */
+                        /*
+                         * @var array<int|string, string> $registerIdsAndSlugsMap
+                         */
                         $property['items']['register'] = $registerIdsAndSlugsMap[$registerIdStr];
                     }
                 }
@@ -584,7 +594,7 @@ class ConfigurationService
      * @param  string $url The input URL to evaluate
      * @return string The numeric value if found, or the original URL
      *
-     * @throws \InvalidArgumentException If the URL is not a string
+     * @throws         \InvalidArgumentException If the URL is not a string
      * @psalm-suppress UndefinedDocblockClass - InvalidArgumentException is a standard PHP exception
      */
     private function getLastNumericSegment(string $url): string
@@ -751,6 +761,8 @@ class ConfigurationService
      *
      * @return array A PHP array with the uploaded json data or a JSONResponse in case of an error.
      */
+
+
     /**
      * @return array<array-key, mixed>|JSONResponse
      */
@@ -820,6 +832,8 @@ class ConfigurationService
      *
      * @return array A PHP array with the uploaded json data or a JSONResponse in case of an error.
      */
+
+
     /**
      * @return array<array-key, mixed>|JSONResponse
      */
@@ -1744,10 +1758,10 @@ class ConfigurationService
                     limit: null,
                     offset: null,
                     filters: [
-                            'register' => $registerId,
-                            'schema'   => $schemaId,
-                            'name'     => $objectName,
-                        ]
+                        'register' => $registerId,
+                        'schema'   => $schemaId,
+                        'name'     => $objectName,
+                    ]
                     );
 
             $existingObject = null;
@@ -3011,6 +3025,8 @@ class ConfigurationService
      *     skipped: array
      * }
      */
+
+
     /**
      * @return array{objects: array<array-key, ObjectEntity>, registers: array<array-key, Register>, schemas: array<array-key, Schema>, endpoints?: array<array-key, mixed>, sources?: array<array-key, mixed>, mappings?: array<array-key, mixed>, jobs?: array<array-key, mixed>, synchronizations?: array<array-key, mixed>, rules?: array<array-key, mixed>}
      */

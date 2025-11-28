@@ -275,7 +275,9 @@ class ViewsController extends Controller
             }
 
             // Extract query parameters from configuration or query.
-            /** @psalm-suppress UnusedVariable - Variable is used in viewService->create() call */
+            /*
+             * @psalm-suppress UnusedVariable - Variable is used in viewService->create() call
+             */
             $query = [];
             if (isset($data['configuration']) === true && is_array($data['configuration']) === true) {
                 // Frontend still sends 'configuration', extract only query params.
@@ -375,7 +377,9 @@ class ViewsController extends Controller
             }
 
             // Extract query parameters from configuration or query.
-            /** @psalm-suppress UnusedVariable - Variable is used in viewService->update() call */
+            /*
+             * @psalm-suppress UnusedVariable - Variable is used in viewService->update() call
+             */
             $query = [];
             if (isset($data['configuration']) === true && is_array($data['configuration']) === true) {
                 // Frontend still sends 'configuration', extract only query params.
@@ -586,11 +590,12 @@ class ViewsController extends Controller
                 return new JSONResponse(
                         data: [
                             'success' => false,
-                            'error' => 'User not authenticated',
+                            'error'   => 'User not authenticated',
                         ],
                         statusCode: 401
                         );
             }
+
             $this->viewService->delete($id, $user->getUID());
 
             return new JSONResponse(

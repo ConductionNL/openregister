@@ -85,11 +85,11 @@ class WebhookRetryJob extends TimedJob
     /**
      * Constructor
      *
-     * @param ITimeFactory     $time            Time factory
-     * @param WebhookMapper    $webhookMapper   Webhook mapper
+     * @param ITimeFactory     $time             Time factory
+     * @param WebhookMapper    $webhookMapper    Webhook mapper
      * @param WebhookLogMapper $webhookLogMapper Webhook log mapper
-     * @param WebhookService   $webhookService  Webhook service
-     * @param LoggerInterface  $logger          Logger
+     * @param WebhookService   $webhookService   Webhook service
+     * @param LoggerInterface  $logger           Logger
      */
     public function __construct(
         ITimeFactory $time,
@@ -168,9 +168,9 @@ class WebhookRetryJob extends TimedJob
                     $this->logger->warning(
                             'Webhook retry limit exceeded',
                             [
-                                'webhook_id' => $webhook->getId(),
-                                'log_id'     => $log->getId(),
-                                'attempt'    => $log->getAttempt(),
+                                'webhook_id'  => $webhook->getId(),
+                                'log_id'      => $log->getId(),
+                                'attempt'     => $log->getAttempt(),
                                 'max_retries' => $webhook->getMaxRetries(),
                             ]
                             );
@@ -227,4 +227,3 @@ class WebhookRetryJob extends TimedJob
 
 
 }//end class
-

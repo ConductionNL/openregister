@@ -210,6 +210,7 @@ class OrganisationService
 
     }//end ensureDefaultOrganisation()
 
+
     /**
      * Get Organisation settings only
      *
@@ -224,13 +225,13 @@ class OrganisationService
             $organisationData = [];
             if (empty($organisationConfig)) {
                 $organisationData = [
-                    'default_organisation'              => null,
+                    'default_organisation'             => null,
                     'auto_create_default_organisation' => true,
                 ];
             } else {
-                $storedData = json_decode($organisationConfig, true);
+                $storedData       = json_decode($organisationConfig, true);
                 $organisationData = [
-                    'default_organisation'              => $storedData['default_organisation'] ?? null,
+                    'default_organisation'             => $storedData['default_organisation'] ?? null,
                     'auto_create_default_organisation' => $storedData['auto_create_default_organisation'] ?? true,
                 ];
             }
@@ -240,8 +241,10 @@ class OrganisationService
             ];
         } catch (Exception $e) {
             throw new \RuntimeException('Failed to retrieve Organisation settings: '.$e->getMessage());
-        }
-    }
+        }//end try
+
+    }//end getOrganisationSettingsOnly()
+
 
     /**
      * Get default organisation UUID from settings
@@ -257,7 +260,8 @@ class OrganisationService
             $this->logger->warning('Failed to get default organisation UUID: '.$e->getMessage());
             return null;
         }
-    }
+
+    }//end getDefaultOrganisationUuid()
 
 
     /**

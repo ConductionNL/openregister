@@ -542,10 +542,11 @@ class SearchTrailController extends Controller
                 // getUserAgentStatistics returns: user_agents, browser_distribution, total_user_agents, period
                 $userAgentsArray = $serviceResult['user_agents'];
                 // Ensure we have a proper indexed array for pagination.
-                $userAgents = is_array($userAgentsArray) ? array_values($userAgentsArray) : [];
+                $userAgents        = is_array($userAgentsArray) ? array_values($userAgentsArray) : [];
                 $totalUniqueAgents = $serviceResult['total_user_agents'] ?? 0;
-                $totalSearches = 0; // Not returned by getUserAgentStatistics
-                $period        = $serviceResult['period'] ?? null;
+                $totalSearches     = 0;
+                // Not returned by getUserAgentStatistics
+                $period       = $serviceResult['period'] ?? null;
                 $browserStats = $serviceResult['browser_distribution'] ?? null;
 
                 // Use pagination format for the user agents array.
@@ -705,12 +706,12 @@ class SearchTrailController extends Controller
             return new JSONResponse(
                     data: [
                         'success' => true,
-            'data'    => [
-                'content'     => $content,
-                'filename'    => $filename,
-                'contentType' => $contentType,
-                'size'        => strlen($content),
-            ],
+                        'data'    => [
+                            'content'     => $content,
+                            'filename'    => $filename,
+                            'contentType' => $contentType,
+                            'size'        => strlen($content),
+                        ],
                     ]
                     );
         } catch (\Exception $e) {
@@ -749,7 +750,7 @@ class SearchTrailController extends Controller
             return new JSONResponse(
                     data: [
                         'success' => true,
-            'message' => 'Search trail deletion not implemented yet',
+                        'message' => 'Search trail deletion not implemented yet',
                     ]
                     );
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
@@ -798,7 +799,7 @@ class SearchTrailController extends Controller
             return new JSONResponse(
                     data: [
                         'success' => true,
-            'results' => $result,
+                        'results' => $result,
                         'message' => 'Multiple search trail deletion not implemented yet',
                     ]
                     );
@@ -873,7 +874,7 @@ class SearchTrailController extends Controller
                 return new JSONResponse(
                         data: [
                             'success' => true,
-                'message' => 'All search trails cleared successfully',
+                            'message' => 'All search trails cleared successfully',
                             'deleted' => 'All expired search trails have been deleted',
                         ]
                         );
@@ -881,7 +882,7 @@ class SearchTrailController extends Controller
                 return new JSONResponse(
                         data: [
                             'success' => true,
-                'message' => 'No expired search trails found to clear',
+                            'message' => 'No expired search trails found to clear',
                             'deleted' => 0,
                         ]
                         );

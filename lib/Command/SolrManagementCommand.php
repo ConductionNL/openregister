@@ -59,8 +59,8 @@ class SolrManagementCommand extends Command
     /**
      * Constructor
      *
-     * @param LoggerInterface   $logger          Logger for debugging and monitoring
-     * @param GuzzleSolrService $solrService     SOLR service for operations
+     * @param LoggerInterface   $logger      Logger for debugging and monitoring
+     * @param GuzzleSolrService $solrService SOLR service for operations
      */
     public function __construct(
         private readonly LoggerInterface $logger,

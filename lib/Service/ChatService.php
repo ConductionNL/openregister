@@ -109,7 +109,6 @@ class ChatService
      */
     private const RECENT_MESSAGES_COUNT = 10;
 
-
     /**
      * Conversation mapper
      *
@@ -158,7 +157,6 @@ class ChatService
      * @var LoggerInterface
      */
     private LoggerInterface $logger;
-
 
     /**
      * Tool registry
@@ -416,7 +414,9 @@ class ChatService
         $totalSources = max($numSourcesFiles, $numSourcesObjects);
 
         // Get view filters if agent has views configured.
-        /** @psalm-suppress UnusedVariable - Variable is used in logger calls */
+        /*
+         * @psalm-suppress UnusedVariable - Variable is used in logger calls
+         */
         $viewFilters = [];
         if ($agent !== null && $agent->getViews() !== null && !empty($agent->getViews())) {
             $agentViews = $agent->getViews();
@@ -1358,7 +1358,9 @@ class ChatService
                     context: [
                         'provider' => $provider,
                         'model'    => $llphantConfig->model,
-                        /** @psalm-suppress TypeDoesNotContainType - url is set before this point */
+                        /*
+                         * @psalm-suppress TypeDoesNotContainType - url is set before this point
+                         */
                         'url'      => $llphantConfig->url ?? 'default',
                     ]
                         );
@@ -1399,7 +1401,9 @@ class ChatService
                     'testMessage'    => $testMessage,
                     'response'       => $response,
                     'responseLength' => strlen($response),
-                    /** @psalm-suppress TypeDoesNotContainType - url may not be set for all providers */
+                    /*
+                     * @psalm-suppress TypeDoesNotContainType - url may not be set for all providers
+                     */
                     'url'            => $llphantConfig->url ?? null,
                 ],
             ];

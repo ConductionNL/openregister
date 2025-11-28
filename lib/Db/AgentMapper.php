@@ -430,8 +430,12 @@ class AgentMapper extends QBMapper
         // Verify RBAC permission to create.
         $this->verifyRbacPermission('create', 'agent');
 
-        /** @var Agent $entity */
-        /** @psalm-suppress RedundantCondition - Runtime type check for defensive programming */
+        /*
+         * @var Agent $entity
+         */
+        /*
+         * @psalm-suppress RedundantCondition - Runtime type check for defensive programming
+         */
         if ($entity instanceof Agent) {
             // Ensure UUID is set.
             $uuid = $entity->getUuid();

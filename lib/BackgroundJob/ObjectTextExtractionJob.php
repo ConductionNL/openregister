@@ -50,10 +50,10 @@ class ObjectTextExtractionJob extends QueuedJob
     /**
      * Constructor
      *
-     * @param ITimeFactory         $timeFactory          Time factory for job scheduling
+     * @param ITimeFactory          $timeFactory           Time factory for job scheduling
      * @param TextExtractionService $textExtractionService Text extraction service
-     * @param LoggerInterface      $logger               Logger instance
-     * @param IAppConfig           $config               Application configuration
+     * @param LoggerInterface       $logger                Logger instance
+     * @param IAppConfig            $config                Application configuration
      *
      * @psalm-suppress PossiblyUnusedMethod - Constructor is called by Nextcloud's job system via dependency injection
      */
@@ -121,8 +121,8 @@ class ObjectTextExtractionJob extends QueuedJob
             $this->logger->info(
                     '[ObjectTextExtractionJob] Text extraction completed successfully',
                     [
-                        'object_id'            => $objectId,
-                        'processing_time_ms'   => $processingTime,
+                        'object_id'          => $objectId,
+                        'processing_time_ms' => $processingTime,
                     ]
                     );
         } catch (\Exception $e) {
@@ -131,10 +131,10 @@ class ObjectTextExtractionJob extends QueuedJob
             $this->logger->error(
                     '[ObjectTextExtractionJob] Exception during text extraction',
                     [
-                        'object_id'            => $objectId,
-                        'error'                => $e->getMessage(),
-                        'trace'                => $e->getTraceAsString(),
-                        'processing_time_ms'   => $processingTime,
+                        'object_id'          => $objectId,
+                        'error'              => $e->getMessage(),
+                        'trace'              => $e->getTraceAsString(),
+                        'processing_time_ms' => $processingTime,
                     ]
                     );
         }//end try
@@ -143,5 +143,3 @@ class ObjectTextExtractionJob extends QueuedJob
 
 
 }//end class
-
-

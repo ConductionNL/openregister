@@ -90,7 +90,7 @@ class WebhookInterceptorService
      * @param CloudEventService $cloudEventService CloudEvent service
      * @param WebhookMapper     $webhookMapper     Webhook mapper
      * @param WebhookLogMapper  $webhookLogMapper  Webhook log mapper
-     * @param LoggerInterface   $logger           Logger
+     * @param LoggerInterface   $logger            Logger
      */
     public function __construct(
         CloudEventService $cloudEventService,
@@ -114,7 +114,7 @@ class WebhookInterceptorService
      * sends CloudEvent-formatted payloads, and optionally processes responses
      * to modify the request.
      *
-     * @param IRequest $request  The HTTP request
+     * @param IRequest $request   The HTTP request
      * @param string   $eventType The event type (e.g., 'object.creating')
      *
      * @return array Modified request data or original request data
@@ -136,7 +136,7 @@ class WebhookInterceptorService
         );
 
         // Get original request data.
-        $requestData = $request->getParams();
+        $requestData  = $request->getParams();
         $modifiedData = $requestData;
 
         // Process each webhook.
@@ -191,10 +191,10 @@ class WebhookInterceptorService
                 $this->logger->error(
                     'Failed to send CloudEvent to webhook',
                     [
-                        'webhook_id' => $webhook->getId(),
+                        'webhook_id'   => $webhook->getId(),
                         'webhook_name' => $webhook->getName(),
-                        'event_type' => $eventType,
-                        'error' => $e->getMessage(),
+                        'event_type'   => $eventType,
+                        'error'        => $e->getMessage(),
                     ]
                 );
 
@@ -288,7 +288,7 @@ class WebhookInterceptorService
 
             // Add HMAC signature if secret is configured.
             if ($webhook->getSecret() !== null) {
-                $payload = json_encode($cloudEvent);
+                $payload   = json_encode($cloudEvent);
                 $signature = hash_hmac('sha256', $payload, $webhook->getSecret());
                 $headers['X-Webhook-Signature'] = $signature;
             }
@@ -298,9 +298,9 @@ class WebhookInterceptorService
                 method: $webhook->getMethod(),
                 uri: $webhook->getUrl(),
                 options: [
-                    'json'    => $cloudEvent,
-                    'headers' => $headers,
-                    'timeout' => $webhook->getTimeout(),
+                    'json'        => $cloudEvent,
+                    'headers'     => $headers,
+                    'timeout'     => $webhook->getTimeout(),
                     'http_errors' => false,
                 ]
             );
@@ -311,7 +311,7 @@ class WebhookInterceptorService
             // Return response if not async.
             if ($isAsync === false) {
                 $responseBody = $response->getBody()->getContents();
-                $decoded = json_decode($responseBody, true);
+                $decoded      = json_decode($responseBody, true);
 
                 return $decoded ?? ['body' => $responseBody];
             }
@@ -390,7 +390,7 @@ class WebhookInterceptorService
                     'Unknown response merge strategy',
                     [
                         'webhook_id' => $webhook->getId(),
-                        'strategy' => $mergeStrategy,
+                        'strategy'   => $mergeStrategy,
                     ]
                 );
 
@@ -439,7 +439,7 @@ class WebhookInterceptorService
      */
     private function setNestedValue(array &$data, string $path, $value): void
     {
-        $keys = explode('.', $path);
+        $keys    = explode('.', $path);
         $current = &$data;
 
         foreach ($keys as $key) {
@@ -473,7 +473,7 @@ class WebhookInterceptorService
                 'Failed to update webhook statistics',
                 [
                     'webhook_id' => $webhook->getId(),
-                    'error' => $e->getMessage(),
+                    'error'      => $e->getMessage(),
                 ]
             );
         }
@@ -492,7 +492,7 @@ class WebhookInterceptorService
     {
         // Convert event type to event class name.
         // Example: 'object.creating' -> 'OCA\OpenRegister\Event\ObjectCreatingEvent'
-        $parts = explode('.', $eventType);
+        $parts  = explode('.', $eventType);
         $entity = ucfirst($parts[0]);
         $action = ucfirst($parts[1] ?? 'created');
 
@@ -511,7 +511,7 @@ class WebhookInterceptorService
      */
     private function calculateNextRetryTime(Webhook $webhook, int $attempt): DateTime
     {
-        $delay = $this->calculateRetryDelay(webhook: $webhook, attempt: $attempt);
+        $delay     = $this->calculateRetryDelay(webhook: $webhook, attempt: $attempt);
         $nextRetry = new DateTime();
         $nextRetry->modify('+'.$delay.' seconds');
 
@@ -551,4 +551,3 @@ class WebhookInterceptorService
 
 
 }//end class
-

@@ -46,6 +46,7 @@ use OCP\IDBConnection;
 class WebhookLogMapper extends QBMapper
 {
 
+
     /**
      * WebhookLogMapper constructor
      *
@@ -92,7 +93,7 @@ class WebhookLogMapper extends QBMapper
      *
      * @return WebhookLog[]
      */
-    public function findByWebhook(int $webhookId, ?int $limit = null, ?int $offset = null): array
+    public function findByWebhook(int $webhookId, ?int $limit=null, ?int $offset=null): array
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -122,7 +123,7 @@ class WebhookLogMapper extends QBMapper
      *
      * @return WebhookLog[]
      */
-    public function findAll(?int $limit = null, ?int $offset = null): array
+    public function findAll(?int $limit=null, ?int $offset=null): array
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -230,17 +231,16 @@ class WebhookLogMapper extends QBMapper
         }
 
         $result = $qb->executeQuery();
-        $row = $result->fetch();
+        $row    = $result->fetch();
         $result->closeCursor();
 
         return [
-            'total'     => (int) ($row['total'] ?? 0),
+            'total'      => (int) ($row['total'] ?? 0),
             'successful' => (int) ($row['successful'] ?? 0),
-            'failed'    => (int) ($row['failed'] ?? 0),
+            'failed'     => (int) ($row['failed'] ?? 0),
         ];
 
     }//end getStatistics()
 
 
 }//end class
-

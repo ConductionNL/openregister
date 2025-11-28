@@ -642,7 +642,7 @@ class SchemasController extends Controller
             return new JSONResponse(
                     data: [
                         'incoming' => $incomingSchemasArray,
-            'outgoing' => $outgoingSchemasArray,
+                        'outgoing' => $outgoingSchemasArray,
                         'total'    => count($incomingSchemasArray) + count($outgoingSchemasArray),
                     ]
                     );
@@ -780,7 +780,7 @@ class SchemasController extends Controller
             return new JSONResponse(
                     data: [
                         'success' => true,
-            'schema'  => $updatedSchema->jsonSerialize(),
+                        'schema'  => $updatedSchema->jsonSerialize(),
                         'message' => 'Schema updated successfully with '.count($propertyUpdates).' properties',
                     ]
                     );

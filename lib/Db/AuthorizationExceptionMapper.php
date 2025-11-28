@@ -57,6 +57,7 @@ use Symfony\Component\Uid\Uuid;
 class AuthorizationExceptionMapper extends QBMapper
 {
 
+
     /**
      * Constructor for the AuthorizationExceptionMapper
      *

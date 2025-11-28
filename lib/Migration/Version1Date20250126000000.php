@@ -68,7 +68,7 @@ class Version1Date20250126000000 extends SimpleMigrationStep
                     'webhook_id',
                     Types::BIGINT,
                     [
-                        'notnull' => true,
+                        'notnull'  => true,
                         'unsigned' => true,
                     ]
                     );
@@ -204,4 +204,3 @@ class Version1Date20250126000000 extends SimpleMigrationStep
 
 
 }//end class
-

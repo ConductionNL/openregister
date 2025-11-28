@@ -44,9 +44,9 @@ use Symfony\Component\Uid\Uuid;
  * @method AuditTrail[] findAll(int|null $limit = null, int|null $offset = null)
  * @method list<AuditTrail> findEntities(IQueryBuilder $query)
  *
- * @template T of AuditTrail
+ * @template         T of AuditTrail
  * @template-extends QBMapper<AuditTrail>
- * @psalm-suppress LessSpecificImplementedReturnType - @method annotation is correct, parent returns list<T>
+ * @psalm-suppress   LessSpecificImplementedReturnType - @method annotation is correct, parent returns list<T>
  */
 class AuditTrailMapper extends QBMapper
 {

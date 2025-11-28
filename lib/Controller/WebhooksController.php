@@ -79,12 +79,12 @@ class WebhooksController extends Controller
     /**
      * Constructor
      *
-     * @param string           $appName         Application name
-     * @param IRequest         $request         HTTP request
-     * @param WebhookMapper    $webhookMapper   Webhook mapper
+     * @param string           $appName          Application name
+     * @param IRequest         $request          HTTP request
+     * @param WebhookMapper    $webhookMapper    Webhook mapper
      * @param WebhookLogMapper $webhookLogMapper Webhook log mapper
-     * @param WebhookService   $webhookService  Webhook service
-     * @param LoggerInterface  $logger          Logger
+     * @param WebhookService   $webhookService   Webhook service
+     * @param LoggerInterface  $logger           Logger
      */
     public function __construct(
         string $appName,
@@ -97,8 +97,8 @@ class WebhooksController extends Controller
         parent::__construct(appName: $appName, request: $request);
         $this->webhookMapper    = $webhookMapper;
         $this->webhookLogMapper = $webhookLogMapper;
-        $this->webhookService  = $webhookService;
-        $this->logger          = $logger;
+        $this->webhookService   = $webhookService;
+        $this->logger           = $logger;
 
     }//end __construct()
 
@@ -398,7 +398,7 @@ class WebhooksController extends Controller
                 );
             } else {
                 // Get the latest log entry to retrieve error details.
-                $latestLogs = $this->webhookLogMapper->findByWebhook($id, 1, 0);
+                $latestLogs   = $this->webhookLogMapper->findByWebhook($id, 1, 0);
                 $errorMessage = 'Test webhook delivery failed';
                 $errorDetails = null;
 
@@ -407,9 +407,10 @@ class WebhooksController extends Controller
                     if ($latestLog->getErrorMessage() !== null) {
                         $errorMessage = $latestLog->getErrorMessage();
                     }
+
                     if ($latestLog->getStatusCode() !== null) {
                         $errorDetails = [
-                            'status_code' => $latestLog->getStatusCode(),
+                            'status_code'   => $latestLog->getStatusCode(),
                             'response_body' => $latestLog->getResponseBody(),
                         ];
                     }
@@ -487,311 +488,311 @@ class WebhooksController extends Controller
         $events = [
             // Object events - Before events (ing).
             [
-                'class' => 'OCA\OpenRegister\Event\ObjectCreatingEvent',
-                'name' => 'Object Creating',
+                'class'       => 'OCA\OpenRegister\Event\ObjectCreatingEvent',
+                'name'        => 'Object Creating',
                 'description' => 'Triggered before an object is created',
-                'category' => 'Object',
-                'type' => 'before',
-                'properties' => ['object'],
+                'category'    => 'Object',
+                'type'        => 'before',
+                'properties'  => ['object'],
             ],
             [
-                'class' => 'OCA\OpenRegister\Event\ObjectUpdatingEvent',
-                'name' => 'Object Updating',
+                'class'       => 'OCA\OpenRegister\Event\ObjectUpdatingEvent',
+                'name'        => 'Object Updating',
                 'description' => 'Triggered before an object is updated',
-                'category' => 'Object',
-                'type' => 'before',
-                'properties' => ['newObject', 'oldObject'],
+                'category'    => 'Object',
+                'type'        => 'before',
+                'properties'  => ['newObject', 'oldObject'],
             ],
             [
-                'class' => 'OCA\OpenRegister\Event\ObjectDeletingEvent',
-                'name' => 'Object Deleting',
+                'class'       => 'OCA\OpenRegister\Event\ObjectDeletingEvent',
+                'name'        => 'Object Deleting',
                 'description' => 'Triggered before an object is deleted',
-                'category' => 'Object',
-                'type' => 'before',
-                'properties' => ['object'],
+                'category'    => 'Object',
+                'type'        => 'before',
+                'properties'  => ['object'],
             ],
             // Object events - After events (ed).
             [
-                'class' => 'OCA\OpenRegister\Event\ObjectCreatedEvent',
-                'name' => 'Object Created',
+                'class'       => 'OCA\OpenRegister\Event\ObjectCreatedEvent',
+                'name'        => 'Object Created',
                 'description' => 'Triggered after an object is created',
-                'category' => 'Object',
-                'type' => 'after',
-                'properties' => ['object'],
+                'category'    => 'Object',
+                'type'        => 'after',
+                'properties'  => ['object'],
             ],
             [
-                'class' => 'OCA\OpenRegister\Event\ObjectUpdatedEvent',
-                'name' => 'Object Updated',
+                'class'       => 'OCA\OpenRegister\Event\ObjectUpdatedEvent',
+                'name'        => 'Object Updated',
                 'description' => 'Triggered after an object is updated',
-                'category' => 'Object',
-                'type' => 'after',
-                'properties' => ['newObject', 'oldObject'],
+                'category'    => 'Object',
+                'type'        => 'after',
+                'properties'  => ['newObject', 'oldObject'],
             ],
             [
-                'class' => 'OCA\OpenRegister\Event\ObjectDeletedEvent',
-                'name' => 'Object Deleted',
+                'class'       => 'OCA\OpenRegister\Event\ObjectDeletedEvent',
+                'name'        => 'Object Deleted',
                 'description' => 'Triggered after an object is deleted',
-                'category' => 'Object',
-                'type' => 'after',
-                'properties' => ['object'],
+                'category'    => 'Object',
+                'type'        => 'after',
+                'properties'  => ['object'],
             ],
             [
-                'class' => 'OCA\OpenRegister\Event\ObjectLockedEvent',
-                'name' => 'Object Locked',
+                'class'       => 'OCA\OpenRegister\Event\ObjectLockedEvent',
+                'name'        => 'Object Locked',
                 'description' => 'Triggered when an object is locked',
-                'category' => 'Object',
-                'type' => 'after',
-                'properties' => ['object'],
+                'category'    => 'Object',
+                'type'        => 'after',
+                'properties'  => ['object'],
             ],
             [
-                'class' => 'OCA\OpenRegister\Event\ObjectUnlockedEvent',
-                'name' => 'Object Unlocked',
+                'class'       => 'OCA\OpenRegister\Event\ObjectUnlockedEvent',
+                'name'        => 'Object Unlocked',
                 'description' => 'Triggered when an object is unlocked',
-                'category' => 'Object',
-                'type' => 'after',
-                'properties' => ['object'],
+                'category'    => 'Object',
+                'type'        => 'after',
+                'properties'  => ['object'],
             ],
             [
-                'class' => 'OCA\OpenRegister\Event\ObjectRevertedEvent',
-                'name' => 'Object Reverted',
+                'class'       => 'OCA\OpenRegister\Event\ObjectRevertedEvent',
+                'name'        => 'Object Reverted',
                 'description' => 'Triggered when an object is reverted',
-                'category' => 'Object',
-                'type' => 'after',
-                'properties' => ['object', 'revertPoint'],
+                'category'    => 'Object',
+                'type'        => 'after',
+                'properties'  => ['object', 'revertPoint'],
             ],
 
             // Register events.
             [
-                'class' => 'OCA\OpenRegister\Event\RegisterCreatedEvent',
-                'name' => 'Register Created',
+                'class'       => 'OCA\OpenRegister\Event\RegisterCreatedEvent',
+                'name'        => 'Register Created',
                 'description' => 'Triggered after a register is created',
-                'category' => 'Register',
-                'type' => 'after',
-                'properties' => ['register'],
+                'category'    => 'Register',
+                'type'        => 'after',
+                'properties'  => ['register'],
             ],
             [
-                'class' => 'OCA\OpenRegister\Event\RegisterUpdatedEvent',
-                'name' => 'Register Updated',
+                'class'       => 'OCA\OpenRegister\Event\RegisterUpdatedEvent',
+                'name'        => 'Register Updated',
                 'description' => 'Triggered after a register is updated',
-                'category' => 'Register',
-                'type' => 'after',
-                'properties' => ['newRegister', 'oldRegister'],
+                'category'    => 'Register',
+                'type'        => 'after',
+                'properties'  => ['newRegister', 'oldRegister'],
             ],
             [
-                'class' => 'OCA\OpenRegister\Event\RegisterDeletedEvent',
-                'name' => 'Register Deleted',
+                'class'       => 'OCA\OpenRegister\Event\RegisterDeletedEvent',
+                'name'        => 'Register Deleted',
                 'description' => 'Triggered after a register is deleted',
-                'category' => 'Register',
-                'type' => 'after',
-                'properties' => ['register'],
+                'category'    => 'Register',
+                'type'        => 'after',
+                'properties'  => ['register'],
             ],
 
             // Schema events.
             [
-                'class' => 'OCA\OpenRegister\Event\SchemaCreatedEvent',
-                'name' => 'Schema Created',
+                'class'       => 'OCA\OpenRegister\Event\SchemaCreatedEvent',
+                'name'        => 'Schema Created',
                 'description' => 'Triggered after a schema is created',
-                'category' => 'Schema',
-                'type' => 'after',
-                'properties' => ['schema'],
+                'category'    => 'Schema',
+                'type'        => 'after',
+                'properties'  => ['schema'],
             ],
             [
-                'class' => 'OCA\OpenRegister\Event\SchemaUpdatedEvent',
-                'name' => 'Schema Updated',
+                'class'       => 'OCA\OpenRegister\Event\SchemaUpdatedEvent',
+                'name'        => 'Schema Updated',
                 'description' => 'Triggered after a schema is updated',
-                'category' => 'Schema',
-                'type' => 'after',
-                'properties' => ['newSchema', 'oldSchema'],
+                'category'    => 'Schema',
+                'type'        => 'after',
+                'properties'  => ['newSchema', 'oldSchema'],
             ],
             [
-                'class' => 'OCA\OpenRegister\Event\SchemaDeletedEvent',
-                'name' => 'Schema Deleted',
+                'class'       => 'OCA\OpenRegister\Event\SchemaDeletedEvent',
+                'name'        => 'Schema Deleted',
                 'description' => 'Triggered after a schema is deleted',
-                'category' => 'Schema',
-                'type' => 'after',
-                'properties' => ['schema'],
+                'category'    => 'Schema',
+                'type'        => 'after',
+                'properties'  => ['schema'],
             ],
 
             // Application events.
             [
-                'class' => 'OCA\OpenRegister\Event\ApplicationCreatedEvent',
-                'name' => 'Application Created',
+                'class'       => 'OCA\OpenRegister\Event\ApplicationCreatedEvent',
+                'name'        => 'Application Created',
                 'description' => 'Triggered after an application is created',
-                'category' => 'Application',
-                'type' => 'after',
-                'properties' => ['application'],
+                'category'    => 'Application',
+                'type'        => 'after',
+                'properties'  => ['application'],
             ],
             [
-                'class' => 'OCA\OpenRegister\Event\ApplicationUpdatedEvent',
-                'name' => 'Application Updated',
+                'class'       => 'OCA\OpenRegister\Event\ApplicationUpdatedEvent',
+                'name'        => 'Application Updated',
                 'description' => 'Triggered after an application is updated',
-                'category' => 'Application',
-                'type' => 'after',
-                'properties' => ['newApplication', 'oldApplication'],
+                'category'    => 'Application',
+                'type'        => 'after',
+                'properties'  => ['newApplication', 'oldApplication'],
             ],
             [
-                'class' => 'OCA\OpenRegister\Event\ApplicationDeletedEvent',
-                'name' => 'Application Deleted',
+                'class'       => 'OCA\OpenRegister\Event\ApplicationDeletedEvent',
+                'name'        => 'Application Deleted',
                 'description' => 'Triggered after an application is deleted',
-                'category' => 'Application',
-                'type' => 'after',
-                'properties' => ['application'],
+                'category'    => 'Application',
+                'type'        => 'after',
+                'properties'  => ['application'],
             ],
 
             // Agent events.
             [
-                'class' => 'OCA\OpenRegister\Event\AgentCreatedEvent',
-                'name' => 'Agent Created',
+                'class'       => 'OCA\OpenRegister\Event\AgentCreatedEvent',
+                'name'        => 'Agent Created',
                 'description' => 'Triggered after an agent is created',
-                'category' => 'Agent',
-                'type' => 'after',
-                'properties' => ['agent'],
+                'category'    => 'Agent',
+                'type'        => 'after',
+                'properties'  => ['agent'],
             ],
             [
-                'class' => 'OCA\OpenRegister\Event\AgentUpdatedEvent',
-                'name' => 'Agent Updated',
+                'class'       => 'OCA\OpenRegister\Event\AgentUpdatedEvent',
+                'name'        => 'Agent Updated',
                 'description' => 'Triggered after an agent is updated',
-                'category' => 'Agent',
-                'type' => 'after',
-                'properties' => ['newAgent', 'oldAgent'],
+                'category'    => 'Agent',
+                'type'        => 'after',
+                'properties'  => ['newAgent', 'oldAgent'],
             ],
             [
-                'class' => 'OCA\OpenRegister\Event\AgentDeletedEvent',
-                'name' => 'Agent Deleted',
+                'class'       => 'OCA\OpenRegister\Event\AgentDeletedEvent',
+                'name'        => 'Agent Deleted',
                 'description' => 'Triggered after an agent is deleted',
-                'category' => 'Agent',
-                'type' => 'after',
-                'properties' => ['agent'],
+                'category'    => 'Agent',
+                'type'        => 'after',
+                'properties'  => ['agent'],
             ],
 
             // Source events.
             [
-                'class' => 'OCA\OpenRegister\Event\SourceCreatedEvent',
-                'name' => 'Source Created',
+                'class'       => 'OCA\OpenRegister\Event\SourceCreatedEvent',
+                'name'        => 'Source Created',
                 'description' => 'Triggered after a source is created',
-                'category' => 'Source',
-                'type' => 'after',
-                'properties' => ['source'],
+                'category'    => 'Source',
+                'type'        => 'after',
+                'properties'  => ['source'],
             ],
             [
-                'class' => 'OCA\OpenRegister\Event\SourceUpdatedEvent',
-                'name' => 'Source Updated',
+                'class'       => 'OCA\OpenRegister\Event\SourceUpdatedEvent',
+                'name'        => 'Source Updated',
                 'description' => 'Triggered after a source is updated',
-                'category' => 'Source',
-                'type' => 'after',
-                'properties' => ['newSource', 'oldSource'],
+                'category'    => 'Source',
+                'type'        => 'after',
+                'properties'  => ['newSource', 'oldSource'],
             ],
             [
-                'class' => 'OCA\OpenRegister\Event\SourceDeletedEvent',
-                'name' => 'Source Deleted',
+                'class'       => 'OCA\OpenRegister\Event\SourceDeletedEvent',
+                'name'        => 'Source Deleted',
                 'description' => 'Triggered after a source is deleted',
-                'category' => 'Source',
-                'type' => 'after',
-                'properties' => ['source'],
+                'category'    => 'Source',
+                'type'        => 'after',
+                'properties'  => ['source'],
             ],
 
             // Configuration events.
             [
-                'class' => 'OCA\OpenRegister\Event\ConfigurationCreatedEvent',
-                'name' => 'Configuration Created',
+                'class'       => 'OCA\OpenRegister\Event\ConfigurationCreatedEvent',
+                'name'        => 'Configuration Created',
                 'description' => 'Triggered after a configuration is created',
-                'category' => 'Configuration',
-                'type' => 'after',
-                'properties' => ['configuration'],
+                'category'    => 'Configuration',
+                'type'        => 'after',
+                'properties'  => ['configuration'],
             ],
             [
-                'class' => 'OCA\OpenRegister\Event\ConfigurationUpdatedEvent',
-                'name' => 'Configuration Updated',
+                'class'       => 'OCA\OpenRegister\Event\ConfigurationUpdatedEvent',
+                'name'        => 'Configuration Updated',
                 'description' => 'Triggered after a configuration is updated',
-                'category' => 'Configuration',
-                'type' => 'after',
-                'properties' => ['newConfiguration', 'oldConfiguration'],
+                'category'    => 'Configuration',
+                'type'        => 'after',
+                'properties'  => ['newConfiguration', 'oldConfiguration'],
             ],
             [
-                'class' => 'OCA\OpenRegister\Event\ConfigurationDeletedEvent',
-                'name' => 'Configuration Deleted',
+                'class'       => 'OCA\OpenRegister\Event\ConfigurationDeletedEvent',
+                'name'        => 'Configuration Deleted',
                 'description' => 'Triggered after a configuration is deleted',
-                'category' => 'Configuration',
-                'type' => 'after',
-                'properties' => ['configuration'],
+                'category'    => 'Configuration',
+                'type'        => 'after',
+                'properties'  => ['configuration'],
             ],
 
             // View events.
             [
-                'class' => 'OCA\OpenRegister\Event\ViewCreatedEvent',
-                'name' => 'View Created',
+                'class'       => 'OCA\OpenRegister\Event\ViewCreatedEvent',
+                'name'        => 'View Created',
                 'description' => 'Triggered after a view is created',
-                'category' => 'View',
-                'type' => 'after',
-                'properties' => ['view'],
+                'category'    => 'View',
+                'type'        => 'after',
+                'properties'  => ['view'],
             ],
             [
-                'class' => 'OCA\OpenRegister\Event\ViewUpdatedEvent',
-                'name' => 'View Updated',
+                'class'       => 'OCA\OpenRegister\Event\ViewUpdatedEvent',
+                'name'        => 'View Updated',
                 'description' => 'Triggered after a view is updated',
-                'category' => 'View',
-                'type' => 'after',
-                'properties' => ['newView', 'oldView'],
+                'category'    => 'View',
+                'type'        => 'after',
+                'properties'  => ['newView', 'oldView'],
             ],
             [
-                'class' => 'OCA\OpenRegister\Event\ViewDeletedEvent',
-                'name' => 'View Deleted',
+                'class'       => 'OCA\OpenRegister\Event\ViewDeletedEvent',
+                'name'        => 'View Deleted',
                 'description' => 'Triggered after a view is deleted',
-                'category' => 'View',
-                'type' => 'after',
-                'properties' => ['view'],
+                'category'    => 'View',
+                'type'        => 'after',
+                'properties'  => ['view'],
             ],
 
             // Conversation events.
             [
-                'class' => 'OCA\OpenRegister\Event\ConversationCreatedEvent',
-                'name' => 'Conversation Created',
+                'class'       => 'OCA\OpenRegister\Event\ConversationCreatedEvent',
+                'name'        => 'Conversation Created',
                 'description' => 'Triggered after a conversation is created',
-                'category' => 'Conversation',
-                'type' => 'after',
-                'properties' => ['conversation'],
+                'category'    => 'Conversation',
+                'type'        => 'after',
+                'properties'  => ['conversation'],
             ],
             [
-                'class' => 'OCA\OpenRegister\Event\ConversationUpdatedEvent',
-                'name' => 'Conversation Updated',
+                'class'       => 'OCA\OpenRegister\Event\ConversationUpdatedEvent',
+                'name'        => 'Conversation Updated',
                 'description' => 'Triggered after a conversation is updated',
-                'category' => 'Conversation',
-                'type' => 'after',
-                'properties' => ['newConversation', 'oldConversation'],
+                'category'    => 'Conversation',
+                'type'        => 'after',
+                'properties'  => ['newConversation', 'oldConversation'],
             ],
             [
-                'class' => 'OCA\OpenRegister\Event\ConversationDeletedEvent',
-                'name' => 'Conversation Deleted',
+                'class'       => 'OCA\OpenRegister\Event\ConversationDeletedEvent',
+                'name'        => 'Conversation Deleted',
                 'description' => 'Triggered after a conversation is deleted',
-                'category' => 'Conversation',
-                'type' => 'after',
-                'properties' => ['conversation'],
+                'category'    => 'Conversation',
+                'type'        => 'after',
+                'properties'  => ['conversation'],
             ],
 
             // Organisation events.
             [
-                'class' => 'OCA\OpenRegister\Event\OrganisationCreatedEvent',
-                'name' => 'Organisation Created',
+                'class'       => 'OCA\OpenRegister\Event\OrganisationCreatedEvent',
+                'name'        => 'Organisation Created',
                 'description' => 'Triggered after an organisation is created',
-                'category' => 'Organisation',
-                'type' => 'after',
-                'properties' => ['organisation'],
+                'category'    => 'Organisation',
+                'type'        => 'after',
+                'properties'  => ['organisation'],
             ],
             [
-                'class' => 'OCA\OpenRegister\Event\OrganisationUpdatedEvent',
-                'name' => 'Organisation Updated',
+                'class'       => 'OCA\OpenRegister\Event\OrganisationUpdatedEvent',
+                'name'        => 'Organisation Updated',
                 'description' => 'Triggered after an organisation is updated',
-                'category' => 'Organisation',
-                'type' => 'after',
-                'properties' => ['newOrganisation', 'oldOrganisation'],
+                'category'    => 'Organisation',
+                'type'        => 'after',
+                'properties'  => ['newOrganisation', 'oldOrganisation'],
             ],
             [
-                'class' => 'OCA\OpenRegister\Event\OrganisationDeletedEvent',
-                'name' => 'Organisation Deleted',
+                'class'       => 'OCA\OpenRegister\Event\OrganisationDeletedEvent',
+                'name'        => 'Organisation Deleted',
                 'description' => 'Triggered after an organisation is deleted',
-                'category' => 'Organisation',
-                'type' => 'after',
-                'properties' => ['organisation'],
+                'category'    => 'Organisation',
+                'type'        => 'after',
+                'properties'  => ['organisation'],
             ],
         ];
 
@@ -879,10 +880,10 @@ class WebhooksController extends Controller
         try {
             // Validate webhook exists by attempting to find it.
             $this->webhookMapper->find($id);
-            $stats   = $this->webhookLogMapper->getStatistics($id);
+            $stats = $this->webhookLogMapper->getStatistics($id);
 
             // Count pending retries.
-            $now           = new \DateTime();
+            $now            = new \DateTime();
             $pendingRetries = count($this->webhookLogMapper->findFailedForRetry($now));
 
             $stats['pendingRetries'] = $pendingRetries;
@@ -936,7 +937,7 @@ class WebhooksController extends Controller
             // If webhook_id is provided and valid, use findByWebhook method.
             if ($webhookId !== null && $webhookId !== '' && $webhookId !== '0') {
                 $webhookIdInt = (int) $webhookId;
-                $logs = $this->webhookLogMapper->findByWebhook($webhookIdInt, $limit, $offset);
+                $logs         = $this->webhookLogMapper->findByWebhook($webhookIdInt, $limit, $offset);
                 // Get total count for this webhook.
                 $allLogsForWebhook = $this->webhookLogMapper->findByWebhook($webhookIdInt, null, null);
                 $total = count($allLogsForWebhook);
@@ -945,33 +946,44 @@ class WebhooksController extends Controller
                 $logs = $this->webhookLogMapper->findAll($limit, $offset);
                 // Get total count for all logs.
                 $allLogs = $this->webhookLogMapper->findAll(null, null);
-                $total = count($allLogs);
+                $total   = count($allLogs);
             }
 
             // Filter by success status if provided.
             if ($success !== null && $success !== '' && ($success === 'true' || $success === '1' || $success === 'false' || $success === '0')) {
-                $successBool = $success === 'true' || $success === '1';
+                $successBool  = $success === 'true' || $success === '1';
                 $filteredLogs = array_filter(
                     $logs,
                     function ($log) use ($successBool) {
                         return $log->getSuccess() === $successBool;
                     }
                 );
-                $logs = array_values($filteredLogs); // Re-index array.
+                $logs         = array_values($filteredLogs);
+                // Re-index array.
                 // Recalculate total if filtering by success.
                 if ($webhookId !== null && $webhookId !== '' && $webhookId !== '0') {
-                    $webhookIdInt = (int) $webhookId;
+                    $webhookIdInt      = (int) $webhookId;
                     $allLogsForWebhook = $this->webhookLogMapper->findByWebhook($webhookIdInt, null, null);
-                    $total = count(array_filter($allLogsForWebhook, function ($log) use ($successBool) {
-                        return $log->getSuccess() === $successBool;
-                    }));
+                    $total = count(
+                            array_filter(
+                            $allLogsForWebhook,
+                            function ($log) use ($successBool) {
+                                return $log->getSuccess() === $successBool;
+                            }
+                            )
+                            );
                 } else {
                     $allLogs = $this->webhookLogMapper->findAll(null, null);
-                    $total = count(array_filter($allLogs, function ($log) use ($successBool) {
-                        return $log->getSuccess() === $successBool;
-                    }));
-                }
-            }
+                    $total   = count(
+                            array_filter(
+                            $allLogs,
+                            function ($log) use ($successBool) {
+                                return $log->getSuccess() === $successBool;
+                            }
+                            )
+                            );
+                }//end if
+            }//end if
 
             return new JSONResponse(
                 data: [
@@ -1037,7 +1049,7 @@ class WebhooksController extends Controller
                 if ($decoded !== null) {
                     $payload = $decoded;
                 }
-            } elseif ($log->getPayload() !== null) {
+            } else if ($log->getPayload() !== null) {
                 $payload = $log->getPayloadArray();
             }
 
@@ -1052,7 +1064,7 @@ class WebhooksController extends Controller
             }
 
             // Extract original event data from payload if available.
-            $eventName = $log->getEventClass();
+            $eventName       = $log->getEventClass();
             $originalPayload = $payload['data'] ?? $payload;
 
             // Retry the webhook delivery.
@@ -1072,7 +1084,7 @@ class WebhooksController extends Controller
                 );
             } else {
                 // Get the latest log entry to retrieve error details.
-                $latestLogs = $this->webhookLogMapper->findByWebhook($webhook->getId(), 1, 0);
+                $latestLogs   = $this->webhookLogMapper->findByWebhook($webhook->getId(), 1, 0);
                 $errorMessage = 'Webhook retry delivery failed';
                 $errorDetails = null;
 
@@ -1081,9 +1093,10 @@ class WebhooksController extends Controller
                     if ($latestLog->getErrorMessage() !== null) {
                         $errorMessage = $latestLog->getErrorMessage();
                     }
+
                     if ($latestLog->getStatusCode() !== null) {
                         $errorDetails = [
-                            'status_code' => $latestLog->getStatusCode(),
+                            'status_code'   => $latestLog->getStatusCode(),
                             'response_body' => $latestLog->getResponseBody(),
                         ];
                     }
@@ -1102,13 +1115,13 @@ class WebhooksController extends Controller
                     data: $responseData,
                     statusCode: 500
                 );
-            }
+            }//end if
         } catch (DoesNotExistException $e) {
             $this->logger->error(
                     message: 'Webhook log not found for retry: '.$e->getMessage(),
                     context: [
                         'log_id' => $logId,
-                        'trace' => $e->getTraceAsString(),
+                        'trace'  => $e->getTraceAsString(),
                     ]
                     );
 
@@ -1123,7 +1136,7 @@ class WebhooksController extends Controller
                     message: 'Error retrying webhook: '.$e->getMessage(),
                     context: [
                         'log_id' => $logId,
-                        'trace' => $e->getTraceAsString(),
+                        'trace'  => $e->getTraceAsString(),
                     ]
                     );
 

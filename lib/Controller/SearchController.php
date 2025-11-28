@@ -45,8 +45,8 @@ class SearchController extends Controller
     /**
      * Constructor for the SearchController
      *
-     * @param string           $appName     The name of the app
-     * @param IRequest         $request     The request object
+     * @param string            $appName     The name of the app
+     * @param IRequest          $request     The request object
      * @param GuzzleSolrService $solrService The Solr search service
      *
      * @return void
@@ -85,9 +85,9 @@ class SearchController extends Controller
         // Note: This is a simplified search endpoint. For full Nextcloud search integration,
         // use the ObjectsProvider which implements IFilteringProvider.
         $searchParams = [
-            'q' => $processedQuery,
+            'q'     => $processedQuery,
             'start' => (int) ($this->request->getParam('offset', 0)),
-            'rows' => (int) ($this->request->getParam('limit', 25)),
+            'rows'  => (int) ($this->request->getParam('limit', 25)),
         ];
 
         $results = $this->solrService->searchObjects($searchParams);
@@ -110,8 +110,8 @@ class SearchController extends Controller
         return new JSONResponse(
             data: [
                 'results' => $formattedResults,
-                'total' => $results['total'] ?? 0,
-                'facets' => $results['facets'] ?? [],
+                'total'   => $results['total'] ?? 0,
+                'facets'  => $results['facets'] ?? [],
             ]
         );
 

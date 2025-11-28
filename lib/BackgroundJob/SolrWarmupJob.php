@@ -62,10 +62,10 @@ class SolrWarmupJob extends QueuedJob
      * Execute the SOLR warmup job.
      *
      * @param array $argument Job arguments containing warmup parameters
-     *                         - maxObjects: Maximum number of objects to index (default: 5000)
-     *                         - mode: Warmup mode - 'serial', 'parallel', or 'hyper' (default: 'serial')
-     *                         - collectErrors: Whether to collect detailed errors (default: false)
-     *                         - triggeredBy: What triggered this warmup (default: 'unknown')
+     *                        - maxObjects: Maximum number of objects to index (default: 5000)
+     *                        - mode: Warmup mode - 'serial', 'parallel', or 'hyper' (default: 'serial')
+     *                        - collectErrors: Whether to collect detailed errors (default: false)
+     *                        - triggeredBy: What triggered this warmup (default: 'unknown')
      *
      * @return void
      *

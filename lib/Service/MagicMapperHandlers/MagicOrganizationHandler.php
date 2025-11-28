@@ -67,18 +67,24 @@ class MagicOrganizationHandler
      * @param IAppConfig      $appConfig    App configuration for multi-tenancy settings
      * @param LoggerInterface $logger       Logger for debugging and error reporting
      */
+
+
     /**
-     * @param IDBConnection $db Database connection (unused but kept for future use)
+     * @param IDBConnection $db          Database connection (unused but kept for future use)
      * @param IUserManager  $userManager User manager (unused but kept for future use)
      *
      * @psalm-suppress UnusedParam - db and userManager kept for future use
      */
     public function __construct(
-        /** @psalm-suppress UnusedProperty - Property kept for future use */
+        /**
+         * @psalm-suppress UnusedProperty - Property kept for future use
+         */
         private readonly IDBConnection $db,
         private readonly IUserSession $userSession,
         private readonly IGroupManager $groupManager,
-        /** @psalm-suppress UnusedProperty - Property kept for future use */
+        /**
+         * @psalm-suppress UnusedProperty - Property kept for future use
+         */
         private readonly IUserManager $userManager,
         private readonly IAppConfig $appConfig,
         private readonly LoggerInterface $logger

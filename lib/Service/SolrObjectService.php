@@ -826,6 +826,7 @@ class SolrObjectService
     private function getProviderOrDefault(?string $provider): string
     {
         return $provider ?? 'default';
+
     }//end getProviderOrDefault()
 
 

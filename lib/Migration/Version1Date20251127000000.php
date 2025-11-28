@@ -29,13 +29,13 @@ use OCP\Migration\SimpleMigrationStep;
 /**
  * Add request_body column to webhook_logs table
  *
- * @category Migration
- * @package  OCA\OpenRegister\Migration
- * @author   Conduction Development Team <dev@conduction.nl>
+ * @category  Migration
+ * @package   OCA\OpenRegister\Migration
+ * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @version  1.0.0
- * @link     https://www.OpenRegister.app
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version   1.0.0
+ * @link      https://www.OpenRegister.app
  */
 class Version1Date20251127000000 extends SimpleMigrationStep
 {
@@ -44,9 +44,9 @@ class Version1Date20251127000000 extends SimpleMigrationStep
     /**
      * Change database schema
      *
-     * @param IOutput        $output         Output interface
-     * @param Closure        $schemaClosure  Schema closure
-     * @param array          $options        Options
+     * @param IOutput $output        Output interface
+     * @param Closure $schemaClosure Schema closure
+     * @param array   $options       Options
      *
      * @return ISchemaWrapper|null
      */
@@ -80,4 +80,3 @@ class Version1Date20251127000000 extends SimpleMigrationStep
 
 
 }//end class
-

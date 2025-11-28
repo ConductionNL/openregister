@@ -85,13 +85,13 @@ class ObjectChangeListener implements IEventListener
             return;
         }
 
-        $object = $event->getObject();
+        $object   = $event->getObject();
         $objectId = $object->getId();
 
         $this->logger->debug(
                 '[ObjectChangeListener] Object event detected',
                 [
-                    'event_type' => get_class($event),
+                    'event_type'  => get_class($event),
                     'object_id'   => $objectId,
                     'object_uuid' => $object->getUuid(),
                 ]
@@ -177,7 +177,7 @@ class ObjectChangeListener implements IEventListener
                     $this->logger->warning(
                             '[ObjectChangeListener] Unknown extraction mode, defaulting to background',
                             [
-                                'object_id'        => $objectId,
+                                'object_id'       => $objectId,
                                 'extraction_mode' => $extractionMode,
                             ]
                             );
@@ -199,5 +199,3 @@ class ObjectChangeListener implements IEventListener
 
 
 }//end class
-
-

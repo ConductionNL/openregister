@@ -84,7 +84,9 @@ class Version1Date20251106120000 extends SimpleMigrationStep
                     $output->info('  📝 Updating configurations.organisation: int → string UUID');
 
                     // Change column type to string UUID.
-                    /** @psalm-suppress UndefinedClass */
+                    /*
+                     * @psalm-suppress UndefinedClass
+                     */
                     $column->setType(Type::getType(Types::STRING));
                     $column->setLength(36);
                     $column->setNotnull(false);

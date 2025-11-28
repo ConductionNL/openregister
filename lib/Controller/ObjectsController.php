@@ -107,8 +107,8 @@ class ObjectsController extends Controller
         private readonly IGroupManager $groupManager,
         ExportService $exportService,
         ImportService $importService,
-        private readonly ?WebhookInterceptorService $webhookInterceptor = null,
-        private readonly ?LoggerInterface $logger = null
+        private readonly ?WebhookInterceptorService $webhookInterceptor=null,
+        private readonly ?LoggerInterface $logger=null
     ) {
         parent::__construct(appName: $appName, request: $request);
         $this->exportService = $exportService;
@@ -598,14 +598,14 @@ class ObjectsController extends Controller
                     $this->logger->error(
                         'Webhook interception failed',
                         [
-                            'error' => $e->getMessage(),
+                            'error'    => $e->getMessage(),
                             'register' => $register,
-                            'schema' => $schema,
+                            'schema'   => $schema,
                         ]
                     );
                 }
             }
-        }
+        }//end if
 
         // Filter out special parameters and reserved fields.
         // @todo shouldn't this be part of the object service?
@@ -1020,10 +1020,11 @@ class ObjectsController extends Controller
         // Set the schema and register to the object service.
         $objectService->setSchema(schema: $schema);
         $objectService->setRegister(register: $register);
-        
+
         // Note: $id is a route parameter for API consistency (/api/objects/{register}/{schema}/{id}/contracts)
         // Currently returns empty array as contract functionality is not yet implemented
-        $objectId = $id; // Reserved for future use when contract functionality is implemented
+        $objectId = $id;
+        // Reserved for future use when contract functionality is implemented
         unset($objectId);
 
         // Get request parameters for filtering and searching.

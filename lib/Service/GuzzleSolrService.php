@@ -138,18 +138,24 @@ class GuzzleSolrService
      *
      * @psalm-suppress UnusedParam - clientService and config kept for future use
      */
+
+
     /**
      * @param IClientService $clientService HTTP client service (unused but kept for future use)
-     * @param IConfig        $config       Nextcloud configuration (unused but kept for future use)
+     * @param IConfig        $config        Nextcloud configuration (unused but kept for future use)
      *
      * @psalm-suppress UnusedParam - clientService and config kept for future use
      */
     public function __construct(
         private readonly SettingsService $settingsService,
         private readonly LoggerInterface $logger,
-        /** @psalm-suppress UnusedProperty - Property kept for future use */
+        /**
+         * @psalm-suppress UnusedProperty - Property kept for future use
+         */
         private readonly IClientService $clientService,
-        /** @psalm-suppress UnusedProperty - Property kept for future use */
+        /**
+         * @psalm-suppress UnusedProperty - Property kept for future use
+         */
         private readonly IConfig $config,
         private readonly ?SchemaMapper $schemaMapper=null,
         private readonly ?RegisterMapper $registerMapper=null,
@@ -648,7 +654,9 @@ class GuzzleSolrService
             } else {
                 // Clear all SOLR availability cache entries.
                 if (function_exists('apcu_delete') === true && class_exists('\APCUIterator') === true) {
-                    /** @psalm-suppress UndefinedClass */
+                    /*
+                     * @psalm-suppress UndefinedClass
+                     */
                     $iterator = new \APCUIterator('/^solr_availability_/');
                     apcu_delete($iterator);
                 }
@@ -927,6 +935,7 @@ class GuzzleSolrService
     public function getTenantCollectionName(): ?string
     {
         return $this->getActiveCollectionName();
+
     }//end getTenantCollectionName()
 
 
@@ -2884,8 +2893,12 @@ class GuzzleSolrService
             return $field.' asc';
         }
 
-        /** @psalm-suppress RedundantCondition - PHPCS requires explicit comparison */
-        /** @psalm-suppress RedundantCondition - PHPCS requires explicit comparison (Squiz.Operators.ComparisonOperatorUsage) */
+        /*
+         * @psalm-suppress RedundantCondition - PHPCS requires explicit comparison
+         */
+        /*
+         * @psalm-suppress RedundantCondition - PHPCS requires explicit comparison (Squiz.Operators.ComparisonOperatorUsage)
+         */
         if (is_array($order) === true) {
             $sortParts = [];
             foreach ($order as $field => $direction) {
@@ -7097,11 +7110,13 @@ class GuzzleSolrService
 
                 try {
                     // Get 5 objects for this schema.
-                    $objects = $objectMapper->searchObjects(searchParams: [
+                    $objects = $objectMapper->searchObjects(
+                            searchParams: [
                                 'schema'  => $schemaId,
                                 '_limit'  => 5,
                                 '_offset' => 0,
-                            ]);
+                            ]
+                            );
 
                     $schemaDetails['objects_found'] = count($objects);
 
@@ -10386,21 +10401,21 @@ class GuzzleSolrService
                         'object_facet_keys' => $this->getObjectFacetKeys($data),
                     ] : [],
                     [
-                        'response_sample'   => array_slice($data, 0, 3, true),
+                        'response_sample' => array_slice($data, 0, 3, true),
                     ]
                 )
             );
 
-                    if (!isset($data['facets'])) {
-                        // Log the full response for debugging.
-                        $this->logger->error(
-                        'SOLR response missing facets key',
-                        [
-                            'response' => $data,
-                        ]
-                                );
-                        throw new \Exception('Invalid faceting response from SOLR - missing facets key');
-                    }
+            if (!isset($data['facets'])) {
+                // Log the full response for debugging.
+                $this->logger->error(
+                'SOLR response missing facets key',
+                [
+                    'response' => $data,
+                ]
+                        );
+                throw new \Exception('Invalid faceting response from SOLR - missing facets key');
+            }
 
                     // Process and format the facet data.
                     return $this->processFacetResponse(facetData: $data['facets'], facetableFields: $facetableFields);
@@ -12382,6 +12397,7 @@ class GuzzleSolrService
 
     }//end getSolrTypeFromArray()
 
+
     /**
      * Get self relations type from document.
      *
@@ -12394,15 +12410,20 @@ class GuzzleSolrService
         if (isset($document['self_relations']) === false) {
             return 'NOT_SET';
         }
+
         $selfRelations = $document['self_relations'];
         if (is_array($selfRelations) === true) {
             return 'array';
         }
+
         if (is_string($selfRelations) === true) {
             return 'string';
         }
+
         return gettype($selfRelations);
+
     }//end getSelfRelationsType()
+
 
     /**
      * Get self relations count from document.
@@ -12416,12 +12437,16 @@ class GuzzleSolrService
         if (isset($document['self_relations']) === false) {
             return 0;
         }
+
         $selfRelations = $document['self_relations'];
         if (is_array($selfRelations) === true) {
             return count($selfRelations);
         }
+
         return 1;
+
     }//end getSelfRelationsCount()
+
 
     /**
      * Get self object JSON representation.
@@ -12436,8 +12461,11 @@ class GuzzleSolrService
         if ($json === false) {
             return '{}';
         }
+
         return $json;
+
     }//end getSelfObjectJson()
+
 
     /**
      * Get config status for a specific key.
@@ -12449,7 +12477,9 @@ class GuzzleSolrService
     private function getConfigStatus(string $key): string
     {
         return (string) ($this->solrConfig[$key] ?? 'NOT_SET');
+
     }//end getConfigStatus()
+
 
     /**
      * Get port status.
@@ -12459,7 +12489,9 @@ class GuzzleSolrService
     private function getPortStatus(): string
     {
         return (string) ($this->solrConfig['port'] ?? 'NOT_SET');
+
     }//end getPortStatus()
+
 
     /**
      * Get core status.
@@ -12469,7 +12501,9 @@ class GuzzleSolrService
     private function getCoreStatus(): string
     {
         return (string) ($this->solrConfig['core'] ?? 'NOT_SET');
+
     }//end getCoreStatus()
+
 
     /**
      * Calculate prediction accuracy percentage.
@@ -12484,9 +12518,12 @@ class GuzzleSolrService
         if ($estimated === 0.0) {
             return 100.0;
         }
+
         $difference = abs($estimated - $actual);
         return round(($difference / $estimated) * 100, 2);
+
     }//end calculatePredictionAccuracy()
+
 
     /**
      * Get numeric type for SOLR.
@@ -12501,13 +12538,18 @@ class GuzzleSolrService
             if ($value >= -2147483648 && $value <= 2147483647) {
                 return 'pint';
             }
+
             return 'plong';
         }
+
         if (is_float($value) === true) {
             return 'pdouble';
         }
+
         return 'pfloat';
+
     }//end getNumericType()
+
 
     /**
      * Get field name from facet key.
@@ -12521,8 +12563,11 @@ class GuzzleSolrService
         if (strpos($facetKey, 'object_') === 0) {
             return substr($facetKey, 7);
         }
+
         return $facetKey;
+
     }//end getFieldNameFromFacetKey()
+
 
     /**
      * Get facet config key.
@@ -12538,8 +12583,11 @@ class GuzzleSolrService
         if ($isMetadataField === true) {
             return $facetKey;
         }
+
         return $fieldName;
+
     }//end getFacetConfigKey()
+
 
     /**
      * Get facet keys from data array.
@@ -12553,8 +12601,11 @@ class GuzzleSolrService
         if (isset($data['facets']) === false || is_array($data['facets']) === false) {
             return [];
         }
+
         return array_keys($data['facets']);
+
     }//end getFacetKeys()
+
 
     /**
      * Get object facet keys from data array.
@@ -12572,7 +12623,9 @@ class GuzzleSolrService
                 return strpos($key, 'object_') === 0;
             }
         );
+
     }//end getObjectFacetKeys()
+
 
     /**
      * Get collection health status.
@@ -12586,9 +12639,12 @@ class GuzzleSolrService
         if (empty($allActive) === true) {
             return 'unhealthy';
         }
+
         // Simple health check - can be enhanced.
         return 'healthy';
+
     }//end getCollectionHealth()
+
 
     /**
      * Get collection status.
@@ -12602,7 +12658,10 @@ class GuzzleSolrService
         if (empty($allActive) === true) {
             return 'inactive';
         }
+
         return 'active';
+
     }//end getCollectionStatus()
+
 
 }//end class

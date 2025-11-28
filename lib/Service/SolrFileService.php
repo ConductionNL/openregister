@@ -704,7 +704,9 @@ class SolrFileService
      */
     private function commandExists(string $command): bool
     {
-        /** @psalm-suppress ForbiddenCode */
+        /*
+         * @psalm-suppress ForbiddenCode
+         */
         $result = shell_exec(sprintf('which %s 2>/dev/null', escapeshellarg($command)));
         return !empty($result);
 
@@ -825,6 +827,7 @@ class SolrFileService
         }
 
         return round($totalSize / count($chunks), 2);
+
     }//end calculateAvgChunkSize()
 
 
@@ -1352,15 +1355,15 @@ class SolrFileService
         }
 
         // Extract chunking options if provided
-        $chunkSize = $options['chunk_size'] ?? null;
+        $chunkSize    = $options['chunk_size'] ?? null;
         $chunkOverlap = $options['chunk_overlap'] ?? null;
 
         $this->logger->info(
                 'Processing single extracted file',
                 [
-                    'file_id'      => $fileId,
-                    'collection'   => $collection,
-                    'chunk_size'   => $chunkSize,
+                    'file_id'       => $fileId,
+                    'collection'    => $collection,
+                    'chunk_size'    => $chunkSize,
                     'chunk_overlap' => $chunkOverlap,
                 ]
                 );

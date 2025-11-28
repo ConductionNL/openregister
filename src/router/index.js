@@ -22,6 +22,7 @@ import AuditTrailIndex from '../views/logs/AuditTrailIndex.vue'
 import SearchTrailIndex from '../views/logs/SearchTrailIndex.vue'
 import WebhooksIndex from '../views/webhooks/WebhooksIndex.vue'
 import WebhookLogsIndex from '../views/webhooks/WebhookLogsIndex.vue'
+import EndpointsIndex from '../views/Endpoint/EndpointsIndex.vue'
 import EntitiesIndex from '../views/entities/EntitiesIndex.vue'
 
 Vue.use(Router)
@@ -43,6 +44,7 @@ export const routeKeyByPath = {
 	'/deleted': 'deleted',
 	'/audit-trails': 'auditTrails',
 	'/search-trails': 'searchTrails',
+	'/endpoints': 'endpoints',
 }
 
 const router = new Router({
@@ -69,6 +71,7 @@ const router = new Router({
 		{ path: '/search-trails', component: SearchTrailIndex },
 		{ path: '/webhooks', component: WebhooksIndex },
 		{ path: '/webhooks/logs', component: WebhookLogsIndex },
+		{ path: '/endpoints', component: EndpointsIndex },
 		{ path: '/entities', component: EntitiesIndex },
 		{ path: '*', redirect: '/' },
 	],
