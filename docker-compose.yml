@@ -195,6 +195,7 @@ services:
       - nextcloud:/var/www/html:rw
       - ./custom_apps:/var/www/html/custom_apps
       - .:/var/www/html/custom_apps/openregister
+      - ../opencatalogi:/var/www/html/custom_apps/opencatalogi
     environment:
       - MYSQL_PASSWORD='!ChangeMe!'
       - MYSQL_DATABASE=nextcloud

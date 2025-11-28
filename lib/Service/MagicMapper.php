@@ -1039,7 +1039,8 @@ class MagicMapper
                     'name'     => $columnName,
                     'type'     => 'boolean',
                     'nullable' => !in_array($propertyName, $propertyConfig['required'] ?? []),
-                    'default'  => $propertyConfig['default'] ?? null,
+                    // propertyConfig may contain 'default' key even if not in type definition.
+                    'default'  => (is_array($propertyConfig) && array_key_exists('default', $propertyConfig)) ? $propertyConfig['default'] : null,
                 ];
 
             case 'array':
@@ -1179,7 +1180,8 @@ class MagicMapper
             'name'     => $columnName,
             'type'     => $intType,
             'nullable' => !$isRequired,
-            'default'  => $propertyConfig['default'] ?? null,
+            // propertyConfig may contain 'default' key even if not in type definition.
+            'default'  => (is_array($propertyConfig) && array_key_exists('default', $propertyConfig)) ? $propertyConfig['default'] : null,
             'index'    => true,
         // Integer fields are often used for filtering.
         ];
@@ -1208,7 +1210,8 @@ class MagicMapper
             'precision' => 10,
             'scale'     => 2,
             'nullable'  => !$isRequired,
-            'default'   => $propertyConfig['default'] ?? null,
+            // propertyConfig may contain 'default' key even if not in type definition.
+            'default'   => (is_array($propertyConfig) && array_key_exists('default', $propertyConfig)) ? $propertyConfig['default'] : null,
             'index'     => true,
         // Numeric fields are often used for filtering.
         ];
@@ -1276,15 +1279,16 @@ class MagicMapper
             $options['default'] = $column['default'];
         }
 
-        if (($column['autoincrement'] ?? null) !== null && $column['autoincrement'] === true) {
+        // Column array may contain additional keys not in type definition.
+        if (is_array($column) && array_key_exists('autoincrement', $column) && $column['autoincrement'] === true) {
             $options['autoincrement'] = true;
         }
 
-        if (($column['precision'] ?? null) !== null) {
+        if (is_array($column) && array_key_exists('precision', $column) && $column['precision'] !== null) {
             $options['precision'] = $column['precision'];
         }
 
-        if (($column['scale'] ?? null) !== null) {
+        if (is_array($column) && array_key_exists('scale', $column) && $column['scale'] !== null) {
             $options['scale'] = $column['scale'];
         }
 
