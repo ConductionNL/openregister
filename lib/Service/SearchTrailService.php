@@ -225,7 +225,7 @@ class SearchTrailService
             'results' => $enrichedTrails,
             'total'   => $total,
             'page'    => $processedConfig['page'],
-            // @psalm-suppress UndefinedMethod
+            //
             'pages'   => $this->calculatePages($total, $processedConfig['limit']),
             'limit'   => $processedConfig['limit'],
             'offset'  => $processedConfig['offset'],
@@ -614,21 +614,21 @@ class SearchTrailService
         ];
 
         // Process pagination parameters.
-        if (isset($config['limit']) === true) {
+        if (($config['limit'] ?? null) !== null) {
             $processed['limit'] = max(1, (int) $config['limit']);
-        } else if (isset($config['_limit']) === true) {
+        } else if (($config['_limit'] ?? null) !== null) {
             $processed['limit'] = max(1, (int) $config['_limit']);
         }
 
-        if (isset($config['offset']) === true) {
+        if (($config['offset'] ?? null) !== null) {
             $processed['offset'] = (int) $config['offset'];
-        } else if (isset($config['_offset']) === true) {
+        } else if (($config['_offset'] ?? null) !== null) {
             $processed['offset'] = (int) $config['_offset'];
         }
 
-        if (isset($config['page']) === true) {
+        if (($config['page'] ?? null) !== null) {
             $processed['page'] = max(1, (int) $config['page']);
-        } else if (isset($config['_page']) === true) {
+        } else if (($config['_page'] ?? null) !== null) {
             $processed['page'] = max(1, (int) $config['_page']);
         }
 
@@ -650,14 +650,14 @@ class SearchTrailService
         $processed['search'] = $config['search'] ?? $config['_search'] ?? null;
 
         // Process sort parameters.
-        if (isset($config['sort']) === true || isset($config['_sort']) === true) {
+        if (($config['sort'] ?? null) !== null || (($config['_sort'] ?? null) !== null) === true) {
             $sortField         = $config['sort'] ?? $config['_sort'] ?? 'created';
             $sortOrder         = $config['order'] ?? $config['_order'] ?? 'DESC';
             $processed['sort'] = [$sortField => $sortOrder];
         }
 
         // Process date filters.
-        if (isset($config['from']) === true) {
+        if (($config['from'] ?? null) !== null) {
             try {
                 $processed['from'] = new \DateTime($config['from']);
             } catch (Exception $e) {
@@ -665,7 +665,7 @@ class SearchTrailService
             }
         }
 
-        if (isset($config['to']) === true) {
+        if (($config['to'] ?? null) !== null) {
             try {
                 $processed['to'] = new \DateTime($config['to']);
             } catch (Exception $e) {
@@ -879,7 +879,7 @@ class SearchTrailService
 
         foreach ($userAgentStats as $stat) {
             $browser = $stat['browser_info']['browser'];
-            if (isset($browserCounts[$browser]) === false) {
+            if (!isset($browserCounts[$browser])) {
                 $browserCounts[$browser] = 0;
             }
 
@@ -977,11 +977,11 @@ class SearchTrailService
 
         // Enrich the trails with names.
         foreach ($trails as $trail) {
-            if ($trail->getRegister() !== null && isset($registerNames[$trail->getRegister()]) === true) {
+            if ($trail->getRegister() !== null && (($registerNames[$trail->getRegister()] ?? null) !== null) === true) {
                 $trail->setRegisterName($registerNames[$trail->getRegister()]);
             }
 
-            if ($trail->getSchema() !== null && isset($schemaNames[$trail->getSchema()]) === true) {
+            if ($trail->getSchema() !== null && (($schemaNames[$trail->getSchema()] ?? null) !== null) === true) {
                 $trail->setSchemaName($schemaNames[$trail->getSchema()]);
             }
         }

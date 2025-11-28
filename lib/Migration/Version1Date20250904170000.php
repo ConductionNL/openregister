@@ -59,13 +59,13 @@ class Version1Date20250904170000 extends SimpleMigrationStep
         $schema = $schemaClosure();
 
         // Get the objects table for optimization.
-        if ($schema->hasTable('openregister_objects')) {
+        if ($schema->hasTable('openregister_objects') === true) {
             $table = $schema->getTable('openregister_objects');
 
             $output->info(message: '🚀 Applying safe database performance optimizations...');
 
             // **SAFE INDEX 1**: Basic schema index only (no composite indexes to avoid key length issues).
-            if (!$table->hasIndex('idx_schema_only') && $table->hasColumn('schema')) {
+            if ($table->hasIndex('idx_schema_only') === false && $table->hasColumn('schema') === true) {
                 try {
                     $table->addIndex(['schema'], 'idx_schema_only');
                     $output->info(message: '✅ Added basic schema index');
@@ -75,7 +75,7 @@ class Version1Date20250904170000 extends SimpleMigrationStep
             }
 
             // **SAFE INDEX 2**: Basic register index only.
-            if (!$table->hasIndex('idx_register_only') && $table->hasColumn('register')) {
+            if ($table->hasIndex('idx_register_only') === false && $table->hasColumn('register') === true) {
                 try {
                     $table->addIndex(['register'], 'idx_register_only');
                     $output->info(message: '✅ Added basic register index');
@@ -115,7 +115,7 @@ class Version1Date20250904170000 extends SimpleMigrationStep
 
         // Add composite indexes based on common relationship query patterns.
         if ($tableName === 'openregister_object_relations') {
-            if (!$table->hasIndex('idx_source_target') && $table->hasColumn('source_id') && $table->hasColumn('target_id')) {
+            if ($table->hasIndex('idx_source_target') === false && $table->hasColumn('source_id') === true && $table->hasColumn('target_id') === true) {
                 try {
                     $table->addIndex(['source_id', 'target_id'], 'idx_source_target');
                     $output->info(message: "✅ Optimized {$tableName} with source+target index");
@@ -126,7 +126,7 @@ class Version1Date20250904170000 extends SimpleMigrationStep
         }
 
         if ($tableName === 'openregister_schema_properties') {
-            if (!$table->hasIndex('idx_schema_property') && $table->hasColumn('schema_id') && $table->hasColumn('name')) {
+            if ($table->hasIndex('idx_schema_property') === false && $table->hasColumn('schema_id') === true && $table->hasColumn('name') === true) {
                 try {
                     // Skip name column in index due to potential key length issues with text fields.
                     $table->addIndex(['schema_id'], 'idx_schema_property');
@@ -138,7 +138,7 @@ class Version1Date20250904170000 extends SimpleMigrationStep
         }
 
         if ($tableName === 'openregister_register_schemas') {
-            if (!$table->hasIndex('idx_register_schema') && $table->hasColumn('register_id') && $table->hasColumn('schema_id')) {
+            if ($table->hasIndex('idx_register_schema') === false && $table->hasColumn('register_id') === true && $table->hasColumn('schema_id') === true) {
                 try {
                     $table->addIndex(['register_id', 'schema_id'], 'idx_register_schema');
                     $output->info(message: "✅ Optimized {$tableName} with register+schema index");

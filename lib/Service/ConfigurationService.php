@@ -320,7 +320,7 @@ class ConfigurationService
             ];
 
             // Add x-openregister metadata if available in input.
-            if (isset($input['x-openregister']) === true) {
+            if (($input['x-openregister'] ?? null) !== null) {
                 $openApiSpec['x-openregister'] = $input['x-openregister'];
             } else {
                 // Create basic metadata from input.
@@ -439,40 +439,40 @@ class ConfigurationService
 
         foreach ($schemaArray['properties'] as &$property) {
             // Ensure property is always an array.
-            if (is_object($property)) {
+            if (is_object($property) === true) {
                 $property = (array) $property;
             }
 
-            if (isset($property['$ref']) === true) {
+            if (($property['$ref'] ?? null) !== null) {
                 $schemaId = $this->getLastNumericSegment(url: $property['$ref']);
-                if (isset($schemaIdsAndSlugsMap[$schemaId]) === true) {
+                if (($schemaIdsAndSlugsMap[$schemaId] ?? null) !== null) {
                     $property['$ref'] = $schemaIdsAndSlugsMap[$schemaId];
                 }
             }
 
-            if (isset($property['items']['$ref']) === true) {
+            if (($property['items']['$ref'] ?? null) !== null) {
                 // Ensure items is an array for consistent access.
-                if (is_object($property['items'])) {
+                if (is_object($property['items']) === true) {
                     $property['items'] = (array) $property['items'];
                 }
 
                 $schemaId = $this->getLastNumericSegment(url: $property['items']['$ref']);
-                if (isset($schemaIdsAndSlugsMap[$schemaId]) === true) {
+                if (($schemaIdsAndSlugsMap[$schemaId] ?? null) !== null) {
                     $property['items']['$ref'] = $schemaIdsAndSlugsMap[$schemaId];
                 }
             }
 
             // Handle register ID in objectConfiguration (new structure).
-            if (isset($property['objectConfiguration']['register']) === true) {
+            if (($property['objectConfiguration']['register'] ?? null) !== null) {
                 // Ensure objectConfiguration is an array for consistent access.
-                if (is_object($property['objectConfiguration'])) {
+                if (is_object($property['objectConfiguration']) === true) {
                     $property['objectConfiguration'] = (array) $property['objectConfiguration'];
                 }
 
                 $registerId = $property['objectConfiguration']['register'];
-                if (is_numeric($registerId)) {
+                if (is_numeric($registerId) === true) {
                     $registerIdStr = (string) $registerId;
-                    if (isset($registerIdsAndSlugsMap[$registerIdStr]) === true) {
+                    if (($registerIdsAndSlugsMap[$registerIdStr] ?? null) !== null) {
                         /*
                          * @var array<int|string, string> $registerIdsAndSlugsMap
                          */
@@ -482,16 +482,16 @@ class ConfigurationService
             }
 
             // Handle schema ID in objectConfiguration (new structure).
-            if (isset($property['objectConfiguration']['schema']) === true) {
+            if (($property['objectConfiguration']['schema'] ?? null) !== null) {
                 // Ensure objectConfiguration is an array for consistent access.
-                if (is_object($property['objectConfiguration'])) {
+                if (is_object($property['objectConfiguration']) === true) {
                     $property['objectConfiguration'] = (array) $property['objectConfiguration'];
                 }
 
                 $schemaId = $property['objectConfiguration']['schema'];
-                if (is_numeric($schemaId)) {
+                if (is_numeric($schemaId) === true) {
                     $schemaIdStr = (string) $schemaId;
-                    if (isset($schemaIdsAndSlugsMap[$schemaIdStr]) === true) {
+                    if (($schemaIdsAndSlugsMap[$schemaIdStr] ?? null) !== null) {
                         /*
                          * @var array<int|string, string> $schemaIdsAndSlugsMap
                          */
@@ -501,20 +501,20 @@ class ConfigurationService
             }
 
             // Handle register ID in array items objectConfiguration (new structure).
-            if (isset($property['items']['objectConfiguration']['register']) === true) {
+            if (($property['items']['objectConfiguration']['register'] ?? null) !== null) {
                 // Ensure items and objectConfiguration are arrays for consistent access.
-                if (is_object($property['items'])) {
+                if (is_object($property['items']) === true) {
                     $property['items'] = (array) $property['items'];
                 }
 
-                if (is_object($property['items']['objectConfiguration'])) {
+                if (is_object($property['items']['objectConfiguration']) === true) {
                     $property['items']['objectConfiguration'] = (array) $property['items']['objectConfiguration'];
                 }
 
                 $registerId = $property['items']['objectConfiguration']['register'];
-                if (is_numeric($registerId)) {
+                if (is_numeric($registerId) === true) {
                     $registerIdStr = (string) $registerId;
-                    if (isset($registerIdsAndSlugsMap[$registerIdStr]) === true) {
+                    if (($registerIdsAndSlugsMap[$registerIdStr] ?? null) !== null) {
                         /*
                          * @var array<int|string, string> $registerIdsAndSlugsMap
                          */
@@ -524,20 +524,20 @@ class ConfigurationService
             }//end if
 
             // Handle schema ID in array items objectConfiguration (new structure).
-            if (isset($property['items']['objectConfiguration']['schema']) === true) {
+            if (($property['items']['objectConfiguration']['schema'] ?? null) !== null) {
                 // Ensure items and objectConfiguration are arrays for consistent access.
-                if (is_object($property['items'])) {
+                if (is_object($property['items']) === true) {
                     $property['items'] = (array) $property['items'];
                 }
 
-                if (is_object($property['items']['objectConfiguration'])) {
+                if (is_object($property['items']['objectConfiguration']) === true) {
                     $property['items']['objectConfiguration'] = (array) $property['items']['objectConfiguration'];
                 }
 
                 $schemaId = $property['items']['objectConfiguration']['schema'];
-                if (is_numeric($schemaId)) {
+                if (is_numeric($schemaId) === true) {
                     $schemaIdStr = (string) $schemaId;
-                    if (isset($schemaIdsAndSlugsMap[$schemaIdStr]) === true) {
+                    if (($schemaIdsAndSlugsMap[$schemaIdStr] ?? null) !== null) {
                         /*
                          * @var array<int|string, string> $schemaIdsAndSlugsMap
                          */
@@ -547,11 +547,11 @@ class ConfigurationService
             }//end if
 
             // Legacy support: Handle old register property structure.
-            if (isset($property['register']) === true) {
+            if (($property['register'] ?? null) !== null) {
                 if (is_string($property['register']) === true) {
                     $registerId    = $this->getLastNumericSegment(url: $property['register']);
                     $registerIdStr = (string) $registerId;
-                    if (isset($registerIdsAndSlugsMap[$registerIdStr]) === true) {
+                    if (($registerIdsAndSlugsMap[$registerIdStr] ?? null) !== null) {
                         /*
                          * @var array<int|string, string> $registerIdsAndSlugsMap
                          */
@@ -560,16 +560,16 @@ class ConfigurationService
                 }
             }
 
-            if (isset($property['items']['register']) === true) {
+            if (($property['items']['register'] ?? null) !== null) {
                 // Ensure items is an array for consistent access.
-                if (is_object($property['items'])) {
+                if (is_object($property['items']) === true) {
                     $property['items'] = (array) $property['items'];
                 }
 
                 if (is_string($property['items']['register']) === true) {
                     $registerId    = $this->getLastNumericSegment(url: $property['items']['register']);
                     $registerIdStr = (string) $registerId;
-                    if (isset($registerIdsAndSlugsMap[$registerIdStr]) === true) {
+                    if (($registerIdsAndSlugsMap[$registerIdStr] ?? null) !== null) {
                         /*
                          * @var array<int|string, string> $registerIdsAndSlugsMap
                          */
@@ -595,7 +595,6 @@ class ConfigurationService
      * @return string The numeric value if found, or the original URL
      *
      * @throws         \InvalidArgumentException If the URL is not a string
-     * @psalm-suppress UndefinedDocblockClass - InvalidArgumentException is a standard PHP exception
      */
     private function getLastNumericSegment(string $url): string
     {
@@ -609,7 +608,7 @@ class ConfigurationService
         $lastSegment = end($parts);
 
         // Return numeric segment if found, otherwise return original URL.
-        return is_numeric($lastSegment) ? $lastSegment : $url;
+        return is_numeric($lastSegment) === true ? $lastSegment : $url;
 
     }//end getLastNumericSegment()
 
@@ -628,7 +627,7 @@ class ConfigurationService
 
         // Remove organisation if present (though objects typically don't have this at top level).
         // Organisation is instance-specific and should not be exported.
-        if (isset($objectArray['organisation']) === true) {
+        if (($objectArray['organisation'] ?? null) !== null) {
             unset($objectArray['organisation']);
         }
 
@@ -734,15 +733,15 @@ class ConfigurationService
      */
     private function ensureArrayStructure(mixed $data): array
     {
-        if (is_object($data)) {
+        if (is_object($data) === true) {
             $data = (array) $data;
         }
 
-        if (is_array($data)) {
+        if (is_array($data) === true) {
             foreach ($data as $key => $value) {
-                if (is_object($value)) {
+                if (is_object($value) === true) {
                     $data[$key] = $this->ensureArrayStructure($value);
-                } else if (is_array($value)) {
+                } else if (is_array($value) === true) {
                     $data[$key] = $this->ensureArrayStructure($value);
                 }
             }
@@ -906,11 +905,11 @@ class ConfigurationService
         $data = $this->ensureArrayStructure($data);
 
         // Extract appId and version from data if not provided as parameters.
-        if ($appId === null && isset($data['appId']) === true) {
+        if ($appId === null && (($data['appId'] ?? null) !== null)) {
             $appId = $data['appId'];
         }
 
-        if ($version === null && isset($data['version']) === true) {
+        if ($version === null && (($data['version'] ?? null) !== null)) {
             $version = $data['version'];
         }
 
@@ -959,7 +958,7 @@ class ConfigurationService
         ];
 
         // Process and import schemas if present.
-        if (isset($data['components']['schemas']) === true && is_array($data['components']['schemas']) === true) {
+        if (($data['components']['schemas'] ?? null) !== null && is_array($data['components']['schemas']) === true) {
             $slugsAndIdsMap = $this->schemaMapper->getSlugToIdMap();
             $this->logger->info(
                     message: 'Starting schema import process',
@@ -979,7 +978,7 @@ class ConfigurationService
                         ]
                         );
 
-                if (isset($schemaData['title']) === false && is_string($key) === true) {
+                if (!isset($schemaData['title']) === false && is_string($key) === true) {
                     $schemaData['title'] = $key;
                 }
 
@@ -1029,14 +1028,14 @@ class ConfigurationService
         }//end if
 
         // Process and import registers if present.
-        if (isset($data['components']['registers']) === true && is_array($data['components']['registers']) === true) {
+        if (($data['components']['registers'] ?? null) !== null && is_array($data['components']['registers']) === true) {
             foreach ($data['components']['registers'] as $slug => $registerData) {
                 $slug = strtolower($slug);
 
-                if (isset($registerData['schemas']) === true && is_array($registerData['schemas']) === true) {
+                if (($registerData['schemas'] ?? null) !== null && is_array($registerData['schemas']) === true) {
                     $schemaIds = [];
                     foreach ($registerData['schemas'] as $schemaSlug) {
-                        if (isset($this->schemasMap[$schemaSlug]) === true) {
+                        if (($this->schemasMap[$schemaSlug] ?? null) !== null) {
                             $schemaSlug  = strtolower($schemaSlug);
                             $schemaIds[] = $this->schemasMap[$schemaSlug]->getId();
                         } else {
@@ -1070,7 +1069,7 @@ class ConfigurationService
         // NOTE: We do NOT build ID maps - we'll pass the actual objects to avoid organisation filter issues.
         // When saveObject() receives Register/Schema objects, it skips the find() lookup entirely.
         // Process and import objects.
-        if (isset($data['components']['objects']) === true && is_array($data['components']['objects']) === true) {
+        if (($data['components']['objects'] ?? null) !== null && is_array($data['components']['objects']) === true) {
             foreach ($data['components']['objects'] as $objectData) {
                 // Log raw values before any mapping.
                 $rawRegister = $objectData['@self']['register'] ?? null;
@@ -1079,7 +1078,7 @@ class ConfigurationService
 
                 // Only import objects with a slug.
                 $slug = $rawSlug;
-                if (empty($slug)) {
+                if (empty($slug) === true) {
                     continue;
                 }
 
@@ -1118,7 +1117,7 @@ class ConfigurationService
 
                 // Search for existing object.
                 $results        = $this->objectService->searchObjects(query: $search, rbac: true, multi: true);
-                $existingObject = is_array($results) && count($results) > 0 ? $results[0] : null;
+                $existingObject = (is_array($results) === true) && count($results) > 0 ? $results[0] : null;
 
                 if ($existingObject === null) {
                     $this->logger->info(
@@ -1137,10 +1136,10 @@ class ConfigurationService
                 $objectData['@self']['schema']   = (int) $schemaId;
 
                 if ($existingObject !== null) {
-                    $existingObjectData = is_array($existingObject) ? $existingObject : $existingObject->jsonSerialize();
+                    $existingObjectData = is_array($existingObject) === true ? $existingObject : $existingObject->jsonSerialize();
                     $importedVersion    = $objectData['@self']['version'] ?? $objectData['version'] ?? '1.0.0';
                     $existingVersion    = $existingObjectData['@self']['version'] ?? $existingObjectData['version'] ?? '1.0.0';
-                    if (version_compare($importedVersion, $existingVersion, '>')) {
+                    if (version_compare($importedVersion, $existingVersion, '>') > 0) {
                         $uuid = $existingObjectData['@self']['id'] ?? $existingObjectData['id'] ?? null;
                         // CRITICAL: Pass Register and Schema OBJECTS, not IDs.
                         // This avoids organisation filter issues in find().
@@ -1304,46 +1303,46 @@ class ConfigurationService
                 $configuration->setSyncStatus('never');
 
                 // Set version requirements from x-openregister if available.
-                if (isset($xOpenregister['openregister']) === true) {
+                if (($xOpenregister['openregister'] ?? null) !== null) {
                     $configuration->setOpenregister($xOpenregister['openregister']);
                 }
 
                 // Set additional metadata from x-openregister if available.
                 // Note: Internal properties (autoUpdate, notificationGroups, owner, organisation).
                 // are not imported as they are instance-specific settings.
-                if (isset($xOpenregister['sourceType']) === true) {
+                if (($xOpenregister['sourceType'] ?? null) !== null) {
                     $configuration->setSourceType($xOpenregister['sourceType']);
                 }
 
-                if (isset($xOpenregister['sourceUrl']) === true) {
+                if (($xOpenregister['sourceUrl'] ?? null) !== null) {
                     $configuration->setSourceUrl($xOpenregister['sourceUrl']);
                 }
 
                 // Support both nested github structure (new) and flat structure (backward compatibility).
-                if (isset($xOpenregister['github']) === true && is_array($xOpenregister['github'])) {
+                if (($xOpenregister['github'] ?? null) !== null && is_array($xOpenregister['github']) === true) {
                     // New nested structure.
-                    if (isset($xOpenregister['github']['repo']) === true) {
+                    if (($xOpenregister['github']['repo'] ?? null) !== null) {
                         $configuration->setGithubRepo($xOpenregister['github']['repo']);
                     }
 
-                    if (isset($xOpenregister['github']['branch']) === true) {
+                    if (($xOpenregister['github']['branch'] ?? null) !== null) {
                         $configuration->setGithubBranch($xOpenregister['github']['branch']);
                     }
 
-                    if (isset($xOpenregister['github']['path']) === true) {
+                    if (($xOpenregister['github']['path'] ?? null) !== null) {
                         $configuration->setGithubPath($xOpenregister['github']['path']);
                     }
                 } else {
                     // Legacy flat structure (backward compatibility).
-                    if (isset($xOpenregister['githubRepo']) === true) {
+                    if (($xOpenregister['githubRepo'] ?? null) !== null) {
                         $configuration->setGithubRepo($xOpenregister['githubRepo']);
                     }
 
-                    if (isset($xOpenregister['githubBranch']) === true) {
+                    if (($xOpenregister['githubBranch'] ?? null) !== null) {
                         $configuration->setGithubBranch($xOpenregister['githubBranch']);
                     }
 
-                    if (isset($xOpenregister['githubPath']) === true) {
+                    if (($xOpenregister['githubPath'] ?? null) !== null) {
                         $configuration->setGithubPath($xOpenregister['githubPath']);
                     }
                 }//end if
@@ -1462,90 +1461,90 @@ class ConfigurationService
             // sets type to string if no type.
             // defaults title to its key in the oas so we dont have whitespaces (which is seen sometimes in defined titles in properties) in the property key.
             // removes format if format is string.
-            if (isset($data['properties']) === true) {
+            if (($data['properties'] ?? null) !== null) {
                 foreach ($data['properties'] as $key => &$property) {
                     // Ensure property is always an array.
-                    if (is_object($property)) {
+                    if (is_object($property) === true) {
                         $property = (array) $property;
                     }
 
                     // Only set title to key if no title exists, to preserve existing titles.
-                    if (isset($property['title']) === false || empty($property['title']) === true) {
+                    if (!isset($property['title']) === false || empty($property['title']) === true) {
                         $property['title'] = $key;
                     }
 
                     // Fix empty objects that became arrays during JSON deserialization.
                     // objectConfiguration and fileConfiguration should always be objects, not arrays.
-                    if (isset($property['objectConfiguration']) === true) {
-                        if (is_array($property['objectConfiguration']) && $property['objectConfiguration'] === []) {
+                    if (($property['objectConfiguration'] ?? null) !== null) {
+                        if (is_array($property['objectConfiguration']) === true && $property['objectConfiguration'] === []) {
                             $property['objectConfiguration'] = new \stdClass();
                         }
                     }
 
-                    if (isset($property['fileConfiguration']) === true) {
-                        if (is_array($property['fileConfiguration']) && $property['fileConfiguration'] === []) {
+                    if (($property['fileConfiguration'] ?? null) !== null) {
+                        if (is_array($property['fileConfiguration']) === true && $property['fileConfiguration'] === []) {
                             $property['fileConfiguration'] = new \stdClass();
                         }
                     }
 
                     // Do the same for array items.
-                    if (isset($property['items']) === true) {
+                    if (($property['items'] ?? null) !== null) {
                         // Ensure items is an array first.
-                        if (is_object($property['items'])) {
+                        if (is_object($property['items']) === true) {
                             $property['items'] = (array) $property['items'];
                         }
 
-                        if (isset($property['items']['objectConfiguration']) === true) {
-                            if (is_array($property['items']['objectConfiguration']) && $property['items']['objectConfiguration'] === []) {
+                        if (($property['items']['objectConfiguration'] ?? null) !== null) {
+                            if (is_array($property['items']['objectConfiguration']) === true && $property['items']['objectConfiguration'] === []) {
                                 $property['items']['objectConfiguration'] = new \stdClass();
                             }
                         }
 
-                        if (isset($property['items']['fileConfiguration']) === true) {
-                            if (is_array($property['items']['fileConfiguration']) && $property['items']['fileConfiguration'] === []) {
+                        if (($property['items']['fileConfiguration'] ?? null) !== null) {
+                            if (is_array($property['items']['fileConfiguration']) === true && $property['items']['fileConfiguration'] === []) {
                                 $property['items']['fileConfiguration'] = new \stdClass();
                             }
                         }
                     }
 
-                    if (isset($property['type']) === false) {
+                    if (!isset($property['type'])) {
                         $property['type'] = 'string';
                     }
 
-                    if (isset($property['format']) === true && ($property['format'] === 'string' || $property['format'] === 'binary' || $property['format'] === 'byte')) {
+                    if (($property['format'] ?? null) !== null && ($property['format'] === 'string' || $property['format'] === 'binary' || $property['format'] === 'byte')) {
                         unset($property['format']);
                     }
 
-                    if (isset($property['items']['format']) === true && ($property['items']['format'] === 'string' || $property['items']['format'] === 'binary' || $property['items']['format'] === 'byte')) {
+                    if (($property['items']['format'] ?? null) !== null && ($property['items']['format'] === 'string' || $property['items']['format'] === 'binary' || $property['items']['format'] === 'byte')) {
                         unset($property['items']['format']);
                     }
 
                     // Check if we have the schema for the slug and set that id.
-                    if (isset($property['$ref']) === true) {
-                        if (isset($slugsAndIdsMap[$property['$ref']]) === true) {
+                    if (($property['$ref'] ?? null) !== null) {
+                        if (($slugsAndIdsMap[$property['$ref']] ?? null) !== null) {
                             $property['$ref'] = $slugsAndIdsMap[$property['$ref']];
-                        } else if (isset($this->schemasMap[$property['$ref']]) === true) {
+                        } else if (($this->schemasMap[$property['$ref']] ?? null) !== null) {
                             $property['$ref'] = $this->schemasMap[$property['$ref']]->getId();
                         }
                     }
 
-                    if (isset($property['items']['$ref']) === true) {
-                        if (isset($slugsAndIdsMap[$property['items']['$ref']]) === true) {
+                    if (($property['items']['$ref'] ?? null) !== null) {
+                        if (($slugsAndIdsMap[$property['items']['$ref']] ?? null) !== null) {
                             $property['items']['$ref'] = $slugsAndIdsMap[$property['items']['$ref']];
-                        } else if (isset($this->schemasMap[$property['items']['$ref']]) === true) {
+                        } else if (($this->schemasMap[$property['items']['$ref']] ?? null) !== null) {
                             $property['$ref'] = $this->schemasMap[$property['items']['$ref']]->getId();
                         }
                     }
 
                     // Ensure objectConfiguration is an array for consistent access before any checks.
-                    if (isset($property['objectConfiguration']) && is_object($property['objectConfiguration'])) {
+                    if (($property['objectConfiguration'] ?? null) !== null && is_object($property['objectConfiguration']) === true) {
                         $property['objectConfiguration'] = (array) $property['objectConfiguration'];
                     }
 
                     // Handle register slug/ID in objectConfiguration (new structure).
-                    if (isset($property['objectConfiguration']['register']) === true) {
+                    if (($property['objectConfiguration']['register'] ?? null) !== null) {
                         $registerSlug = $property['objectConfiguration']['register'];
-                        if (isset($this->registersMap[$registerSlug]) === true) {
+                        if (($this->registersMap[$registerSlug] ?? null) !== null) {
                             $property['objectConfiguration']['register'] = $this->registersMap[$registerSlug]->getId();
                         } else {
                             // Try to find existing register in database.
@@ -1566,11 +1565,11 @@ class ConfigurationService
                     }//end if
 
                     // Handle schema slug/ID in objectConfiguration (new structure).
-                    if (isset($property['objectConfiguration']['schema']) === true) {
+                    if (($property['objectConfiguration']['schema'] ?? null) !== null) {
                         $schemaSlug = $property['objectConfiguration']['schema'];
                         // Only process non-empty schema slugs.
                         if (!empty($schemaSlug)) {
-                            if (isset($this->schemasMap[$schemaSlug]) === true) {
+                            if (($this->schemasMap[$schemaSlug] ?? null) !== null) {
                                 $property['objectConfiguration']['schema'] = $this->schemasMap[$schemaSlug]->getId();
                             } else {
                                 // Try to find existing schema in database.
@@ -1594,20 +1593,20 @@ class ConfigurationService
                     }//end if
 
                     // Ensure items and its objectConfiguration are arrays for consistent access before any checks.
-                    if (isset($property['items'])) {
-                        if (is_object($property['items'])) {
+                    if (($property['items'] ?? null) !== null) {
+                        if (is_object($property['items']) === true) {
                             $property['items'] = (array) $property['items'];
                         }
 
-                        if (isset($property['items']['objectConfiguration']) && is_object($property['items']['objectConfiguration'])) {
+                        if (($property['items']['objectConfiguration'] ?? null) !== null && is_object($property['items']['objectConfiguration']) === true) {
                             $property['items']['objectConfiguration'] = (array) $property['items']['objectConfiguration'];
                         }
                     }
 
                     // Handle register slug/ID in array items objectConfiguration (new structure).
-                    if (isset($property['items']['objectConfiguration']['register']) === true) {
+                    if (($property['items']['objectConfiguration']['register'] ?? null) !== null) {
                         $registerSlug = $property['items']['objectConfiguration']['register'];
-                        if (isset($this->registersMap[$registerSlug]) === true) {
+                        if (($this->registersMap[$registerSlug] ?? null) !== null) {
                             $property['items']['objectConfiguration']['register'] = $this->registersMap[$registerSlug]->getId();
                         } else {
                             // Try to find existing register in database.
@@ -1628,11 +1627,11 @@ class ConfigurationService
                     }//end if
 
                     // Handle schema slug/ID in array items objectConfiguration (new structure).
-                    if (isset($property['items']['objectConfiguration']['schema']) === true) {
+                    if (($property['items']['objectConfiguration']['schema'] ?? null) !== null) {
                         $schemaSlug = $property['items']['objectConfiguration']['schema'];
                         // Only process non-empty schema slugs.
                         if (!empty($schemaSlug)) {
-                            if (isset($this->schemasMap[$schemaSlug]) === true) {
+                            if (($this->schemasMap[$schemaSlug] ?? null) !== null) {
                                 $property['items']['objectConfiguration']['schema'] = $this->schemasMap[$schemaSlug]->getId();
                             } else {
                                 // Try to find existing schema in database.
@@ -1656,18 +1655,18 @@ class ConfigurationService
                     }//end if
 
                     // Legacy support: Handle old register property structure.
-                    if (isset($property['register']) === true) {
-                        if (isset($slugsAndIdsMap[$property['register']]) === true) {
+                    if (($property['register'] ?? null) !== null) {
+                        if (($slugsAndIdsMap[$property['register']] ?? null) !== null) {
                             $property['register'] = $slugsAndIdsMap[$property['register']];
-                        } else if (isset($this->registersMap[$property['register']]) === true) {
+                        } else if (($this->registersMap[$property['register']] ?? null) !== null) {
                             $property['register'] = $this->registersMap[$property['register']]->getId();
                         }
                     }
 
-                    if (isset($property['items']['register']) === true) {
-                        if (isset($slugsAndIdsMap[$property['items']['register']]) === true) {
+                    if (($property['items']['register'] ?? null) !== null) {
+                        if (($slugsAndIdsMap[$property['items']['register']] ?? null) !== null) {
                             $property['items']['register'] = $slugsAndIdsMap[$property['items']['register']];
-                        } else if (isset($this->registersMap[$property['items']['register']]) === true) {
+                        } else if (($this->registersMap[$property['items']['register']] ?? null) !== null) {
                             $property['items']['register'] = $this->registersMap[$property['items']['register']]->getId();
                         }
                     }
@@ -1743,7 +1742,7 @@ class ConfigurationService
             $data = $this->ensureArrayStructure($data);
 
             // Validate required @self metadata.
-            if (!isset($data['@self']['register']) || !isset($data['@self']['schema']) || !isset($data['name'])) {
+            if (!isset($data['@self']['register']) === false || !isset($data['@self']['schema']) === false || !isset($data['name'])) {
                 $this->logger->warning(message: 'Object data missing required @self metadata (register, schema) or name field');
                 return null;
             }
@@ -1772,7 +1771,7 @@ class ConfigurationService
                 $existingVersion    = $existingObjectData['@self']['version'] ?? $existingObjectData['version'] ?? '1.0.0';
 
                 // Compare versions using version_compare for proper semver comparison.
-                if (version_compare($objectVersion, $existingVersion, '<=')) {
+                if (version_compare($objectVersion, $existingVersion, '<=') <= 0) {
                     $this->logger->info(
                         sprintf(
                             'Skipping object import as existing version (%s) is newer or equal to import version (%s) for object: %s',
@@ -1813,7 +1812,7 @@ class ConfigurationService
             }
 
             // Use existing object's UUID if available, otherwise let the service generate a new one.
-            $uuid = $existingObject ? $existingObject->getUuid() : ($data['uuid'] ?? $data['id'] ?? null);
+            $uuid = $existingObject === true ? $existingObject->getUuid() : ($data['uuid'] ?? $data['id'] ?? null);
 
             // Save the object using the object service.
             $object = $this->objectService->saveObject(
@@ -1855,7 +1854,7 @@ class ConfigurationService
             // Call the exportRegister function on the Open Connector service.
             $exportedData = $this->openConnectorConfigurationService->exportRegister($registerId);
 
-            if (empty($exportedData)) {
+            if (empty($exportedData) === true) {
                 $this->logger->error(message: 'No data received from Open Connector export');
                 return null;
             }
@@ -2066,46 +2065,46 @@ class ConfigurationService
                 $configuration->setSyncStatus('never');
 
                 // Set version requirements from x-openregister if available.
-                if (isset($xOpenregister['openregister']) === true) {
+                if (($xOpenregister['openregister'] ?? null) !== null) {
                     $configuration->setOpenregister($xOpenregister['openregister']);
                 }
 
                 // Set additional metadata from x-openregister if available.
                 // Note: Internal properties (autoUpdate, notificationGroups, owner, organisation).
                 // are not imported as they are instance-specific settings.
-                if (isset($xOpenregister['sourceType']) === true) {
+                if (($xOpenregister['sourceType'] ?? null) !== null) {
                     $configuration->setSourceType($xOpenregister['sourceType']);
                 }
 
-                if (isset($xOpenregister['sourceUrl']) === true) {
+                if (($xOpenregister['sourceUrl'] ?? null) !== null) {
                     $configuration->setSourceUrl($xOpenregister['sourceUrl']);
                 }
 
                 // Support both nested github structure (new) and flat structure (backward compatibility).
-                if (isset($xOpenregister['github']) === true && is_array($xOpenregister['github'])) {
+                if (($xOpenregister['github'] ?? null) !== null && is_array($xOpenregister['github']) === true) {
                     // New nested structure.
-                    if (isset($xOpenregister['github']['repo']) === true) {
+                    if (($xOpenregister['github']['repo'] ?? null) !== null) {
                         $configuration->setGithubRepo($xOpenregister['github']['repo']);
                     }
 
-                    if (isset($xOpenregister['github']['branch']) === true) {
+                    if (($xOpenregister['github']['branch'] ?? null) !== null) {
                         $configuration->setGithubBranch($xOpenregister['github']['branch']);
                     }
 
-                    if (isset($xOpenregister['github']['path']) === true) {
+                    if (($xOpenregister['github']['path'] ?? null) !== null) {
                         $configuration->setGithubPath($xOpenregister['github']['path']);
                     }
                 } else {
                     // Legacy flat structure (backward compatibility).
-                    if (isset($xOpenregister['githubRepo']) === true) {
+                    if (($xOpenregister['githubRepo'] ?? null) !== null) {
                         $configuration->setGithubRepo($xOpenregister['githubRepo']);
                     }
 
-                    if (isset($xOpenregister['githubBranch']) === true) {
+                    if (($xOpenregister['githubBranch'] ?? null) !== null) {
                         $configuration->setGithubBranch($xOpenregister['githubBranch']);
                     }
 
-                    if (isset($xOpenregister['githubPath']) === true) {
+                    if (($xOpenregister['githubPath'] ?? null) !== null) {
                         $configuration->setGithubPath($xOpenregister['githubPath']);
                     }
                 }//end if
@@ -2172,51 +2171,51 @@ class ConfigurationService
                 $xOpenregister = $data['x-openregister'] ?? [];
 
                 // Standard OAS properties from info section.
-                if (isset($info['title']) === true) {
+                if (($info['title'] ?? null) !== null) {
                     $configuration->setTitle($info['title']);
-                } else if (isset($xOpenregister['title']) === true) {
+                } else if (($xOpenregister['title'] ?? null) !== null) {
                     $configuration->setTitle($xOpenregister['title']);
                 }
 
-                if (isset($info['description']) === true) {
+                if (($info['description'] ?? null) !== null) {
                     $configuration->setDescription($info['description']);
-                } else if (isset($xOpenregister['description']) === true) {
+                } else if (($xOpenregister['description'] ?? null) !== null) {
                     $configuration->setDescription($xOpenregister['description']);
                 }
 
                 // OpenRegister-specific properties from x-openregister.
-                if (isset($xOpenregister['sourceType']) === true) {
+                if (($xOpenregister['sourceType'] ?? null) !== null) {
                     $configuration->setSourceType($xOpenregister['sourceType']);
                 }
 
-                if (isset($xOpenregister['sourceUrl']) === true) {
+                if (($xOpenregister['sourceUrl'] ?? null) !== null) {
                     $configuration->setSourceUrl($xOpenregister['sourceUrl']);
                 }
 
                 // Update github properties (nested or flat).
-                if (isset($xOpenregister['github']) === true && is_array($xOpenregister['github'])) {
-                    if (isset($xOpenregister['github']['repo']) === true) {
+                if (($xOpenregister['github'] ?? null) !== null && is_array($xOpenregister['github']) === true) {
+                    if (($xOpenregister['github']['repo'] ?? null) !== null) {
                         $configuration->setGithubRepo($xOpenregister['github']['repo']);
                     }
 
-                    if (isset($xOpenregister['github']['branch']) === true) {
+                    if (($xOpenregister['github']['branch'] ?? null) !== null) {
                         $configuration->setGithubBranch($xOpenregister['github']['branch']);
                     }
 
-                    if (isset($xOpenregister['github']['path']) === true) {
+                    if (($xOpenregister['github']['path'] ?? null) !== null) {
                         $configuration->setGithubPath($xOpenregister['github']['path']);
                     }
                 } else {
                     // Legacy flat structure.
-                    if (isset($xOpenregister['githubRepo']) === true) {
+                    if (($xOpenregister['githubRepo'] ?? null) !== null) {
                         $configuration->setGithubRepo($xOpenregister['githubRepo']);
                     }
 
-                    if (isset($xOpenregister['githubBranch']) === true) {
+                    if (($xOpenregister['githubBranch'] ?? null) !== null) {
                         $configuration->setGithubBranch($xOpenregister['githubBranch']);
                     }
 
-                    if (isset($xOpenregister['githubPath']) === true) {
+                    if (($xOpenregister['githubPath'] ?? null) !== null) {
                         $configuration->setGithubPath($xOpenregister['githubPath']);
                     }
                 }//end if
@@ -2330,7 +2329,7 @@ class ConfigurationService
                     $schema->getId(),
                     $schema->getUuid(),
                     $schema->getTitle(),
-                    $schema->getCreated() ? $schema->getCreated()->format('Y-m-d H:i:s') : 'unknown'
+                    (($schema->getCreated() !== null) === true) ? $schema->getCreated()->format('Y-m-d H:i:s') : 'unknown'
                 );
             }
 
@@ -2403,7 +2402,7 @@ class ConfigurationService
                     $register->getId(),
                     $register->getUuid(),
                     $register->getTitle(),
-                    $register->getCreated() ? $register->getCreated()->format('Y-m-d H:i:s') : 'unknown'
+                    (($register->getCreated() !== null) === true) ? $register->getCreated()->format('Y-m-d H:i:s') : 'unknown'
                 );
             }
 
@@ -2640,21 +2639,21 @@ class ConfigurationService
         ];
 
         // Preview registers.
-        if (isset($remoteData['components']['registers']) === true && is_array($remoteData['components']['registers']) === true) {
+        if (($remoteData['components']['registers'] ?? null) !== null && is_array($remoteData['components']['registers']) === true) {
             foreach ($remoteData['components']['registers'] as $slug => $registerData) {
                 $preview['registers'][] = $this->previewRegisterChange(slug: $slug, registerData: $registerData);
             }
         }
 
         // Preview schemas.
-        if (isset($remoteData['components']['schemas']) === true && is_array($remoteData['components']['schemas']) === true) {
+        if (($remoteData['components']['schemas'] ?? null) !== null && is_array($remoteData['components']['schemas']) === true) {
             foreach ($remoteData['components']['schemas'] as $slug => $schemaData) {
                 $preview['schemas'][] = $this->previewSchemaChange(slug: $slug, schemaData: $schemaData);
             }
         }
 
         // Preview objects.
-        if (isset($remoteData['components']['objects']) === true && is_array($remoteData['components']['objects']) === true) {
+        if (($remoteData['components']['objects'] ?? null) !== null && is_array($remoteData['components']['objects']) === true) {
             // Build register and schema slug to ID maps.
             $registerSlugToId = [];
             $schemaSlugToId   = [];
@@ -2886,13 +2885,13 @@ class ConfigurationService
         ];
 
         $results        = $this->objectService->searchObjects(query: $search, rbac: true, multi: true);
-        $existingObject = is_array($results) && count($results) > 0 ? $results[0] : null;
+        $existingObject = is_array($results) === true && count($results) > 0 ? $results[0] : null;
 
         if ($existingObject === null) {
             $preview['action'] = 'create';
         } else {
             // Object exists, check version.
-            $existingObjectData = is_array($existingObject) ? $existingObject : $existingObject->jsonSerialize();
+            $existingObjectData = is_array($existingObject) === true ? $existingObject : $existingObject->jsonSerialize();
             $preview['current'] = $existingObjectData;
 
             $currentVersion  = $existingObjectData['@self']['version'] ?? $existingObjectData['version'] ?? '1.0.0';
@@ -2950,9 +2949,9 @@ class ConfigurationService
             $currentValue = $current[$key];
 
             // Deep comparison for arrays.
-            if (is_array($proposedValue) && is_array($currentValue)) {
+            if (is_array($proposedValue) === true && is_array($currentValue) === true) {
                 // For simple arrays, just compare values.
-                if ($this->isSimpleArray($proposedValue) || $this->isSimpleArray($currentValue)) {
+                if ($this->isSimpleArray($proposedValue) === true || $this->isSimpleArray($currentValue) === true) {
                     if ($proposedValue !== $currentValue) {
                         $changes[] = [
                             'field'    => $fieldName,
@@ -2990,7 +2989,7 @@ class ConfigurationService
     private function isSimpleArray(array $array): bool
     {
         foreach ($array as $value) {
-            if (is_array($value) || is_object($value)) {
+            if (is_array($value) === true || is_object($value) === true) {
                 return false;
             }
         }
@@ -3051,40 +3050,40 @@ class ConfigurationService
         ];
 
         // Copy metadata.
-        if (isset($remoteData['info']) === true) {
+        if (($remoteData['info'] ?? null) !== null) {
             $filteredData['info'] = $remoteData['info'];
         }
 
-        if (isset($remoteData['version']) === true) {
+        if (($remoteData['version'] ?? null) !== null) {
             $filteredData['version'] = $remoteData['version'];
         }
 
-        if (isset($remoteData['appId']) === true) {
+        if (($remoteData['appId'] ?? null) !== null) {
             $filteredData['appId'] = $remoteData['appId'];
         }
 
         // Filter registers.
-        if (isset($selection['registers']) === true && is_array($selection['registers']) === true) {
+        if (($selection['registers'] ?? null) !== null && is_array($selection['registers']) === true) {
             foreach ($selection['registers'] as $slug) {
                 $slug = strtolower($slug);
-                if (isset($remoteData['components']['registers'][$slug]) === true) {
+                if (($remoteData['components']['registers'][$slug] ?? null) !== null) {
                     $filteredData['components']['registers'][$slug] = $remoteData['components']['registers'][$slug];
                 }
             }
         }
 
         // Filter schemas.
-        if (isset($selection['schemas']) === true && is_array($selection['schemas']) === true) {
+        if (($selection['schemas'] ?? null) !== null && is_array($selection['schemas']) === true) {
             foreach ($selection['schemas'] as $slug) {
                 $slug = strtolower($slug);
-                if (isset($remoteData['components']['schemas'][$slug]) === true) {
+                if (($remoteData['components']['schemas'][$slug] ?? null) !== null) {
                     $filteredData['components']['schemas'][$slug] = $remoteData['components']['schemas'][$slug];
                 }
             }
         }
 
         // Filter objects - requires matching by slug + register + schema.
-        if (isset($selection['objects']) === true && is_array($selection['objects']) === true) {
+        if (($selection['objects'] ?? null) !== null && is_array($selection['objects']) === true) {
             foreach ($remoteData['components']['objects'] ?? [] as $objectData) {
                 $objectSlug   = $objectData['@self']['slug'] ?? null;
                 $registerSlug = $objectData['@self']['register'] ?? null;

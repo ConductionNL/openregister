@@ -33,7 +33,7 @@ use OCP\AppFramework\Db\Entity;
  * @author    Conduction Development Team
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2
- * @version   1.0.0
+ * @version   GIT: <git_id>
  * @link      https://OpenRegister.app
  */
 class EndpointLog extends Entity implements JsonSerializable
@@ -305,8 +305,8 @@ class EndpointLog extends Entity implements JsonSerializable
             'endpointId'    => $this->endpointId,
             'userId'        => $this->userId,
             'sessionId'     => $this->sessionId,
-            'expires'       => isset($this->expires) ? $this->expires->format('c') : null,
-            'created'       => isset($this->created) ? $this->created->format('c') : null,
+            'expires'       => isset($this->expires) === true ? $this->expires->format('c') : null,
+            'created'       => isset($this->created) === true ? $this->created->format('c') : null,
             'size'          => $this->size,
         ];
 

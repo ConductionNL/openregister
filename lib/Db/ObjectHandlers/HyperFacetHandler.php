@@ -448,10 +448,10 @@ class HyperFacetHandler
 
         // Combine results from different facet types.
         $combinedFacets = [];
-        if (isset($results['metadata']) === true) {
+        if (($results['metadata'] ?? null) !== null) {
             $combinedFacets = array_merge($combinedFacets, $results['metadata']);
         }
-        if (isset($results['json']) === true) {
+        if (($results['json'] ?? null) !== null) {
             $combinedFacets = array_merge($combinedFacets, $results['json']);
         }
 
@@ -606,7 +606,6 @@ class HyperFacetHandler
                     'batchOptimization' => 'enabled'
                 ]);
 
-                /** @psalm-suppress InvalidArgument - Promise resolve accepts mixed */
                 $resolve($results);
             } catch (\Throwable $e) {
                 $reject($e);
@@ -645,12 +644,12 @@ class HyperFacetHandler
         // **SINGLE QUERY OPTIMIZATION**: Get all terms facets in one query.
         $selectFields = [];
         foreach ($fields as $field) {
-            if (isset($facetConfig[$field]) && ($facetConfig[$field]['type'] ?? '') === 'terms') {
+            if (($facetConfig[$field] ?? null) !== null && ($facetConfig[$field]['type'] ?? '') === 'terms') {
                 $selectFields[] = $field;
             }
         }
 
-        if (empty($selectFields)) {
+        if (empty($selectFields) === true) {
             return [];
         }
 
@@ -659,8 +658,8 @@ class HyperFacetHandler
             ->selectAlias($queryBuilder->createFunction('COUNT(*)'), 'doc_count')
             ->from('openregister_objects')
             ->groupBy(...$selectFields)
-            ->orderBy('doc_count', 'DESC')
-            ->setMaxResults(1000); // Reasonable limit for facet values
+            ->orderBy('doc_count', 'DESC');
+        // Reasonable limit for facet values.
 
         // Apply optimized base filters (will use our composite indexes).
         $this->applyOptimizedBaseFilters($queryBuilder, $baseQuery);
@@ -676,7 +675,7 @@ class HyperFacetHandler
         }
 
         // Process batched results.
-        while ($row = $result->fetch()) {
+        while (($row = $result->fetch()) !== false) {
             $count = (int) $row['doc_count'];
 
             foreach ($selectFields as $field) {
@@ -717,16 +716,16 @@ class HyperFacetHandler
         // **INDEX OPTIMIZATION**: Apply filters in order of our composite indexes.
 
         // 1. FIRST: Apply register+schema filters (uses objects_register_schema_idx).
-        if (isset($baseQuery['@self']['register'])) {
+        if (($baseQuery['@self']['register'] ?? null) !== null) {
             $queryBuilder->andWhere($queryBuilder->expr()->eq('register', $queryBuilder->createNamedParameter($baseQuery['@self']['register'])));
         }
 
-        if (isset($baseQuery['@self']['schema'])) {
+        if (($baseQuery['@self']['schema'] ?? null) !== null) {
             $queryBuilder->andWhere($queryBuilder->expr()->eq('schema', $queryBuilder->createNamedParameter($baseQuery['@self']['schema'])));
         }
 
         // 2. SECOND: Apply organisation filter (uses objects_perf_super_idx with register+schema).
-        if (isset($baseQuery['@self']['organisation'])) {
+        if (($baseQuery['@self']['organisation'] ?? null) !== null) {
             $queryBuilder->andWhere($queryBuilder->expr()->eq('organisation', $queryBuilder->createNamedParameter($baseQuery['@self']['organisation'])));
         }
 
@@ -833,7 +832,7 @@ class HyperFacetHandler
         $keyData = [
             'facets' => $facetConfig,
             'query' => $baseQuery,
-            'version' => 'v2.0' // Increment to invalidate cache when algorithm changes
+// Increment to invalidate cache when algorithm changes.
         ];
 
         return 'hyper_facets_' . md5(json_encode($keyData));
@@ -856,7 +855,7 @@ class HyperFacetHandler
 
         try {
             $cached = $this->facetCache->get($cacheKey);
-            return is_array($cached) ? $cached : null;
+            return is_array($cached) === true ? $cached : null;
         } catch (\Exception $e) {
             return null;
         }
@@ -921,23 +920,16 @@ class HyperFacetHandler
         $score = 0;
 
         // Add complexity for each filter type.
-        if (isset($baseQuery['_search'])) {
-            $score += 2; // Search adds complexity
+        if (($baseQuery['_search'] ?? null) !== null) {
+            // Search adds complexity.
         }
 
-        if (isset($baseQuery['@self'])) {
-            $score += count($baseQuery['@self']); // Each metadata filter adds 1
+        if (($baseQuery['@self'] ?? null) !== null) {
+// Each metadata filter adds 1.
         }
 
         // Count JSON field filters (more expensive).
-        $jsonFilters = array_filter(
-            $baseQuery,
-            function ($key) {
-                return $key !== '@self' && !str_starts_with($key, '_');
-            },
-            ARRAY_FILTER_USE_KEY
-        );
-        $score += count($jsonFilters) * 2; // JSON filters are 2x more complex
+        // JSON filters are 2x more complex.
 
         return $score;
 
@@ -1070,20 +1062,38 @@ class HyperFacetHandler
     private function processJsonFacetsParallel(array $jsonFacets, array $baseQuery): PromiseInterface
     {
         return new Promise(function ($resolve) {
-            /** @psalm-suppress InvalidArgument - Promise resolve accepts mixed */
-            $resolve([]); // Simplified for now
+            // Simplified for now.
+            $resolve([]);
         });
     }
 
+    /**
+     * Build a sample query with random ordering
+     *
+     * @param array $baseQuery  Base query parameters
+     * @param int   $sampleSize Sample size to limit results
+     *
+     * @return array Query with sample size limit and random ordering
+     */
     private function buildSampleQuery(array $baseQuery, int $sampleSize): array
     {
         return array_merge($baseQuery, ['_limit' => $sampleSize, '_order' => ['RAND()' => 'ASC']]);
     }
 
+    /**
+     * Extrapolate facet results from sample to full dataset
+     *
+     * @param array $sampleFacets Sample facet results
+     * @param float $factor       Extrapolation factor
+     * @param int   $sampleSize   Sample size used
+     * @param int   $totalSize    Total dataset size
+     *
+     * @return array Extrapolated facet results with confidence scores
+     */
     private function extrapolateFacetResults(array $sampleFacets, float $factor, int $sampleSize, int $totalSize): array
     {
         foreach ($sampleFacets as &$facetData) {
-            if (isset($facetData['buckets'])) {
+            if (($facetData['buckets'] ?? null) !== null) {
                 foreach ($facetData['buckets'] as &$bucket) {
                     $bucket['results'] = (int) round($bucket['results'] * $factor);
                     $bucket['approximate'] = true;
@@ -1094,11 +1104,29 @@ class HyperFacetHandler
         return $sampleFacets;
     }
 
+    /**
+     * Calculate metadata facets using hyper-fast index-optimized queries
+     *
+     * @param array $config    Facet configuration
+     * @param array $baseQuery Base query parameters
+     *
+     * @return array Facet results
+     */
     private function calculateMetadataFacetsHyperFast(array $config, array $baseQuery): array
     {
-        return []; // Simplified - would use index-optimized queries
+// Simplified - would use index-optimized queries.
     }
 
+    /**
+     * Estimate JSON field facet values using statistics
+     *
+     * @param string $field     Field name
+     * @param array  $config    Facet configuration
+     * @param array  $baseQuery  Base query parameters
+     * @param array  $stats      Statistics for estimation
+     *
+     * @return array Estimated facet results
+     */
     private function estimateJsonFieldFacet(string $field, array $config, array $baseQuery, array $stats): array
     {
         return [
@@ -1109,21 +1137,54 @@ class HyperFacetHandler
         ];
     }
 
+    /**
+     * Calculate a single metadata facet
+     *
+     * @param string $field     Field name
+     * @param array  $config    Facet configuration
+     * @param array  $baseQuery Base query parameters
+     *
+     * @return array Facet results
+     */
     private function calculateSingleMetadataFacet(string $field, array $config, array $baseQuery): array
     {
-        return []; // Would implement specific facet calculation
+// Would implement specific facet calculation.
     }
 
+    /**
+     * Get human-readable label for a field value
+     *
+     * @param string $field Field name
+     * @param mixed  $value Field value
+     *
+     * @return string Human-readable label
+     */
     private function getFieldLabel(string $field, mixed $value): string
     {
-        return (string) $value; // Simplified label generation
+// Simplified label generation.
     }
 
+    /**
+     * Apply JSON field filters to query builder
+     *
+     * @param IQueryBuilder $queryBuilder Query builder instance
+     * @param array         $filters     Filters to apply
+     *
+     * @return void
+     */
     private function applyJsonFieldFilters(IQueryBuilder $queryBuilder, array $filters): void
     {
         // Apply JSON field filters efficiently.
     }
 
+    /**
+     * Calculate statistical confidence based on sample size
+     *
+     * @param int $sampleSize Sample size used
+     * @param int $totalSize  Total dataset size
+     *
+     * @return float Confidence score between 0 and 0.95
+     */
     private function calculateConfidence(int $sampleSize, int $totalSize): float
     {
         // Statistical confidence calculation based on sample size.

@@ -99,7 +99,7 @@ class UploadService
 
         if (empty($data['file']) === false) {
             // @todo use .json file content from POST as $json.
-            // @psalm-suppress NoValue - getJSONfromFile() always throws, but this is intentional for now.
+            //
             return $this->getJSONfromFile();
         }
 

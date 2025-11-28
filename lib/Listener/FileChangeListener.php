@@ -58,7 +58,6 @@ class FileChangeListener implements IEventListener
      * @param IJobList              $jobList               Job list for queuing background jobs
      * @param LoggerInterface       $logger                Logger
      *
-     * @psalm-suppress UnusedProperty - Properties are used in handle() method
      */
     public function __construct(
         private readonly TextExtractionService $textExtractionService,

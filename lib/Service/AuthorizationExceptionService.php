@@ -294,7 +294,7 @@ class AuthorizationExceptionService
     public function userHasExceptionsOptimized(string $userId): bool
     {
         // Check in-memory cache first.
-        if (isset($this->userExceptionCache[$userId])) {
+        if (($this->userExceptionCache[$userId] ?? null) !== null) {
             return !empty($this->userExceptionCache[$userId]);
         }
 
@@ -311,7 +311,7 @@ class AuthorizationExceptionService
         $hasExceptions = $this->userHasExceptions($userId);
 
         if ($this->cache !== null) {
-            $this->cache->set($cacheKey, $hasExceptions ? 'true' : 'false', 300);
+            $this->cache->set($cacheKey, $hasExceptions === true ? 'true' : 'false', 300);
         }
 
         return $hasExceptions;
@@ -329,7 +329,7 @@ class AuthorizationExceptionService
     private function getUserGroupsCached(string $userId): array
     {
         // Check in-memory cache first.
-        if (isset($this->groupMembershipCache[$userId])) {
+        if (($this->groupMembershipCache[$userId] ?? null) !== null) {
             return $this->groupMembershipCache[$userId];
         }
 
@@ -337,10 +337,7 @@ class AuthorizationExceptionService
         $userObj    = $this->groupManager->get($userId);
         $userGroups = [];
 
-        if ($userObj !== null) {
-            /*
-             * @psalm-suppress InvalidArgument - IGroupManager::getUserGroups expects IUser|null, but get() can return IGroup
-             */
+        if ($userObj !== null && $userObj instanceof \OCP\IUser) {
             $groups = $this->groupManager->getUserGroups($userObj);
             foreach ($groups as $group) {
                 $userGroups[] = $group->getGID();
@@ -368,7 +365,7 @@ class AuthorizationExceptionService
      */
     public function preloadUserExceptions(array $userIds, string $action=''): void
     {
-        if (empty($userIds)) {
+        if (empty($userIds) === true) {
             return;
         }
 
@@ -505,7 +502,7 @@ class AuthorizationExceptionService
 
         // Evaluate exceptions in priority order.
         foreach ($allExceptions as $exception) {
-            if ($exception->isExclusion()) {
+            if ($exception->isExclusion() === true) {
                 // Exclusion found - user is denied access.
                 $this->logger->debug(
                         'Authorization exclusion applied',
@@ -521,7 +518,7 @@ class AuthorizationExceptionService
                 return false;
             }
 
-            if ($exception->isInclusion()) {
+            if ($exception->isInclusion() === true) {
                 // Inclusion found - user is granted access.
                 $this->logger->debug(
                         'Authorization inclusion applied',

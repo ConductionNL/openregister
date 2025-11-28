@@ -43,7 +43,6 @@ use Psr\Log\LoggerInterface;
  * @license  AGPL-3.0-or-later
  * @link     https://github.com/ConductionNL/openregister
  *
- * @psalm-suppress UnusedClass - This background job is registered and instantiated by Nextcloud's job system
  */
 class WebhookRetryJob extends TimedJob
 {

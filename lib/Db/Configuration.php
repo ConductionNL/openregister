@@ -435,7 +435,7 @@ class Configuration extends Entity implements JsonSerializable
         $jsonFields = $this->getJsonFields();
 
         // Map 'application' to 'app' for frontend compatibility.
-        if (isset($object['application']) === true && isset($object['app']) === false) {
+        if (($object['application'] ?? null) !== null && (($object['app'] ?? null) === null) === true) {
             $object['app'] = $object['application'];
         }
 

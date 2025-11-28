@@ -154,7 +154,7 @@ class SchemaFacetCacheService
         $cacheKey = "facetable_fields_{$schemaId}";
 
         // Check in-memory cache.
-        if (isset(self::$facetConfigCache[$cacheKey]) === true) {
+        if ((self::$facetConfigCache[$cacheKey] ?? null) !== null) {
             $this->logger->debug('Facetable fields cache hit (memory)', ['schemaId' => $schemaId]);
             return self::$facetConfigCache[$cacheKey];
         }
@@ -674,7 +674,7 @@ class SchemaFacetCacheService
     private function isPropertyFacetable(array $property): bool
     {
         // Check for explicit facetable flag.
-        if (isset($property['facetable']) === true && $property['facetable'] === true) {
+        if (($property['facetable'] ?? null) !== null && ($property['facetable'] === true) === true) {
             return true;
         }
 
@@ -690,7 +690,7 @@ class SchemaFacetCacheService
         }
 
         // Check for enum properties (always facetable).
-        if (isset($property['enum']) === true && is_array($property['enum']) === true) {
+        if (($property['enum'] ?? null) !== null && is_array($property['enum']) === true) {
             return true;
         }
 
@@ -728,17 +728,17 @@ class SchemaFacetCacheService
         ];
 
         // Add enum values if available.
-        if (isset($property['enum']) === true && is_array($property['enum']) === true) {
+        if (($property['enum'] ?? null) !== null && is_array($property['enum']) === true) {
             $config['enum_values'] = $property['enum'];
         }
 
         // Add range information for numeric types.
         if (in_array($type, ['integer', 'number']) === true) {
-            if (isset($property['minimum']) === true) {
+            if (($property['minimum'] ?? null) !== null) {
                 $config['minimum'] = $property['minimum'];
             }
 
-            if (isset($property['maximum']) === true) {
+            if (($property['maximum'] ?? null) !== null) {
                 $config['maximum'] = $property['maximum'];
             }
         }

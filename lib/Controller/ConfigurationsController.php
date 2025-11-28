@@ -35,7 +35,6 @@ use Symfony\Component\Uid\Uuid;
  *
  * @package OCA\OpenRegister\Controller
  *
- * @psalm-suppress UnusedClass - This controller is registered via routes.php and used by Nextcloud's routing system
  */
 class ConfigurationsController extends Controller
 {
@@ -138,13 +137,13 @@ class ConfigurationsController extends Controller
         }
 
         // Ensure we have a UUID.
-        if (isset($data['uuid']) === false) {
+        if (!isset($data['uuid'])) {
             $data['uuid'] = Uuid::v4();
         }
 
         // Set default values for new local configurations.
         // If sourceType is not provided, assume it's a local configuration.
-        if (isset($data['sourceType']) === false || $data['sourceType'] === null || $data['sourceType'] === '') {
+        if (!isset($data['sourceType']) || $data['sourceType'] === null || $data['sourceType'] === '') {
             $data['sourceType'] = 'local';
         }
 
@@ -155,7 +154,7 @@ class ConfigurationsController extends Controller
             $data['isLocal'] = true;
         } else if (in_array($data['sourceType'], ['github', 'gitlab', 'url'], true) === true) {
             $data['isLocal'] = false;
-        } else if (isset($data['isLocal']) === false) {
+        } else if (!isset($data['isLocal'])) {
             // Fallback: if sourceType is something else and isLocal not set, default to true.
             $data['isLocal'] = true;
         }
@@ -199,7 +198,7 @@ class ConfigurationsController extends Controller
         unset($data['created']);
 
         // Enforce consistency between sourceType and isLocal.
-        if (isset($data['sourceType']) === true) {
+        if (($data['sourceType'] ?? null) !== null) {
             if (in_array($data['sourceType'], ['local', 'manual'], true) === true) {
                 $data['isLocal'] = true;
             } else if (in_array($data['sourceType'], ['github', 'gitlab', 'url'], true) === true) {
@@ -328,6 +327,7 @@ class ConfigurationsController extends Controller
             }
 
             // Import the data.
+            $force = $this->request->getParam('force') === 'true' || $this->request->getParam('force') === true;
             $result = $this->configurationService->importFromJson(
                 data: $jsonData,
                 configuration: null,

@@ -136,7 +136,7 @@ class SaveObjects
     private function loadSchemaWithCache(int|string $schemaId): Schema
     {
         // Check static cache first.
-        if (isset(self::$schemaCache[$schemaId]) === true) {
+        if ((self::$schemaCache[$schemaId] ?? null) !== null) {
             return self::$schemaCache[$schemaId];
         }
 
@@ -160,7 +160,7 @@ class SaveObjects
         $schemaId = $schema->getId();
 
         // Check static cache first.
-        if (isset(self::$schemaAnalysisCache[$schemaId]) === true) {
+        if ((self::$schemaAnalysisCache[$schemaId] ?? null) !== null) {
             return self::$schemaAnalysisCache[$schemaId];
         }
 
@@ -183,7 +183,7 @@ class SaveObjects
     private function loadRegisterWithCache(int|string $registerId): Register
     {
         // Check static cache first.
-        if (isset(self::$registerCache[$registerId]) === true) {
+        if ((self::$registerCache[$registerId] ?? null) !== null) {
             return self::$registerCache[$registerId];
         }
 
@@ -367,21 +367,21 @@ class SaveObjects
             $result['updated'] = array_merge($result['updated'], $chunkResult['updated']);
             $result['invalid'] = array_merge($result['invalid'], $chunkResult['invalid']);
             $result['errors']  = array_merge($result['errors'], $chunkResult['errors']);
-            $result['unchanged'] = array_merge($result['unchanged'], $chunkResult['unchanged']); // TODO: Renamed from 'skipped'
+// TODO: Renamed from 'skipped'.
 
             // Update total statistics.
             $result['statistics']['saved']   += $chunkResult['statistics']['saved'] ?? 0;
             $result['statistics']['updated'] += $chunkResult['statistics']['updated'] ?? 0;
             $result['statistics']['invalid'] += $chunkResult['statistics']['invalid'] ?? 0;
             $result['statistics']['errors']  += $chunkResult['statistics']['errors'] ?? 0;
-            $result['statistics']['unchanged'] += $chunkResult['statistics']['unchanged'] ?? 0; // TODO: Renamed from 'skipped'
+// TODO: Renamed from 'skipped'.
 
             // Calculate chunk processing time and speed.
             $chunkTime  = microtime(true) - $chunkStart;
             $chunkSpeed = count($objectsChunk) / max($chunkTime, 0.001);
 
             // Store per-chunk statistics for transparency and debugging.
-            if (!isset($result['chunkStatistics'])) {
+            if (isset($result['chunkStatistics']) === false) {
                 $result['chunkStatistics'] = [];
             }
             $result['chunkStatistics'][] = [
@@ -389,10 +389,10 @@ class SaveObjects
                 'count'           => count($objectsChunk),
                 'saved'           => $chunkResult['statistics']['saved'] ?? 0,
                 'updated'         => $chunkResult['statistics']['updated'] ?? 0,
-                'unchanged'       => $chunkResult['statistics']['unchanged'] ?? 0, // TODO: Renamed from 'skipped'
+// TODO: Renamed from 'skipped'.
                 'invalid'         => $chunkResult['statistics']['invalid'] ?? 0,
-                'processingTime'  => round($chunkTime * 1000, 2), // ms
-                'speed'           => round($chunkSpeed, 2), // objects/sec
+// ms.
+// objects/sec.
             ];
         }
 
@@ -438,7 +438,7 @@ class SaveObjects
         $current = $data;
 
         foreach ($keys as $key) {
-            if (!is_array($current) || !isset($current[$key])) {
+            if (!is_array($current) || isset($current[$key]) === false) {
                 return null;
             }
             $current = $current[$key];
@@ -480,9 +480,10 @@ class SaveObjects
 
         // Check if this field is defined as an object reference in the schema.
         $schemaProperties = $schema->getProperties();
-        $fieldName = explode('.', $fieldPath)[0]; // Get the base field name
+        // Get the base field name from the field path (first part before any dots).
+        $fieldName = explode('.', $fieldPath)[0];
 
-        if (!isset($schemaProperties[$fieldName])) {
+        if (isset($schemaProperties[$fieldName]) === false) {
             // Field not in schema, return raw value.
             return $rawValue;
         }
@@ -490,7 +491,7 @@ class SaveObjects
         $propertyConfig = $schemaProperties[$fieldName];
 
         // Check if this is an object reference field.
-        if (isset($propertyConfig['type']) && $propertyConfig['type'] === 'object' && isset($propertyConfig['$ref'])) {
+        if (($propertyConfig['type'] ?? null) !== null && $propertyConfig['type'] === 'object' && (($propertyConfig['$ref'] ?? null) !== null)) {
             // This is an object reference - try to resolve it to a readable name.
             $resolved = $this->resolveObjectReference(object: $object, fieldPath: $fieldPath, propertyConfig: $propertyConfig, metadataType: $metadataType);
             return $resolved;
@@ -571,7 +572,7 @@ class SaveObjects
         $current = $object;
 
         foreach ($keys as $key) {
-            if (!is_array($current) || !isset($current[$key])) {
+            if (!is_array($current) || isset($current[$key]) === false) {
                 return null;
             }
             $current = $current[$key];
@@ -595,7 +596,7 @@ class SaveObjects
     private function extractUuidFromReference($referenceData): ?string
     {
         // Handle object format: {"value": "uuid"}.
-        if (is_array($referenceData) === true && isset($referenceData['value']) === true) {
+        if (is_array($referenceData) === true && (($referenceData['value'] ?? null) !== null)) {
             $uuid = $referenceData['value'];
             if (is_string($uuid) === true && empty($uuid) === false) {
                 return $uuid;
@@ -639,14 +640,14 @@ class SaveObjects
             $nameFields = ['naam', 'name', 'title', 'contractNummer', 'achternaam'];
 
             foreach ($nameFields as $field) {
-                if (isset($objectData[$field]) && !empty($objectData[$field])) {
+                if (($objectData[$field] ?? null) !== null && empty($objectData[$field]) === true) {
                     return (string) $objectData[$field];
                 }
             }
 
             // Fallback to the object's stored name property.
             $storedName = $referencedObject->getName();
-            if (!empty($storedName) && $storedName !== $uuid) {
+            if (empty($storedName) === false && $storedName !== $uuid) {
                 return $storedName;
             }
 
@@ -699,17 +700,17 @@ class SaveObjects
         // ULTRA-PERFORMANCE: Aggressive chunk sizes for sub-1-second imports.
         // Optimized for 33k+ object datasets.
         if ($totalObjects <= 100) {
-            return $totalObjects; // Process all at once for small sets
-        } else if ($totalObjects <= 1000) {
-            return $totalObjects; // Process all at once for medium sets
-        } else if ($totalObjects <= 5000) {
-            return 2500; // Large chunks for large sets
-        } else if ($totalObjects <= 10000) {
-            return 5000; // Very large chunks
-        } else if ($totalObjects <= 50000) {
-            return 10000; // Ultra-large chunks for massive datasets
+// Process all at once for small sets.
+        } elseif ($totalObjects <= 1000) {
+// Process all at once for medium sets.
+        } elseif ($totalObjects <= 5000) {
+// Large chunks for large sets.
+        } elseif ($totalObjects <= 10000) {
+// Very large chunks.
+        } elseif ($totalObjects <= 50000) {
+// Ultra-large chunks for massive datasets.
         } else {
-            return 20000; // Maximum chunk size for huge datasets
+// Maximum chunk size for huge datasets.
         }
 
     }//end calculateOptimalChunkSize()
@@ -739,20 +740,21 @@ class SaveObjects
 
 
         // Early return for empty arrays.
-        if (empty($objects)) {
+        if (empty($objects) === true) {
             return [[], []];
         }
 
         $preparedObjects = [];
         $schemaCache     = [];
-        $schemaAnalysis  = []; // PERFORMANCE OPTIMIZATION: Comprehensive schema analysis cache
+        $invalidObjects  = [];
+// PERFORMANCE OPTIMIZATION: Comprehensive schema analysis cache.
 
         // PERFORMANCE OPTIMIZATION: Build comprehensive schema analysis cache first.
         $schemaIds = [];
         foreach ($objects as $object) {
             $selfData = $object['@self'] ?? [];
             $schemaId = $selfData['schema'] ?? null;
-            if ($schemaId && !in_array($schemaId, $schemaIds)) {
+            if (($schemaId !== null) === true && in_array($schemaId, $schemaIds, true) === false) {
                 $schemaIds[] = $schemaId;
             }
         }
@@ -769,7 +771,7 @@ class SaveObjects
         }
 
         // Pre-process objects using cached schema analysis.
-        $invalidObjects = []; // Track objects with invalid schemas
+// Track objects with invalid schemas.
         foreach ($objects as $index => $object) {
             // NO ERROR SUPPRESSION: Let object processing errors bubble up immediately!
             $selfData = $object['@self'] ?? [];
@@ -782,7 +784,7 @@ class SaveObjects
             }
 
             // Schema validation - direct error if not found in cache.
-            if (!isset($schemaCache[$schemaId])) {
+            if (isset($schemaCache[$schemaId]) === false) {
                 throw new \Exception("Schema {$schemaId} not found in cache during preparation");
             }
 
@@ -791,7 +793,7 @@ class SaveObjects
 
             // Accept any non-empty string as ID, generate UUID if not provided.
             $providedId = $selfData['id'] ?? null;
-            if (!$providedId || empty(trim($providedId))) {
+            if (($providedId === null) === true || empty(trim($providedId)) === true) {
                 // No ID provided or empty - generate new UUID.
                 $selfData['id'] = \Symfony\Component\Uid\Uuid::v4()->toRfc4122();
                 $object['@self'] = $selfData;
@@ -804,18 +806,18 @@ class SaveObjects
 
             // CRITICAL FIX: Hydrate @self data into the entity before calling hydrateObjectMetadata.
             // Convert datetime strings to DateTime objects for proper hydration.
-            if (isset($object['@self']) && is_array($object['@self'])) {
+            if (($object['@self'] ?? null) !== null && is_array($object['@self']) === true) {
                 $selfDataForHydration = $object['@self'];
 
                 // Convert published/depublished strings to DateTime objects.
-                if (isset($selfDataForHydration['published']) && is_string($selfDataForHydration['published'])) {
+                if (($selfDataForHydration['published'] ?? null) !== null && is_string($selfDataForHydration['published']) === true) {
                     try {
                         $selfDataForHydration['published'] = new \DateTime($selfDataForHydration['published']);
                     } catch (\Exception $e) {
                         // Keep as string if conversion fails.
                     }
                 }
-                if (isset($selfDataForHydration['depublished']) && is_string($selfDataForHydration['depublished'])) {
+                if (($selfDataForHydration['depublished'] ?? null) !== null && is_string($selfDataForHydration['depublished']) === true) {
                     try {
                         $selfDataForHydration['depublished'] = new \DateTime($selfDataForHydration['depublished']);
                     } catch (\Exception $e) {
@@ -830,11 +832,11 @@ class SaveObjects
 
             // AUTO-PUBLISH LOGIC: Only set published for NEW objects if not already set from CSV.
             $config = $schema->getConfiguration();
-            $isNewObject = empty($selfData['id']) || !isset($selfData['id']);
-            if (isset($config['autoPublish']) && $config['autoPublish'] === true && $isNewObject) {
+            $isNewObject = empty($selfData['id']) === true || isset($selfData['id']) === false;
+            if (($config['autoPublish'] ?? null) !== null && $config['autoPublish'] === true && ($isNewObject === true)) {
                 // Check if published date was already set from @self data (CSV).
-                $publishedFromCsv = isset($selfData['published']) && !empty($selfData['published']);
-                if (!$publishedFromCsv && $tempEntity->getPublished() === null) {
+                $publishedFromCsv = ($selfData['published'] ?? null) !== null && !empty($selfData['published']) === false;
+                if (($publishedFromCsv === false) === true && $tempEntity->getPublished() === null) {
                     $this->logger->debug('Auto-publishing NEW object in bulk creation', [
                         'schema' => $schema->getTitle(),
                         'autoPublish' => true,
@@ -842,7 +844,7 @@ class SaveObjects
                         'publishedFromCsv' => false
                     ]);
                     $tempEntity->setPublished(new DateTime());
-                } else if ($publishedFromCsv === true) {
+                } elseif ($publishedFromCsv === true) {
                     $this->logger->debug('Skipping auto-publish - published date provided from CSV (mixed schema)', [
                         'schema' => $schema->getTitle(),
                         'publishedFromCsv' => true,
@@ -855,33 +857,33 @@ class SaveObjects
             $selfData = $object['@self'] ?? [];
             if ($tempEntity->getName() !== null) {
                 $selfData['name'] = $tempEntity->getName();
-                $object['name'] = $tempEntity->getName(); // TOP LEVEL for bulk SQL
+// TOP LEVEL for bulk SQL.
             }
             if ($tempEntity->getDescription() !== null) {
                 $selfData['description'] = $tempEntity->getDescription();
-                $object['description'] = $tempEntity->getDescription(); // TOP LEVEL for bulk SQL
+// TOP LEVEL for bulk SQL.
             }
             if ($tempEntity->getSummary() !== null) {
                 $selfData['summary'] = $tempEntity->getSummary();
-                $object['summary'] = $tempEntity->getSummary(); // TOP LEVEL for bulk SQL
+// TOP LEVEL for bulk SQL.
             }
             if ($tempEntity->getImage() !== null) {
                 $selfData['image'] = $tempEntity->getImage();
-                $object['image'] = $tempEntity->getImage(); // TOP LEVEL for bulk SQL
+// TOP LEVEL for bulk SQL.
             }
             if ($tempEntity->getSlug() !== null) {
                 $selfData['slug'] = $tempEntity->getSlug();
-                $object['slug'] = $tempEntity->getSlug(); // TOP LEVEL for bulk SQL
+// TOP LEVEL for bulk SQL.
             }
             if ($tempEntity->getPublished() !== null) {
                 $publishedFormatted = $tempEntity->getPublished()->format('c');
                 $selfData['published'] = $publishedFormatted;
-                $object['published'] = $publishedFormatted; // TOP LEVEL for bulk SQL
+// TOP LEVEL for bulk SQL.
             }
             if ($tempEntity->getDepublished() !== null) {
                 $depublishedFormatted = $tempEntity->getDepublished()->format('c');
                 $selfData['depublished'] = $depublishedFormatted;
-                $object['depublished'] = $depublishedFormatted; // TOP LEVEL for bulk SQL
+// TOP LEVEL for bulk SQL.
             }
 
             // RELATIONS EXTRACTION: Scan the object data for relations (UUIDs and URLs).
@@ -992,12 +994,14 @@ class SaveObjects
 
                 // PERFORMANCE: Accept any non-empty string as ID, prioritize CSV 'id' column.
                 $providedId = $object['id'] ?? $selfData['id'] ?? null;
-                if ($providedId && !empty(trim($providedId))) {
-                    $selfData['uuid'] = $providedId;
-                    $selfData['id'] = $providedId; // Also set in @self for consistency
+                if (($providedId !== null) === true && empty(trim($providedId)) === true) {
+                    continue;
+                }
+                $selfData['uuid'] = $providedId;
+// Also set in @self for consistency.
                 } else {
                     $selfData['uuid'] = Uuid::v4()->toRfc4122();
-                    $selfData['id'] = $selfData['uuid']; // Set @self.id to generated UUID
+// Set @self.id to generated UUID.
                 }
 
                 // PERFORMANCE: Use pre-calculated metadata values.
@@ -1014,11 +1018,11 @@ class SaveObjects
 
                 // CRITICAL FIX: Hydrate @self data into the entity before calling hydrateObjectMetadata.
                 // Convert datetime strings to DateTime objects for proper hydration.
-                if (isset($object['@self']) && is_array($object['@self'])) {
+                if (($object['@self'] ?? null) !== null && is_array($object['@self']) === true) {
                     $selfDataForHydration = $object['@self'];
 
                     // Convert published/depublished strings to DateTime objects.
-                    if (isset($selfDataForHydration['published']) && is_string($selfDataForHydration['published'])) {
+                    if (($selfDataForHydration['published'] ?? null) !== null && is_string($selfDataForHydration['published']) === true) {
                         try {
                             $selfDataForHydration['published'] = new \DateTime($selfDataForHydration['published']);
                         } catch (\Exception $e) {
@@ -1029,7 +1033,7 @@ class SaveObjects
                             ]);
                         }
                     }
-                    if (isset($selfDataForHydration['depublished']) && is_string($selfDataForHydration['depublished'])) {
+                    if (($selfDataForHydration['depublished'] ?? null) !== null && is_string($selfDataForHydration['depublished']) === true) {
                         try {
                             $selfDataForHydration['depublished'] = new \DateTime($selfDataForHydration['depublished']);
                         } catch (\Exception $e) {
@@ -1045,11 +1049,11 @@ class SaveObjects
                 // AUTO-PUBLISH LOGIC: Only set published for NEW objects if not already set from CSV.
                 // Note: For updates to existing objects, published status should be preserved unless explicitly changed.
                 $config = $schemaObj->getConfiguration();
-                $isNewObject = empty($selfData['uuid']) || !isset($selfData['uuid']);
-                if (isset($config['autoPublish']) && $config['autoPublish'] === true && $isNewObject) {
+                $isNewObject = empty($selfData['uuid']) === true || isset($selfData['uuid']) === false;
+                if (($config['autoPublish'] ?? null) !== null && $config['autoPublish'] === true && ($isNewObject === true)) {
                     // Check if published date was already set from @self data (CSV).
-                    $publishedFromCsv = isset($selfData['published']) && !empty($selfData['published']);
-                    if (!$publishedFromCsv && $tempEntity->getPublished() === null) {
+                    $publishedFromCsv = ($selfData['published'] ?? null) !== null && !empty($selfData['published']) === false;
+                    if (($publishedFromCsv === false) === true && $tempEntity->getPublished() === null) {
                         $this->logger->debug('Auto-publishing NEW object in bulk creation (single schema)', [
                             'schema' => $schemaObj->getTitle(),
                             'autoPublish' => true,
@@ -1057,7 +1061,7 @@ class SaveObjects
                             'publishedFromCsv' => false
                         ]);
                         $tempEntity->setPublished(new DateTime());
-                    } else if ($publishedFromCsv === true) {
+                    } elseif ($publishedFromCsv === true) {
                         $this->logger->debug('Skipping auto-publish - published date provided from CSV', [
                             'schema' => $schemaObj->getTitle(),
                             'publishedFromCsv' => true,
@@ -1069,47 +1073,47 @@ class SaveObjects
                 // Extract hydrated metadata back to @self data AND top level (for bulk SQL).
                 if ($tempEntity->getName() !== null) {
                     $selfData['name'] = $tempEntity->getName();
-                    $object['name'] = $tempEntity->getName(); // TOP LEVEL for bulk SQL
+// TOP LEVEL for bulk SQL.
                 }
                 if ($tempEntity->getDescription() !== null) {
                     $selfData['description'] = $tempEntity->getDescription();
-                    $object['description'] = $tempEntity->getDescription(); // TOP LEVEL for bulk SQL
+// TOP LEVEL for bulk SQL.
                 }
                 if ($tempEntity->getSummary() !== null) {
                     $selfData['summary'] = $tempEntity->getSummary();
-                    $object['summary'] = $tempEntity->getSummary(); // TOP LEVEL for bulk SQL
+// TOP LEVEL for bulk SQL.
                 }
                 if ($tempEntity->getImage() !== null) {
                     $selfData['image'] = $tempEntity->getImage();
-                    $object['image'] = $tempEntity->getImage(); // TOP LEVEL for bulk SQL
+// TOP LEVEL for bulk SQL.
                 }
                 if ($tempEntity->getSlug() !== null) {
                     $selfData['slug'] = $tempEntity->getSlug();
-                    $object['slug'] = $tempEntity->getSlug(); // TOP LEVEL for bulk SQL
+// TOP LEVEL for bulk SQL.
                 }
                 if ($tempEntity->getPublished() !== null) {
                     $publishedFormatted = $tempEntity->getPublished()->format('c');
                     $selfData['published'] = $publishedFormatted;
-                    $object['published'] = $publishedFormatted; // TOP LEVEL for bulk SQL
+// TOP LEVEL for bulk SQL.
                 }
                 if ($tempEntity->getDepublished() !== null) {
                     $depublishedFormatted = $tempEntity->getDepublished()->format('c');
                     $selfData['depublished'] = $depublishedFormatted;
-                    $object['depublished'] = $depublishedFormatted; // TOP LEVEL for bulk SQL
+// TOP LEVEL for bulk SQL.
                 }
 
                 // DEBUG: Log actual data structure to understand what we're receiving.
                 $this->logger->info("[SaveObjects] DEBUG - Single schema object structure", [
                     'available_keys' => array_keys($object),
-                    'has_@self' => isset($object['@self']),
-                    '@self_keys' => isset($object['@self']) ? array_keys($object['@self']) : 'none',
-                    'has_object_property' => isset($object['object']),
-                    'sample_data' => array_slice($object, 0, 3, true) // First 3 key-value pairs for structure
+                    'has_@self' => (($object['@self'] ?? null) !== null) === true,
+                    '@self_keys' => (($object['@self'] ?? null) !== null) === true ? array_keys($object['@self']) : 'none',
+                    'has_object_property' => (($object['object'] ?? null) !== null) === true,
+// First 3 key-value pairs for structure.
                 ]);
 
                 // TEMPORARY FIX: Extract business data properly based on actual structure.
 
-                if (isset($object['object']) && is_array($object['object'])) {
+                if (($object['object'] ?? null) !== null && is_array($object['object']) === true) {
                     // NEW STRUCTURE: object property contains business data.
                     $businessData = $object['object'];
                     $this->logger->info("[SaveObjects] Using object property for business data");
@@ -1201,15 +1205,15 @@ class SaveObjects
         $result = [
             'saved'      => [],
             'updated'    => [],
-            'unchanged'  => [], // Ensure consistent result structure
+// Ensure consistent result structure.
             'invalid'    => [],
             'errors'     => [],
             'statistics' => [
                 'saved'     => 0,
                 'updated'   => 0,
-                'unchanged' => 0, // Ensure consistent statistics structure
+// Ensure consistent statistics structure.
                 'invalid'   => 0,
-                'errors'    => 0, // Also add errors counter
+// Also add errors counter.
             ],
         ];
 
@@ -1223,7 +1227,7 @@ class SaveObjects
         /*
         foreach ($transformedObjects as &$objData) {
             // Ensure metadata fields from object hydration are preserved.
-            if (isset($objData['schema']) && isset($schemaCache[$objData['schema']])) {
+            if (isset($objData['schema']) && (($schemaCache[$objData['schema']] ?? null) !== null)) {
                 $schema = $schemaCache[$objData['schema']];
                 $tempEntity = new ObjectEntity();
                 $tempEntity->setObject($objData['object'] ?? []);
@@ -1292,7 +1296,7 @@ class SaveObjects
         }
         */
 
-        if (empty($transformedObjects)) {
+        if (empty($transformedObjects) === true) {
             return $result;
         }
 
@@ -1307,14 +1311,14 @@ class SaveObjects
 
         // STEP 3: DIRECT BULK PROCESSING - No categorization needed upfront.
         // All objects are treated as "potential inserts" - MySQL will handle duplicates.
-        $insertObjects = $transformedObjects; // All objects go to bulk save
-        $updateObjects = []; // Empty - classification happens after bulk save
-        $unchangedObjects = []; // Will be populated from timestamp analysis
+        $unchangedObjects = [];
+        // Empty - classification happens after bulk save.
+        // Will be populated from timestamp analysis.
 
         // Update statistics for unchanged objects (skipped because content was unchanged).
         $result['statistics']['unchanged'] = count($unchangedObjects);
         $result['unchanged'] = array_map(function($obj) {
-            return is_array($obj) ? $obj : $obj->jsonSerialize();
+            return is_array($obj) === true ? $obj : $obj->jsonSerialize();
         }, $unchangedObjects);
 
 
@@ -1325,7 +1329,8 @@ class SaveObjects
         // This will reveal the real problem causing silent failures.
 
         // MAXIMUM PERFORMANCE: Always use ultra-fast bulk operations for large imports.
-        $bulkResult = $this->objectEntityMapper->ultraFastBulkSave(insertObjects: $insertObjects, updateObjects: $updateObjects);
+        // All transformed objects go to bulk save (both inserts and updates handled by database).
+        $bulkResult = $this->objectEntityMapper->ultraFastBulkSave(insertObjects: $transformedObjects, updateObjects: []);
 
         // Bulk save completed successfully.
 
@@ -1336,11 +1341,11 @@ class SaveObjects
         $unchangedObjects = [];
         $reconstructedObjects = [];
 
-        if (is_array($bulkResult)) {
+        if (is_array($bulkResult) === true) {
             // Check if we got complete objects (new approach) or just UUIDs (fallback).
             $firstItem = reset($bulkResult);
 
-            if (is_array($firstItem) && isset($firstItem['created'], $firstItem['updated'])) {
+            if (is_array($firstItem) === true && (($firstItem['created'] ?? null) !== null) && (($firstItem['updated'] ?? null) !== null)) {
                 // NEW APPROACH: Complete objects with database-computed classification returned.
                 $this->logger->info("[SaveObjects] Processing complete objects with database-computed classification");
 
@@ -1400,7 +1405,7 @@ class SaveObjects
 
                 // Fallback counting (less precise).
             foreach ($insertObjects as $objData) {
-                if (in_array($objData['uuid'], $bulkResult)) {
+                if (in_array($objData['uuid'], $bulkResult) === true) {
                     $result['statistics']['saved']++;
                 }
                 }
@@ -1421,13 +1426,13 @@ class SaveObjects
 
             // Objects are already classified, add to appropriate response arrays.
             foreach ($createdObjects as $createdObj) {
-                $result['saved'][] = is_array($createdObj) ? $createdObj : $createdObj;
+                $result['saved'][] = is_array($createdObj) === true ? $createdObj : $createdObj;
             }
             foreach ($updatedObjects as $updatedObj) {
-                $result['updated'][] = is_array($updatedObj) ? $updatedObj : $updatedObj;
+                $result['updated'][] = is_array($updatedObj) === true ? $updatedObj : $updatedObj;
             }
             foreach ($unchangedObjects as $unchangedObj) {
-                $result['unchanged'][] = is_array($unchangedObj) ? $unchangedObj : $unchangedObj;
+                $result['unchanged'][] = is_array($unchangedObj) === true ? $unchangedObj : $unchangedObj;
             }
 
             $this->logger->info("[SaveObjects] Using database-computed pre-classified objects for response", [
@@ -1452,7 +1457,7 @@ class SaveObjects
         // TEMPORARILY DISABLED: Skip post-save database calls to isolate bulk operation issues.
         // if (!empty($savedObjects)) {
         //     $this->handlePostSaveInverseRelations($savedObjects, $schemaCache);
-        // }
+// }.
 
         $endTime = microtime(true);
         $processingTime = round(($endTime - $startTime) * 1000, 2);
@@ -1484,15 +1489,15 @@ class SaveObjects
         $result = [
             'saved'      => [],
             'updated'    => [],
-            'unchanged'  => [], // Ensure consistent result structure
+// Ensure consistent result structure.
             'invalid'    => [],
             'errors'     => [],
             'statistics' => [
                 'saved'     => 0,
                 'updated'   => 0,
-                'unchanged' => 0, // Ensure consistent statistics structure
+// Ensure consistent statistics structure.
                 'invalid'   => 0,
-                'errors'    => 0, // Also add errors counter
+// Also add errors counter.
             ],
         ];
 
@@ -1515,7 +1520,7 @@ class SaveObjects
 
                 // PERFORMANCE: Use cached register and schema loading.
                 $register = $this->loadRegisterWithCache($registerId);
-                $schema = isset($schemaCache[$schemaId]) ? $schemaCache[$schemaId] : $this->loadSchemaWithCache($schemaId);
+                $schema = (($schemaCache[$schemaId] ?? null) !== null) === true ? $schemaCache[$schemaId] : $this->loadSchemaWithCache($schemaId);
 
 
                 $uuid = $selfData['id'] ?? null;
@@ -1557,7 +1562,7 @@ class SaveObjects
 
         // Collect all saved ObjectEntity instances (reconstruct from saved UUIDs).
         foreach ($result['saved'] as $savedArray) {
-            if (isset($savedArray['uuid'])) {
+            if (($savedArray['uuid'] ?? null) !== null) {
                 try {
                     $objEntity = $this->objectEntityMapper->find($savedArray['uuid']);
                     if ($objEntity !== null) {
@@ -1584,7 +1589,7 @@ class SaveObjects
         // TEMPORARILY DISABLED: Skip post-save database calls to isolate bulk operation issues.
         // if (!empty($allSavedObjects)) {
         //     $this->handlePostSaveInverseRelations($allSavedObjects, $schemaCache);
-        // }
+// }.
 
         return $result;
     }//end fallbackToIndividualProcessing()
@@ -1649,7 +1654,7 @@ class SaveObjects
 
             // Check for inversedBy in array items (array of object relations).
             // CRITICAL FIX: Preserve property-level writeBack if it's true.
-            if (!$inversedBy && isset($items['inversedBy'])) {
+            if (!$inversedBy && (($items['inversedBy'] ?? null) !== null)) {
                 $inversedBy = $items['inversedBy'];
                 $rawItemsWriteBack = $items['writeBack'] ?? false;
                 $itemsWriteBack = $this->castToBoolean($rawItemsWriteBack);
@@ -1687,15 +1692,15 @@ class SaveObjects
      */
     private function castToBoolean($value): bool
     {
-        if (is_bool($value)) {
+        if (is_bool($value) === true) {
             return $value;
         }
 
-        if (is_string($value)) {
+        if (is_string($value) === true) {
             return strtolower(trim($value)) === 'true';
         }
 
-        if (is_numeric($value)) {
+        if (is_numeric($value) === true) {
             return (bool) $value;
         }
 
@@ -1738,7 +1743,7 @@ class SaveObjects
             $schemaId   = $selfData['schema'] ?? null;
             $objectUuid = $selfData['id'] ?? null;
 
-            if (!$schemaId || !$objectUuid || !isset($schemaAnalysis[$schemaId])) {
+            if ($schemaId === false || $objectUuid === false || isset($schemaAnalysis[$schemaId]) === false) {
                 continue;
             }
 
@@ -1754,8 +1759,8 @@ class SaveObjects
                 $inversedBy = $propertyInfo['inversedBy'];
 
                 // Handle single object relations.
-                if (!$propertyInfo['isArray'] && is_string($value) && \Symfony\Component\Uid\Uuid::isValid($value)) {
-                    if (isset($objectsByUuid[$value])) {
+                if (($propertyInfo['isArray'] === false) === true && is_string($value) === true && \Symfony\Component\Uid\Uuid::isValid($value) === true) {
+                    if (($objectsByUuid[$value] ?? null) !== null) {
                         $targetObject = &$objectsByUuid[$value];
                         $existingValues = $targetObject[$inversedBy] ?? [];
                         if (!is_array($existingValues)) {
@@ -1770,10 +1775,10 @@ class SaveObjects
                     }
                 }
                 // Handle array of object relations.
-                else if ($propertyInfo['isArray'] && is_array($value)) {
+                else if (($propertyInfo['isArray'] === true) && is_array($value) === true) {
                     foreach ($value as $relatedUuid) {
-                        if (is_string($relatedUuid) && \Symfony\Component\Uid\Uuid::isValid($relatedUuid)) {
-                            if (isset($objectsByUuid[$relatedUuid])) {
+                        if (is_string($relatedUuid) === true && \Symfony\Component\Uid\Uuid::isValid($relatedUuid) === true) {
+                            if (($objectsByUuid[$relatedUuid] ?? null) !== null) {
                                 $targetObject = &$objectsByUuid[$relatedUuid];
                                 $existingValues = $targetObject[$inversedBy] ?? [];
                                 if (!is_array($existingValues)) {
@@ -1846,7 +1851,7 @@ class SaveObjects
             // CRITICAL FIX: Objects from prepareSingleSchemaObjectsOptimized are already flat $selfData arrays.
             // They don't have an '@self' key because they ARE the self data.
             // Only extract @self if it exists (mixed schema or other paths).
-            if (isset($object['@self'])) {
+            if (($object['@self'] ?? null) !== null) {
                 $selfData = $object['@self'];
             } else {
                 // Object is already a flat $selfData array from prepareSingleSchemaObjectsOptimized.
@@ -1858,39 +1863,45 @@ class SaveObjects
 
             // Accept any non-empty string as ID, prioritize CSV 'id' column over @self.id.
             $providedId = $object['id'] ?? $selfData['id'] ?? null;
-            if ($providedId && !empty(trim($providedId))) {
+            if (($providedId !== null) === true && !empty(trim($providedId)) === true) {
                 // Accept any non-empty string as identifier.
                 $selfData['uuid'] = $providedId;
-                $selfData['id'] = $providedId; // Also set in @self for consistency
+// Also set in @self for consistency.
             } else {
                 // No ID provided or empty - generate new UUID.
                 $selfData['uuid'] = Uuid::v4()->toRfc4122();
-                $selfData['id'] = $selfData['uuid']; // Set @self.id to generated UUID
+// Set @self.id to generated UUID.
             }
 
-            // CRITICAL FIX: Use register and schema from method parameters if not provided in object data.
-            $selfData['register'] = $selfData['register'] ?? $object['register'] ?? ($register ? $register->getId() : null);
-            $selfData['schema'] = $selfData['schema'] ?? $object['schema'] ?? ($schema ? $schema->getId() : null);
-
+            // CRITICAL FIX: Use register and schema from object data if available.
+            // Register and schema should be provided in object data for this method.
+            if (($selfData['register'] ?? null) === null && ($object['register'] ?? null) !== null) {
+                $selfData['register'] = (is_object($object['register']) === true) ? $object['register']->getId() : $object['register'];
+            }
+            if (($selfData['schema'] ?? null) === null && ($object['schema'] ?? null) !== null) {
+                $selfData['schema'] = (is_object($object['schema']) === true) ? $object['schema']->getId() : $object['schema'];
+            }
+            // Note: Register and schema should be set in object data before calling this method.
             // VALIDATION FIX: Validate that required register and schema are properly set.
-            if (!$selfData['register']) {
-                $invalidObjects[] = [
-                    'object' => $object,
-                    'error'  => 'Register ID is required but not found in object data or method parameters',
-                    'index'  => $index,
-                    'type'   => 'MissingRegisterException',
-                ];
-                continue;
-            }
-
-            if (!$selfData['schema']) {
-                $invalidObjects[] = [
-                    'object' => $object,
-                    'error'  => 'Schema ID is required but not found in object data or method parameters',
-                    'index'  => $index,
-                    'type'   => 'MissingSchemaException',
-                ];
-                continue;
+            if (($selfData['register'] ?? null) === null || ($selfData['schema'] ?? null) === null) {
+                if (($selfData['register'] ?? null) === null) {
+                    $invalidObjects[] = [
+                        'object' => $object,
+                        'error'  => 'Register ID is required but not found in object data or method parameters',
+                        'index'  => $index,
+                        'type'   => 'MissingRegisterException',
+                    ];
+                    continue;
+                }
+                if (($selfData['schema'] ?? null) === null) {
+                    $invalidObjects[] = [
+                        'object' => $object,
+                        'error'  => 'Schema ID is required but not found in object data or method parameters',
+                        'index'  => $index,
+                        'type'   => 'MissingSchemaException',
+                    ];
+                    continue;
+                }
             }
 
             // VALIDATION FIX: Verify schema exists in cache (validates schema exists in database).
@@ -1905,13 +1916,13 @@ class SaveObjects
             }
 
             // Set owner to current user if not provided (with null check).
-            if (!isset($selfData['owner']) || empty($selfData['owner'])) {
+            if (($selfData['owner'] ?? null) === null || empty($selfData['owner']) === true) {
                 $currentUser = $this->userSession->getUser();
-                $selfData['owner'] = $currentUser ? $currentUser->getUID() : null;
+                $selfData['owner'] = ($currentUser !== null) === true ? $currentUser->getUID() : null;
             }
 
         // Set organization using optimized OrganisationService method if not provided.
-        if (!isset($selfData['organisation']) || empty($selfData['organisation'])) {
+        if (($selfData['organisation'] ?? null) === null || empty($selfData['organisation']) === true) {
             // NO ERROR SUPPRESSION: Let organisation service errors bubble up immediately!
             $selfData['organisation'] = $this->organisationService->getOrganisationForNewEntity();
         }
@@ -1925,12 +1936,12 @@ class SaveObjects
             // DEBUG: Log mixed schema object structure.
             $this->logger->info("[SaveObjects] DEBUG - Mixed schema object structure", [
                 'available_keys' => array_keys($object),
-                'has_object_property' => isset($object['object']),
+                'has_object_property' => isset($object['object']) === true,
                 'sample_data' => array_slice($object, 0, 3, true)
             ]);
 
             // TEMPORARY FIX: Extract business data properly based on actual structure.
-            if (isset($object['object']) && is_array($object['object'])) {
+            if (($object['object'] ?? null) !== null && is_array($object['object']) === true) {
                 // NEW STRUCTURE: object property contains business data.
                 $businessData = $object['object'];
                 $this->logger->info("[SaveObjects] Using object property for business data (mixed)");
@@ -1955,8 +1966,8 @@ class SaveObjects
 
             // RELATIONS EXTRACTION: Scan the business data for relations (UUIDs and URLs).
             // ONLY scan if relations weren't already set during preparation phase.
-            if (!isset($selfData['relations']) || empty($selfData['relations'])) {
-                if (isset($schemaCache[$selfData['schema']])) {
+            if (($selfData['relations'] ?? null) === null || empty($selfData['relations']) === true) {
+                if (($schemaCache[$selfData['schema']] ?? null) !== null) {
                     $schema = $schemaCache[$selfData['schema']];
                     $relations = $this->scanForRelations(data: $businessData, prefix: '', schema: $schema);
                     $selfData['relations'] = $relations;
@@ -2021,11 +2032,11 @@ class SaveObjects
             try {
                 $schema = $schemaCache[$schemaId];
                 // FIXED: Use 'object' instead of 'data' and handle both formats.
-                if (isset($objectData['object'])) {
-                    $data = is_string($objectData['object']) ? json_decode($objectData['object'], true) : $objectData['object'];
-                } elseif (isset($objectData['data'])) {
+                if (($objectData['object'] ?? null) !== null) {
+                    $data = is_string($objectData['object']) === true ? json_decode($objectData['object'], true) : $objectData['object'];
+                } elseif (($objectData['data'] ?? null) !== null) {
                     // Legacy support.
-                    $data = is_string($objectData['data']) ? json_decode($objectData['data'], true) : $objectData['data'];
+                    $data = is_string($objectData['data']) === true ? json_decode($objectData['data'], true) : $objectData['data'];
                 } else {
                     throw new \InvalidArgumentException('No object data found for validation');
                 }
@@ -2176,7 +2187,7 @@ class SaveObjects
             }
         }
 
-        if (empty($allIdentifiers)) {
+        if (empty($allIdentifiers) === true) {
             return [];
         }
 
@@ -2187,23 +2198,23 @@ class SaveObjects
         // Index objects by all their possible identifiers for fast lookup.
         foreach ($foundObjects as $obj) {
             // Index by UUID (primary).
-            if ($obj->getUuid()) {
+            if (($obj->getUuid() !== null) === true) {
                 $existingObjects[$obj->getUuid()] = $obj;
             }
 
             // Index by slug if available.
-            if ($obj->getSlug()) {
+            if (($obj->getSlug() !== null) === true) {
                 $existingObjects[$obj->getSlug()] = $obj;
             }
 
             // Index by URI if available.
-            if ($obj->getUri()) {
+            if (($obj->getUri() !== null) === true) {
                 $existingObjects[$obj->getUri()] = $obj;
             }
 
             // Index by custom ID fields from object data.
             $objectData = $obj->getObject();
-            if (is_array($objectData)) {
+            if (is_array($objectData) === true) {
                 $customIdFields = ['id', 'identifier', 'externalId', 'sourceId'];
                 foreach ($customIdFields as $field) {
                     if (!empty($objectData[$field])) {
@@ -2237,7 +2248,7 @@ class SaveObjects
 
             // PERFORMANCE: Index only by UUID for speed.
             foreach ($foundObjects as $obj) {
-                if ($obj->getUuid()) {
+                if (($obj->getUuid() !== null) === true) {
                     $existingObjects[$obj->getUuid()] = $obj;
                 }
             }
@@ -2289,26 +2300,26 @@ class SaveObjects
                 if ($incomingHash === $existingHash) {
                     $result['skip'][] = $existingObject;
                 } else {
-                    if (isset($incomingData['object']) && is_array($incomingData['object']) && !empty($incomingData['object'])) {
+                    if (($incomingData['object'] ?? null) !== null && is_array($incomingData['object']) === true && !empty($incomingData['object']) === true) {
                         $existingObject->setObject($incomingData['object']);
-                        if (isset($incomingData['updated'])) {
+                        if (($incomingData['updated'] ?? null) !== null) {
                             $existingObject->setUpdated(new \DateTime($incomingData['updated']));
                         }
-                        if (isset($incomingData['owner'])) {
+                        if (($incomingData['owner'] ?? null) !== null) {
                             $existingObject->setOwner($incomingData['owner']);
                         }
-                        if (isset($incomingData['organisation'])) {
+                        if (($incomingData['organisation'] ?? null) !== null) {
                             $existingObject->setOrganisation($incomingData['organisation']);
                         }
-                        if (isset($incomingData['published'])) {
+                        if (($incomingData['published'] ?? null) !== null) {
                             $existingObject->setPublished(new \DateTime($incomingData['published']));
                         }
 
                         // CRITICAL FIX: Update register and schema to support object migration between registers/schemas.
-                        if (isset($incomingData['register']) && $incomingData['register'] !== $existingObject->getRegister()) {
+                        if (($incomingData['register'] ?? null) !== null && $incomingData['register'] !== $existingObject->getRegister()) {
                             $existingObject->setRegister($incomingData['register']);
                         }
-                        if (isset($incomingData['schema']) && $incomingData['schema'] !== $existingObject->getSchema()) {
+                        if (($incomingData['schema'] ?? null) !== null && $incomingData['schema'] !== $existingObject->getSchema()) {
                             $existingObject->setSchema($incomingData['schema']);
                         }
 
@@ -2335,7 +2346,7 @@ class SaveObjects
     private function findExistingObjectByPrimaryId(array $incomingData, array $existingObjects): ?object
     {
         // Only check UUID for maximum performance.
-        if (!empty($incomingData['uuid']) && isset($existingObjects[$incomingData['uuid']])) {
+        if (!empty($incomingData['uuid']) === true && (($existingObjects[$incomingData['uuid']] ?? null) !== null)) {
             return $existingObjects[$incomingData['uuid']];
         }
 
@@ -2354,24 +2365,24 @@ class SaveObjects
     private function findExistingObjectByAnyIdentifier(array $incomingData, array $existingObjects): ?object
     {
         // Check UUID first (most reliable).
-        if (!empty($incomingData['uuid']) && isset($existingObjects[$incomingData['uuid']])) {
+        if (!empty($incomingData['uuid']) === true && (($existingObjects[$incomingData['uuid']] ?? null) !== null)) {
             return $existingObjects[$incomingData['uuid']];
         }
 
         // Check slug from @self metadata.
-        if (!empty($incomingData['@self']['slug']) && isset($existingObjects[$incomingData['@self']['slug']])) {
+        if (!empty($incomingData['@self']['slug']) === true && (($existingObjects[$incomingData['@self']['slug']] ?? null) !== null)) {
             return $existingObjects[$incomingData['@self']['slug']];
         }
 
         // Check URI from @self metadata.
-        if (!empty($incomingData['@self']['uri']) && isset($existingObjects[$incomingData['@self']['uri']])) {
+        if (!empty($incomingData['@self']['uri']) === true && (($existingObjects[$incomingData['@self']['uri']] ?? null) !== null)) {
             return $existingObjects[$incomingData['@self']['uri']];
         }
 
         // Check custom ID fields.
         $customIdFields = ['id', 'identifier', 'externalId', 'sourceId'];
         foreach ($customIdFields as $field) {
-            if (!empty($incomingData[$field]) && isset($existingObjects[$incomingData[$field]])) {
+            if (!empty($incomingData[$field]) === true && (($existingObjects[$incomingData[$field]] ?? null) !== null)) {
                 return $existingObjects[$incomingData[$field]];
             }
         }
@@ -2390,7 +2401,7 @@ class SaveObjects
     {
         ksort($array);
         foreach ($array as &$value) {
-            if (is_array($value)) {
+            if (is_array($value) === true) {
                 $this->ksortRecursive($value);
             }
         }
@@ -2411,16 +2422,16 @@ class SaveObjects
     private function mergeObjectData(ObjectEntity $existingObject, array $newObjectData): ObjectEntity
     {
         // Update core fields.
-        if (isset($newObjectData['object'])) {
+        if (($newObjectData['object'] ?? null) !== null) {
             $existingObject->setObject($newObjectData['object']);
-        } elseif (isset($newObjectData['data'])) {
+        } elseif (($newObjectData['data'] ?? null) !== null) {
             // Legacy support: 'data' should be 'object'.
             $existingObject->setObject($newObjectData['data']);
         }
-        if (isset($newObjectData['schema'])) {
+        if (($newObjectData['schema'] ?? null) !== null) {
             $existingObject->setSchema($newObjectData['schema']);
         }
-        if (isset($newObjectData['register'])) {
+        if (($newObjectData['register'] ?? null) !== null) {
             $existingObject->setRegister($newObjectData['register']);
         }
 
@@ -2454,7 +2465,7 @@ class SaveObjects
             $obj = new ObjectEntity();
 
             // CRITICAL FIX: Objects missing UUIDs after save indicate serious database issues - LOG ERROR!
-            if (empty($objData['uuid'])) {
+            if (empty($objData['uuid']) === true) {
                 $this->logger->error('Object reconstruction failed: Missing UUID after bulk save operation', [
                     'objectData' => $objData,
                     'error' => 'UUID missing in saved object data',
@@ -2493,14 +2504,14 @@ class SaveObjects
      */
     private function handlePostSaveInverseRelations(array $savedObjects, array $schemaCache): void
     {
-        if (empty($savedObjects)) {
+        if (empty($savedObjects) === true) {
             return;
         }
 
 
         // PERFORMANCE FIX: Collect all related IDs first to avoid N+1 queries.
         $allRelatedIds = [];
-        $objectRelationsMap = []; // Track which objects need which related objects
+// Track which objects need which related objects.
 
         // First pass: collect all related object IDs.
         foreach ($savedObjects as $index => $savedObject) {
@@ -2512,7 +2523,7 @@ class SaveObjects
             // PERFORMANCE: Get cached comprehensive schema analysis for inverse relations.
             $analysis = $this->getSchemaAnalysisWithCache($schema);
 
-            if (empty($analysis['inverseProperties'])) {
+            if (empty($analysis['inverseProperties']) === true) {
                 continue;
             }
 
@@ -2525,10 +2536,10 @@ class SaveObjects
                     continue;
                 }
 
-                $relatedObjectIds = is_array($objectData[$propertyName]) ? $objectData[$propertyName] : [$objectData[$propertyName]];
+                $relatedObjectIds = is_array($objectData[$propertyName]) === true ? $objectData[$propertyName] : [$objectData[$propertyName]];
 
                 foreach ($relatedObjectIds as $relatedId) {
-                    if (!empty($relatedId) && !empty($inverseConfig['writeBack'])) {
+                    if (!empty($relatedId) === true && !empty($inverseConfig['writeBack'])) {
                         $allRelatedIds[] = $relatedId;
                         $objectRelationsMap[$index][] = $relatedId;
                     }
@@ -2547,7 +2558,7 @@ class SaveObjects
                     $relatedObjectsMap[$obj->getUuid()] = $obj;
                 }
             } catch (\Exception $e) {
-                return; // Skip inverse relations processing if bulk fetch fails
+// Skip inverse relations processing if bulk fetch fails.
             }
         }
 
@@ -2569,19 +2580,18 @@ class SaveObjects
 
             // Build writeBack operations with full context.
             foreach ($analysis['inverseProperties'] as $propertyName => $inverseConfig) {
-                if (!isset($objectData[$propertyName]) || !$inverseConfig['writeBack']) {
+                if (!isset($objectData[$propertyName]) === false || !$inverseConfig['writeBack']) {
                     continue;
                 }
 
-                $relatedObjectIds = is_array($objectData[$propertyName]) ? $objectData[$propertyName] : [$objectData[$propertyName]];
+                $relatedObjectIds = is_array($objectData[$propertyName]) === true ? $objectData[$propertyName] : [$objectData[$propertyName]];
 
                 foreach ($relatedObjectIds as $relatedId) {
-                    if (!empty($relatedId) && isset($relatedObjectsMap[$relatedId])) {
+                    if (!empty($relatedId) === true && (($relatedObjectsMap[$relatedId] ?? null) !== null)) {
                         $writeBackOperations[] = [
                             'targetObject' => $relatedObjectsMap[$relatedId],
                             'sourceUuid' => $savedObject->getUuid(),
-                            'inverseProperty' => $inverseConfig['inversedBy'], // e.g., 'deelnames'
-                            'sourceProperty' => $propertyName, // e.g., 'deelnemers'
+                            'inverseProperty' => $inverseConfig['inverseProperty'] ?? $propertyName,
                         ];
                     }
                 }
@@ -2607,7 +2617,7 @@ class SaveObjects
      */
     private function performBulkWriteBackUpdatesWithContext(array $writeBackOperations): void
     {
-        if (empty($writeBackOperations)) {
+        if (empty($writeBackOperations) === true) {
             return;
         }
 
@@ -2617,9 +2627,11 @@ class SaveObjects
         foreach ($writeBackOperations as $operation) {
             $targetObject = $operation['targetObject'];
             $sourceUuid = $operation['sourceUuid'];
-            $inverseProperty = $operation['inverseProperty']; // e.g., 'deelnames'
-            $sourceProperty = $operation['sourceProperty']; // e.g., 'deelnemers'
+            $inverseProperty = $operation['inverseProperty'] ?? null;
 
+            if ($inverseProperty === null) {
+                continue;
+            }
 
             // Get current object data.
             $objectData = $targetObject->getObject();
@@ -2651,7 +2663,7 @@ class SaveObjects
         // if (!empty($objectsToUpdate)) {
         //     // NO ERROR SUPPRESSION: Let bulk writeBack update errors bubble up immediately!
         //     $this->objectEntityMapper->saveObjects([], $objectsToUpdate);
-        // }
+// }.
     }//end performBulkWriteBackUpdatesWithContext()
 
 
@@ -2684,7 +2696,7 @@ class SaveObjects
     private function generateSlugFromValue(string $value): ?string
     {
         try {
-            if (empty($value)) {
+            if (empty($value) === true) {
                 return null;
             }
 
@@ -2721,7 +2733,7 @@ class SaveObjects
         $text = trim($text, '-');
 
         // Ensure the slug is not empty.
-        if (empty($text)) {
+        if (empty($text) === true) {
             $text = 'object';
         }
 
@@ -2760,31 +2772,31 @@ class SaveObjects
 
         foreach ($data as $key => $value) {
             // Skip if key is not a string or is empty.
-            if (!is_string($key) || empty($key)) {
+            if (!is_string($key) === true || empty($key) === true) {
                 continue;
             }
 
-            $currentPath = $prefix ? $prefix.'.'.$key : $key;
+            $currentPath = ($prefix !== '') === true ? $prefix.'.'.$key : $key;
 
-            if (is_array($value) && !empty($value)) {
+            if (is_array($value) === true && !empty($value) === true) {
                 // Check if this is an array property in the schema.
                 $propertyConfig   = $schemaProperties[$key] ?? null;
-                $isArrayOfObjects = $propertyConfig &&
+                $isArrayOfObjects = ($propertyConfig !== null) === true &&
                                   ($propertyConfig['type'] ?? '') === 'array' &&
-                                  isset($propertyConfig['items']['type']) &&
-                                  $propertyConfig['items']['type'] === 'object';
+                                  (($propertyConfig['items']['type'] ?? null) !== null) === true &&
+                                  ($propertyConfig['items']['type'] === 'object') === true;
 
                 if ($isArrayOfObjects === true) {
                     // For arrays of objects, scan each item for relations.
                     foreach ($value as $index => $item) {
-                        if (is_array($item)) {
+                        if (is_array($item) === true) {
                             $itemRelations = $this->scanForRelations(
                                 data: $item,
                                 prefix: $currentPath.'.'.$index,
                                 schema: $schema
                             );
                             $relations     = array_merge($relations, $itemRelations);
-                        } else if (is_string($item) && !empty($item)) {
+                        } elseif (is_string($item) === true && empty($item) === false) {
                             // String values in object arrays are always treated as relations.
                             $relations[$currentPath.'.'.$index] = $item;
                         }
@@ -2792,7 +2804,7 @@ class SaveObjects
                 } else {
                     // For non-object arrays, check each item.
                     foreach ($value as $index => $item) {
-                        if (is_array($item)) {
+                        if (is_array($item) === true) {
                             // Recursively scan nested arrays/objects.
                             $itemRelations = $this->scanForRelations(
                                 data: $item,
@@ -2800,25 +2812,25 @@ class SaveObjects
                                 schema: $schema
                             );
                             $relations = array_merge($relations, $itemRelations);
-                        } else if (is_string($item) && !empty($item) && trim($item) !== '') {
+                        } elseif (is_string($item) === true && empty($item) === false && trim($item) !== '') {
                             // Check if the string looks like a reference.
-                            if ($this->isReference($item)) {
+                            if ($this->isReference($item) === true) {
                                 $relations[$currentPath.'.'.$index] = $item;
                             }
                         }
                     }
                 }
-            } else if (is_string($value) && !empty($value) && trim($value) !== '') {
+            } elseif (is_string($value) === true && empty($value) === false && trim($value) !== '') {
                 $shouldTreatAsRelation = false;
 
                 // Check schema property configuration first.
-                if ($schemaProperties && isset($schemaProperties[$key])) {
+                if ($schemaProperties !== null && (($schemaProperties[$key] ?? null) !== null) === true) {
                     $propertyConfig = $schemaProperties[$key];
                     $propertyType   = $propertyConfig['type'] ?? '';
                     $propertyFormat = $propertyConfig['format'] ?? '';
 
                     // Check for explicit relation types.
-                    if ($propertyType === 'text' && in_array($propertyFormat, ['uuid', 'uri', 'url'])) {
+                    if ($propertyType === 'text' && in_array($propertyFormat, ['uuid', 'uri', 'url'], true) === true) {
                         $shouldTreatAsRelation = true;
                     } else if ($propertyType === 'object') {
                         // Object properties with string values are always relations.
@@ -2860,28 +2872,28 @@ class SaveObjects
         $value = trim($value);
 
         // Empty strings are not references.
-        if (empty($value)) {
+        if (empty($value) === true) {
             return false;
         }
 
         // Check for standard UUID pattern (8-4-4-4-12 format).
-        if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value)) {
+        if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value) === true) {
             return true;
         }
 
         // Check for prefixed UUID patterns (e.g., "id-uuid", "ref-uuid", etc.).
-        if (preg_match('/^[a-z]+-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value)) {
+        if (preg_match('/^[a-z]+-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value) === true) {
             return true;
         }
 
         // Check for URLs.
-        if (filter_var($value, FILTER_VALIDATE_URL)) {
+        if (filter_var($value, FILTER_VALIDATE_URL) !== false) {
             return true;
         }
 
         // Check for other common ID patterns, but be more selective to avoid false positives.
         // Only consider strings that look like identifiers, not regular text.
-        if (preg_match('/^[a-z0-9][a-z0-9_-]{7,}$/i', $value)) {
+        if (preg_match('/^[a-z0-9][a-z0-9_-]{7,}$/i', $value) === 1) {
             // Must contain at least one hyphen or underscore (indicating it's likely an ID).
             // AND must not contain spaces or common text words.
             if ((strpos($value, '-') !== false || strpos($value, '_') !== false) &&

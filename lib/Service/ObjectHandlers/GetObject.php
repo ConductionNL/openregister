@@ -46,7 +46,7 @@ use OCA\OpenRegister\Service\SettingsService;
  * @author    Conduction b.v. <info@conduction.nl>
  * @license   AGPL-3.0-or-later
  * @link      https://github.com/OpenCatalogi/OpenRegister
- * @version   1.0.0
+ * @version   GIT: <git_id>
  * @copyright 2024 Conduction b.v.
  */
 class GetObject
@@ -232,7 +232,7 @@ class GetObject
         $objectData = $object->getObject();
         foreach ($files as $file) {
             $propertyName = explode('_', $file->getName())[0];
-            if (isset($objectData[$propertyName]) === false) {
+            if (!isset($objectData[$propertyName])) {
                 continue;
             }
 
@@ -321,7 +321,7 @@ class GetObject
         ?Schema $schema=null
     ): array {
         // First find all objects that reference this object's URI or UUID.
-        // @psalm-suppress UndefinedMethod.
+        //
         $referencingObjects = $this->objectEntityMapper->findByRelationUri(
             search: $object->getUri() ?? $object->getUuid(),
             partialMatch: $partialMatch

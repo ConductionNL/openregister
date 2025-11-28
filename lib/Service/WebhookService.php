@@ -225,9 +225,9 @@ class WebhookService
 
                     // Try to parse JSON response for better error message.
                     $jsonResponse = json_decode($responseBody, true);
-                    if ($jsonResponse !== null && isset($jsonResponse['message'])) {
+                    if ($jsonResponse !== null && (($jsonResponse['message'] ?? null) !== null)) {
                         $errorMessage .= ': '.$jsonResponse['message'];
-                    } elseif ($jsonResponse !== null && isset($jsonResponse['error'])) {
+                    } elseif ($jsonResponse !== null && (($jsonResponse['error'] ?? null) !== null)) {
                         $errorMessage .= ': '.$jsonResponse['error'];
                     }
                 } catch (\Exception $bodyException) {
@@ -351,7 +351,7 @@ class WebhookService
         $keys = explode('.', $key);
 
         foreach ($keys as $k) {
-            if (isset($array[$k]) === false) {
+            if (!isset($array[$k])) {
                 return null;
             }
 

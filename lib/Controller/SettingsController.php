@@ -116,7 +116,6 @@ use Psr\Log\LoggerInterface;
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
- * @psalm-suppress UnusedClass - This controller is registered via routes.php and used by Nextcloud's routing system
  */
 class SettingsController extends Controller
 {
@@ -545,7 +544,7 @@ class SettingsController extends Controller
             }
 
             // Convert string boolean to actual boolean.
-            if (is_string($collectErrors)) {
+            if (is_string($collectErrors) === true) {
                 $collectErrors = filter_var($collectErrors, FILTER_VALIDATE_BOOLEAN);
             }
 
@@ -1325,7 +1324,7 @@ class SettingsController extends Controller
                         'enabled'         => $solrSettings['enabled'] ?? false,
                         'host'            => $solrSettings['host'] ?? 'not_set',
                         'port'            => $solrSettings['port'] ?? 'not_set',
-                        'has_credentials' => !empty($solrSettings['username']) && !empty($solrSettings['password']),
+                        'has_credentials' => !empty($solrSettings['username']) === true && !empty($solrSettings['password']),
                     ]
                     );
 
@@ -1417,7 +1416,7 @@ class SettingsController extends Controller
                                     'guzzle_details'     => $errorDetails['guzzle_details'] ?? [],
                                     'configuration_used' => [
                                         'host'   => $solrSettings['host'],
-                                        'port'   => $solrSettings['port'] ?: 'default',
+                                        'port'   => (($solrSettings['port'] !== null) === true && ($solrSettings['port'] !== '') === true) ? $solrSettings['port'] : 'default',
                                         'scheme' => $solrSettings['scheme'],
                                         'path'   => $solrSettings['path'],
                                     ],
@@ -1437,7 +1436,7 @@ class SettingsController extends Controller
 
                     // Get last system error message.
                     $lastSystemError = 'No system error captured';
-                    if ($lastError !== null && isset($lastError['message']) === true) {
+                    if ($lastError !== null && (($lastError['message'] ?? null) !== null)) {
                         $lastSystemError = $lastError['message'];
                     }
 
@@ -1492,7 +1491,7 @@ class SettingsController extends Controller
 
             // Try to get detailed error information from SolrSetup if available.
             $detailedError = null;
-            if (isset($setup)) {
+            if (($setup ?? null) !== null) {
                 try {
                     $setupProgress    = $setup->getSetupProgress();
                     $lastErrorDetails = $setup->getLastErrorDetails();
@@ -1633,7 +1632,7 @@ class SettingsController extends Controller
             // Delete the specific collection.
             $result = $guzzleSolrService->deleteCollection($name);
 
-            if ($result['success']) {
+            if ($result['success'] === true) {
                 $logger->info(
                         message: '✅ SOLR collection deleted successfully',
                         context: [
@@ -1714,7 +1713,7 @@ class SettingsController extends Controller
             // Clear the specific collection.
             $result = $guzzleSolrService->clearIndex($name);
 
-            if ($result['success']) {
+            if ($result['success'] === true) {
                 return new JSONResponse(
                         data: [
                             'success'    => true,
@@ -1792,7 +1791,7 @@ class SettingsController extends Controller
             // Reindex the specified collection.
             $result = $guzzleSolrService->reindexAll(maxObjects: $maxObjects, batchSize: $batchSize, collectionName: $name);
 
-            if ($result['success']) {
+            if ($result['success'] === true) {
                 return new JSONResponse(
                         data: [
                             'success'    => true,
@@ -2018,11 +2017,11 @@ class SettingsController extends Controller
                         dryRun: $dryRun
                     );
                     $results['objects'] = $objectResult;
-                    if (isset($objectResult['created_count'])) {
+                    if (($objectResult['created_count'] ?? null) !== null) {
                         $totalCreated += $objectResult['created_count'];
                     }
 
-                    if (isset($objectResult['error_count'])) {
+                    if (($objectResult['error_count'] ?? null) !== null) {
                         $totalErrors += $objectResult['error_count'];
                     }
                 }
@@ -2044,11 +2043,11 @@ class SettingsController extends Controller
                         dryRun: $dryRun
                     );
                     $results['files'] = $fileResult;
-                    if (isset($fileResult['created_count'])) {
+                    if (($fileResult['created_count'] ?? null) !== null) {
                         $totalCreated += $fileResult['created_count'];
                     }
 
-                    if (isset($fileResult['error_count'])) {
+                    if (($fileResult['error_count'] ?? null) !== null) {
                         $totalErrors += $fileResult['error_count'];
                     }
                 }
@@ -2316,7 +2315,7 @@ class SettingsController extends Controller
                 expectedFields: $expectedFields
             );
 
-            if (empty($comparison['mismatched'])) {
+            if (empty($comparison['mismatched']) === true) {
                 return new JSONResponse(
                         data: [
                             'success' => true,
@@ -2423,7 +2422,7 @@ class SettingsController extends Controller
         // Find extra fields (in SOLR but not expected) and mismatched configurations.
         foreach ($actualFields as $fieldName => $actualField) {
             // Skip only system fields (but allow self_* metadata fields to be checked).
-            if (str_starts_with($fieldName, '_')) {
+            if (str_starts_with($fieldName, '_') === true) {
                 continue;
             }
 
@@ -2664,7 +2663,7 @@ class SettingsController extends Controller
             ];
 
             // Process metadata facets.
-            if (isset($discoveredFacets['@self'])) {
+            if (($discoveredFacets['@self'] ?? null) !== null) {
                 $index = 0;
                 foreach ($discoveredFacets['@self'] as $key => $facetInfo) {
                     $fieldName           = "self_{$key}";
@@ -2690,7 +2689,7 @@ class SettingsController extends Controller
             }//end if
 
             // Process object field facets.
-            if (isset($discoveredFacets['object_fields'])) {
+            if (($discoveredFacets['object_fields'] ?? null) !== null) {
                 $index = 0;
                 foreach ($discoveredFacets['object_fields'] as $key => $facetInfo) {
                     $fieldName           = $key;
@@ -2812,7 +2811,7 @@ class SettingsController extends Controller
             }
 
             // Convert string boolean to actual boolean.
-            if (is_string($collectErrors)) {
+            if (is_string($collectErrors) === true) {
                 $collectErrors = filter_var($collectErrors, FILTER_VALIDATE_BOOLEAN);
             }
 
@@ -2907,7 +2906,7 @@ class SettingsController extends Controller
                                 'success'   => $success,
                                 'operation' => 'commit',
                                 // Get commit message based on success.
-                                'message'   => $success ? 'Index committed successfully' : 'Failed to commit index',
+                                'message'   => $success === true ? 'Index committed successfully' : 'Failed to commit index',
                                 'timestamp' => date('c'),
                             ]
                             );
@@ -2918,7 +2917,7 @@ class SettingsController extends Controller
                             data: [
                                 'success'   => $success,
                                 'operation' => 'optimize',
-                                'message'   => $success ? 'Index optimized successfully' : 'Failed to optimize index',
+                                'message'   => $success === true ? 'Index optimized successfully' : 'Failed to optimize index',
                                 'timestamp' => date('c'),
                             ]
                             );
@@ -3207,7 +3206,7 @@ class SettingsController extends Controller
         try {
             // Get database platform information.
             /*
-             * @var \Doctrine\DBAL\Platforms\AbstractPlatform $platform
+             * @var AbstractPlatform $platform
              */
             $platform = $this->db->getDatabasePlatform();
             /*
@@ -3335,27 +3334,27 @@ class SettingsController extends Controller
             $data = $this->request->getParams();
 
             // Extract the model IDs from the objects sent by frontend.
-            if (isset($data['fireworksConfig']['embeddingModel']) && is_array($data['fireworksConfig']['embeddingModel'])) {
+            if (($data['fireworksConfig']['embeddingModel'] ?? null) !== null && is_array($data['fireworksConfig']['embeddingModel']) === true) {
                 $data['fireworksConfig']['embeddingModel'] = $data['fireworksConfig']['embeddingModel']['id'] ?? null;
             }
 
-            if (isset($data['fireworksConfig']['chatModel']) && is_array($data['fireworksConfig']['chatModel'])) {
+            if (($data['fireworksConfig']['chatModel'] ?? null) !== null && is_array($data['fireworksConfig']['chatModel']) === true) {
                 $data['fireworksConfig']['chatModel'] = $data['fireworksConfig']['chatModel']['id'] ?? null;
             }
 
-            if (isset($data['openaiConfig']['model']) && is_array($data['openaiConfig']['model'])) {
+            if (($data['openaiConfig']['model'] ?? null) !== null && is_array($data['openaiConfig']['model']) === true) {
                 $data['openaiConfig']['model'] = $data['openaiConfig']['model']['id'] ?? null;
             }
 
-            if (isset($data['openaiConfig']['chatModel']) && is_array($data['openaiConfig']['chatModel'])) {
+            if (($data['openaiConfig']['chatModel'] ?? null) !== null && is_array($data['openaiConfig']['chatModel']) === true) {
                 $data['openaiConfig']['chatModel'] = $data['openaiConfig']['chatModel']['id'] ?? null;
             }
 
-            if (isset($data['ollamaConfig']['model']) && is_array($data['ollamaConfig']['model'])) {
+            if (($data['ollamaConfig']['model'] ?? null) !== null && is_array($data['ollamaConfig']['model']) === true) {
                 $data['ollamaConfig']['model'] = $data['ollamaConfig']['model']['id'] ?? null;
             }
 
-            if (isset($data['ollamaConfig']['chatModel']) && is_array($data['ollamaConfig']['chatModel'])) {
+            if (($data['ollamaConfig']['chatModel'] ?? null) !== null && is_array($data['ollamaConfig']['chatModel']) === true) {
                 $data['ollamaConfig']['chatModel'] = $data['ollamaConfig']['chatModel']['id'] ?? null;
             }
 
@@ -3666,7 +3665,7 @@ class SettingsController extends Controller
                     ]
                     );
 
-            curl_exec($ch);
+            $response = curl_exec($ch);
             $httpCode  = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             $curlError = curl_error($ch);
             curl_close($ch);
@@ -3708,7 +3707,7 @@ class SettingsController extends Controller
                         $name = $model['name'] ?? 'unknown';
                         // Format size if available.
                         $size = '';
-                        if (isset($model['size']) === true && is_numeric($model['size'])) {
+                        if (($model['size'] ?? null) !== null && is_numeric($model['size']) === true) {
                             $size = $this->formatBytes((int) $model['size']);
                         }
 
@@ -3806,7 +3805,7 @@ class SettingsController extends Controller
         try {
             $result = $this->vectorEmbeddingService->clearAllEmbeddings();
 
-            if ($result['success']) {
+            if ($result['success'] === true) {
                 return new JSONResponse(data: $result);
             } else {
                 return new JSONResponse(data: $result, statusCode: 500);
@@ -3838,11 +3837,11 @@ class SettingsController extends Controller
             $data = $this->request->getParams();
 
             // Extract IDs from objects sent by frontend.
-            if (isset($data['provider']) && is_array($data['provider'])) {
+            if (($data['provider'] ?? null) !== null && is_array($data['provider']) === true) {
                 $data['provider'] = $data['provider']['id'] ?? null;
             }
 
-            if (isset($data['chunkingStrategy']) && is_array($data['chunkingStrategy'])) {
+            if (($data['chunkingStrategy'] ?? null) !== null && is_array($data['chunkingStrategy']) === true) {
                 $data['chunkingStrategy'] = $data['chunkingStrategy']['id'] ?? null;
             }
 
@@ -3912,7 +3911,7 @@ class SettingsController extends Controller
             $data = $this->request->getParams();
 
             // Extract IDs from objects sent by frontend.
-            if (isset($data['provider']) && is_array($data['provider'])) {
+            if (($data['provider'] ?? null) !== null && is_array($data['provider']) === true) {
                 $data['provider'] = $data['provider']['id'] ?? null;
             }
 
@@ -4075,7 +4074,7 @@ class SettingsController extends Controller
             // Search documents in SOLR.
             $result = $guzzleSolrService->inspectIndex($query, $start, $rows, $fields);
 
-            if ($result['success']) {
+            if ($result['success'] === true) {
                 return new JSONResponse(
                         data: [
                             'success'   => true,
@@ -4204,7 +4203,7 @@ class SettingsController extends Controller
                     );
 
             // Validate field name.
-            if (empty($fieldName) || !is_string($fieldName)) {
+            if (empty($fieldName) === true || !is_string($fieldName)) {
                 return new JSONResponse(
                         data: [
                             'success' => false,
@@ -4216,7 +4215,7 @@ class SettingsController extends Controller
 
             // Prevent deletion of critical system fields.
             $protectedFields = ['id', '_version_', '_root_', '_text_'];
-            if (in_array($fieldName, $protectedFields)) {
+            if (in_array($fieldName, $protectedFields) === true) {
                 return new JSONResponse(
                         data: [
                             'success' => false,
@@ -4230,7 +4229,7 @@ class SettingsController extends Controller
             $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
             $result            = $guzzleSolrService->deleteField($fieldName);
 
-            if ($result['success']) {
+            if ($result['success'] === true) {
                 $logger->info(
                         message: '✅ SOLR field deleted successfully via API',
                         context: [
@@ -4723,7 +4722,7 @@ class SettingsController extends Controller
     public function semanticSearch(string $query, int $limit=10, array $filters=[], ?string $provider=null): JSONResponse
     {
         try {
-            if (empty(trim($query))) {
+            if (empty(trim($query)) === true) {
                 return new JSONResponse(
                         data: [
                             'success' => false,
@@ -4786,7 +4785,7 @@ class SettingsController extends Controller
         ?string $provider=null
     ): JSONResponse {
         try {
-            if (empty(trim($query))) {
+            if (empty(trim($query)) === true) {
                 return new JSONResponse(
                         data: [
                             'success' => false,
@@ -4803,7 +4802,7 @@ class SettingsController extends Controller
             $result = $vectorService->hybridSearch($query, $solrFilters, $limit, $weights, $provider);
 
             // Ensure result is an array for spread operator.
-            $resultArray = is_array($result) ? $result : [];
+            $resultArray = is_array($result) === true ? $result : [];
 
             return new JSONResponse(
                     data: [
@@ -4879,7 +4878,7 @@ class SettingsController extends Controller
             // Get request parameters.
             $maxFiles  = (int) $this->request->getParam('max_files', 100);
             $batchSize = (int) $this->request->getParam('batch_size', 50);
-            // Note: file_types parameter not currently used
+            // Note: file_types parameter not currently used.
             $skipIndexed = $this->request->getParam('skip_indexed', true);
             $mode        = $this->request->getParam('mode', 'parallel');
 
@@ -4916,7 +4915,7 @@ class SettingsController extends Controller
             }
 
             // If no files to process, return early.
-            if (empty($filesToProcess)) {
+            if (empty($filesToProcess) === true) {
                 return new JSONResponse(
                         data: [
                             'success'         => true,
@@ -5050,7 +5049,7 @@ class SettingsController extends Controller
             // Get all completed extractions.
             $fileIds = $textExtractionService->findByStatus('file', 'completed', $maxFiles, 0);
 
-            if (empty($fileIds)) {
+            if (empty($fileIds) === true) {
                 return new JSONResponse(
                         data: [
                             'success' => true,
@@ -5285,21 +5284,21 @@ class SettingsController extends Controller
         try {
             $data = $this->request->getParams();
 
-            if (isset($data['github_token'])) {
+            if (($data['github_token'] ?? null) !== null) {
                 // Only save if not masked.
                 if (!str_contains($data['github_token'], '***')) {
                     $this->config->setValueString('openregister', 'github_api_token', $data['github_token']);
                 }
             }
 
-            if (isset($data['gitlab_token'])) {
+            if (($data['gitlab_token'] ?? null) !== null) {
                 // Only save if not masked.
                 if (!str_contains($data['gitlab_token'], '***')) {
                     $this->config->setValueString('openregister', 'gitlab_api_token', $data['gitlab_token']);
                 }
             }
 
-            if (isset($data['gitlab_url'])) {
+            if (($data['gitlab_url'] ?? null) !== null) {
                 $this->config->setValueString('openregister', 'gitlab_api_url', $data['gitlab_url']);
             }
 
@@ -5335,7 +5334,7 @@ class SettingsController extends Controller
             $data  = $this->request->getParams();
             $token = $data['token'] ?? $this->config->getValueString('openregister', 'github_api_token', '');
 
-            if (empty($token)) {
+            if (empty($token) === true) {
                 return new JSONResponse(
                         data: [
                             'success' => false,
@@ -5396,7 +5395,7 @@ class SettingsController extends Controller
             $token  = $data['token'] ?? $this->config->getValueString('openregister', 'gitlab_api_token', '');
             $apiUrl = $data['url'] ?? $this->config->getValueString('openregister', 'gitlab_api_url', 'https://gitlab.com/api/v4');
 
-            if (empty($token)) {
+            if (empty($token) === true) {
                 return new JSONResponse(
                         data: [
                             'success' => false,
@@ -5410,7 +5409,7 @@ class SettingsController extends Controller
             $apiUrl = rtrim($apiUrl, '/');
 
             // Default to gitlab.com if no URL provided.
-            if (empty($apiUrl)) {
+            if (empty($apiUrl) === true) {
                 $apiUrl = 'https://gitlab.com/api/v4';
             }
 

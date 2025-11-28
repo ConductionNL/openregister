@@ -41,7 +41,6 @@ use Psr\Log\LoggerInterface;
  *
  * @package OCA\OpenRegister\BackgroundJob
  *
- * @psalm-suppress UnusedClass - This background job is registered and instantiated by Nextcloud's job system
  */
 class ObjectTextExtractionJob extends QueuedJob
 {
@@ -55,7 +54,6 @@ class ObjectTextExtractionJob extends QueuedJob
      * @param LoggerInterface       $logger                Logger instance
      * @param IAppConfig            $config                Application configuration
      *
-     * @psalm-suppress PossiblyUnusedMethod - Constructor is called by Nextcloud's job system via dependency injection
      */
     public function __construct(
         ITimeFactory $timeFactory,
@@ -78,7 +76,6 @@ class ObjectTextExtractionJob extends QueuedJob
      *
      * @return void
      *
-     * @psalm-suppress PossiblyUnusedMethod - This method is called by Nextcloud's job system when the job executes
      */
     protected function run($argument): void
     {
@@ -90,7 +87,7 @@ class ObjectTextExtractionJob extends QueuedJob
         }
 
         // Validate argument.
-        if (isset($argument['object_id']) === false) {
+        if (!isset($argument['object_id'])) {
             $this->logger->error(
                     '[ObjectTextExtractionJob] Missing object_id in job arguments',
                     [

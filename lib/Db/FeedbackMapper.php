@@ -44,7 +44,6 @@ use OCP\IDBConnection;
  * @method list<Feedback> findEntities(IQueryBuilder $query)
  *
  * @extends        QBMapper<Feedback>
- * @psalm-suppress LessSpecificImplementedReturnType - @method annotation is correct, parent returns list<T>
  */
 class FeedbackMapper extends QBMapper
 {
@@ -68,7 +67,6 @@ class FeedbackMapper extends QBMapper
      * @param Entity $entity Entity to insert
      *
      * @return         Feedback Inserted entity
-     * @psalm-suppress LessSpecificImplementedReturnType - QBMapper returns more specific type
      */
     public function insert(Entity $entity): Feedback
     {
@@ -96,7 +94,6 @@ class FeedbackMapper extends QBMapper
      * @param Entity $entity Entity to update
      *
      * @return         Feedback Updated entity
-     * @psalm-suppress LessSpecificImplementedReturnType - QBMapper returns more specific type
      */
     public function update(Entity $entity): Feedback
     {

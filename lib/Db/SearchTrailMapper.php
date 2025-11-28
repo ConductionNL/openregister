@@ -50,7 +50,6 @@ use Symfony\Component\Uid\Uuid;
  * @method         SearchTrail findEntity(IQueryBuilder $query)
  * @method         SearchTrail[] findAll(int|null $limit = null, int|null $offset = null)
  * @method         list<SearchTrail> findEntities(IQueryBuilder $query)
- * @psalm-suppress LessSpecificImplementedReturnType - @method annotation is correct, parent returns list<T>
  */
 class SearchTrailMapper extends QBMapper
 {
@@ -844,7 +843,7 @@ class SearchTrailMapper extends QBMapper
 
         foreach ($filters as $field => $value) {
             // Skip system variables and ensure valid column names.
-            if (str_starts_with($field, '_') || !in_array($field, $validColumns)) {
+            if (str_starts_with($field, '_') === true || !in_array($field, $validColumns)) {
                 continue;
             }
 
@@ -852,7 +851,7 @@ class SearchTrailMapper extends QBMapper
                 $qb->andWhere($qb->expr()->isNotNull($field));
             } else if ($value === 'IS NULL') {
                 $qb->andWhere($qb->expr()->isNull($field));
-            } else if (is_array($value)) {
+            } else if (is_array($value) === true) {
                 // Handle array values like ['IS NULL', ''].
                 $conditions = [];
                 foreach ($value as $val) {
@@ -870,7 +869,7 @@ class SearchTrailMapper extends QBMapper
                 }
             } else {
                 // Handle comma-separated values.
-                if (is_string($value) && strpos($value, ',') !== false) {
+                if (is_string($value) === true && strpos($value, ',') !== false) {
                     $values = array_map('trim', explode(',', $value));
                     $qb->andWhere($qb->expr()->in($field, $qb->createNamedParameter($values, IQueryBuilder::PARAM_STR_ARRAY)));
                 } else {
@@ -907,20 +906,20 @@ class SearchTrailMapper extends QBMapper
 
         // Extract metadata filters.
         $metadataFilters = $query['@self'] ?? [];
-        if (isset($metadataFilters['register'])) {
-            $searchTrail->setRegister(is_numeric($metadataFilters['register']) ? (int) $metadataFilters['register'] : null);
-            $searchTrail->setRegisterUuid(is_string($metadataFilters['register']) ? $metadataFilters['register'] : null);
+        if (($metadataFilters['register'] ?? null) !== null) {
+            $searchTrail->setRegister(is_numeric($metadataFilters['register']) === true ? (int) $metadataFilters['register'] : null);
+            $searchTrail->setRegisterUuid(is_string($metadataFilters['register']) === true ? $metadataFilters['register'] : null);
         }
 
-        if (isset($metadataFilters['schema'])) {
-            $searchTrail->setSchema(is_numeric($metadataFilters['schema']) ? (int) $metadataFilters['schema'] : null);
-            $searchTrail->setSchemaUuid(is_string($metadataFilters['schema']) ? $metadataFilters['schema'] : null);
+        if (($metadataFilters['schema'] ?? null) !== null) {
+            $searchTrail->setSchema(is_numeric($metadataFilters['schema']) === true ? (int) $metadataFilters['schema'] : null);
+            $searchTrail->setSchemaUuid(is_string($metadataFilters['schema']) === true ? $metadataFilters['schema'] : null);
         }
 
         // Extract sort parameters.
         $sortParams = [];
-        if (isset($query['_order'])) {
-            $sortParams = is_array($query['_order']) ? $query['_order'] : [$query['_order']];
+        if (($query['_order'] ?? null) !== null) {
+            $sortParams = is_array($query['_order']) === true ? $query['_order'] : [$query['_order']];
         }
 
         $searchTrail->setSortParameters($sortParams);

@@ -50,7 +50,7 @@ use Psr\Log\LoggerInterface;
  * @author    Conduction b.v. <info@conduction.nl>
  * @license   AGPL-3.0-or-later
  * @link      https://github.com/OpenCatalogi/OpenRegister
- * @version   1.0.0
+ * @version   GIT: <git_id>
  * @copyright 2024 Conduction b.v.
  */
 class DeleteObject
@@ -95,7 +95,6 @@ class DeleteObject
         private readonly FileService $fileService,
         private readonly ObjectCacheService $objectCacheService,
         /**
-         * @psalm-suppress UnusedProperty - Property kept for future use
          */
         private readonly SchemaCacheService $schemaCacheService,
         private readonly SchemaFacetCacheService $schemaFacetCacheService,
@@ -217,7 +216,7 @@ class DeleteObject
     ): void {
         $properties = $schema->getProperties();
         foreach ($properties as $propertyName => $property) {
-            if (isset($property['cascade']) === false || $property['cascade'] !== true) {
+            if (!isset($property['cascade']) === false || $property['cascade'] !== true) {
                 continue;
             }
 

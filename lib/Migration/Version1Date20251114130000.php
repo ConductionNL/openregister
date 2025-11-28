@@ -142,8 +142,8 @@ class Version1Date20251114130000 extends SimpleMigrationStep
         if ($schema->hasTable('openregister_schemas') === true) {
             $table = $schema->getTable('openregister_schemas');
 
-            // Remove extend column if it exists
-            if ($table->hasColumn('extend')) {
+            // Remove extend column if it exists.
+            if ($table->hasColumn('extend') === true) {
                 $table->dropColumn('extend');
 
                 $output->info(message: '   ✓ Removed extend column from schemas table');

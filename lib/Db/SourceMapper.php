@@ -322,7 +322,7 @@ class SourceMapper extends QBMapper
         $obj->hydrate($object);
 
         // Set or update the version.
-        if (isset($object['version']) === false) {
+        if (!isset($object['version'])) {
             $version    = explode('.', $obj->getVersion());
             $version[2] = ((int) $version[2] + 1);
             $obj->setVersion(implode('.', $version));

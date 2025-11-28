@@ -223,7 +223,7 @@ class FileHandler implements TextExtractionHandlerInterface
             // For now, delegate to existing extraction methods.
             $content = $file->getContent();
 
-            if ($mimeType === 'text/plain' || str_starts_with($mimeType, 'text/')) {
+            if ($mimeType === 'text/plain' || str_starts_with($mimeType, 'text/') === true) {
                 return $content;
             }
 

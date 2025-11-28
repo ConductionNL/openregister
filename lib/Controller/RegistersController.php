@@ -50,7 +50,6 @@ use Exception;
 /**
  * Class RegistersController
  *
- * @psalm-suppress UnusedClass - This controller is registered via routes.php and used by Nextcloud's routing system
  */
 class RegistersController extends Controller
 {
@@ -189,12 +188,12 @@ class RegistersController extends Controller
         $params = $this->request->getParams();
 
         // Extract pagination and search parameters.
-        $limit  = isset($params['_limit']) ? (int) $params['_limit'] : null;
-        $offset = isset($params['_offset']) ? (int) $params['_offset'] : null;
-        $page   = isset($params['_page']) ? (int) $params['_page'] : null;
-        // Note: search parameter not currently used in this endpoint
+        $limit  = isset($params['_limit']) === true ? (int) $params['_limit'] : null;
+        $offset = isset($params['_offset']) === true ? (int) $params['_offset'] : null;
+        $page   = isset($params['_page']) === true ? (int) $params['_page'] : null;
+        // Note: search parameter not currently used in this endpoint.
         $extend = $params['_extend'] ?? [];
-        if (is_string($extend)) {
+        if (is_string($extend) === true) {
             $extend = [$extend];
         }
 
@@ -210,9 +209,9 @@ class RegistersController extends Controller
         $registersArr = array_map(fn($register) => $register->jsonSerialize(), $registers);
 
         // If 'schemas' is requested in _extend, expand schema IDs to full schema objects.
-        if (in_array('schemas', $extend, true)) {
+        if (in_array('schemas', $extend, true) === true) {
             foreach ($registersArr as &$register) {
-                if (isset($register['schemas']) && is_array($register['schemas'])) {
+                if (($register['schemas'] ?? null) !== null && is_array($register['schemas']) === true) {
                     $expandedSchemas = [];
                     foreach ($register['schemas'] as $schemaId) {
                         try {
@@ -230,7 +229,7 @@ class RegistersController extends Controller
         }
 
         // If '@self.stats' is requested, attach statistics to each register.
-        if (in_array('@self.stats', $extend, true)) {
+        if (in_array('@self.stats', $extend, true) === true) {
             foreach ($registersArr as &$register) {
                 $register['stats'] = [
                     'objects' => $this->objectEntityMapper->getStatistics(registerId: $register['id'], schemaId: null),
@@ -259,14 +258,14 @@ class RegistersController extends Controller
     public function show($id): JSONResponse
     {
         $extend = $this->request->getParam(key: '_extend', default: []);
-        if (is_string($extend)) {
+        if (is_string($extend) === true) {
             $extend = [$extend];
         }
 
         $register    = $this->registerService->find($id, []);
         $registerArr = $register->jsonSerialize();
         // If '@self.stats' is requested, attach statistics to the register.
-        if (in_array('@self.stats', $extend, true)) {
+        if (in_array('@self.stats', $extend, true) === true) {
             $registerArr['stats'] = [
                 'objects' => $this->objectEntityMapper->getStatistics(registerId: $registerArr['id'], schemaId: null),
                 'logs'    => $this->auditTrailMapper->getStatistics(registerId: $registerArr['id'], schemaId: null),
@@ -303,7 +302,7 @@ class RegistersController extends Controller
         }
 
         // Remove ID if present to ensure a new record is created.
-        if (isset($data['id']) === true) {
+        if (($data['id'] ?? null) !== null) {
             unset($data['id']);
         }
 
@@ -584,7 +583,7 @@ class RegistersController extends Controller
             $branch        = $data['branch'] ?? 'main';
             $commitMessage = $data['commitMessage'] ?? "Update register OAS: {$register->getTitle()}";
 
-            if (empty($owner) || empty($repo)) {
+            if (empty($owner) === true || empty($repo) === true) {
                 return new JSONResponse(data: ['error' => 'Owner and repo parameters are required'], statusCode: 400);
             }
 
@@ -592,7 +591,7 @@ class RegistersController extends Controller
             $path = ltrim($path, '/');
 
             // If path is empty, use a default filename based on register slug.
-            if (empty($path)) {
+            if (empty($path) === true) {
                 $slug = $register->getSlug();
                 $path = $slug.'_openregister.json';
             }
@@ -663,7 +662,7 @@ class RegistersController extends Controller
             }
 
             $message = 'Register OAS published successfully to GitHub';
-            if ($defaultBranch && $branch !== $defaultBranch) {
+            if (($defaultBranch !== null && $defaultBranch !== '') === true && $branch !== $defaultBranch) {
                 $message .= ". Note: Published to branch '{$branch}' (default is '{$defaultBranch}'). "."GitHub Code Search primarily indexes the default branch, so this may not appear in search results immediately.";
             } else {
                 $message .= ". Note: GitHub Code Search may take a few minutes to index new files.";
@@ -679,7 +678,7 @@ class RegistersController extends Controller
                     'file_url'       => $result['file_url'],
                     'branch'         => $branch,
                     'default_branch' => $defaultBranch,
-                    'indexing_note'  => $defaultBranch && $branch !== $defaultBranch ? "Published to non-default branch. For discovery, publish to '{$defaultBranch}' branch." : "File published successfully. GitHub Code Search indexing may take a few minutes.",
+                    'indexing_note'  => (($defaultBranch !== null) === true && $branch !== $defaultBranch) === true ? "Published to non-default branch. For discovery, publish to '{$defaultBranch}' branch." : "File published successfully. GitHub Code Search indexing may take a few minutes.",
                 ],
                     statusCode: 200
                 );
@@ -724,7 +723,7 @@ class RegistersController extends Controller
             if ($type === null || $type === '') {
                 $filename  = $uploadedFile['name'] ?? '';
                 $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
-                if (in_array($extension, ['xlsx', 'xls'])) {
+                if (in_array($extension, ['xlsx', 'xls']) === true) {
                     $type = 'excel';
                 } else if ($extension === 'csv') {
                     $type = 'csv';
@@ -817,7 +816,7 @@ class RegistersController extends Controller
                     // importFromJson requires a Configuration entity as second parameter.
                     // For now, pass null and let the service handle it (will throw if required).
                     $configuration = null;
-                    // TODO: Get or create Configuration entity if needed
+                    // TODO: Get or create Configuration entity if needed.
                     $result = $this->configurationService->importFromJson(
                         data: $jsonData,
                         configuration: $configuration,
@@ -835,7 +834,7 @@ class RegistersController extends Controller
                             'errors'    => [],
                         ],
                     ];
-                    if (isset($result['objects']) && is_array($result['objects'])) {
+                    if (($result['objects'] ?? null) !== null && is_array($result['objects']) === true) {
                         foreach ($result['objects'] as $object) {
                             // For now, treat all as 'created' (improve if possible).
                             $summary['configuration']['created'][] = [
@@ -941,18 +940,18 @@ class RegistersController extends Controller
         $value = $this->request->getParam($paramName, $default);
 
         // If already boolean, return as-is.
-        if (is_bool($value)) {
+        if (is_bool($value) === true) {
             return $value;
         }
 
         // Handle string values.
-        if (is_string($value)) {
+        if (is_string($value) === true) {
             $value = strtolower(trim($value));
             return in_array($value, ['true', '1', 'on', 'yes'], true);
         }
 
         // Handle numeric values.
-        if (is_numeric($value)) {
+        if (is_numeric($value) === true) {
             return (bool) $value;
         }
 

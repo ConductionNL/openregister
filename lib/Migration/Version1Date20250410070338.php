@@ -43,7 +43,6 @@ class Version1Date20250410070338 extends SimpleMigrationStep
      * @psalm-return ISchemaWrapper|null
      * @return ISchemaWrapper
      *
-     * @psalm-suppress MoreSpecificImplementedParamType
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
         /** @var ISchemaWrapper $schema */

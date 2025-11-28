@@ -1373,7 +1373,7 @@ class TextExtractionService
                 // Iterate through rows and columns.
                 for ($row = 1; $row <= $highestRow; $row++) {
                     $rowData = [];
-                    // @psalm-suppress StringIncrement - Intentional Excel column increment (A->B->C...).
+                    //
                     for ($col = 'A'; $col !== $highestColumn; $col++) {
                         $value = $sheet->getCell($col.$row)->getValue();
                         if ($value !== null && $value !== '') {
@@ -1824,7 +1824,7 @@ class TextExtractionService
 
         $totalSize = 0;
         foreach ($chunks as $chunk) {
-            $text       = is_array($chunk) && isset($chunk['text']) ? $chunk['text'] : (is_string($chunk) ? $chunk : '');
+            $text       = is_array($chunk) === true && (($chunk['text'] ?? null) !== null) ? $chunk['text'] : (is_string($chunk) === true ? $chunk : '');
             $totalSize += strlen($text);
         }
 

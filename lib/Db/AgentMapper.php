@@ -43,9 +43,6 @@ use Symfony\Component\Uid\Uuid;
  * @package OCA\OpenRegister\Db
  *
  * @template-extends QBMapper<Agent>
- *
- * @psalm-suppress MissingTemplateParam
- *
  * @method Agent insert(Entity $entity)
  * @method Agent update(Entity $entity)
  * @method Agent insertOrUpdate(Entity $entity)
@@ -434,7 +431,6 @@ class AgentMapper extends QBMapper
          * @var Agent $entity
          */
         /*
-         * @psalm-suppress RedundantCondition - Runtime type check for defensive programming
          */
         if ($entity instanceof Agent) {
             // Ensure UUID is set.

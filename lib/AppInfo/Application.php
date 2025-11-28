@@ -133,7 +133,6 @@ use OCA\OpenRegister\Event\OrganisationDeletedEvent;
  *
  * @link https://github.com/nextcloud/server/blob/master/apps-extra/openregister
  *
- * @psalm-suppress UnusedClass - This class is instantiated by Nextcloud's app framework system
  */
 class Application extends App implements IBootstrap
 {
@@ -147,9 +146,6 @@ class Application extends App implements IBootstrap
 
     /**
      * Constructor for the Application class
-     *
-     * @psalm-suppress PossiblyUnusedMethod
-     *
      * @return void
      */
     public function __construct()

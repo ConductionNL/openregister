@@ -122,7 +122,7 @@ class FileVectorizationStrategy implements VectorizationStrategyInterface
 
         foreach ($allChunks as $chunk) {
             $sourceId = $chunk->getSourceId();
-            if (isset($uniqueFiles[$sourceId]) === false) {
+            if (!isset($uniqueFiles[$sourceId])) {
                 $uniqueFiles[$sourceId] = true;
                 if ($maxFiles > 0 && count($uniqueFiles) > $maxFiles) {
                     break;

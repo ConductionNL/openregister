@@ -29,7 +29,6 @@ use OCA\OpenRegister\Service\GuzzleSolrService;
  * Controller for handling search operations in the application.
  * Provides functionality to search across the application using the Nextcloud search service.
  *
- * @psalm-suppress UnusedClass - This controller is registered via routes.php and used by Nextcloud's routing system
  */
 class SearchController extends Controller
 {
@@ -93,7 +92,7 @@ class SearchController extends Controller
         $results = $this->solrService->searchObjects($searchParams);
 
         // Format the search results for the JSON response.
-        // GuzzleSolrService returns: ['objects' => [], 'facets' => [], 'total' => int, 'execution_time_ms' => float]
+        // GuzzleSolrService returns: ['objects' => [], 'facets' => [], 'total' => int, 'execution_time_ms' => float].
         $formattedResults = array_map(
             function ($object) {
                 return [

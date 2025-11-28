@@ -41,7 +41,6 @@ use OCP\IRequest;
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @psalm-suppress UnusedClass - This controller is registered via routes.php and used by Nextcloud's routing system
  */
 class FileExtractionController extends Controller
 {
@@ -146,7 +145,7 @@ class FileExtractionController extends Controller
             // Get chunks for this file.
             $chunks = $this->chunkMapper->findBySource(sourceType: 'file', sourceId: $id);
 
-            if (empty($chunks)) {
+            if (empty($chunks) === true) {
                 return new JSONResponse(
                         data: [
                             'success' => false,
@@ -462,7 +461,7 @@ class FileExtractionController extends Controller
     public function cleanup(): JSONResponse
     {
         try {
-            // Note: cleanupInvalidEntries not available in TextExtractionService
+            // Note: cleanupInvalidEntries not available in TextExtractionService.
             return new JSONResponse(
                     data: [
                         'success' => true,
@@ -513,7 +512,7 @@ class FileExtractionController extends Controller
     public function fileTypes(): JSONResponse
     {
         try {
-            // Note: getFileTypeStats not available in TextExtractionService
+            // Note: getFileTypeStats not available in TextExtractionService.
             $types = [];
 
             return new JSONResponse(

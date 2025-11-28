@@ -47,10 +47,9 @@ use Psr\Log\LoggerInterface;
  * @author    Conduction b.v. <info@conduction.nl>
  * @license   AGPL-3.0-or-later
  * @link      https://github.com/OpenCatalogi/OpenRegister
- * @version   1.0.0
+ * @version   GIT: <git_id>
  * @copyright 2024 Conduction b.v.
  *
- * @psalm-suppress UnusedClass - This controller is registered via routes.php and used by Nextcloud's routing system
  */
 class NamesController extends Controller
 {
@@ -386,12 +385,6 @@ class NamesController extends Controller
      *
      * @throws \Exception If name lookup fails
      *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
-     * @PublicPage
-     *
      * @psalm-return JSONResponse<
      *     200|404|500,
      *     array{
@@ -484,12 +477,6 @@ class NamesController extends Controller
      * ADMINISTRATIVE ENDPOINT**: Provides cache performance insights
      * for monitoring and optimization.
      *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
-     * @PublicPage
-     *
      * @return JSONResponse Cache statistics and performance data
      *
      * @psalm-return JSONResponse<
@@ -565,12 +552,6 @@ class NamesController extends Controller
      *
      * ADMINISTRATIVE ENDPOINT**: Triggers manual cache warmup
      * for improved performance after system maintenance.
-     *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
-     * @PublicPage
      *
      * @return JSONResponse Warmup results with performance data
      *

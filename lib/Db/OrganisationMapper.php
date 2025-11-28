@@ -53,7 +53,6 @@ use Symfony\Component\Uid\Uuid;
  * @method         Organisation findEntity(IQueryBuilder $query)
  * @method         Organisation[] findAll(int|null $limit = null, int|null $offset = null)
  * @method         list<Organisation> findEntities(IQueryBuilder $query)
- * @psalm-suppress LessSpecificImplementedReturnType - @method annotation is correct, parent returns list<T>
  */
 class OrganisationMapper extends QBMapper
 {
@@ -120,7 +119,6 @@ class OrganisationMapper extends QBMapper
          * @var Organisation $oldEntity
          */
         /*
-         * @psalm-suppress UndefinedMethod - parent::find exists on QBMapper
          */
         $oldEntity = parent::find($entity->getId());
 
@@ -992,7 +990,7 @@ class OrganisationMapper extends QBMapper
         $depth   = 0;
         $current = $nodeUuid;
 
-        while (isset($parentMap[$current]) === true && $current !== $rootUuid && $depth < 20) {
+        while (($parentMap[$current] ?? null) !== null && ($current !== $rootUuid) === true && ($depth < 20) === true) {
             $depth++;
             $current = $parentMap[$current];
         }

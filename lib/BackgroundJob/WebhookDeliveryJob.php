@@ -32,7 +32,6 @@ use Psr\Log\LoggerInterface;
  * This job handles asynchronous webhook delivery, particularly for retries
  * after failed delivery attempts.
  *
- * @psalm-suppress UnusedClass - This background job is registered and instantiated by Nextcloud's job system
  */
 class WebhookDeliveryJob extends QueuedJob
 {
@@ -67,7 +66,6 @@ class WebhookDeliveryJob extends QueuedJob
      * @param WebhookService  $webhookService Webhook service
      * @param LoggerInterface $logger         Logger
      *
-     * @psalm-suppress PossiblyUnusedMethod - Constructor is called by Nextcloud's job system via dependency injection
      */
     public function __construct(
         ITimeFactory $time,
@@ -94,7 +92,6 @@ class WebhookDeliveryJob extends QueuedJob
      *
      * @return void
      *
-     * @psalm-suppress PossiblyUnusedMethod - This method is called by Nextcloud's job system when the job executes
      */
     protected function run($argument): void
     {

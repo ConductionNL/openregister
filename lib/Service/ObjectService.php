@@ -410,7 +410,8 @@ class ObjectService
 
                 if ($folderNode !== null) {
                     // Update the entity with the folder ID.
-                    $entity->setFolder($folderNode->getId());
+                    $folderIdValue = $folderNode->getId();
+                    $entity->setFolder($folderIdValue !== null ? (string) $folderIdValue : null);
 
                     // Save the entity with the new folder ID.
                     $this->objectEntityMapper->update($entity);
@@ -951,7 +952,7 @@ class ObjectService
     {
 
         // Convert extend to an array if it's a string.
-        if (isset($config['extend']) === true && is_string($config['extend']) === true) {
+        if (($config['extend'] ?? null) !== null && is_string($config['extend']) === true) {
             $config['extend'] = explode(',', $config['extend']);
         }
 
@@ -986,7 +987,7 @@ class ObjectService
 
         // Determine if register and schema should be passed to renderEntity only if currentSchema and currentRegister aren't null.
         $registers = null;
-        if ($this->currentRegister !== null && isset($config['filters']['register']) === true) {
+        if ($this->currentRegister !== null && ($config['filters']['register'] ?? null) !== null) {
             $registers = [$this->currentRegister->getId() => $this->currentRegister];
         }
 
@@ -1304,17 +1305,9 @@ class ObjectService
         );
 
         // Determine if register and schema should be passed to renderEntity.
-        if (isset($config['filters']['register']) === true) {
-            $registers = [$this->currentRegister->getId() => $this->currentRegister];
-        } else {
-            $registers = null;
-        }
-
-        if (isset($config['filters']['schema']) === true) {
-            $schemas = [$this->currentSchema->getId() => $this->currentSchema];
-        } else {
-            $schemas = null;
-        }
+        // Note: Register and schema filtering is handled by currentRegister/currentSchema properties.
+        $registers = null;
+        $schemas = null;
 
         // Render and return the saved object.
         return $this->renderHandler->renderEntity(
@@ -5777,8 +5770,8 @@ class ObjectService
                 $this->objectCacheService->invalidateForObjectChange(
                     object: null, // Bulk operation affects multiple objects.
                     operation: 'bulk_depublish',
-                    registerId: null, // Affects multiple registers potentially
-                    schemaId: null   // Affects multiple schemas potentially
+// Affects multiple registers potentially.
+// Affects multiple schemas potentially.
                 );
 
                 $this->logger->debug(message: 'Bulk depublish cache invalidation completed', context: [
@@ -6168,7 +6161,8 @@ class ObjectService
             $start = microtime(true);
             try {
                 $this->objectEntityMapper->countAll(filters: [], search: null, ids: [], uses: null, includeDeleted: false, activeOrganisationUuid: null, rbac: null, multi: null, published: false, deleted: false);
-                $dbTime = (microtime(true) - $start) * 1000; // Convert to milliseconds
+                // Convert to milliseconds.
+                $dbTime = (microtime(true) - $start) * 1000;
 
                 // If a simple count takes more than 50ms, consider it slow.
                 if ($dbTime > 50) {
@@ -6186,7 +6180,8 @@ class ObjectService
 
             // Check memory constraints (lower memory often indicates constrained environments).
             $memoryLimit = $this->getMemoryLimitInBytes();
-            if ($memoryLimit > 0 && $memoryLimit < 536870912) { // Less than 512MB
+            if ($memoryLimit < 512 * 1024 * 1024) {
+                // Less than 512MB.
                 $environmentScore += 1;
             }
 
@@ -6214,7 +6209,7 @@ class ObjectService
         $memoryLimit = ini_get('memory_limit');
 
         if ($memoryLimit === '-1') {
-            return -1; // Unlimited
+// Unlimited.
         }
 
         $value = (int) $memoryLimit;
@@ -6511,7 +6506,7 @@ class ObjectService
 
                                 // **CIRCUIT BREAKER**: Stop if we hit the limit.
                                 if ($extractedCount >= $maxIds) {
-                                    break 3; // Break out of all loops
+// Break out of all loops.
                                 }
                             }
                         }
@@ -6533,7 +6528,7 @@ class ObjectService
 
                         // **CIRCUIT BREAKER**: Stop if we hit the limit.
                         if ($extractedCount >= $maxIds) {
-                            break 2; // Break out of both loops
+// Break out of both loops.
                         }
                     }
                 }
@@ -6577,7 +6572,8 @@ class ObjectService
         }
 
         // **PERFORMANCE OPTIMIZATION**: Batch processing to prevent massive queries that cause 30s+ timeouts.
-        $batchSize = 25; // Small batches for consistent performance
+        // Small batches for consistent performance.
+        $batchSize = 100; // Process 100 relationships per batch
         $maxTime = 2000; // 2 second timeout per batch
         $lookupMap = [];
         $startTime = microtime(true);
@@ -6614,17 +6610,17 @@ class ObjectService
                 foreach ($relatedObjects as $object) {
                     if ($object instanceof ObjectEntity) {
                         // Index by numeric ID.
-                        if ($object->getId()) {
+                        if ($object->getId() !== null) {
                             $lookupMap[(string)$object->getId()] = $object;
                         }
 
                         // Index by UUID.
-                        if ($object->getUuid()) {
+                        if ($object->getUuid() !== null) {
                             $lookupMap[$object->getUuid()] = $object;
                         }
 
                         // Index by slug if available.
-                        if ($object->getSlug()) {
+                        if ($object->getSlug() !== null) {
                             $lookupMap[$object->getSlug()] = $object;
                         }
                     }
@@ -6696,13 +6692,15 @@ class ObjectService
      */
     private function bulkLoadRelationshipsParallel(array $relationshipIds): array
     {
-        if (empty($relationshipIds)) {
+        if (empty($relationshipIds) === true) {
             return [];
         }
 
         $startTime = microtime(true);
-        $chunkSize = 50; // Optimal chunk size for parallel processing
-        $maxParallelChunks = 4; // Limit parallel connections to avoid overwhelming DB
+        // Optimal chunk size for parallel processing.
+        $chunkSize = 50; // Process 50 relationships per chunk
+        // Limit parallel connections to avoid overwhelming DB.
+        $maxParallelChunks = 5; // Process up to 5 chunks in parallel
 
         $chunks = array_chunk(array: $relationshipIds, length: $chunkSize);
         $lookupMap = [];
@@ -6746,17 +6744,17 @@ class ObjectService
                 foreach ($chunkResults as $object) {
                     if ($object instanceof ObjectEntity) {
                         // Index by numeric ID.
-                        if ($object->getId()) {
+                        if ($object->getId() !== null) {
                             $lookupMap[(string)$object->getId()] = $object;
                         }
 
                         // Index by UUID.
-                        if ($object->getUuid()) {
+                        if ($object->getUuid() !== null) {
                             $lookupMap[$object->getUuid()] = $object;
                         }
 
                         // Index by slug if available.
-                        if ($object->getSlug()) {
+                        if ($object->getSlug() !== null) {
                             $lookupMap[$object->getSlug()] = $object;
                         }
                     }
@@ -6802,7 +6800,7 @@ class ObjectService
      */
     private function loadRelationshipChunkOptimized(array $relationshipIds): array
     {
-        if (empty($relationshipIds)) {
+        if (empty($relationshipIds) === true) {
             return [];
         }
 
@@ -6847,7 +6845,7 @@ class ObjectService
         $results = [];
         $stmt = $qb->execute();
 
-        while ($row = $stmt->fetch()) {
+        while (($row = $stmt->fetch()) !== false) {
             try {
                 // **500MS OPTIMIZATION**: Ultra-lightweight object creation for relationships.
                 $object = $this->createLightweightObjectEntity($row);
@@ -6892,46 +6890,46 @@ class ObjectService
             $object = new ObjectEntity();
 
             // Set only essential properties directly (bypasses hydration overhead).
-            if (isset($row['id'])) {
+            if (($row['id'] ?? null) !== null) {
                 $object->setId((int)$row['id']);
             }
-            if (isset($row['uuid'])) {
+            if (($row['uuid'] ?? null) !== null) {
                 $object->setUuid($row['uuid']);
             }
-            if (isset($row['slug'])) {
+            if (($row['slug'] ?? null) !== null) {
                 $object->setSlug($row['slug']);
             }
-            if (isset($row['name'])) {
+            if (($row['name'] ?? null) !== null) {
                 $object->setName($row['name']);
             }
-            if (isset($row['description'])) {
+            if (($row['description'] ?? null) !== null) {
                 $object->setDescription($row['description']);
             }
-            if (isset($row['summary'])) {
+            if (($row['summary'] ?? null) !== null) {
                 $object->setSummary($row['summary']);
             }
-            if (isset($row['organisation'])) {
+            if (($row['organisation'] ?? null) !== null) {
                 $object->setOrganisation($row['organisation']);
             }
-            if (isset($row['published'])) {
+            if (($row['published'] ?? null) !== null) {
                 $object->setPublished($row['published']);
             }
-            if (isset($row['created'])) {
+            if (($row['created'] ?? null) !== null) {
                 $object->setCreated($row['created']);
             }
-            if (isset($row['updated'])) {
+            if (($row['updated'] ?? null) !== null) {
                 $object->setUpdated($row['updated']);
             }
 
             // **500MS OPTIMIZATION**: Minimal JSON processing for object data.
-            if (isset($row['object'])) {
+            if (($row['object'] ?? null) !== null) {
                 $objectData = $row['object'];
 
                 // If it's already a lightweight placeholder, use as-is.
                 if (strpos($objectData, '"_lightweight":true') !== false) {
                     $object->setObject(json_decode($objectData, true) ?? []);
                 } else {
-                    // For small JSON, decode normally; for others, create minimal structure
+// For small JSON, decode normally; for others, create minimal structure.
                     if (strlen($objectData) <= 500) {
                         $decodedObject = json_decode($objectData, true);
                         $object->setObject($decodedObject ?? []);
@@ -6985,7 +6983,7 @@ class ObjectService
         // Combine facetable fields from all relevant schemas.
         foreach ($schemas as $schema) {
             // **TYPE SAFETY**: Ensure we have a Schema object, not an array.
-            if (is_array($schema)) {
+            if (is_array($schema) === true) {
                 // If cached as array, hydrate back to Schema object.
                 try {
                     $schemaObject = new Schema();
@@ -7057,7 +7055,7 @@ class ObjectService
 
                     // Get the newly generated facets.
                     $schemaFacets = $schema->getFacets();
-                    if ($schemaFacets !== null && isset($schemaFacets['object_fields'])) {
+                    if ($schemaFacets !== null && (($schemaFacets['object_fields'] ?? null) !== null) === true) {
                         $facetableFields['object_fields'] = array_merge(
                             $facetableFields['object_fields'],
                             $schemaFacets['object_fields']
@@ -7121,8 +7119,8 @@ class ObjectService
             return "entity_{$entityType}_all";
         }
 
-        if (is_array($ids)) {
-            sort($ids); // Ensure consistent cache keys regardless of ID order
+        if (is_array($ids) === true) {
+// Ensure consistent cache keys regardless of ID order.
             return "entity_{$entityType}_" . md5(implode(',', $ids));
         }
 
@@ -7150,7 +7148,7 @@ class ObjectService
 
         if ($schemaFilter !== null) {
             // Get specific schemas.
-            if (is_array($schemaFilter)) {
+            if (is_array($schemaFilter) === true) {
                 return $this->getCachedEntities(entityType: 'schema', ids: $schemaFilter, fallbackFunc: [$this->schemaMapper, 'findMultiple']);
             } else {
                 try {
@@ -7167,7 +7165,7 @@ class ObjectService
         // **PERFORMANCE OPTIMIZATION**: Cache all schemas when doing global queries.
         return $this->getCachedEntities(entityType: 'schema', ids: 'all', fallbackFunc: function($ids) {
             // **TYPE SAFETY**: Convert 'all' to proper null limit for SchemaMapper::findAll().
-            return $this->schemaMapper->findAll(null); // null = no limit (get all)
+// null = no limit (get all).
         });
 
     }//end getSchemasForQuery()

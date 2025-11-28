@@ -42,9 +42,6 @@ use OCP\IUserSession;
  * @package OCA\OpenRegister\Db
  *
  * @template-extends QBMapper<Configuration>
- *
- * @psalm-suppress MissingTemplateParam
- *
  * @method Configuration insert(Entity $entity)
  * @method Configuration update(Entity $entity)
  * @method Configuration insertOrUpdate(Entity $entity)
@@ -379,7 +376,6 @@ class ConfigurationMapper extends QBMapper
          * @var Configuration $entity
          */
         /*
-         * @psalm-suppress RedundantCondition - Runtime type check for defensive programming
          */
         if ($entity instanceof Configuration) {
             // Generate UUID if not set.
@@ -516,7 +512,7 @@ class ConfigurationMapper extends QBMapper
         $object = $this->find(id: $id);
 
         // Set or update the version.
-        if (isset($data['version']) === false) {
+        if (!isset($data['version'])) {
             $version    = explode('.', $object->getVersion());
             $version[2] = ((int) $version[2] + 1);
             $object->setVersion(implode('.', $version));

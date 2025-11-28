@@ -197,7 +197,7 @@ class SchemaService
 
             foreach ($objectData as $propertyName => $propertyValue) {
                 // Track usage count.
-                if (isset($usageStats['counts'][$propertyName]) === false) {
+                if (!isset($usageStats['counts'][$propertyName])) {
                     $usageStats['counts'][$propertyName] = 0;
                 }
 
@@ -211,7 +211,7 @@ class SchemaService
                 // Analyze data type and characteristics.
                 $propertyAnalysis = $this->analyzePropertyValue($propertyValue);
 
-                if (isset($discoveredProperties[$propertyName]) === false) {
+                if (!isset($discoveredProperties[$propertyName])) {
                     $discoveredProperties[$propertyName] = [
                         'name'             => $propertyName,
                         'types'            => [],
@@ -242,7 +242,7 @@ class SchemaService
         foreach ($usageStats['counts'] as $propertyName => $count) {
             $usageStats['percentages'][$propertyName] = round(($count / $totalObjects) * 100, 2);
 
-            if (isset($discoveredProperties[$propertyName]) === true) {
+            if (($discoveredProperties[$propertyName] ?? null) !== null) {
                 $discoveredProperties[$propertyName]['usage_percentage'] = $usageStats['percentages'][$propertyName];
             }
         }
@@ -497,16 +497,16 @@ class SchemaService
         }
 
         // Update length ranges.
-        if (isset($newAnalysis['max_length']) === true && $newAnalysis['max_length'] > $existingAnalysis['max_length']) {
+        if (($newAnalysis['max_length'] ?? null) !== null && $newAnalysis['max_length'] > $existingAnalysis['max_length']) {
             $existingAnalysis['max_length'] = $newAnalysis['max_length'];
         }
 
-        if (isset($newAnalysis['min_length']) === true && $newAnalysis['min_length'] < $existingAnalysis['min_length']) {
+        if (($newAnalysis['min_length'] ?? null) !== null && $newAnalysis['min_length'] < $existingAnalysis['min_length']) {
             $existingAnalysis['min_length'] = $newAnalysis['min_length'];
         }
 
         // Merge detected formats (if consistent patterns emerge).
-        if (isset($newAnalysis['detected_format']) === true && $newAnalysis['detected_format'] !== null) {
+        if (($newAnalysis['detected_format'] ?? null) !== null && ($newAnalysis['detected_format'] !== null) === true) {
             $existingAnalysis['detected_format'] = $this->consolidateFormatDetection(
                 $existingAnalysis['detected_format'] ?? null,
                 $newAnalysis['detected_format']
@@ -538,7 +538,7 @@ class SchemaService
         }
 
         // Merge array structure analysis.
-        if ($newAnalysis['array_structure']) {
+        if ($newAnalysis['array_structure'] === true) {
             if (!$existingAnalysis['array_structure']) {
                 $existingAnalysis['array_structure'] = $newAnalysis['array_structure'];
             }
@@ -635,7 +635,7 @@ class SchemaService
      */
     private function analyzezArrayStructure(array $array): array
     {
-        if (empty($array)) {
+        if (empty($array) === true) {
             return ['type' => 'empty', 'item_types' => []];
         }
 
@@ -681,7 +681,7 @@ class SchemaService
      */
     private function analyzeObjectStructure($object): array
     {
-        if (is_object($object)) {
+        if (is_object($object) === true) {
             $object = get_object_vars($object);
         }
 
@@ -737,12 +737,12 @@ class SchemaService
 
         foreach ($discoveredProperties as $propertyName => $analysis) {
             // Skip properties that already exist in the schema.
-            if (in_array($propertyName, $existingPropertyNames)) {
+            if (in_array($propertyName, $existingPropertyNames) === true) {
                 continue;
             }
 
             // Skip internal/metadata properties.
-            if ($this->isInternalProperty($propertyName)) {
+            if ($this->isInternalProperty($propertyName) === true) {
                 continue;
             }
 
@@ -784,20 +784,20 @@ class SchemaService
             }
 
             // Handle enum-like properties.
-            if ($this->detectEnumLike($analysis)) {
+            if ($this->detectEnumLike($analysis) === true) {
                 $suggestion['type']        = 'string';
                 $suggestion['enum']        = $this->extractEnumValues($analysis['examples']);
                 $suggestion['description'] = 'Enum-like property with predefined values';
             }
 
             // Handle nested objects.
-            if (!empty($analysis['object_structure']) && $analysis['object_structure']['type'] === 'object') {
+            if (!empty($analysis['object_structure']) === true && $analysis['object_structure']['type'] === 'object') {
                 $suggestion['type']       = 'object';
                 $suggestion['properties'] = $this->generateNestedProperties($analysis['object_structure']);
             }
 
             // Handle arrays.
-            if (!empty($analysis['array_structure']) && $analysis['array_structure']['type'] === 'list') {
+            if (!empty($analysis['array_structure']) === true && $analysis['array_structure']['type'] === 'list') {
                 $suggestion['type']  = 'array';
                 $suggestion['items'] = $this->generateArrayItemType($analysis['array_structure']);
             }
@@ -915,7 +915,7 @@ class SchemaService
 
         // Type mismatch check.
         $currentType = $currentConfig['type'] ?? null;
-        if ($currentType && $currentType !== $recommendedType) {
+        if (($currentType !== null) === true && $currentType !== $recommendedType) {
             $issues[]      = "type_mismatch";
             $suggestions[] = [
                 'type'        => 'type',
@@ -928,11 +928,11 @@ class SchemaService
 
         // Missing constraints for strings.
         if ($recommendedType === 'string' || $currentType === 'string') {
-            $actualType    = $currentType ?: $recommendedType;
+            $actualType    = $currentType === true ?: $recommendedType;
             $suggestConfig = [];
 
             // Check for missing maxLength.
-            if (isset($analysis['max_length']) && $analysis['max_length'] > 0) {
+            if (($analysis['max_length'] ?? null) !== null && $analysis['max_length'] > 0) {
                 $currentMaxLength = $currentConfig['maxLength'] ?? null;
                 if ($currentMaxLength === null || $currentMaxLength === 0) {
                     $issues[] = "missing_max_length";
@@ -958,7 +958,7 @@ class SchemaService
             }//end if
 
             // Check for missing format.
-            if (isset($analysis['detected_format']) && $analysis['detected_format'] !== null && $analysis['detected_format'] !== '') {
+            if (($analysis['detected_format'] ?? null) !== null && ($analysis['detected_format'] !== null) === true && ($analysis['detected_format'] !== '') === true) {
                 $currentFormat = $currentConfig['format'] ?? null;
                 if ($currentFormat === null || $currentFormat === '') {
                     $issues[]      = "missing_format";
@@ -991,9 +991,9 @@ class SchemaService
 
         // Missing constraints for numbers.
         if ($recommendedType === 'number' || $recommendedType === 'integer' || $currentType === 'number' || $currentType === 'integer') {
-            $actualType = $currentType ?: $recommendedType;
+            $actualType = $currentType === true ?: $recommendedType;
 
-            if (isset($analysis['numeric_range'])) {
+            if (($analysis['numeric_range'] ?? null) !== null) {
                 $range = $analysis['numeric_range'];
 
                 // Check for missing minimum.
@@ -1061,7 +1061,7 @@ class SchemaService
         // Check for enum-like patterns.
         if ($this->detectEnumLike($analysis) === true) {
             $currentEnum = $currentConfig['enum'] ?? null;
-            if ($currentEnum === null || empty($currentEnum)) {
+            if ($currentEnum === null || empty($currentEnum) === true) {
                 $issues[]      = "missing_enum";
                 $enumValues    = $this->extractEnumValues($analysis['examples']);
                 $suggestions[] = [
@@ -1150,16 +1150,16 @@ class SchemaService
 
         // Check for boolean-like string patterns.
         $stringPatterns = $analysis['string_patterns'] ?? [];
-        if (in_array('boolean_string', $stringPatterns, true)) {
+        if (in_array('boolean_string', $stringPatterns, true) === true) {
             return 'boolean';
         }
 
         // Check for numeric string patterns.
-        if (in_array('integer_string', $stringPatterns, true)) {
+        if (in_array('integer_string', $stringPatterns, true) === true) {
             return 'integer';
         }
 
-        if (in_array('float_string', $stringPatterns, true)) {
+        if (in_array('float_string', $stringPatterns, true) === true) {
             return 'number';
         }
 
@@ -1170,11 +1170,11 @@ class SchemaService
             switch ($primaryType) {
                 case 'string':
                     // Check if it's a numeric string.
-                    if (in_array('integer_string', $stringPatterns, true)) {
+                    if (in_array('integer_string', $stringPatterns, true) === true) {
                         return 'integer';
                     }
 
-                    if (in_array('float_string', $stringPatterns, true)) {
+                    if (in_array('float_string', $stringPatterns, true) === true) {
                         return 'number';
                     }
                     return 'string';
@@ -1203,11 +1203,11 @@ class SchemaService
         // Check pattern consistency for string-dominated fields.
         if ($dominantType === 'string') {
             // If most values are consistently numeric strings, recommend number/integer.
-            if (in_array('integer_string', $stringPatterns, true)
+            if (in_array('integer_string', $stringPatterns, true) === true
                 && !in_array('float_string', $stringPatterns, true)
             ) {
                 return 'integer';
-            } else if (in_array('float_string', $stringPatterns, true)) {
+            } else if (in_array('float_string', $stringPatterns, true) === true) {
                 return 'number';
             }
 
@@ -1258,7 +1258,7 @@ class SchemaService
         // If we have relatively few unique values compared to total examples.
         // and all examples are strings, likely enum-like.
         return $uniqueCount <= ($totalExamples / 2) &&
-               !empty($analysis['types']) &&
+               !empty($analysis['types']) === true &&
                $analysis['types'][0] === 'string';
 
     }//end detectEnumLike()
@@ -1297,7 +1297,7 @@ class SchemaService
     {
         $properties = [];
 
-        if (isset($objectStructure['keys'])) {
+        if (($objectStructure['keys'] ?? null) !== null) {
             foreach ($objectStructure['keys'] as $key) {
                 $properties[$key] = [
                     'type'        => 'string',
@@ -1321,7 +1321,7 @@ class SchemaService
      */
     private function generateArrayItemType(array $arrayStructure): array
     {
-        if (isset($arrayStructure['item_types'])) {
+        if (($arrayStructure['item_types'] ?? null) !== null) {
             $primaryType = array_key_first($arrayStructure['item_types']);
 
             switch ($primaryType) {

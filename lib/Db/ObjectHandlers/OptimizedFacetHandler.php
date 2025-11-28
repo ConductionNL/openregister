@@ -90,7 +90,7 @@ class OptimizedFacetHandler
         // Generate cache key for this facet combination.
         $cacheKey = $this->generateCacheKey($facetConfig, $baseQuery);
 
-        if (isset($this->facetCache[$cacheKey]) === true) {
+        if (($this->facetCache[$cacheKey] ?? null) !== null) {
             return $this->facetCache[$cacheKey];
         }
 
@@ -205,7 +205,7 @@ class OptimizedFacetHandler
         $result = $queryBuilder->executeQuery();
         $buckets = [];
 
-        while ($row = $result->fetch()) {
+        while (($row = $result->fetch()) !== false) {
             $key = $row[$field];
             $label = $this->getFieldLabel($field, $key);
 
@@ -272,8 +272,8 @@ class OptimizedFacetHandler
                 )
             )
             ->groupBy('field_value')
-            ->orderBy('doc_count', 'DESC')
-            ->setMaxResults(50); // Limit results for performance
+            ->orderBy('doc_count', 'DESC');
+        // Limit results for performance.
 
         // Apply optimized base filters.
         $this->applyOptimizedBaseFilters($queryBuilder, $baseQuery);
@@ -281,7 +281,7 @@ class OptimizedFacetHandler
         $result = $queryBuilder->executeQuery();
         $buckets = [];
 
-        while ($row = $result->fetch()) {
+        while (($row = $result->fetch()) !== false) {
             $key = $row['field_value'];
             if ($key !== null && $key !== '') {
                 $buckets[] = [
@@ -321,18 +321,18 @@ class OptimizedFacetHandler
         // Apply filters in order of index selectivity (most selective first).
 
         // 1. Most selective: ID-based filters.
-        if (isset($baseQuery['_ids']) && is_array($baseQuery['_ids']) && !empty($baseQuery['_ids'])) {
+        if (($baseQuery['_ids'] ?? null) !== null && is_array($baseQuery['_ids']) === true && !empty($baseQuery['_ids']) === false) {
             $queryBuilder->andWhere(
                 $queryBuilder->expr()->in('id', $queryBuilder->createNamedParameter($baseQuery['_ids'], \Doctrine\DBAL\Connection::PARAM_INT_ARRAY))
             );
         }
 
         // 2. High selectivity: register/schema filters.
-        if (isset($baseQuery['@self']['register'])) {
+        if (($baseQuery['@self']['register'] ?? null) !== null) {
             $queryBuilder->andWhere($queryBuilder->expr()->eq('register', $queryBuilder->createNamedParameter($baseQuery['@self']['register'])));
         }
 
-        if (isset($baseQuery['@self']['schema'])) {
+        if (($baseQuery['@self']['schema'] ?? null) !== null) {
             $queryBuilder->andWhere($queryBuilder->expr()->eq('schema', $queryBuilder->createNamedParameter($baseQuery['@self']['schema'])));
         }
 
@@ -358,7 +358,7 @@ class OptimizedFacetHandler
         }
 
         // 4. Low selectivity: organization filters.
-        if (isset($baseQuery['@self']['organisation'])) {
+        if (($baseQuery['@self']['organisation'] ?? null) !== null) {
             $queryBuilder->andWhere($queryBuilder->expr()->eq('organisation', $queryBuilder->createNamedParameter($baseQuery['@self']['organisation'])));
         }
 
@@ -389,11 +389,11 @@ class OptimizedFacetHandler
             ->from('openregister_objects');
 
         // Apply only the most selective filters for estimation.
-        if (isset($baseQuery['@self']['register'])) {
+        if (($baseQuery['@self']['register'] ?? null) !== null) {
             $queryBuilder->andWhere($queryBuilder->expr()->eq('register', $queryBuilder->createNamedParameter($baseQuery['@self']['register'])));
         }
 
-        if (isset($baseQuery['@self']['schema'])) {
+        if (($baseQuery['@self']['schema'] ?? null) !== null) {
             $queryBuilder->andWhere($queryBuilder->expr()->eq('schema', $queryBuilder->createNamedParameter($baseQuery['@self']['schema'])));
         }
 
@@ -446,7 +446,7 @@ class OptimizedFacetHandler
     private function getFieldLabel(string $field, mixed $value): string
     {
         // For register and schema fields, try to get the actual name from database.
-        if ($field === 'register' && is_numeric($value)) {
+        if ($field === 'register' && is_numeric($value) === true) {
             try {
                 $qb = $this->db->getQueryBuilder();
                 $qb->select('title')
@@ -454,13 +454,13 @@ class OptimizedFacetHandler
                     ->where($qb->expr()->eq('id', $qb->createNamedParameter((int) $value)));
                 $result = $qb->executeQuery();
                 $title = $result->fetchOne();
-                return $title ? (string) $title : "Register $value";
+                return $title === true ? (string) $title : "Register $value";
             } catch (\Exception $e) {
                 return "Register $value";
             }
         }
 
-        if ($field === 'schema' && is_numeric($value)) {
+        if ($field === 'schema' && is_numeric($value) === true) {
             try {
                 $qb = $this->db->getQueryBuilder();
                 $qb->select('title')
@@ -468,7 +468,7 @@ class OptimizedFacetHandler
                     ->where($qb->expr()->eq('id', $qb->createNamedParameter((int) $value)));
                 $result = $qb->executeQuery();
                 $title = $result->fetchOne();
-                return $title ? (string) $title : "Schema $value";
+                return $title === true ? (string) $title : "Schema $value";
             } catch (\Exception $e) {
                 return "Schema $value";
             }

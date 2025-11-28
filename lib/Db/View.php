@@ -275,7 +275,7 @@ class View extends Entity implements JsonSerializable
      */
     private function getCreatedFormatted(): ?string
     {
-        if (isset($this->created) === true) {
+        if (($this->created ?? null) !== null) {
             return $this->created->format('c');
         }
 
@@ -291,7 +291,7 @@ class View extends Entity implements JsonSerializable
      */
     private function getUpdatedFormatted(): ?string
     {
-        if (isset($this->updated) === true) {
+        if (($this->updated ?? null) !== null) {
             return $this->updated->format('c');
         }
 
@@ -331,49 +331,49 @@ class View extends Entity implements JsonSerializable
      */
     public function hydrate(array $object): self
     {
-        if (isset($object['uuid']) === true) {
+        if (($object['uuid'] ?? null) !== null) {
             $this->setUuid($object['uuid']);
         } else {
             $this->setUuid(null);
         }
 
-        if (isset($object['name']) === true) {
+        if (($object['name'] ?? null) !== null) {
             $this->setName($object['name']);
         } else {
             $this->setName(null);
         }
 
-        if (isset($object['description']) === true) {
+        if (($object['description'] ?? null) !== null) {
             $this->setDescription($object['description']);
         } else {
             $this->setDescription(null);
         }
 
-        if (isset($object['owner']) === true) {
+        if (($object['owner'] ?? null) !== null) {
             $this->setOwner($object['owner']);
         } else {
             $this->setOwner(null);
         }
 
-        if (isset($object['isPublic']) === true) {
+        if (($object['isPublic'] ?? null) !== null) {
             $this->setIsPublic($object['isPublic']);
         } else {
             $this->setIsPublic(false);
         }
 
-        if (isset($object['isDefault']) === true) {
+        if (($object['isDefault'] ?? null) !== null) {
             $this->setIsDefault($object['isDefault']);
         } else {
             $this->setIsDefault(false);
         }
 
-        if (isset($object['query']) === true) {
+        if (($object['query'] ?? null) !== null) {
             $this->setQuery($object['query']);
         } else {
             $this->setQuery([]);
         }
 
-        if (isset($object['favoredBy']) === true) {
+        if (($object['favoredBy'] ?? null) !== null) {
             $this->setFavoredBy($object['favoredBy']);
         } else {
             $this->setFavoredBy([]);

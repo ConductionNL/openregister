@@ -77,7 +77,6 @@ class ExportService
      * @param IGroupManager      $groupManager       The group manager
      * @param ObjectService      $objectService      The object service
      *
-     * @psalm-suppress UnusedParam - objectEntityMapper and userManager kept for future use
      */
     public function __construct(
         ObjectEntityMapper $objectEntityMapper,
@@ -137,7 +136,6 @@ class ExportService
                     try {
                         $spreadsheet = $this->exportToExcel(register: $register, schema: $schema, filters: $filters);
                         /*
-                         * @psalm-suppress InvalidArgument
                          */
                         $resolve($spreadsheet);
                     } catch (\Throwable $e) {
@@ -201,7 +199,6 @@ class ExportService
                     try {
                         $csv = $this->exportToCsv(register: $register, schema: $schema, filters: $filters);
                         /*
-                         * @psalm-suppress InvalidArgument
                          */
                         $resolve($csv);
                     } catch (\Throwable $e) {
@@ -371,7 +368,6 @@ class ExportService
                 // Always use the property key as the header to ensure consistent data access.
                 $headers[$col] = $fieldName;
                 /*
-                 * @psalm-suppress StringIncrement - Intentional Excel column increment (B->C->D...).
                  */
                 $col++;
             }
@@ -435,7 +431,7 @@ class ExportService
             $objectArray = $object->getObjectArray();
 
             // Check if the field exists in the object array.
-            if (isset($objectArray[$fieldName]) === true) {
+            if (($objectArray[$fieldName] ?? null) !== null) {
                 $value = $objectArray[$fieldName];
 
                 // Handle DateTime objects (they come as ISO strings from getObjectArray).
@@ -479,7 +475,7 @@ class ExportService
             $objectArray = $object->getObjectArray();
 
             // Check if the field exists in the object array.
-            if (isset($objectArray[$fieldName]) === true) {
+            if (($objectArray[$fieldName] ?? null) !== null) {
                 $value = $objectArray[$fieldName];
 
                 // Handle DateTime objects (they come as ISO strings from getObjectArray).

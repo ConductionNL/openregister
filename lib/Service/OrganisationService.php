@@ -223,7 +223,7 @@ class OrganisationService
             $organisationConfig = $this->appConfig->getValueString('openregister', 'organisation', '');
 
             $organisationData = [];
-            if (empty($organisationConfig)) {
+            if (empty($organisationConfig) === true) {
                 $organisationData = [
                     'default_organisation'             => null,
                     'auto_create_default_organisation' => true,
@@ -973,10 +973,10 @@ class OrganisationService
         // Add admin group to all CRUD permissions for all entity types.
         $entityTypes = ['register', 'schema', 'object', 'view', 'agent', 'configuration', 'application'];
         foreach ($entityTypes as $entityType) {
-            if (isset($authorization[$entityType]) === true && is_array($authorization[$entityType]) === true) {
+            if (($authorization[$entityType] ?? null) !== null && is_array($authorization[$entityType]) === true) {
                 foreach (['create', 'read', 'update', 'delete'] as $action) {
-                    if (isset($authorization[$entityType][$action]) === true && is_array($authorization[$entityType][$action]) === true) {
-                        if (in_array($adminGroupId, $authorization[$entityType][$action]) === false) {
+                    if (($authorization[$entityType][$action] ?? null) !== null && is_array($authorization[$entityType][$action]) === true) {
+                        if (in_array($adminGroupId, $authorization[$entityType][$action], true) === false) {
                             $authorization[$entityType][$action][] = $adminGroupId;
                         }
                     }
@@ -987,8 +987,8 @@ class OrganisationService
         // Add admin group to special permissions.
         $specialPermissions = ['object_publish', 'agent_use', 'dashboard_view', 'llm_use'];
         foreach ($specialPermissions as $permission) {
-            if (isset($authorization[$permission]) === true && is_array($authorization[$permission]) === true) {
-                if (in_array($adminGroupId, $authorization[$permission]) === false) {
+            if (($authorization[$permission] ?? null) !== null && is_array($authorization[$permission]) === true) {
+                if (in_array($adminGroupId, $authorization[$permission], true) === false) {
                     $authorization[$permission][] = $adminGroupId;
                 }
             }
@@ -1024,10 +1024,10 @@ class OrganisationService
         // Check all entity types.
         $entityTypes = ['register', 'schema', 'object', 'view', 'agent', 'configuration', 'application'];
         foreach ($entityTypes as $entityType) {
-            if (isset($authorization[$entityType]) === true && is_array($authorization[$entityType]) === true) {
+            if (($authorization[$entityType] ?? null) !== null && is_array($authorization[$entityType]) === true) {
                 foreach (['create', 'read', 'update', 'delete'] as $action) {
-                    if (isset($authorization[$entityType][$action]) === true && is_array($authorization[$entityType][$action]) === true) {
-                        if (in_array($adminGroupId, $authorization[$entityType][$action]) === true) {
+                    if (($authorization[$entityType][$action] ?? null) !== null && is_array($authorization[$entityType][$action]) === true) {
+                        if (in_array($adminGroupId, $authorization[$entityType][$action], true) === true) {
                             return true;
                         }
                     }
@@ -1038,8 +1038,8 @@ class OrganisationService
         // Check special permissions.
         $specialPermissions = ['object_publish', 'agent_use', 'dashboard_view', 'llm_use'];
         foreach ($specialPermissions as $permission) {
-            if (isset($authorization[$permission]) === true && is_array($authorization[$permission]) === true) {
-                if (in_array($adminGroupId, $authorization[$permission]) === true) {
+            if (($authorization[$permission] ?? null) !== null && is_array($authorization[$permission]) === true) {
+                if (in_array($adminGroupId, $authorization[$permission], true) === true) {
                     return true;
                 }
             }
@@ -1191,31 +1191,31 @@ class OrganisationService
         $organisation = new Organisation();
 
         // Set all properties from cached data.
-        if (isset($cachedData['id']) === true) {
+        if (($cachedData['id'] ?? null) !== null) {
             $organisation->setId($cachedData['id']);
         }
 
-        if (isset($cachedData['uuid']) === true) {
+        if (($cachedData['uuid'] ?? null) !== null) {
             $organisation->setUuid($cachedData['uuid']);
         }
 
-        if (isset($cachedData['name']) === true) {
+        if (($cachedData['name'] ?? null) !== null) {
             $organisation->setName($cachedData['name']);
         }
 
-        if (isset($cachedData['description']) === true) {
+        if (($cachedData['description'] ?? null) !== null) {
             $organisation->setDescription($cachedData['description']);
         }
 
-        if (isset($cachedData['owner']) === true) {
+        if (($cachedData['owner'] ?? null) !== null) {
             $organisation->setOwner($cachedData['owner']);
         }
 
-        if (isset($cachedData['users']) === true) {
+        if (($cachedData['users'] ?? null) !== null) {
             $organisation->setUsers($cachedData['users']);
         }
 
-        if (isset($cachedData['created']) === true && $cachedData['created'] !== null) {
+        if (($cachedData['created'] ?? null) !== null) {
             // Convert string back to DateTime if needed.
             if (is_string($cachedData['created']) === true) {
                 $organisation->setCreated(new \DateTime($cachedData['created']));
@@ -1224,7 +1224,7 @@ class OrganisationService
             }
         }
 
-        if (isset($cachedData['updated']) === true && $cachedData['updated'] !== null) {
+        if (($cachedData['updated'] ?? null) !== null) {
             // Convert string back to DateTime if needed.
             if (is_string($cachedData['updated']) === true) {
                 $organisation->setUpdated(new \DateTime($cachedData['updated']));

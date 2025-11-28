@@ -41,7 +41,6 @@ use Psr\Log\LoggerInterface;
  * @license  EUPL-1.2
  * @link     https://github.com/ConductionNL/openregister
  *
- * @psalm-suppress UnusedClass - This controller is registered via routes.php and used by Nextcloud's routing system
  */
 class EndpointsController extends Controller
 {

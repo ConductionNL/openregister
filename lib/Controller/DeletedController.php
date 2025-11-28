@@ -34,7 +34,6 @@ use OCP\IUserSession;
  *
  * Controller for managing soft deleted objects
  *
- * @psalm-suppress UnusedClass - This controller is registered via routes.php and used by Nextcloud's routing system
  */
 class DeletedController extends Controller
 {
@@ -80,16 +79,16 @@ class DeletedController extends Controller
         $limit = (int) ($params['limit'] ?? $params['_limit'] ?? 20);
 
         $offset = null;
-        if (isset($params['offset']) === true) {
+        if (($params['offset'] ?? null) !== null) {
             $offset = (int) $params['offset'];
-        } else if (isset($params['_offset']) === true) {
+        } else if (($params['_offset'] ?? null) !== null) {
             $offset = (int) $params['_offset'];
         }
 
         $page = null;
-        if (isset($params['page']) === true) {
+        if (($params['page'] ?? null) !== null) {
             $page = (int) $params['page'];
-        } else if (isset($params['_page']) === true) {
+        } else if (($params['_page'] ?? null) !== null) {
             $page = (int) $params['_page'];
         }
 
@@ -103,7 +102,7 @@ class DeletedController extends Controller
 
         // Extract sort parameters.
         $sort = [];
-        if (isset($params['sort']) === true || isset($params['_sort']) === true) {
+        if (($params['sort'] ?? null) !== null || (($params['_sort'] ?? null) !== null) === true) {
             $sortField        = $params['sort'] ?? $params['_sort'] ?? 'deleted';
             $sortOrder        = $params['order'] ?? $params['_order'] ?? 'DESC';
             $sort[$sortField] = $sortOrder;
@@ -194,7 +193,7 @@ class DeletedController extends Controller
 
             // Calculate pagination.
             $pages = 1;
-            if (isset($params['limit']) === true && $params['limit'] > 0) {
+            if (($params['limit'] ?? null) !== null && ($params['limit'] > 0) === true) {
                 $pages = ceil($total / $params['limit']);
             }
 

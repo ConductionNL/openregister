@@ -39,7 +39,6 @@ use Psr\Log\LoggerInterface;
  * @version   GIT: <git_id>
  * @link      https://www.OpenRegister.app
  *
- * @psalm-suppress UnusedClass - This controller is registered via routes.php and used by Nextcloud's routing system
  */
 class SolrController extends Controller
 {
@@ -217,7 +216,7 @@ class SolrController extends Controller
             $result = $vectorService->hybridSearch(query: $query, solrFilters: $solrFilters, limit: $limit, weights: $weights, provider: $provider);
 
             // Ensure result is an array for spread operator.
-            $resultArray = is_array($result) ? $result : [];
+            $resultArray = is_array($result) === true ? $result : [];
 
             return new JSONResponse(
                     data: [
@@ -771,7 +770,7 @@ class SolrController extends Controller
             $result = $solrObjectService->vectorizeObject(object: $object, provider: $provider);
 
             // Ensure result is an array for spread operator.
-            $resultArray = is_array($result) ? $result : [];
+            $resultArray = is_array($result) === true ? $result : [];
 
             return new JSONResponse(
                     data: [
@@ -876,7 +875,7 @@ class SolrController extends Controller
             $result = $solrObjectService->vectorizeObjects(objects: $objects, provider: $provider);
 
             // Ensure result is an array for spread operator.
-            $resultArray = is_array($result) ? $result : [];
+            $resultArray = is_array($result) === true ? $result : [];
 
             return new JSONResponse(
                     data: [

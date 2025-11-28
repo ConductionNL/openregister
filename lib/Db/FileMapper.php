@@ -71,9 +71,8 @@ use OCP\IURLGenerator;
  * @method File[] findAll(int|null $limit = null, int|null $offset = null)
  * @method File[] findEntities(IQueryBuilder $query)
  *
- * @psalm-suppress ImplementedReturnTypeMismatch - FileMapper returns arrays, not Entity objects
- * @psalm-suppress ImplementedParamTypeMismatch - FileMapper uses Entity type for compatibility
- * @psalm-suppress LessSpecificImplementedReturnType - FileMapper returns arrays, not Entity objects
+
+
  */
 class FileMapper extends QBMapper
 {

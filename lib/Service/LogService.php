@@ -46,17 +46,14 @@ class LogService
      * @param RegisterMapper $registerMapper Register mapper (unused but kept for future use)
      * @param SchemaMapper   $schemaMapper   Schema mapper (unused but kept for future use)
      *
-     * @psalm-suppress UnusedParam - registerMapper and schemaMapper kept for future use
      */
     public function __construct(
         private readonly AuditTrailMapper $auditTrailMapper,
         private readonly ObjectEntityMapper $objectEntityMapper,
         /**
-         * @psalm-suppress UnusedProperty - Property kept for future use
          */
         private readonly RegisterMapper $registerMapper,
         /**
-         * @psalm-suppress UnusedProperty - Property kept for future use
          */
         private readonly SchemaMapper $schemaMapper
     ) {

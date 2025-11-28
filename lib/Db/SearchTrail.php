@@ -521,12 +521,12 @@ class SearchTrail extends Entity implements JsonSerializable
     public function jsonSerialize(): array
     {
         $created = null;
-        if (isset($this->created) === true) {
+        if (($this->created ?? null) !== null) {
             $created = $this->created->format('c');
         }
 
         $expires = null;
-        if (isset($this->expires) === true) {
+        if (($this->expires ?? null) !== null) {
             $expires = $this->expires->format('c');
         }
 

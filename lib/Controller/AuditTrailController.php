@@ -30,7 +30,6 @@ use OCP\IRequest;
  * Class AuditTrailController
  * Handles all audit trail related operations
  *
- * @psalm-suppress UnusedClass - This controller is registered via routes.php and used by Nextcloud's routing system
  */
 class AuditTrailController extends Controller
 {
@@ -81,25 +80,25 @@ class AuditTrailController extends Controller
         $params = $this->request->getParams();
 
         // Extract pagination parameters.
-        if (isset($params['limit']) === true) {
+        if (($params['limit'] ?? null) !== null) {
             $limit = (int) $params['limit'];
-        } else if (isset($params['_limit']) === true) {
+        } else if (($params['_limit'] ?? null) !== null) {
             $limit = (int) $params['_limit'];
         } else {
             $limit = 20;
         }
 
-        if (isset($params['offset']) === true) {
+        if (($params['offset'] ?? null) !== null) {
             $offset = (int) $params['offset'];
-        } else if (isset($params['_offset']) === true) {
+        } else if (($params['_offset'] ?? null) !== null) {
             $offset = (int) $params['_offset'];
         } else {
             $offset = null;
         }
 
-        if (isset($params['page']) === true) {
+        if (($params['page'] ?? null) !== null) {
             $page = (int) $params['page'];
-        } else if (isset($params['_page']) === true) {
+        } else if (($params['_page'] ?? null) !== null) {
             $page = (int) $params['_page'];
         } else {
             $page = null;
@@ -115,7 +114,7 @@ class AuditTrailController extends Controller
 
         // Extract sort parameters.
         $sort = [];
-        if (isset($params['sort']) === true || isset($params['_sort']) === true) {
+        if (($params['sort'] ?? null) !== null || (($params['_sort'] ?? null) !== null) === true) {
             $sortField        = $params['sort'] ?? $params['_sort'] ?? 'created';
             $sortOrder        = $params['order'] ?? $params['_order'] ?? 'DESC';
             $sort[$sortField] = $sortOrder;

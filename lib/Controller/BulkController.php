@@ -32,7 +32,6 @@ use Exception;
 /**
  * Bulk operations controller for OpenRegister
  *
- * @psalm-suppress UnusedClass - This controller is registered via routes.php and used by Nextcloud's routing system
  */
 class BulkController extends Controller
 {
@@ -101,7 +100,7 @@ class BulkController extends Controller
             $uuids = $data['uuids'] ?? [];
 
             // Validate input.
-            if (empty($uuids) || !is_array($uuids)) {
+            if (empty($uuids) === true || !is_array($uuids)) {
                 return new JSONResponse(data: ['error' => 'Invalid input. "uuids" array is required.'], statusCode: Http::STATUS_BAD_REQUEST);
             }
 
@@ -153,7 +152,7 @@ class BulkController extends Controller
             $datetime = $data['datetime'] ?? true;
 
             // Validate input.
-            if (empty($uuids) || !is_array($uuids)) {
+            if (empty($uuids) === true || !is_array($uuids)) {
                 return new JSONResponse(data: ['error' => 'Invalid input. "uuids" array is required.'], statusCode: Http::STATUS_BAD_REQUEST);
             }
 
@@ -218,7 +217,7 @@ class BulkController extends Controller
             $datetime = $data['datetime'] ?? true;
 
             // Validate input.
-            if (empty($uuids) || !is_array($uuids)) {
+            if (empty($uuids) === true || !is_array($uuids)) {
                 return new JSONResponse(data: ['error' => 'Invalid input. "uuids" array is required.'], statusCode: Http::STATUS_BAD_REQUEST);
             }
 
@@ -282,7 +281,7 @@ class BulkController extends Controller
             $objects = $data['objects'] ?? [];
 
             // Validate input.
-            if (empty($objects) || !is_array($objects)) {
+            if (empty($objects) === true || !is_array($objects)) {
                 return new JSONResponse(data: ['error' => 'Invalid input. "objects" array is required.'], statusCode: Http::STATUS_BAD_REQUEST);
             }
 

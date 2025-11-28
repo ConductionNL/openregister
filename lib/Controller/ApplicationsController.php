@@ -35,7 +35,6 @@ use Exception;
  *
  * @package OCA\OpenRegister\Controller
  *
- * @psalm-suppress UnusedClass - This controller is registered via routes.php and used by Nextcloud's routing system
  */
 class ApplicationsController extends Controller
 {
@@ -314,7 +313,7 @@ class ApplicationsController extends Controller
      */
     private function extractLimit(array $params): ?int
     {
-        if (isset($params['_limit']) === true) {
+        if (($params['_limit'] ?? null) !== null) {
             return (int) $params['_limit'];
         }
 
@@ -332,7 +331,7 @@ class ApplicationsController extends Controller
      */
     private function extractOffset(array $params): ?int
     {
-        if (isset($params['_offset']) === true) {
+        if (($params['_offset'] ?? null) !== null) {
             return (int) $params['_offset'];
         }
 
@@ -350,7 +349,7 @@ class ApplicationsController extends Controller
      */
     private function extractPage(array $params): ?int
     {
-        if (isset($params['_page']) === true) {
+        if (($params['_page'] ?? null) !== null) {
             return (int) $params['_page'];
         }
 

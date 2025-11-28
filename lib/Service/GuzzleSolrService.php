@@ -46,7 +46,7 @@ use GuzzleHttp\Client as GuzzleClient;
  * @author    OpenRegister Team
  * @license   AGPL-3.0-or-later
  * @link      https://github.com/OpenRegister/OpenRegister
- * @version   1.0.0
+ * @version   GIT: <git_id>
  * @copyright 2024 OpenRegister
  */
 class GuzzleSolrService
@@ -86,8 +86,6 @@ class GuzzleSolrService
      * Cached schema data to avoid repeated processing
      *
      * @var array|null
-     *
-     * @psalm-suppress UnusedProperty - Property kept for future caching optimization
      */
     private ?array $cachedSchemaData = null;
 
@@ -135,27 +133,11 @@ class GuzzleSolrService
     /**
      * @param IClientService $clientService HTTP client service (unused but kept for future use)
      * @param IConfig        $config       Nextcloud configuration (unused but kept for future use)
-     *
-     * @psalm-suppress UnusedParam - clientService and config kept for future use
-     */
-
-
-    /**
-     * @param IClientService $clientService HTTP client service (unused but kept for future use)
-     * @param IConfig        $config        Nextcloud configuration (unused but kept for future use)
-     *
-     * @psalm-suppress UnusedParam - clientService and config kept for future use
      */
     public function __construct(
         private readonly SettingsService $settingsService,
         private readonly LoggerInterface $logger,
-        /**
-         * @psalm-suppress UnusedProperty - Property kept for future use
-         */
         private readonly IClientService $clientService,
-        /**
-         * @psalm-suppress UnusedProperty - Property kept for future use
-         */
         private readonly IConfig $config,
         private readonly ?SchemaMapper $schemaMapper=null,
         private readonly ?RegisterMapper $registerMapper=null,
@@ -289,13 +271,13 @@ class GuzzleSolrService
      */
     public function buildSolrBaseUrl(): string
     {
-        if (isset($this->solrConfig['host']) === true) {
+        if (($this->solrConfig['host'] ?? null) !== null) {
             $host = $this->solrConfig['host'];
         } else {
             $host = 'localhost';
         }
 
-        if (isset($this->solrConfig['port']) === true) {
+        if (($this->solrConfig['port'] ?? null) !== null) {
             $port = $this->solrConfig['port'];
         } else {
             $port = null;
@@ -316,13 +298,13 @@ class GuzzleSolrService
         // Check if it's a Kubernetes service name (contains .svc.cluster.local).
         if (strpos($host, '.svc.cluster.local') !== false) {
             // Kubernetes service - don't append port, it's handled by the service.
-            if (isset($this->solrConfig['scheme']) === true) {
+            if (($this->solrConfig['scheme'] ?? null) !== null) {
                 $scheme = $this->solrConfig['scheme'];
             } else {
                 $scheme = 'http';
             }
 
-            if (isset($this->solrConfig['path']) === true) {
+            if (($this->solrConfig['path'] ?? null) !== null) {
                 $path = $this->solrConfig['path'];
             } else {
                 $path = '/solr';
@@ -337,13 +319,13 @@ class GuzzleSolrService
         } else {
             // Regular hostname - only append port if explicitly provided and not 0/null.
             if ($port !== null && $port > 0) {
-                if (isset($this->solrConfig['scheme']) === true) {
+                if (($this->solrConfig['scheme'] ?? null) !== null) {
                     $scheme = $this->solrConfig['scheme'];
                 } else {
                     $scheme = 'http';
                 }
 
-                if (isset($this->solrConfig['path']) === true) {
+                if (($this->solrConfig['path'] ?? null) !== null) {
                     $path = $this->solrConfig['path'];
                 } else {
                     $path = '/solr';
@@ -358,13 +340,13 @@ class GuzzleSolrService
                 );
             } else {
                 // No port provided or port is 0 - let the service handle it.
-                if (isset($this->solrConfig['scheme']) === true) {
+                if (($this->solrConfig['scheme'] ?? null) !== null) {
                     $scheme = $this->solrConfig['scheme'];
                 } else {
                     $scheme = 'http';
                 }
 
-                if (isset($this->solrConfig['path']) === true) {
+                if (($this->solrConfig['path'] ?? null) !== null) {
                     $path = $this->solrConfig['path'];
                 } else {
                     $path = '/solr';
@@ -390,7 +372,7 @@ class GuzzleSolrService
     private function isSolrConfigured(): bool
     {
         // Check if SOLR is enabled.
-        if (isset($this->solrConfig['enabled']) === true) {
+        if (($this->solrConfig['enabled'] ?? null) !== null) {
             $enabled = $this->solrConfig['enabled'];
         } else {
             $enabled = false;
@@ -654,9 +636,7 @@ class GuzzleSolrService
             } else {
                 // Clear all SOLR availability cache entries.
                 if (function_exists('apcu_delete') === true && class_exists('\APCUIterator') === true) {
-                    /*
-                     * @psalm-suppress UndefinedClass
-                     */
+                    /** @var \APCUIterator $iterator */
                     $iterator = new \APCUIterator('/^solr_availability_/');
                     apcu_delete($iterator);
                 }
@@ -816,7 +796,7 @@ class GuzzleSolrService
             $response = $this->httpClient->get($url, ['timeout' => 10]);
             $data     = json_decode((string) $response->getBody(), true);
 
-            return isset($data['cluster']['collections'][$collectionName]) === true;
+            return isset($data['cluster']['collections'][$collectionName]);
         } catch (\Exception $e) {
             $this->logger->error(
                     'Failed to check collection existence',
@@ -1214,7 +1194,7 @@ class GuzzleSolrService
                         'Document created for SOLR indexing',
                         [
                             'object_uuid'          => $object->getUuid(),
-                            'has_self_relations'   => isset($document['self_relations']),
+                            'has_self_relations'   => isset($document['self_relations']) === true,
                             'self_relations_value' => $document['self_relations'] ?? 'NOT_SET',
                             'self_relations_type'  => $this->getSelfRelationsType($document),
                             'self_relations_count' => $this->getSelfRelationsCount($document),
@@ -1561,7 +1541,7 @@ class GuzzleSolrService
             $extractedArrays = $this->extractArraysFromRelations($relations);
             foreach ($extractedArrays as $fieldName => $arrayValues) {
                 // Only enrich if the field is empty or doesn't exist in object data.
-                $fieldExists       = isset($objectData[$fieldName]) === true;
+                $fieldExists       = isset($objectData[$fieldName]);
                 $fieldIsEmptyArray = $fieldExists === true && is_array($objectData[$fieldName]) === true && empty($objectData[$fieldName]) === true;
                 if ($fieldExists === false || $fieldIsEmptyArray === true) {
                     $objectData[$fieldName] = $arrayValues;
@@ -1684,7 +1664,7 @@ class GuzzleSolrService
                     );
 
             foreach ($schemaProperties as $fieldName => $fieldDefinition) {
-                if (isset($objectData[$fieldName]) === false) {
+                if (!isset($objectData[$fieldName])) {
                     continue;
                 }
 
@@ -1960,7 +1940,7 @@ class GuzzleSolrService
                 $index     = $parts[1];
 
                 // Initialize array if not exists.
-                if (isset($arrays[$fieldName]) === false) {
+                if (!isset($arrays[$fieldName])) {
                     $arrays[$fieldName] = [];
                 }
 
@@ -2063,7 +2043,7 @@ class GuzzleSolrService
         $idFields = ['id', 'uuid', 'identifier', 'key', 'value'];
 
         foreach ($idFields as $field) {
-            if (isset($object[$field]) === true && is_string($object[$field]) === true) {
+            if (($object[$field] ?? null) !== null && is_string($object[$field]) === true) {
                 return $object[$field];
             }
         }
@@ -2092,9 +2072,9 @@ class GuzzleSolrService
             foreach ($files as $file) {
                 if (is_string($file) === true) {
                     $flattened[] = $file;
-                } else if (is_array($file) === true && isset($file['id']) === true) {
+                } else if (is_array($file) === true && (($file['id'] ?? null) !== null)) {
                     $flattened[] = (string) $file['id'];
-                } else if (is_array($file) === true && isset($file['uuid']) === true) {
+                } else if (is_array($file) === true && (($file['uuid'] ?? null) !== null)) {
                     $flattened[] = $file['uuid'];
                 }
             }
@@ -2290,7 +2270,7 @@ class GuzzleSolrService
 
         // Add metadata fields with self_ prefix for easy identification and faceting.
         $document['self_id'] = $uuid;
-        // Always use UUID for consistency
+        // Always use UUID for consistency.
         $document['self_uuid']         = $uuid;
         $document['self_register']     = $this->resolveRegisterToId($object->getRegister());
         $document['self_schema']       = $this->resolveSchemaToId($object->getSchema());
@@ -2599,9 +2579,9 @@ class GuzzleSolrService
         }
 
         // Handle pagination.
-        if (isset($query['_page']) === true) {
+        if (($query['_page'] ?? null) !== null) {
             $page = max(1, (int) $query['_page']);
-            if (isset($query['_limit']) === true) {
+            if (($query['_limit'] ?? null) !== null) {
                 $limit = max(1, (int) $query['_limit']);
             } else {
                 $limit = 20;
@@ -2609,7 +2589,7 @@ class GuzzleSolrService
 
             $solrQuery['offset'] = ($page - 1) * $limit;
             $solrQuery['limit']  = $limit;
-        } else if (isset($query['_limit']) === true) {
+        } else if (($query['_limit'] ?? null) !== null) {
             $solrQuery['limit'] = max(1, (int) $query['_limit']);
         }
 
@@ -2619,7 +2599,7 @@ class GuzzleSolrService
         }
 
         // Handle faceting - check for _facetable parameter (can be boolean true or string "true").
-        if (isset($query['_facetable']) === true && ($query['_facetable'] === true || $query['_facetable'] === 'true')) {
+        if (($query['_facetable'] ?? null) !== null && ($query['_facetable'] === true || $query['_facetable'] === 'true') === true) {
             $enableFacets = true;
         } else {
             $enableFacets = false;
@@ -2662,7 +2642,7 @@ class GuzzleSolrService
 
                     // Handle [or] and [and] operators.
                     if (is_array($metaValue) === true) {
-                        if (isset($metaValue['or']) === true) {
+                        if (($metaValue['or'] ?? null) !== null) {
                             // OR logic: (field:val1 OR field:val2).
                             if (is_string($metaValue['or']) === true) {
                                 $values = array_map('trim', explode(',', $metaValue['or']));
@@ -2680,7 +2660,7 @@ class GuzzleSolrService
                             }
 
                             $filterQueries[] = '('.implode(' OR ', $conditions).')';
-                        } else if (isset($metaValue['and']) === true) {
+                        } else if (($metaValue['and'] ?? null) !== null) {
                             // AND logic: multiple fq parameters.
                             if (is_string($metaValue['and']) === true) {
                                 $values = array_map('trim', explode(',', $metaValue['and']));
@@ -2722,7 +2702,7 @@ class GuzzleSolrService
 
             if (is_array($value) === true) {
                 // Check for explicit [or] or [and] operators.
-                if (isset($value['or']) === true) {
+                if (($value['or'] ?? null) !== null) {
                     // Explicit OR logic: (field:val1 OR field:val2).
                     if (is_string($value['or']) === true) {
                         $values = array_map('trim', explode(',', $value['or']));
@@ -2747,7 +2727,7 @@ class GuzzleSolrService
                     }
 
                     $filterQueries[] = '('.implode(' OR ', $conditions).')';
-                } else if (isset($value['and']) === true) {
+                } else if (($value['and'] ?? null) !== null) {
                     // Explicit AND logic: multiple fq parameters.
                     if (is_string($value['and']) === true) {
                         $values = array_map('trim', explode(',', $value['and']));
@@ -2869,7 +2849,7 @@ class GuzzleSolrService
             'published'    => 'self_published',
         ];
 
-        if (isset($fieldMappings[$field]) === true) {
+        if (($fieldMappings[$field] ?? null) !== null) {
             return $fieldMappings[$field];
         }
 
@@ -2893,12 +2873,6 @@ class GuzzleSolrService
             return $field.' asc';
         }
 
-        /*
-         * @psalm-suppress RedundantCondition - PHPCS requires explicit comparison
-         */
-        /*
-         * @psalm-suppress RedundantCondition - PHPCS requires explicit comparison (Squiz.Operators.ComparisonOperatorUsage)
-         */
         if (is_array($order) === true) {
             $sortParts = [];
             foreach ($order as $field => $direction) {
@@ -2942,40 +2916,40 @@ class GuzzleSolrService
             $sortableFieldMappings = [
                 // Text fields use _s suffix (string type, single-valued, not tokenized).
                 'name'         => 'self_name_s',
-            // Use sortable string variant
+            // Use sortable string variant.
                 'title'        => 'self_title_s',
-            // Use sortable string variant (if exists)
+            // Use sortable string variant (if exists).
                 'summary'      => 'self_summary_s',
-            // Use sortable string variant
+            // Use sortable string variant.
                 'description'  => 'self_description_s',
-            // Use sortable string variant
+            // Use sortable string variant.
                 'slug'         => 'self_slug_s',
             // Use sortable string variant
                 // Date/time fields are already sortable.
                 'published'    => 'self_published',
-            // Date fields are sortable
+            // Date fields are sortable.
                 'created'      => 'self_created',
-            // Date fields are sortable
+            // Date fields are sortable.
                 'updated'      => 'self_updated',
-            // Date fields are sortable
+            // Date fields are sortable.
                 'depublished'  => 'self_depublished',
             // Date fields are sortable
                 // Integer/UUID fields are already sortable.
                 'register'     => 'self_register',
-            // Integer fields are sortable
+            // Integer fields are sortable.
                 'schema'       => 'self_schema',
-            // Integer fields are sortable
+            // Integer fields are sortable.
                 'organisation' => 'self_organisation',
-            // UUID fields are sortable
+            // UUID fields are sortable.
                 'owner'        => 'self_owner',
-            // Integer fields are sortable
+            // Integer fields are sortable.
                 'id'           => 'id',
-            // ID is always sortable
+            // ID is always sortable.
                 'uuid'         => 'self_uuid',
-            // UUID is sortable
+            // UUID is sortable.
             ];
 
-            if (isset($sortableFieldMappings[$metadataField]) === true) {
+            if (($sortableFieldMappings[$metadataField] ?? null) !== null) {
                 $this->logger->debug(
                         'SORT: Translating metadata field',
                         [
@@ -3000,16 +2974,16 @@ class GuzzleSolrService
             'updated'      => 'self_updated',
             'published'    => 'self_published',
             'name'         => 'self_name_s',
-        // Use sortable string variant
+        // Use sortable string variant.
             'title'        => 'self_title_s',
-        // Use sortable string variant
+        // Use sortable string variant.
             'summary'      => 'self_summary_s',
-        // Use sortable string variant
+        // Use sortable string variant.
             'slug'         => 'self_slug_s',
-        // Use sortable string variant
+        // Use sortable string variant.
         ];
 
-        if (isset($fieldMappings[$field]) === true) {
+        if (($fieldMappings[$field] ?? null) !== null) {
             return $fieldMappings[$field];
         }
 
@@ -3062,13 +3036,13 @@ class GuzzleSolrService
 
         // Build pagination info.
         $total = $solrResults['total'] ?? count($results);
-        if (isset($originalQuery['_page']) === true) {
+        if (($originalQuery['_page'] ?? null) !== null) {
             $page = (int) $originalQuery['_page'];
         } else {
             $page = 1;
         }
 
-        if (isset($originalQuery['_limit']) === true) {
+        if (($originalQuery['_limit'] ?? null) !== null) {
             $limit = (int) $originalQuery['_limit'];
         } else {
             $limit = 20;
@@ -3099,7 +3073,7 @@ class GuzzleSolrService
         $aggregations = $originalQuery['_aggregations'] ?? false;
         if ($aggregations === true || $aggregations === 'true') {
             $response['aggregations'] = $solrResults['facets'] ?? [];
-            // Alias for compatibility
+            // Alias for compatibility.
         }
 
         // Only add debug if _debug=true.
@@ -3423,7 +3397,7 @@ class GuzzleSolrService
         $this->logger->debug(message: 'Document count: '.count($documents));
         foreach ($documents as $i => $doc) {
             if (is_array($doc) === true) {
-                if (isset($doc['self_object_id']) === true) {
+                if (($doc['self_object_id'] ?? null) !== null) {
                     $hasSelfObjectId = 'YES';
                 } else {
                     $hasSelfObjectId = 'NO';
@@ -3850,8 +3824,8 @@ class GuzzleSolrService
                     $responseBody = (string) $e->getResponse()->getBody();
                     $responseData = json_decode($responseBody, true);
 
-                    if ($responseData !== null && isset($responseData['error']) === true) {
-                        if (isset($responseData['error']['msg']) === true) {
+                    if ($responseData !== null && (($responseData['error'] ?? null) !== null)) {
+                        if (($responseData['error']['msg'] ?? null) !== null) {
                             $errorMsg = "SOLR HTTP {$e->getResponse()->getStatusCode()} Error: ".$responseData['error']['msg'];
                         } else {
                             $errorMsg = "SOLR HTTP {$e->getResponse()->getStatusCode()} Error: ".$responseData['error'];
@@ -4020,13 +3994,13 @@ class GuzzleSolrService
         // Using essential OpenRegister fields with specified weights.
         $fieldWeights = [
             'self_name'        => 15.0,
-        // OpenRegister standardized name (highest priority)
+        // OpenRegister standardized name (highest priority).
             'self_summary'     => 10.0,
-        // OpenRegister standardized summary
+        // OpenRegister standardized summary.
             'self_description' => 5.0,
-        // OpenRegister standardized description
+        // OpenRegister standardized description.
             '_text_'           => 1.0,
-        // Catch-all text field (lowest priority)
+        // Catch-all text field (lowest priority).
         ];
 
         $queryParts = [];
@@ -4091,12 +4065,12 @@ class GuzzleSolrService
         ];
 
         // Handle _facetable parameter for field discovery.
-        if (isset($query['_facetable']) === true && ($query['_facetable'] === true || $query['_facetable'] === 'true')) {
+        if (($query['_facetable'] ?? null) !== null && ($query['_facetable'] === true || $query['_facetable'] === 'true') === true) {
             $solrQuery['_facetable'] = true;
         }
 
         // Handle _facets parameter for extended faceting.
-        if (isset($query['_facets']) === true) {
+        if (($query['_facets'] ?? null) !== null) {
             $solrQuery['_facets'] = $query['_facets'];
 
             // For extended faceting, we'll use JSON faceting instead of traditional faceting.
@@ -4122,13 +4096,13 @@ class GuzzleSolrService
         }
 
         // Handle pagination.
-        if (isset($query['_limit']) === true) {
+        if (($query['_limit'] ?? null) !== null) {
             $solrQuery['rows'] = (int) $query['_limit'];
         }
 
-        if (isset($query['_offset']) === true) {
+        if (($query['_offset'] ?? null) !== null) {
             $solrQuery['start'] = (int) $query['_offset'];
-        } else if (isset($query['_page']) === true) {
+        } else if (($query['_page'] ?? null) !== null) {
             $page = max(1, (int) $query['_page']);
             $solrQuery['start'] = ($page - 1) * $solrQuery['rows'];
         }
@@ -4150,14 +4124,14 @@ class GuzzleSolrService
         $filters = [];
 
         // Handle @self metadata filters (register, schema, etc.).
-        if (isset($query['@self']) === true && is_array($query['@self']) === true) {
+        if (($query['@self'] ?? null) !== null && is_array($query['@self']) === true) {
             foreach ($query['@self'] as $metaKey => $metaValue) {
                 if ($metaValue !== null && $metaValue !== '') {
                     $solrField = 'self_'.$metaKey;
 
                     // Handle [or] and [and] operators. for metadata fields.
-                    if (is_array($metaValue) === true && (isset($metaValue['or']) === true || isset($metaValue['and']) === true)) {
-                        if (isset($metaValue['or']) === true) {
+                    if (is_array($metaValue) === true && (($metaValue['or'] ?? null) !== null || (($metaValue['and'] ?? null) !== null) === true)) {
+                        if (($metaValue['or'] ?? null) !== null) {
                             // OR logic: (field:val1 OR field:val2 OR field:val3).
                             if (is_string($metaValue['or']) === true) {
                                 $values = array_map('trim', explode(',', $metaValue['or']));
@@ -4181,7 +4155,7 @@ class GuzzleSolrService
                                     $values
                                     );
                             $filters[]    = '('.implode(' OR ', $orConditions).')';
-                        } else if (isset($metaValue['and']) === true) {
+                        } else if (($metaValue['and'] ?? null) !== null) {
                             // AND logic: field:val1 AND field:val2 AND field:val3.
                             if (is_string($metaValue['and']) === true) {
                                 $values = array_map('trim', explode(',', $metaValue['and']));
@@ -4306,7 +4280,7 @@ class GuzzleSolrService
                 if ($facetGroup === '@self' && is_array($facetConfig) === true) {
                     // Handle @self metadata facets.
                     foreach ($facetConfig as $metaField => $metaConfig) {
-                        if (is_array($metaConfig) === true && isset($metaConfig['type']) === true) {
+                        if (is_array($metaConfig) === true && (($metaConfig['type'] ?? null) !== null)) {
                             $solrFacetField = 'self_'.$metaField;
 
                             if ($metaConfig['type'] === 'terms') {
@@ -4320,7 +4294,7 @@ class GuzzleSolrService
                             }
                         }
                     }
-                } else if (is_array($facetConfig) === true && isset($facetConfig['type']) === true) {
+                } else if (is_array($facetConfig) === true && (($facetConfig['type'] ?? null) !== null)) {
                     // Handle regular facets.
                     if ($facetConfig['type'] === 'terms') {
                         $solrQuery['facet.field'][] = $facetGroup;
@@ -4444,9 +4418,9 @@ class GuzzleSolrService
         ];
 
         // Parse documents and convert back to OpenRegister objects.
-        if (isset($responseData['response']['docs']) === true) {
+        if (($responseData['response']['docs'] ?? null) !== null) {
             $results['objects'] = $this->convertSolrDocumentsToOpenRegisterObjects(solrDocuments: $responseData['response']['docs'], extend: $extend);
-            if (isset($responseData['response']['numFound']) === true) {
+            if (($responseData['response']['numFound'] ?? null) !== null) {
                 $results['total'] = $responseData['response']['numFound'];
             } else {
                 $results['total'] = count($results['objects']);
@@ -4465,11 +4439,11 @@ class GuzzleSolrService
         }
 
         // Parse facets.
-        if (isset($responseData['facet_counts']['facet_fields']) === true) {
+        if (($responseData['facet_counts']['facet_fields'] ?? null) !== null) {
             foreach ($responseData['facet_counts']['facet_fields'] as $field => $values) {
                 $facetData = [];
                 for ($i = 0; $i < count($values); $i += 2) {
-                    if (isset($values[$i + 1]) === true) {
+                    if (($values[$i + 1] ?? null) !== null) {
                         $facetData[] = [
                             'value' => $values[$i],
                             'count' => $values[$i + 1],
@@ -4495,25 +4469,25 @@ class GuzzleSolrService
      */
     private function convertToOpenRegisterPaginatedFormat(array $searchResults, array $originalQuery, array $solrQuery=null): array
     {
-        if (isset($originalQuery['_limit']) === true) {
+        if (($originalQuery['_limit'] ?? null) !== null) {
             $limit = (int) $originalQuery['_limit'];
         } else {
             $limit = 20;
         }
 
-        if (isset($originalQuery['_page']) === true) {
+        if (($originalQuery['_page'] ?? null) !== null) {
             $page = (int) $originalQuery['_page'];
         } else {
             $page = 1;
         }
 
-        if (isset($originalQuery['_offset']) === true) {
+        if (($originalQuery['_offset'] ?? null) !== null) {
             $offset = (int) $originalQuery['_offset'];
         } else {
             $offset = ($page - 1) * $limit;
         }
 
-        if (isset($searchResults['total']) === true) {
+        if (($searchResults['total'] ?? null) !== null) {
             $total = $searchResults['total'];
         } else {
             $total = 0;
@@ -4552,17 +4526,17 @@ class GuzzleSolrService
         ];
 
         // Handle _facetable parameter for live field discovery from SOLR.
-        if (isset($originalQuery['_facetable']) === true && ($originalQuery['_facetable'] === true || $originalQuery['_facetable'] === 'true')) {
+        if (($originalQuery['_facetable'] ?? null) !== null && ($originalQuery['_facetable'] === true || $originalQuery['_facetable'] === 'true') === true) {
             try {
                 $facetableFields = $this->discoverFacetableFieldsFromSolr();
                 // Combine all facetable fields into a single flat structure.
-                if (isset($facetableFields['@self']) === true) {
+                if (($facetableFields['@self'] ?? null) !== null) {
                     $selfFields = $facetableFields['@self'];
                 } else {
                     $selfFields = [];
                 }
 
-                if (isset($facetableFields['object_fields']) === true) {
+                if (($facetableFields['object_fields'] ?? null) !== null) {
                     $objectFields = $facetableFields['object_fields'];
                 } else {
                     $objectFields = [];
@@ -4590,7 +4564,7 @@ class GuzzleSolrService
         }//end if
 
         // Handle _facets=extend parameter for complete faceting (discovery + data).
-        if (isset($originalQuery['_facets']) === true && $originalQuery['_facets'] === 'extend') {
+        if (($originalQuery['_facets'] ?? null) !== null && $originalQuery['_facets'] === 'extend') {
             try {
                 // Build contextual facets - if we don't have solrQuery, build it from original query.
                 if ($solrQuery === null) {
@@ -4652,7 +4626,7 @@ class GuzzleSolrService
 
         // Add pagination URLs if applicable (matching database format).
         if ($page < $pages) {
-            if (isset($_SERVER['REQUEST_URI']) === true) {
+            if (($_SERVER['REQUEST_URI'] ?? null) !== null) {
                 $response['next'] = $_SERVER['REQUEST_URI'];
             } else {
                 $response['next'] = '';
@@ -4739,7 +4713,7 @@ class GuzzleSolrService
                 if (is_array($extend) === true && ($registerId !== null || $schemaId !== null)
                     && (in_array('@self.register', $extend) === true || in_array('@self.schema', $extend) === true)
                 ) {
-                    if (isset($objectData['@self']) === true) {
+                    if (($objectData['@self'] ?? null) !== null) {
                         $self = $objectData['@self'];
                     } else {
                         $self = [];
@@ -4786,7 +4760,7 @@ class GuzzleSolrService
 
                 $openRegisterObjects[] = $objectData;
             } catch (\Exception $e) {
-                if (isset($doc['id']) === true) {
+                if (($doc['id'] ?? null) !== null) {
                     $docId = $doc['id'];
                 } else {
                     $docId = 'unknown';
@@ -4944,10 +4918,10 @@ class GuzzleSolrService
             // Validate admin response - be flexible about response format.
             $isValidResponse = false;
 
-            if (isset($data['status']) === true && $data['status'] === 'OK') {
+            if (($data['status'] ?? null) !== null && $data['status'] === 'OK') {
                 // Standard ping response.
                 $isValidResponse = true;
-            } else if (isset($data['responseHeader']['status']) === true && $data['responseHeader']['status'] === 0) {
+            } else if (($data['responseHeader']['status'] ?? null) !== null && $data['responseHeader']['status'] === 0) {
                 // System info response.
                 $isValidResponse = true;
             } else if (is_array($data) === true && empty($data) === false) {
@@ -5029,26 +5003,26 @@ class GuzzleSolrService
                 }
 
                 $data = json_decode((string) $response->getBody(), true);
-                if (isset($data['cluster']['collections']) === true) {
+                if (($data['cluster']['collections'] ?? null) !== null) {
                     $collections = $data['cluster']['collections'];
                 } else {
                     $collections = [];
                 }
 
-                if (isset($collections[$collectionName]) === true) {
+                if (($collections[$collectionName] ?? null) !== null) {
                     if (strpos($collectionName, '_nc_') !== false) {
                         $collectionType = 'tenant-specific';
                     } else {
                         $collectionType = 'base';
                     }
 
-                    if (isset($collections[$collectionName]['status']) === true) {
+                    if (($collections[$collectionName]['status'] ?? null) !== null) {
                         $status = $collections[$collectionName]['status'];
                     } else {
                         $status = 'unknown';
                     }
 
-                    if (isset($collections[$collectionName]['shards']) === true) {
+                    if (($collections[$collectionName]['shards'] ?? null) !== null) {
                         $shards = $collections[$collectionName]['shards'];
                     } else {
                         $shards = [];
@@ -5096,26 +5070,26 @@ class GuzzleSolrService
                 }
 
                 $data = json_decode((string) $response->getBody(), true);
-                if (isset($data['status']) === true) {
+                if (($data['status'] ?? null) !== null) {
                     $cores = $data['status'];
                 } else {
                     $cores = [];
                 }
 
-                if (isset($cores[$collectionName]) === true) {
+                if (($cores[$collectionName] ?? null) !== null) {
                     if (strpos($collectionName, '_nc_') !== false) {
                         $collectionType = 'tenant-specific';
                     } else {
                         $collectionType = 'base';
                     }
 
-                    if (isset($cores[$collectionName]['index']['numDocs']) === true) {
+                    if (($cores[$collectionName]['index']['numDocs'] ?? null) !== null) {
                         $numDocs = $cores[$collectionName]['index']['numDocs'];
                     } else {
                         $numDocs = 0;
                     }
 
-                    if (isset($cores[$collectionName]['index']['maxDoc']) === true) {
+                    if (($cores[$collectionName]['index']['maxDoc'] ?? null) !== null) {
                         $maxDocs = $cores[$collectionName]['index']['maxDoc'];
                     } else {
                         $maxDocs = 0;
@@ -5150,9 +5124,9 @@ class GuzzleSolrService
                 }//end if
             }//end if
         } catch (\Exception $e) {
-            if (isset($this->solrConfig['collection']) === true) {
+            if (($this->solrConfig['collection'] ?? null) !== null) {
                 $collection = $this->solrConfig['collection'];
-            } else if (isset($this->solrConfig['core']) === true) {
+            } else if (($this->solrConfig['core'] ?? null) !== null) {
                 $collection = $this->solrConfig['core'];
             } else {
                 $collection = 'openregister';
@@ -5213,14 +5187,14 @@ class GuzzleSolrService
 
             $data = json_decode((string) $response->getBody(), true);
 
-            if (isset($data['response']) === true) {
+            if (($data['response'] ?? null) !== null) {
                 if (strpos($collectionName, '_nc_') !== false) {
                     $collectionType = 'tenant-specific';
                 } else {
                     $collectionType = 'base';
                 }
 
-                if (isset($data['response']['numFound']) === true) {
+                if (($data['response']['numFound'] ?? null) !== null) {
                     $totalDocs = $data['response']['numFound'];
                 } else {
                     $totalDocs = 0;
@@ -5248,9 +5222,9 @@ class GuzzleSolrService
                 ];
             }//end if
         } catch (\Exception $e) {
-            if (isset($this->solrConfig['collection']) === true) {
+            if (($this->solrConfig['collection'] ?? null) !== null) {
                 $collection = $this->solrConfig['collection'];
-            } else if (isset($this->solrConfig['core']) === true) {
+            } else if (($this->solrConfig['core'] ?? null) !== null) {
                 $collection = $this->solrConfig['core'];
             } else {
                 $collection = 'openregister';
@@ -5299,7 +5273,7 @@ class GuzzleSolrService
             $deleteData = [
                 'delete' => [
                     'query' => '*:*'  ,
-            // Delete everything in this collection
+            // Delete everything in this collection.
                 ],
             ];
 
@@ -5325,7 +5299,7 @@ class GuzzleSolrService
 
             $responseData = json_decode($response->getBody()->getContents(), true);
 
-            if ($response->getStatusCode() === 200 && isset($responseData['responseHeader']['status']) === true && $responseData['responseHeader']['status'] === 0) {
+            if ($response->getStatusCode() === 200 && (($responseData['responseHeader']['status'] ?? null) !== null) && $responseData['responseHeader']['status'] === 0) {
                 $this->logger->info(
                         'SOLR index cleared successfully',
                         [
@@ -5337,7 +5311,7 @@ class GuzzleSolrService
                     'success'      => true,
                     'message'      => 'SOLR index cleared successfully',
                     'deleted_docs' => 'all',
-                // We don't get exact count from *:* delete
+                // We don't get exact count from *:* delete.
                     'collection'   => $targetCollection,
                 ];
             } else {
@@ -5350,7 +5324,7 @@ class GuzzleSolrService
                         ]
                         );
 
-                if (isset($responseData['error']) === true) {
+                if (($responseData['error'] ?? null) !== null) {
                     $errorDetails = $responseData['error'];
                 } else {
                     $errorDetails = 'Unknown error';
@@ -5436,20 +5410,20 @@ class GuzzleSolrService
 
             $data = json_decode((string) $response->getBody(), true);
 
-            if (isset($data['responseHeader']['status']) === true) {
+            if (($data['responseHeader']['status'] ?? null) !== null) {
                 $status = $data['responseHeader']['status'];
             } else {
                 $status = -1;
             }
 
             if ($status === 0) {
-                if (isset($data['response']['docs']) === true) {
+                if (($data['response']['docs'] ?? null) !== null) {
                     $documents = $data['response']['docs'];
                 } else {
                     $documents = [];
                 }
 
-                if (isset($data['response']['numFound']) === true) {
+                if (($data['response']['numFound'] ?? null) !== null) {
                     $totalResults = $data['response']['numFound'];
                 } else {
                     $totalResults = 0;
@@ -5474,15 +5448,15 @@ class GuzzleSolrService
                     'collection' => $tenantCollectionName,
                 ];
             } else {
-                if (isset($data['error']['msg']) === true) {
+                if (($data['error']['msg'] ?? null) !== null) {
                     $errorMsg = $data['error']['msg'];
                 } else {
                     $errorMsg = 'Unknown SOLR error';
                 }
 
-                if (isset($data['error']['code']) === true) {
+                if (($data['error']['code'] ?? null) !== null) {
                     $errorCode = $data['error']['code'];
-                } else if (isset($data['responseHeader']['status']) === true) {
+                } else if (($data['responseHeader']['status'] ?? null) !== null) {
                     $errorCode = $data['responseHeader']['status'];
                 } else {
                     $errorCode = -1;
@@ -5513,8 +5487,8 @@ class GuzzleSolrService
                 $responseBody = (string) $e->getResponse()->getBody();
                 $responseData = json_decode($responseBody, true);
 
-                if ($responseData !== null && isset($responseData['error']) === true) {
-                    if (isset($responseData['error']['msg']) === true) {
+                if ($responseData !== null && (($responseData['error'] ?? null) !== null)) {
+                    if (($responseData['error']['msg'] ?? null) !== null) {
                         $errorMsg = "SOLR HTTP {$e->getResponse()->getStatusCode()} Error: ".$responseData['error']['msg'];
                     } else {
                         $errorMsg = "SOLR HTTP {$e->getResponse()->getStatusCode()} Error: ".$responseData['error'];
@@ -5583,12 +5557,12 @@ class GuzzleSolrService
                         'body'    => json_encode(['optimize' => []]),
                         'headers' => ['Content-Type' => 'application/json'],
                         'timeout' => 120,
-            // Optimization can take time
+            // Optimization can take time.
                     ]
                     );
 
             $data = json_decode((string) $response->getBody(), true);
-            if (isset($data['responseHeader']['status']) === true) {
+            if (($data['responseHeader']['status'] ?? null) !== null) {
                 $status = $data['responseHeader']['status'];
             } else {
                 $status = -1;
@@ -5625,10 +5599,10 @@ class GuzzleSolrService
         // This ensures consistency between connection test and dashboard stats.
         try {
             $connectionTest = $this->testConnection();
-            if (isset($connectionTest['success']) === true && $connectionTest['success'] === true) {
+            if (($connectionTest['success'] ?? null) !== null && $connectionTest['success'] === true) {
                 // Connection test successful, continue.
             } else {
-                if (isset($connectionTest['message']) === true) {
+                if (($connectionTest['message'] ?? null) !== null) {
                     $errorMsg = $connectionTest['message'];
                 } else {
                     $errorMsg = 'Connection test failed';
@@ -5652,7 +5626,7 @@ class GuzzleSolrService
             $fileCollection   = $this->solrConfig['fileCollection'] ?? null;
 
             // Fallback to legacy collection if new collections are not configured.
-            if (isset($this->solrConfig['collection']) === true) {
+            if (($this->solrConfig['collection'] ?? null) !== null) {
                 $legacyCollection = $this->solrConfig['collection'];
             } else {
                 $legacyCollection = null;
@@ -5751,11 +5725,11 @@ class GuzzleSolrService
                     register: null,
                     schema: null,
                     published: null,
-                // Don't filter by published status for total count
+                // Don't filter by published status for total count.
                     rbac: false,
-                // Skip RBAC for performance
+                // Skip RBAC for performance.
                     multi: false
-                // Skip multitenancy for performance
+                // Skip multitenancy for performance.
                 );
 
                 // Get published object count.
@@ -5768,11 +5742,11 @@ class GuzzleSolrService
                     register: null,
                     schema: null,
                     published: true,
-                // Only count published objects
+                // Only count published objects.
                     rbac: false,
-                // Skip RBAC for performance
+                // Skip RBAC for performance.
                     multi: false
-                // Skip multitenancy for performance
+                // Skip multitenancy for performance.
                 );
             } catch (\Exception $e) {
                 $this->logger->warning(message: 'Failed to get object counts from database', context: ['error' => $e->getMessage()]);
@@ -5792,7 +5766,7 @@ class GuzzleSolrService
 
             // Get shard count from stats.
             $shards = [];
-            if ($primaryStats !== null && isset($primaryStats['shards']) === true) {
+            if ($primaryStats !== null && (($primaryStats['shards'] ?? null) !== null)) {
                 $shards = $primaryStats['shards'];
             }
 
@@ -5806,14 +5780,14 @@ class GuzzleSolrService
                 $memoryPrediction = [
                     'error'           => 'Unable to predict memory usage',
                     'prediction_safe' => true,
-                // Default to safe
+                // Default to safe.
                 ];
             }
 
             // Get file counts from Nextcloud file cache.
             $totalFiles   = 0;
             $indexedFiles = $fileDocCount;
-            // Files indexed in SOLR fileCollection
+            // Files indexed in SOLR fileCollection.
             try {
                 $fileMapper = \OC::$server->get(\OCA\OpenRegister\Db\FileMapper::class);
                 $totalFiles = $fileMapper->countAllFiles();
@@ -5845,13 +5819,13 @@ class GuzzleSolrService
                 $fileCollectionData = null;
             }
 
-            if (isset($sizeData['index']['version']) === true) {
+            if (($sizeData['index']['version'] ?? null) !== null) {
                 $indexVersion = $sizeData['index']['version'];
             } else {
                 $indexVersion = 'unknown';
             }
 
-            if (isset($sizeData['index']['lastModified']) === true) {
+            if (($sizeData['index']['lastModified'] ?? null) !== null) {
                 $lastModified = $sizeData['index']['lastModified'];
             } else {
                 $lastModified = 'unknown';
@@ -5911,37 +5885,37 @@ class GuzzleSolrService
         $statsResponse = $this->httpClient->get($statsUrl, ['timeout' => 10]);
         $statsData     = json_decode((string) $statsResponse->getBody(), true);
 
-        if (isset($statsData['cluster']['collections'][$collectionName]) === true) {
+        if (($statsData['cluster']['collections'][$collectionName] ?? null) !== null) {
             $collectionInfo = $statsData['cluster']['collections'][$collectionName];
         } else {
             $collectionInfo = [];
         }
 
-        if (isset($collectionInfo['shards']) === true) {
+        if (($collectionInfo['shards'] ?? null) !== null) {
             $shards = $collectionInfo['shards'];
         } else {
             $shards = [];
         }
 
-        if (isset($collectionInfo['configName']) === true) {
+        if (($collectionInfo['configName'] ?? null) !== null) {
             $configName = $collectionInfo['configName'];
         } else {
             $configName = 'unknown';
         }
 
-        if (isset($collectionInfo['replicationFactor']) === true) {
+        if (($collectionInfo['replicationFactor'] ?? null) !== null) {
             $replicationFactor = $collectionInfo['replicationFactor'];
         } else {
             $replicationFactor = 1;
         }
 
-        if (isset($collectionInfo['maxShardsPerNode']) === true) {
+        if (($collectionInfo['maxShardsPerNode'] ?? null) !== null) {
             $maxShardsPerNode = $collectionInfo['maxShardsPerNode'];
         } else {
             $maxShardsPerNode = 1;
         }
 
-        if (isset($collectionInfo['autoAddReplicas']) === true) {
+        if (($collectionInfo['autoAddReplicas'] ?? null) !== null) {
             $autoAddReplicas = $collectionInfo['autoAddReplicas'];
         } else {
             $autoAddReplicas = false;
@@ -5980,7 +5954,7 @@ class GuzzleSolrService
             $response = $this->httpClient->get($url, ['timeout' => 10]);
             $data     = json_decode((string) $response->getBody(), true);
 
-            if (isset($data['response']['numFound']) === true) {
+            if (($data['response']['numFound'] ?? null) !== null) {
                 return (int) $data['response']['numFound'];
             }
 
@@ -6029,7 +6003,7 @@ class GuzzleSolrService
             $connectionTest = $this->testConnection();
             $stats          = $this->getDashboardStats();
 
-            if (isset($stats['available']) === true) {
+            if (($stats['available'] ?? null) !== null) {
                 $availability = $stats['available'];
             } else {
                 $availability = false;
@@ -6195,7 +6169,7 @@ class GuzzleSolrService
             $qb->setMaxResults($limit)
                 ->setFirstResult($offset)
                 ->orderBy('o.id', 'ASC');
-            // Consistent ordering for pagination
+            // Consistent ordering for pagination.
             $result = $qb->executeQuery();
             $rows   = $result->fetchAll();
 
@@ -6377,7 +6351,7 @@ class GuzzleSolrService
                         throw $e;
                     } catch (\Exception $e) {
                         if (is_array($object) === true) {
-                            if (isset($object['id']) === true) {
+                            if (($object['id'] ?? null) !== null) {
                                 $objectId = $object['id'];
                             } else {
                                 $objectId = 'unknown';
@@ -6404,9 +6378,9 @@ class GuzzleSolrService
                     $indexStart = microtime(true);
                     // Bulk index the documents (minimal logging for performance).
                     $this->bulkIndex(documents: $documents, commit: true);
-                    // Commit each batch for immediate visibility
+                    // Commit each batch for immediate visibility.
                     $indexed = count($documents);
-                    // If we reach here, indexing succeeded
+                    // If we reach here, indexing succeeded.
                     $indexEnd      = microtime(true);
                     $indexDuration = round(($indexEnd - $indexStart) * 1000, 2);
 
@@ -6422,7 +6396,7 @@ class GuzzleSolrService
 
                 $batchCount++;
                 $totalIndexed += $indexed;
-                // Use actual indexed count, not object count
+                // Use actual indexed count, not object count.
                 $offset += $currentBatchSize;
             } while (count($objects) === $currentBatchSize && ($maxObjects === 0 || $totalIndexed < $maxObjects));
 
@@ -6438,7 +6412,7 @@ class GuzzleSolrService
                     ]
                     );
 
-            if (isset($results['skipped_non_searchable']) === true) {
+            if (($results['skipped_non_searchable'] ?? null) !== null) {
                 $skippedNonSearchable = $results['skipped_non_searchable'];
             } else {
                 $skippedNonSearchable = 0;
@@ -6454,13 +6428,13 @@ class GuzzleSolrService
         } catch (\Exception $e) {
             $this->logger->error(message: 'Serial bulk indexing failed', context: ['error' => $e->getMessage()]);
             // **ERROR VISIBILITY**: Re-throw exception to expose errors.
-            if (isset($totalIndexed) === true) {
+            if (($totalIndexed ?? null) !== null) {
                 $totalIndexedValue = $totalIndexed;
             } else {
                 $totalIndexedValue = 0;
             }
 
-            if (isset($batchCount) === true) {
+            if (($batchCount ?? null) !== null) {
                 $batchCountValue = $batchCount;
             } else {
                 $batchCountValue = 0;
@@ -6561,7 +6535,7 @@ class GuzzleSolrService
 
                 // Aggregate results from this chunk.
                 foreach ($chunkResults as $result) {
-                    if (isset($result['success']) === true && $result['success'] === true) {
+                    if (($result['success'] ?? null) !== null && $result['success'] === true) {
                         $totalIndexed += $result['indexed'];
                         $totalBatches++;
                     }
@@ -6614,13 +6588,13 @@ class GuzzleSolrService
         } catch (\Exception $e) {
             $this->logger->error(message: 'Parallel bulk indexing failed', context: ['error' => $e->getMessage()]);
             // **ERROR VISIBILITY**: Re-throw exception to expose errors.
-            if (isset($totalIndexed) === true) {
+            if (($totalIndexed ?? null) !== null) {
                 $totalIndexedValue = $totalIndexed;
             } else {
                 $totalIndexedValue = 0;
             }
 
-            if (isset($totalBatches) === true) {
+            if (($totalBatches ?? null) !== null) {
                 $totalBatchesValue = $totalBatches;
             } else {
                 $totalBatchesValue = 0;
@@ -6703,7 +6677,7 @@ class GuzzleSolrService
                         );
 
                 $bulkResult = $this->bulkIndex(documents: $documents, commit: true);
-                // Commit each batch for immediate visibility
+                // Commit each batch for immediate visibility.
                 $this->logger->info(
                         '🔥 WARMUP: Bulk index result',
                         [
@@ -6810,11 +6784,11 @@ class GuzzleSolrService
                     register: null,
                     schema: null,
                     published: true,
-                    // Only fetch published objects
+                    // Only fetch published objects.
                     rbac: false,
-                    // Skip RBAC for performance
+                    // Skip RBAC for performance.
                     multi: false
-                    // Skip multitenancy for performance
+                    // Skip multitenancy for performance.
                     );
 
                     if (empty($objects) === true) {
@@ -6851,7 +6825,7 @@ class GuzzleSolrService
                     $indexed = 0;
                     if (empty($documents) === false) {
                         $success = $this->bulkIndex(documents: $documents, commit: true);
-                        // Commit each batch for immediate visibility
+                        // Commit each batch for immediate visibility.
                         if ($success === true) {
                             $indexed = count($documents);
                         } else {
@@ -6919,7 +6893,7 @@ class GuzzleSolrService
             // **OPTIMIZATION**: Single large batch instead of multiple small ones.
             $query = [
                 '_limit'  => $maxObjects,
-            // Get all objects in one go
+            // Get all objects in one go.
                 '_offset' => 0,
             ];
 
@@ -6951,11 +6925,11 @@ class GuzzleSolrService
                 register: null,
                 schema: null,
                 published: true,
-            // Only fetch published objects
+            // Only fetch published objects.
                 rbac: false,
-            // Skip RBAC for performance
+            // Skip RBAC for performance.
                 multi: false
-            // Skip multitenancy for performance
+            // Skip multitenancy for performance.
             );
 
             if (empty($objects) === true) {
@@ -7001,9 +6975,9 @@ class GuzzleSolrService
             // **OPTIMIZATION**: Single massive bulk index operation.
             if (empty($documents) === false) {
                 $this->bulkIndex(documents: $documents, commit: true);
-                // Commit immediately - will throw on error
+                // Commit immediately - will throw on error.
                 $totalIndexed = count($documents);
-                // If we reach here, indexing succeeded
+                // If we reach here, indexing succeeded.
                 $batchCount = 1;
             }
 
@@ -7033,13 +7007,13 @@ class GuzzleSolrService
         } catch (\Exception $e) {
             $this->logger->error(message: 'Hyper-fast bulk indexing failed', context: ['error' => $e->getMessage()]);
             // **ERROR VISIBILITY**: Re-throw exception to expose errors.
-            if (isset($totalIndexed) === true) {
+            if (($totalIndexed ?? null) !== null) {
                 $totalIndexedValue = $totalIndexed;
             } else {
                 $totalIndexedValue = 0;
             }
 
-            if (isset($batchCount) === true) {
+            if (($batchCount ?? null) !== null) {
                 $batchCountValue = $batchCount;
             } else {
                 $batchCountValue = 0;
@@ -7130,7 +7104,7 @@ class GuzzleSolrService
                             $document = $this->createSolrDocument($entity);
 
                             // Determine mapping type based on document structure.
-                            if (isset($document['self_schema']) === true && count($document) > 20) {
+                            if (($document['self_schema'] ?? null) !== null && count($document) > 20) {
                                 $schemaDetails['mapping_type'] = 'schema-aware';
                             } else {
                                 $schemaDetails['mapping_type'] = 'legacy-fallback';
@@ -7142,7 +7116,7 @@ class GuzzleSolrService
                                 $results['objects_indexed']++;
                             }
                         } catch (\Exception $e) {
-                            if (isset($objectData['id']) === true) {
+                            if (($objectData['id'] ?? null) !== null) {
                                 $objectId = $objectData['id'];
                             } else {
                                 $objectId = 'unknown';
@@ -7228,7 +7202,7 @@ class GuzzleSolrService
             $data     = json_decode((string) $response->getBody(), true);
 
             $fieldTypes = [];
-            if (isset($data['fields']) === true && is_array($data['fields']) === true) {
+            if (($data['fields'] ?? null) !== null && is_array($data['fields']) === true) {
                 foreach ($data['fields'] as $field) {
                     $fieldTypes[$field['name']] = $field['type'];
                 }
@@ -7237,7 +7211,7 @@ class GuzzleSolrService
             // Cache the field types.
             $this->cachedSolrFieldTypes = $fieldTypes;
 
-            if (isset($fieldTypes['versie']) === true) {
+            if (($fieldTypes['versie'] ?? null) !== null) {
                 $versieFieldType = $fieldTypes['versie'];
             } else {
                 $versieFieldType = 'NOT_FOUND';
@@ -7328,7 +7302,7 @@ class GuzzleSolrService
         try {
             // 1. Test connection.
             $connectionResult = $this->testConnection();
-            if (isset($connectionResult['success']) === true) {
+            if (($connectionResult['success'] ?? null) !== null) {
                 $operations['connection_test'] = $connectionResult['success'];
             } else {
                 $operations['connection_test'] = false;
@@ -7342,26 +7316,26 @@ class GuzzleSolrService
                 // Lazy-load SolrSchemaService to avoid circular dependency.
                 $solrSchemaService = \OC::$server->get(SolrSchemaService::class);
                 $mirrorResult      = $solrSchemaService->mirrorSchemas(true);
-                // Force update for testing
-                if (isset($mirrorResult['success']) === true) {
+                // Force update for testing.
+                if (($mirrorResult['success'] ?? null) !== null) {
                     $operations['schema_mirroring'] = $mirrorResult['success'];
                 } else {
                     $operations['schema_mirroring'] = false;
                 }
 
-                if (isset($mirrorResult['stats']['schemas_processed']) === true) {
+                if (($mirrorResult['stats']['schemas_processed'] ?? null) !== null) {
                     $operations['schemas_processed'] = $mirrorResult['stats']['schemas_processed'];
                 } else {
                     $operations['schemas_processed'] = 0;
                 }
 
-                if (isset($mirrorResult['stats']['fields_created']) === true) {
+                if (($mirrorResult['stats']['fields_created'] ?? null) !== null) {
                     $operations['fields_created'] = $mirrorResult['stats']['fields_created'];
                 } else {
                     $operations['fields_created'] = 0;
                 }
 
-                if (isset($mirrorResult['stats']['conflicts_resolved']) === true) {
+                if (($mirrorResult['stats']['conflicts_resolved'] ?? null) !== null) {
                     $operations['conflicts_resolved'] = $mirrorResult['stats']['conflicts_resolved'];
                 } else {
                     $operations['conflicts_resolved'] = 0;
@@ -7373,7 +7347,7 @@ class GuzzleSolrService
 
                 // Skip automatic field creation - use dedicated field management instead.
                 $operations['missing_fields_created'] = true;
-                // Always true since we skip this step
+                // Always true since we skip this step.
                 $operations['fields_added']   = 0;
                 $operations['fields_updated'] = 0;
 
@@ -7401,7 +7375,7 @@ class GuzzleSolrService
 
                 // Skip automatic field creation - use dedicated field management instead.
                 $operations['missing_fields_created'] = true;
-                // Always true since we skip this step
+                // Always true since we skip this step.
                 $operations['fields_added']   = 0;
                 $operations['fields_updated'] = 0;
 
@@ -7415,7 +7389,7 @@ class GuzzleSolrService
             }//end if
 
             // 3. Object indexing using mode-based bulk indexing (no logging for performance).
-            if (isset($solrFieldTypes) === true) {
+            if (($solrFieldTypes ?? null) !== null) {
                 $solrFieldTypesValue = $solrFieldTypes;
             } else {
                 $solrFieldTypesValue = [];
@@ -7431,20 +7405,20 @@ class GuzzleSolrService
 
             // Pass collectErrors mode for potential future use.
             $operations['error_collection_mode'] = $collectErrors;
-            if (isset($indexResult['success']) === true) {
+            if (($indexResult['success'] ?? null) !== null) {
                 $operations['object_indexing'] = $indexResult['success'];
             } else {
                 $operations['object_indexing'] = false;
             }
 
-            if (isset($indexResult['indexed']) === true) {
+            if (($indexResult['indexed'] ?? null) !== null) {
                 $operations['objects_indexed'] = $indexResult['indexed'];
             } else {
                 $operations['objects_indexed'] = 0;
             }
 
             // **BUG FIX**: Calculate errors properly - if no errors field, assume 0 errors when successful.
-            if (isset($indexResult['errors']) === true) {
+            if (($indexResult['errors'] ?? null) !== null) {
                 $operations['indexing_errors'] = $indexResult['errors'];
             } else {
                 $operations['indexing_errors'] = 0;
@@ -7453,11 +7427,11 @@ class GuzzleSolrService
             // 4. Perform basic warmup queries to warm SOLR caches.
             $warmupQueries = [
                 ['q' => '*:*', 'rows' => 1],
-            // Basic query to warm general cache
+            // Basic query to warm general cache.
                 ['q' => 'name:*', 'rows' => 5],
-            // Name field search to warm field caches
+            // Name field search to warm field caches.
                 ['q' => '*:*', 'rows' => 0, 'facet.field' => 'register_id_i'],
-            // Facet query to warm facet cache
+            // Facet query to warm facet cache.
             ];
 
             $successfulQueries = 0;
@@ -7512,25 +7486,25 @@ class GuzzleSolrService
                 }
             }
 
-            if (isset($indexResult['total']) === true) {
+            if (($indexResult['total'] ?? null) !== null) {
                 $totalObjectsFound = $indexResult['total'];
             } else {
                 $totalObjectsFound = 0;
             }
 
-            if (isset($indexResult['indexed']) === true) {
+            if (($indexResult['indexed'] ?? null) !== null) {
                 $objectsIndexed = $indexResult['indexed'];
             } else {
                 $objectsIndexed = 0;
             }
 
-            if (isset($indexResult['batches']) === true) {
+            if (($indexResult['batches'] ?? null) !== null) {
                 $batchesProcessed = $indexResult['batches'];
             } else {
                 $batchesProcessed = 0;
             }
 
-            if (isset($indexResult['errors']) === true) {
+            if (($indexResult['errors'] ?? null) !== null) {
                 $indexingErrors = $indexResult['errors'];
             } else {
                 $indexingErrors = 0;
@@ -7552,7 +7526,7 @@ class GuzzleSolrService
             // **MEMORY TRACKING**: Calculate memory usage even on error.
             $finalMemoryUsage = (int) memory_get_usage(true);
             $finalMemoryPeak  = (int) memory_get_peak_usage(true);
-            if (isset($memoryPrediction) === true) {
+            if (($memoryPrediction ?? null) !== null) {
                 $memoryPredictionValue = $memoryPrediction;
             } else {
                 $memoryPredictionValue = [];
@@ -7604,7 +7578,7 @@ class GuzzleSolrService
         }
 
         // If field doesn't exist in SOLR, it will be auto-created (allow).
-        if (isset($solrFieldTypes[$fieldName]) === false) {
+        if (!isset($solrFieldTypes[$fieldName])) {
             $this->logger->debug(
                     'Field not in SOLR schema, will be auto-created',
                     [
@@ -7922,7 +7896,7 @@ class GuzzleSolrService
 
             // Get current field configuration to check for immutable property changes.
             $currentFieldsResponse = $this->getFieldsConfiguration();
-            if (isset($currentFieldsResponse['fields']) === true) {
+            if (($currentFieldsResponse['fields'] ?? null) !== null) {
                 $currentFields = $currentFieldsResponse['fields'];
             } else {
                 $currentFields = [];
@@ -7931,19 +7905,19 @@ class GuzzleSolrService
             foreach ($mismatchedFields as $fieldName => $fieldConfig) {
                 try {
                     // Check if this is a docValues change (which is immutable in SOLR).
-                    if (isset($currentFields[$fieldName]) === true) {
+                    if (($currentFields[$fieldName] ?? null) !== null) {
                         $currentField = $currentFields[$fieldName];
                     } else {
                         $currentField = null;
                     }
 
-                    if (isset($fieldConfig['docValues']) === true) {
+                    if (($fieldConfig['docValues'] ?? null) !== null) {
                         $newDocValues = $fieldConfig['docValues'];
                     } else {
                         $newDocValues = false;
                     }
 
-                    if ($currentField !== null && isset($currentField['docValues']) === true) {
+                    if ($currentField !== null && (($currentField['docValues'] ?? null) !== null)) {
                         $currentDocValues = $currentField['docValues'];
                     } else {
                         $currentDocValues = false;
@@ -8005,7 +7979,7 @@ class GuzzleSolrService
 
                         $responseData = json_decode($response->getBody()->getContents(), true);
 
-                        if (isset($responseData['responseHeader']['status']) === true) {
+                        if (($responseData['responseHeader']['status'] ?? null) !== null) {
                             $responseStatus = $responseData['responseHeader']['status'];
                         } else {
                             $responseStatus = 1;
@@ -8020,7 +7994,7 @@ class GuzzleSolrService
                                     ]
                                     );
                         } else {
-                            if (isset($responseData['error']['msg']) === true) {
+                            if (($responseData['error']['msg'] ?? null) !== null) {
                                 $errorMsg = $responseData['error']['msg'];
                             } else {
                                 $errorMsg = 'Unknown error';
@@ -8155,7 +8129,7 @@ class GuzzleSolrService
                     );
 
             $data = json_decode((string) $response->getBody(), true);
-            if (isset($data['responseHeader']['status']) === true) {
+            if (($data['responseHeader']['status'] ?? null) !== null) {
                 $responseStatus = $data['responseHeader']['status'];
             } else {
                 $responseStatus = -1;
@@ -8177,7 +8151,7 @@ class GuzzleSolrService
                     'message' => "Field '{$fieldName}' deleted successfully",
                 ];
             } else {
-                if (isset($data['error']['msg']) === true) {
+                if (($data['error']['msg'] ?? null) !== null) {
                     $error = $data['error']['msg'];
                 } else {
                     $error = 'Unknown error occurred';
@@ -8268,8 +8242,8 @@ class GuzzleSolrService
             $this->logger->info(message: '🗑️ Clearing current SOLR index');
             $clearResult = $this->clearIndex($targetCollection);
 
-            if (isset($clearResult['success']) === false || $clearResult['success'] === false) {
-                if (isset($clearResult['error']) === true) {
+            if (!isset($clearResult['success']) === false || $clearResult['success'] === false) {
+                if (($clearResult['error'] ?? null) !== null) {
                     $error = $clearResult['error'];
                 } else {
                     $error = null;
@@ -8293,7 +8267,7 @@ class GuzzleSolrService
                 register: null,
                 schema: null,
                     published: true,
-            // Only reindex published objects
+            // Only reindex published objects.
                 rbac: false,
                 multi: false
             );
@@ -8352,7 +8326,7 @@ class GuzzleSolrService
                     register: null,
                     schema: null,
                     published: true,
-                // Only reindex published objects
+                // Only reindex published objects.
                     rbac: false,
                     multi: false
                 );
@@ -8568,7 +8542,7 @@ class GuzzleSolrService
                 }
 
                 // Only add truly missing fields.
-                if (isset($currentFields[$fieldName]) === false) {
+                if (!isset($currentFields[$fieldName])) {
                     $fieldsToProcess[$fieldName] = $fieldConfig;
                     $this->logger->debug(message: "Field '{$fieldName}' is missing and will be created");
                 }
@@ -8791,7 +8765,7 @@ class GuzzleSolrService
             ];
 
             // Add authentication if configured.
-            if (!empty($this->solrConfig['username']) && !empty($this->solrConfig['password'])) {
+            if (!empty($this->solrConfig['username']) === true && !empty($this->solrConfig['password'])) {
                 $requestOptions['auth'] = [
                     $this->solrConfig['username'],
                     $this->solrConfig['password'],
@@ -8802,7 +8776,7 @@ class GuzzleSolrService
             $response   = $this->httpClient->get($schemaUrl, $requestOptions);
             $schemaData = json_decode($response->getBody()->getContents(), true);
 
-            if (($schemaData === null || $schemaData === false) === true || isset($schemaData['schema']) === false) {
+            if (($schemaData === null || $schemaData === false) === true || !isset($schemaData['schema'])) {
                 return [
                     'success' => false,
                     'message' => 'Invalid schema response from SOLR',
@@ -8866,7 +8840,7 @@ class GuzzleSolrService
     {
         $fields = [];
 
-        if (isset($schema['fields']) === true) {
+        if (($schema['fields'] ?? null) !== null) {
             foreach ($schema['fields'] as $field) {
                 $name          = $field['name'] ?? 'unknown';
                 $fields[$name] = [
@@ -8898,7 +8872,7 @@ class GuzzleSolrService
     {
         $dynamicFields = [];
 
-        if (isset($schema['dynamicFields']) === true) {
+        if (($schema['dynamicFields'] ?? null) !== null) {
             foreach ($schema['dynamicFields'] as $field) {
                 $name = $field['name'] ?? 'unknown';
                 $dynamicFields[$name] = [
@@ -8925,7 +8899,7 @@ class GuzzleSolrService
     {
         $fieldTypes = [];
 
-        if (isset($schema['fieldTypes']) === true) {
+        if (($schema['fieldTypes'] ?? null) !== null) {
             foreach ($schema['fieldTypes'] as $fieldType) {
                 $name = $fieldType['name'] ?? 'unknown';
                 $fieldTypes[$name] = [
@@ -8973,7 +8947,7 @@ class GuzzleSolrService
         $notes = [];
 
         // Check for common field configuration issues.
-        if (isset($schema['fields']) === true) {
+        if (($schema['fields'] ?? null) !== null) {
             $stringFields = array_filter(
                     $schema['fields'],
                     function ($field) {
@@ -8992,7 +8966,7 @@ class GuzzleSolrService
         }
 
         // Check for OpenRegister-specific field patterns.
-        if (isset($schema['dynamicFields']) === true) {
+        if (($schema['dynamicFields'] ?? null) !== null) {
             $orFields = array_filter(
                     $schema['dynamicFields'],
                     function ($field) {
@@ -9046,11 +9020,11 @@ class GuzzleSolrService
                     register: null,
                     schema: null,
                     published: null,
-                // Count ALL objects (published and unpublished)
+                // Count ALL objects (published and unpublished).
                     rbac: false,
-                // Skip RBAC for performance
+                // Skip RBAC for performance.
                     multi: false
-                // Skip multitenancy for performance
+                // Skip multitenancy for performance.
                 );
             }
 
@@ -9137,7 +9111,7 @@ class GuzzleSolrService
         ];
 
         // Add prediction accuracy if prediction was available.
-        if (empty($prediction) === false && isset($prediction['estimated_additional']) === true) {
+        if (empty($prediction) === false && (($prediction['estimated_additional'] ?? null) !== null)) {
             $predictionAccuracy = $this->calculatePredictionAccuracy(estimated: $prediction['estimated_additional'], actual: $actualUsed);
 
             $report['prediction'] = [
@@ -9167,7 +9141,7 @@ class GuzzleSolrService
     {
         if ($memoryLimit === '-1') {
             return PHP_INT_MAX;
-            // No limit
+            // No limit.
         }
 
         $unit  = strtoupper(substr($memoryLimit, -1));
@@ -9231,7 +9205,7 @@ class GuzzleSolrService
         // Check if value exceeds byte limit (UTF-8 safe).
         if (strlen($value) <= $maxBytes) {
             return $value;
-            // Within limits
+            // Within limits.
         }
 
         // **TRUNCATE SAFELY**: Ensure we don't break UTF-8 characters.
@@ -9273,7 +9247,7 @@ class GuzzleSolrService
 
         // File fields should always be truncated.
         if ($type === 'file' || $format === 'file' || $format === 'binary'
-            || in_array($format, ['data-url', 'base64', 'image', 'document'])
+            || in_array($format, ['data-url', 'base64', 'image', 'document'], true) === true
         ) {
             return true;
         }
@@ -9285,7 +9259,7 @@ class GuzzleSolrService
         }
 
         // Base64 data URLs (common pattern).
-        if (str_contains(strtolower($fieldName), 'base64')) {
+        if (str_contains(strtolower($fieldName), 'base64') === true) {
             return true;
         }
 
@@ -9327,7 +9301,7 @@ class GuzzleSolrService
 
             $schemaData = json_decode($response->getBody()->getContents(), true);
 
-            if (isset($schemaData['fields']) === false || is_array($schemaData['fields']) === false) {
+            if (!isset($schemaData['fields']) === false || is_array($schemaData['fields']) === false) {
                 throw new \Exception('Invalid schema response from SOLR');
             }
 
@@ -9352,9 +9326,9 @@ class GuzzleSolrService
                             );
                 }
 
-                if (isset($field['name']) === false || isset($field['docValues']) === false || $field['docValues'] !== true) {
+                if (!isset($field['name']) === false || !isset($field['docValues']) === false || $field['docValues'] !== true) {
                     continue;
-                    // Skip fields without docValues
+                    // Skip fields without docValues.
                 }
 
                 $fieldName = $field['name'];
@@ -9364,7 +9338,7 @@ class GuzzleSolrService
                 if (str_starts_with($fieldName, 'self_') === true) {
                     // Metadata field.
                     $metadataKey = substr($fieldName, 5);
-                    // Remove 'self_' prefix
+                    // Remove 'self_' prefix.
                     $facetableFields['@self'][$metadataKey] = [
                         'name'           => $metadataKey,
                         'type'           => $this->mapSolrTypeToFacetType($fieldType),
@@ -9379,14 +9353,14 @@ class GuzzleSolrService
                     $baseFieldName = $fieldName;
                     if (str_ends_with($fieldName, '_s') === true || str_ends_with($fieldName, '_t') === true || str_ends_with($fieldName, '_i') === true || str_ends_with($fieldName, '_f') === true || str_ends_with($fieldName, '_b') === true) {
                         $baseFieldName = substr($fieldName, 0, -2);
-                        // Remove suffix
+                        // Remove suffix.
                     }
 
                     $facetableFields['object_fields'][$baseFieldName] = [
                         'name'           => $baseFieldName,
                         'type'           => $this->mapSolrTypeToFacetType($fieldType),
                         'index_field'    => $fieldName,
-                    // Use the actual SOLR field name
+                    // Use the actual SOLR field name.
                         'index_type'     => $fieldType,
                         'queryParameter' => $baseFieldName,
                         'source'         => 'object',
@@ -9452,7 +9426,7 @@ class GuzzleSolrService
 
             $schemaData = json_decode($response->getBody()->getContents(), true);
 
-            if (isset($schemaData['fields']) === false || is_array($schemaData['fields']) === false) {
+            if (!isset($schemaData['fields']) === false || is_array($schemaData['fields']) === false) {
                 throw new \Exception('Invalid schema response from SOLR');
             }
 
@@ -9466,7 +9440,7 @@ class GuzzleSolrService
                 $fieldName = $field['name'] ?? 'unknown';
 
                 // Only include fields that have docValues (facetable).
-                if (isset($field['name']) === false || isset($field['docValues']) === false || $field['docValues'] !== true) {
+                if (!isset($field['name']) === false || !isset($field['docValues']) === false || $field['docValues'] !== true) {
                     continue;
                 }
 
@@ -9488,7 +9462,7 @@ class GuzzleSolrService
                 if (str_starts_with($fieldName, 'self_') === true) {
                     // Metadata field.
                     $metadataKey = substr($fieldName, 5);
-                    // Remove 'self_' prefix
+                    // Remove 'self_' prefix.
                     $fieldInfo['displayName']         = ucfirst(str_replace('_', ' ', $metadataKey));
                     $fieldInfo['category']            = 'metadata';
                     $rawFields['@self'][$metadataKey] = $fieldInfo;
@@ -9661,7 +9635,7 @@ class GuzzleSolrService
                         'Failed to decode SOLR JSON response for contextual facets',
                         [
                             'response_body' => substr($responseBody, 0, 1000),
-                // First 1000 chars
+                // First 1000 chars.
                             'json_error'    => json_last_error_msg(),
                         ]
                         );
@@ -9673,12 +9647,12 @@ class GuzzleSolrService
                     [
                         'execution_time_ms' => round($executionTime, 2),
                         'total_found'       => $data['response']['numFound'] ?? 0,
-                        'facets_available'  => isset($data['facets']),
+                        'facets_available'  => isset($data['facets']) === true,
                     ]
                     );
 
             // Process the facet data.
-            if (isset($data['facets']) === true) {
+            if (($data['facets'] ?? null) !== null) {
                 $contextualData = $this->processOptimizedContextualFacets($data['facets']);
 
                 return $contextualData;
@@ -9717,7 +9691,7 @@ class GuzzleSolrService
         ];
 
         // If there are no results, return empty facets.
-        if (isset($solrResponse['response']['docs']) === false || empty($solrResponse['response']['docs']) === true) {
+        if (!isset($solrResponse['response']['docs']) === false || empty($solrResponse['response']['docs']) === true) {
             return $contextualData;
         }
 
@@ -9728,7 +9702,7 @@ class GuzzleSolrService
         $sampleSize = min(10, count($docs));
         for ($i = 0; $i < $sampleSize; $i++) {
             foreach ($docs[$i] as $fieldName => $fieldValue) {
-                if (isset($fieldsFound[$fieldName]) === false) {
+                if (!isset($fieldsFound[$fieldName])) {
                     $fieldsFound[$fieldName] = [];
                 }
 
@@ -9760,7 +9734,7 @@ class GuzzleSolrService
         foreach ($fieldsFound as $fieldName => $values) {
             if (str_starts_with($fieldName, 'self_') === true) {
                 // Metadata field.
-                if (isset($metadataFields[$fieldName]) === true) {
+                if (($metadataFields[$fieldName] ?? null) !== null) {
                     $fieldInfo = $metadataFields[$fieldName];
                     $contextualData['facetable']['@self'][$fieldInfo['name']] = $fieldInfo;
                     $contextualData['extended']['@self'][$fieldInfo['name']]  = array_merge(
@@ -9857,7 +9831,7 @@ class GuzzleSolrService
 
         // Extract facets from the current search results if they exist.
         // This is much faster than making additional SOLR calls.
-        if (isset($searchResults['facets']) && !empty($searchResults['facets'])) {
+        if (($searchResults['facets'] ?? null) !== null && empty($searchResults['facets']) === false) {
             $this->logger->debug(message: 'Using facets from current search results for contextual data');
             return $this->processContextualFacetsFromSearchResults($searchResults['facets']);
         }
@@ -9902,7 +9876,7 @@ class GuzzleSolrService
         // and gets their facet data in one call.
         $optimizedFacetQuery = $this->buildOptimizedContextualFacetQuery();
 
-        if (empty($optimizedFacetQuery)) {
+        if (empty($optimizedFacetQuery) === true) {
             return [
                 'facetable' => ['@self' => [], 'object_fields' => []],
                 'extended'  => ['@self' => [], 'object_fields' => []],
@@ -9927,7 +9901,7 @@ class GuzzleSolrService
         $queryParams = [
             'q'          => $baseQuery,
             'rows'       => 0,
-        // We only want facet data
+        // We only want facet data.
             'wt'         => 'json',
             'json.facet' => json_encode($optimizedFacetQuery),
         ];
@@ -9961,7 +9935,7 @@ class GuzzleSolrService
                         'Failed to decode SOLR JSON response for contextual facets',
                         [
                             'response_body' => substr($responseBody, 0, 1000),
-                // First 1000 chars
+                // First 1000 chars.
                             'json_error'    => json_last_error_msg(),
                         ]
                         );
@@ -10040,11 +10014,11 @@ class GuzzleSolrService
                 'type'     => 'terms',
                 'field'    => $solrField,
                 'limit'    => 1000,
-            // Increased from 50 to 1000 for better coverage
+            // Increased from 50 to 1000 for better coverage.
                 'mincount' => 1,
-            // Only include if there are actual values
+            // Only include if there are actual values.
                 'missing'  => false,
-            // Don't include missing values
+            // Don't include missing values.
             ];
 
             // Apply domain filter if we have filter queries.
@@ -10059,19 +10033,19 @@ class GuzzleSolrService
         try {
             $allFacetableFields = $this->discoverFacetableFieldsFromSolr();
 
-            if (isset($allFacetableFields['object_fields'])) {
+            if (($allFacetableFields['object_fields'] ?? null) !== null) {
                 foreach ($allFacetableFields['object_fields'] as $fieldName => $fieldConfig) {
                     // Only add fields that can be faceted (have docValues).
-                    if (isset($fieldConfig['index_field'])) {
+                    if (($fieldConfig['index_field'] ?? null) !== null) {
                         $objectFacetConfig = [
                             'type'     => 'terms',
                             'field'    => $fieldConfig['index_field'],
                             'limit'    => 1000,
-                        // Increased from 50 to 1000 for better coverage
+                        // Increased from 50 to 1000 for better coverage.
                             'mincount' => 1,
-                        // Only include if there are actual values
+                        // Only include if there are actual values.
                             'missing'  => false,
-                        // Don't include missing values
+                        // Don't include missing values.
                         ];
 
                         // Apply domain filter if we have filter queries.
@@ -10113,11 +10087,11 @@ class GuzzleSolrService
                     'type'     => 'terms',
                     'field'    => $fieldName,
                     'limit'    => 1000,
-                // Increased from 50 to 1000 for better coverage
+                // Increased from 50 to 1000 for better coverage.
                     'mincount' => 1,
-                // Only include if there are actual values
+                // Only include if there are actual values.
                     'missing'  => false,
-                // Don't include missing values
+                // Don't include missing values.
                 ];
 
                 // Apply domain filter if we have filter queries.
@@ -10152,9 +10126,9 @@ class GuzzleSolrService
 
         // Process ALL facets from SOLR using unified approach.
         foreach ($facetData as $facetKey => $facetValue) {
-            if (empty($facetValue['buckets'])) {
+            if (empty($facetValue['buckets']) === true) {
                 continue;
-                // Skip facets with no data
+                // Skip facets with no data.
             }
 
             // Determine if this is a metadata field or object field.
@@ -10174,7 +10148,7 @@ class GuzzleSolrService
             $contextualData['facetable'][$fieldName] = $fieldInfo;
 
             // Format facet data with label resolution for metadata fields that need it.
-            if ($isMetadataField && in_array($facetKey, $metadataFieldsWithLabelResolution, true)) {
+            if (($isMetadataField === true) && in_array($facetKey, $metadataFieldsWithLabelResolution, true) === true) {
                 // Use specialized formatting with label resolution for register, schema, organisation.
                 $formattedData = $this->formatMetadataFacetData(
                     rawData: $facetValue,
@@ -10265,11 +10239,11 @@ class GuzzleSolrService
         $objectFieldInfo = $this->getObjectFieldInfoFromSchema($fieldName);
 
         // If no schema info available, use defaults.
-        if (empty($objectFieldInfo)) {
+        if (empty($objectFieldInfo) === true) {
             $objectFieldInfo = [
                 'name'           => $fieldName,
                 'type'           => 'terms',
-            // Most object fields are terms-based
+            // Most object fields are terms-based.
                 'title'          => ucfirst(str_replace('_', ' ', $fieldName)),
                 'description'    => 'Object field: '.$fieldName,
                 'data_type'      => 'string',
@@ -10319,7 +10293,7 @@ class GuzzleSolrService
                 ]
                 );
 
-        if (empty($facetQuery)) {
+        if (empty($facetQuery) === true) {
             return [
                 '@self'         => [],
                 'object_fields' => [],
@@ -10344,7 +10318,7 @@ class GuzzleSolrService
         $queryParams = [
             'q'          => $baseQuery,
             'rows'       => 0,
-        // We only want facet data, not documents
+        // We only want facet data, not documents.
             'wt'         => 'json',
             'json.facet' => json_encode($facetQuery),
         ];
@@ -10394,9 +10368,9 @@ class GuzzleSolrService
             $this->logger->debug(
                 'SOLR JSON faceting response',
                 array_merge(
-                    isset($data['facets']) ? [
+                    isset($data['facets']) === true ? [
                         'response_keys'     => array_keys($data),
-                        'facets_key_exists' => isset($data['facets']),
+                        'facets_key_exists' => isset($data['facets']) === true,
                         'facet_keys'        => $this->getFacetKeys($data),
                         'object_facet_keys' => $this->getObjectFacetKeys($data),
                     ] : [],
@@ -10491,9 +10465,9 @@ class GuzzleSolrService
             'type'     => 'terms',
             'field'    => $fieldName,
             'limit'    => $limit,
-        // Configurable limit, -1 for unlimited
+        // Configurable limit, -1 for unlimited.
             'mincount' => 1,
-        // Only include terms with at least 1 document
+        // Only include terms with at least 1 document.
         ];
 
     }//end buildTermsFacet()
@@ -10577,7 +10551,7 @@ class GuzzleSolrService
             $configFieldName = $fieldName;
 
             // Check if this field has custom configuration.
-            if (isset($facetConfig['facets'][$configFieldName])) {
+            if (($facetConfig['facets'][$configFieldName] ?? null) !== null) {
                 $customConfig = $facetConfig['facets'][$configFieldName];
 
                 // Apply custom title.
@@ -10591,22 +10565,22 @@ class GuzzleSolrService
                 }
 
                 // Apply custom order.
-                if (isset($customConfig['order'])) {
+                if (($customConfig['order'] ?? null) !== null) {
                     $facetData['order'] = (int) $customConfig['order'];
                 }
 
                 // Apply enabled/disabled state.
-                if (isset($customConfig['enabled'])) {
+                if (($customConfig['enabled'] ?? null) !== null) {
                     $facetData['enabled'] = (bool) $customConfig['enabled'];
                 }
 
                 // Apply show_count setting.
-                if (isset($customConfig['show_count'])) {
+                if (($customConfig['show_count'] ?? null) !== null) {
                     $facetData['show_count'] = (bool) $customConfig['show_count'];
                 }
 
                 // Apply max_items limit.
-                if (isset($customConfig['max_items']) && is_array($facetData['data'])) {
+                if (($customConfig['max_items'] ?? null) !== null && is_array($facetData['data']) === true) {
                     $maxItems = (int) $customConfig['max_items'];
                     if ($maxItems > 0 && count($facetData['data']) > $maxItems) {
                         $facetData['data'] = array_slice($facetData['data'], 0, $maxItems);
@@ -10620,7 +10594,7 @@ class GuzzleSolrService
                 $facetData['order']      = 0;
 
                 // Apply default max_items.
-                if (isset($defaultSettings['max_items']) && is_array($facetData['data'])) {
+                if (($defaultSettings['max_items'] ?? null) !== null && is_array($facetData['data']) === true) {
                     $maxItems = (int) $defaultSettings['max_items'];
                     if ($maxItems > 0 && count($facetData['data']) > $maxItems) {
                         $facetData['data'] = array_slice($facetData['data'], 0, $maxItems);
@@ -10666,7 +10640,7 @@ class GuzzleSolrService
 
                 // First, add facets in the specified global order.
                 foreach ($globalOrder as $fieldName) {
-                    if (isset($facets[$fieldName])) {
+                    if (($facets[$fieldName] ?? null) !== null) {
                         $sortedFacets[$fieldName] = $facets[$fieldName];
                         unset($facets[$fieldName]);
                     }
@@ -10729,9 +10703,9 @@ class GuzzleSolrService
 
         // Process metadata fields.
         foreach ($facetableFields['@self'] ?? [] as $fieldName => $fieldInfo) {
-            if (isset($facetData[$fieldName])) {
+            if (($facetData[$fieldName] ?? null) !== null) {
                 // Use specialized formatting for metadata fields that need label resolution.
-                if (in_array($fieldName, $metadataFieldsWithLabelResolution, true)) {
+                if (in_array($fieldName, $metadataFieldsWithLabelResolution, true) === true) {
                     // Strip leading underscore for method parameter (register, schema, organisation).
                     $cleanFieldName = ltrim($fieldName, '_');
                     $formattedData  = $this->formatMetadataFacetData(
@@ -10761,7 +10735,7 @@ class GuzzleSolrService
 
         // Process object fields.
         foreach ($facetableFields['object_fields'] ?? [] as $fieldName => $fieldInfo) {
-            if (isset($facetData[$fieldName])) {
+            if (($facetData[$fieldName] ?? null) !== null) {
                 $facetResult = array_merge(
                     $fieldInfo,
                     ['data' => $this->formatFacetData(rawFacetData: $facetData[$fieldName], facetType: $fieldInfo['type'])]
@@ -10872,7 +10846,7 @@ class GuzzleSolrService
                 'value' => $id,
                 'count' => $bucket['count'],
                 'label' => $labels[$id] ?? $id,
-            // Use resolved label or fallback to ID
+            // Use resolved label or fallback to ID.
             ];
         }
 
@@ -10987,7 +10961,7 @@ class GuzzleSolrService
         foreach ($buckets as $bucket) {
             $value = $bucket['val'];
             $label = $resolvedNames[$value] ?? $value;
-            // Use resolved name or fallback to value
+            // Use resolved name or fallback to value.
             $formattedBuckets[] = [
                 'value' => $value,
                 'count' => $bucket['count'],
@@ -11232,7 +11206,7 @@ class GuzzleSolrService
             // In a full implementation, this would query the current schema context.
             // and extract field information from schema properties.
             return null;
-            // Placeholder - would need schema context to implement fully
+            // Placeholder - would need schema context to implement fully.
         } catch (\Exception $e) {
             $this->logger->debug(
                     'Failed to get object field info from schema',
@@ -11255,7 +11229,7 @@ class GuzzleSolrService
      */
     private function resolveRegisterLabels(array $ids): array
     {
-        if (empty($ids) || $this->registerMapper === null) {
+        if (empty($ids) === true || $this->registerMapper === null) {
             return array_combine($ids, $ids);
         }
 
@@ -11265,7 +11239,7 @@ class GuzzleSolrService
 
             $labels = [];
             foreach ($ids as $id) {
-                if (isset($registers[$id])) {
+                if (($registers[$id] ?? null) !== null) {
                     $register    = $registers[$id];
                     $labels[$id] = $register->getTitle() ?? "Register $id";
                 } else {
@@ -11298,7 +11272,7 @@ class GuzzleSolrService
      */
     private function resolveSchemaLabels(array $ids): array
     {
-        if (empty($ids) || $this->schemaMapper === null) {
+        if (empty($ids) === true || $this->schemaMapper === null) {
             return array_combine($ids, $ids);
         }
 
@@ -11308,7 +11282,7 @@ class GuzzleSolrService
 
             $labels = [];
             foreach ($ids as $id) {
-                if (isset($schemas[$id])) {
+                if (($schemas[$id] ?? null) !== null) {
                     $schema      = $schemas[$id];
                     $labels[$id] = $schema->getTitle() ?? $schema->getName() ?? "Schema $id";
                 } else {
@@ -11341,7 +11315,7 @@ class GuzzleSolrService
      */
     private function resolveOrganisationLabels(array $ids): array
     {
-        if (empty($ids) || $this->organisationMapper === null) {
+        if (empty($ids) === true || $this->organisationMapper === null) {
             return array_combine($ids, $ids);
         }
 
@@ -11351,7 +11325,7 @@ class GuzzleSolrService
 
             $labels = [];
             foreach ($ids as $uuid) {
-                if (isset($organisations[$uuid])) {
+                if (($organisations[$uuid] ?? null) !== null) {
                     $organisation  = $organisations[$uuid];
                     $labels[$uuid] = $organisation->getName() ?? "Organisation $uuid";
                 } else {
@@ -11387,12 +11361,12 @@ class GuzzleSolrService
      */
     private function resolveRegisterToId($registerValue, ?\OCA\OpenRegister\Db\Register $register=null): int
     {
-        if (empty($registerValue)) {
+        if (empty($registerValue) === true) {
             return 0;
         }
 
         // If it's already a numeric ID, return it as integer.
-        if (is_numeric($registerValue)) {
+        if (is_numeric($registerValue) === true) {
             return (int) $registerValue;
         }
 
@@ -11441,12 +11415,12 @@ class GuzzleSolrService
      */
     private function resolveSchemaToId($schemaValue, ?\OCA\OpenRegister\Db\Schema $schema=null): int
     {
-        if (empty($schemaValue)) {
+        if (empty($schemaValue) === true) {
             return 0;
         }
 
         // If it's already a numeric ID, return it as integer.
-        if (is_numeric($schemaValue)) {
+        if (is_numeric($schemaValue) === true) {
             return (int) $schemaValue;
         }
 
@@ -11503,7 +11477,7 @@ class GuzzleSolrService
      */
     private function resolveMetadataValueToId(string $fieldType, string|int $value): int
     {
-        if (is_numeric($value)) {
+        if (is_numeric($value) === true) {
             return (int) $value;
         }
 
@@ -11610,6 +11584,7 @@ class GuzzleSolrService
                 $shardCount   = count($shards);
                 $replicaCount = 0;
                 $allActive    = true;
+                $activeArray  = []; // Array to track active replicas for health/status checks
 
                 foreach ($shards as $shard) {
                     $replicas      = $shard['replicas'] ?? [];
@@ -11617,7 +11592,10 @@ class GuzzleSolrService
 
                     // Check if all replicas are active.
                     foreach ($replicas as $replica) {
-                        if (($replica['state'] ?? '') !== 'active') {
+                        $isActive = ($replica['state'] ?? '') === 'active';
+                        if ($isActive === true) {
+                            $activeArray[] = 'active';
+                        } else {
                             $allActive = false;
                         }
                     }
@@ -11633,8 +11611,8 @@ class GuzzleSolrService
                     'autoAddReplicas'   => $collectionData['autoAddReplicas'] ?? false,
                     'replicationFactor' => $collectionData['replicationFactor'] ?? 1,
                     'maxShardsPerNode'  => $collectionData['maxShardsPerNode'] ?? 1,
-                    'health'            => $this->getCollectionHealth($allActive),
-                    'status'            => $this->getCollectionStatus($allActive),
+                    'health'            => $this->getCollectionHealth($activeArray),
+                    'status'            => $this->getCollectionStatus($activeArray),
                 ];
             }//end foreach
 
@@ -11775,7 +11753,7 @@ class GuzzleSolrService
             $response = $this->httpClient->get($createUrl, ['timeout' => 60]);
             $result   = json_decode((string) $response->getBody(), true);
 
-            if (isset($result['failure'])) {
+            if (($result['failure'] ?? null) !== null) {
                 throw new \Exception('Failed to create ConfigSet: '.json_encode($result['failure']));
             }
 
@@ -11844,7 +11822,7 @@ class GuzzleSolrService
             $response = $this->httpClient->get($deleteUrl, ['timeout' => 60]);
             $result   = json_decode((string) $response->getBody(), true);
 
-            if (isset($result['failure'])) {
+            if (($result['failure'] ?? null) !== null) {
                 throw new \Exception('Failed to delete ConfigSet: '.json_encode($result['failure']));
             }
 
@@ -11918,12 +11896,12 @@ class GuzzleSolrService
             $response = $this->httpClient->get($createUrl, ['timeout' => 60]);
             $result   = json_decode((string) $response->getBody(), true);
 
-            if (isset($result['failure'])) {
+            if (($result['failure'] ?? null) !== null) {
                 throw new \Exception('Failed to create collection: '.json_encode($result['failure']));
             }
 
             // If copyData is true, copy documents from source to target.
-            if ($copyData && $sourceInfo['documentCount'] > 0) {
+            if (($copyData === true) === true && ($sourceInfo['documentCount'] > 0) === true) {
                 $this->logger->info(message: '📋 Copying data from source to target collection');
 
                 // Note: This is a placeholder for data copying.
@@ -11942,7 +11920,7 @@ class GuzzleSolrService
                 'shards'     => $sourceInfo['shards'],
                 'replicas'   => $sourceInfo['replicationFactor'],
                 'dataCopied' => false,
-            // Will be true when data copying is implemented
+            // Will be true when data copying is implemented.
             ];
         } catch (\Exception $e) {
             $this->logger->error(
@@ -12004,7 +11982,7 @@ class GuzzleSolrService
                     'chunk_start_offset' => $chunk['start_offset'] ?? 0,
                     'chunk_end_offset'   => $chunk['end_offset'] ?? 0,
                     'text_content'       => $chunk['text'] ?? '',
-                // For full-text search
+                // For full-text search.
                     'indexed_at'         => date('Y-m-d\TH:i:s\Z'),
                 ];
             }
@@ -12018,7 +11996,7 @@ class GuzzleSolrService
             ];
 
             // Add authentication if configured.
-            if (!empty($this->solrConfig['username']) && !empty($this->solrConfig['password'])) {
+            if (!empty($this->solrConfig['username']) === true && !empty($this->solrConfig['password'])) {
                 $requestOptions['auth'] = [
                     $this->solrConfig['username'],
                     $this->solrConfig['password'],
@@ -12028,7 +12006,7 @@ class GuzzleSolrService
             $response = $this->httpClient->post($updateUrl, $requestOptions);
             $result   = json_decode($response->getBody()->getContents(), true);
 
-            if (isset($result['responseHeader']['status']) && $result['responseHeader']['status'] === 0) {
+            if (($result['responseHeader']['status'] ?? null) !== null && $result['responseHeader']['status'] === 0) {
                 $this->logger->info(
                         '[GuzzleSolrService] File chunks indexed successfully',
                         [
@@ -12106,7 +12084,7 @@ class GuzzleSolrService
                 $chunksJson = $fileText->getChunksJson();
                 $chunks     = json_decode($chunksJson, true);
 
-                if (!is_array($chunks) || empty($chunks)) {
+                if (is_array($chunks) === false || empty($chunks) === true) {
                     $errors[] = "File $fileId: Invalid or empty chunks data";
                     $failed++;
                     continue;
@@ -12121,7 +12099,7 @@ class GuzzleSolrService
                 ];
 
                 // Index chunks (chunks are already prepared by TextExtractionService).
-                if ($this->indexFileChunks(fileId: $fileId, chunks: $chunks, metadata: $metadata)) {
+                if ($this->indexFileChunks(fileId: $fileId, chunks: $chunks, metadata: $metadata) === true) {
                     $indexed++;
 
                     // Update file text record.
@@ -12215,7 +12193,7 @@ class GuzzleSolrService
             ];
 
             // Add authentication if configured.
-            if (!empty($this->solrConfig['username']) && !empty($this->solrConfig['password'])) {
+            if (!empty($this->solrConfig['username']) === true && !empty($this->solrConfig['password'])) {
                 $requestOptions['auth'] = [
                     $this->solrConfig['username'],
                     $this->solrConfig['password'],
@@ -12389,7 +12367,7 @@ class GuzzleSolrService
      */
     private function getSolrTypeFromArray(array $solrType): string
     {
-        if (empty($solrType) === false && isset($solrType[0]) === true) {
+        if (empty($solrType) === false && (($solrType[0] ?? null) !== null)) {
             return (string) $solrType[0];
         }
 
@@ -12407,7 +12385,7 @@ class GuzzleSolrService
      */
     private function getSelfRelationsType(array $document): string
     {
-        if (isset($document['self_relations']) === false) {
+        if (!isset($document['self_relations'])) {
             return 'NOT_SET';
         }
 
@@ -12434,7 +12412,7 @@ class GuzzleSolrService
      */
     private function getSelfRelationsCount(array $document): int
     {
-        if (isset($document['self_relations']) === false) {
+        if (!isset($document['self_relations'])) {
             return 0;
         }
 
@@ -12598,7 +12576,7 @@ class GuzzleSolrService
      */
     private function getFacetKeys(array $data): array
     {
-        if (isset($data['facets']) === false || is_array($data['facets']) === false) {
+        if (!isset($data['facets']) === false || is_array($data['facets']) === false) {
             return [];
         }
 

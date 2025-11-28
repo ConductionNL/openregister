@@ -43,7 +43,6 @@ use Symfony\Component\Uid\Uuid;
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
- * @psalm-suppress UnusedClass - This controller is registered via routes.php and used by Nextcloud's routing system
  */
 class ConversationController extends Controller
 {
@@ -408,9 +407,9 @@ class ConversationController extends Controller
 
             // Get agent ID (handle both agentId and agentUuid).
             $agentId = null;
-            if (isset($data['agentId']) === true) {
+            if (($data['agentId'] ?? null) !== null) {
                 $agentId = $data['agentId'];
-            } else if (isset($data['agentUuid']) === true) {
+            } else if (($data['agentUuid'] ?? null) !== null) {
                 // Look up agent by UUID to get ID.
                 try {
                     $agent   = $this->agentMapper->findByUuid($data['agentUuid']);
@@ -515,11 +514,11 @@ class ConversationController extends Controller
 
             // SECURITY: Only update allowed fields to prevent tampering with immutable fields.
             // Immutable fields (organisation, owner, userId, agentId, created) are NOT updated.
-            if (isset($data['title']) === true) {
+            if (($data['title'] ?? null) !== null) {
                 $conversation->setTitle($data['title']);
             }
 
-            if (isset($data['metadata']) === true) {
+            if (($data['metadata'] ?? null) !== null) {
                 $conversation->setMetadata($data['metadata']);
             }
 

@@ -203,7 +203,7 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
             $objectData = $entity->jsonSerialize();
         }
 
-        if (isset($objectData['id']) === true) {
+        if (($objectData['id'] ?? null) !== null) {
             $objectId = $objectData['id'];
         } else {
             $objectId = 'unknown';
@@ -214,8 +214,8 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
                 '[ObjectVectorizationStrategy] Preparing metadata',
                 [
                     'object_id'       => $objectId,
-                    'has_@self'       => isset($objectData['@self']),
-                    // @psalm-suppress UndefinedMethod.
+                    'has_@self'       => isset($objectData['@self']) === true,
+                    //
                     '@self_keys'      => $this->getSelfKeys($objectData),
                     'register_direct' => $objectData['_register'] ?? $objectData['register'] ?? 'none',
                     'register_@self'  => $objectData['@self']['register'] ?? 'none',
@@ -320,7 +320,7 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
             $objectData = $entity->jsonSerialize();
         }
 
-        if (isset($objectData['id']) === true) {
+        if (($objectData['id'] ?? null) !== null) {
             return $objectData['id'];
         }
 

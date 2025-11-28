@@ -58,32 +58,26 @@ class MagicOrganizationHandler
 
 
     /**
-     * Constructor for MagicOrganizationHandler
+     * Constructor for MagicOrganizationHandler.
      *
-     * @param IDBConnection   $db           Database connection
-     * @param IUserSession    $userSession  User session for current user context
-     * @param IGroupManager   $groupManager Group manager for user groups
-     * @param IUserManager    $userManager  User manager for user operations
-     * @param IAppConfig      $appConfig    App configuration for multi-tenancy settings
-     * @param LoggerInterface $logger       Logger for debugging and error reporting
-     */
-
-
-    /**
-     * @param IDBConnection $db          Database connection (unused but kept for future use)
-     * @param IUserManager  $userManager User manager (unused but kept for future use)
+     * @param IDBConnection   $db           Database connection (unused but kept for future use)
+     * @param IUserSession    $userSession  User session manager
+     * @param IGroupManager   $groupManager Group manager
+     * @param IUserManager    $userManager  User manager (unused but kept for future use)
+     * @param IAppConfig      $appConfig    Application configuration
+     * @param LoggerInterface $logger       Logger for logging operations
      *
      * @psalm-suppress UnusedParam - db and userManager kept for future use
      */
     public function __construct(
         /**
-         * @psalm-suppress UnusedProperty - Property kept for future use
+         * Database connection.
          */
         private readonly IDBConnection $db,
         private readonly IUserSession $userSession,
         private readonly IGroupManager $groupManager,
         /**
-         * @psalm-suppress UnusedProperty - Property kept for future use
+         * User manager.
          */
         private readonly IUserManager $userManager,
         private readonly IAppConfig $appConfig,
@@ -157,7 +151,7 @@ class MagicOrganizationHandler
                 // If admin override is disabled, apply organization filtering for admin users.
                 // Note: $activeOrganisationUuid cannot be null here because we checked and returned early at line 125.
                 // This check is redundant but kept for defensive programming.
-                // @psalm-suppress TypeDoesNotContainNull.
+                //
                 if ($activeOrganisationUuid === null) {
                     return;
                     // No filtering if no active organization.
@@ -369,7 +363,7 @@ class MagicOrganizationHandler
     public function setDefaultOrganization(array $objects, string $defaultOrgUuid): array
     {
         foreach ($objects as &$object) {
-            if (isset($object['_organisation']) === false || $object['_organisation'] === '') {
+            if (!isset($object['_organisation']) === false || $object['_organisation'] === '') {
                 $object['_organisation'] = $defaultOrgUuid;
             }
         }

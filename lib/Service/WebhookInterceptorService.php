@@ -158,7 +158,7 @@ class WebhookInterceptorService
 
                 // Log success.
                 $webhookLog->setSuccess(true);
-                if ($response !== null && isset($response['statusCode'])) {
+                if ($response !== null && (($response['statusCode'] ?? null) !== null)) {
                     $webhookLog->setStatusCode($response['statusCode']);
                     $webhookLog->setResponseBody(json_encode($response));
                 }
@@ -417,7 +417,7 @@ class WebhookInterceptorService
         $modifiedData = $originalData;
 
         foreach ($mapping as $responseField => $requestField) {
-            if (isset($response[$responseField]) === true) {
+            if (($response[$responseField] ?? null) !== null) {
                 // Support nested field access using dot notation.
                 $this->setNestedValue($modifiedData, $requestField, $response[$responseField]);
             }
@@ -443,7 +443,7 @@ class WebhookInterceptorService
         $current = &$data;
 
         foreach ($keys as $key) {
-            if (isset($current[$key]) === false || is_array($current[$key]) === false) {
+            if (!isset($current[$key]) === false || is_array($current[$key]) === false) {
                 $current[$key] = [];
             }
 
@@ -491,7 +491,7 @@ class WebhookInterceptorService
     private function eventTypeToEventClass(string $eventType): string
     {
         // Convert event type to event class name.
-        // Example: 'object.creating' -> 'OCA\OpenRegister\Event\ObjectCreatingEvent'
+        // Example: 'object.creating' -> 'OCA\OpenRegister\Event\ObjectCreatingEvent'.
         $parts  = explode('.', $eventType);
         $entity = ucfirst($parts[0]);
         $action = ucfirst($parts[1] ?? 'created');

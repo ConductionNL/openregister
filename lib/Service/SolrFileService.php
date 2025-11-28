@@ -705,7 +705,6 @@ class SolrFileService
     private function commandExists(string $command): bool
     {
         /*
-         * @psalm-suppress ForbiddenCode
          */
         $result = shell_exec(sprintf('which %s 2>/dev/null', escapeshellarg($command)));
         return !empty($result);
@@ -774,7 +773,7 @@ class SolrFileService
                 [
                     'chunk_count'      => count($chunks),
                     'chunking_time_ms' => $chunkingTime,
-                    // @psalm-suppress UndefinedMethod.
+                    //
                     'avg_chunk_size'   => $this->calculateAvgChunkSize($chunks),
                 ]
                 );
@@ -1354,7 +1353,7 @@ class SolrFileService
             throw new \Exception('fileCollection not configured in SOLR settings');
         }
 
-        // Extract chunking options if provided
+        // Extract chunking options if provided.
         $chunkSize    = $options['chunk_size'] ?? null;
         $chunkOverlap = $options['chunk_overlap'] ?? null;
 

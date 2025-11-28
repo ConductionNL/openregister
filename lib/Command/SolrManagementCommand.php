@@ -49,7 +49,7 @@ use Symfony\Component\Console\Input\InputArgument;
  * @author    OpenRegister Team
  * @license   AGPL-3.0-or-later
  * @link      https://github.com/OpenRegister/OpenRegister
- * @version   1.0.0
+ * @version   GIT: <git_id>
  * @copyright 2024 OpenRegister
  */
 class SolrManagementCommand extends Command
@@ -528,7 +528,7 @@ class SolrManagementCommand extends Command
 
         try {
             $result = $this->solrService->clearIndex();
-            if (isset($result['success']) && $result['success'] === true) {
+            if (($result['success'] ?? null) !== null && ($result['success'] === true) === true) {
                 $output->writeln('✅ Index cleared successfully');
                 $output->writeln('<comment>   All documents have been removed from the index</comment>');
                 return self::SUCCESS;

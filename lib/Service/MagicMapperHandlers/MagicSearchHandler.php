@@ -159,7 +159,7 @@ class MagicSearchHandler
             $result = $queryBuilder->executeQuery();
             return (int) $result->fetchOne();
         } else {
-            return $this->executeSearchQuery($queryBuilder, $register, $schema);
+            return $this->executeSearchQuery($queryBuilder, $register, $schema, $tableName);
         }
 
     }//end searchObjects()
@@ -241,7 +241,7 @@ class MagicSearchHandler
 
         foreach ($filters as $field => $value) {
             // Check if this field exists as a column in the schema.
-            if (isset($properties[$field]) === true) {
+            if (($properties[$field] ?? null) !== null) {
                 $columnName = $this->sanitizeColumnName($field);
 
                 if ($value === 'IS NOT NULL') {
@@ -334,7 +334,7 @@ class MagicSearchHandler
                 // Metadata field sorting.
                 $metadataField = '_'.str_replace('@self.', '', $field);
                 $qb->addOrderBy("t.{$metadataField}", $direction);
-            } else if (isset($properties[$field]) === true) {
+            } else if (($properties[$field] ?? null) !== null) {
                 // Schema property field sorting.
                 $columnName = $this->sanitizeColumnName($field);
                 $qb->addOrderBy("t.{$columnName}", $direction);
@@ -347,9 +347,10 @@ class MagicSearchHandler
     /**
      * Execute search query and convert results to ObjectEntity objects
      *
-     * @param IQueryBuilder $qb       Query builder to execute
+     * @param IQueryBuilder $qb        Query builder to execute
      * @param Register      $register Register context
      * @param Schema        $schema   Schema context
+     * @param string        $tableName Table name for object conversion
      *
      * @return ObjectEntity[]
      *
@@ -357,7 +358,7 @@ class MagicSearchHandler
      *
      * @psalm-return list<ObjectEntity>
      */
-    private function executeSearchQuery(IQueryBuilder $qb, Register $register, Schema $schema): array
+    private function executeSearchQuery(IQueryBuilder $qb, Register $register, Schema $schema, string $tableName): array
     {
         $result  = $qb->executeQuery();
         $rows    = $result->fetchAll();
@@ -406,55 +407,55 @@ class MagicSearchHandler
             }
 
             // Set metadata properties.
-            if (isset($metadataData['uuid']) === true) {
+            if (($metadataData['uuid'] ?? null) !== null) {
                 $objectEntity->setUuid($metadataData['uuid']);
             }
 
-            if (isset($metadataData['name']) === true) {
+            if (($metadataData['name'] ?? null) !== null) {
                 $objectEntity->setName($metadataData['name']);
             }
 
-            if (isset($metadataData['description']) === true) {
+            if (($metadataData['description'] ?? null) !== null) {
                 $objectEntity->setDescription($metadataData['description']);
             }
 
-            if (isset($metadataData['summary']) === true) {
+            if (($metadataData['summary'] ?? null) !== null) {
                 $objectEntity->setSummary($metadataData['summary']);
             }
 
-            if (isset($metadataData['image']) === true) {
+            if (($metadataData['image'] ?? null) !== null) {
                 $objectEntity->setImage($metadataData['image']);
             }
 
-            if (isset($metadataData['slug']) === true) {
+            if (($metadataData['slug'] ?? null) !== null) {
                 $objectEntity->setSlug($metadataData['slug']);
             }
 
-            if (isset($metadataData['uri']) === true) {
+            if (($metadataData['uri'] ?? null) !== null) {
                 $objectEntity->setUri($metadataData['uri']);
             }
 
-            if (isset($metadataData['owner']) === true) {
+            if (($metadataData['owner'] ?? null) !== null) {
                 $objectEntity->setOwner($metadataData['owner']);
             }
 
-            if (isset($metadataData['organisation']) === true) {
+            if (($metadataData['organisation'] ?? null) !== null) {
                 $objectEntity->setOrganisation($metadataData['organisation']);
             }
 
-            if (isset($metadataData['created']) === true) {
+            if (($metadataData['created'] ?? null) !== null) {
                 $objectEntity->setCreated(new \DateTime($metadataData['created']));
             }
 
-            if (isset($metadataData['updated']) === true) {
+            if (($metadataData['updated'] ?? null) !== null) {
                 $objectEntity->setUpdated(new \DateTime($metadataData['updated']));
             }
 
-            if (isset($metadataData['published']) === true) {
+            if (($metadataData['published'] ?? null) !== null) {
                 $objectEntity->setPublished(new \DateTime($metadataData['published']));
             }
 
-            if (isset($metadataData['deleted']) === true) {
+            if (($metadataData['deleted'] ?? null) !== null) {
                 // Convert deleted timestamp to array format expected by setDeleted.
                 $deletedDateTime = new \DateTime($metadataData['deleted']);
                 $objectEntity->setDeleted(
@@ -465,7 +466,7 @@ class MagicSearchHandler
                         );
             }
 
-            if (isset($metadataData['depublished']) === true) {
+            if (($metadataData['depublished'] ?? null) !== null) {
                 $objectEntity->setDepublished(new \DateTime($metadataData['depublished']));
             }
 

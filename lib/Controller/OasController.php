@@ -26,7 +26,9 @@ use OCP\IRequest;
 use Exception;
 
 /**
- * Class OasController
+ * OasController class.
+ *
+ * Controller for generating OpenAPI Specifications (OAS) for registers.
  *
  * @psalm-suppress UnusedClass - This controller is registered via routes.php and used by Nextcloud's routing system
  */

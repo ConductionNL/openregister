@@ -25,7 +25,6 @@ declare(strict_types=1);
  * @version        GIT: <git_id>
  * @link           https://www.OpenRegister.app
  *
- * @psalm-suppress PropertyNotSetInConstructor
  * @phpstan-type   FileArray array{
  *     id: string,
  *     name: string,
@@ -204,13 +203,12 @@ class FileService
         $this->checkOwnership($file);
 
         // VersionManager is optional (requires files_versions app).
-        /** @psalm-suppress UndefinedClass */
+        /*
         if (class_exists(\OCA\Files_Versions\Versions\VersionManager::class) === true) {
-            /** @var \OCA\Files_Versions\Versions\VersionManager $versionManager */
             $versionManager = \OC::$server->get(\OCA\Files_Versions\Versions\VersionManager::class);
-            /** @psalm-suppress UndefinedClass - VersionManager is optional dependency */
             $versionManager->createVersion(user: $this->userManager->get(self::APP_USER), file: $file);
         }
+        */
 
         if ($filename !== null) {
             $file->move(targetPath: $file->getParent()->getPath().'/'.$filename);
@@ -237,13 +235,12 @@ class FileService
         $this->checkOwnership($file);
 
         // VersionManager is optional (requires files_versions app).
-        /** @psalm-suppress UndefinedClass */
+        /*
         if (class_exists(\OCA\Files_Versions\Versions\VersionManager::class) === true) {
-            /** @var \OCA\Files_Versions\Versions\VersionManager $versionManager */
             $versionManager = \OC::$server->get(\OCA\Files_Versions\Versions\VersionManager::class);
-            /** @psalm-suppress UndefinedClass - VersionManager is optional dependency */
             return $versionManager->getVersionFile($this->userManager->get(self::APP_USER), $file, $version);
         }
+        */
 
         return null;
     }//end getVersion()
@@ -308,7 +305,6 @@ class FileService
      * @throws NotPermittedException If folder creation is not permitted
      * @throws NotFoundException If parent folders do not exist
      *
-     * @psalm-suppress InvalidNullableReturnType
      * @phpstan-return string
      */
 
@@ -331,7 +327,6 @@ class FileService
      * @throws NotPermittedException If folder creation is not permitted
      * @throws NotFoundException If parent folders do not exist
      *
-     * @psalm-suppress InvalidNullableReturnType
      * @phpstan-return Node|null
      */
 
@@ -352,7 +347,6 @@ class FileService
      * @throws NotPermittedException If folder access is not permitted
      * @throws NotFoundException If folders do not exist
      *
-     * @psalm-suppress InvalidNullableReturnType
      * @phpstan-return Node|null
      */
 
@@ -369,7 +363,6 @@ class FileService
      *
      * @return string The folder name
      *
-     * @psalm-suppress PossiblyNullReference
      * @phpstan-return string
      */
     private function getObjectFolderName(ObjectEntity|string $objectEntity): string
@@ -396,7 +389,6 @@ class FileService
      * @throws NotPermittedException If folder creation is not permitted
      * @throws NotFoundException If parent folders do not exist
      *
-     * @psalm-suppress InvalidNullableReturnType
      * @phpstan-return Node|null
      */
     public function createEntityFolder(Register | ObjectEntity $entity): ?Node
@@ -430,7 +422,6 @@ class FileService
      * @throws Exception If folder creation fails
      * @throws NotPermittedException If folder creation is not permitted
      *
-     * @psalm-suppress InvalidNullableReturnType
      * @phpstan-return Node|null
      */
     private function createRegisterFolderById(Register $register, ?IUser $currentUser = null): ?Node
@@ -440,9 +431,9 @@ class FileService
         // Check if folder ID is already set and valid (not legacy string).
         if ($folderProperty !== null && $folderProperty !== '' && is_string($folderProperty) === false) {
             try {
-                // Type assertion: after checking it's not a string, it should be numeric (int or float)
+// Type assertion: after checking it's not a string, it should be numeric (int or float).
                 /** @var int|float $folderProperty */
-                if (is_numeric($folderProperty)) {
+                if (is_numeric($folderProperty) === true) {
                     $folderId = (int) $folderProperty;
                     $existingFolder = $this->getNodeById($folderId);
                     if ($existingFolder !== null && $existingFolder instanceof Folder) {
@@ -494,7 +485,6 @@ class FileService
      * @throws Exception If folder creation fails
      * @throws NotPermittedException If folder creation is not permitted
      *
-     * @psalm-suppress InvalidNullableReturnType
      * @phpstan-return Node|null
      */
     private function createObjectFolderById(ObjectEntity|string $objectEntity, ?IUser $currentUser = null, int|string|null $registerId = null): ?Node
@@ -507,9 +497,9 @@ class FileService
         // Check if folder ID is already set and valid (not legacy string).
         if ($folderProperty !== null && $folderProperty !== '' && is_string($folderProperty) === false) {
             try {
-                // Type assertion: after checking it's not a string, it should be numeric (int or float)
+// Type assertion: after checking it's not a string, it should be numeric (int or float).
                 /** @var int|float $folderProperty */
-                if (is_numeric($folderProperty)) {
+                if (is_numeric($folderProperty) === true) {
                     $folderId = (int) $folderProperty;
                     $existingFolder = $this->getNodeById($folderId);
                     if ($existingFolder !== null && $existingFolder instanceof Folder) {
@@ -648,7 +638,6 @@ class FileService
      */
     public function getFilesForEntity(Register | ObjectEntity $entity, ?bool $sharedFilesOnly = false): array
     {
-        /** @psalm-suppress UnusedVariable - Variable is used in getDirectoryListing() call */
         $folder = null;
 
         if ($entity instanceof Register) {
@@ -695,7 +684,7 @@ class FileService
 
         // Try to get folder by ID.
         /** @var int|float $folderProperty */
-        if (is_numeric($folderProperty)) {
+        if (is_numeric($folderProperty) === true) {
             $folderId = (int) $folderProperty;
             $folder = $this->getNodeById($folderId);
         } else {
@@ -851,7 +840,7 @@ class FileService
         $baseUrl = $this->urlGenerator->getBaseUrl();
         $trustedDomains = $this->config->getSystemValue('trusted_domains');
 
-        if (isset($trustedDomains[1]) === true) {
+        if (($trustedDomains[1] ?? null) !== null) {
             $baseUrl = str_replace(search: 'localhost', replace: $trustedDomains[1], subject: $baseUrl);
         }
 
@@ -1074,7 +1063,7 @@ class FileService
             'hash'        => $file->getEtag(),
             'published'   => $this->getPublishedTimeFromShares($shares),
             'modified'    => (new DateTime())->setTimestamp($file->getUploadTime())->format('c'),
-            'labels'      => $this->getFileTags(fileId: $file->getId()),
+            'labels'      => $this->getFileTags(fileId: (string) $file->getId()),
             'owner'       => $file->getOwner()?->getUID(),
         ];
 
@@ -1093,15 +1082,15 @@ class FileService
                 $value = trim($value);
 
                 // Skip if key exists in base metadata.
-                if (isset($metadata[$key]) === true) {
+                if (($metadata[$key] ?? null) !== null) {
                     $remainingLabels[] = $label;
                     continue;
                 }
 
                 // If key already exists as array, append value.
-                if (isset($metadata[$key]) && is_array($metadata[$key]) === true) {
+                if (($metadata[$key] ?? null) !== null && is_array($metadata[$key]) === true) {
                     $metadata[$key][] = $value;
-                } else if (isset($metadata[$key])) {
+                } else if (($metadata[$key] ?? null) !== null) {
                     // If key exists but not as array, convert to array with both values.
                     $metadata[$key] = [$metadata[$key], $value];
                 } else {
@@ -1159,10 +1148,10 @@ class FileService
         // Extract pagination parameters.
         $limit = $requestParams['limit'] ?? $requestParams['_limit'] ?? 20;
         $offset = $requestParams['offset'] ?? $requestParams['_offset'] ?? 0;
-        // Note: order, extend, and search parameters not currently used in this method
+// Note: order, extend, and search parameters not currently used in this method.
         $page = $requestParams['page'] ?? $requestParams['_page'] ?? null;
 
-        if ($page !== null && isset($limit) === true) {
+        if ($page !== null && (($limit ?? null) !== null)) {
             $page = (int) $page;
             $offset = $limit * ($page - 1);
         }
@@ -1230,15 +1219,15 @@ class FileService
         $filters = [];
 
         // Labels filtering (business logic filters prefixed with underscore).
-        if (isset($requestParams['_hasLabels']) === true) {
+        if (($requestParams['_hasLabels'] ?? null) !== null) {
             $filters['_hasLabels'] = (bool) $requestParams['_hasLabels'];
         }
 
-        if (isset($requestParams['_noLabels']) === true) {
+        if (($requestParams['_noLabels'] ?? null) !== null) {
             $filters['_noLabels'] = (bool) $requestParams['_noLabels'];
         }
 
-        if (isset($requestParams['labels']) === true) {
+        if (($requestParams['labels'] ?? null) !== null) {
             $labels = $requestParams['labels'];
             if (is_string($labels) === true) {
                 $filters['labels'] = array_map('trim', explode(',', $labels));
@@ -1248,34 +1237,34 @@ class FileService
         }
 
         // Extension filtering.
-        if (isset($requestParams['extension'])) {
+        if (($requestParams['extension'] ?? null) !== null) {
             $filters['extension'] = trim($requestParams['extension']);
         }
 
-        if (isset($requestParams['extensions'])) {
+        if (($requestParams['extensions'] ?? null) !== null) {
             $extensions = $requestParams['extensions'];
-            if (is_string($extensions)) {
+            if (is_string($extensions) === true) {
                 $filters['extensions'] = array_map('trim', explode(',', $extensions));
-            } else if (is_array($extensions)) {
+            } else if (is_array($extensions) === true) {
                 $filters['extensions'] = $extensions;
             }
         }
 
         // Size filtering.
-        if (isset($requestParams['minSize'])) {
+        if (($requestParams['minSize'] ?? null) !== null) {
             $filters['minSize'] = (int) $requestParams['minSize'];
         }
 
-        if (isset($requestParams['maxSize'])) {
+        if (($requestParams['maxSize'] ?? null) !== null) {
             $filters['maxSize'] = (int) $requestParams['maxSize'];
         }
 
         // Title/search filtering.
-        if (isset($requestParams['title'])) {
+        if (($requestParams['title'] ?? null) !== null) {
             $filters['title'] = trim($requestParams['title']);
         }
 
-        if (isset($requestParams['search']) || isset($requestParams['_search'])) {
+        if (($requestParams['search'] ?? null) !== null || (($requestParams['_search'] ?? null) !== null) === true) {
             $filters['search'] = trim($requestParams['search'] ?? $requestParams['_search']);
         }
 
@@ -1303,13 +1292,13 @@ class FileService
      */
     private function applyFileFilters(array $formattedFiles, array $filters): array
     {
-        if (empty($filters)) {
+        if (empty($filters) === true) {
             return $formattedFiles;
         }
 
         return array_filter($formattedFiles, function (array $file) use ($filters): bool {
             // Filter by label presence (business logic filter).
-            if (isset($filters['_hasLabels'])) {
+            if (($filters['_hasLabels'] ?? null) !== null) {
                 $hasLabels = !empty($file['labels']);
                 if ($filters['_hasLabels'] !== $hasLabels) {
                     return false;
@@ -1317,20 +1306,20 @@ class FileService
             }
 
             // Filter for files without labels (business logic filter).
-            if (isset($filters['_noLabels']) && $filters['_noLabels'] === true) {
-                $hasLabels = !empty($file['labels']);
+            if (($filters['_noLabels'] ?? null) !== null && $filters['_noLabels'] === true) {
+                $hasLabels = empty($file['labels']) === false;
                 if ($hasLabels === true) {
                     return false;
                 }
             }
 
             // Filter by specific labels.
-            if (isset($filters['labels']) && !empty($filters['labels'])) {
+            if (($filters['labels'] ?? null) !== null && empty($filters['labels']) === false) {
                 $fileLabels = $file['labels'] ?? [];
                 $hasMatchingLabel = false;
 
                 foreach ($filters['labels'] as $requiredLabel) {
-                    if (in_array($requiredLabel, $fileLabels, true)) {
+                    if (in_array($requiredLabel, $fileLabels, true) === true) {
                         $hasMatchingLabel = true;
                         break;
                     }
@@ -1342,7 +1331,7 @@ class FileService
             }
 
             // Filter by single extension.
-            if (isset($filters['extension'])) {
+            if (($filters['extension'] ?? null) !== null) {
                 $fileExtension = $file['extension'] ?? '';
                 if (strcasecmp($fileExtension, $filters['extension']) !== 0) {
                     return false;
@@ -1350,7 +1339,7 @@ class FileService
             }
 
             // Filter by multiple extensions.
-            if (isset($filters['extensions']) && !empty($filters['extensions'])) {
+            if (($filters['extensions'] ?? null) !== null && empty($filters['extensions']) === false) {
                 $fileExtension = $file['extension'] ?? '';
                 $hasMatchingExtension = false;
 
@@ -1367,14 +1356,14 @@ class FileService
             }
 
             // Filter by file size range.
-            if (isset($filters['minSize'])) {
+            if (($filters['minSize'] ?? null) !== null) {
                 $fileSize = $file['size'] ?? 0;
                 if ($fileSize < $filters['minSize']) {
                     return false;
                 }
             }
 
-            if (isset($filters['maxSize'])) {
+            if (($filters['maxSize'] ?? null) !== null) {
                 $fileSize = $file['size'] ?? 0;
                 if ($fileSize > $filters['maxSize']) {
                     return false;
@@ -1382,7 +1371,7 @@ class FileService
             }
 
             // Filter by title/filename content.
-            if (isset($filters['title']) && !empty($filters['title'])) {
+            if (($filters['title'] ?? null) !== null && empty($filters['title']) === false) {
                 $fileTitle = $file['title'] ?? '';
                 if (stripos($fileTitle, $filters['title']) === false) {
                     return false;
@@ -1390,7 +1379,7 @@ class FileService
             }
 
             // Filter by search term (searches in title).
-            if (isset($filters['search']) && !empty($filters['search'])) {
+            if (($filters['search'] ?? null) !== null && empty($filters['search']) === false) {
                 $fileTitle = $file['title'] ?? '';
                 if (stripos($fileTitle, $filters['search']) === false) {
                     return false;
@@ -1418,7 +1407,7 @@ class FileService
             objIds: [$fileId],
             objectType: $this::FILE_TAG_TYPE
         );
-        if (isset($tagIds[$fileId]) === false || empty($tagIds[$fileId]) === true) {
+        if (!isset($tagIds[$fileId]) === false || empty($tagIds[$fileId]) === true) {
             return [];
         }
 
@@ -1570,7 +1559,7 @@ class FileService
                 'path'        => ltrim($folder->getPath(), '/'),
                 'nodeId'      => $folder->getId(),
                 'nodeType'    => 'folder',
-                'shareType'   => 0, // User share
+                'shareType'   => \OCP\Share\IShare::TYPE_USER, // User share.
                 'permissions' => $permissions,
                 'sharedWith'  => $userId,
             ]);
@@ -1792,7 +1781,7 @@ class FileService
         }
 
         try {
-            // Note: userId and userFolder not currently used - file retrieved from rootFolder
+// Note: userId and userFolder not currently used - file retrieved from rootFolder.
             $this->getOpenRegisterUserFolder();
         } catch (Exception) {
             $this->logger->error(message: "Can't create share link for $path because OpenRegister user folder couldn't be found.");
@@ -1939,7 +1928,7 @@ class FileService
         $file = null;
 
         // If $filePath is an integer (file ID), try to find the file directly by ID.
-        if (is_int($filePath)) {
+        if (is_int($filePath) === true) {
             $this->logger->info(message: "updateFile: File ID provided: $filePath");
 
             if ($object !== null) {
@@ -2036,7 +2025,7 @@ class FileService
                 $this->logger->error(message: "updateFile: File $filePath not found in user folder either.");
 
                 // Try to find the file by ID if the path starts with a number.
-                if (preg_match('/^(\d+)\//', $filePath, $matches)) {
+                if (preg_match('/^(\d+)\//', $filePath, $matches) === 1) {
                     $fileId = (int) $matches[1];
                     $this->logger->info(message: "updateFile: Attempting to find file by ID: $fileId");
 
@@ -2193,7 +2182,7 @@ class FileService
             // Get the current files array from the object.
             $objectFiles = $object->getFiles() ?? [];
 
-            if (empty($objectFiles)) {
+            if (empty($objectFiles) === true) {
                 $this->logger->debug(message: "Object {$object->getId()} has no files array to update");
                 return;
             }
@@ -2209,31 +2198,31 @@ class FileService
                 $shouldKeep = true;
 
                 // Handle different possible structures of file entries.
-                if (is_array($fileEntry)) {
+                if (is_array($fileEntry) === true) {
                     // Check various possible path fields in the file entry.
                     $pathFields = ['path', 'title', 'name', 'filename', 'accessUrl', 'downloadUrl'];
 
                     foreach ($pathFields as $field) {
-                        if (isset($fileEntry[$field])) {
+                        if (($fileEntry[$field] ?? null) !== null) {
                             $entryPath = $fileEntry[$field];
                             $entryFileName = basename($entryPath);
 
                             // Check if this entry references the deleted file.
                             if ($entryPath === $deletedFilePath ||
                                 $entryFileName === $deletedFileName ||
-                                str_ends_with($entryPath, $deletedFilePath)) {
+                                str_ends_with($entryPath, $deletedFilePath) === true) {
                                 $shouldKeep = false;
                                 $this->logger->info(message: "Removing file entry from object {$object->getId()}: $entryPath");
                                 break;
                             }
                         }
                     }
-                } else if (is_string($fileEntry)) {
+                } else if (is_string($fileEntry) === true) {
                     // Handle simple string entries.
                     $entryFileName = basename($fileEntry);
                     if ($fileEntry === $deletedFilePath ||
                         $entryFileName === $deletedFileName ||
-                        str_ends_with($fileEntry, $deletedFilePath)) {
+                        str_ends_with($fileEntry, $deletedFilePath) === true) {
                         $shouldKeep = false;
                         $this->logger->info(message: "Removing file entry from object {$object->getId()}: $fileEntry");
                     }
@@ -2273,7 +2262,7 @@ class FileService
     {
         // Get all existing tags for the file and convert to array of just the IDs.
         $oldTagIds = $this->systemTagMapper->getTagIdsForObjects(objIds: [$fileId], objectType: $this::FILE_TAG_TYPE);
-        if (isset($oldTagIds[$fileId]) === false || empty($oldTagIds[$fileId]) === true) {
+        if (!isset($oldTagIds[$fileId]) === false || empty($oldTagIds[$fileId]) === true) {
             $oldTagIds = [];
         } else {
             $oldTagIds = $oldTagIds[$fileId];
@@ -2283,7 +2272,7 @@ class FileService
         $newTagIds = [];
         foreach ($tags as $tagName) {
             // Skip empty tag names.
-            if (empty($tagName)) {
+            if (empty($tagName) === true) {
                 continue;
             }
 
@@ -2368,7 +2357,7 @@ class FileService
     {
 		try {
 			// Ensure we have an ObjectEntity instance.
-			if (is_string($objectEntity)) {
+			if (is_string($objectEntity) === true) {
                 try {
 				    $objectEntity = $this->objectEntityMapper->find($objectEntity);
                 } catch (DoesNotExistException) {
@@ -2477,10 +2466,10 @@ class FileService
 
                 // Update the existing file - pass the object so updateFile can find it in the object folder.
                 return $this->updateFile(
-                    filePath: $fileName,  // Just pass the filename, not the full path
+// Just pass the filename, not the full path.
                     content: $content,
                     tags: $tags,
-                    object: $objectEntity  // Pass the object so updateFile can locate the file
+// Pass the object so updateFile can locate the file.
                 );
             } else {
                 // File doesn't exist, create it.
@@ -2607,12 +2596,12 @@ class FileService
         $folder = $this->getObjectFolder($object);
 
         // If $file is an integer or a string that is an integer, treat as file ID.
-        if (is_int($file) || (is_string($file) && ctype_digit($file))) {
+        if (is_int($file) === true || (is_string($file) === true && ctype_digit($file) === true) === true) {
 
             // Try to get the file by ID.
             try {
                 $nodes = $folder->getById((int)$file);
-                if (!empty($nodes) && $nodes[0] instanceof File) {
+                if (!empty($nodes) === true && $nodes[0] instanceof File) {
                     $fileNode = $nodes[0];
                     // Check ownership for NextCloud rights issues.
                     $this->checkOwnership($fileNode);
@@ -2683,7 +2672,7 @@ class FileService
             // Use root folder to search for file by ID.
             $nodes = $this->rootFolder->getById($fileId);
 
-            if (empty($nodes)) {
+            if (empty($nodes) === true) {
                 return null;
             }
 
@@ -2764,7 +2753,7 @@ class FileService
         $fileNode = null;
 
         // If $file is an integer (file ID), try to find the file directly by ID.
-        if (is_int($file)) {
+        if (is_int($file) === true) {
             $this->logger->info(message: "publishFile: File ID provided: $file");
 
             // Try to find the file in the object's folder by ID.
@@ -2844,7 +2833,7 @@ class FileService
                 fileId: $fileNode->getId(),
                 sharedBy: $openRegisterUser->getUID(),
                 shareOwner: $openRegisterUser->getUID(),
-                permissions: 1 // Read only
+// Read only.
             );
 
             $this->logger->info(message: "publishFile: Successfully created public share via FileMapper - ID: {$shareInfo['id']}, Token: {$shareInfo['token']}, URL: {$shareInfo['accessUrl']}");
@@ -2886,7 +2875,7 @@ class FileService
         $file = null;
 
         // If $filePath is an integer (file ID), try to find the file directly by ID.
-        if (is_int($filePath)) {
+        if (is_int($filePath) === true) {
             $this->logger->info(message: "unpublishFile: File ID provided: $filePath");
 
             // Try to find the file in the object's folder by ID.
@@ -3190,7 +3179,12 @@ class FileService
                 // Convert file IDs to actual file nodes.
                 foreach ($fileIds as $fileId) {
                     try {
-                        $file = $userFolder->getById($fileId);
+                        // Ensure fileId is an integer for getById.
+                        $fileIdInt = (is_numeric($fileId) === true) === true ? (int) $fileId : null;
+                        if ($fileIdInt === null) {
+                            continue;
+                        }
+                        $file = $userFolder->getById($fileIdInt);
                         if (!empty($file)) {
                             $files = array_merge($files, $file);
                         }
@@ -3221,7 +3215,7 @@ class FileService
             $userFolder = $this->getOpenRegisterUserFolder();
             $nodes = $userFolder->getById($fileId);
 
-            if (empty($nodes)) {
+            if (empty($nodes) === true) {
                 $this->logger->info(message: "debugFindFileById: No file found with ID: $fileId");
                 return null;
             }
@@ -3446,7 +3440,7 @@ class FileService
 
         // Check file extension.
         $extension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
-        if (in_array($extension, $dangerousExtensions, true)) {
+        if (in_array($extension, $dangerousExtensions, true) === true) {
             $this->logger->warning(message: 'Executable file upload blocked', context: [
                 'app' => 'openregister',
                 'filename' => $fileName,
@@ -3510,7 +3504,7 @@ class FileService
 
         // Check for script shebangs anywhere in first 4 lines.
         $firstLines = substr($content, 0, 1024);
-        if (preg_match('/^#!.*\/(sh|bash|zsh|ksh|csh|python|perl|ruby|php|node)/m', $firstLines)) {
+        if (preg_match('/^#!.*\/(sh|bash|zsh|ksh|csh|python|perl|ruby|php|node)/m', $firstLines) === 1) {
             throw new Exception(
                 "File '$fileName' contains script shebang. "
                 ."Script files are blocked for security reasons."
@@ -3518,7 +3512,7 @@ class FileService
         }
 
         // Check for embedded PHP tags.
-        if (preg_match('/<\?php|<\?=|<script\s+language\s*=\s*["\']php/i', $firstLines)) {
+        if (preg_match('/<\?php|<\?=|<script\s+language\s*=\s*["\']php/i', $firstLines) === 1) {
             throw new Exception(
                 "File '$fileName' contains PHP code. "
                 ."PHP files are blocked for security reasons."
@@ -3653,7 +3647,9 @@ class FileService
             if ($share instanceof IShare) {
                 $stime = $share->getShareTime();
                 if ($stime !== null) {
-                    return (new DateTime())->setTimestamp($stime)->format('c');
+                    // getShareTime() returns DateTime|null, convert to timestamp.
+                    $timestamp = $stime instanceof \DateTime ? $stime->getTimestamp() : (int) $stime;
+                    return (new DateTime())->setTimestamp($timestamp)->format('c');
                 }
             }
         }

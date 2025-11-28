@@ -464,27 +464,27 @@ class Webhook extends Entity implements JsonSerializable
      */
     public function hydrate(array $object): self
     {
-        if (isset($object['id']) === true) {
+        if (($object['id'] ?? null) !== null) {
             $this->setId($object['id']);
         }
 
-        if (isset($object['uuid']) === true) {
+        if (($object['uuid'] ?? null) !== null) {
             $this->setUuid($object['uuid']);
         }
 
-        if (isset($object['name']) === true) {
+        if (($object['name'] ?? null) !== null) {
             $this->setName($object['name']);
         }
 
-        if (isset($object['url']) === true) {
+        if (($object['url'] ?? null) !== null) {
             $this->setUrl($object['url']);
         }
 
-        if (isset($object['method']) === true) {
+        if (($object['method'] ?? null) !== null) {
             $this->setMethod($object['method']);
         }
 
-        if (isset($object['events']) === true) {
+        if (($object['events'] ?? null) !== null) {
             if (is_array($object['events']) === true) {
                 $this->setEventsArray($object['events']);
             } else {
@@ -492,7 +492,7 @@ class Webhook extends Entity implements JsonSerializable
             }
         }
 
-        if (isset($object['headers']) === true) {
+        if (($object['headers'] ?? null) !== null) {
             if (is_array($object['headers']) === true) {
                 $this->setHeadersArray($object['headers']);
             } else {
@@ -500,19 +500,19 @@ class Webhook extends Entity implements JsonSerializable
             }
         }
 
-        if (isset($object['secret']) === true) {
+        if (($object['secret'] ?? null) !== null) {
             $this->setSecret($object['secret']);
         }
 
-        if (isset($object['enabled']) === true) {
+        if (($object['enabled'] ?? null) !== null) {
             $this->setEnabled((bool) $object['enabled']);
         }
 
-        if (isset($object['organisation']) === true) {
+        if (($object['organisation'] ?? null) !== null) {
             $this->setOrganisation($object['organisation']);
         }
 
-        if (isset($object['filters']) === true) {
+        if (($object['filters'] ?? null) !== null) {
             if (is_array($object['filters']) === true) {
                 $this->setFiltersArray($object['filters']);
             } else {
@@ -520,19 +520,19 @@ class Webhook extends Entity implements JsonSerializable
             }
         }
 
-        if (isset($object['retryPolicy']) === true) {
+        if (($object['retryPolicy'] ?? null) !== null) {
             $this->setRetryPolicy($object['retryPolicy']);
         }
 
-        if (isset($object['maxRetries']) === true) {
+        if (($object['maxRetries'] ?? null) !== null) {
             $this->setMaxRetries((int) $object['maxRetries']);
         }
 
-        if (isset($object['timeout']) === true) {
+        if (($object['timeout'] ?? null) !== null) {
             $this->setTimeout((int) $object['timeout']);
         }
 
-        if (isset($object['configuration']) === true) {
+        if (($object['configuration'] ?? null) !== null) {
             if (is_array($object['configuration']) === true) {
                 $this->setConfigurationArray($object['configuration']);
             } else {

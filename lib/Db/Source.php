@@ -177,7 +177,7 @@ class Source extends Entity implements JsonSerializable
     {
         $jsonFields = $this->getJsonFields();
 
-        if (isset($object['metadata']) === false) {
+        if (!isset($object['metadata'])) {
             $object['metadata'] = [];
         }
 
@@ -251,12 +251,12 @@ class Source extends Entity implements JsonSerializable
     public function jsonSerialize(): array
     {
         $updated = null;
-        if (isset($this->updated) === true) {
+        if (($this->updated ?? null) !== null) {
             $updated = $this->updated->format('c');
         }
 
         $created = null;
-        if (isset($this->created) === true) {
+        if (($this->created ?? null) !== null) {
             $created = $this->created->format('c');
         }
 
