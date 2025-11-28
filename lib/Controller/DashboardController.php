@@ -349,9 +349,9 @@ class DashboardController extends Controller
                     context: [
                         'register_id' => $registerId,
                         'schema_id'   => $schemaId,
-                        'limit'        => $limit,
-                        'hours'        => $hours,
-                        'trace'        => $e->getTraceAsString(),
+                        'limit'       => $limit,
+                        'hours'       => $hours,
+                        'trace'       => $e->getTraceAsString(),
                     ]
                     );
 

@@ -202,7 +202,9 @@ class SaveObject
 
         // Try direct slug match as last resort.
         try {
-            /** @psalm-suppress UndefinedMethod - findBySlug doesn't exist, but code handles exception */
+            /*
+             * @psalm-suppress UndefinedMethod - findBySlug doesn't exist, but code handles exception
+             */
             $schema = $this->schemaMapper->findBySlug($slug);
             if ($schema !== null) {
                 return (string) $schema->getId();
@@ -286,7 +288,9 @@ class SaveObject
 
         // Try direct slug match as last resort.
         try {
-            /** @psalm-suppress UndefinedMethod - findBySlug doesn't exist, but code handles exception */
+            /*
+             * @psalm-suppress UndefinedMethod - findBySlug doesn't exist, but code handles exception
+             */
             $register = $this->registerMapper->findBySlug($slug);
             if ($register !== null) {
                 return (string) $register->getId();

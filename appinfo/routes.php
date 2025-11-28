@@ -8,6 +8,7 @@ return [
         'Configurations' => ['url' => 'api/configurations'],
         'Applications' => ['url' => 'api/applications'],
         'Agents' => ['url' => 'api/agents'],
+        'Endpoints' => ['url' => 'api/endpoints'],
     ],
     'routes' => [
         // PATCH routes for resources (partial updates).
@@ -17,7 +18,13 @@ return [
         ['name' => 'configurations#patch', 'url' => '/api/configurations/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'applications#patch', 'url' => '/api/applications/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'agents#patch', 'url' => '/api/agents/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'endpoints#patch', 'url' => '/api/endpoints/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
         
+        // Endpoints - Custom routes.
+        ['name' => 'endpoints#test', 'url' => '/api/endpoints/{id}/test', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
+        ['name' => 'endpoints#logs', 'url' => '/api/endpoints/{id}/logs', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
+        ['name' => 'endpoints#logStats', 'url' => '/api/endpoints/{id}/logs/stats', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
+        ['name' => 'endpoints#allLogs', 'url' => '/api/endpoints/logs', 'verb' => 'GET'],
 
         // Settings - Legacy endpoints (kept for compatibility).
         ['name' => 'settings#index', 'url' => '/api/settings', 'verb' => 'GET'],
@@ -390,6 +397,8 @@ return [
 		['name' => 'ui#searchTrail', 'url' => '/search-trails', 'verb' => 'GET'],
 		['name' => 'ui#webhooks', 'url' => '/webhooks', 'verb' => 'GET'],
 		['name' => 'ui#webhooksLogs', 'url' => '/webhooks/logs', 'verb' => 'GET'],
+		['name' => 'ui#endpoints', 'url' => '/endpoints', 'verb' => 'GET'],
+		['name' => 'ui#endpointLogs', 'url' => '/endpoints/logs', 'verb' => 'GET'],
 		['name' => 'ui#entities', 'url' => '/entities', 'verb' => 'GET'],
 	['name' => 'files#page', 'url' => '/files', 'verb' => 'GET'],
 

@@ -45,14 +45,14 @@ use Symfony\Component\Uid\Uuid;
  *
  * @package OCA\OpenRegister\Db
  *
- * @method Organisation insert(Entity $entity)
- * @method Organisation update(Entity $entity)
- * @method Organisation insertOrUpdate(Entity $entity)
- * @method Organisation delete(Entity $entity)
- * @method Organisation find(int|string $id)
- * @method Organisation findEntity(IQueryBuilder $query)
- * @method Organisation[] findAll(int|null $limit = null, int|null $offset = null)
- * @method list<Organisation> findEntities(IQueryBuilder $query)
+ * @method         Organisation insert(Entity $entity)
+ * @method         Organisation update(Entity $entity)
+ * @method         Organisation insertOrUpdate(Entity $entity)
+ * @method         Organisation delete(Entity $entity)
+ * @method         Organisation find(int|string $id)
+ * @method         Organisation findEntity(IQueryBuilder $query)
+ * @method         Organisation[] findAll(int|null $limit = null, int|null $offset = null)
+ * @method         list<Organisation> findEntities(IQueryBuilder $query)
  * @psalm-suppress LessSpecificImplementedReturnType - @method annotation is correct, parent returns list<T>
  */
 class OrganisationMapper extends QBMapper
@@ -116,8 +116,12 @@ class OrganisationMapper extends QBMapper
     public function update(Entity $entity): Entity
     {
         // Get old state before update.
-        /** @var Organisation $oldEntity */
-        /** @psalm-suppress UndefinedMethod - parent::find exists on QBMapper */
+        /*
+         * @var Organisation $oldEntity
+         */
+        /*
+         * @psalm-suppress UndefinedMethod - parent::find exists on QBMapper
+         */
         $oldEntity = parent::find($entity->getId());
 
         if ($entity instanceof Organisation) {

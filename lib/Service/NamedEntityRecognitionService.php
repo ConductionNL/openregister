@@ -84,15 +84,19 @@ class NamedEntityRecognitionService
      * @param EntityRelationMapper $entityRelationMapper Entity relation mapper.
      * @param ChunkMapper          $chunkMapper          Chunk mapper.
      * @param SettingsService      $settingsService      Settings service.
-     * @param IDBConnection        $db                  Database connection.
-     * @param LoggerInterface      $logger              Logger.
+     * @param IDBConnection        $db                   Database connection.
+     * @param LoggerInterface      $logger               Logger.
      */
     public function __construct(
         private readonly GdprEntityMapper $entityMapper,
         private readonly EntityRelationMapper $entityRelationMapper,
-        /** @psalm-suppress UnusedProperty - Property kept for future use */
+        /**
+         * @psalm-suppress UnusedProperty - Property kept for future use
+         */
         private readonly ChunkMapper $chunkMapper,
-        /** @psalm-suppress UnusedProperty - Property kept for future use */
+        /**
+         * @psalm-suppress UnusedProperty - Property kept for future use
+         */
         private readonly SettingsService $settingsService,
         private readonly IDBConnection $db,
         private readonly LoggerInterface $logger
@@ -484,11 +488,14 @@ class NamedEntityRecognitionService
                 $this->entityMapper->update($existing);
                 return $existing;
             }
+
             throw new DoesNotExistException('Entity not found');
         } catch (DoesNotExistException $e) {
             // Entity doesn't exist, create new one.
             $entity = new GdprEntity();
-            /** @psalm-suppress UndefinedClass - Ramsey\Uuid\Uuid is an optional dependency */
+            /*
+             * @psalm-suppress UndefinedClass - Ramsey\Uuid\Uuid is an optional dependency
+             */
             $entity->setUuid((string) Uuid::v4());
             $entity->setType($type);
             $entity->setValue($value);

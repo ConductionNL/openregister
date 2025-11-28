@@ -41,14 +41,14 @@ use OCA\OpenRegister\Db\ObjectEntityMapper;
  *
  * @package OCA\OpenRegister\Db
  *
- * @method Schema insert(Entity $entity)
- * @method Schema update(Entity $entity)
- * @method Schema insertOrUpdate(Entity $entity)
- * @method Schema delete(Entity $entity)
- * @method Schema find(int|string $id)
- * @method Schema findEntity(IQueryBuilder $query)
- * @method Schema[] findAll(int|null $limit = null, int|null $offset = null)
- * @method list<Schema> findEntities(IQueryBuilder $query)
+ * @method         Schema insert(Entity $entity)
+ * @method         Schema update(Entity $entity)
+ * @method         Schema insertOrUpdate(Entity $entity)
+ * @method         Schema delete(Entity $entity)
+ * @method         Schema find(int|string $id)
+ * @method         Schema findEntity(IQueryBuilder $query)
+ * @method         Schema[] findAll(int|null $limit = null, int|null $offset = null)
+ * @method         list<Schema> findEntities(IQueryBuilder $query)
  * @psalm-suppress LessSpecificImplementedReturnType - @method annotation is correct, parent returns list<T>
  */
 class SchemaMapper extends QBMapper
@@ -567,8 +567,8 @@ class SchemaMapper extends QBMapper
         // Set or update the version.
         if (isset($object['version']) === false) {
             $currentVersion = $schema->getVersion() ?? '0.0.0';
-            $version    = explode('.', $currentVersion);
-            $version[2] = ((int) $version[2] + 1);
+            $version        = explode('.', $currentVersion);
+            $version[2]     = ((int) $version[2] + 1);
             $schema->setVersion(implode('.', $version));
         }
 

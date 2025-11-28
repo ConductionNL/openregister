@@ -375,8 +375,12 @@ class ConfigurationMapper extends QBMapper
         // Verify RBAC permission to create.
         $this->verifyRbacPermission('create', 'configuration');
 
-        /** @var Configuration $entity */
-        /** @psalm-suppress RedundantCondition - Runtime type check for defensive programming */
+        /*
+         * @var Configuration $entity
+         */
+        /*
+         * @psalm-suppress RedundantCondition - Runtime type check for defensive programming
+         */
         if ($entity instanceof Configuration) {
             // Generate UUID if not set.
             if (empty($entity->getUuid()) === true) {

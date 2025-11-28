@@ -208,8 +208,8 @@ class TextExtractionService
      * 2. Checks if re-extraction is needed (object modified since last extraction)
      * 3. Performs extraction if needed using ObjectHandler
      *
-     * @param int  $objectId        Object ID
-     * @param bool $forceReExtract  Force re-extraction even if object hasn't changed
+     * @param int  $objectId       Object ID
+     * @param bool $forceReExtract Force re-extraction even if object hasn't changed
      *
      * @return void
      *
@@ -221,7 +221,7 @@ class TextExtractionService
         $this->logger->info('[TextExtractionService] Starting object extraction', ['objectId' => $objectId]);
 
         // Get object to check timestamp.
-        $object = $this->objectEntityMapper->find($objectId);
+        $object          = $this->objectEntityMapper->find($objectId);
         $sourceTimestamp = $object->getUpdated()?->getTimestamp() ?? time();
 
         // Check if chunks are up-to-date.
@@ -245,7 +245,7 @@ class TextExtractionService
 
         // Extract text using ObjectHandler.
         $extractedData = $objectHandler->extractText(sourceId: $objectId, sourceMeta: $sourceMeta, force: $forceReExtract);
-        $cleanText = $this->sanitizeText($extractedData['text']);
+        $cleanText     = $this->sanitizeText($extractedData['text']);
 
         if ($cleanText === '') {
             throw new Exception('Text extraction resulted in an empty payload for object.');

@@ -353,6 +353,7 @@ class MetricsService
 
     }//end cleanOldMetrics()
 
+
     /**
      * Encode metadata array to JSON string.
      *
@@ -366,13 +367,16 @@ class MetricsService
         if ($encoded === false) {
             return '{}';
         }
+
         return $encoded;
+
     }//end encodeMetadata()
+
 
     /**
      * Calculate success rate percentage.
      *
-     * @param int $total     Total number of operations.
+     * @param int $total      Total number of operations.
      * @param int $successful Number of successful operations.
      *
      * @return float Success rate as percentage (0-100).
@@ -382,8 +386,11 @@ class MetricsService
         if ($total === 0) {
             return 0.0;
         }
+
         return round(($successful / $total) * 100, 2);
+
     }//end calculateSuccessRate()
+
 
     /**
      * Round average milliseconds value.
@@ -397,8 +404,11 @@ class MetricsService
         if (is_numeric($avgMs) === true) {
             return round((float) $avgMs, 2);
         }
+
         return 0.0;
+
     }//end roundAverageMs()
+
 
     /**
      * Calculate average vectors per day from growth data.
@@ -412,15 +422,20 @@ class MetricsService
         if (empty($growthData) === true) {
             return 0.0;
         }
+
         $totalVectors = 0;
-        $days = count($growthData);
+        $days         = count($growthData);
         foreach ($growthData as $dayData) {
             $totalVectors += (int) ($dayData['count'] ?? 0);
         }
+
         if ($days === 0) {
             return 0.0;
         }
+
         return round($totalVectors / $days, 2);
+
     }//end calculateAverageVectorsPerDay()
+
 
 }//end class

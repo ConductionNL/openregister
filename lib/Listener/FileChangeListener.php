@@ -124,8 +124,8 @@ class FileChangeListener implements IEventListener
 
         // Get extraction mode from settings to determine processing strategy.
         try {
-            $fileSettings = $this->settingsService->getFileSettingsOnly();
-            $extractionMode = $fileSettings['extractionMode'] ?? 'background';
+            $fileSettings    = $this->settingsService->getFileSettingsOnly();
+            $extractionMode  = $fileSettings['extractionMode'] ?? 'background';
             $extractionScope = $fileSettings['extractionScope'] ?? 'objects';
 
             // Check extraction scope - skip if not matching.
@@ -212,7 +212,7 @@ class FileChangeListener implements IEventListener
                     $this->logger->warning(
                             '[FileChangeListener] Unknown extraction mode, defaulting to background',
                             [
-                                'file_id'        => $fileId,
+                                'file_id'         => $fileId,
                                 'extraction_mode' => $extractionMode,
                             ]
                             );

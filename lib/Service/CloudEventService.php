@@ -45,6 +45,7 @@ use Symfony\Component\Uid\Uuid;
 class CloudEventService
 {
 
+
     /**
      * Format a request as a CloudEvent
      *
@@ -52,7 +53,7 @@ class CloudEventService
      * This allows external systems to receive standardized event notifications
      * before requests are processed by controllers.
      *
-     * @param IRequest $request  The HTTP request
+     * @param IRequest $request   The HTTP request
      * @param string   $eventType The event type (e.g., 'object.creating', 'object.updating')
      * @param array    $data      Additional event data
      *
@@ -61,7 +62,7 @@ class CloudEventService
     public function formatRequestAsCloudEvent(
         IRequest $request,
         string $eventType,
-        array $data = []
+        array $data=[]
     ): array {
         // Get request body.
         $requestBody = $request->getParams();
@@ -82,11 +83,11 @@ class CloudEventService
         // Build CloudEvent payload according to CloudEvents 1.0 specification.
         return [
             // Required CloudEvent attributes.
-            'specversion' => '1.0',
-            'type'        => $eventType,
-            'source'      => $this->getSource($request),
-            'id'          => Uuid::v4()->toRfc4122(),
-            'time'        => date('c'),
+            'specversion'     => '1.0',
+            'type'            => $eventType,
+            'source'          => $this->getSource($request),
+            'id'              => Uuid::v4()->toRfc4122(),
+            'time'            => date('c'),
 
             // Optional CloudEvent attributes.
             'datacontenttype' => $request->getHeader('Content-Type') ?: 'application/json',
@@ -94,7 +95,7 @@ class CloudEventService
             'dataschema'      => null,
 
             // Request-specific data.
-            'data' => array_merge(
+            'data'            => array_merge(
                 [
                     'method'      => $request->getMethod(),
                     'path'        => $request->getPathInfo(),
@@ -106,7 +107,7 @@ class CloudEventService
             ),
 
             // OpenRegister-specific extensions.
-            'openregister' => [
+            'openregister'    => [
                 'app'     => 'openregister',
                 'version' => $this->getAppVersion(),
             ],
@@ -127,7 +128,7 @@ class CloudEventService
      */
     private function getSource(IRequest $request): string
     {
-        $host = $request->getServerProtocol() === 'https' ? 'https://' : 'http://';
+        $host  = $request->getServerProtocol() === 'https' ? 'https://' : 'http://';
         $host .= $request->getServerHost();
 
         return $host.'/apps/openregister';
@@ -212,5 +213,3 @@ class CloudEventService
 
 
 }//end class
-
-

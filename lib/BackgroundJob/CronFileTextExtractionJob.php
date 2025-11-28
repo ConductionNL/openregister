@@ -5,8 +5,8 @@
  * Recurring background job that periodically processes files for text extraction.
  * This job runs at configurable intervals to handle files when extraction mode is set to 'cron'.
  *
- * @category  BackgroundJob
- * @package   OCA\OpenRegister\BackgroundJob
+ * @category BackgroundJob
+ * @package  OCA\OpenRegister\BackgroundJob
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -124,7 +124,7 @@ class CronFileTextExtractionJob extends TimedJob
             $fileMapper = \OC::$server->get(FileMapper::class);
 
             // Check if extraction mode is set to 'cron'.
-            $fileSettings = $settingsService->getFileSettingsOnly();
+            $fileSettings   = $settingsService->getFileSettingsOnly();
             $extractionMode = $fileSettings['extractionMode'] ?? 'background';
 
             if ($extractionMode !== 'cron') {
@@ -136,13 +136,13 @@ class CronFileTextExtractionJob extends TimedJob
             }
 
             // Get batch size from settings.
-            $batchSize = $fileSettings['batchSize'] ?? self::DEFAULT_BATCH_SIZE;
+            $batchSize       = $fileSettings['batchSize'] ?? self::DEFAULT_BATCH_SIZE;
             $extractionScope = $fileSettings['extractionScope'] ?? 'objects';
 
             $logger->info(
                     'Starting cron file text extraction',
                     [
-                        'batch_size'      => $batchSize,
+                        'batch_size'       => $batchSize,
                         'extraction_scope' => $extractionScope,
                     ]
                     );
@@ -165,7 +165,7 @@ class CronFileTextExtractionJob extends TimedJob
 
             // Process each file.
             $processed = 0;
-            $failed = 0;
+            $failed    = 0;
 
             foreach ($pendingFiles as $file) {
                 try {
@@ -238,10 +238,10 @@ class CronFileTextExtractionJob extends TimedJob
     /**
      * Get pending files for extraction based on scope
      *
-     * @param FileMapper     $fileMapper     File mapper
-     * @param string         $extractionScope Extraction scope (none, all, folders, objects)
-     * @param int            $batchSize      Batch size limit
-     * @param LoggerInterface $logger         Logger
+     * @param FileMapper      $fileMapper      File mapper
+     * @param string          $extractionScope Extraction scope (none, all, folders, objects)
+     * @param int             $batchSize       Batch size limit
+     * @param LoggerInterface $logger          Logger
      *
      * @return array List of pending files
      */
@@ -261,7 +261,6 @@ class CronFileTextExtractionJob extends TimedJob
             // For 'objects' scope, we'd need to check if files are attached to objects.
             // For 'folders' scope, we'd need to check if files are in specific folders.
             // This is a simplified implementation - scope filtering happens in TextExtractionService.
-
             return $files;
         } catch (\Exception $e) {
             $logger->error(
@@ -276,4 +275,3 @@ class CronFileTextExtractionJob extends TimedJob
 
 
 }//end class
-

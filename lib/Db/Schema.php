@@ -885,7 +885,9 @@ class Schema extends Entity implements JsonSerializable
         }
 
         // If it's a JSON string, decode it.
-        /** @psalm-suppress TypeDoesNotContainType - configuration can be string|null|array */
+        /*
+         * @psalm-suppress TypeDoesNotContainType - configuration can be string|null|array
+         */
         if (is_string($this->configuration)) {
             $decoded = json_decode($this->configuration, true);
             if (json_last_error() === JSON_ERROR_NONE) {
@@ -1108,7 +1110,9 @@ class Schema extends Entity implements JsonSerializable
         }
 
         // If it's a JSON string, decode it.
-        /** @psalm-suppress TypeDoesNotContainType - facets can be string|null|array */
+        /*
+         * @psalm-suppress TypeDoesNotContainType - facets can be string|null|array
+         */
         if (is_string($this->facets)) {
             $decoded = json_decode($this->facets, true);
             if (json_last_error() === JSON_ERROR_NONE) {
@@ -1119,7 +1123,9 @@ class Schema extends Entity implements JsonSerializable
         }
 
         // Otherwise, it's already an array.
-        /** @psalm-suppress TypeDoesNotContainType - facets can be string|null|array */
+        /*
+         * @psalm-suppress TypeDoesNotContainType - facets can be string|null|array
+         */
         return $this->facets;
 
     }//end getFacets()

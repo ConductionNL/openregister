@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * OpenRegister Facet Service
  *
  * **CENTRALIZED FACETING SYSTEM**: This service handles all faceting operations
@@ -82,7 +82,9 @@ class FacetService
     public function __construct(
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly SchemaMapper $schemaMapper,
-        /** @psalm-suppress PossiblyUnusedProperty - Property is used in constructor to initialize cache */
+        /**
+         * @psalm-suppress PossiblyUnusedProperty - Property is used in constructor to initialize cache
+         */
         private readonly ICacheFactory $cacheFactory,
         private readonly IUserSession $userSession,
         private readonly LoggerInterface $logger
