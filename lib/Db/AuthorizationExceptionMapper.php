@@ -64,7 +64,6 @@ class AuthorizationExceptionMapper extends QBMapper
      * @param IDBConnection   $db     The database connection
      * @param LoggerInterface $logger The logger instance (unused but kept for future use)
      *
-     * @psalm-suppress UnusedParam - Logger kept for future use
      */
     public function __construct(IDBConnection $db, LoggerInterface $logger)
     {
@@ -440,27 +439,27 @@ class AuthorizationExceptionMapper extends QBMapper
             ->from($this->getTableName());
 
         // Apply criteria filters.
-        if (isset($criteria['type']) === true && $criteria['type'] !== '') {
+        if (($criteria['type'] ?? null) !== null && ($criteria['type'] !== '') === true) {
             $qb->andWhere($qb->expr()->eq('type', $qb->createNamedParameter($criteria['type'])));
         }
 
-        if (isset($criteria['subject_type']) === true && $criteria['subject_type'] !== '') {
+        if (($criteria['subject_type'] ?? null) !== null && ($criteria['subject_type'] !== '') === true) {
             $qb->andWhere($qb->expr()->eq('subject_type', $qb->createNamedParameter($criteria['subject_type'])));
         }
 
-        if (isset($criteria['subject_id']) === true && $criteria['subject_id'] !== '') {
+        if (($criteria['subject_id'] ?? null) !== null && ($criteria['subject_id'] !== '') === true) {
             $qb->andWhere($qb->expr()->eq('subject_id', $qb->createNamedParameter($criteria['subject_id'])));
         }
 
-        if (isset($criteria['action']) === true && $criteria['action'] !== '') {
+        if (($criteria['action'] ?? null) !== null && ($criteria['action'] !== '') === true) {
             $qb->andWhere($qb->expr()->eq('action', $qb->createNamedParameter($criteria['action'])));
         }
 
-        if (isset($criteria['schema_uuid']) === true && $criteria['schema_uuid'] !== '') {
+        if (($criteria['schema_uuid'] ?? null) !== null && ($criteria['schema_uuid'] !== '') === true) {
             $qb->andWhere($qb->expr()->eq('schema_uuid', $qb->createNamedParameter($criteria['schema_uuid'])));
         }
 
-        if (isset($criteria['active']) === true && is_bool($criteria['active']) === true) {
+        if (($criteria['active'] ?? null) !== null && is_bool($criteria['active']) === true) {
             $qb->andWhere($qb->expr()->eq('active', $qb->createNamedParameter($criteria['active'], IQueryBuilder::PARAM_BOOL)));
         }
 

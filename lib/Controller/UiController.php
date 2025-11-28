@@ -8,7 +8,7 @@
  * @author    Conduction b.v. <info@conduction.nl>
  * @copyright 2024 Conduction b.v.
  * @license   https://www.gnu.org/licenses/agpl-3.0.html AGPL-3.0-or-later
- * @version   1.0.0
+ * @version   GIT: <git_id>
  * @link      https://github.com/conductionnl/openregister
  */
 
@@ -24,7 +24,6 @@ use OCP\IRequest;
  *
  * @psalm-type TemplateName = 'index'
  *
- * @psalm-suppress UnusedClass - This controller is registered via routes.php and used by Nextcloud's routing system
  */
 class UiController extends Controller
 {

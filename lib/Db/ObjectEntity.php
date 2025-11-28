@@ -536,7 +536,7 @@ class ObjectEntity extends Entity implements JsonSerializable
     {
         $jsonFields = $this->getJsonFields();
 
-        if (isset($object['metadata']) === false) {
+        if (!isset($object['metadata'])) {
             $object['metadata'] = [];
         }
 
@@ -593,7 +593,7 @@ class ObjectEntity extends Entity implements JsonSerializable
     public function jsonSerialize(): array
     {
         // Backwards compatibility for old objects.
-        if (isset($this->object) === true) {
+        if (($this->object ?? null) !== null) {
             $object = $this->object;
         } else {
             $object = [];
@@ -657,27 +657,27 @@ class ObjectEntity extends Entity implements JsonSerializable
         ];
 
         // Check for '@self' in the provided object array (this is the case if the object metadata is extended).
-        if (isset($object['@self']) === true && is_array($object['@self']) === true) {
+        if (($object['@self'] ?? null) !== null && is_array($object['@self']) === true) {
             $self = $object['@self'];
 
             // Use the '@self' values if they are arrays.
-            if (isset($self['register']) === true && is_array($self['register']) === true) {
+            if (($self['register'] ?? null) !== null && is_array($self['register']) === true) {
                 $objectArray['register'] = $self['register'];
             }
 
-            if (isset($self['schema']) === true && is_array($self['schema']) === true) {
+            if (($self['schema'] ?? null) !== null && is_array($self['schema']) === true) {
                 $objectArray['schema'] = $self['schema'];
             }
 
-            if (isset($self['owner']) === true && is_array($self['owner']) === true) {
+            if (($self['owner'] ?? null) !== null && is_array($self['owner']) === true) {
                 $objectArray['owner'] = $self['owner'];
             }
 
-            if (isset($self['organisation']) === true && is_array($self['organisation']) === true) {
+            if (($self['organisation'] ?? null) !== null && is_array($self['organisation']) === true) {
                 $objectArray['organisation'] = $self['organisation'];
             }
 
-            if (isset($self['application']) === true && is_array($self['application']) === true) {
+            if (($self['application'] ?? null) !== null && is_array($self['application']) === true) {
                 $objectArray['application'] = $self['application'];
             }
         }//end if

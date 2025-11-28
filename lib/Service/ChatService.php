@@ -415,7 +415,6 @@ class ChatService
 
         // Get view filters if agent has views configured.
         /*
-         * @psalm-suppress UnusedVariable - Variable is used in logger calls
          */
         $viewFilters = [];
         if ($agent !== null && $agent->getViews() !== null && !empty($agent->getViews())) {
@@ -471,7 +470,7 @@ class ChatService
             }
 
             // Only add entity_type filter if we're filtering.
-            if (!empty($entityTypes) && count($entityTypes) < 2) {
+            if (!empty($entityTypes) === true && count($entityTypes) < 2) {
                 $vectorFilters['entity_type'] = $entityTypes;
             }
 
@@ -534,16 +533,16 @@ class ChatService
                 $isObject = ($result['entity_type'] ?? '') === 'object';
 
                 // Check type filters.
-                if (($isFile && !$includeFiles) || ($isObject && !$includeObjects)) {
+                if (($isFile === true && $includeFiles === false) === true || ($isObject === true && $includeObjects === false) === true) {
                     continue;
                 }
 
                 // Check if we've reached the limit for this source type.
-                if ($isFile && $fileSourceCount >= $numSourcesFiles) {
+                if (($isFile === true) === true && ($fileSourceCount >= $numSourcesFiles) === true) {
                     continue;
                 }
 
-                if ($isObject && $objectSourceCount >= $numSourcesObjects) {
+                if (($isObject === true) === true && ($objectSourceCount >= $numSourcesObjects) === true) {
                     continue;
                 }
 
@@ -560,7 +559,7 @@ class ChatService
 
                 // Add type-specific metadata.
                 $metadata = $result['metadata'] ?? [];
-                if (is_string($metadata)) {
+                if (is_string($metadata) === true) {
                     $metadata = json_decode($metadata, true) ?? [];
                 }
 
@@ -612,7 +611,7 @@ class ChatService
                         'includeFiles'      => $includeFiles,
                         'numSourcesFiles'   => $numSourcesFiles,
                         'numSourcesObjects' => $numSourcesObjects,
-                        'rawResultsCount'   => is_array($results) ? count($results) : gettype($results),
+                        'rawResultsCount'   => is_array($results) === true ? count($results) : gettype($results),
                     ]
                     );
 
@@ -704,7 +703,7 @@ class ChatService
 
         // Check metadata for object_title, file_name, etc.
         if (!empty($result['metadata'])) {
-            $metadata = is_array($result['metadata']) ? $result['metadata'] : json_decode($result['metadata'], true);
+            $metadata = is_array($result['metadata']) === true ? $result['metadata'] : json_decode($result['metadata'], true);
 
             if (!empty($metadata['object_title'])) {
                 return $metadata['object_title'];
@@ -775,7 +774,7 @@ class ChatService
                     );
 
             // Only add messages that have both role and content.
-            if (!empty($role) && !empty($content)) {
+            if (!empty($role) === true && !empty($content)) {
                 // Use static factory methods based on role.
                 if ($role === 'user') {
                     $history[] = LLPhantMessage::user($content);
@@ -866,7 +865,7 @@ class ChatService
         // Get chat provider.
         $chatProvider = $llmConfig['chatProvider'] ?? null;
 
-        if (empty($chatProvider)) {
+        if (empty($chatProvider) === true) {
             throw new \Exception('Chat provider is not configured. Please configure OpenAI, Fireworks AI, or Ollama in settings.');
         }
 
@@ -884,7 +883,7 @@ class ChatService
             // Ollama uses its own native config and chat class.
             if ($chatProvider === 'ollama') {
                 $ollamaConfig = $llmConfig['ollamaConfig'] ?? [];
-                if (empty($ollamaConfig['url'])) {
+                if (empty($ollamaConfig['url']) === true) {
                     throw new \Exception('Ollama URL is not configured');
                 }
 
@@ -905,7 +904,7 @@ class ChatService
 
                 if ($chatProvider === 'openai') {
                     $openaiConfig = $llmConfig['openaiConfig'] ?? [];
-                    if (empty($openaiConfig['apiKey'])) {
+                    if (empty($openaiConfig['apiKey']) === true) {
                         throw new \Exception('OpenAI API key is not configured');
                     }
 
@@ -919,7 +918,7 @@ class ChatService
                     }
                 } else if ($chatProvider === 'fireworks') {
                     $fireworksConfig = $llmConfig['fireworksConfig'] ?? [];
-                    if (empty($fireworksConfig['apiKey'])) {
+                    if (empty($fireworksConfig['apiKey']) === true) {
                         throw new \Exception('Fireworks AI API key is not configured');
                     }
 
@@ -1061,7 +1060,7 @@ class ChatService
             $chatProvider = $llmConfig['chatProvider'] ?? null;
 
             // Try to use configured LLM, fallback if not available.
-            if (empty($chatProvider)) {
+            if (empty($chatProvider) === true) {
                 return $this->generateFallbackTitle($firstMessage);
             }
 
@@ -1069,7 +1068,7 @@ class ChatService
             // Ollama uses its own native config.
             if ($chatProvider === 'ollama') {
                 $ollamaConfig = $llmConfig['ollamaConfig'] ?? [];
-                if (empty($ollamaConfig['url'])) {
+                if (empty($ollamaConfig['url']) === true) {
                     return $this->generateFallbackTitle($firstMessage);
                 }
 
@@ -1084,7 +1083,7 @@ class ChatService
 
                 if ($chatProvider === 'openai') {
                     $openaiConfig = $llmConfig['openaiConfig'] ?? [];
-                    if (empty($openaiConfig['apiKey'])) {
+                    if (empty($openaiConfig['apiKey']) === true) {
                         return $this->generateFallbackTitle($firstMessage);
                     }
 
@@ -1093,7 +1092,7 @@ class ChatService
                     // Use fast model for titles.
                 } else if ($chatProvider === 'fireworks') {
                     $fireworksConfig = $llmConfig['fireworksConfig'] ?? [];
-                    if (empty($fireworksConfig['apiKey'])) {
+                    if (empty($fireworksConfig['apiKey']) === true) {
                         return $this->generateFallbackTitle($firstMessage);
                     }
 
@@ -1214,7 +1213,7 @@ class ChatService
         $existingTitles = $this->conversationMapper->findTitlesByUserAgent($userId, $agentId, $pattern);
 
         // If no matches, the base title is unique.
-        if (empty($existingTitles)) {
+        if (empty($existingTitles) === true) {
             return $baseTitle;
         }
 
@@ -1229,7 +1228,7 @@ class ChatService
 
         foreach ($existingTitles as $title) {
             // Match "Title (N)" pattern.
-            if (preg_match('/^'.$baseTitleEscaped.' \((\d+)\)$/', $title, $matches)) {
+            if (preg_match('/^'.$baseTitleEscaped.' \((\d+)\)$/', $title, $matches) === 1) {
                 $number = (int) $matches[1];
                 if ($number > $maxNumber) {
                     $maxNumber = $number;
@@ -1287,7 +1286,7 @@ class ChatService
             // Configure LLM client based on provider.
             // Ollama uses its own native config.
             if ($provider === 'ollama') {
-                if (empty($config['url'])) {
+                if (empty($config['url']) === true) {
                     throw new \Exception('Ollama URL is required');
                 }
 
@@ -1297,7 +1296,7 @@ class ChatService
                 $llphantConfig->model = $config['chatModel'] ?? $config['model'] ?? 'llama2';
 
                 // Set temperature if provided.
-                if (isset($config['temperature'])) {
+                if (($config['temperature'] ?? null) !== null) {
                     $llphantConfig->modelOptions['temperature'] = (float) $config['temperature'];
                 }
             } else {
@@ -1305,7 +1304,7 @@ class ChatService
                 $llphantConfig = new OpenAIConfig();
 
                 if ($provider === 'openai') {
-                    if (empty($config['apiKey'])) {
+                    if (empty($config['apiKey']) === true) {
                         throw new \Exception('OpenAI API key is required');
                     }
 
@@ -1316,7 +1315,7 @@ class ChatService
                         $llphantConfig->organizationId = $config['organizationId'];
                     }
                 } else if ($provider === 'fireworks') {
-                    if (empty($config['apiKey'])) {
+                    if (empty($config['apiKey']) === true) {
                         throw new \Exception('Fireworks AI API key is required');
                     }
 
@@ -1334,7 +1333,7 @@ class ChatService
                 }//end if
 
                 // Set temperature if provided.
-                if (isset($config['temperature'])) {
+                if (($config['temperature'] ?? null) !== null) {
                     $llphantConfig->temperature = (float) $config['temperature'];
                 }
             }//end if
@@ -1359,7 +1358,6 @@ class ChatService
                         'provider' => $provider,
                         'model'    => $llphantConfig->model,
                         /*
-                         * @psalm-suppress TypeDoesNotContainType - url is set before this point
                          */
                         'url'      => $llphantConfig->url ?? 'default',
                     ]
@@ -1402,7 +1400,6 @@ class ChatService
                     'response'       => $response,
                     'responseLength' => strlen($response),
                     /*
-                     * @psalm-suppress TypeDoesNotContainType - url may not be set for all providers
                      */
                     'url'            => $llphantConfig->url ?? null,
                 ],
@@ -1412,13 +1409,13 @@ class ChatService
             $errorMessage = $e->getMessage();
 
             // Try to extract more meaningful error from the exception.
-            if (str_contains($errorMessage, 'unauthorized')) {
+            if (str_contains($errorMessage, 'unauthorized') === true) {
                 $errorMessage = 'Authentication failed. Please check your API key.';
-            } else if (str_contains($errorMessage, 'invalid_api_key')) {
+            } else if (str_contains($errorMessage, 'invalid_api_key') === true) {
                 $errorMessage = 'Invalid API key provided.';
-            } else if (str_contains($errorMessage, 'model_not_found')) {
+            } else if (str_contains($errorMessage, 'model_not_found') === true) {
                 $errorMessage = 'Model not found. Please check the model name.';
-            } else if (str_contains($errorMessage, 'rate_limit')) {
+            } else if (str_contains($errorMessage, 'rate_limit') === true) {
                 $errorMessage = 'Rate limit exceeded. Please try again later.';
             }
 
@@ -1523,8 +1520,8 @@ class ChatService
 
         if ($httpCode !== 200) {
             // Parse error response.
-            $errorData    = is_string($response) ? json_decode($response, true) : [];
-            $errorMessage = $errorData['error']['message'] ?? $errorData['error'] ?? (is_string($response) ? $response : 'Unknown error');
+            $errorData    = is_string($response) === true ? json_decode($response, true) : [];
+            $errorMessage = $errorData['error']['message'] ?? $errorData['error'] ?? (is_string($response) === true ? $response : 'Unknown error');
 
             // Make error messages user-friendly.
             if ($httpCode === 401 || $httpCode === 403) {
@@ -1538,9 +1535,9 @@ class ChatService
             }
         }
 
-        $data = is_string($response) ? json_decode($response, true) : [];
+        $data = is_string($response) === true ? json_decode($response, true) : [];
         if (!isset($data['choices'][0]['message']['content'])) {
-            throw new \Exception("Unexpected Fireworks API response format: ".(is_string($response) ? $response : 'Invalid response'));
+            throw new \Exception("Unexpected Fireworks API response format: ".(is_string($response) === true ? $response : 'Invalid response'));
         }
 
         return $data['choices'][0]['message']['content'];
@@ -1638,8 +1635,8 @@ class ChatService
 
         if ($httpCode !== 200) {
             // Parse error response.
-            $errorData    = is_string($response) ? json_decode($response, true) : [];
-            $errorMessage = $errorData['error']['message'] ?? $errorData['error'] ?? (is_string($response) ? $response : 'Unknown error');
+            $errorData    = is_string($response) === true ? json_decode($response, true) : [];
+            $errorMessage = $errorData['error']['message'] ?? $errorData['error'] ?? (is_string($response) === true ? $response : 'Unknown error');
 
             // Make error messages user-friendly.
             if ($httpCode === 401 || $httpCode === 403) {
@@ -1653,9 +1650,9 @@ class ChatService
             }
         }
 
-        $data = is_string($response) ? json_decode($response, true) : [];
+        $data = is_string($response) === true ? json_decode($response, true) : [];
         if (!isset($data['choices'][0]['message']['content'])) {
-            throw new \Exception("Unexpected Fireworks API response format: ".(is_string($response) ? $response : 'Invalid response'));
+            throw new \Exception("Unexpected Fireworks API response format: ".(is_string($response) === true ? $response : 'Invalid response'));
         }
 
         return $data['choices'][0]['message']['content'];
@@ -1706,7 +1703,7 @@ class ChatService
             $allMessages         = $this->messageMapper->findByConversation($conversation->getId());
             $messagesToSummarize = array_slice($allMessages, 0, -self::RECENT_MESSAGES_COUNT);
 
-            if (empty($messagesToSummarize)) {
+            if (empty($messagesToSummarize) === true) {
                 return;
             }
 
@@ -1756,7 +1753,7 @@ class ChatService
         $llmConfig    = $this->settingsService->getLLMSettingsOnly();
         $chatProvider = $llmConfig['chatProvider'] ?? null;
 
-        if (empty($chatProvider)) {
+        if (empty($chatProvider) === true) {
             throw new \Exception('Chat provider not configured');
         }
 
@@ -1771,7 +1768,7 @@ class ChatService
         // Ollama uses its own native config.
         if ($chatProvider === 'ollama') {
             $ollamaConfig = $llmConfig['ollamaConfig'] ?? [];
-            if (empty($ollamaConfig['url'])) {
+            if (empty($ollamaConfig['url']) === true) {
                 throw new \Exception('Ollama URL not configured');
             }
 
@@ -1785,7 +1782,7 @@ class ChatService
 
             if ($chatProvider === 'openai') {
                 $openaiConfig = $llmConfig['openaiConfig'] ?? [];
-                if (empty($openaiConfig['apiKey'])) {
+                if (empty($openaiConfig['apiKey']) === true) {
                     throw new \Exception('OpenAI API key not configured');
                 }
 
@@ -1793,7 +1790,7 @@ class ChatService
                 $config->model  = 'gpt-4o-mini';
             } else if ($chatProvider === 'fireworks') {
                 $fireworksConfig = $llmConfig['fireworksConfig'] ?? [];
-                if (empty($fireworksConfig['apiKey'])) {
+                if (empty($fireworksConfig['apiKey']) === true) {
                     throw new \Exception('Fireworks AI API key not configured');
                 }
 
@@ -1891,7 +1888,7 @@ class ChatService
         }
 
         $enabledToolIds = $agent->getTools();
-        if ($enabledToolIds === null || empty($enabledToolIds)) {
+        if ($enabledToolIds === null || empty($enabledToolIds) === true) {
             return [];
         }
 
@@ -1981,7 +1978,7 @@ class ChatService
             $parameters = [];
             $required   = [];
 
-            if (isset($func['parameters']['properties'])) {
+            if (($func['parameters']['properties'] ?? null) !== null) {
                 foreach ($func['parameters']['properties'] as $paramName => $paramDef) {
                     // Determine parameter type from definition.
                     $type        = $paramDef['type'] ?? 'string';
@@ -2005,7 +2002,7 @@ class ChatService
                 }//end foreach
             }//end if
 
-            if (isset($func['parameters']['required'])) {
+            if (($func['parameters']['required'] ?? null) !== null) {
                 $required = $func['parameters']['required'];
             }
 
@@ -2022,7 +2019,7 @@ class ChatService
             }
 
             // Create FunctionInfo object with the tool instance.
-            // LLPhant will call $toolInstance->{$func['name']}(...$args)
+            // LLPhant will call $toolInstance->{$func['name']}(...$args).
             $functionInfo = new FunctionInfo(
                 $func['name'],
                 $toolInstance,

@@ -36,9 +36,6 @@ use OCP\IDBConnection;
  * @package OCA\OpenRegister\Db
  *
  * @template-extends QBMapper<Conversation>
- *
- * @psalm-suppress MissingTemplateParam
- *
  * @method Conversation insert(Entity $entity)
  * @method Conversation update(Entity $entity)
  * @method Conversation insertOrUpdate(Entity $entity)

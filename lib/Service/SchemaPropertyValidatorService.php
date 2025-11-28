@@ -128,12 +128,12 @@ class SchemaPropertyValidatorService
     public function validateProperty(array $property, string $path=''): bool
     {
         // If property has oneOf, treat the contents as separate properties and return the result of those checks.
-        if (isset($property['oneOf']) === true) {
+        if (($property['oneOf'] ?? null) !== null) {
             return $this->validateProperties($property['oneOf'], $path.'/oneOf');
         }
 
         // Type is required.
-        if (isset($property['type']) === false) {
+        if (!isset($property['type'])) {
             throw new Exception("Property at '$path' must have a 'type' field");
         }
 
@@ -145,7 +145,7 @@ class SchemaPropertyValidatorService
         }
 
         // Validate string format if present.
-        if ($property['type'] === 'string' && isset($property['format']) === true) {
+        if ($property['type'] === 'string' && (($property['format'] ?? null) !== null)) {
             if (in_array($property['format'], $this->validStringFormats) === false) {
                 throw new Exception(
                     "Invalid string format '{$property['format']}' at '$path'. Must be one of: ".implode(', ', $this->validStringFormats)
@@ -154,26 +154,26 @@ class SchemaPropertyValidatorService
         }
 
         // Validate array items if type is array.
-        if ($property['type'] === 'array' && isset($property['items']) === true && isset($property['items']['$ref']) === false) {
+        if ($property['type'] === 'array' && (($property['items'] ?? null) !== null) && !isset($property['items']['$ref'])) {
             $this->validateProperty($property['items'], $path.'/items');
         }
 
         // Validate nested properties if type is object.
-        if ($property['type'] === 'object' && isset($property['properties']) === true) {
+        if ($property['type'] === 'object' && (($property['properties'] ?? null) !== null)) {
             $this->validateProperties($property['properties'], $path.'/properties');
         }
 
         // Validate minimum/maximum for numeric types.
-        if (in_array($property['type'], ['number', 'integer']) === true) {
-            if (isset($property['minimum']) === true && is_numeric($property['minimum']) === false) {
+        if (in_array($property['type'], ['number', 'integer'], true) === true) {
+            if (($property['minimum'] ?? null) !== null && is_numeric($property['minimum']) === false) {
                 throw new Exception("'minimum' at '$path' must be numeric");
             }
 
-            if (isset($property['maximum']) === true && is_numeric($property['maximum']) === false) {
+            if (($property['maximum'] ?? null) !== null && is_numeric($property['maximum']) === false) {
                 throw new Exception("'maximum' at '$path' must be numeric");
             }
 
-            if (isset($property['minimum'], $property['maximum']) === true && $property['minimum'] > $property['maximum']) {
+            if (($property['minimum'] ?? null) !== null && ($property['maximum'] ?? null) !== null && ($property['minimum'] > $property['maximum']) === true) {
                 throw new Exception("'minimum' cannot be greater than 'maximum' at '$path'");
             }
         }
@@ -184,24 +184,24 @@ class SchemaPropertyValidatorService
         }
 
         // Validate enum values if present.
-        if (isset($property['enum']) === true) {
+        if (($property['enum'] ?? null) !== null) {
             if (is_array($property['enum']) === false || empty($property['enum']) === true) {
                 throw new Exception("'enum' at '$path' must be a non-empty array");
             }
         }
 
         // Validate visible property if present.
-        if (isset($property['visible']) === true && is_bool($property['visible']) === false) {
+        if (($property['visible'] ?? null) !== null && is_bool($property['visible']) === false) {
             throw new Exception("'visible' at '$path' must be a boolean");
         }
 
         // Validate hideOnCollection property if present.
-        if (isset($property['hideOnCollection']) === true && is_bool($property['hideOnCollection']) === false) {
+        if (($property['hideOnCollection'] ?? null) !== null && is_bool($property['hideOnCollection']) === false) {
             throw new Exception("'hideOnCollection' at '$path' must be a boolean");
         }
 
         // Validate hideOnForm property if present.
-        if (isset($property['hideOnForm']) === true && is_bool($property['hideOnForm']) === false) {
+        if (($property['hideOnForm'] ?? null) !== null && is_bool($property['hideOnForm']) === false) {
             throw new Exception("'hideOnForm' at '$path' must be a boolean");
         }
 
@@ -282,7 +282,7 @@ class SchemaPropertyValidatorService
     private function validateFileProperty(array $property, string $path): bool
     {
         // Validate allowedTypes if present.
-        if (isset($property['allowedTypes']) === true) {
+        if (($property['allowedTypes'] ?? null) !== null) {
             if (is_array($property['allowedTypes']) === false) {
                 throw new Exception("'allowedTypes' at '$path' must be an array");
             }
@@ -301,7 +301,7 @@ class SchemaPropertyValidatorService
         }
 
         // Validate maxSize if present.
-        if (isset($property['maxSize']) === true) {
+        if (($property['maxSize'] ?? null) !== null) {
             if (is_int($property['maxSize']) === false && is_numeric($property['maxSize']) === false) {
                 throw new Exception("'maxSize' at '$path' must be a numeric value");
             }
@@ -318,7 +318,7 @@ class SchemaPropertyValidatorService
         }
 
         // Validate allowedTags if present.
-        if (isset($property['allowedTags']) === true) {
+        if (($property['allowedTags'] ?? null) !== null) {
             if (is_array($property['allowedTags']) === false) {
                 throw new Exception("'allowedTags' at '$path' must be an array");
             }
@@ -340,7 +340,7 @@ class SchemaPropertyValidatorService
         }
 
         // Validate autoTags if present.
-        if (isset($property['autoTags']) === true) {
+        if (($property['autoTags'] ?? null) !== null) {
             if (is_array($property['autoTags']) === false) {
                 throw new Exception("'autoTags' at '$path' must be an array");
             }

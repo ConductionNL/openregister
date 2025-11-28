@@ -161,14 +161,14 @@ class ToolRegistry
         }
 
         // Check if already registered.
-        if (isset($this->tools[$id]) === true) {
+        if (($this->tools[$id] ?? null) !== null) {
             throw new \InvalidArgumentException("Tool already registered: {$id}");
         }
 
         // Validate required metadata.
         $required = ['name', 'description', 'icon', 'app'];
         foreach ($required as $field) {
-            if (isset($metadata[$field]) === false) {
+            if (!isset($metadata[$field])) {
                 throw new \InvalidArgumentException("Missing required metadata field: {$field}");
             }
         }
@@ -202,7 +202,7 @@ class ToolRegistry
     {
         $this->loadTools();
 
-        if (isset($this->tools[$id]) === false) {
+        if (!isset($this->tools[$id])) {
             return null;
         }
 
@@ -245,7 +245,7 @@ class ToolRegistry
 
         $result = [];
         foreach ($ids as $id) {
-            if (isset($this->tools[$id]) === true) {
+            if (($this->tools[$id] ?? null) !== null) {
                 $result[$id] = $this->tools[$id]['tool'];
             } else {
                 $this->logger->warning('[ToolRegistry] Tool not found', ['id' => $id]);

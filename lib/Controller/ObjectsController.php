@@ -52,7 +52,6 @@ use OCA\OpenRegister\Service\ImportService;
 use OCP\AppFramework\Http\DataDownloadResponse;
 
 /**
- * @psalm-suppress UnusedClass - This controller is registered via routes.php and used by Nextcloud's routing system
  */
 class ObjectsController extends Controller
 {
@@ -269,17 +268,17 @@ class ObjectsController extends Controller
 
         // Extract and normalize parameters.
         $limit = (int) ($params['limit'] ?? $params['_limit'] ?? 20);
-        if (isset($params['offset']) === true) {
+        if (($params['offset'] ?? null) !== null) {
             $offset = (int) $params['offset'];
-        } else if (isset($params['_offset']) === true) {
+        } else if (($params['_offset'] ?? null) !== null) {
             $offset = (int) $params['_offset'];
         } else {
             $offset = null;
         }
 
-        if (isset($params['page']) === true) {
+        if (($params['page'] ?? null) !== null) {
             $page = (int) $params['page'];
-        } else if (isset($params['_page']) === true) {
+        } else if (($params['_page'] ?? null) !== null) {
             $page = (int) $params['_page'];
         } else {
             $page = null;
@@ -410,7 +409,7 @@ class ObjectsController extends Controller
         $response = new JSONResponse(data: $result);
 
         // Enable gzip compression for responses > 1KB.
-        if (isset($result['results']) && count($result['results']) > 10) {
+        if (($result['results'] ?? null) !== null && (count($result['results']) > 10) === true) {
             $response->addHeader('Content-Encoding', 'gzip');
             $response->addHeader('Vary', 'Accept-Encoding');
         }
@@ -504,22 +503,22 @@ class ObjectsController extends Controller
         $unset  = ($requestParams['unset'] ?? $requestParams['_unset'] ?? null);
 
         // Convert extend to array if it's a string.
-        if (is_string($extend)) {
+        if (is_string($extend) === true) {
             $extend = explode(',', $extend);
         }
 
         // Convert fields to array if it's a string.
-        if (is_string($fields)) {
+        if (is_string($fields) === true) {
             $fields = explode(',', $fields);
         }
 
         // Convert filter to array if it's a string.
-        if (is_string($filter)) {
+        if (is_string($filter) === true) {
             $filter = explode(',', $filter);
         }
 
         // Convert unset to array if it's a string.
-        if (is_string($unset)) {
+        if (is_string($unset) === true) {
             $unset = explode(',', $unset);
         }
 
@@ -626,7 +625,7 @@ class ObjectsController extends Controller
             /*
              * @var array{name: array<int, string>|string, type: array<int, string>|string, tmp_name: array<int, string>|string, error: array<int, int>|int, size: array<int, int>|int} $fileData
              */
-            if (is_array($fileData['name'])) {
+            if (is_array($fileData['name']) === true) {
                 // Handle array uploads: images[] becomes images with array values.
                 // We need to preserve all files, so use indexed keys: images[0], images[1], etc.
                 $fileCount = count($fileData['name']);
@@ -665,7 +664,7 @@ class ObjectsController extends Controller
                     rbac: $rbac,
                     multi: true,
                     uuid: null,
-                    uploadedFiles: !empty($uploadedFiles) ? $uploadedFiles : null
+                    uploadedFiles: !empty($uploadedFiles) === true ? $uploadedFiles : null
             );
 
             // Unlock the object after saving.
@@ -741,7 +740,7 @@ class ObjectsController extends Controller
             /*
              * @var array{name: array<int, string>|string, type: array<int, string>|string, tmp_name: array<int, string>|string, error: array<int, int>|int, size: array<int, int>|int} $fileData
              */
-            if (is_array($fileData['name'])) {
+            if (is_array($fileData['name']) === true) {
                 // Handle array uploads: images[] becomes images with array values.
                 // We need to preserve all files, so use indexed keys: images[0], images[1], etc.
                 $fileCount = count($fileData['name']);
@@ -820,7 +819,7 @@ class ObjectsController extends Controller
                     rbac: $rbac,
                     multi: $multi,
                     uuid: $id,
-                    uploadedFiles: !empty($uploadedFiles) ? $uploadedFiles : null
+                    uploadedFiles: !empty($uploadedFiles) === true ? $uploadedFiles : null
             );
 
             // Unlock the object after saving.
@@ -1022,9 +1021,9 @@ class ObjectsController extends Controller
         $objectService->setRegister(register: $register);
 
         // Note: $id is a route parameter for API consistency (/api/objects/{register}/{schema}/{id}/contracts)
-        // Currently returns empty array as contract functionality is not yet implemented
+        // Currently returns empty array as contract functionality is not yet implemented.
         $objectId = $id;
-        // Reserved for future use when contract functionality is implemented
+        // Reserved for future use when contract functionality is implemented.
         unset($objectId);
 
         // Get request parameters for filtering and searching.
@@ -1032,8 +1031,8 @@ class ObjectsController extends Controller
 
         // Extract specific parameters.
         $limit  = (int) ($requestParams['limit'] ?? $requestParams['_limit'] ?? 20);
-        $offset = isset($requestParams['offset']) ? (int) $requestParams['offset'] : (isset($requestParams['_offset']) ? (int) $requestParams['_offset'] : null);
-        $page   = isset($requestParams['page']) ? (int) $requestParams['page'] : (isset($requestParams['_page']) ? (int) $requestParams['_page'] : null);
+        $offset = isset($requestParams['offset']) === true ? (int) $requestParams['offset'] : (isset($requestParams['_offset']) === true ? (int) $requestParams['_offset'] : null);
+        $page   = isset($requestParams['page']) === true ? (int) $requestParams['page'] : (isset($requestParams['_page']) === true ? (int) $requestParams['_page'] : null);
 
         // Return empty paginated response.
         return new JSONResponse(
@@ -1189,12 +1188,12 @@ class ObjectsController extends Controller
 
         // If objectSchema is an array/object, files: get slug and id.
         $objectSchemaSlug = null;
-        if (is_array($objectSchema) && isset($objectSchema['id'])) {
+        if (is_array($objectSchema) === true && (($objectSchema['id'] ?? null) !== null)) {
             $objectSchemaId   = (string) $objectSchema['id'];
-            $objectSchemaSlug = isset($objectSchema['slug']) ? strtolower($objectSchema['slug']) : null;
-        } else if (is_object($objectSchema) && isset($objectSchema->id)) {
+            $objectSchemaSlug = isset($objectSchema['slug']) === true ? strtolower($objectSchema['slug']) : null;
+        } else if (is_object($objectSchema) === true && (($objectSchema->id ?? null) !== null)) {
             $objectSchemaId   = (string) $objectSchema->id;
-            $objectSchemaSlug = isset($objectSchema->slug) ? strtolower($objectSchema->slug) : null;
+            $objectSchemaSlug = isset($objectSchema->slug) === true ? strtolower($objectSchema->slug) : null;
         } else {
             $objectSchemaId = (string) $objectSchema;
         }
@@ -1254,7 +1253,7 @@ class ObjectsController extends Controller
         $process = ($data['process'] ?? null);
         // Check if duration is set in the request data.
         $duration = null;
-        if (isset($data['duration']) === true) {
+        if (($data['duration'] ?? null) !== null) {
             $duration = (int) $data['duration'];
         }
 
@@ -1425,7 +1424,7 @@ class ObjectsController extends Controller
                     if ($schemaId === null || $schemaId === '') {
                         // If no schema specified, get the first available schema from the register.
                         $schemas = $registerEntity->getSchemas();
-                        if (empty($schemas)) {
+                        if (empty($schemas) === true) {
                             return new JSONResponse(data: ['error' => 'No schema found for register'], statusCode: 400);
                         }
 
@@ -1605,7 +1604,7 @@ class ObjectsController extends Controller
                 return new JSONResponse(data: ['error' => 'Target object ID is required'], statusCode: 400);
             }
 
-            if (!isset($requestParams['object']) || empty($requestParams['object'])) {
+            if (($requestParams['object'] ?? null) === null || empty($requestParams['object']) === true) {
                 return new JSONResponse(data: ['error' => 'Object data is required'], statusCode: 400);
             }
 
@@ -1662,11 +1661,11 @@ class ObjectsController extends Controller
                 return new JSONResponse(data: ['error' => 'Target register and schema are required'], statusCode: 400);
             }
 
-            if (empty($objectIds)) {
+            if (empty($objectIds) === true) {
                 return new JSONResponse(data: ['error' => 'At least one object ID is required'], statusCode: 400);
             }
 
-            if (empty($mapping)) {
+            if (empty($mapping) === true) {
                 return new JSONResponse(data: ['error' => 'Property mapping is required'], statusCode: 400);
             }
 
@@ -1747,7 +1746,7 @@ class ObjectsController extends Controller
             $zipContent = file_get_contents($zipInfo['path']);
             if ($zipContent === false) {
                 // Clean up temporary file.
-                if (file_exists($zipInfo['path'])) {
+                if (file_exists($zipInfo['path']) === true) {
                     unlink($zipInfo['path']);
                 }
 
@@ -1755,7 +1754,7 @@ class ObjectsController extends Controller
             }
 
             // Clean up temporary file after reading.
-            if (file_exists($zipInfo['path'])) {
+            if (file_exists($zipInfo['path']) === true) {
                 unlink($zipInfo['path']);
             }
 
@@ -1840,7 +1839,7 @@ class ObjectsController extends Controller
         try {
             // Get views parameter if provided.
             $views = $this->request->getParam('views');
-            if (is_string($views)) {
+            if (is_string($views) === true) {
                 $views = json_decode($views, true);
             }
 

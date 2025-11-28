@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/*
+/**
  * FilesController
  *
  * Controller for file operations in the OpenRegister application.
@@ -41,7 +41,6 @@ use OCP\IRequest;
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
  *
- * @psalm-suppress UnusedClass - This controller is registered via routes.php and used by Nextcloud's routing system
  */
 class FilesController extends Controller
 {
@@ -104,7 +103,7 @@ class FilesController extends Controller
         // Note: $register and $schema are route parameters for API consistency
         // They are part of the URL structure (/api/objects/{register}/{schema}/{id}/files)
         // but only $id is used to fetch files
-        // Reference them to satisfy static analysis
+        // Reference them to satisfy static analysis.
         $routeParams = ['register' => $register, 'schema' => $schema];
         unset($routeParams);
         try {
@@ -324,8 +323,11 @@ class FilesController extends Controller
 
             // Normalize single file upload to array structure.
             // $_FILES can have 'name' as string (single file) or array (multiple files).
-            if (isset($files['name']) === true) {
-                if (is_array($files['name']) === false) {
+            $fileName = $files['name'] ?? null;
+            if ($fileName !== null) {
+                // $fileName can be string or array from $_FILES.
+                /** @var string|array<int, string> $fileName */
+                if (is_array($fileName) === false) {
                     // Single file upload.
                     $tags = $data['tags'] ?? '';
                     if (is_array($tags) === false) {
@@ -333,7 +335,7 @@ class FilesController extends Controller
                     }
 
                     $uploadedFiles[] = [
-                        'name'     => (string) $files['name'],
+                        'name'     => (string) $fileName,
                         'type'     => (string) ($files['type'] ?? ''),
                         'tmp_name' => (string) ($files['tmp_name'] ?? ''),
                         'error'    => (int) ($files['error'] ?? UPLOAD_ERR_NO_FILE),
@@ -344,19 +346,19 @@ class FilesController extends Controller
                 } else {
                     // Multiple file upload.
                     // Loop through each file using the count of 'name'.
-                    $nameArray = $files['name'];
-                    for ($i = 0; $i < count($nameArray); $i++) {
+                    /** @var array<int, string> $fileName */
+                    for ($i = 0; $i < count($fileName); $i++) {
                         $tags = $data['tags'][$i] ?? '';
                         if (is_array($tags) === false) {
                             $tags = explode(',', $tags);
                         }
 
                         $uploadedFiles[] = [
-                            'name'     => (string) ($nameArray[$i] ?? ''),
-                            'type'     => (string) ((is_array($files['type'] ?? null) && isset($files['type'][$i])) ? $files['type'][$i] : ''),
-                            'tmp_name' => (string) ((is_array($files['tmp_name'] ?? null) && isset($files['tmp_name'][$i])) ? $files['tmp_name'][$i] : ''),
-                            'error'    => (int) ((is_array($files['error'] ?? null) && isset($files['error'][$i])) ? $files['error'][$i] : UPLOAD_ERR_NO_FILE),
-                            'size'     => (int) ((is_array($files['size'] ?? null) && isset($files['size'][$i])) ? $files['size'][$i] : 0),
+                            'name'     => (string) (($fileName[$i] ?? '')),
+                            'type'     => (string) ((is_array($files['type'] ?? null) === true && (($files['type'][$i] ?? null) !== null)) === true ? $files['type'][$i] : ''),
+                            'tmp_name' => (string) ((is_array($files['tmp_name'] ?? null) === true && (($files['tmp_name'][$i] ?? null) !== null)) === true ? $files['tmp_name'][$i] : ''),
+                            'error'    => (int) ((is_array($files['error'] ?? null) === true && (($files['error'][$i] ?? null) !== null)) === true ? $files['error'][$i] : UPLOAD_ERR_NO_FILE),
+                            'size'     => (int) ((is_array($files['size'] ?? null) === true && (($files['size'][$i] ?? null) !== null)) === true ? $files['size'][$i] : 0),
                             'share'    => $data['share'] === 'true',
                             'tags'     => $tags,
                         ];
@@ -378,7 +380,7 @@ class FilesController extends Controller
             $results = [];
             foreach ($uploadedFiles as $file) {
                 // Check for upload errors first.
-                if (isset($file['error']) === true && $file['error'] !== UPLOAD_ERR_OK) {
+                if (($file['error'] ?? null) !== null && ($file['error'] !== UPLOAD_ERR_OK) === true) {
                     throw new Exception('File upload error for '.$file['name'].': '.$this->getUploadErrorMessage($file['error']));
                 }
 

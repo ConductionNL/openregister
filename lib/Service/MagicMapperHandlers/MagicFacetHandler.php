@@ -92,7 +92,7 @@ class MagicFacetHandler
         $facets = [];
 
         // Process metadata facets (@self).
-        if (isset($facetConfig['@self']) === true && is_array($facetConfig['@self']) === true) {
+        if (($facetConfig['@self'] ?? null) !== null && is_array($facetConfig['@self']) === true) {
             $facets['@self'] = [];
             foreach ($facetConfig['@self'] as $field => $config) {
                 $facets['@self'][$field] = $this->getMetadataFieldFacet($field, $config, $baseQuery, $tableName);
@@ -169,7 +169,7 @@ class MagicFacetHandler
 
         // Verify field exists in schema.
         $properties = $schema->getProperties();
-        if (isset($properties[$field]) === false) {
+        if (!isset($properties[$field])) {
             return [];
         }
 
@@ -456,7 +456,7 @@ class MagicFacetHandler
         }
 
         // Apply metadata filters (@self).
-        if (isset($baseQuery['@self']) === true && is_array($baseQuery['@self']) === true) {
+        if (($baseQuery['@self'] ?? null) !== null && is_array($baseQuery['@self']) === true) {
             foreach ($baseQuery['@self'] as $field => $value) {
                 $columnName = '_'.$field;
 

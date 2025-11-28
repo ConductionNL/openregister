@@ -30,7 +30,6 @@ use OCP\IRequest;
  * Class SearchTrailController
  * Handles all search trail related operations and analytics
  *
- * @psalm-suppress UnusedClass - This controller is registered via routes.php and used by Nextcloud's routing system
  */
 class SearchTrailController extends Controller
 {
@@ -66,25 +65,25 @@ class SearchTrailController extends Controller
         $params = $this->request->getParams();
 
         // Extract pagination parameters (prioritize underscore-prefixed versions).
-        if (isset($params['_limit']) === true) {
+        if (($params['_limit'] ?? null) !== null) {
             $limit = (int) $params['_limit'];
-        } else if (isset($params['limit']) === true) {
+        } else if (($params['limit'] ?? null) !== null) {
             $limit = (int) $params['limit'];
         } else {
             $limit = 20;
         }
 
-        if (isset($params['_offset']) === true) {
+        if (($params['_offset'] ?? null) !== null) {
             $offset = (int) $params['_offset'];
-        } else if (isset($params['offset']) === true) {
+        } else if (($params['offset'] ?? null) !== null) {
             $offset = (int) $params['offset'];
         } else {
             $offset = null;
         }
 
-        if (isset($params['_page']) === true) {
+        if (($params['_page'] ?? null) !== null) {
             $page = (int) $params['_page'];
-        } else if (isset($params['page']) === true) {
+        } else if (($params['page'] ?? null) !== null) {
             $page = (int) $params['page'];
         } else {
             $page = null;
@@ -100,7 +99,7 @@ class SearchTrailController extends Controller
 
         // Extract sort parameters (prioritize underscore-prefixed versions).
         $sort = [];
-        if (isset($params['_sort']) === true || isset($params['sort']) === true) {
+        if (($params['_sort'] ?? null) !== null || (($params['sort'] ?? null) !== null) === true) {
             $sortField        = $params['_sort'] ?? $params['sort'] ?? 'created';
             $sortOrder        = $params['_order'] ?? $params['order'] ?? 'DESC';
             $sort[$sortField] = $sortOrder;
@@ -111,7 +110,7 @@ class SearchTrailController extends Controller
         // Extract date filters.
         $from = null;
         $to   = null;
-        if (isset($params['from']) === true) {
+        if (($params['from'] ?? null) !== null) {
             try {
                 $from = new \DateTime($params['from']);
             } catch (\Exception $e) {
@@ -119,7 +118,7 @@ class SearchTrailController extends Controller
             }
         }
 
-        if (isset($params['to']) === true) {
+        if (($params['to'] ?? null) !== null) {
             try {
                 $to = new \DateTime($params['to']);
             } catch (\Exception $e) {
@@ -537,15 +536,15 @@ class SearchTrailController extends Controller
             );
 
             // Check if service result is a structured array with nested data.
-            if (isset($serviceResult['user_agents']) === true) {
+            if (($serviceResult['user_agents'] ?? null) !== null) {
                 // Extract the user agents array and metadata from structured response.
-                // getUserAgentStatistics returns: user_agents, browser_distribution, total_user_agents, period
+                // getUserAgentStatistics returns: user_agents, browser_distribution, total_user_agents, period.
                 $userAgentsArray = $serviceResult['user_agents'];
                 // Ensure we have a proper indexed array for pagination.
-                $userAgents        = is_array($userAgentsArray) ? array_values($userAgentsArray) : [];
+                $userAgents        = is_array($userAgentsArray) === true ? array_values($userAgentsArray) : [];
                 $totalUniqueAgents = $serviceResult['total_user_agents'] ?? 0;
                 $totalSearches     = 0;
-                // Not returned by getUserAgentStatistics
+                // Not returned by getUserAgentStatistics.
                 $period       = $serviceResult['period'] ?? null;
                 $browserStats = $serviceResult['browser_distribution'] ?? null;
 
@@ -860,7 +859,6 @@ class SearchTrailController extends Controller
         try {
             // Get the search trail mapper from the container.
             /*
-             * @psalm-suppress UndefinedClass
              */
             /*
              * @var \OCA\OpenRegister\Db\SearchTrailMapper $searchTrailMapper

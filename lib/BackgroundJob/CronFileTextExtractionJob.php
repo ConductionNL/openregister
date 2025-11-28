@@ -42,7 +42,6 @@ use Psr\Log\LoggerInterface;
  * - Detailed logging and error handling
  * - Automatic retry for failed files
  *
- * @psalm-suppress UnusedClass - This background job is registered and instantiated by Nextcloud's job system
  */
 class CronFileTextExtractionJob extends TimedJob
 {
@@ -64,7 +63,6 @@ class CronFileTextExtractionJob extends TimedJob
      *
      * @return void
      *
-     * @psalm-suppress PossiblyUnusedMethod - Constructor is called by Nextcloud's job system via dependency injection
      */
     public function __construct(ITimeFactory $time)
     {
@@ -86,7 +84,6 @@ class CronFileTextExtractionJob extends TimedJob
      *
      * @return void
      *
-     * @psalm-suppress PossiblyUnusedMethod - This method is called by Nextcloud's job system when the job executes
      */
     protected function run($argument): void
     {
@@ -150,7 +147,7 @@ class CronFileTextExtractionJob extends TimedJob
             // Get pending files based on extraction scope.
             $pendingFiles = $this->getPendingFiles($fileMapper, $extractionScope, $batchSize, $logger);
 
-            if (empty($pendingFiles)) {
+            if (empty($pendingFiles) === true) {
                 $logger->info('No pending files found for cron extraction');
                 return;
             }

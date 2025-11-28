@@ -90,7 +90,7 @@ class CloudEventService
             'time'            => date('c'),
 
             // Optional CloudEvent attributes.
-            'datacontenttype' => $request->getHeader('Content-Type') ?: 'application/json',
+            'datacontenttype' => $request->getHeader('Content-Type') === true ?: 'application/json',
             'subject'         => $this->getSubject($request),
             'dataschema'      => null,
 
@@ -151,9 +151,9 @@ class CloudEventService
         $path = $request->getPathInfo();
 
         // Extract resource identifiers from path.
-        // Example: /api/objects/{register}/{schema}/{id}
-        if (preg_match('#/api/objects/([^/]+)/([^/]+)(?:/([^/]+))?#', $path, $matches)) {
-            if (isset($matches[3])) {
+        // Example: /api/objects/{register}/{schema}/{id}.
+        if (preg_match('#/api/objects/([^/]+)/([^/]+)(?:/([^/]+))?#', $path, $matches) === 1) {
+            if (($matches[3] ?? null) !== null) {
                 return 'object:'.$matches[1].'/'.$matches[2].'/'.$matches[3];
             }
 

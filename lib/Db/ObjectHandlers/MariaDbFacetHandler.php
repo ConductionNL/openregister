@@ -70,7 +70,7 @@ class MariaDbFacetHandler
         $jsonPath = '$.'.$field;
 
         // First, check if this field commonly contains arrays.
-        if ($this->fieldContainsArrays(field: $field, baseQuery: $baseQuery)) {
+        if ($this->fieldContainsArrays(field: $field, baseQuery: $baseQuery) === true) {
             return $this->getTermsFacetForArrayField(field: $field, baseQuery: $baseQuery);
         }
 
@@ -98,7 +98,7 @@ class MariaDbFacetHandler
         $result  = $queryBuilder->executeQuery();
         $buckets = [];
 
-        while ($row = $result->fetch()) {
+        while (($row = $result->fetch()) !== false) {
             $key = $row['field_value'];
             if ($key !== null && $key !== '') {
                 $buckets[] = [
@@ -156,11 +156,11 @@ class MariaDbFacetHandler
         $arrayCount = 0;
         $totalCount = 0;
 
-        while ($row = $result->fetch()) {
+        while (($row = $result->fetch()) !== false) {
             $objectData = json_decode($row['object'], true);
-            if ($objectData && isset($objectData[$field])) {
+            if (($objectData !== null) === true && (($objectData[$field] ?? null) !== null) === true) {
                 $totalCount++;
-                if (is_array($objectData[$field])) {
+                if (is_array($objectData[$field]) === true) {
                     $arrayCount++;
                 }
             }
@@ -211,13 +211,13 @@ class MariaDbFacetHandler
         $valueCounts = [];
 
         // Process each object to extract individual array values.
-        while ($row = $result->fetch()) {
+        while (($row = $result->fetch()) !== false) {
             $objectData = json_decode($row['object'], true);
-            if ($objectData && isset($objectData[$field])) {
+            if (($objectData !== null) === true && (($objectData[$field] ?? null) !== null) === true) {
                 $fieldValue = $objectData[$field];
 
                 // Handle both arrays and single values.
-                if (is_array($fieldValue)) {
+                if (is_array($fieldValue) === true) {
                     // For arrays, count each element separately.
                     foreach ($fieldValue as $value) {
                         $stringValue = $this->normalizeValue($value);
@@ -282,11 +282,11 @@ class MariaDbFacetHandler
             return null;
         }
 
-        if (is_bool($value)) {
-            return $value ? 'true' : 'false';
+        if (is_bool($value) === true) {
+            return $value === true ? 'true' : 'false';
         }
 
-        if (is_scalar($value)) {
+        if (is_scalar($value) === true) {
             return trim((string) $value);
         }
 
@@ -346,7 +346,7 @@ class MariaDbFacetHandler
         $result  = $queryBuilder->executeQuery();
         $buckets = [];
 
-        while ($row = $result->fetch()) {
+        while (($row = $result->fetch()) !== false) {
             if ($row['date_key'] !== null) {
                 $buckets[] = [
                     'key'     => $row['date_key'],
@@ -402,7 +402,7 @@ class MariaDbFacetHandler
                         );
 
             // Apply range conditions.
-            if (isset($range['from'])) {
+            if (($range['from'] ?? null) !== null) {
                 $queryBuilder->andWhere(
                     $queryBuilder->createFunction(
                         "CAST(JSON_UNQUOTE(JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")) AS DECIMAL(10,2))"
@@ -410,7 +410,7 @@ class MariaDbFacetHandler
                 );
             }
 
-            if (isset($range['to'])) {
+            if (($range['to'] ?? null) !== null) {
                 $queryBuilder->andWhere(
                     $queryBuilder->createFunction(
                         "CAST(JSON_UNQUOTE(JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")) AS DECIMAL(10,2))"
@@ -432,11 +432,11 @@ class MariaDbFacetHandler
                 'results' => $count,
             ];
 
-            if (isset($range['from'])) {
+            if (($range['from'] ?? null) !== null) {
                 $bucket['from'] = $range['from'];
             }
 
-            if (isset($range['to'])) {
+            if (($range['to'] ?? null) !== null) {
                 $bucket['to'] = $range['to'];
             }
 
@@ -502,12 +502,12 @@ class MariaDbFacetHandler
         }
 
         // Apply IDs filter if provided.
-        if ($ids !== null && is_array($ids) && !empty($ids)) {
+        if ($ids !== null && is_array($ids) === true && !empty($ids)) {
             $this->applyIdsFilter(queryBuilder: $queryBuilder, ids: $ids);
         }
 
         // Apply metadata filters from @self.
-        if (isset($baseQuery['@self']) && is_array($baseQuery['@self'])) {
+        if (($baseQuery['@self'] ?? null) !== null && is_array($baseQuery['@self']) === true) {
             $this->applyMetadataFilters(queryBuilder: $queryBuilder, metadataFilters: $baseQuery['@self']);
         }
 
@@ -615,7 +615,7 @@ class MariaDbFacetHandler
 
         // Separate integer IDs from string UUIDs.
         foreach ($ids as $id) {
-            if (is_numeric($id)) {
+            if (is_numeric($id) === true) {
                 $integerIds[] = (int) $id;
             } else {
                 $stringIds[] = (string) $id;
@@ -688,7 +688,7 @@ class MariaDbFacetHandler
             }
 
             // Handle array of values (OR condition).
-            if (isset($value[0]) && !is_string($value[0])) {
+            if (($value[0] ?? null) !== null && is_string($value[0]) === false) {
                 // This is an array of values, not operators.
                 $queryBuilder->andWhere($queryBuilder->expr()->in($field, $queryBuilder->createNamedParameter($value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
                 continue;
@@ -815,7 +815,7 @@ class MariaDbFacetHandler
             }
 
             // Handle array of values (OR condition) - backwards compatibility.
-            if (isset($value[0]) && !is_string($value[0])) {
+            if (($value[0] ?? null) !== null && is_string($value[0]) === false) {
                 // This is an array of values, not operators.
                 $orConditions = $queryBuilder->expr()->orX();
                 foreach ($value as $val) {
@@ -1060,11 +1060,11 @@ class MariaDbFacetHandler
      */
     private function generateRangeKey(array $range): string
     {
-        if (isset($range['from']) && isset($range['to'])) {
+        if (($range['from'] ?? null) !== null && (($range['to'] ?? null) !== null) === true) {
             return $range['from'].'-'.$range['to'];
-        } else if (isset($range['from'])) {
+        } else if (($range['from'] ?? null) !== null) {
             return $range['from'].'+';
-        } else if (isset($range['to'])) {
+        } else if (($range['to'] ?? null) !== null) {
             return '0-'.$range['to'];
         } else {
             return 'all';
@@ -1098,7 +1098,7 @@ class MariaDbFacetHandler
         // Get sample objects to analyze.
         $sampleObjects = $this->getSampleObjects($baseQuery, $sampleSize);
 
-        if (empty($sampleObjects)) {
+        if (empty($sampleObjects) === true) {
             return [];
         }
 
@@ -1159,9 +1159,9 @@ class MariaDbFacetHandler
         $result  = $queryBuilder->executeQuery();
         $objects = [];
 
-        while ($row = $result->fetch()) {
+        while (($row = $result->fetch()) !== false) {
             $objectData = json_decode($row['object'], true);
-            if (is_array($objectData)) {
+            if (is_array($objectData) === true) {
                 $objects[] = $objectData;
             }
         }
@@ -1202,7 +1202,7 @@ class MariaDbFacetHandler
             $fieldPath = $prefix === '' ? $key : $prefix.'.'.$key;
 
             // Skip system fields.
-            if (str_starts_with($key, '@') || str_starts_with($key, '_')) {
+            if (str_starts_with($key, '@') === true || str_starts_with($key, '_') === true) {
                 continue;
             }
 
@@ -1221,11 +1221,11 @@ class MariaDbFacetHandler
             $fieldAnalysis[$fieldPath]['count']++;
 
             // Analyze value type and characteristics.
-            if (is_array($value)) {
+            if (is_array($value) === true) {
                 $fieldAnalysis[$fieldPath]['is_array'] = true;
 
                 // Check if it's an array of objects (nested structure).
-                if (!empty($value) && is_array($value[0])) {
+                if (!empty($value) === true && is_array($value[0]) === true) {
                     $fieldAnalysis[$fieldPath]['is_nested'] = true;
                     // Recursively analyze nested objects.
                     $this->analyzeObjectFields($value[0], $fieldAnalysis, $fieldPath, $depth + 1);
@@ -1236,13 +1236,13 @@ class MariaDbFacetHandler
                         $this->recordSampleValue($fieldAnalysis[$fieldPath], $item);
                     }
                 }
-            } else if (is_object($value)) {
+            } else if (is_object($value) === true) {
                 $fieldAnalysis[$fieldPath]['is_nested'] = true;
                 // Recursively analyze nested object.
                 // Note: is_object($value) and is_array($value) are mutually exclusive.
                 // This code path handles objects that are not arrays.
                 // For array-like objects, convert to array first.
-                if (method_exists($value, '__toArray')) {
+                if (method_exists($value, '__toArray') === true) {
                     $valueArray = (array) $value->__toArray();
                     $this->analyzeObjectFields($valueArray, $fieldAnalysis, $fieldPath, $depth + 1);
                 }
@@ -1326,26 +1326,26 @@ class MariaDbFacetHandler
             return 'null';
         }
 
-        if (is_bool($value)) {
+        if (is_bool($value) === true) {
             return 'boolean';
         }
 
-        if (is_int($value)) {
+        if (is_int($value) === true) {
             return 'integer';
         }
 
-        if (is_float($value)) {
+        if (is_float($value) === true) {
             return 'float';
         }
 
-        if (is_string($value)) {
+        if (is_string($value) === true) {
             // Check if it looks like a date.
-            if ($this->looksLikeDate($value)) {
+            if ($this->looksLikeDate($value) === true) {
                 return 'date';
             }
 
             // Check if it's numeric.
-            if (is_numeric($value)) {
+            if (is_numeric($value) === true) {
                 return 'numeric_string';
             }
 
@@ -1385,7 +1385,7 @@ class MariaDbFacetHandler
         ];
 
         foreach ($datePatterns as $pattern) {
-            if (preg_match($pattern, $value)) {
+            if (preg_match($pattern, $value) === true) {
                 return true;
             }
         }
@@ -1412,11 +1412,11 @@ class MariaDbFacetHandler
             return 'null';
         }
 
-        if (is_bool($value)) {
-            return $value ? 'true' : 'false';
+        if (is_bool($value) === true) {
+            return $value === true ? 'true' : 'false';
         }
 
-        if (is_array($value) || is_object($value)) {
+        if (is_array($value) === true || is_object($value) === true) {
             return json_encode($value);
         }
 
@@ -1442,7 +1442,7 @@ class MariaDbFacetHandler
     private function determineFieldConfiguration(string $fieldPath, array $analysis): ?array
     {
         // Skip nested objects and arrays of objects, but allow arrays of simple values.
-        if ($analysis['is_nested'] && !$this->isArrayOfSimpleValues($analysis)) {
+        if (($analysis['is_nested'] === true) && $this->isArrayOfSimpleValues($analysis) === false) {
             return null;
         }
 
@@ -1527,7 +1527,6 @@ class MariaDbFacetHandler
             $simpleTypes = ['string', 'integer', 'float', 'boolean', 'numeric_string', 'date'];
 
             /*
-             * @psalm-suppress UnusedForeachValue - $type is used in in_array() check
              */
             foreach (array_keys($types) as $type) {
                 if (!in_array($type, $simpleTypes)) {
@@ -1556,7 +1555,7 @@ class MariaDbFacetHandler
      */
     private function getPrimaryType(array $types): ?string
     {
-        if (empty($types)) {
+        if (empty($types) === true) {
             return null;
         }
 

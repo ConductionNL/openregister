@@ -33,7 +33,7 @@ use OCP\AppFramework\Db\Entity;
  * @author    Conduction Development Team
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2
- * @version   1.0.0
+ * @version   GIT: <git_id>
  * @link      https://OpenRegister.app
  */
 class Endpoint extends Entity implements JsonSerializable
@@ -328,7 +328,7 @@ class Endpoint extends Entity implements JsonSerializable
         $generatedSlug = preg_replace('/[^a-z0-9]+/', '-', strtolower(trim($this->name ?? '')));
 
         // Ensure the generated slug is not empty.
-        if (empty($generatedSlug)) {
+        if (empty($generatedSlug) === true) {
             throw new \RuntimeException('Unable to generate a valid slug from the name.');
         }
 
@@ -397,8 +397,8 @@ class Endpoint extends Entity implements JsonSerializable
             'slug'           => $this->getSlug(),
             'groups'         => $this->getGroups(),
             'organisation'   => $this->organisation,
-            'created'        => isset($this->created) ? $this->created->format('c') : null,
-            'updated'        => isset($this->updated) ? $this->updated->format('c') : null,
+            'created'        => isset($this->created) === true ? $this->created->format('c') : null,
+            'updated'        => isset($this->updated) === true ? $this->updated->format('c') : null,
         ];
 
     }//end jsonSerialize()

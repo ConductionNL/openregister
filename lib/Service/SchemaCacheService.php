@@ -155,7 +155,7 @@ class SchemaCacheService
         $cacheKey = $this->buildCacheKey($schemaId, self::CACHE_KEY_SCHEMA);
 
         // Check in-memory cache first.
-        if (isset(self::$memoryCache[$cacheKey]) === true) {
+        if ((self::$memoryCache[$cacheKey] ?? null) !== null) {
             $this->logger->debug('Schema cache hit (memory)', ['schemaId' => $schemaId]);
             return self::$memoryCache[$cacheKey];
         }
@@ -282,7 +282,7 @@ class SchemaCacheService
         $cacheKey = $this->buildCacheKey($schemaId, self::CACHE_KEY_FACETABLE_FIELDS);
 
         // Check in-memory cache first.
-        if (isset(self::$memoryCache[$cacheKey]) === true) {
+        if ((self::$memoryCache[$cacheKey] ?? null) !== null) {
             return self::$memoryCache[$cacheKey];
         }
 
@@ -836,11 +836,11 @@ class SchemaCacheService
             $schema->setOrganisation($cachedData['organisation']);
             $schema->setOwner($cachedData['owner']);
 
-            if (isset($cachedData['created']) === true && $cachedData['created'] !== null && $cachedData['created'] !== '') {
+            if (($cachedData['created'] ?? null) !== null && ($cachedData['created'] !== null) === true && ($cachedData['created'] !== '') === true) {
                 $schema->setCreated(new \DateTime($cachedData['created']));
             }
 
-            if (isset($cachedData['updated']) === true && $cachedData['updated'] !== null && $cachedData['updated'] !== '') {
+            if (($cachedData['updated'] ?? null) !== null && ($cachedData['updated'] !== null) === true && ($cachedData['updated'] !== '') === true) {
                 $schema->setUpdated(new \DateTime($cachedData['updated']));
             }
 

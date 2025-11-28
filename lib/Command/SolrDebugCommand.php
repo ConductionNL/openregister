@@ -356,7 +356,7 @@ class SolrDebugCommand extends Command
         $coresResponse = @file_get_contents($coresUrl);
         if ($coresResponse !== false && $coresResponse !== '') {
             $coresData = json_decode($coresResponse, true);
-            if (isset($coresData['status']) === true) {
+            if (($coresData['status'] ?? null) !== null) {
                 $coreCount = count($coresData['status']);
                 $output->writeln("  <info>✅ Found $coreCount cores (standalone mode)</info>");
                 foreach ($coresData['status'] as $coreName => $coreInfo) {
@@ -382,14 +382,12 @@ class SolrDebugCommand extends Command
         $collectionsResponse = @file_get_contents($collectionsUrl);
         if ($collectionsResponse !== false && $collectionsResponse !== '') {
             $collectionsData = json_decode($collectionsResponse, true);
-            if (isset($collectionsData['cluster']['collections']) === true) {
+            if (($collectionsData['cluster']['collections'] ?? null) !== null) {
                 $collectionCount = count($collectionsData['cluster']['collections']);
                 $output->writeln("  <info>✅ Found $collectionCount collections (SolrCloud mode)</info>");
                 foreach (array_keys($collectionsData['cluster']['collections']) as $collectionName) {
-                    /*
-                     * @var string|int $collectionName
-                     */
-                    $collectionNameStr = is_string($collectionName) ? $collectionName : (string) $collectionName;
+                    // Ensure collectionName is a string (array_keys returns string|int keys).
+                    $collectionNameStr = (string) $collectionName;
                     $output->writeln("    - <comment>".$collectionNameStr."</comment>");
                 }
             }
@@ -411,7 +409,7 @@ class SolrDebugCommand extends Command
         $configSetsResponse = @file_get_contents($configSetsUrl);
         if ($configSetsResponse !== false && $configSetsResponse !== '') {
             $configSetsData = json_decode($configSetsResponse, true);
-            if (isset($configSetsData['configSets']) === true) {
+            if (($configSetsData['configSets'] ?? null) !== null) {
                 $configSetCount = count($configSetsData['configSets']);
                 $output->writeln("  <info>✅ Found $configSetCount configSets</info>");
                 foreach ($configSetsData['configSets'] as $configSetName) {

@@ -61,11 +61,11 @@ class OasService
     public function __construct(
         private readonly RegisterMapper $registerMapper,
         private readonly SchemaMapper $schemaMapper,
-        private readonly IURLGenerator $urlGenerator,
-        /** @psalm-suppress UnusedProperty - Property kept for future use */
+        private readonly IURLGenerator $urlGenerator
+        /*
         private readonly IConfig $config,
-        /** @psalm-suppress UnusedProperty - Property kept for future use */
         private readonly LoggerInterface $logger
+        */
     ) {
         // Initialize the OAS array with the base OAS.
         $this->oas = $this->getBaseOas();
@@ -150,7 +150,7 @@ class OasService
             $sanitizedSchemaName = $this->sanitizeSchemaName($schemaTitle);
 
             // Validate schema definition before adding.
-            if (!empty($schemaDefinition) && is_array($schemaDefinition)) {
+            if (!empty($schemaDefinition) === true && is_array($schemaDefinition) === true) {
                 $this->oas['components']['schemas'][$sanitizedSchemaName] = $schemaDefinition;
 
                 // Add tag for the schema (keep original title for display).
@@ -172,7 +172,7 @@ class OasService
 
             // Loop through each schema slug to get the schema from the schemas array.
             foreach ($schemaIds as $schemaId) {
-                if (isset($schemas[$schemaId]) === true) {
+                if (($schemas[$schemaId] ?? null) !== null) {
                     $schema = $schemas[$schemaId];
                     $this->addCrudPaths($register, $schema);
                     $this->addExtendedPaths($register, $schema);
@@ -307,24 +307,24 @@ class OasService
 
         // Copy only valid OpenAPI schema keywords.
         foreach ($allowedSchemaKeywords as $keyword) {
-            if (isset($propertyDefinition[$keyword])) {
+            if (($propertyDefinition[$keyword] ?? null) !== null) {
                 $cleanDef[$keyword] = $propertyDefinition[$keyword];
             }
         }
 
         // Remove invalid/empty values that violate OpenAPI spec.
         // oneOf must have at least 1 item, remove if empty.
-        if (isset($cleanDef['oneOf']) === true && (empty($cleanDef['oneOf']) === true || is_array($cleanDef['oneOf']) === false)) {
+        if (($cleanDef['oneOf'] ?? null) !== null && (empty($cleanDef['oneOf']) === true || is_array($cleanDef['oneOf']) === false) === true) {
             unset($cleanDef['oneOf']);
         }
 
         // anyOf must have at least 1 item, remove if empty.
-        if (isset($cleanDef['anyOf']) === true && (empty($cleanDef['anyOf']) === true || is_array($cleanDef['anyOf']) === false)) {
+        if (($cleanDef['anyOf'] ?? null) !== null && (empty($cleanDef['anyOf']) === true || is_array($cleanDef['anyOf']) === false) === true) {
             unset($cleanDef['anyOf']);
         }
 
         // allOf must have at least 1 item, remove if empty or invalid.
-        if (isset($cleanDef['allOf']) === true) {
+        if (($cleanDef['allOf'] ?? null) !== null) {
             if (is_array($cleanDef['allOf']) === false || empty($cleanDef['allOf']) === true) {
                 unset($cleanDef['allOf']);
             } else {
@@ -347,22 +347,22 @@ class OasService
         }
 
         // $ref must be a non-empty string, remove if empty.
-        if (isset($cleanDef['$ref']) === true && (empty($cleanDef['$ref']) === true || is_string($cleanDef['$ref']) === false)) {
+        if (($cleanDef['$ref'] ?? null) !== null && (empty($cleanDef['$ref']) === true || is_string($cleanDef['$ref']) === false) === true) {
             unset($cleanDef['$ref']);
         }
 
         // enum must have at least 1 item, remove if empty.
-        if (isset($cleanDef['enum']) === true && (empty($cleanDef['enum']) === true || is_array($cleanDef['enum']) === false)) {
+        if (($cleanDef['enum'] ?? null) !== null && (empty($cleanDef['enum']) === true || is_array($cleanDef['enum']) === false) === true) {
             unset($cleanDef['enum']);
         }
 
         // Ensure we have at least a type.
-        if (isset($cleanDef['type']) === false && isset($cleanDef['$ref']) === false) {
+        if (!isset($cleanDef['type']) === false && !isset($cleanDef['$ref'])) {
             $cleanDef['type'] = 'string';
         }
 
         // Add basic description if missing.
-        if (!isset($cleanDef['description']) && !isset($cleanDef['$ref'])) {
+        if (!isset($cleanDef['description']) === false && !isset($cleanDef['$ref'])) {
             $cleanDef['description'] = 'Property value';
         }
 
@@ -513,7 +513,7 @@ class OasService
                 $schemaProperties = $schema->getProperties();
                 foreach ($schemaProperties as $propertyName => $propertyDefinition) {
                     // Skip metadata properties and internal system properties.
-                    if (str_starts_with($propertyName, '@')) {
+                    if (str_starts_with($propertyName, '@') === true) {
                         continue;
                     }
 
@@ -533,7 +533,7 @@ class OasService
                     // Array types require an items field.
                     if ($propertyType === 'array') {
                         $paramSchema['items'] = [
-                            'type' => 'string', // Default array item type for query parameters
+// Default array item type for query parameters.
                         ];
                     }
 
@@ -563,7 +563,7 @@ class OasService
     private function getPropertyType($propertyDefinition): string
     {
         // If the property definition is an array, look for the type key.
-        if (is_array($propertyDefinition) === true && isset($propertyDefinition['type']) === true) {
+        if (is_array($propertyDefinition) === true && (($propertyDefinition['type'] ?? null) !== null)) {
             return $propertyDefinition['type'];
         }
 
@@ -599,14 +599,14 @@ class OasService
     {
         // Ensure schema has a valid title before proceeding.
         $schemaTitle = $schema->getTitle();
-        if (empty($schemaTitle)) {
+        if (empty($schemaTitle) === true) {
             $schemaTitle = 'UnknownSchema';
         }
 
         $sanitizedSchemaName = $this->sanitizeSchemaName($schemaTitle);
 
         // Validate that we have a proper schema reference.
-        if (empty($sanitizedSchemaName)) {
+        if (empty($sanitizedSchemaName) === true) {
             $sanitizedSchemaName = 'UnknownSchema';
         }
 
@@ -683,7 +683,7 @@ class OasService
                     'content'     => [
                         'application/json' => [
                             'schema' => [
-                                '$ref' => '#/components/schemas/'.$this->sanitizeSchemaName($schema->getTitle() ?: 'UnknownSchema'),
+                                '$ref' => '#/components/schemas/'.$this->sanitizeSchemaName((($schema->getTitle() !== null) === true && ($schema->getTitle() !== '') === true) ? $schema->getTitle() : 'UnknownSchema'),
                             ],
                         ],
                     ],
@@ -738,7 +738,7 @@ class OasService
                 'content'  => [
                     'application/json' => [
                         'schema' => [
-                            '$ref' => '#/components/schemas/'.$this->sanitizeSchemaName($schema->getTitle() ?: 'UnknownSchema'),
+                            '$ref' => '#/components/schemas/'.$this->sanitizeSchemaName((($schema->getTitle() !== null && $schema->getTitle() !== '') === true) ? $schema->getTitle() : 'UnknownSchema'),
                         ],
                     ],
                 ],
@@ -749,7 +749,7 @@ class OasService
                     'content'     => [
                         'application/json' => [
                             'schema' => [
-                                '$ref' => '#/components/schemas/'.$this->sanitizeSchemaName($schema->getTitle() ?: 'UnknownSchema'),
+                                '$ref' => '#/components/schemas/'.$this->sanitizeSchemaName((($schema->getTitle() !== null) === true && ($schema->getTitle() !== '') === true) ? $schema->getTitle() : 'UnknownSchema'),
                             ],
                         ],
                     ],
@@ -790,7 +790,7 @@ class OasService
                 'content'  => [
                     'application/json' => [
                         'schema' => [
-                            '$ref' => '#/components/schemas/'.$this->sanitizeSchemaName($schema->getTitle() ?: 'UnknownSchema'),
+                            '$ref' => '#/components/schemas/'.$this->sanitizeSchemaName((($schema->getTitle() !== null && $schema->getTitle() !== '') === true) ? $schema->getTitle() : 'UnknownSchema'),
                         ],
                     ],
                 ],
@@ -801,7 +801,7 @@ class OasService
                     'content'     => [
                         'application/json' => [
                             'schema' => [
-                                '$ref' => '#/components/schemas/'.$this->sanitizeSchemaName($schema->getTitle() ?: 'UnknownSchema'),
+                                '$ref' => '#/components/schemas/'.$this->sanitizeSchemaName((($schema->getTitle() !== null) === true && ($schema->getTitle() !== '') === true) ? $schema->getTitle() : 'UnknownSchema'),
                             ],
                         ],
                     ],
@@ -1186,7 +1186,7 @@ class OasService
     private function sanitizeSchemaName(?string $title): string
     {
         // Handle null or empty titles.
-        if (empty($title)) {
+        if (empty($title) === true) {
             return 'UnknownSchema';
         }
 
@@ -1200,12 +1200,12 @@ class OasService
         $sanitized = trim($sanitized, '_');
 
         // Handle edge case where sanitization results in empty string.
-        if (empty($sanitized)) {
+        if (empty($sanitized) === true) {
             return 'UnknownSchema';
         }
 
         // Ensure it starts with a letter (prepend 'Schema_' if it starts with number).
-        if (preg_match('/^[0-9]/', $sanitized)) {
+        if (preg_match('/^[0-9]/', $sanitized) === true) {
             $sanitized = 'Schema_' . $sanitized;
         }
 
@@ -1224,21 +1224,21 @@ class OasService
     private function validateOasIntegrity(): void
     {
         // Check for invalid $ref references in schemas.
-        if (isset($this->oas['components']['schemas'])) {
+        if (($this->oas['components']['schemas'] ?? null) !== null) {
             foreach ($this->oas['components']['schemas'] as $schemaName => &$schema) {
-                if (is_array($schema)) {
+                if (is_array($schema) === true) {
                     $this->validateSchemaReferences($schema, $schemaName);
                 }
             }
         }
 
         // Check for invalid allOf constructs in paths.
-        if (isset($this->oas['paths'])) {
+        if (($this->oas['paths'] ?? null) !== null) {
             foreach ($this->oas['paths'] as $pathName => &$path) {
                 foreach ($path as $method => &$operation) {
-                    if (isset($operation['responses'])) {
+                    if (($operation['responses'] ?? null) !== null) {
                         foreach ($operation['responses'] as $statusCode => &$response) {
-                            if (isset($response['content']['application/json']['schema'])) {
+                            if (($response['content']['application/json']['schema'] ?? null) !== null) {
                                 $this->validateSchemaReferences($response['content']['application/json']['schema'], "path:{$pathName}:{$method}:response:{$statusCode}");
                             }
                         }
@@ -1260,18 +1260,18 @@ class OasService
     private function validateSchemaReferences(array &$schema, string $context): void
     {
         // Check allOf constructs.
-        if (isset($schema['allOf'])) {
-            if (!is_array($schema['allOf']) || empty($schema['allOf'])) {
+        if (($schema['allOf'] ?? null) !== null) {
+            if (!is_array($schema['allOf']) === true || empty($schema['allOf']) === true) {
                 unset($schema['allOf']);
             } else {
                 $validAllOfItems = [];
                 foreach ($schema['allOf'] as $index => $item) {
-                    if (!is_array($item) || empty($item)) {
+                    if (!is_array($item) === true || empty($item) === true) {
                     } else {
                         // Validate each allOf item has required structure.
-                        if (isset($item['$ref']) && !empty($item['$ref']) && is_string($item['$ref'])) {
+                        if (($item['$ref'] ?? null) !== null && empty($item['$ref']) === false && is_string($item['$ref']) === true) {
                             $validAllOfItems[] = $item;
-                        } elseif (isset($item['type']) || isset($item['properties'])) {
+                        } elseif (($item['type'] ?? null) !== null || (($item['properties'] ?? null) !== null) === true) {
                             $validAllOfItems[] = $item;
                         } else {
                         }
@@ -1279,7 +1279,7 @@ class OasService
                 }
 
                 // If no valid items remain, remove allOf.
-                if (empty($validAllOfItems)) {
+                if (empty($validAllOfItems) === true) {
                     unset($schema['allOf']);
                 } else {
                     $schema['allOf'] = $validAllOfItems;
@@ -1288,8 +1288,8 @@ class OasService
         }
 
         // Check $ref validity.
-        if (isset($schema['$ref'])) {
-            if (empty($schema['$ref']) || !is_string($schema['$ref'])) {
+        if (($schema['$ref'] ?? null) !== null) {
+            if (empty($schema['$ref']) === true || !is_string($schema['$ref'])) {
                 unset($schema['$ref']);
             } else {
                 // Check if reference points to existing schema.
@@ -1301,15 +1301,15 @@ class OasService
         }
 
         // Recursively check nested schemas.
-        if (isset($schema['properties'])) {
+        if (($schema['properties'] ?? null) !== null) {
             foreach ($schema['properties'] as $propName => $property) {
-                if (is_array($property)) {
+                if (is_array($property) === true) {
                     $this->validateSchemaReferences($property, "{$context}.properties.{$propName}");
                 }
             }
         }
 
-        if (isset($schema['items']) && is_array($schema['items'])) {
+        if (($schema['items'] ?? null) !== null && is_array($schema['items']) === true) {
             $this->validateSchemaReferences($schema['items'], "{$context}.items");
         }
     }//end validateSchemaReferences()

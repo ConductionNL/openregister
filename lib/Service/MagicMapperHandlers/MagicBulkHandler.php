@@ -510,7 +510,7 @@ class MagicBulkHandler
             $valuesClause[] = '('.implode(',', $rowValues).')';
 
             // Collect UUID for return.
-            if (isset($objectData['_uuid']) === true) {
+            if (($objectData['_uuid'] ?? null) !== null) {
                 $insertedUuids[] = $objectData['_uuid'];
             }
         }
@@ -647,7 +647,7 @@ class MagicBulkHandler
             $stmt   = $this->db->executeQuery('SHOW VARIABLES LIKE \'max_allowed_packet\'');
             $result = $stmt->fetch();
 
-            if ($result !== false && isset($result['Value']) === true) {
+            if ($result !== false && (($result['Value'] ?? null) !== null)) {
                 return (int) $result['Value'];
             }
         } catch (\Exception $e) {

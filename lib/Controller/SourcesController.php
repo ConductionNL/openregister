@@ -28,7 +28,6 @@ use OCP\IRequest;
 /**
  * Class SourcesController
  *
- * @psalm-suppress UnusedClass - This controller is registered via routes.php and used by Nextcloud's routing system
  */
 class SourcesController extends Controller
 {
@@ -155,7 +154,7 @@ class SourcesController extends Controller
         }
 
         // Remove ID if present to ensure a new record is created.
-        if (isset($data['id']) === true) {
+        if (($data['id'] ?? null) !== null) {
             unset($data['id']);
         }
 
@@ -260,7 +259,7 @@ class SourcesController extends Controller
      */
     private function getIntParam(array $params, string $key): ?int
     {
-        if (isset($params[$key]) === true) {
+        if (($params[$key] ?? null) !== null) {
             return (int) $params[$key];
         }
 

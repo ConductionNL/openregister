@@ -74,10 +74,10 @@ class Version1Date20251106120000 extends SimpleMigrationStep
         // ============================================================.
         // Update openregister_configurations: int → string UUID.
         // ============================================================.
-        if ($schema->hasTable('openregister_configurations')) {
+        if ($schema->hasTable('openregister_configurations') === true) {
             $table = $schema->getTable('openregister_configurations');
 
-            if ($table->hasColumn('organisation')) {
+            if ($table->hasColumn('organisation') === true) {
                 $column = $table->getColumn('organisation');
                 // Check if it's currently an integer.
                 if ($column->getType()->getName() === Types::INTEGER) {
@@ -85,7 +85,6 @@ class Version1Date20251106120000 extends SimpleMigrationStep
 
                     // Change column type to string UUID.
                     /*
-                     * @psalm-suppress UndefinedClass
                      */
                     $column->setType(Type::getType(Types::STRING));
                     $column->setLength(36);
@@ -102,10 +101,10 @@ class Version1Date20251106120000 extends SimpleMigrationStep
         // ============================================================.
         // Update openregister_agents: int → string UUID.
         // ============================================================.
-        if ($schema->hasTable('openregister_agents')) {
+        if ($schema->hasTable('openregister_agents') === true) {
             $table = $schema->getTable('openregister_agents');
 
-            if ($table->hasColumn('organisation')) {
+            if ($table->hasColumn('organisation') === true) {
                 $column = $table->getColumn('organisation');
                 // Check if it's currently an integer.
                 if ($column->getType()->getName() === Types::INTEGER) {
@@ -127,10 +126,10 @@ class Version1Date20251106120000 extends SimpleMigrationStep
         // ============================================================.
         // Update openregister_applications: int → string UUID.
         // ============================================================.
-        if ($schema->hasTable('openregister_applications')) {
+        if ($schema->hasTable('openregister_applications') === true) {
             $table = $schema->getTable('openregister_applications');
 
-            if ($table->hasColumn('organisation')) {
+            if ($table->hasColumn('organisation') === true) {
                 $column = $table->getColumn('organisation');
                 // Check if it's currently an integer.
                 if ($column->getType()->getName() === Types::INTEGER) {
@@ -152,10 +151,10 @@ class Version1Date20251106120000 extends SimpleMigrationStep
         // ============================================================.
         // Add openregister_view.organisation column (table name is singular).
         // ============================================================.
-        if ($schema->hasTable('openregister_view')) {
+        if ($schema->hasTable('openregister_view') === true) {
             $table = $schema->getTable('openregister_view');
 
-            if (!$table->hasColumn('organisation')) {
+            if ($table->hasColumn('organisation') === false) {
                 $output->info(message: '  📝 Adding view.organisation column');
 
                 $table->addColumn(
@@ -180,10 +179,10 @@ class Version1Date20251106120000 extends SimpleMigrationStep
         // ============================================================.
         // Add openregister_sources.organisation column.
         // ============================================================.
-        if ($schema->hasTable('openregister_sources')) {
+        if ($schema->hasTable('openregister_sources') === true) {
             $table = $schema->getTable('openregister_sources');
 
-            if (!$table->hasColumn('organisation')) {
+            if ($table->hasColumn('organisation') === false) {
                 $output->info(message: '  📝 Adding sources.organisation column');
 
                 $table->addColumn(
@@ -208,10 +207,10 @@ class Version1Date20251106120000 extends SimpleMigrationStep
         // ============================================================.
         // Add openregister_registers.organisation column.
         // ============================================================.
-        if ($schema->hasTable('openregister_registers')) {
+        if ($schema->hasTable('openregister_registers') === true) {
             $table = $schema->getTable('openregister_registers');
 
-            if (!$table->hasColumn('organisation')) {
+            if ($table->hasColumn('organisation') === false) {
                 $output->info(message: '  📝 Adding registers.organisation column');
 
                 $table->addColumn(
@@ -236,10 +235,10 @@ class Version1Date20251106120000 extends SimpleMigrationStep
         // ============================================================.
         // Verify openregister_schemas.organisation (should already be string).
         // ============================================================.
-        if ($schema->hasTable('openregister_schemas')) {
+        if ($schema->hasTable('openregister_schemas') === true) {
             $table = $schema->getTable('openregister_schemas');
 
-            if ($table->hasColumn('organisation')) {
+            if ($table->hasColumn('organisation') === true) {
                 $column = $table->getColumn('organisation');
                 if ($column->getType()->getName() === Types::STRING) {
                     $output->info(message: '  ✅ schemas.organisation already string UUID (no change needed)');

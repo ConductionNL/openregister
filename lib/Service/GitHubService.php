@@ -271,7 +271,7 @@ class GitHubService
             $statusCode   = null;
 
             // Extract HTTP status code if available.
-            if ($e->hasResponse()) {
+            if ($e->hasResponse() === true) {
                 $statusCode = $e->getResponse()->getStatusCode();
             }
 
@@ -308,7 +308,7 @@ class GitHubService
             case 403:
                 if (stripos($rawError, 'rate limit') !== false) {
                     $token = $this->config->getAppValue('openregister', 'github_api_token', '');
-                    if (empty($token)) {
+                    if (empty($token) === true) {
                         return 'GitHub API rate limit exceeded (60 requests/hour for unauthenticated). Please configure a GitHub API token in Settings to increase to 5,000 requests/hour (30/minute for Code Search).';
                     } else {
                         return 'GitHub Code Search API rate limit exceeded (30 requests per minute). Please wait a few minutes before trying again. The discovery search makes multiple API calls to find configurations.';
@@ -571,7 +571,7 @@ class GitHubService
             $data = json_decode($response->getBody(), true);
 
             // Decode base64 content.
-            if (isset($data['content'])) {
+            if (($data['content'] ?? null) !== null) {
                 $content = base64_decode($data['content']);
                 $json    = json_decode($content, true);
 
@@ -702,7 +702,7 @@ class GitHubService
             $content = $this->getFileContent(owner: $owner, repo: $repo, path: $path, branch: $branch);
 
             // Validate that it's a valid OpenRegister configuration.
-            if (!isset($content['openapi']) || !isset($content['x-openregister'])) {
+            if (!isset($content['openapi']) === false || !isset($content['x-openregister'])) {
                 $this->logger->debug(
                         'File does not contain required OpenRegister structure',
                         [
@@ -740,7 +740,7 @@ class GitHubService
     {
         // Check if GitHub API token is configured.
         $token = $this->config->getAppValue('openregister', 'github_api_token', '');
-        if (empty($token)) {
+        if (empty($token) === true) {
             $this->logger->info(message: 'GitHub API token not configured - returning empty repositories list');
             return [];
         }
@@ -793,12 +793,12 @@ class GitHubService
                     );
         } catch (GuzzleException $e) {
             $statusCode = null;
-            if ($e->hasResponse()) {
+            if ($e->hasResponse() === true) {
                 $statusCode = $e->getResponse()->getStatusCode();
             }
 
             // If authentication failed (401) or token not configured, return empty array instead of error.
-            if ($statusCode === 401 || empty($token)) {
+            if ($statusCode === 401 || empty($token) === true) {
                 $this->logger->info(
                         'GitHub API authentication failed or not configured - returning empty repositories list',
                         [
@@ -972,12 +972,12 @@ class GitHubService
             $errorMessage = $e->getMessage();
             $statusCode   = null;
 
-            if ($e->hasResponse()) {
+            if ($e->hasResponse() === true) {
                 $statusCode   = $e->getResponse()->getStatusCode();
                 $responseBody = $e->getResponse()->getBody()->getContents();
                 $errorData    = json_decode($responseBody, true);
 
-                if (isset($errorData['message'])) {
+                if (($errorData['message'] ?? null) !== null) {
                     $errorMessage = $errorData['message'];
 
                     // Provide more context for common errors.
@@ -1043,7 +1043,7 @@ class GitHubService
             return $fileInfo['sha'] ?? null;
         } catch (GuzzleException $e) {
             // File doesn't exist or other error.
-            if ($e->hasResponse() && $e->getResponse()->getStatusCode() === 404) {
+            if ($e->hasResponse() === true && $e->getResponse()->getStatusCode() === 404) {
                 return null;
                 // File doesn't exist, which is fine for new files.
             }

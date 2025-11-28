@@ -274,7 +274,7 @@ class ObjectsProvider implements IFilteringProvider
         }
 
         if ($until !== null) {
-            if (isset($searchQuery['@self']['created'])) {
+            if (($searchQuery['@self']['created'] ?? null) !== null) {
                 $searchQuery['@self']['created']['$lte'] = $until;
             } else {
                 $searchQuery['@self']['created'] = ['$lte' => $until];
@@ -283,12 +283,10 @@ class ObjectsProvider implements IFilteringProvider
 
         // Set pagination limits for Nextcloud search.
         /*
-         * @psalm-suppress TypeDoesNotContainType We intend null-coalescing for future when pagination is implemented
          */
         $searchQuery['_limit'] = $limit ?? 25;
         // Default limit for search interface.
         /*
-         * @psalm-suppress TypeDoesNotContainType We intend null-coalescing for future when pagination is implemented
          */
         $searchQuery['_offset'] = $offset ?? 0;
 
@@ -375,7 +373,7 @@ class ObjectsProvider implements IFilteringProvider
             $parts[] = $this->l10n->t('Updated: %s', [date('Y-m-d H:i', strtotime($object['updated']))]);
         }
 
-        return implode(' • ', $parts) ?: $this->l10n->t('Open Register Object');
+        return implode(' • ', $parts) === true ?: $this->l10n->t('Open Register Object');
 
     }//end buildDescription()
 

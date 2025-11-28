@@ -71,7 +71,6 @@ class MagicRbacHandler
         private readonly IUserManager $userManager,
         private readonly IAppConfig $appConfig,
         /**
-         * @psalm-suppress UnusedProperty - Property kept for future use
          */
         private readonly LoggerInterface $logger
     ) {

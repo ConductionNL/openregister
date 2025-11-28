@@ -531,7 +531,7 @@ class SolrObjectService
                 );
 
         // Note: schemaIds parameter is logged but not yet used in reindexAll
-        // Future enhancement: filter reindexing by specific schema IDs
+        // Future enhancement: filter reindexing by specific schema IDs.
         return $this->guzzleSolrService->reindexAll(maxObjects: $maxObjects, batchSize: $batchSize);
 
     }//end reindexObjects()

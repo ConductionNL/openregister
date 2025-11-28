@@ -30,10 +30,9 @@ echo "- API: /apps/openregister/api/settings/solr/fields/create\n\n";
 echo "Exiting without making changes...\n";
 exit(1);
 
-/*
- * DEPRECATED CODE BELOW - This code is unreachable due to exit(1) above.
- * Kept for reference only. Do not use this script.
- *
+// DEPRECATED CODE BELOW - This code is unreachable due to exit(1) above.
+// Kept for reference only. Do not use this script.
+//
 // Get collection name from command line or use default.
 $collectionName = $argv[1] ?? 'openregister_nc_f0e53393';
 $solrBaseUrl    = 'http://nextcloud-dev-solr:8983/solr';
@@ -43,10 +42,8 @@ echo "Collection: {$collectionName}\n";
 echo "SOLR URL: {$solrBaseUrl}\n";
 echo "==========================================\n\n";
 
-/*
- * ObjectEntity field definitions for SOLR schema
- * Based on ObjectEntity.php metadata properties
- */
+// ObjectEntity field definitions for SOLR schema
+// Based on ObjectEntity.php metadata properties
 
 $fieldDefinitions = [
     // **CRITICAL**: Core tenant field with self_ prefix (consistent naming).
@@ -395,4 +392,4 @@ if ($successCount === $totalFields) {
     echo "⚠️  Some fields failed to configure. Check SOLR logs for details.\n";
     exit(1);
 }
-*/
+// End of deprecated code

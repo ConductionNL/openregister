@@ -40,8 +40,7 @@ use OCP\IDBConnection;
  *
  * @template-extends QBMapper<WebhookLog>
  *
- * @psalm-suppress ImplementedParamTypeMismatch - Entity type is used consistently across all mappers
- * @psalm-suppress PossiblyUnusedMethod - Constructor is called by Nextcloud's DI container
+
  */
 class WebhookLogMapper extends QBMapper
 {
@@ -52,7 +51,6 @@ class WebhookLogMapper extends QBMapper
      *
      * @param IDBConnection $db Database connection
      *
-     * @psalm-suppress PossiblyUnusedMethod - Constructor is called by Nextcloud's DI container
      */
     public function __construct(IDBConnection $db)
     {
@@ -174,7 +172,6 @@ class WebhookLogMapper extends QBMapper
      *
      * @return WebhookLog The inserted log
      *
-     * @psalm-suppress PossiblyUnusedReturnValue - Return value may be used by callers
      */
     public function insert(Entity $entity): Entity
     {
@@ -195,7 +192,6 @@ class WebhookLogMapper extends QBMapper
      *
      * @return int Number of deleted logs
      *
-     * @psalm-suppress PossiblyUnusedMethod - May be used by cleanup cron jobs or admin operations
      */
     public function deleteOldLogs(DateTime $before): int
     {

@@ -42,7 +42,6 @@ use Psr\Log\LoggerInterface;
  * @license  AGPL-3.0-or-later
  * @link     https://github.com/ConductionNL/openregister
  *
- * @psalm-suppress UnusedClass - This controller is registered via routes.php and used by Nextcloud's routing system
  */
 class WebhooksController extends Controller
 {
@@ -1054,7 +1053,7 @@ class WebhooksController extends Controller
             }
 
             // If no payload found, return error.
-            if (empty($payload)) {
+            if (empty($payload) === true) {
                 return new JSONResponse(
                     data: [
                         'error' => 'No payload available for retry',

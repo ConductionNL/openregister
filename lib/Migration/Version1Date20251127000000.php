@@ -34,7 +34,7 @@ use OCP\Migration\SimpleMigrationStep;
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @version   1.0.0
+ * @version   GIT: <git_id>
  * @link      https://www.OpenRegister.app
  */
 class Version1Date20251127000000 extends SimpleMigrationStep

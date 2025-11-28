@@ -461,7 +461,7 @@ class Agent extends Entity implements JsonSerializable
     public function hydrate(array $object): static
     {
         // Set UUID - generate if not provided.
-        if (isset($object['uuid']) === true && empty($object['uuid']) === false) {
+        if (($object['uuid'] ?? null) !== null && empty($object['uuid']) === false) {
             $this->setUuid($object['uuid']);
         } else {
             // Generate new UUID if not provided.

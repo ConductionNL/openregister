@@ -32,7 +32,6 @@ use OCA\OpenRegister\Exception\LockedException;
  * Class RevertController
  * Handles all object reversion operations
  *
- * @psalm-suppress UnusedClass - This controller is registered via routes.php and used by Nextcloud's routing system
  */
 class RevertController extends Controller
 {
@@ -82,11 +81,11 @@ class RevertController extends Controller
 
             // Parse the revert point.
             $until = null;
-            if (isset($data['datetime']) === true) {
+            if (($data['datetime'] ?? null) !== null) {
                 $until = new \DateTime($data['datetime']);
-            } else if (isset($data['auditTrailId']) === true) {
+            } else if (($data['auditTrailId'] ?? null) !== null) {
                 $until = $data['auditTrailId'];
-            } else if (isset($data['version']) === true) {
+            } else if (($data['version'] ?? null) !== null) {
                 $until = $data['version'];
             }
 

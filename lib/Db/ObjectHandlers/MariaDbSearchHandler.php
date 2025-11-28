@@ -79,7 +79,7 @@ class MariaDbSearchHandler
                 }
 
                 // Handle complex operators for text fields.
-                if (in_array($field, $textFields) && is_array($value)) {
+                if (in_array($field, $textFields, true) === true && is_array($value) === true) {
                     foreach ($value as $operator => $operatorValue) {
                         switch ($operator) {
                             case '~':
@@ -152,11 +152,11 @@ class MariaDbSearchHandler
                                 break;
                             case 'or':
                                 // OR logic: field matches ANY of the values.
-                                $values = is_string($operatorValue) ? array_map('trim', explode(',', $operatorValue)) : $operatorValue;
+                                $values = is_string($operatorValue) === true ? array_map('trim', explode(',', $operatorValue)) : $operatorValue;
                                 if (!empty($values)) {
                                     $orConditions = $queryBuilder->expr()->orX();
                                     foreach ($values as $val) {
-                                        if (in_array($field, $textFields)) {
+                                        if (in_array($field, $textFields) === true) {
                                             $orConditions->add(
                                                 $queryBuilder->expr()->eq(
                                                     $queryBuilder->createFunction('LOWER('.$qualifiedField.')'),
@@ -175,9 +175,9 @@ class MariaDbSearchHandler
                                 break 2;
                             case 'and':
                                 // AND logic: field must match ALL values (multiple andWhere calls).
-                                $values = is_string($operatorValue) ? array_map('trim', explode(',', $operatorValue)) : $operatorValue;
+                                $values = is_string($operatorValue) === true ? array_map('trim', explode(',', $operatorValue)) : $operatorValue;
                                 foreach ($values as $val) {
-                                    if (in_array($field, $textFields)) {
+                                    if (in_array($field, $textFields) === true) {
                                         $queryBuilder->andWhere(
                                             $queryBuilder->expr()->eq(
                                                 $queryBuilder->createFunction('LOWER('.$qualifiedField.')'),
@@ -193,7 +193,7 @@ class MariaDbSearchHandler
                                 break 2;
                             default:
                                 // For non-text operators or unsupported operators, treat as regular array (IN clause).
-                                if (is_numeric($operator)) {
+                                if (is_numeric($operator) === true) {
                                     // This is a regular array, not an operator array.
                                     $queryBuilder->andWhere(
                                     $queryBuilder->expr()->in(
@@ -212,7 +212,7 @@ class MariaDbSearchHandler
                 }//end if
 
                 // Handle complex operators for date fields.
-                if (in_array($field, $dateFields) && is_array($value)) {
+                if (in_array($field, $dateFields, true) === true && is_array($value) === true) {
                     foreach ($value as $operator => $operatorValue) {
                         // CRITICAL FIX: Convert PHP-friendly operator names back to SQL operators.
                         // Frontend sends 'gte', 'lte', etc. because PHP's $_GET can't handle >= in array keys.
@@ -233,7 +233,7 @@ class MariaDbSearchHandler
 
                         // Normalize the filter value for date fields to a consistent format.
                         $normalizedValue = $operatorValue;
-                        if (in_array($field, ['created', 'updated', 'published', 'depublished'])) {
+                        if (in_array($field, ['created', 'updated', 'published', 'depublished']) === true) {
                             try {
                                 // Convert to database format: Y-m-d H:i:s (2025-06-25 21:46:59).
                                 $dateTime        = new \DateTime($operatorValue);
@@ -247,7 +247,7 @@ class MariaDbSearchHandler
                         switch ($sqlOperator) {
                             case '>=':
                                 // For date fields, ensure proper datetime comparison.
-                                if (in_array($field, ['created', 'updated', 'published', 'depublished'])) {
+                                if (in_array($field, ['created', 'updated', 'published', 'depublished']) === true) {
                                     // Use simple string comparison since both sides are in Y-m-d H:i:s format.
                                     $queryBuilder->andWhere(
                                     $queryBuilder->expr()->gte($qualifiedField, $queryBuilder->createNamedParameter($normalizedValue))
@@ -260,7 +260,7 @@ class MariaDbSearchHandler
                                 break;
                             case '<=':
                                 // For date fields, ensure proper datetime comparison.
-                                if (in_array($field, ['created', 'updated', 'published', 'depublished'])) {
+                                if (in_array($field, ['created', 'updated', 'published', 'depublished']) === true) {
                                     $queryBuilder->andWhere(
                                     $queryBuilder->expr()->lte($qualifiedField, $queryBuilder->createNamedParameter($normalizedValue))
                                     );
@@ -272,7 +272,7 @@ class MariaDbSearchHandler
                                 break;
                             case '>':
                                 // For date fields, ensure proper datetime comparison.
-                                if (in_array($field, ['created', 'updated', 'published', 'depublished'])) {
+                                if (in_array($field, ['created', 'updated', 'published', 'depublished']) === true) {
                                     $queryBuilder->andWhere(
                                     $queryBuilder->expr()->gt($qualifiedField, $queryBuilder->createNamedParameter($normalizedValue))
                                     );
@@ -284,7 +284,7 @@ class MariaDbSearchHandler
                                 break;
                             case '<':
                                 // For date fields, ensure proper datetime comparison.
-                                if (in_array($field, ['created', 'updated', 'published', 'depublished'])) {
+                                if (in_array($field, ['created', 'updated', 'published', 'depublished']) === true) {
                                     $queryBuilder->andWhere(
                                     $queryBuilder->expr()->lt($qualifiedField, $queryBuilder->createNamedParameter($normalizedValue))
                                     );
@@ -296,7 +296,7 @@ class MariaDbSearchHandler
                                 break;
                             case '=':
                                 // For date fields, ensure proper datetime comparison.
-                                if (in_array($field, ['created', 'updated', 'published', 'depublished'])) {
+                                if (in_array($field, ['created', 'updated', 'published', 'depublished']) === true) {
                                     $queryBuilder->andWhere(
                                     $queryBuilder->expr()->eq($qualifiedField, $queryBuilder->createNamedParameter($normalizedValue))
                                     );
@@ -308,7 +308,7 @@ class MariaDbSearchHandler
                                 break;
                             case 'or':
                                 // OR logic for date/numeric fields: field matches ANY of the values.
-                                $values = is_string($operatorValue) ? array_map('trim', explode(',', $operatorValue)) : $operatorValue;
+                                $values = is_string($operatorValue) === true ? array_map('trim', explode(',', $operatorValue)) : $operatorValue;
                                 if (!empty($values)) {
                                     $orConditions = $queryBuilder->expr()->orX();
                                     foreach ($values as $val) {
@@ -322,7 +322,7 @@ class MariaDbSearchHandler
                                 break 2;
                             case 'and':
                                 // AND logic for date/numeric fields: field must match ALL values.
-                                $values = is_string($operatorValue) ? array_map('trim', explode(',', $operatorValue)) : $operatorValue;
+                                $values = is_string($operatorValue) === true ? array_map('trim', explode(',', $operatorValue)) : $operatorValue;
                                 foreach ($values as $val) {
                                     $queryBuilder->andWhere(
                                         $queryBuilder->expr()->eq($qualifiedField, $queryBuilder->createNamedParameter($val))
@@ -331,7 +331,7 @@ class MariaDbSearchHandler
                                 break 2;
                             default:
                                 // For non-date operators or unsupported operators, treat as regular array (IN clause).
-                                if (is_numeric($operator)) {
+                                if (is_numeric($operator) === true) {
                                     // This is a regular array, not an operator array.
                                     $queryBuilder->andWhere(
                                     $queryBuilder->expr()->in(
@@ -350,10 +350,10 @@ class MariaDbSearchHandler
                 }//end if
 
                 // Handle [or] and [and] operators for non-text, non-date fields (e.g. schema, register).
-                if (is_array($value) && (isset($value['or']) || isset($value['and']))) {
-                    if (isset($value['or'])) {
+                if (is_array($value) === true && ((($value['or'] ?? null) !== null) === true || (($value['and'] ?? null) !== null) === true) === true) {
+                    if (($value['or'] ?? null) !== null) {
                         // OR logic: (field=val1 OR field=val2).
-                        $values       = is_string($value['or']) ? array_map('trim', explode(',', $value['or'])) : $value['or'];
+                        $values       = is_string($value['or']) === true ? array_map('trim', explode(',', $value['or'])) : $value['or'];
                         $orConditions = $queryBuilder->expr()->orX();
                         foreach ($values as $val) {
                             $orConditions->add(
@@ -362,9 +362,9 @@ class MariaDbSearchHandler
                         }
 
                         $queryBuilder->andWhere($orConditions);
-                    } else if (isset($value['and'])) {
+                    } else if (($value['and'] ?? null) !== null) {
                         // AND logic: multiple andWhere clauses.
-                        $values = is_string($value['and']) ? array_map('trim', explode(',', $value['and'])) : $value['and'];
+                        $values = is_string($value['and']) === true ? array_map('trim', explode(',', $value['and'])) : $value['and'];
                         foreach ($values as $val) {
                             $queryBuilder->andWhere(
                                 $queryBuilder->expr()->eq($qualifiedField, $queryBuilder->createNamedParameter($val))
@@ -377,7 +377,7 @@ class MariaDbSearchHandler
 
                 // Handle array values (one of search) for non-date fields or simple arrays.
                 if (is_array($value) === true) {
-                    if (in_array($field, $textFields)) {
+                    if (in_array($field, $textFields) === true) {
                         // Case-insensitive array search for text fields.
                         $orConditions = $queryBuilder->expr()->orX();
                         foreach ($value as $arrayValue) {
@@ -400,7 +400,7 @@ class MariaDbSearchHandler
                     }//end if
                 } else {
                     // Handle single values - use case-insensitive comparison for text fields.
-                    if (in_array($field, $textFields)) {
+                    if (in_array($field, $textFields) === true) {
                         $queryBuilder->andWhere(
                         $queryBuilder->expr()->eq(
                             $queryBuilder->createFunction('LOWER('.$qualifiedField.')'),
@@ -504,7 +504,7 @@ class MariaDbSearchHandler
 
             foreach ($value as $arrayValue) {
                 // Use case-insensitive comparison for string values.
-                if (is_string($arrayValue)) {
+                if (is_string($arrayValue) === true) {
                     // Check for exact match (single value).
                     $orConditions->add(
                         $queryBuilder->expr()->eq(
@@ -546,7 +546,7 @@ class MariaDbSearchHandler
             $queryBuilder->andWhere($orConditions);
         } else {
             // Handle single values - use case-insensitive comparison for strings.
-            if (is_string($value)) {
+            if (is_string($value) === true) {
                 $singleValueConditions = $queryBuilder->expr()->orX();
 
                 // Check for exact match (single value).

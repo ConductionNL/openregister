@@ -36,7 +36,6 @@ use Psr\Log\LoggerInterface;
  * @author   OpenRegister Team
  * @license  AGPL-3.0-or-later
  *
- * @psalm-suppress UnusedClass - This controller is registered via routes.php and used by Nextcloud's routing system
  */
 class FileSearchController extends Controller
 {
@@ -133,7 +132,7 @@ class FileSearchController extends Controller
                 $requestOptions['auth'] = [$solrConfig['username'], $solrConfig['password']];
             }
 
-            // @psalm-suppress UndefinedClass
+            //
             // @var \OCP\Http\Client\IClientService $clientService
             $clientService = \OC::$server->get(\OCP\Http\Client\IClientService::class);
             $httpClient    = $clientService->newClient();
@@ -147,7 +146,7 @@ class FileSearchController extends Controller
             $groupedResults = [];
             foreach ($results as $doc) {
                 $fileId = $doc['file_id'];
-                if (isset($groupedResults[$fileId]) === false) {
+                if (!isset($groupedResults[$fileId])) {
                     $groupedResults[$fileId] = [
                         'file_id'   => $fileId,
                         'file_name' => $doc['file_name'] ?? '',

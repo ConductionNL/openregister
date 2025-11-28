@@ -44,7 +44,6 @@ use Psr\Log\LoggerInterface;
 /**
  * Class SchemasController
  *
- * @psalm-suppress UnusedClass - This controller is registered via routes.php and used by Nextcloud's routing system
  */
 class SchemasController extends Controller
 {
@@ -106,12 +105,12 @@ class SchemasController extends Controller
         $params = $this->request->getParams();
 
         // Extract pagination and search parameters.
-        $limit  = isset($params['_limit']) ? (int) $params['_limit'] : null;
-        $offset = isset($params['_offset']) ? (int) $params['_offset'] : null;
-        $page   = isset($params['_page']) ? (int) $params['_page'] : null;
-        // Note: search parameter not currently used in this endpoint
+        $limit  = isset($params['_limit']) === true ? (int) $params['_limit'] : null;
+        $offset = isset($params['_offset']) === true ? (int) $params['_offset'] : null;
+        $page   = isset($params['_page']) === true ? (int) $params['_page'] : null;
+        // Note: search parameter not currently used in this endpoint.
         $extend = $params['_extend'] ?? [];
-        if (is_string($extend)) {
+        if (is_string($extend) === true) {
             $extend = [$extend];
         }
 
@@ -142,7 +141,7 @@ class SchemasController extends Controller
         unset($schema);
         // Break the reference.
         // If '@self.stats' is requested, attach statistics to each schema.
-        if (in_array('@self.stats', $extend, true)) {
+        if (in_array('@self.stats', $extend, true) === true) {
             // Get register counts for all schemas in one call.
             $registerCounts = $this->schemaMapper->getRegisterCountPerSchema();
             foreach ($schemasArr as &$schema) {
@@ -175,7 +174,7 @@ class SchemasController extends Controller
     public function show($id): JSONResponse
     {
         $extend = $this->request->getParam(key: '_extend', default: []);
-        if (is_string($extend)) {
+        if (is_string($extend) === true) {
             $extend = [$extend];
         }
 
@@ -187,7 +186,7 @@ class SchemasController extends Controller
             $schemaArr['@self']['extendedBy'] = $this->schemaMapper->findExtendedBy($id);
 
             // If '@self.stats' is requested, attach statistics to the schema.
-        if (in_array('@self.stats', $extend, true)) {
+        if (in_array('@self.stats', $extend, true) === true) {
             // Get register counts for all schemas in one call.
             $registerCounts     = $this->schemaMapper->getRegisterCountPerSchema();
             $schemaArr['stats'] = [
@@ -228,7 +227,7 @@ class SchemasController extends Controller
         }
 
         // Remove ID if present to ensure a new record is created.
-        if (isset($data['id']) === true) {
+        if (($data['id'] ?? null) !== null) {
             unset($data['id']);
         }
 
@@ -263,21 +262,21 @@ class SchemasController extends Controller
                     );
 
             // Check if this is a validation error by examining the message.
-            if (str_contains($e->getMessage(), 'Invalid')
-                || str_contains($e->getMessage(), 'must be')
-                || str_contains($e->getMessage(), 'required')
-                || str_contains($e->getMessage(), 'format')
-                || str_contains($e->getMessage(), 'Property at')
-                || str_contains($e->getMessage(), 'authorization')
+            if (str_contains($e->getMessage(), 'Invalid') === true
+                || str_contains($e->getMessage(), 'must be') === true
+                || str_contains($e->getMessage(), 'required') === true
+                || str_contains($e->getMessage(), 'format') === true
+                || str_contains($e->getMessage(), 'Property at') === true
+                || str_contains($e->getMessage(), 'authorization') === true
             ) {
                 // Return 400 Bad Request for validation errors with actual error message.
                 return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
             }
 
             // For database constraint violations, return 409 Conflict.
-            if (str_contains($e->getMessage(), 'constraint')
-                || str_contains($e->getMessage(), 'duplicate')
-                || str_contains($e->getMessage(), 'unique')
+            if (str_contains($e->getMessage(), 'constraint') === true
+                || str_contains($e->getMessage(), 'duplicate') === true
+                || str_contains($e->getMessage(), 'unique') === true
             ) {
                 return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 409);
             }
@@ -349,21 +348,21 @@ class SchemasController extends Controller
                     );
 
             // Check if this is a validation error by examining the message.
-            if (str_contains($e->getMessage(), 'Invalid')
-                || str_contains($e->getMessage(), 'must be')
-                || str_contains($e->getMessage(), 'required')
-                || str_contains($e->getMessage(), 'format')
-                || str_contains($e->getMessage(), 'Property at')
-                || str_contains($e->getMessage(), 'authorization')
+            if (str_contains($e->getMessage(), 'Invalid') === true
+                || str_contains($e->getMessage(), 'must be') === true
+                || str_contains($e->getMessage(), 'required') === true
+                || str_contains($e->getMessage(), 'format') === true
+                || str_contains($e->getMessage(), 'Property at') === true
+                || str_contains($e->getMessage(), 'authorization') === true
             ) {
                 // Return 400 Bad Request for validation errors with actual error message.
                 return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
             }
 
             // For database constraint violations, return 409 Conflict.
-            if (str_contains($e->getMessage(), 'constraint')
-                || str_contains($e->getMessage(), 'duplicate')
-                || str_contains($e->getMessage(), 'unique')
+            if (str_contains($e->getMessage(), 'constraint') === true
+                || str_contains($e->getMessage(), 'duplicate') === true
+                || str_contains($e->getMessage(), 'unique') === true
             ) {
                 return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 409);
             }
@@ -543,21 +542,21 @@ class SchemasController extends Controller
                     );
 
             // Check if this is a validation error by examining the message.
-            if (str_contains($e->getMessage(), 'Invalid')
-                || str_contains($e->getMessage(), 'must be')
-                || str_contains($e->getMessage(), 'required')
-                || str_contains($e->getMessage(), 'format')
-                || str_contains($e->getMessage(), 'Property at')
-                || str_contains($e->getMessage(), 'authorization')
+            if (str_contains($e->getMessage(), 'Invalid') === true
+                || str_contains($e->getMessage(), 'must be') === true
+                || str_contains($e->getMessage(), 'required') === true
+                || str_contains($e->getMessage(), 'format') === true
+                || str_contains($e->getMessage(), 'Property at') === true
+                || str_contains($e->getMessage(), 'authorization') === true
             ) {
                 // Return 400 Bad Request for validation errors with actual error message.
                 return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
             }
 
             // For database constraint violations, return 409 Conflict.
-            if (str_contains($e->getMessage(), 'constraint')
-                || str_contains($e->getMessage(), 'duplicate')
-                || str_contains($e->getMessage(), 'unique')
+            if (str_contains($e->getMessage(), 'constraint') === true
+                || str_contains($e->getMessage(), 'duplicate') === true
+                || str_contains($e->getMessage(), 'unique') === true
             ) {
                 return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 409);
             }
@@ -584,7 +583,7 @@ class SchemasController extends Controller
      */
     public function download(int $id): JSONResponse
     {
-        // Note: Accept header not currently used - always returns JSON
+        // Note: Accept header not currently used - always returns JSON.
         try {
             // Find the schema by ID.
             $schema = $this->schemaMapper->find($id);
@@ -632,7 +631,7 @@ class SchemasController extends Controller
                 }
 
                 // Use the same reference logic as getRelated, but reversed.
-                if ($this->schemaMapper->hasReferenceToSchema(properties: $properties, targetSchemaId: (string) $schema->getId(), targetSchemaUuid: $schema->getUuid(), targetSchemaSlug: $schema->getSlug())) {
+                if ($this->schemaMapper->hasReferenceToSchema(properties: $properties, targetSchemaId: (string) $schema->getId(), targetSchemaUuid: $schema->getUuid(), targetSchemaSlug: $schema->getSlug()) === true) {
                     $outgoingSchemas[$schema->getId()] = $schema;
                 }
             }
@@ -764,7 +763,7 @@ class SchemasController extends Controller
             // Get property updates from request.
             $propertyUpdates = $this->request->getParam('properties', []);
 
-            if (empty($propertyUpdates)) {
+            if (empty($propertyUpdates) === true) {
                 return new JSONResponse(data: ['error' => 'No property updates provided'], statusCode: 400);
             }
 

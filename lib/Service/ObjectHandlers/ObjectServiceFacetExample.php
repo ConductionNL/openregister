@@ -148,7 +148,7 @@ class ObjectServiceFacetExample
      */
     public function ecommerceFacetedSearch(): array
     {
-        // @psalm-suppress UndefinedMethod.
+        //
         if ($this->isAuditTrailsEnabled() === true) {
             // Audit trails enabled.
         }
@@ -409,7 +409,7 @@ class ObjectServiceFacetExample
                 'facet_count'    => count($legacyResults),
                 'results'        => $legacyResults,
             ],
-            // @psalm-suppress UndefinedMethod.
+            //
             'performance_improvement' => $this->calculatePerformanceImprovement(legacyTime: $legacyTime, newTime: $newTime),
         ];
 
@@ -471,8 +471,8 @@ class ObjectServiceFacetExample
                     'total_pages'    => $result['pages'],
                     'total_items'    => $result['total'],
                     'items_per_page' => $result['limit'],
-                    'has_next'       => isset($result['next']),
-                    'has_prev'       => isset($result['prev']),
+                    'has_next'       => isset($result['next']) === true,
+                    'has_prev'       => isset($result['prev']) === true,
                     'next_url'       => $result['next'] ?? null,
                     'prev_url'       => $result['prev'] ?? null,
                 ],
@@ -579,7 +579,7 @@ class ObjectServiceFacetExample
         $filters = [];
 
         // Extract metadata filters.
-        if (isset($query['@self']) === true) {
+        if (($query['@self'] ?? null) !== null) {
             foreach ($query['@self'] as $field => $value) {
                 $filters['metadata_'.$field] = [
                     'field' => $field,

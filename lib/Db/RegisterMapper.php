@@ -49,7 +49,6 @@ use OCA\OpenRegister\Service\FileService;
  * @method         Register findEntity(IQueryBuilder $query)
  * @method         Register[] findAll(int|null $limit = null, int|null $offset = null)
  * @method         list<Register> findEntities(IQueryBuilder $query)
- * @psalm-suppress LessSpecificImplementedReturnType - @method annotation is correct, parent returns list<T>
  */
 class RegisterMapper extends QBMapper
 {
@@ -141,7 +140,7 @@ class RegisterMapper extends QBMapper
     public function find(string | int $id, ?array $extend=[]): Register
     {
         // Verify RBAC permission to read registers @todo: remove this hotfix for solr
-        // $this->verifyRbacPermission('read', 'register');
+        // $this->verifyRbacPermission('read', 'register');.
         $qb = $this->db->getQueryBuilder();
         $qb->select('*')
             ->from('openregister_registers')
@@ -155,7 +154,7 @@ class RegisterMapper extends QBMapper
 
         // Apply organisation filter (all users including admins must have active org)
         // $this->applyOrganisationFilter($qb);
-        // Just return the entity; do not attach stats here
+        // Just return the entity; do not attach stats here.
         return $this->findEntity(query: $qb);
 
     }//end find()
@@ -247,7 +246,7 @@ class RegisterMapper extends QBMapper
         ?array $extend=[]
     ): array {
         // Verify RBAC permission to read registers
-        // $this->verifyRbacPermission('read', 'register');
+        // $this->verifyRbacPermission('read', 'register');.
         $qb = $this->db->getQueryBuilder();
         $qb->select('*')
             ->from('openregister_registers')
@@ -255,7 +254,7 @@ class RegisterMapper extends QBMapper
             ->setFirstResult($offset);
 
         // Apply organisation filter (all users including admins must have active org)
-        // $this->applyOrganisationFilter($qb);
+        // $this->applyOrganisationFilter($qb);.
         foreach ($filters as $filter => $value) {
             if ($value === 'IS NOT NULL') {
                 $qb->andWhere($qb->expr()->isNotNull($filter));
@@ -418,7 +417,7 @@ class RegisterMapper extends QBMapper
         $register = $this->find(id: $id);
 
         // Set or update the version.
-        if (isset($object['version']) === false) {
+        if (!isset($object['version'])) {
             $currentVersion = $register->getVersion() ?? '0.0.0';
             $version        = explode('.', $currentVersion);
             $version[2]     = ((int) $version[2] + 1);

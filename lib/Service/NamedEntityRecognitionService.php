@@ -91,11 +91,9 @@ class NamedEntityRecognitionService
         private readonly GdprEntityMapper $entityMapper,
         private readonly EntityRelationMapper $entityRelationMapper,
         /**
-         * @psalm-suppress UnusedProperty - Property kept for future use
          */
         private readonly ChunkMapper $chunkMapper,
         /**
-         * @psalm-suppress UnusedProperty - Property kept for future use
          */
         private readonly SettingsService $settingsService,
         private readonly IDBConnection $db,
@@ -494,7 +492,6 @@ class NamedEntityRecognitionService
             // Entity doesn't exist, create new one.
             $entity = new GdprEntity();
             /*
-             * @psalm-suppress UndefinedClass - Ramsey\Uuid\Uuid is an optional dependency
              */
             $entity->setUuid((string) Uuid::v4());
             $entity->setType($type);

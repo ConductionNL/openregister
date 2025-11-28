@@ -10,7 +10,7 @@
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
- * @version   1.0.0
+ * @version   GIT: <git_id>
  * @link      https://github.com/ConductionNL/openregister
  */
 
@@ -34,7 +34,6 @@ use OCP\AppFramework\Db\DoesNotExistException;
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
- * @psalm-suppress UnusedClass - This controller is registered via routes.php and used by Nextcloud's routing system
  */
 class ViewsController extends Controller
 {
@@ -118,21 +117,21 @@ class ViewsController extends Controller
 
             // Extract pagination and search parameters (for future use).
             $limit = null;
-            if (isset($params['_limit']) === true) {
+            if (($params['_limit'] ?? null) !== null) {
                 $limit = (int) $params['_limit'];
             }
 
             $offset = null;
-            if (isset($params['_offset']) === true) {
+            if (($params['_offset'] ?? null) !== null) {
                 $offset = (int) $params['_offset'];
             }
 
             $page = null;
-            if (isset($params['_page']) === true) {
+            if (($params['_page'] ?? null) !== null) {
                 $page = (int) $params['_page'];
             }
 
-            // Note: search parameter not currently used in this endpoint
+            // Note: search parameter not currently used in this endpoint.
             $views = $this->viewService->findAll($userId);
 
             // Apply client-side pagination if parameters are provided.
@@ -265,7 +264,7 @@ class ViewsController extends Controller
             $data = $this->request->getParams();
 
             // Validate required fields.
-            if (isset($data['name']) === false || empty($data['name']) === true) {
+            if (!isset($data['name']) === false || empty($data['name']) === true) {
                 return new JSONResponse(
                         data: [
                             'error' => 'View name is required',
@@ -275,11 +274,7 @@ class ViewsController extends Controller
             }
 
             // Extract query parameters from configuration or query.
-            /*
-             * @psalm-suppress UnusedVariable - Variable is used in viewService->create() call
-             */
-            $query = [];
-            if (isset($data['configuration']) === true && is_array($data['configuration']) === true) {
+            if (($data['configuration'] ?? null) !== null && is_array($data['configuration']) === true) {
                 // Frontend still sends 'configuration', extract only query params.
                 $config = $data['configuration'];
                 $query  = [
@@ -290,7 +285,7 @@ class ViewsController extends Controller
                     'facetFilters'  => $config['facetFilters'] ?? [],
                     'enabledFacets' => $config['enabledFacets'] ?? [],
                 ];
-            } else if (isset($data['query']) === true && is_array($data['query']) === true) {
+            } else if (($data['query'] ?? null) !== null && is_array($data['query']) === true) {
                 // Direct query parameter.
                 $query = $data['query'];
             } else {
@@ -367,7 +362,7 @@ class ViewsController extends Controller
             $data = $this->request->getParams();
 
             // Validate required fields.
-            if (isset($data['name']) === false || empty($data['name']) === true) {
+            if (!isset($data['name']) === false || empty($data['name']) === true) {
                 return new JSONResponse(
                         data: [
                             'error' => 'View name is required',
@@ -377,11 +372,7 @@ class ViewsController extends Controller
             }
 
             // Extract query parameters from configuration or query.
-            /*
-             * @psalm-suppress UnusedVariable - Variable is used in viewService->update() call
-             */
-            $query = [];
-            if (isset($data['configuration']) === true && is_array($data['configuration']) === true) {
+            if (($data['configuration'] ?? null) !== null && is_array($data['configuration']) === true) {
                 // Frontend still sends 'configuration', extract only query params.
                 $config = $data['configuration'];
                 $query  = [
@@ -392,7 +383,7 @@ class ViewsController extends Controller
                     'facetFilters'  => $config['facetFilters'] ?? [],
                     'enabledFacets' => $config['enabledFacets'] ?? [],
                 ];
-            } else if (isset($data['query']) === true && is_array($data['query']) === true) {
+            } else if (($data['query'] ?? null) !== null && is_array($data['query']) === true) {
                 // Direct query parameter.
                 $query = $data['query'];
             } else {
@@ -486,12 +477,12 @@ class ViewsController extends Controller
             $name        = $data['name'] ?? $view->getName();
             $description = $data['description'] ?? $view->getDescription();
             $isPublic    = $view->getIsPublic();
-            if (isset($data['isPublic']) === true) {
+            if (($data['isPublic'] ?? null) !== null) {
                 $isPublic = $data['isPublic'];
             }
 
             $isDefault = $view->getIsDefault();
-            if (isset($data['isDefault']) === true) {
+            if (($data['isDefault'] ?? null) !== null) {
                 $isDefault = $data['isDefault'];
             }
 
@@ -499,7 +490,7 @@ class ViewsController extends Controller
 
             // Handle query parameter.
             $query = $view->getQuery() ?? [];
-            if (isset($data['configuration']) === true && is_array($data['configuration']) === true) {
+            if (($data['configuration'] ?? null) !== null && is_array($data['configuration']) === true) {
                 $config = $data['configuration'];
                 $query  = [
                     'registers'     => $config['registers'] ?? [],
@@ -509,7 +500,7 @@ class ViewsController extends Controller
                     'facetFilters'  => $config['facetFilters'] ?? [],
                     'enabledFacets' => $config['enabledFacets'] ?? [],
                 ];
-            } else if (isset($data['query']) === true && is_array($data['query']) === true) {
+            } else if (($data['query'] ?? null) !== null && is_array($data['query']) === true) {
                 $query = $data['query'];
             }
 

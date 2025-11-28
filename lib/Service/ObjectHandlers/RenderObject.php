@@ -54,7 +54,7 @@ use Symfony\Component\Uid\Uuid;
  * @author    Conduction b.v. <info@conduction.nl>
  * @license   AGPL-3.0-or-later
  * @link      https://github.com/OpenCatalogi/OpenRegister
- * @version   1.0.0
+ * @version   GIT: <git_id>
  * @copyright 2024 Conduction b.v.
  */
 class RenderObject
@@ -205,7 +205,7 @@ class RenderObject
             foreach ($relatedObjects as $relatedObject) {
                 if ($relatedObject instanceof ObjectEntity) {
                     $indexedObjects[$relatedObject->getId()] = $relatedObject;
-                    if ($relatedObject->getUuid()) {
+                    if (($relatedObject->getUuid() !== null) === true) {
                         $indexedObjects[$relatedObject->getUuid()] = $relatedObject;
                     }
                 }
@@ -278,7 +278,7 @@ class RenderObject
     private function getRegister(int | string $id): ?Register
     {
         // Return from cache if available.
-        if (isset($this->registersCache[$id]) === true) {
+        if (($this->registersCache[$id] ?? null) !== null) {
             return $this->registersCache[$id];
         }
 
@@ -304,7 +304,7 @@ class RenderObject
     private function getSchema(int | string $id): ?Schema
     {
         // Return from cache if available.
-        if (isset($this->schemasCache[$id]) === true) {
+        if (($this->schemasCache[$id] ?? null) !== null) {
             return $this->schemasCache[$id];
         }
 
@@ -330,13 +330,13 @@ class RenderObject
     private function getObject(int | string $id): ?ObjectEntity
     {
         // **ULTRA PERFORMANCE**: Check ultra preload cache first (fastest possible).
-        if (isset($this->ultraPreloadCache[(string) $id])) {
+        if (($this->ultraPreloadCache[(string) $id] ?? null) !== null) {
             return $this->ultraPreloadCache[(string) $id];
         }
 
         // **PERFORMANCE OPTIMIZATION**: Use ObjectCacheService for optimized caching.
         // First check local cache for backward compatibility.
-        if (isset($this->objectsCache[$id]) === true) {
+        if (($this->objectsCache[$id] ?? null) !== null) {
             return $this->objectsCache[$id];
         }
 
@@ -369,7 +369,7 @@ class RenderObject
         array_filter(
                 $ids,
                 function ($id) {
-                    if (isset($this->registersCache[$id]) === false) {
+                    if (!isset($this->registersCache[$id])) {
                         $this->getRegister($id);
                     }
 
@@ -394,7 +394,7 @@ class RenderObject
         array_filter(
                 $ids,
                 function ($id) {
-                    if (isset($this->schemasCache[$id]) === false) {
+                    if (!isset($this->schemasCache[$id])) {
                         $this->getSchema($id);
                     }
 
@@ -419,7 +419,7 @@ class RenderObject
         array_filter(
                 $ids,
                 function ($id) {
-                    if (isset($this->objectsCache[$id]) === false) {
+                    if (!isset($this->objectsCache[$id])) {
                         $this->getObject($id);
                     }
 
@@ -465,7 +465,7 @@ class RenderObject
         $fileRecords = $this->fileMapper->getFilesForObject($object);
 
         // If no files found, set empty array and return.
-        if (empty($fileRecords)) {
+        if (empty($fileRecords) === true) {
             $object->setFiles([]);
             return $object;
         }
@@ -489,7 +489,7 @@ class RenderObject
                 'size'        => (int) $fileRecord['size'],
                 'hash'        => $fileRecord['etag'] ?? '',
                 'published'   => $fileRecord['published'] ?? null,
-                'modified'    => isset($fileRecord['mtime']) ? (new \DateTime())->setTimestamp($fileRecord['mtime'])->format('c') : null,
+                'modified'    => isset($fileRecord['mtime']) === true ? (new \DateTime())->setTimestamp($fileRecord['mtime'])->format('c') : null,
                 'labels'      => $labels,
             ];
 
@@ -529,7 +529,7 @@ class RenderObject
         );
 
         // Check if file has any tags.
-        if (isset($tagIds[$fileId]) === false || empty($tagIds[$fileId]) === true) {
+        if (!isset($tagIds[$fileId]) === false || empty($tagIds[$fileId]) === true) {
             return [];
         }
 
@@ -590,11 +590,11 @@ class RenderObject
             // First, ensure all file array properties exist in objectData (even if empty).
             // This is important for properties that have been set to empty arrays.
             foreach ($schemaProperties as $propertyName => $propertyConfig) {
-                if ($this->isFilePropertyConfig($propertyConfig)) {
+                if ($this->isFilePropertyConfig($propertyConfig) === true) {
                     $isArrayProperty = ($propertyConfig['type'] ?? '') === 'array';
 
                     // If it's an array property and not set, initialize it as empty array.
-                    if ($isArrayProperty && !isset($objectData[$propertyName])) {
+                    if (($isArrayProperty === true) && (($objectData[$propertyName] ?? null) === null) === true) {
                         $objectData[$propertyName] = [];
                     }
                 }
@@ -608,7 +608,7 @@ class RenderObject
                 }
 
                 // Check if this property is configured in the schema.
-                if (isset($schemaProperties[$propertyName]) === false) {
+                if (!isset($schemaProperties[$propertyName])) {
                     continue;
                 }
 
@@ -655,8 +655,8 @@ class RenderObject
         }
 
         // Array of files.
-        if (($propertyConfig['type'] ?? '') === 'array'
-            && isset($propertyConfig['items'])
+        if (($propertyConfig['type'] ?? '' === true) === 'array'
+            && (($propertyConfig['items'] ?? null) !== null)
             && ($propertyConfig['items']['type'] ?? '') === 'file'
         ) {
             return true;
@@ -708,7 +708,7 @@ class RenderObject
             return $hydratedFiles;
         } else {
             // Handle single file.
-            if (is_numeric($propertyValue) || (is_string($propertyValue) && ctype_digit($propertyValue))) {
+            if (is_numeric($propertyValue) === true || (is_string($propertyValue) === true && ctype_digit($propertyValue) === true) === true) {
                 return $this->getFileObject($propertyValue);
             }
 
@@ -749,7 +749,7 @@ class RenderObject
                 $value = $this->getValueFromPath(data: $objectData, path: $imageField);
 
                 // Check if the value is a file object (has downloadUrl or accessUrl).
-                if (is_array($value) && (isset($value['downloadUrl']) || isset($value['accessUrl']))) {
+                if (is_array($value) === true && (($value['downloadUrl'] ?? null) !== null || (($value['accessUrl'] ?? null) !== null) === true) === true) {
                     // Set the image URL on the entity itself (not in object data).
                     // This will be serialized to @self.image in jsonSerialize().
                     // Prefer downloadUrl, fallback to accessUrl.
@@ -782,7 +782,7 @@ class RenderObject
         $value = $data;
 
         foreach ($keys as $key) {
-            if (is_array($value) && isset($value[$key])) {
+            if (is_array($value) === true && (($value[$key] ?? null) !== null)) {
                 $value = $value[$key];
             } else {
                 return null;
@@ -810,7 +810,7 @@ class RenderObject
     {
         try {
             // Convert to string/int as needed.
-            $fileIdStr = is_numeric($fileId) ? (string) $fileId : $fileId;
+            $fileIdStr = is_numeric($fileId) === true ? (string) $fileId : $fileId;
 
             if (!is_string($fileIdStr) && !is_int($fileIdStr)) {
                 return null;
@@ -819,7 +819,7 @@ class RenderObject
             // Use FileMapper to get file information directly.
             $fileRecord = $this->fileMapper->getFile((int) $fileIdStr);
 
-            if (empty($fileRecord)) {
+            if (empty($fileRecord) === true) {
                 return null;
             }
 
@@ -838,7 +838,7 @@ class RenderObject
                 'size'        => (int) $fileRecord['size'],
                 'hash'        => $fileRecord['etag'] ?? '',
                 'published'   => $fileRecord['published'] ?? null,
-                'modified'    => isset($fileRecord['mtime']) ? (new \DateTime())->setTimestamp($fileRecord['mtime'])->format('c') : null,
+                'modified'    => isset($fileRecord['mtime']) === true ? (new \DateTime())->setTimestamp($fileRecord['mtime'])->format('c') : null,
                 'labels'      => $labels,
             ];
         } catch (Exception $e) {
@@ -885,7 +885,7 @@ class RenderObject
         bool $rbac=true,
         bool $multi=true
     ): ObjectEntity {
-        if ($entity->getUuid() !== null && in_array($entity->getUuid(), $visitedIds, true)) {
+        if ($entity->getUuid() !== null && in_array($entity->getUuid(), $visitedIds, true) === true) {
             return $entity->setObject(object: ['@circular' => true, 'id' => $entity->getUuid()]);
         }
 
@@ -932,7 +932,7 @@ class RenderObject
 
             $filteredData = [];
             foreach ($fields as $field) {
-                if (isset($objectData[$field]) === true) {
+                if (($objectData[$field] ?? null) !== null) {
                     $filteredData[$field] = $objectData[$field];
                 }
             }
@@ -944,7 +944,7 @@ class RenderObject
         // Apply filters if specified.
         if (empty($filter) === false) {
             foreach ($filter as $key => $value) {
-                if (isset($objectData[$key]) === true && $objectData[$key] !== $value) {
+                if (($objectData[$key] ?? null) !== null && $objectData[$key] !== $value) {
                     $entity->setObject([]);
                     return $entity;
                 }
@@ -954,7 +954,7 @@ class RenderObject
         // Apply unset - remove specified properties from the response.
         if (empty($unset) === false) {
             foreach ($unset as $property) {
-                if (isset($objectData[$property]) === true) {
+                if (($objectData[$property] ?? null) !== null) {
                     unset($objectData[$property]);
                 }
             }
@@ -978,12 +978,12 @@ class RenderObject
         }
 
         // Convert extend to an array if it's a string.
-        if (is_array($extend) === true && in_array('all', $extend, true)) {
+        if (is_array($extend) === true && in_array('all', $extend, true) === true) {
             $id       = $objectData['id'] ?? null;
             $originId = $objectData['originId'] ?? null;
 
             foreach ($objectData as $key => $value) {
-                if (in_array($key, ['id', 'originId'], true)) {
+                if (in_array($key, ['id', 'originId'], true) === true) {
                     continue;
                 }
 
@@ -1090,7 +1090,7 @@ class RenderObject
             }
 
             // Skip if the key starts with '@' (special fields).
-            if (str_starts_with($key, '@')) {
+            if (str_starts_with($key, '@') === true) {
                 continue;
             }
 
@@ -1124,7 +1124,7 @@ class RenderObject
                 );
                 $renderedValue = array_map(
                         function ($identifier) use ($depth, $keyExtends, $allFlag, $visitedIds) {
-                            if (is_array($identifier)) {
+                            if (is_array($identifier) === true) {
                                 return null;
                             }
 
@@ -1142,13 +1142,13 @@ class RenderObject
                                 return null;
                             }
 
-                            if (in_array($object->getUuid(), $visitedIds, true)) {
+                            if (in_array($object->getUuid(), $visitedIds, true) === true) {
                                 return ['@circular' => true, 'id' => $object->getUuid()];
                             }
 
-                            $subExtend = $allFlag ? array_merge(['all'], $keyExtends) : $keyExtends;
+                            $subExtend = $allFlag === true ? array_merge(['all'], $keyExtends) : $keyExtends;
 
-                            return $this->renderEntity(entity: $object, extend: $subExtend, depth: $depth + 1, filter: $filter ?? [], fields: $fields ?? [], unset: $unset ?? [], visitedIds: $visitedIds)->jsonSerialize();
+                            return $this->renderEntity(entity: $object, extend: $subExtend, depth: $depth + 1, filter: [], fields: [], unset: [], visitedIds: $visitedIds)->jsonSerialize();
                         },
                         $value
                         );
@@ -1165,7 +1165,7 @@ class RenderObject
                 }
             } else {
                 // Skip if the value starts with '@' or '_'.
-                if (is_string($value) && (str_starts_with(haystack: $value, needle: '@') || str_starts_with(haystack: $value, needle: '_'))) {
+                if (is_string($value) === true && ((str_starts_with(haystack: $value, needle: '@') === true) || (str_starts_with(haystack: $value, needle: '_') === true)) === true) {
                     continue;
                 }
 
@@ -1190,7 +1190,7 @@ class RenderObject
                     continue;
                 }
 
-                $subExtend = $allFlag ? array_merge(['all'], $keyExtends) : $keyExtends;
+                $subExtend = $allFlag === true ? array_merge(['all'], $keyExtends) : $keyExtends;
 
                 if (in_array($object->getUuid(), $visitedIds, true) === true) {
                     $rendered = ['@circular' => true, 'id' => $object->getUuid()];
@@ -1199,9 +1199,9 @@ class RenderObject
                         entity: $object,
                         extend: $subExtend,
                         depth: $depth + 1,
-                        filter: $filter ?? [],
-                        fields: $fields ?? [],
-                        unset: $unset ?? [],
+                        filter: [],
+                        fields: [],
+                        unset: [],
                         visitedIds: $visitedIds
                     )->jsonSerialize();
                 }
@@ -1348,7 +1348,16 @@ class RenderObject
                 $referencingObjects
                 );
 
-        $objectsToCache     = array_combine(keys: $ids, values: $referencingObjects);
+        // Filter out null IDs before combining arrays.
+        $validIds = [];
+        $validObjects = [];
+        foreach ($ids as $index => $id) {
+            if ($id !== null) {
+                $validIds[] = $id;
+                $validObjects[] = $referencingObjects[$index];
+            }
+        }
+        $objectsToCache = array_combine(keys: $validIds, values: $validObjects);
         $this->objectsCache = array_merge($objectsToCache, $this->objectsCache);
 
         // Process each inversed property.
@@ -1361,13 +1370,13 @@ class RenderObject
             $isArray            = false;
 
             // Check if this is an array property with inversedBy in items.
-            if (isset($propertyConfig['type']) && $propertyConfig['type'] === 'array' && isset($propertyConfig['items']['inversedBy'])) {
+            if (($propertyConfig['type'] ?? null) !== null && ($propertyConfig['type'] === 'array') === true && (($propertyConfig['items']['inversedBy'] ?? null) !== null) === true) {
                 $inversedByProperty = $propertyConfig['items']['inversedBy'];
                 $targetSchema       = $propertyConfig['items']['$ref'] ?? null;
                 $isArray            = true;
             }
             // Check if this is a direct object property with inversedBy.
-            else if (isset($propertyConfig['inversedBy'])) {
+            else if (($propertyConfig['inversedBy'] ?? null) !== null) {
                 $inversedByProperty = $propertyConfig['inversedBy'];
                 $targetSchema       = $propertyConfig['$ref'] ?? null;
                 $isArray            = false;
@@ -1404,7 +1413,7 @@ class RenderObject
                         $referenceValue = $data[$inversedByProperty];
 
                         // Handle both array and single value references.
-                        if (is_array($referenceValue)) {
+                        if (is_array($referenceValue) === true) {
                             // Check if the current entity's UUID is in the array.
                             return in_array($entity->getUuid(), $referenceValue, true) && $object->getSchema() === $schemaId;
                         } else {
@@ -1426,7 +1435,7 @@ class RenderObject
             if ($isArray === true) {
                 $objectData[$propertyName] = $inversedUuids;
             } else {
-                $objectData[$propertyName] = !empty($inversedUuids) ? end($inversedUuids) : null;
+                $objectData[$propertyName] = !empty($inversedUuids) === true ? end($inversedUuids) : null;
             }
         }//end foreach
 
@@ -1448,12 +1457,12 @@ class RenderObject
         $cleanSchemaRef = $this->removeQueryParameters($schemaRef);
 
         // If it's already a numeric ID, return it.
-        if (is_numeric($cleanSchemaRef)) {
+        if (is_numeric($cleanSchemaRef) === true) {
             return $cleanSchemaRef;
         }
 
         // If it's a UUID, try to find the schema by UUID.
-        if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $cleanSchemaRef)) {
+        if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $cleanSchemaRef) === true) {
             try {
                 $schema = $this->schemaMapper->find($cleanSchemaRef);
                 return (string) $schema->getId();
@@ -1463,7 +1472,7 @@ class RenderObject
         }
 
         // Handle JSON Schema path references (e.g., "#/components/schemas/organisatie").
-        if (str_contains($cleanSchemaRef, '/')) {
+        if (str_contains($cleanSchemaRef, '/') === true) {
             $lastSegment = basename($cleanSchemaRef);
             // Remove any file extension or fragment.
             $lastSegment = preg_replace('/\.[^.]*$/', '', $lastSegment);
@@ -1505,7 +1514,7 @@ class RenderObject
     private function removeQueryParameters(string $reference): string
     {
         // Remove query parameters if present (e.g., "schema?key=value" -> "schema").
-        if (str_contains($reference, '?')) {
+        if (str_contains($reference, '?') === true) {
             return substr($reference, 0, strpos($reference, '?'));
         }
 
@@ -1561,7 +1570,7 @@ class RenderObject
      */
     private function getFileModifiedTime(array $fileRecord): ?string
     {
-        if (isset($fileRecord['mtime']) === true) {
+        if (($fileRecord['mtime'] ?? null) !== null) {
             return (new \DateTime())->setTimestamp($fileRecord['mtime'])->format('c');
         }
 

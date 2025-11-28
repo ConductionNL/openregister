@@ -35,7 +35,7 @@ use OCA\OpenRegister\Service\GuzzleSolrService;
  * @author    OpenRegister Team
  * @copyright 2024 OpenRegister
  * @license   AGPL-3.0-or-later
- * @version   1.0.0
+ * @version   GIT: <git_id>
  * @link      https://github.com/OpenRegister/OpenRegister
  */
 class SolrSetup
@@ -117,7 +117,7 @@ class SolrSetup
         $this->logger->info(
                 'SOLR Setup: Using authenticated HTTP client from GuzzleSolrService',
                 [
-                    'has_credentials' => !empty($this->solrConfig['username']) && !empty($this->solrConfig['password']),
+                    'has_credentials' => !empty($this->solrConfig['username']) === true && !empty($this->solrConfig['password']),
                     'username'        => $this->solrConfig['username'] ?? 'not_set',
                     'password_set'    => !empty($this->solrConfig['password']),
                     'host'            => $this->solrConfig['host'] ?? 'unknown',
@@ -971,7 +971,7 @@ class SolrSetup
             $requestOptions = ['timeout' => 10];
 
             // Add authentication if configured.
-            if (!empty($this->solrConfig['username']) && !empty($this->solrConfig['password'])) {
+            if (!empty($this->solrConfig['username']) === true && !empty($this->solrConfig['password'])) {
                 $requestOptions['auth'] = [$this->solrConfig['username'], $this->solrConfig['password']];
             }
 
@@ -1101,7 +1101,7 @@ class SolrSetup
                     'configSet'                 => $newConfigSetName,
                     'template'                  => $templateConfigSetName,
                     'url'                       => $url,
-                    'authentication_configured' => !empty($this->solrConfig['username']) && !empty($this->solrConfig['password']),
+                    'authentication_configured' => !empty($this->solrConfig['username']) === true && !empty($this->solrConfig['password']),
                 ]
                 );
 
@@ -1181,14 +1181,14 @@ class SolrSetup
             // Extract additional details from Guzzle exceptions.
             if ($e instanceof \GuzzleHttp\Exception\RequestException) {
                 $logData['guzzle_request_exception'] = true;
-                if ($e->hasResponse()) {
+                if ($e->hasResponse() === true) {
                     $response = $e->getResponse();
                     $logData['response_status']  = $response->getStatusCode();
                     $logData['response_body']    = (string) $response->getBody();
                     $logData['response_headers'] = $response->getHeaders();
                 }
 
-                if ($e->getRequest()) {
+                if ($e->getRequest() !== null) {
                     $request = $e->getRequest();
                     $logData['request_method']  = $request->getMethod();
                     $logData['request_uri']     = (string) $request->getUri();
@@ -1199,7 +1199,7 @@ class SolrSetup
             // Check for authentication issues.
             if (strpos($e->getMessage(), '401') !== false || strpos($e->getMessage(), 'Unauthorized') !== false) {
                 $logData['authentication_issue'] = true;
-                $logData['has_credentials']      = !empty($this->solrConfig['username']) && !empty($this->solrConfig['password']);
+                $logData['has_credentials']      = !empty($this->solrConfig['username']) === true && !empty($this->solrConfig['password']);
             }
 
             // Check for network connectivity issues.
@@ -1264,7 +1264,7 @@ class SolrSetup
             // Add specific error categorization.
             if (strpos($e->getMessage(), '401') !== false || strpos($e->getMessage(), 'Unauthorized') !== false) {
                 $this->lastErrorDetails['error_category']  = 'authentication_failure';
-                $this->lastErrorDetails['has_credentials'] = !empty($this->solrConfig['username']) && !empty($this->solrConfig['password']);
+                $this->lastErrorDetails['has_credentials'] = !empty($this->solrConfig['username']) === true && !empty($this->solrConfig['password']);
             } else if (strpos($e->getMessage(), 'Connection refused') !== false
                 || strpos($e->getMessage(), 'Could not resolve host') !== false
                 || strpos($e->getMessage(), 'timeout') !== false
@@ -1428,14 +1428,14 @@ class SolrSetup
                 'step_name'         => 'Collection Creation',
                 'collection'        => $tenantCollectionName,
                 'configSet'         => $tenantConfigSetName,
-                'url_attempted'     => $e->getRequest() ? $e->getRequest()->getUri() : 'unknown',
+                'url_attempted'     => ($e->getRequest() !== null) === true ? $e->getRequest()->getUri() : 'unknown',
                 'exception_type'    => get_class($e),
                 'exception_message' => $e->getMessage(),
                 'error_category'    => 'network_connectivity',
                 'guzzle_details'    => [
-                    'request_method' => $e->getRequest() ? $e->getRequest()->getMethod() : 'unknown',
-                    'response_code'  => $e->hasResponse() ? $e->getResponse()->getStatusCode() : null,
-                    'response_body'  => $e->hasResponse() ? (string) $e->getResponse()->getBody() : null,
+                    'request_method' => ($e->getRequest() !== null) === true ? $e->getRequest()->getMethod() : 'unknown',
+                    'response_code'  => ($e->hasResponse() === true) === true ? $e->getResponse()->getStatusCode() : null,
+                    'response_body'  => ($e->hasResponse() === true) === true ? (string) $e->getResponse()->getBody() : null,
                 ],
             ];
 
@@ -1448,12 +1448,12 @@ class SolrSetup
             $retryDetails  = null;
 
             // Try to extract retry details and SOLR response from nested exception.
-            if ($e->getPrevious() && $e->getPrevious()->getMessage()) {
+            if (($e->getPrevious() !== null) === true && ($e->getPrevious()->getMessage() !== null) === true) {
                 $possibleJson    = $e->getPrevious()->getMessage();
                 $decodedResponse = json_decode($possibleJson, true);
                 if (json_last_error() === JSON_ERROR_NONE) {
                     // Check if this is retry details from createCollectionWithRetry.
-                    if (isset($decodedResponse['attempts']) && isset($decodedResponse['attempt_timestamps'])) {
+                    if (($decodedResponse['attempts'] ?? null) !== null && (($decodedResponse['attempt_timestamps'] ?? null) !== null) === true) {
                         $retryDetails  = $decodedResponse;
                         $solrResponse  = $decodedResponse['last_solr_response'] ?? null;
                         $errorCategory = 'solr_validation_error';
@@ -1488,7 +1488,7 @@ class SolrSetup
                 'exception_type'     => get_class($e),
                 'exception_message'  => $e->getMessage(),
                 'error_category'     => $errorCategory,
-                'solr_response'      => $retryDetails ?: $solrResponse,
+                'solr_response'      => $retryDetails === true ?: $solrResponse,
                 'guzzle_details'     => [],
                 'configuration_used' => [
                     'host'   => $this->solrConfig['host'] ?? 'unknown',
@@ -1575,10 +1575,10 @@ class SolrSetup
                 $retryDetails['last_error'] = $errorMessage;
 
                 // Try to extract SOLR response from the exception.
-                if ($e->getPrevious() && $e->getPrevious()->getMessage()) {
+                if (($e->getPrevious() !== null) === true && ($e->getPrevious()->getMessage() !== null) === true) {
                     try {
                         $solrResponse = json_decode($e->getPrevious()->getMessage(), true);
-                        if ($solrResponse && json_last_error() === JSON_ERROR_NONE) {
+                        if (($solrResponse !== null) === true && json_last_error() === JSON_ERROR_NONE) {
                             $retryDetails['last_solr_response'] = $solrResponse;
 
                             // Log the actual SOLR error for debugging.
@@ -1614,7 +1614,7 @@ class SolrSetup
                         );
 
                 // If this is the last attempt, provide user-friendly propagation error with retry details.
-                if ($attempt >= $maxAttempts && $isConfigSetError) {
+                if ($attempt >= $maxAttempts && ($isConfigSetError === true)) {
                     $totalElapsed = time() - $startTime;
                     $retryDetails['total_elapsed_seconds'] = $totalElapsed;
 
@@ -1842,7 +1842,7 @@ class SolrSetup
             $requestOptions = ['timeout' => 10];
 
             // Add authentication if configured.
-            if (!empty($this->solrConfig['username']) && !empty($this->solrConfig['password'])) {
+            if (!empty($this->solrConfig['username']) === true && !empty($this->solrConfig['password'])) {
                 $requestOptions['auth'] = [$this->solrConfig['username'], $this->solrConfig['password']];
             }
 
@@ -2429,7 +2429,7 @@ class SolrSetup
         foreach ($fieldDefinitions as $fieldName => $fieldConfig) {
             $result = $this->addOrUpdateSchemaFieldWithTracking($fieldName, $fieldConfig);
 
-            if ($result['success']) {
+            if ($result['success'] === true) {
                 if ($result['action'] === 'added') {
                     $fieldResults['fields_added']++;
                     $fieldResults['added_fields'][] = $fieldName;
@@ -2452,8 +2452,8 @@ class SolrSetup
         $this->trackStep(
                 4,
                 'Schema Configuration',
-                $success ? 'completed' : 'failed',
-            $success ? 'Schema fields configured successfully' : 'Schema field configuration failed',
+                $success === true ? 'completed' : 'failed',
+            $success === true ? 'Schema fields configured successfully' : 'Schema field configuration failed',
             $fieldResults
         );
 
@@ -2478,7 +2478,7 @@ class SolrSetup
         // First, try to add the field.
         $addResult = $this->addSchemaFieldWithResult($fieldName, $fieldConfig);
 
-        if ($addResult['success']) {
+        if ($addResult['success'] === true) {
             return [
                 'success' => true,
                 'action'  => 'added',
@@ -2492,7 +2492,7 @@ class SolrSetup
         ) {
             $updateResult = $this->replaceSchemaFieldWithResult($fieldName, $fieldConfig);
 
-            if ($updateResult['success']) {
+            if ($updateResult['success'] === true) {
                 return [
                     'success' => true,
                     'action'  => 'updated',
@@ -3009,7 +3009,7 @@ class SolrSetup
     private function addOrUpdateSchemaField(string $fieldName, array $fieldConfig): bool
     {
         // Try to add the field first (will fail if it already exists).
-        if ($this->addSchemaField($fieldName, $fieldConfig)) {
+        if ($this->addSchemaField($fieldName, $fieldConfig) === true) {
             return true;
         }
 

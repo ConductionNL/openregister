@@ -39,7 +39,6 @@ use Exception;
  *
  * @package OCA\OpenRegister\Controller
  *
- * @psalm-suppress UnusedClass - This controller is registered via routes.php and used by Nextcloud's routing system
  */
 class OrganisationController extends Controller
 {
@@ -482,27 +481,27 @@ class OrganisationController extends Controller
             unset($data['_route']);
 
             // Update fields if provided.
-            if (isset($data['name']) === true && empty(trim($data['name'])) === false) {
+            if (($data['name'] ?? null) !== null && empty(trim($data['name'])) === false) {
                 $organisation->setName(trim($data['name']));
 
                 // Auto-generate slug from name if slug is not provided or is empty.
-                if (isset($data['slug']) === false || empty(trim($data['slug'])) === true) {
+                if (!isset($data['slug']) === false || empty(trim($data['slug'])) === true) {
                     $slug = $this->generateSlug(trim($data['name']));
                     $organisation->setSlug($slug);
                 }
             }
 
-            if (isset($data['description']) === true) {
+            if (($data['description'] ?? null) !== null) {
                 $organisation->setDescription(trim($data['description']));
             }
 
             // Only set slug if it's provided and not empty.
             // Empty strings should not override existing slug.
-            if (isset($data['slug']) === true && trim($data['slug']) !== '') {
+            if (($data['slug'] ?? null) !== null && (trim($data['slug']) !== '') === true) {
                 $organisation->setSlug(trim($data['slug']));
             }
 
-            if (isset($data['active']) === true) {
+            if (($data['active'] ?? null) !== null) {
                 // Handle empty string as false.
                 $active = false;
                 if ($data['active'] !== '') {
@@ -512,23 +511,23 @@ class OrganisationController extends Controller
                 $organisation->setActive($active);
             }
 
-            if (isset($data['storageQuota']) === true) {
+            if (($data['storageQuota'] ?? null) !== null) {
                 $organisation->setStorageQuota($data['storageQuota']);
             }
 
-            if (isset($data['bandwidthQuota']) === true) {
+            if (($data['bandwidthQuota'] ?? null) !== null) {
                 $organisation->setBandwidthQuota($data['bandwidthQuota']);
             }
 
-            if (isset($data['requestQuota']) === true) {
+            if (($data['requestQuota'] ?? null) !== null) {
                 $organisation->setRequestQuota($data['requestQuota']);
             }
 
-            if (isset($data['groups']) === true && is_array($data['groups']) === true) {
+            if (($data['groups'] ?? null) !== null && is_array($data['groups']) === true) {
                 $organisation->setGroups($data['groups']);
             }
 
-            if (isset($data['authorization']) === true && is_array($data['authorization']) === true) {
+            if (($data['authorization'] ?? null) !== null && is_array($data['authorization']) === true) {
                 $organisation->setAuthorization($data['authorization']);
             }
 

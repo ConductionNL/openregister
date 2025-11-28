@@ -294,12 +294,12 @@ class VectorizationService
                     foreach ($batch as $index => $item) {
                         $embeddingData = $embeddings[$index] ?? null;
 
-                        if ($embeddingData !== null && isset($embeddingData['embedding']) === true && $embeddingData['embedding'] !== null) {
+                        if ($embeddingData !== null && (($embeddingData['embedding'] ?? null) !== null) && $embeddingData['embedding'] !== null) {
                             $this->storeVector(entity: $entity, item: $item, embeddingData: $embeddingData, strategy: $strategy);
                             $vectorized++;
                         } else {
                             $failed++;
-                            // @psalm-suppress-next-line InvalidArrayOffset
+                            //
                             $errors[] = [
                                 'entity_id'  => $entityId,
                                 'item_index' => $index,
@@ -386,7 +386,7 @@ class VectorizationService
      */
     private function getStrategy(string $entityType): VectorizationStrategyInterface
     {
-        if (isset($this->strategies[$entityType]) === false) {
+        if (!isset($this->strategies[$entityType])) {
             throw new \Exception("No vectorization strategy registered for entity type: {$entityType}");
         }
 

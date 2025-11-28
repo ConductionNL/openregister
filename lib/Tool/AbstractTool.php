@@ -280,7 +280,7 @@ abstract class AbstractTool implements ToolInterface
     protected function validateParameters(array $parameters, array $required): void
     {
         foreach ($required as $param) {
-            if (isset($parameters[$param]) === false) {
+            if (!isset($parameters[$param])) {
                 throw new \InvalidArgumentException("Missing required parameter: {$param}");
             }
         }
@@ -320,7 +320,7 @@ abstract class AbstractTool implements ToolInterface
                 $paramName = $param->getName();
 
                 // Get value from either named argument or positional argument.
-                if ($isAssociative === true && isset($arguments[$paramName]) === true) {
+                if ($isAssociative === true && (($arguments[$paramName] ?? null) !== null)) {
                     $value = $arguments[$paramName];
                 } else {
                     $value = $arguments[$index] ?? null;

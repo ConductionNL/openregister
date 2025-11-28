@@ -315,7 +315,7 @@ class Register extends Entity implements JsonSerializable
     {
         $jsonFields = $this->getJsonFields();
 
-        if (isset($object['metadata']) === false) {
+        if (!isset($object['metadata'])) {
             $object['metadata'] = [];
         }
 
@@ -383,17 +383,17 @@ class Register extends Entity implements JsonSerializable
     public function jsonSerialize(): array
     {
         $updated = null;
-        if (isset($this->updated) === true) {
+        if (($this->updated ?? null) !== null) {
             $updated = $this->updated->format('c');
         }
 
         $created = null;
-        if (isset($this->created) === true) {
+        if (($this->created ?? null) !== null) {
             $created = $this->created->format('c');
         }
 
         $deleted = null;
-        if (isset($this->deleted) === true) {
+        if (($this->deleted ?? null) !== null) {
             $deleted = $this->deleted->format('c');
         }
 
@@ -476,7 +476,7 @@ class Register extends Entity implements JsonSerializable
 
         // Final fallback with ID.
         // Suppress redundant property initialization check.
-        // @psalm-suppress RedundantPropertyInitializationCheck.
+        //
         return 'Register #'.($this->id ?? 'unknown');
 
     }//end __toString()

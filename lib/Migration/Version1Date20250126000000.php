@@ -29,7 +29,6 @@ use OCP\Migration\SimpleMigrationStep;
 /**
  * Create webhook_logs table for webhook delivery logging
  *
- * @psalm-suppress UnusedClass - Migration classes are loaded by Nextcloud's migration system
  */
 class Version1Date20250126000000 extends SimpleMigrationStep
 {
@@ -127,6 +126,15 @@ class Version1Date20250126000000 extends SimpleMigrationStep
             $table->addColumn(
                     'status_code',
                     Types::INTEGER,
+                    [
+                        'notnull' => false,
+                    ]
+                    );
+
+            // Request body (stored for debugging failures).
+            $table->addColumn(
+                    'request_body',
+                    Types::TEXT,
                     [
                         'notnull' => false,
                     ]

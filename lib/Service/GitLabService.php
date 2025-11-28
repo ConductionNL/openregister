@@ -169,7 +169,7 @@ class GitLabService
             $results = [];
             foreach ($items as $item) {
                 // Extract project ID and file path.
-                if (isset($item['project_id']) === true && isset($item['path']) === true) {
+                if (($item['project_id'] ?? null) !== null && (($item['path'] ?? null) !== null) === true) {
                     $results[] = [
                         'project_id' => $item['project_id'],
                         'path'       => $item['path'],
@@ -474,8 +474,8 @@ class GitLabService
             $content = $this->getFileContent(projectId: $projectId, path: $path, ref: $ref);
 
             // Validate that it's a valid OpenRegister configuration.
-            if (isset($content['openapi']) === false
-                || isset($content['x-openregister']) === false
+            if (!isset($content['openapi'])
+                || !isset($content['x-openregister'])
             ) {
                 $this->logger->debug(
                         message: 'File does not contain required OpenRegister structure',

@@ -46,7 +46,6 @@ use Symfony\Component\Uid\Uuid;
  *
  * @template         T of AuditTrail
  * @template-extends QBMapper<AuditTrail>
- * @psalm-suppress   LessSpecificImplementedReturnType - @method annotation is correct, parent returns list<T>
  */
 class AuditTrailMapper extends QBMapper
 {
@@ -327,7 +326,7 @@ class AuditTrailMapper extends QBMapper
 
             // Compare old and new values to detect changes.
             foreach ($newArray as $key => $value) {
-                if ((isset($oldArray[$key]) === false) || ($oldArray[$key] !== $value)) {
+                if ((!isset($oldArray[$key])) || ($oldArray[$key] !== $value)) {
                     $changed[$key] = [
                         'old' => ($oldArray[$key] ?? null),
                         'new' => $value,
@@ -338,7 +337,7 @@ class AuditTrailMapper extends QBMapper
             // For updates, check for removed fields.
             if ($action === 'update') {
                 foreach ($oldArray as $key => $value) {
-                    if (isset($newArray[$key]) === false) {
+                    if (!isset($newArray[$key])) {
                         $changed[$key] = [
                             'old' => $value,
                             'new' => null,
@@ -528,7 +527,7 @@ class AuditTrailMapper extends QBMapper
 
         // Iterate through each change and apply the reverse.
         foreach ($changes as $field => $change) {
-            if (isset($change['old']) === true) {
+            if (($change['old'] ?? null) !== null) {
                 // Use reflection to set the value if it's a protected property.
                 $reflection = new \ReflectionClass($object);
                 $property   = $reflection->getProperty($field);
@@ -577,7 +576,7 @@ class AuditTrailMapper extends QBMapper
                     $orConditions = $qb->expr()->orX();
 
                     // Handle register exclusion.
-                    if (isset($combination['register']) === true) {
+                    if (($combination['register'] ?? null) !== null) {
                         $orConditions->add($qb->expr()->isNull('register'));
                         $orConditions->add(
                             $qb->expr()->neq(
@@ -591,7 +590,7 @@ class AuditTrailMapper extends QBMapper
                     }
 
                     // Handle schema exclusion.
-                    if (isset($combination['schema']) === true) {
+                    if (($combination['schema'] ?? null) !== null) {
                         $orConditions->add($qb->expr()->isNull('schema'));
                         $orConditions->add(
                             $qb->expr()->neq(
@@ -705,7 +704,7 @@ class AuditTrailMapper extends QBMapper
             // Initialize data structure.
             foreach ($results as $row) {
                 $date = $row['date'];
-                if (isset($dateData[$date]) === false) {
+                if (!isset($dateData[$date])) {
                     $dateData[$date] = array_fill_keys($actions, 0);
                 }
 

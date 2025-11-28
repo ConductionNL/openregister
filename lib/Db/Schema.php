@@ -424,7 +424,7 @@ class Schema extends Entity implements JsonSerializable
      *
      * @param SchemaPropertyValidatorService $validator The schema property validator
      *
-     * @throws Exception If the properties are invalid
+     * @throws \Exception If the properties are invalid
      *
      * @return bool True if the properties are valid
      */
@@ -532,7 +532,7 @@ class Schema extends Entity implements JsonSerializable
         }
 
         // If action is not specified in authorization, everyone has permission.
-        if (isset($this->authorization[$action]) === false) {
+        if (!isset($this->authorization[$action])) {
             return true;
         }
 
@@ -557,7 +557,7 @@ class Schema extends Entity implements JsonSerializable
         }
 
         // If action is not specified, return empty array (meaning all groups).
-        if (isset($this->authorization[$action]) === false) {
+        if (!isset($this->authorization[$action])) {
             return [];
         }
 
@@ -583,8 +583,8 @@ class Schema extends Entity implements JsonSerializable
         foreach ($this->properties as $propertyName => $property) {
             // Handle regular object properties.
                         // TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property.
-            if (isset($property['inversedBy']) === true) {
-                if (is_array($property['inversedBy']) === true && isset($property['inversedBy']['id']) === true) {
+            if (($property['inversedBy'] ?? null) !== null) {
+                if (is_array($property['inversedBy']) === true && (($property['inversedBy']['id'] ?? null) !== null)) {
                     $this->properties[$propertyName]['inversedBy'] = $property['inversedBy']['id'];
                 } else if (is_string($property['inversedBy']) === false) {
                     // Remove invalid inversedBy if it's not a string or object with id.
@@ -594,8 +594,8 @@ class Schema extends Entity implements JsonSerializable
 
             // Handle array items with inversedBy.
                         // TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property.
-            if (isset($property['items']['inversedBy']) === true) {
-                if (is_array($property['items']['inversedBy']) === true && isset($property['items']['inversedBy']['id']) === true) {
+            if (($property['items']['inversedBy'] ?? null) !== null) {
+                if (is_array($property['items']['inversedBy']) === true && (($property['items']['inversedBy']['id'] ?? null) !== null)) {
                     $this->properties[$propertyName]['items']['inversedBy'] = $property['items']['inversedBy']['id'];
                 } else if (is_string($property['items']['inversedBy']) === false) {
                     // Remove invalid inversedBy if it's not a string or object with id.
@@ -615,14 +615,14 @@ class Schema extends Entity implements JsonSerializable
      * @param array                          $object    The data array to hydrate from
      * @param SchemaPropertyValidatorService $validator Optional validator for properties
      *
-     * @throws Exception If property validation fails
+     * @throws \Exception If property validation fails
      * @return self Returns $this for method chaining
      */
     public function hydrate(array $object, ?SchemaPropertyValidatorService $validator=null): self
     {
         $jsonFields = $this->getJsonFields();
 
-        if (isset($object['metadata']) === false) {
+        if (!isset($object['metadata'])) {
             $object['metadata'] = [];
         }
 
@@ -666,12 +666,12 @@ class Schema extends Entity implements JsonSerializable
         }//end foreach
 
         // Validate properties if validator is provided.
-        if ($validator !== null && isset($object['properties']) === true) {
+        if ($validator !== null && (($object['properties'] ?? null) !== null)) {
             $this->validateProperties($validator);
         }
 
         // Validate authorization structure.
-        if (isset($object['authorization']) === true) {
+        if (($object['authorization'] ?? null) !== null) {
             $this->validateAuthorization();
         }
 
@@ -692,9 +692,9 @@ class Schema extends Entity implements JsonSerializable
         $required   = ($this->required ?? []);
         $properties = [];
 
-        if (isset($this->properties) === true) {
+        if (($this->properties ?? null) !== null) {
             foreach ($this->properties as $propertyKey => $property) {
-                $isRequired    = (isset($property['required']) === true && $property['required'] === true);
+                $isRequired    = (isset($property['required']) && $property['required'] === true);
                 $notInRequired = in_array($propertyKey, $required) === false;
 
                 if ($isRequired === true && $notInRequired === true) {
@@ -706,17 +706,17 @@ class Schema extends Entity implements JsonSerializable
         }
 
         $updated = null;
-        if (isset($this->updated) === true) {
+        if (($this->updated ?? null) !== null) {
             $updated = $this->updated->format('c');
         }
 
         $created = null;
-        if (isset($this->created) === true) {
+        if (($this->created ?? null) !== null) {
             $created = $this->created->format('c');
         }
 
         $deleted = null;
-        if (isset($this->deleted) === true) {
+        if (($this->deleted ?? null) !== null) {
             $deleted = $this->deleted->format('c');
         }
 
@@ -778,16 +778,16 @@ class Schema extends Entity implements JsonSerializable
         $schema->properties  = new stdClass();
 
         foreach ($this->properties as $propertyName => $property) {
-            if (isset($property['properties']) === true) {
+            if (($property['properties'] ?? null) !== null) {
                 $nestedProperties         = new stdClass();
                 $nestedProperty           = new stdClass();
                 $nestedProperty->type     = 'object';
                 $nestedProperty->title    = $property['title'];
                 $nestedProperty->required = [];
 
-                if (isset($property['properties']) === true) {
+                if (($property['properties'] ?? null) !== null) {
                     foreach ($property['properties'] as $subName => $subProperty) {
-                        if ((isset($subProperty['required']) === true) && ($subProperty['required'] === true)) {
+                        if ((($subProperty['required'] ?? null) !== null) === true && ($subProperty['required'] === true) === true) {
                             $nestedProperty->required[] = $subName;
                         }
 
@@ -886,9 +886,8 @@ class Schema extends Entity implements JsonSerializable
 
         // If it's a JSON string, decode it.
         /*
-         * @psalm-suppress TypeDoesNotContainType - configuration can be string|null|array
          */
-        if (is_string($this->configuration)) {
+        if (is_string($this->configuration) === true) {
             $decoded = json_decode($this->configuration, true);
             if (json_last_error() === JSON_ERROR_NONE) {
                 return $decoded;
@@ -1111,9 +1110,8 @@ class Schema extends Entity implements JsonSerializable
 
         // If it's a JSON string, decode it.
         /*
-         * @psalm-suppress TypeDoesNotContainType - facets can be string|null|array
          */
-        if (is_string($this->facets)) {
+        if (is_string($this->facets) === true) {
             $decoded = json_decode($this->facets, true);
             if (json_last_error() === JSON_ERROR_NONE) {
                 return $decoded;
@@ -1124,7 +1122,6 @@ class Schema extends Entity implements JsonSerializable
 
         // Otherwise, it's already an array.
         /*
-         * @psalm-suppress TypeDoesNotContainType - facets can be string|null|array
          */
         return $this->facets;
 
@@ -1190,7 +1187,7 @@ class Schema extends Entity implements JsonSerializable
         // Analyze each property for facetable configuration.
         foreach ($properties as $propertyKey => $property) {
             // Skip properties that are not marked as facetable.
-            if (isset($property['facetable']) === false || $property['facetable'] !== true) {
+            if (!isset($property['facetable']) === false || $property['facetable'] !== true) {
                 continue;
             }
 
@@ -1212,7 +1209,7 @@ class Schema extends Entity implements JsonSerializable
                     $facetConfig['object_fields'][$propertyKey]['supported_intervals'] = ['day', 'week', 'month', 'year'];
                 } else if ($facetType === 'range') {
                     $facetConfig['object_fields'][$propertyKey]['supports_custom_ranges'] = true;
-                } else if ($facetType === 'terms' && isset($property['enum']) === true) {
+                } else if ($facetType === 'terms' && (($property['enum'] ?? null) !== null)) {
                     $facetConfig['object_fields'][$propertyKey]['predefined_values'] = $property['enum'];
                 }
             }
@@ -1278,9 +1275,9 @@ class Schema extends Entity implements JsonSerializable
     private function determineFacetTypeForProperty(array $property, string $fieldName): ?string
     {
         // Check if explicitly marked as facetable.
-        if (isset($property['facetable']) === true
+        if (($property['facetable'] ?? null) !== null
             && ($property['facetable'] === true || $property['facetable'] === 'true'
-            || (is_string($property['facetable']) === true && strtolower(trim($property['facetable'])) === 'true'))
+            || (is_string($property['facetable']) === true && strtolower(trim($property['facetable'])) === 'true')) === true
         ) {
             return $this->determineFacetTypeFromPropertyType($property);
         }
@@ -1312,7 +1309,7 @@ class Schema extends Entity implements JsonSerializable
         }
 
         // Auto-detect enum properties (good for faceting).
-        if (isset($property['enum']) === true && is_array($property['enum']) === true && count($property['enum']) > 0) {
+        if (($property['enum'] ?? null) !== null && is_array($property['enum']) === true && (count($property['enum']) > 0) === true) {
             return 'terms';
         }
 
@@ -1352,7 +1349,7 @@ class Schema extends Entity implements JsonSerializable
         }
 
         // Enum properties use terms.
-        if (isset($property['enum']) === true && is_array($property['enum']) === true) {
+        if (($property['enum'] ?? null) !== null && is_array($property['enum']) === true) {
             return 'terms';
         }
 

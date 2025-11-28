@@ -100,7 +100,6 @@ class AbstractNodeFolderEventListener implements IEventListener
      *
      * @return void
      *
-     * @psalm-suppress UndefinedMethod
      */
     private function handleNodeCreated(NodeCreatedEvent $event): void
     {
@@ -117,7 +116,6 @@ class AbstractNodeFolderEventListener implements IEventListener
      *
      * @return void
      *
-     * @psalm-suppress UndefinedMethod
      */
     private function handleNodeDeleted(NodeDeletedEvent $event): void
     {
@@ -134,7 +132,6 @@ class AbstractNodeFolderEventListener implements IEventListener
      *
      * @return void
      *
-     * @psalm-suppress UndefinedMethod
      */
     private function handleNodeTouched(NodeTouchedEvent $event): void
     {
@@ -151,7 +148,6 @@ class AbstractNodeFolderEventListener implements IEventListener
      *
      * @return void
      *
-     * @psalm-suppress UndefinedMethod
      */
     private function handleNodeWritten(NodeWrittenEvent $event): void
     {

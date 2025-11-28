@@ -43,7 +43,7 @@ use Psr\Log\LoggerInterface;
  * @author    Conduction b.v. <info@conduction.nl>
  * @license   AGPL-3.0-or-later
  * @link      https://github.com/OpenCatalogi/OpenRegister
- * @version   1.0.0
+ * @version   GIT: <git_id>
  * @copyright 2024 Conduction b.v.
  */
 class ObjectCacheService
@@ -60,8 +60,6 @@ class ObjectCacheService
      * Cache of relationship mappings to avoid repeated lookups
      *
      * @var array<string, array<string>>
-     *
-     * @psalm-suppress UnusedProperty - Property is used in clearCache method
      */
     private array $relationshipCache = [];
 
@@ -164,6 +162,11 @@ class ObjectCacheService
         $this->userSession = $userSession ?? new class {
 
 
+            /**
+             * Get user.
+             *
+             * @return null
+             */
             public function getUser()
             {
                 return null;
@@ -209,7 +212,7 @@ class ObjectCacheService
         $key = (string) $identifier;
 
         // Check cache first.
-        if (isset($this->objectCache[$key])) {
+        if (($this->objectCache[$key] ?? null) !== null) {
             $this->stats['hits']++;
             return $this->objectCache[$key];
         }
@@ -433,7 +436,7 @@ class ObjectCacheService
                 $document,
                 function ($value, $key) {
                     // Always keep published/depublished fields even if null for proper Solr filtering.
-                    if (in_array($key, ['published_dt', 'depublished_dt'])) {
+                    if (in_array($key, ['published_dt', 'depublished_dt']) === true) {
                         return true;
                     }
 
@@ -467,8 +470,8 @@ class ObjectCacheService
 
             $fieldName = $prefix.$key;
 
-            if (is_array($value)) {
-                if (isset($value[0])) {
+            if (is_array($value) === true) {
+                if (($value[0] ?? null) !== null) {
                     // Multi-value array.
                     $dynamicFields[$fieldName.'_ss'] = $value;
                     // Also add as text for searching.
@@ -478,15 +481,15 @@ class ObjectCacheService
                     $nestedFields  = $this->extractDynamicFieldsFromObject(objectData: $value, prefix: $fieldName.'_');
                     $dynamicFields = array_merge($dynamicFields, $nestedFields);
                 }
-            } else if (is_string($value)) {
+            } else if (is_string($value) === true) {
                 $dynamicFields[$fieldName.'_s']   = $value;
                 $dynamicFields[$fieldName.'_txt'] = $value;
-            } else if (is_int($value) || is_float($value)) {
-                $suffix = is_int($value) ? '_i' : '_f';
+            } else if (is_int($value) === true || is_float($value) === true) {
+                $suffix = is_int($value) === true ? '_i' : '_f';
                 $dynamicFields[$fieldName.$suffix] = $value;
-            } else if (is_bool($value)) {
+            } else if (is_bool($value) === true) {
                 $dynamicFields[$fieldName.'_b'] = $value;
-            } else if ($this->isDateString($value)) {
+            } else if ($this->isDateString($value) === true) {
                 $dynamicFields[$fieldName.'_dt'] = $this->formatDateForSolr($value);
             }//end if
         }//end foreach
@@ -524,17 +527,17 @@ class ObjectCacheService
     /**
      * Extract text content from array recursively
      *
-     * @param array $data         Array to extract text from
-     * @param array &$textContent Reference to text content array
+     * @param array      $data         Array to extract text from
+     * @param array|null $textContent  Reference to text content array
      *
      * @return void
      */
     private function extractTextFromArray(array $data, array &$textContent): void
     {
         foreach ($data as $key => $value) {
-            if (is_string($value)) {
+            if (is_string($value) === true) {
                 $textContent[] = $value;
-            } else if (is_array($value)) {
+            } else if (is_array($value) === true) {
                 $this->extractTextFromArray(data: $value, textContent: $textContent);
             }
         }
@@ -596,7 +599,7 @@ class ObjectCacheService
      */
     public function preloadObjects(array $identifiers): array
     {
-        if (empty($identifiers)) {
+        if (empty($identifiers) === true) {
             return [];
         }
 
@@ -606,7 +609,7 @@ class ObjectCacheService
             fn($id) => !isset($this->objectCache[(string) $id])
         );
 
-        if (empty($identifiersToLoad)) {
+        if (empty($identifiersToLoad) === true) {
             // All objects already cached.
             return array_filter(
                 array_map(
@@ -666,7 +669,7 @@ class ObjectCacheService
         $this->objectCache[$object->getId()] = $object;
 
         // Also cache with UUID if available.
-        if ($object->getUuid()) {
+        if (($object->getUuid() !== null) === true) {
             $this->objectCache[$object->getUuid()] = $object;
         }
 
@@ -693,7 +696,7 @@ class ObjectCacheService
      */
     public function preloadRelationships(array $objects, array $extend): array
     {
-        if (empty($objects) || empty($extend)) {
+        if (empty($objects) === true || empty($extend) === true) {
             return [];
         }
 
@@ -708,19 +711,19 @@ class ObjectCacheService
             $objectData = $object->getObject();
 
             foreach ($extend as $field) {
-                if (str_starts_with($field, '@')) {
+                if (str_starts_with($field, '@') === true) {
                     continue;
                 }
 
                 $value = $objectData[$field] ?? null;
 
-                if (is_array($value)) {
+                if (is_array($value) === true) {
                     foreach ($value as $relId) {
-                        if (is_string($relId) || is_int($relId)) {
+                        if (is_string($relId) === true || is_int($relId) === true) {
                             $allRelationshipIds[] = (string) $relId;
                         }
                     }
-                } else if (is_string($value) || is_int($value)) {
+                } else if (is_string($value) === true || is_int($value) === true) {
                     $allRelationshipIds[] = (string) $value;
                 }
             }
@@ -789,7 +792,7 @@ class ObjectCacheService
         $cacheKey = $this->generateSearchCacheKey(query: $query, activeOrganisationUuid: $activeOrganisationUuid, rbac: $rbac, multi: $multi);
 
         // Check in-memory cache first (fastest).
-        if (isset($this->inMemoryQueryCache[$cacheKey])) {
+        if (($this->inMemoryQueryCache[$cacheKey] ?? null) !== null) {
             $this->stats['query_hits']++;
             $this->logger->debug(
                     '🚀 SEARCH CACHE HIT (in-memory)',
@@ -882,7 +885,7 @@ class ObjectCacheService
                 '💾 SEARCH RESULT CACHED',
                 [
                     'cacheKey'   => substr($cacheKey, 0, 16).'...',
-                    'resultType' => is_array($result) ? 'array('.count($result).')' : 'count('.$result.')',
+                    'resultType' => is_array($result) === true ? 'array('.count($result).')' : 'count('.$result.')',
                     'ttl'        => $ttl.'s',
                 ]
                 );
@@ -1009,7 +1012,7 @@ class ObjectCacheService
                     'operation'     => $operation,
                     'executionTime' => $executionTime.'ms',
                     'impact'        => 'all_users_affected',
-                    'strategy'      => $schemaId ? 'schema_targeted' : 'global_fallback',
+                    'strategy'      => $schemaId === true ? 'schema_targeted' : 'global_fallback',
                 ]
                 );
 
@@ -1054,7 +1057,7 @@ class ObjectCacheService
                 // Update name cache for the modified object.
                 $name = $object->getName() ?? $object->getUuid();
                 $this->setObjectName(identifier: $object->getUuid(), name: $name);
-                if ($object->getId() && (string) $object->getId() !== $object->getUuid()) {
+                if (($object->getId() !== null) === true && (string) $object->getId() !== $object->getUuid()) {
                     $this->setObjectName(identifier: $object->getId(), name: $name);
                 }
             } else if ($operation === 'delete') {
@@ -1074,7 +1077,7 @@ class ObjectCacheService
             /*
              * @var int|string $schemaId
              */
-            $schemaIdInt = is_string($schemaId) ? (int) $schemaId : (int) $schemaId;
+            $schemaIdInt = is_string($schemaId) === true ? (int) $schemaId : (int) $schemaId;
         }
 
         $registerIdInt = null;
@@ -1082,7 +1085,7 @@ class ObjectCacheService
             /*
              * @var int|string $registerId
              */
-            $registerIdInt = is_string($registerId) ? (int) $registerId : (int) $registerId;
+            $registerIdInt = is_string($registerId) === true ? (int) $registerId : (int) $registerId;
         }
 
         $this->clearSchemaRelatedCaches(schemaId: $schemaIdInt, registerId: $registerIdInt, operation: $operation);
@@ -1117,7 +1120,7 @@ class ObjectCacheService
         unset($this->objectCache[$object->getId()]);
 
         // Remove by UUID if available.
-        if ($object->getUuid()) {
+        if (($object->getUuid() !== null) === true) {
             unset($this->objectCache[$object->getUuid()]);
         }
 
@@ -1182,24 +1185,24 @@ class ObjectCacheService
     private function generateSearchCacheKey(array $query, ?string $activeOrganisationUuid, bool $rbac, bool $multi): string
     {
         $user   = $this->userSession->getUser();
-        $userId = $user ? $user->getUID() : 'anonymous';
+        $userId = $user === true ? $user->getUID() : 'anonymous';
 
         // Create consistent key components.
         $keyComponents = [
             'user'  => $userId,
             'org'   => $activeOrganisationUuid ?? 'null',
-            'rbac'  => $rbac ? 'true' : 'false',
-            'multi' => $multi ? 'true' : 'false',
+            'rbac'  => $rbac === true ? 'true' : 'false',
+            'multi' => $multi === true ? 'true' : 'false',
             'query' => $query,
         ];
 
         // Sort query parameters for consistent key generation.
-        if (isset($keyComponents['query']) && is_array($keyComponents['query'])) {
+        if (($keyComponents['query'] ?? null) !== null && is_array($keyComponents['query']) === true) {
             ksort($keyComponents['query']);
             array_walk_recursive(
                     $keyComponents['query'],
                     function (&$value) {
-                        if (is_array($value)) {
+                        if (is_array($value) === true) {
                             sort($value);
                         }
                     }
@@ -1351,7 +1354,7 @@ class ObjectCacheService
         $key = (string) $identifier;
 
         // Check in-memory cache first (fastest).
-        if (isset($this->nameCache[$key])) {
+        if (($this->nameCache[$key] ?? null) !== null) {
             $this->stats['name_hits']++;
             $this->logger->debug(message: '🚀 NAME CACHE HIT (in-memory)', context: ['identifier' => $key]);
             return $this->nameCache[$key];
@@ -1435,7 +1438,7 @@ class ObjectCacheService
      */
     public function getMultipleObjectNames(array $identifiers): array
     {
-        if (empty($identifiers)) {
+        if (empty($identifiers) === true) {
             return [];
         }
 
@@ -1445,7 +1448,7 @@ class ObjectCacheService
         // Check in-memory cache for all identifiers.
         foreach ($identifiers as $identifier) {
             $key = (string) $identifier;
-            if (isset($this->nameCache[$key])) {
+            if (($this->nameCache[$key] ?? null) !== null) {
                 $results[$key] = $this->nameCache[$key];
                 $this->stats['name_hits']++;
             } else {
@@ -1454,7 +1457,7 @@ class ObjectCacheService
         }
 
         // Check distributed cache for missing identifiers.
-        if (!empty($missingIdentifiers) && $this->nameDistributedCache !== null) {
+        if (!empty($missingIdentifiers) === true && $this->nameDistributedCache !== null) {
             $distributedResults = [];
             foreach ($missingIdentifiers as $key) {
                 try {
@@ -1615,7 +1618,7 @@ class ObjectCacheService
                 $name = $organisation->getName() ?? $organisation->getUuid();
 
                 // Cache by UUID only (not by database ID).
-                if ($organisation->getUuid()) {
+                if ($organisation->getUuid() !== null) {
                     $this->nameCache[$organisation->getUuid()] = $name;
                     $loadedCount++;
                 }
@@ -1628,7 +1631,7 @@ class ObjectCacheService
 
                 // Cache by UUID only (not by database ID).
                 // Note: If an organisation has the same UUID, it will remain (organisations loaded first).
-                if ($object->getUuid() && !isset($this->nameCache[$object->getUuid()])) {
+                if ($object->getUuid() !== null && (($this->nameCache[$object->getUuid()] ?? null) === null) === true) {
                     $this->nameCache[$object->getUuid()] = $name;
                     $loadedCount++;
                 }
@@ -1779,7 +1782,7 @@ class ObjectCacheService
                     schemaId: $schemaId
                 );
 
-                if (empty($objects)) {
+                if (empty($objects) === true) {
                     break;
                     // No more objects.
                 }
@@ -2015,7 +2018,7 @@ class ObjectCacheService
             return [
                 'success'   => $result,
                 'timestamp' => date('c'),
-                'message'   => $result ? 'Commit successful' : 'Commit failed',
+                'message'   => $result === true ? 'Commit successful' : 'Commit failed',
             ];
         } catch (\Exception $e) {
             return [
@@ -2045,7 +2048,7 @@ class ObjectCacheService
             return [
                 'success'   => $result,
                 'timestamp' => date('c'),
-                'message'   => $result ? 'Optimization successful' : 'Optimization failed',
+                'message'   => $result === true ? 'Optimization successful' : 'Optimization failed',
             ];
         } catch (\Exception $e) {
             return [
@@ -2077,7 +2080,7 @@ class ObjectCacheService
                 'error'         => $result['error'] ?? null,
                 'error_details' => $result['error_details'] ?? null,
                 'timestamp'     => date('c'),
-                'message'       => $result['success'] ? 'Index cleared successfully' : 'Index clear failed',
+                'message'       => ($result['success'] === true) === true ? 'Index cleared successfully' : 'Index clear failed',
             ];
         } catch (\Exception $e) {
             return [

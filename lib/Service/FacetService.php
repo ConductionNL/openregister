@@ -83,7 +83,6 @@ class FacetService
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly SchemaMapper $schemaMapper,
         /**
-         * @psalm-suppress PossiblyUnusedProperty - Property is used in constructor to initialize cache
          */
         private readonly ICacheFactory $cacheFactory,
         private readonly IUserSession $userSession,
@@ -307,7 +306,7 @@ class FacetService
 
         // Get organization context if available.
         $orgId = null;
-        if (isset($facetQuery['@self']['organisation']) === true) {
+        if (($facetQuery['@self']['organisation'] ?? null) !== null) {
             $orgId = $facetQuery['@self']['organisation'];
         }
 
@@ -410,7 +409,7 @@ class FacetService
         foreach ($facets as $facetGroup) {
             if (is_array($facetGroup) === true) {
                 foreach ($facetGroup as $facet) {
-                    if (isset($facet['buckets']) === true && is_array($facet['buckets']) === true) {
+                    if (($facet['buckets'] ?? null) !== null && is_array($facet['buckets']) === true) {
                         foreach ($facet['buckets'] as $bucket) {
                             $total += (int) ($bucket['results'] ?? 0);
                         }
@@ -508,7 +507,7 @@ class FacetService
                 $schemaFacets = $schema->getFacets();
                 if (empty($schemaFacets) === false) {
                     // Merge @self metadata facets.
-                    if (isset($schemaFacets['@self']) === true) {
+                    if (($schemaFacets['@self'] ?? null) !== null) {
                         $facetableFields['@self'] = array_merge(
                             $facetableFields['@self'],
                             $schemaFacets['@self']
@@ -516,7 +515,7 @@ class FacetService
                     }
 
                     // Merge object field facets.
-                    if (isset($schemaFacets['object_fields']) === true) {
+                    if (($schemaFacets['object_fields'] ?? null) !== null) {
                         $facetableFields['object_fields'] = array_merge(
                             $facetableFields['object_fields'],
                             $schemaFacets['object_fields']

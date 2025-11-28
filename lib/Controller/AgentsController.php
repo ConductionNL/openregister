@@ -39,7 +39,6 @@ use Exception;
  *
  * @package OCA\OpenRegister\Controller
  *
- * @psalm-suppress UnusedClass - This controller is registered via routes.php and used by Nextcloud's routing system
  */
 class AgentsController extends Controller
 {
@@ -149,19 +148,19 @@ class AgentsController extends Controller
             $params = $this->request->getParams();
 
             // Extract pagination parameters.
-            if (isset($params['_limit']) === true) {
+            if (($params['_limit'] ?? null) !== null) {
                 $limit = (int) $params['_limit'];
             } else {
                 $limit = 50;
             }
 
-            if (isset($params['_offset']) === true) {
+            if (($params['_offset'] ?? null) !== null) {
                 $offset = (int) $params['_offset'];
             } else {
                 $offset = 0;
             }
 
-            if (isset($params['_page']) === true) {
+            if (($params['_page'] ?? null) !== null) {
                 $page = (int) $params['_page'];
             } else {
                 $page = null;
@@ -260,17 +259,17 @@ class AgentsController extends Controller
             $data['owner'] = $this->userId;
 
             // Set default values for new properties if not provided.
-            if (isset($data['isPrivate']) === false && isset($data['is_private']) === false) {
+            if (!isset($data['isPrivate']) === false && !isset($data['is_private'])) {
                 $data['isPrivate'] = true;
                 // Private by default.
             }
 
-            if (isset($data['searchFiles']) === false && isset($data['search_files']) === false) {
+            if (!isset($data['searchFiles']) === false && !isset($data['search_files'])) {
                 $data['searchFiles'] = true;
                 // Search files by default.
             }
 
-            if (isset($data['searchObjects']) === false && isset($data['search_objects']) === false) {
+            if (!isset($data['searchObjects']) === false && !isset($data['search_objects'])) {
                 $data['searchObjects'] = true;
                 // Search objects by default.
             }

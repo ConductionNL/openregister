@@ -424,7 +424,7 @@ class ImportService
                 'found'     => 0,
                 'created'   => [],
                 'updated'   => [],
-                'unchanged' => [],  // TODO: Renamed from 'skipped' - more descriptive (objects skipped because content was unchanged)
+// TODO: Renamed from 'skipped' - more descriptive (objects skipped because content was unchanged).
                 'errors'    => [],
                 'schema'    => null,
                 'debug'     => [
@@ -582,7 +582,7 @@ class ImportService
             'found'     => 0,
             'created'   => [],
             'updated'   => [],
-            'unchanged' => [],  // TODO: Renamed from 'skipped' - more descriptive
+// TODO: Renamed from 'skipped' - more descriptive.
             'unchanged' => [],
             'errors'    => [],
         ];
@@ -644,7 +644,7 @@ class ImportService
 
         // Call saveObjects ONCE with all objects - NO ERROR SUPPRESSION!
         // This will reveal the real bulk save problem immediately.
-        if (!empty($allObjects) && $register !== null && $schema !== null) {
+        if (!empty($allObjects) === true && $register !== null && $schema !== null) {
             // Add publish date to all objects if publish is enabled.
             if ($publish === true) {
                 $publishDate = (new \DateTime('now'))->format('c'); // ISO 8601 format.
@@ -658,7 +658,7 @@ class ImportService
             $summary['created'] = array_map(fn($obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['saved'] ?? []);
             $summary['updated'] = array_map(fn($obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['updated'] ?? []);
 
-            // TODO: Handle unchanged objects from smart deduplication (renamed from 'skipped')
+// TODO: Handle unchanged objects from smart deduplication (renamed from 'skipped').
             $summary['unchanged'] = array_map(fn($obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['unchanged'] ?? []);
 
             // Add efficiency metrics from smart deduplication.
@@ -710,7 +710,7 @@ class ImportService
             'found'     => 0,
             'created'   => [],
             'updated'   => [],
-            'unchanged' => [],  // TODO: Renamed from 'skipped' - more descriptive
+// TODO: Renamed from 'skipped' - more descriptive.
             'unchanged' => [],
             'errors'    => [],
         ];
@@ -800,7 +800,7 @@ class ImportService
             $summary['created'] = array_map(fn($obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['saved'] ?? []);
             $summary['updated'] = array_map(fn($obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['updated'] ?? []);
 
-            // TODO: Handle unchanged objects from smart deduplication (renamed from 'skipped')
+// TODO: Handle unchanged objects from smart deduplication (renamed from 'skipped').
             $summary['unchanged'] = array_map(fn($obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['unchanged'] ?? []);
 
             // Add efficiency metrics from smart deduplication.
@@ -995,7 +995,7 @@ class ImportService
             // NO ERROR SUPPRESSION: Let CSV chunk processing errors bubble up immediately!
             $rowData = $this->extractRowData(sheet: $sheet, columnMapping: $columnMapping, row: $row);
 
-            if (empty($rowData)) {
+            if (empty($rowData) === true) {
                 // Skip empty rows.
                 continue;
             }
@@ -1079,17 +1079,17 @@ class ImportService
                     continue; // Skip @ columns for non-admin users.
                 }
 
-                if (str_starts_with($key, '@self.')) {
+                if (str_starts_with($key, '@self.') === true) {
                     // Move properties starting with @self. to @self array and remove the @self. prefix.
                     $selfPropertyName = substr($key, 6);
 
                     // Transform special @self properties.
                     $selfData[$selfPropertyName] = $this->transformSelfProperty(propertyName: $selfPropertyName, value: $value);
                 }
-                // Note: Other @ columns that don't start with @self. are ignored
+// Note: Other @ columns that don't start with @self. are ignored.
             } else {
                 // Regular properties - transform based on schema if needed.
-                if (isset($schemaProperties[$key])) {
+                if (($schemaProperties[$key] ?? null) !== null) {
                     $objectData[$key] = $this->transformValueByType(value: $value, propertyDef: $schemaProperties[$key]);
                 } else {
                     $objectData[$key] = $value;
@@ -1106,7 +1106,7 @@ class ImportService
         $objectData['@self'] = $selfData;
 
         // Validate that we're not accidentally creating invalid properties.
-        $this->validateObjectProperties(objectData: $objectData, schemaId: $schemaId);
+        $this->validateObjectProperties(objectData: $objectData, schemaId: (string) $schemaId);
 
         return $objectData;
 
@@ -1123,7 +1123,7 @@ class ImportService
     private function transformDateTimeValue(string $value): string
     {
         // Handle ISO 8601 format with timezone (e.g., "2025-01-01T00:00:00+00:00").
-        if (preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/', $value)) {
+        if (preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/', $value) === true) {
             try {
                 $dateTime = new \DateTime($value);
                 return $dateTime->format(format: 'Y-m-d H:i:s');
@@ -1134,7 +1134,7 @@ class ImportService
         }
 
         // Handle ISO 8601 format without timezone (e.g., "2025-01-01T00:00:00").
-        if (preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/', $value)) {
+        if (preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/', $value) === true) {
             try {
                 $dateTime = new \DateTime($value);
                 return $dateTime->format(format: 'Y-m-d H:i:s');
@@ -1145,7 +1145,7 @@ class ImportService
         }
 
         // Handle date-only format (e.g., "2025-01-01").
-        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) {
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) === true) {
             return $value . ' 00:00:00';
         }
 
@@ -1172,7 +1172,7 @@ class ImportService
         // Transform organisation property - ensure it's a valid UUID.
         if ($propertyName === 'organisation') {
             // Validate UUID format.
-            if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value)) {
+            if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value) === true) {
                 return $value;
             }
             // If not a valid UUID, return as-is (might be a slug that needs resolution).
@@ -1212,7 +1212,7 @@ class ImportService
             // NO ERROR SUPPRESSION: Let Excel chunk processing errors bubble up immediately!
             $rowData = $this->extractRowData(sheet: $sheet, columnMapping: $columnMapping, row: $row);
 
-            if (empty($rowData)) {
+            if (empty($rowData) === true) {
                 // Skip empty rows.
                 continue;
             }
@@ -1273,7 +1273,7 @@ class ImportService
                     // Transform special @self properties.
                     $selfData[$selfPropertyName] = $this->transformSelfProperty(propertyName: $selfPropertyName, value: $value);
                 }
-                // Note: Other @ columns that don't start with @self. are ignored
+// Note: Other @ columns that don't start with @self. are ignored.
             } else {
                 // Regular properties go to main object data.
                 $objectData[$key] = $value;
@@ -1289,7 +1289,7 @@ class ImportService
         }
 
         // Add ID if present in the data (for updates).
-        if (isset($rowData['id']) && !empty($rowData['id'])) {
+        if (($rowData['id'] ?? null) !== null && empty($rowData['id']) === false) {
             $selfData['id'] = $rowData['id'];
         }
 
@@ -1407,7 +1407,7 @@ class ImportService
                 $results = \React\Async\await(\React\Promise\all($batch));
 
                 foreach ($results as $result) {
-                    if (isset($result['error']) === true) {
+                    if (($result['error'] ?? null) !== null) {
                         $chunkSummary['errors'][] = $result['error'];
                     } else {
                         if ($result['wasExisting'] === true) {
@@ -1626,8 +1626,8 @@ class ImportService
 
             case 'object':
                 // Check if this is a related-object that should store UUID strings directly.
-                if (isset($propertyDef['objectConfiguration']['handling'])
-                    && $propertyDef['objectConfiguration']['handling'] === 'related-object') {
+                if (($propertyDef['objectConfiguration']['handling'] ?? null) !== null
+                    && ($propertyDef['objectConfiguration']['handling'] === 'related-object') === true) {
                     // For related objects, store UUID strings directly instead of wrapping in objects.
                     return (string) $value;
                 }
@@ -1769,7 +1769,8 @@ class ImportService
     {
         $totalLength = 0;
         $fieldCount = 0;
-        $startRow = 2; // Skip header
+        // Skip header row (row 1).
+        $startRow = 2;
 
         for ($row = $startRow; $row < $startRow + $sampleSize; $row++) {
             foreach (array_keys($columnMapping) as $columnLetter) {
@@ -1781,7 +1782,7 @@ class ImportService
             }
         }
 
-        return $fieldCount > 0 ? $totalLength / $fieldCount : 50; // Default to 50 if no data
+// Default to 50 if no data.
     }//end estimateDataComplexity()
 
 
@@ -1796,8 +1797,8 @@ class ImportService
      */
     private function calculateOptimalChunkSize(int $baseChunkSize, float $avgFieldLength, int $columnCount): int
     {
-        // Calculate complexity score.
-        $complexityScore = ($avgFieldLength * $columnCount) / 1000; // Normalize to reasonable range
+        // Calculate complexity score based on average field length and column count.
+        $complexityScore = ($avgFieldLength * $columnCount) / 100;
 
         // Adjust chunk size based on complexity.
         if ($complexityScore > 10) {
@@ -1848,7 +1849,7 @@ class ImportService
             }
 
             // Check for invalid properties that commonly cause issues.
-            if (in_array($key, $invalidProperties)) {
+            if (in_array($key, $invalidProperties) === true) {
             }
         }
 
@@ -1872,7 +1873,7 @@ class ImportService
             }
 
             // Only add published date if not already set (from @self.published column).
-            if (!isset($object['@self']['published']) || empty($object['@self']['published'])) {
+            if (($object['@self']['published'] ?? null) === null || empty($object['@self']['published']) === true) {
                 $object['@self']['published'] = $publishDate;
             }
         }
@@ -1915,7 +1916,7 @@ class ImportService
             $jobArguments = [
                 'maxObjects' => $maxObjects,
                 'mode' => $mode,
-                'collectErrors' => false, // Keep it fast for post-import warmup
+// Keep it fast for post-import warmup.
                 'triggeredBy' => 'import_completion',
                 'importSummary' => [
                     'totalImported' => $totalImported,
@@ -1961,7 +1962,7 @@ class ImportService
         $total = 0;
 
         foreach ($importSummary as $sheetSummary) {
-            if (is_array($sheetSummary)) {
+            if (is_array($sheetSummary) === true) {
                 $created = count($sheetSummary['created'] ?? []);
                 $updated = count($sheetSummary['updated'] ?? []);
                 $total += $created + $updated;
@@ -1981,11 +1982,11 @@ class ImportService
     public function getRecommendedWarmupMode(int $totalImported): string
     {
         if ($totalImported > 10000) {
-            return 'hyper'; // Fast mode for large imports
+// Fast mode for large imports.
         } elseif ($totalImported > 1000) {
-            return 'parallel'; // Balanced mode for medium imports
+// Balanced mode for medium imports.
         } else {
-            return 'serial'; // Safe mode for small imports
+// Safe mode for small imports.
         }
     }//end getRecommendedWarmupMode()
 
@@ -2010,8 +2011,9 @@ class ImportService
 
         // Smart configuration based on import size.
         $mode = $this->getRecommendedWarmupMode($totalImported);
-        $maxObjects = min($totalImported * 2, 15000); // Index up to 2x imported objects, max 15k
-        $delay = $immediate ? 0 : 30; // 30 second delay by default
+        // Index up to 2x imported objects, max 15k.
+        $maxObjects = min($totalImported * 2, 15000);
+        $delay = $immediate === true ? 0 : 30; // 30 second delay by default
 
         $this->logger->info(message: 'Scheduling smart SOLR warmup', context: [
             'total_imported' => $totalImported,

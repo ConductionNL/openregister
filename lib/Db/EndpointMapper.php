@@ -191,7 +191,7 @@ class EndpointMapper extends QBMapper
         $endpoint = new Endpoint();
 
         // Generate UUID if not provided.
-        if (isset($data['uuid']) === false || empty($data['uuid']) === true) {
+        if (!isset($data['uuid']) === false || empty($data['uuid']) === true) {
             $data['uuid'] = Uuid::v4()->toRfc4122();
         }
 

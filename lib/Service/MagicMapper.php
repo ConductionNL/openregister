@@ -322,9 +322,9 @@ class MagicMapper
             // Check if table exists using cached method.
             $tableExists = $this->tableExistsForRegisterSchema($register, $schema);
 
-            if ($tableExists && !$force) {
+            if (($tableExists === true) && ($force === false)) {
                 // Table exists and not forcing update - check if schema changed.
-                if (!$this->hasRegisterSchemaChanged($register, $schema)) {
+                if ($this->hasRegisterSchemaChanged($register, $schema) === false) {
                     $this->logger->debug(
                             'Table exists and schema unchanged, skipping',
                             [
@@ -340,7 +340,7 @@ class MagicMapper
             }
 
             // Create new table or recreate if forced.
-            if ($tableExists && $force) {
+            if (($tableExists === true) && ($force === true)) {
                 $this->dropTable($tableName);
                 $this->invalidateTableCache($cacheKey);
             }
@@ -418,7 +418,7 @@ class MagicMapper
         $cacheKey   = $this->getCacheKey($registerId, $schemaId);
 
         // Check cache first (with timeout).
-        if (isset(self::$tableExistsCache[$cacheKey])) {
+        if ((self::$tableExistsCache[$cacheKey] ?? null) !== null) {
             $cachedTime = self::$tableExistsCache[$cacheKey];
             if ((time() - $cachedTime) < self::TABLE_CACHE_TIMEOUT) {
                 $this->logger->debug(
@@ -781,10 +781,10 @@ class MagicMapper
         // Get schema properties and convert to SQL columns.
         $schemaProperties = $schema->getProperties();
 
-        if (is_array($schemaProperties)) {
+        if (is_array($schemaProperties) === true) {
             foreach ($schemaProperties as $propertyName => $propertyConfig) {
                 // Skip if property name conflicts with metadata columns.
-                if (isset($columns[self::METADATA_PREFIX.$propertyName])) {
+                if (($columns[self::METADATA_PREFIX.$propertyName] ?? null) !== null) {
                     $this->logger->warning(
                             'Schema property conflicts with metadata column',
                             [
@@ -1129,7 +1129,7 @@ class MagicMapper
 
             default:
                 // Regular string.
-                if ($maxLength && $maxLength <= 255) {
+                if (($maxLength !== null) === true && $maxLength <= 255) {
                     return [
                         'name'     => $columnName,
                         'type'     => 'string',
@@ -1141,8 +1141,8 @@ class MagicMapper
                 } else {
                     return [
                         'name'     => $columnName,
-                        'type'     => $maxLength && $maxLength > 65535 ? 'text' : 'text',
-                        'nullable' => !$isRequired,
+                        'type'     => (($maxLength !== null) === true && $maxLength > 65535) === true ? 'text' : 'text',
+                        'nullable' => ($isRequired === false),
                     ];
                 }
         }//end switch
@@ -1268,23 +1268,23 @@ class MagicMapper
             'notnull' => !($column['nullable'] ?? true),
         ];
 
-        if (isset($column['length'])) {
+        if (($column['length'] ?? null) !== null) {
             $options['length'] = $column['length'];
         }
 
-        if (isset($column['default'])) {
+        if (($column['default'] ?? null) !== null) {
             $options['default'] = $column['default'];
         }
 
-        if (isset($column['autoincrement']) && $column['autoincrement']) {
+        if (($column['autoincrement'] ?? null) !== null && $column['autoincrement'] === true) {
             $options['autoincrement'] = true;
         }
 
-        if (isset($column['precision'])) {
+        if (($column['precision'] ?? null) !== null) {
             $options['precision'] = $column['precision'];
         }
 
-        if (isset($column['scale'])) {
+        if (($column['scale'] ?? null) !== null) {
             $options['scale'] = $column['scale'];
         }
 
@@ -1292,7 +1292,7 @@ class MagicMapper
         $table->addColumn($column['name'], $column['type'], $options);
 
         // Set primary key if specified.
-        if (isset($column['primary']) && $column['primary']) {
+        if (($column['primary'] ?? null) !== null && $column['primary'] === true) {
             $table->setPrimaryKey([$column['name']]);
         }
 
@@ -1378,7 +1378,7 @@ class MagicMapper
         $preparedData = $this->prepareObjectDataForTable($objectData, $register, $schema);
 
         // Generate UUID if not provided.
-        if (empty($preparedData[self::METADATA_PREFIX.'uuid'])) {
+        if (empty($preparedData[self::METADATA_PREFIX.'uuid']) === true) {
             $preparedData[self::METADATA_PREFIX.'uuid'] = Uuid::v4()->toRfc4122();
         }
 
@@ -1447,11 +1447,11 @@ class MagicMapper
         unset($data['@self']);
 
         // Ensure register and schema IDs are set correctly.
-        if (empty($metadata['register'])) {
+        if (empty($metadata['register']) === true) {
             $metadata['register'] = $register->getId();
         }
 
-        if (empty($metadata['schema'])) {
+        if (empty($metadata['schema']) === true) {
             $metadata['schema'] = $schema->getId();
         }
 
@@ -1493,14 +1493,14 @@ class MagicMapper
             $value = $metadata[$field] ?? null;
 
             // Handle datetime fields.
-            if (in_array($field, ['created', 'updated', 'published', 'depublished', 'expires'])) {
-                if ($value === null && in_array($field, ['created', 'updated'])) {
+            if (in_array($field, ['created', 'updated', 'published', 'depublished', 'expires']) === true) {
+                if ($value === null && in_array($field, ['created', 'updated']) === true) {
                     $value = $now;
                 }
 
                 if ($value instanceof DateTime) {
                     $value = $value->format('Y-m-d H:i:s');
-                } else if (is_string($value)) {
+                } else if (is_string($value) === true) {
                     // Validate and convert datetime strings.
                     try {
                         $dateTime = new \DateTime($value);
@@ -1512,7 +1512,7 @@ class MagicMapper
             }
 
             // Handle JSON fields.
-            if (in_array($field, ['files', 'relations', 'locked', 'authorization', 'validation', 'deleted', 'geo', 'retention', 'groups'])) {
+            if (in_array($field, ['files', 'relations', 'locked', 'authorization', 'validation', 'deleted', 'geo', 'retention', 'groups']) === true) {
                 if ($value !== null && !is_string($value)) {
                     $value = json_encode($value);
                 }
@@ -1523,13 +1523,13 @@ class MagicMapper
 
         // Map schema properties to columns.
         $schemaProperties = $schema->getProperties();
-        if (is_array($schemaProperties)) {
+        if (is_array($schemaProperties) === true) {
             foreach (array_keys($schemaProperties) as $propertyName) {
-                if (isset($data[$propertyName])) {
+                if (($data[$propertyName] ?? null) !== null) {
                     $value = $data[$propertyName];
 
                     // Convert complex types to JSON.
-                    if (is_array($value) || is_object($value)) {
+                    if (is_array($value) === true || is_object($value) === true) {
                         $value = json_encode($value);
                     }
 
@@ -1564,18 +1564,18 @@ class MagicMapper
         $this->applySearchFilters($qb, $query);
 
         // Apply pagination.
-        if (isset($query['_limit'])) {
+        if (($query['_limit'] ?? null) !== null) {
             $qb->setMaxResults((int) $query['_limit']);
         }
 
-        if (isset($query['_offset'])) {
+        if (($query['_offset'] ?? null) !== null) {
             $qb->setFirstResult((int) $query['_offset']);
         }
 
         // Apply ordering.
-        if (isset($query['_order']) && is_array($query['_order'])) {
+        if (($query['_order'] ?? null) !== null && is_array($query['_order']) === true) {
             foreach ($query['_order'] as $field => $direction) {
-                $columnName = str_starts_with($field, '@self.') ? self::METADATA_PREFIX.substr($field, 6) : $this->sanitizeColumnName($field);
+                $columnName = str_starts_with($field, '@self.') === true ? self::METADATA_PREFIX.substr($field, 6) : $this->sanitizeColumnName($field);
 
                 $qb->addOrderBy($columnName, strtoupper($direction));
             }
@@ -1638,17 +1638,17 @@ class MagicMapper
             $objectData = [];
 
             foreach ($row as $columnName => $value) {
-                if (str_starts_with($columnName, self::METADATA_PREFIX)) {
+                if (str_starts_with($columnName, self::METADATA_PREFIX) === true) {
                     // This is a metadata field.
                     $metadataField = substr($columnName, strlen(self::METADATA_PREFIX));
 
                     // Handle datetime fields.
-                    if (in_array($metadataField, ['created', 'updated', 'published', 'depublished', 'expires']) && $value) {
+                    if (in_array($metadataField, ['created', 'updated', 'published', 'depublished', 'expires'], true) === true && ($value !== null) === true) {
                         $value = new \DateTime($value);
                     }
 
                     // Handle JSON fields.
-                    if (in_array($metadataField, ['files', 'relations', 'locked', 'authorization', 'validation', 'deleted', 'geo', 'retention', 'groups']) && $value) {
+                    if (in_array($metadataField, ['files', 'relations', 'locked', 'authorization', 'validation', 'deleted', 'geo', 'retention', 'groups'], true) === true && ($value !== null) === true) {
                         $value = json_decode($value, true);
                     }
 
@@ -1656,7 +1656,7 @@ class MagicMapper
                 } else {
                     // This is a schema property.
                     // Decode JSON values if they're JSON strings.
-                    if (is_string($value) && $this->isJsonString($value)) {
+                    if (is_string($value) === true && $this->isJsonString($value) === true) {
                         $decodedValue            = json_decode($value, true);
                         $objectData[$columnName] = $decodedValue !== null ? $decodedValue : $value;
                     } else {
@@ -1669,7 +1669,7 @@ class MagicMapper
             foreach ($metadata as $field => $value) {
                 if ($value !== null) {
                     $method = 'set'.ucfirst($field);
-                    if (method_exists($objectEntity, $method)) {
+                    if (method_exists($objectEntity, $method) === true) {
                         $objectEntity->$method($value);
                     }
                 }
@@ -1874,12 +1874,12 @@ class MagicMapper
     {
         foreach ($query as $key => $value) {
             // Skip system parameters.
-            if (str_starts_with($key, '_')) {
+            if (str_starts_with($key, '_') === true) {
                 continue;
             }
 
             // Handle @self metadata filters.
-            if ($key === '@self' && is_array($value)) {
+            if ($key === '@self' && is_array($value) === true) {
                 foreach ($value as $metaField => $metaValue) {
                     $columnName = self::METADATA_PREFIX.$metaField;
                     $this->addWhereCondition($qb, $columnName, $metaValue);
@@ -1907,10 +1907,10 @@ class MagicMapper
      */
     private function addWhereCondition(IQueryBuilder $qb, string $columnName, $value): void
     {
-        if (is_array($value)) {
+        if (is_array($value) === true) {
             // Handle array filters (IN operation).
             $qb->andWhere($qb->expr()->in($columnName, $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY)));
-        } else if (is_string($value) && str_contains($value, '%')) {
+        } else if (is_string($value) === true && str_contains($value, '%') === true) {
             // Handle LIKE operation.
             $qb->andWhere($qb->expr()->like($columnName, $qb->createNamedParameter($value)));
         } else {
@@ -1940,7 +1940,7 @@ class MagicMapper
             $result = $qb->executeQuery();
             $row    = $result->fetch();
 
-            return $row ?: null;
+            return $row === true ?: null;
         } catch (Exception $e) {
             $this->logger->warning(
                     'Failed to find object in register+schema table',
@@ -2135,7 +2135,7 @@ class MagicMapper
 
             // Clear from cache - need to clear by table name pattern.
             foreach (array_keys(self::$tableExistsCache) as $cacheKey) {
-                if (isset(self::$registerSchemaTableCache[$cacheKey])
+                if ((self::$registerSchemaTableCache[$cacheKey] ?? null) !== null
                     && self::$registerSchemaTableCache[$cacheKey] === $tableName
                 ) {
                     $this->invalidateTableCache($cacheKey);
@@ -2232,12 +2232,12 @@ class MagicMapper
             $prefix = self::TABLE_PREFIX;
 
             foreach ($allTables as $tableName) {
-                if (str_starts_with($tableName, $prefix)) {
+                if (str_starts_with($tableName, $prefix) === true) {
                     // Extract register and schema IDs from table name.
                     $suffix = substr($tableName, strlen($prefix));
 
-                    // Expected format: {registerId}_{schemaId}
-                    if (preg_match('/^(\d+)_(\d+)$/', $suffix, $matches)) {
+                    // Expected format: {registerId}_{schemaId}.
+                    if (preg_match('/^(\d+)_(\d+)$/', $suffix, $matches) === 1) {
                         $registerId = (int) $matches[1];
                         $schemaId   = (int) $matches[2];
 
@@ -2291,7 +2291,7 @@ class MagicMapper
         $configuration = $schema->getConfiguration();
 
         // Enable magic mapping if explicitly enabled in schema config.
-        if (isset($configuration['magicMapping']) && $configuration['magicMapping'] === true) {
+        if (($configuration['magicMapping'] ?? null) !== null && $configuration['magicMapping'] === true) {
             return true;
         }
 
@@ -2316,7 +2316,7 @@ class MagicMapper
         // For backward compatibility, just check schema config without register context.
         $configuration = $schema->getConfiguration();
 
-        if (isset($configuration['magicMapping']) && $configuration['magicMapping'] === true) {
+        if (($configuration['magicMapping'] ?? null) !== null && $configuration['magicMapping'] === true) {
             return true;
         }
 

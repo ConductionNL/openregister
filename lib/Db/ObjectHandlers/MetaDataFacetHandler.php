@@ -83,7 +83,7 @@ class MetaDataFacetHandler
         $result  = $queryBuilder->executeQuery();
         $buckets = [];
 
-        while ($row = $result->fetch()) {
+        while (($row = $result->fetch()) !== false) {
             $key   = $row[$actualField];
             $label = $this->getFieldLabel($field, $key);
 
@@ -176,7 +176,7 @@ class MetaDataFacetHandler
         $result  = $queryBuilder->executeQuery();
         $buckets = [];
 
-        while ($row = $result->fetch()) {
+        while (($row = $result->fetch()) !== false) {
             $buckets[] = [
                 'key'     => $row['date_key'],
                 'results' => (int) $row['doc_count'],
@@ -225,11 +225,11 @@ class MetaDataFacetHandler
                 ->where($queryBuilder->expr()->isNotNull($field));
 
             // Apply range conditions.
-            if (isset($range['from'])) {
+            if (($range['from'] ?? null) !== null) {
                 $queryBuilder->andWhere($queryBuilder->expr()->gte($field, $queryBuilder->createNamedParameter($range['from'])));
             }
 
-            if (isset($range['to'])) {
+            if (($range['to'] ?? null) !== null) {
                 $queryBuilder->andWhere($queryBuilder->expr()->lt($field, $queryBuilder->createNamedParameter($range['to'])));
             }
 
@@ -247,11 +247,11 @@ class MetaDataFacetHandler
                 'results' => $count,
             ];
 
-            if (isset($range['from'])) {
+            if (($range['from'] ?? null) !== null) {
                 $bucket['from'] = $range['from'];
             }
 
-            if (isset($range['to'])) {
+            if (($range['to'] ?? null) !== null) {
                 $bucket['to'] = $range['to'];
             }
 
@@ -317,12 +317,12 @@ class MetaDataFacetHandler
         }
 
         // Apply IDs filter if provided.
-        if ($ids !== null && is_array($ids) && !empty($ids)) {
+        if ($ids !== null && is_array($ids) === true && !empty($ids)) {
             $this->applyIdsFilter($queryBuilder, $ids);
         }
 
         // Apply metadata filters from @self.
-        if (isset($baseQuery['@self']) && is_array($baseQuery['@self'])) {
+        if (($baseQuery['@self'] ?? null) !== null && is_array($baseQuery['@self']) === true) {
             $this->applyMetadataFilters($queryBuilder, $baseQuery['@self']);
         }
 
@@ -430,7 +430,7 @@ class MetaDataFacetHandler
 
         // Separate integer IDs from string UUIDs.
         foreach ($ids as $id) {
-            if (is_numeric($id)) {
+            if (is_numeric($id) === true) {
                 $integerIds[] = (int) $id;
             } else {
                 $stringIds[] = (string) $id;
@@ -503,7 +503,7 @@ class MetaDataFacetHandler
             }
 
             // Handle array of values (OR condition).
-            if (isset($value[0]) && !is_string($value[0])) {
+            if (($value[0] ?? null) !== null && is_string($value[0]) === false) {
                 // This is an array of values, not operators.
                 $queryBuilder->andWhere($queryBuilder->expr()->in($field, $queryBuilder->createNamedParameter($value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
                 continue;
@@ -576,7 +576,7 @@ class MetaDataFacetHandler
                         break;
 
                     case 'or':
-                        $values       = is_string($operatorValue) ? array_map('trim', explode(',', $operatorValue)) : $operatorValue;
+                        $values       = is_string($operatorValue) === true ? array_map('trim', explode(',', $operatorValue)) : $operatorValue;
                         $orConditions = $queryBuilder->expr()->orX();
                         foreach ($values as $val) {
                             $orConditions->add(
@@ -642,7 +642,7 @@ class MetaDataFacetHandler
             }
 
             // Handle array of values (OR condition) - backwards compatibility.
-            if (isset($value[0]) && !is_string($value[0])) {
+            if (($value[0] ?? null) !== null && is_string($value[0]) === false) {
                 // This is an array of values, not operators.
                 $orConditions = $queryBuilder->expr()->orX();
                 foreach ($value as $val) {
@@ -887,11 +887,11 @@ class MetaDataFacetHandler
      */
     private function generateRangeKey(array $range): string
     {
-        if (isset($range['from']) && isset($range['to'])) {
+        if (($range['from'] ?? null) !== null && (($range['to'] ?? null) !== null) === true) {
             return $range['from'].'-'.$range['to'];
-        } else if (isset($range['from'])) {
+        } else if (($range['from'] ?? null) !== null) {
             return $range['from'].'+';
-        } else if (isset($range['to'])) {
+        } else if (($range['to'] ?? null) !== null) {
             return '0-'.$range['to'];
         } else {
             return 'all';
@@ -917,7 +917,7 @@ class MetaDataFacetHandler
     private function getFieldLabel(string $field, mixed $value): string
     {
         // For register and schema fields, try to get the actual name from database.
-        if ($field === 'register' && is_numeric($value)) {
+        if ($field === 'register' && is_numeric($value) === true) {
             try {
                 $qb = $this->db->getQueryBuilder();
                 $qb->select('title')
@@ -925,13 +925,13 @@ class MetaDataFacetHandler
                     ->where($qb->expr()->eq('id', $qb->createNamedParameter((int) $value)));
                 $result = $qb->executeQuery();
                 $title  = $result->fetchOne();
-                return $title ? (string) $title : "Register $value";
+                return $title === true ? (string) $title : "Register $value";
             } catch (\Exception $e) {
                 return "Register $value";
             }
         }
 
-        if ($field === 'schema' && is_numeric($value)) {
+        if ($field === 'schema' && is_numeric($value) === true) {
             try {
                 $qb = $this->db->getQueryBuilder();
                 $qb->select('title')
@@ -939,7 +939,7 @@ class MetaDataFacetHandler
                     ->where($qb->expr()->eq('id', $qb->createNamedParameter((int) $value)));
                 $result = $qb->executeQuery();
                 $title  = $result->fetchOne();
-                return $title ? (string) $title : "Schema $value";
+                return $title === true ? (string) $title : "Schema $value";
             } catch (\Exception $e) {
                 return "Schema $value";
             }
@@ -1029,7 +1029,7 @@ class MetaDataFacetHandler
 
         // Check which fields actually have data in the database.
         foreach ($metadataFields as $field => $config) {
-            if ($this->hasFieldData($field, $baseQuery)) {
+            if ($this->hasFieldData($field, $baseQuery) === true) {
                 $fieldConfig = $config;
 
                 // Add sample values for categorical fields.
@@ -1126,7 +1126,7 @@ class MetaDataFacetHandler
         $result  = $queryBuilder->executeQuery();
         $samples = [];
 
-        while ($row = $result->fetch()) {
+        while (($row = $result->fetch()) !== false) {
             $value = $row[$field];
             $label = $this->getFieldLabel($field, $value);
 
@@ -1173,7 +1173,7 @@ class MetaDataFacetHandler
         $result = $queryBuilder->executeQuery();
         $row    = $result->fetch();
 
-        if ($row && $row['min_date'] && $row['max_date']) {
+        if (($row !== false) === true && ($row['min_date'] !== null) === true && ($row['max_date'] !== null) === true) {
             return [
                 'min' => $row['min_date'],
                 'max' => $row['max_date'],

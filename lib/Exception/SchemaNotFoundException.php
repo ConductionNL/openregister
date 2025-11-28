@@ -20,7 +20,6 @@ use Exception;
 /**
  * Exception thrown when a schema cannot be found by slug or ID.
  *
- * @psalm-suppress                 UnusedClass
  * @phpstan-consistent-constructor
  */
 class SchemaNotFoundException extends Exception

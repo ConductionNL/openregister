@@ -144,7 +144,7 @@ class Notifier implements INotifier
         );
 
         // Add action to view the configuration.
-        if (isset($parameters['configurationId']) === true) {
+        if (($parameters['configurationId'] ?? null) !== null) {
             $action = $notification->createAction();
             $action->setLabel($l->t('View'))
                 ->setPrimary(true)

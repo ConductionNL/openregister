@@ -39,7 +39,6 @@ use Psr\Log\LoggerInterface;
  *
  * @package OCA\OpenRegister\Controller
  *
- * @psalm-suppress UnusedClass - This controller is registered via routes.php and used by Nextcloud's routing system
  */
 class ConfigurationController extends Controller
 {
@@ -312,31 +311,31 @@ class ConfigurationController extends Controller
             $data          = $this->request->getParams();
 
             // Update fields if provided.
-            if (isset($data['title']) === true) {
+            if (($data['title'] ?? null) !== null) {
                 $configuration->setTitle($data['title']);
             }
 
-            if (isset($data['description']) === true) {
+            if (($data['description'] ?? null) !== null) {
                 $configuration->setDescription($data['description']);
             }
 
-            if (isset($data['type']) === true) {
+            if (($data['type'] ?? null) !== null) {
                 $configuration->setType($data['type']);
             }
 
-            if (isset($data['sourceType']) === true) {
+            if (($data['sourceType'] ?? null) !== null) {
                 $configuration->setSourceType($data['sourceType']);
             }
 
-            if (isset($data['sourceUrl']) === true) {
+            if (($data['sourceUrl'] ?? null) !== null) {
                 $configuration->setSourceUrl($data['sourceUrl']);
             }
 
-            if (isset($data['app']) === true) {
+            if (($data['app'] ?? null) !== null) {
                 $configuration->setApp($data['app']);
             }
 
-            if (isset($data['version']) === true) {
+            if (($data['version'] ?? null) !== null) {
                 $configuration->setVersion($data['version']);
                 // For local configurations, sync version to localVersion.
                 if ($configuration->getIsLocal() === true) {
@@ -344,39 +343,39 @@ class ConfigurationController extends Controller
                 }
             }
 
-            if (isset($data['localVersion']) === true) {
+            if (($data['localVersion'] ?? null) !== null) {
                 $configuration->setLocalVersion($data['localVersion']);
             }
 
-            if (isset($data['registers']) === true) {
+            if (($data['registers'] ?? null) !== null) {
                 $configuration->setRegisters($data['registers']);
             }
 
-            if (isset($data['schemas']) === true) {
+            if (($data['schemas'] ?? null) !== null) {
                 $configuration->setSchemas($data['schemas']);
             }
 
-            if (isset($data['objects']) === true) {
+            if (($data['objects'] ?? null) !== null) {
                 $configuration->setObjects($data['objects']);
             }
 
-            if (isset($data['autoUpdate']) === true) {
+            if (($data['autoUpdate'] ?? null) !== null) {
                 $configuration->setAutoUpdate($data['autoUpdate']);
             }
 
-            if (isset($data['notificationGroups']) === true) {
+            if (($data['notificationGroups'] ?? null) !== null) {
                 $configuration->setNotificationGroups($data['notificationGroups']);
             }
 
-            if (isset($data['githubRepo']) === true) {
+            if (($data['githubRepo'] ?? null) !== null) {
                 $configuration->setGithubRepo($data['githubRepo']);
             }
 
-            if (isset($data['githubBranch']) === true) {
+            if (($data['githubBranch'] ?? null) !== null) {
                 $configuration->setGithubBranch($data['githubBranch']);
             }
 
-            if (isset($data['githubPath']) === true) {
+            if (($data['githubPath'] ?? null) !== null) {
                 $configuration->setGithubPath($data['githubPath']);
             }
 
@@ -704,13 +703,13 @@ class ConfigurationController extends Controller
     {
         try {
             $data = $this->request->getParams();
-            if (isset($data['page']) === true) {
+            if (($data['page'] ?? null) !== null) {
                 $page = (int) $data['page'];
             } else {
                 $page = 1;
             }
 
-            if (isset($data['per_page']) === true) {
+            if (($data['per_page'] ?? null) !== null) {
                 $perPage = (int) $data['per_page'];
             } else {
                 $perPage = 100;
@@ -1341,7 +1340,7 @@ class ConfigurationController extends Controller
             // Instead, we set the openregister version and GitHub info.
             $githubRepo = "{$owner}/{$repo}";
 
-            if (isset($configData['x-openregister']) === false) {
+            if (!isset($configData['x-openregister'])) {
                 $configData['x-openregister'] = [];
             }
 

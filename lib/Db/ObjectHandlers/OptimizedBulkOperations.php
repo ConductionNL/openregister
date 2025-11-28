@@ -103,7 +103,7 @@ class OptimizedBulkOperations
         // MEMORY OPTIMIZATION: Convert all objects to unified format in memory.
         $allObjects = $this->unifyObjectFormats($insertObjects, $updateObjects);
 
-        if (empty($allObjects)) {
+        if (empty($allObjects) === true) {
             return [];
         }
 
@@ -176,7 +176,7 @@ class OptimizedBulkOperations
      */
     private function processUnifiedChunk(array $objects, int $chunkNumber, int $totalChunks): array
     {
-        if (empty($objects)) {
+        if (empty($objects) === true) {
             return [];
         }
 
@@ -307,8 +307,8 @@ class OptimizedBulkOperations
         unset($parameters, $sql);
 
         // ENHANCED RETURN: Return complete objects with timestamps for precise classification.
-        // If complete objects available, return them; otherwise fallback to UUID array
-        $finalResult = !empty($completeObjects) ? $completeObjects : array_filter($processedUUIDs);
+        // If complete objects available, return them; otherwise fallback to UUID array.
+        $finalResult = !empty($completeObjects) === true ? $completeObjects : array_filter($processedUUIDs);
 
         // DEBUG: Returning bulk operation results.
         return $finalResult;
@@ -371,7 +371,7 @@ class OptimizedBulkOperations
                         if ($dataCol === 'object') {
                             // SPECIAL HANDLING: JSON comparison for object data.
                             $changeChecks[] = "JSON_EXTRACT(`{$dataCol}`, '$') != JSON_EXTRACT(VALUES(`{$dataCol}`), '$')";
-                        } else if (in_array($dataCol, ['files', 'relations', 'authorization', 'validation', 'geo', 'retention', 'groups'])) {
+                        } else if (in_array($dataCol, ['files', 'relations', 'authorization', 'validation', 'geo', 'retention', 'groups']) === true) {
                             // JSON fields comparison.
                             $changeChecks[] = "COALESCE(`{$dataCol}`, '{}') != COALESCE(VALUES(`{$dataCol}`), '{}')";
                         } else {
@@ -413,7 +413,7 @@ class OptimizedBulkOperations
 
         // Add insert objects (already in array format).
         foreach ($insertObjects as $insertObj) {
-            if (is_array($insertObj)) {
+            if (is_array($insertObj) === true) {
                 // Ensure required UUID field only.
                 if (!isset($insertObj['uuid'])) {
                     $insertObj['uuid'] = (string) \Symfony\Component\Uid\Uuid::v4();
@@ -426,7 +426,7 @@ class OptimizedBulkOperations
 
         // Convert update objects to array format using the correct ObjectEntity methods.
         foreach ($updateObjects as $updateObj) {
-            if (is_object($updateObj) && method_exists($updateObj, 'getObjectArray') && method_exists($updateObj, 'getObject')) {
+            if (is_object($updateObj) === true && method_exists($updateObj, 'getObjectArray') === true && method_exists($updateObj, 'getObject') === true) {
                 // Use the proper ObjectEntity methods to get the correct structure directly.
                 $newFormatArray = $updateObj->getObjectArray();
                 // Gets metadata at top level.
@@ -434,11 +434,11 @@ class OptimizedBulkOperations
                 // Gets actual object data.
                 // CRITICAL FIX: Ensure UUID is at top level for proper return value handling.
                 // The UUID might be in getObject() data, so extract it to top level.
-                if (method_exists($updateObj, 'getUuid') && $updateObj->getUuid()) {
+                if (method_exists($updateObj, 'getUuid') === true && $updateObj->getUuid() !== null) {
                     $newFormatArray['uuid'] = $updateObj->getUuid();
-                } else if (isset($newFormatArray['object']['uuid'])) {
+                } else if (($newFormatArray['object']['uuid'] ?? null) !== null) {
                     $newFormatArray['uuid'] = $newFormatArray['object']['uuid'];
-                } else if (isset($newFormatArray['object']['id'])) {
+                } else if (($newFormatArray['object']['id'] ?? null) !== null) {
                     // Fallback: use id field as uuid if no uuid field exists.
                     $newFormatArray['uuid'] = $newFormatArray['object']['id'];
                 }
@@ -505,7 +505,7 @@ class OptimizedBulkOperations
 
         foreach ($validDbColumns as $dbColumn) {
             // Include column if it's in object data or if it's a required metadata field.
-            if (in_array($dbColumn, $objectColumns)) {
+            if (in_array($dbColumn, $objectColumns) === true) {
                 $mappedColumns[] = $dbColumn;
             }
 
@@ -614,7 +614,7 @@ class OptimizedBulkOperations
             case 'name':
                 // SIMPLE METADATA EXTRACTION: Look for 'naam' in object data.
                 $objectContent = $objectData['object'] ?? [];
-                if (is_array($objectContent) && isset($objectContent['naam'])) {
+                if (is_array($objectContent) === true && (($objectContent['naam'] ?? null) !== null)) {
                     return $objectContent['naam'];
                 }
 
