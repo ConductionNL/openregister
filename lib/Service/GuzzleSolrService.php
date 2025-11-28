@@ -1664,7 +1664,7 @@ class GuzzleSolrService
                     );
 
             foreach ($schemaProperties as $fieldName => $fieldDefinition) {
-                if (!isset($objectData[$fieldName])) {
+                if (isset($objectData[$fieldName]) === false) {
                     continue;
                 }
 
@@ -1940,7 +1940,7 @@ class GuzzleSolrService
                 $index     = $parts[1];
 
                 // Initialize array if not exists.
-                if (!isset($arrays[$fieldName])) {
+                if (isset($arrays[$fieldName]) === false) {
                     $arrays[$fieldName] = [];
                 }
 
@@ -2359,8 +2359,10 @@ class GuzzleSolrService
         // Test SOLR connection.
         if ($this->isAvailable() === false) {
             $connectionTest = $this->testConnection();
+            // Connection test may return 'error' key or other structure.
+            $errorMessage = (is_array($connectionTest) && isset($connectionTest['error'])) ? $connectionTest['error'] : 'Unknown connection error';
             throw new \Exception(
-                'SOLR service is not available. Connection test failed: '.($connectionTest['error'] ?? 'Unknown connection error').'. Please verify that SOLR is running and accessible at the configured URL.'
+                'SOLR service is not available. Connection test failed: '.$errorMessage.'. Please verify that SOLR is running and accessible at the configured URL.'
             );
         }
 
@@ -4789,7 +4791,8 @@ class GuzzleSolrService
     private function testZookeeperConnection(): array
     {
         try {
-            $zookeeperHosts = $this->solrConfig['zookeeperHosts'] ?? 'zookeeper:2181';
+            // solrConfig may contain additional keys not in type definition.
+            $zookeeperHosts = (is_array($this->solrConfig) && isset($this->solrConfig['zookeeperHosts'])) ? $this->solrConfig['zookeeperHosts'] : 'zookeeper:2181';
             $hosts          = explode(',', $zookeeperHosts);
 
             $successfulHosts = [];
@@ -5622,8 +5625,9 @@ class GuzzleSolrService
 
         try {
             // Get both objectCollection and fileCollection from settings.
-            $objectCollection = $this->solrConfig['objectCollection'] ?? null;
-            $fileCollection   = $this->solrConfig['fileCollection'] ?? null;
+            // solrConfig may contain additional keys not in type definition.
+            $objectCollection = (is_array($this->solrConfig) && isset($this->solrConfig['objectCollection'])) ? $this->solrConfig['objectCollection'] : null;
+            $fileCollection   = (is_array($this->solrConfig) && isset($this->solrConfig['fileCollection'])) ? $this->solrConfig['fileCollection'] : null;
 
             // Fallback to legacy collection if new collections are not configured.
             if (($this->solrConfig['collection'] ?? null) !== null) {
@@ -7578,7 +7582,7 @@ class GuzzleSolrService
         }
 
         // If field doesn't exist in SOLR, it will be auto-created (allow).
-        if (!isset($solrFieldTypes[$fieldName])) {
+        if (isset($solrFieldTypes[$fieldName]) === false) {
             $this->logger->debug(
                     'Field not in SOLR schema, will be auto-created',
                     [
@@ -8242,7 +8246,7 @@ class GuzzleSolrService
             $this->logger->info(message: '🗑️ Clearing current SOLR index');
             $clearResult = $this->clearIndex($targetCollection);
 
-            if (!isset($clearResult['success']) === false || $clearResult['success'] === false) {
+            if (isset($clearResult['success']) === false || $clearResult['success'] === false) {
                 if (($clearResult['error'] ?? null) !== null) {
                     $error = $clearResult['error'];
                 } else {
@@ -8542,7 +8546,7 @@ class GuzzleSolrService
                 }
 
                 // Only add truly missing fields.
-                if (!isset($currentFields[$fieldName])) {
+                if (isset($currentFields[$fieldName]) === false) {
                     $fieldsToProcess[$fieldName] = $fieldConfig;
                     $this->logger->debug(message: "Field '{$fieldName}' is missing and will be created");
                 }
@@ -8776,7 +8780,7 @@ class GuzzleSolrService
             $response   = $this->httpClient->get($schemaUrl, $requestOptions);
             $schemaData = json_decode($response->getBody()->getContents(), true);
 
-            if (($schemaData === null || $schemaData === false) === true || !isset($schemaData['schema'])) {
+            if (($schemaData === null || $schemaData === false) === true || isset($schemaData['schema']) === false) {
                 return [
                     'success' => false,
                     'message' => 'Invalid schema response from SOLR',
@@ -9301,7 +9305,7 @@ class GuzzleSolrService
 
             $schemaData = json_decode($response->getBody()->getContents(), true);
 
-            if (!isset($schemaData['fields']) === false || is_array($schemaData['fields']) === false) {
+            if (isset($schemaData['fields']) === false || is_array($schemaData['fields']) === false) {
                 throw new \Exception('Invalid schema response from SOLR');
             }
 
@@ -9326,7 +9330,7 @@ class GuzzleSolrService
                             );
                 }
 
-                if (!isset($field['name']) === false || !isset($field['docValues']) === false || $field['docValues'] !== true) {
+                if (isset($field['name']) === false || isset($field['docValues']) === false || $field['docValues'] !== true) {
                     continue;
                     // Skip fields without docValues.
                 }
@@ -9426,7 +9430,7 @@ class GuzzleSolrService
 
             $schemaData = json_decode($response->getBody()->getContents(), true);
 
-            if (!isset($schemaData['fields']) === false || is_array($schemaData['fields']) === false) {
+            if (isset($schemaData['fields']) === false || is_array($schemaData['fields']) === false) {
                 throw new \Exception('Invalid schema response from SOLR');
             }
 
@@ -9440,7 +9444,7 @@ class GuzzleSolrService
                 $fieldName = $field['name'] ?? 'unknown';
 
                 // Only include fields that have docValues (facetable).
-                if (!isset($field['name']) === false || !isset($field['docValues']) === false || $field['docValues'] !== true) {
+                if (isset($field['name']) === false || isset($field['docValues']) === false || $field['docValues'] !== true) {
                     continue;
                 }
 
@@ -9691,7 +9695,7 @@ class GuzzleSolrService
         ];
 
         // If there are no results, return empty facets.
-        if (!isset($solrResponse['response']['docs']) === false || empty($solrResponse['response']['docs']) === true) {
+        if (isset($solrResponse['response']['docs']) === false || empty($solrResponse['response']['docs']) === true) {
             return $contextualData;
         }
 
@@ -9702,7 +9706,7 @@ class GuzzleSolrService
         $sampleSize = min(10, count($docs));
         for ($i = 0; $i < $sampleSize; $i++) {
             foreach ($docs[$i] as $fieldName => $fieldValue) {
-                if (!isset($fieldsFound[$fieldName])) {
+                if (isset($fieldsFound[$fieldName]) === false) {
                     $fieldsFound[$fieldName] = [];
                 }
 
@@ -9942,7 +9946,7 @@ class GuzzleSolrService
                 throw new \Exception('Failed to decode SOLR JSON response: '.json_last_error_msg());
             }
 
-            if (!isset($data['facets'])) {
+            if (isset($data['facets']) === false) {
                 $this->logger->error(
                         'SOLR response missing facets key for contextual facets',
                         [
@@ -10380,7 +10384,7 @@ class GuzzleSolrService
                 )
             );
 
-            if (!isset($data['facets'])) {
+            if (isset($data['facets']) === false) {
                 // Log the full response for debugging.
                 $this->logger->error(
                 'SOLR response missing facets key',
@@ -11555,7 +11559,7 @@ class GuzzleSolrService
             $response   = $this->httpClient->get($clusterUrl, ['timeout' => 30]);
             $data       = json_decode((string) $response->getBody(), true);
 
-            if (!isset($data['cluster']['collections'])) {
+            if (isset($data['cluster']['collections']) === false) {
                 $this->logger->warning(message: 'No collections found in cluster status');
                 return [];
             }
@@ -11666,7 +11670,7 @@ class GuzzleSolrService
             $response      = $this->httpClient->get($configSetsUrl, ['timeout' => 10]);
             $data          = json_decode((string) $response->getBody(), true);
 
-            if (!isset($data['configSets'])) {
+            if (isset($data['configSets']) === false) {
                 $this->logger->warning(message: 'No ConfigSets found');
                 return [];
             }
@@ -12385,7 +12389,7 @@ class GuzzleSolrService
      */
     private function getSelfRelationsType(array $document): string
     {
-        if (!isset($document['self_relations'])) {
+        if (isset($document['self_relations']) === false) {
             return 'NOT_SET';
         }
 
@@ -12412,7 +12416,7 @@ class GuzzleSolrService
      */
     private function getSelfRelationsCount(array $document): int
     {
-        if (!isset($document['self_relations'])) {
+        if (isset($document['self_relations']) === false) {
             return 0;
         }
 
@@ -12576,7 +12580,7 @@ class GuzzleSolrService
      */
     private function getFacetKeys(array $data): array
     {
-        if (!isset($data['facets']) === false || is_array($data['facets']) === false) {
+        if (isset($data['facets']) === false || is_array($data['facets']) === false) {
             return [];
         }
 

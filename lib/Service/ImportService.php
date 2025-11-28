@@ -1046,11 +1046,13 @@ class ImportService
     {
         // Use instance cache instead of static to prevent issues between requests.
         $schemaId = $schema->getId();
+        // Ensure schemaId is string for array key.
+        $schemaIdKey = is_string($schemaId) ? $schemaId : (string) $schemaId;
 
-        if (!isset($this->schemaPropertiesCache[$schemaId])) {
-            $this->schemaPropertiesCache[$schemaId] = $schema->getProperties();
+        if (!isset($this->schemaPropertiesCache[$schemaIdKey])) {
+            $this->schemaPropertiesCache[$schemaIdKey] = $schema->getProperties();
         }
-        $schemaProperties = $this->schemaPropertiesCache[$schemaId];
+        $schemaProperties = $this->schemaPropertiesCache[$schemaIdKey];
 
         // Pre-allocate arrays for better performance.
         $objectData = [];

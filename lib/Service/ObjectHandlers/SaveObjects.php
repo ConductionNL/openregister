@@ -701,13 +701,13 @@ class SaveObjects
         // Optimized for 33k+ object datasets.
         if ($totalObjects <= 100) {
 // Process all at once for small sets.
-        } elseif ($totalObjects <= 1000) {
+        } else if ($totalObjects <= 1000) {
 // Process all at once for medium sets.
-        } elseif ($totalObjects <= 5000) {
+        } else if ($totalObjects <= 5000) {
 // Large chunks for large sets.
-        } elseif ($totalObjects <= 10000) {
+        } else if ($totalObjects <= 10000) {
 // Very large chunks.
-        } elseif ($totalObjects <= 50000) {
+        } else if ($totalObjects <= 50000) {
 // Ultra-large chunks for massive datasets.
         } else {
 // Maximum chunk size for huge datasets.
@@ -756,6 +756,7 @@ class SaveObjects
             $schemaId = $selfData['schema'] ?? null;
             if (($schemaId !== null) === true && in_array($schemaId, $schemaIds, true) === false) {
                 $schemaIds[] = $schemaId;
+            }
             }
         }
 
@@ -844,7 +845,7 @@ class SaveObjects
                         'publishedFromCsv' => false
                     ]);
                     $tempEntity->setPublished(new DateTime());
-                } elseif ($publishedFromCsv === true) {
+                } else if ($publishedFromCsv === true) {
                     $this->logger->debug('Skipping auto-publish - published date provided from CSV (mixed schema)', [
                         'schema' => $schema->getTitle(),
                         'publishedFromCsv' => true,
@@ -1061,7 +1062,7 @@ class SaveObjects
                             'publishedFromCsv' => false
                         ]);
                         $tempEntity->setPublished(new DateTime());
-                    } elseif ($publishedFromCsv === true) {
+                    } else if ($publishedFromCsv === true) {
                         $this->logger->debug('Skipping auto-publish - published date provided from CSV', [
                             'schema' => $schemaObj->getTitle(),
                             'publishedFromCsv' => true,
@@ -1274,7 +1275,7 @@ class SaveObjects
         */
 
         // PERFORMANCE OPTIMIZATION: Batch error processing.
-        if (!empty($transformationResult['invalid'])) {
+        if (empty($transformationResult['invalid']) === false) {
             $invalidCount = count($transformationResult['invalid']);
             $result['invalid'] = array_merge($result['invalid'], $transformationResult['invalid']);
             $result['statistics']['invalid'] += $invalidCount;
@@ -1420,7 +1421,7 @@ class SaveObjects
         }
 
         // STEP 6: ENHANCED OBJECT RESPONSE - Use pre-classified objects or reconstruct.
-        if (!empty($reconstructedObjects)) {
+        if (empty($reconstructedObjects) === false) {
             // NEW APPROACH: Use already reconstructed objects from timestamp classification.
             $savedObjects = $reconstructedObjects;
 
@@ -1507,7 +1508,7 @@ class SaveObjects
                 $registerId = $selfData['register'] ?? null;
                 $schemaId = $selfData['schema'] ?? null;
 
-                if (!$registerId || !$schemaId) {
+                if (($registerId === false || $registerId === null) === true || ($schemaId === false || $schemaId === null) === true) {
                     $result['invalid'][] = [
                         'object' => $object,
                         'error'  => 'Missing register or schema in @self section',
@@ -1751,7 +1752,7 @@ class SaveObjects
 
             // PERFORMANCE OPTIMIZATION: Use pre-analyzed inverse properties.
             foreach ($analysis['inverseProperties'] as $property => $propertyInfo) {
-                if (!isset($object[$property])) {
+                if (isset($object[$property]) === false) {
                     continue;
                 }
 
@@ -1905,7 +1906,7 @@ class SaveObjects
             }
 
             // VALIDATION FIX: Verify schema exists in cache (validates schema exists in database).
-            if (!isset($schemaCache[$selfData['schema']])) {
+            if (isset($schemaCache[$selfData['schema']]) === false) {
                 $invalidObjects[] = [
                     'object' => $object,
                     'error'  => "Schema ID {$selfData['schema']} does not exist or could not be loaded",
@@ -2018,7 +2019,7 @@ class SaveObjects
         foreach ($objects as $index => $objectData) {
             $schemaId = $objectData['schema'] ?? null;
 
-            if (!$schemaId || !isset($schemaCache[$schemaId])) {
+            if (($schemaId === false || $schemaId === null) === true || isset($schemaCache[$schemaId]) === false) {
                 $invalidObjects[] = [
                     'object' => $objectData,
                     'error'  => 'Schema not found: '.$schemaId,
@@ -2532,7 +2533,7 @@ class SaveObjects
 
             // Process inverse relations for this object.
             foreach ($analysis['inverseProperties'] as $propertyName => $inverseConfig) {
-                if (!isset($objectData[$propertyName])) {
+                if (isset($objectData[$propertyName]) === false) {
                     continue;
                 }
 
@@ -2565,7 +2566,7 @@ class SaveObjects
         // Second pass: process inverse relations with proper context.
         $writeBackOperations = [];
         foreach ($savedObjects as $index => $savedObject) {
-            if (!isset($objectRelationsMap[$index])) {
+            if (isset($objectRelationsMap[$index]) === false) {
                 continue;
             }
 
@@ -2580,7 +2581,7 @@ class SaveObjects
 
             // Build writeBack operations with full context.
             foreach ($analysis['inverseProperties'] as $propertyName => $inverseConfig) {
-                if (!isset($objectData[$propertyName]) === false || !$inverseConfig['writeBack']) {
+                if (isset($objectData[$propertyName]) === false || ($inverseConfig['writeBack'] === false) === true) {
                     continue;
                 }
 
@@ -2637,7 +2638,7 @@ class SaveObjects
             $objectData = $targetObject->getObject();
 
             // Initialize inverse property array if it doesn't exist.
-            if (!isset($objectData[$inverseProperty])) {
+            if (isset($objectData[$inverseProperty]) === false) {
                 $objectData[$inverseProperty] = [];
             }
 
@@ -2796,7 +2797,7 @@ class SaveObjects
                                 schema: $schema
                             );
                             $relations     = array_merge($relations, $itemRelations);
-                        } elseif (is_string($item) === true && empty($item) === false) {
+                        } else if (is_string($item) === true && empty($item) === false) {
                             // String values in object arrays are always treated as relations.
                             $relations[$currentPath.'.'.$index] = $item;
                         }
@@ -2812,7 +2813,7 @@ class SaveObjects
                                 schema: $schema
                             );
                             $relations = array_merge($relations, $itemRelations);
-                        } elseif (is_string($item) === true && empty($item) === false && trim($item) !== '') {
+                        } else if (is_string($item) === true && empty($item) === false && trim($item) !== '') {
                             // Check if the string looks like a reference.
                             if ($this->isReference($item) === true) {
                                 $relations[$currentPath.'.'.$index] = $item;
@@ -2820,7 +2821,7 @@ class SaveObjects
                         }
                     }
                 }
-            } elseif (is_string($value) === true && empty($value) === false && trim($value) !== '') {
+            } else if (is_string($value) === true && empty($value) === false && trim($value) !== '') {
                 $shouldTreatAsRelation = false;
 
                 // Check schema property configuration first.
@@ -2903,8 +2904,4 @@ class SaveObjects
             }
         }
 
-        return false;
-    }//end isReference()
-
-
-}//end class
+        ret

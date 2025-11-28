@@ -87,7 +87,7 @@ class ConfigurationService
     /**
      * OpenConnector service instance for handling OpenConnector operations.
      *
-     * @var OCA\OpenConnector\Service\ConfigurationService The OpenConnector service instance.
+     * @var \OCA\OpenConnector\Service\ConfigurationService The OpenConnector service instance.
      */
     private $openConnectorConfigurationService;
 
