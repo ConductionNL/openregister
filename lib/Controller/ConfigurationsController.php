@@ -34,7 +34,6 @@ use Symfony\Component\Uid\Uuid;
  * Class ConfigurationController
  *
  * @package OCA\OpenRegister\Controller
- *
  */
 class ConfigurationsController extends Controller
 {
@@ -327,7 +326,7 @@ class ConfigurationsController extends Controller
             }
 
             // Import the data.
-            $force = $this->request->getParam('force') === 'true' || $this->request->getParam('force') === true;
+            $force  = $this->request->getParam('force') === 'true' || $this->request->getParam('force') === true;
             $result = $this->configurationService->importFromJson(
                 data: $jsonData,
                 configuration: null,

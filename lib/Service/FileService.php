@@ -534,7 +534,7 @@ class FileService
 
         $registerFolder = $this->createRegisterFolderById(register: $register, currentUser: $currentUser);
 
-        if ($registerFolder === null) {
+        if ($registerFolder === null || !($registerFolder instanceof Folder)) {
             throw new Exception("Failed to create or access register folder");
         }
 
@@ -655,7 +655,7 @@ class FileService
         if ($sharedFilesOnly === true) {
             $files = array_filter($files, function ($file) {
                 $shares = $this->findShares($file);
-                return !empty($shares);
+                return empty($shares) === false;
             });
         }
 
@@ -950,7 +950,7 @@ class FileService
             // Try to read the file to trigger any potential access issues.
             if ($file instanceof File) {
                 $file->getContent();
-            } else {
+            } else if ($file instanceof Folder) {
                 // For folders, try to list contents.
                 $file->getDirectoryListing();
             }
@@ -1231,7 +1231,7 @@ class FileService
             $labels = $requestParams['labels'];
             if (is_string($labels) === true) {
                 $filters['labels'] = array_map('trim', explode(',', $labels));
-            } elseif (is_array($labels) === true) {
+            } else if (is_array($labels) === true) {
                 $filters['labels'] = $labels;
             }
         }
@@ -1299,7 +1299,7 @@ class FileService
         return array_filter($formattedFiles, function (array $file) use ($filters): bool {
             // Filter by label presence (business logic filter).
             if (($filters['_hasLabels'] ?? null) !== null) {
-                $hasLabels = !empty($file['labels']);
+                $hasLabels = empty($file['labels']) === false;
                 if ($filters['_hasLabels'] !== $hasLabels) {
                     return false;
                 }
@@ -1407,7 +1407,7 @@ class FileService
             objIds: [$fileId],
             objectType: $this::FILE_TAG_TYPE
         );
-        if (!isset($tagIds[$fileId]) === false || empty($tagIds[$fileId]) === true) {
+        if (isset($tagIds[$fileId]) === false || empty($tagIds[$fileId]) === true) {
             return [];
         }
 
@@ -1636,7 +1636,10 @@ class FileService
                 $this->logger->info(message: "Transferring ownership of file {$file->getName()} from {$currentUserId} to {$openRegisterUserId}");
 
                 // Change file ownership to OpenRegister user.
-                $file->getStorage()->chown($file->getInternalPath(), $openRegisterUserId);
+                $storage = $file->getStorage();
+                if (method_exists($storage, 'chown') === true) {
+                    $storage->chown($file->getInternalPath(), $openRegisterUserId);
+                }
 
                 // Create a share with the current user to maintain access.
                 $this->shareFileWithUser(file: $file, userId: $currentUserId);
@@ -1743,7 +1746,10 @@ class FileService
                 $this->logger->info(message: "Transferring ownership of folder {$folder->getName()} from {$currentUserId} to {$openRegisterUserId}");
 
                 // Change folder ownership to OpenRegister user.
-                $folder->getStorage()->chown($folder->getInternalPath(), $openRegisterUserId);
+                $storage = $folder->getStorage();
+                if (method_exists($storage, 'chown') === true) {
+                    $storage->chown($folder->getInternalPath(), $openRegisterUserId);
+                }
 
                 // Create a share with the current user to maintain access.
                 $this->shareFolderWithUser(folder: $folder, userId: $currentUserId);
@@ -1944,7 +1950,7 @@ class FileService
                 try {
                     $userFolder = $this->getOpenRegisterUserFolder();
                     $nodes = $userFolder->getById($filePath);
-                    if (!empty($nodes)) {
+                    if (empty($nodes) === false) {
                         $file = $nodes[0];
                         $this->logger->info(message: "updateFile: Found file by ID in user folder: " . $file->getName() . " (ID: " . $file->getId() . ")");
                     } else {
@@ -2031,7 +2037,7 @@ class FileService
 
                     try {
                         $nodes = $userFolder->getById($fileId);
-                        if (!empty($nodes)) {
+                        if (empty($nodes) === false) {
                             $file = $nodes[0];
                             $this->logger->info(message: "updateFile: Found file by ID $fileId: " . $file->getName() . " at path: " . $file->getPath());
                         } else {
@@ -2053,7 +2059,7 @@ class FileService
         }
 
         // Update the file content if provided and content is not equal to the current content.
-        if ($content !== null && $file->hash(type: 'md5') !== md5(string: $content)) {
+        if ($content !== null && $file instanceof File && $file->hash(type: 'md5') !== md5(string: $content)) {
                 try {
 					// Check if the content is base64 encoded and decode it if necessary.
 					if (base64_encode(base64_decode($content, true)) === $content) {
@@ -2262,7 +2268,7 @@ class FileService
     {
         // Get all existing tags for the file and convert to array of just the IDs.
         $oldTagIds = $this->systemTagMapper->getTagIdsForObjects(objIds: [$fileId], objectType: $this::FILE_TAG_TYPE);
-        if (!isset($oldTagIds[$fileId]) === false || empty($oldTagIds[$fileId]) === true) {
+        if (isset($oldTagIds[$fileId]) === false || empty($oldTagIds[$fileId]) === true) {
             $oldTagIds = [];
         } else {
             $oldTagIds = $oldTagIds[$fileId];
@@ -2588,7 +2594,7 @@ class FileService
     {
 
         // If string ID provided for object, try to find the object entity.
-        if (is_string($object) === true && !empty($object)) {
+        if (is_string($object) === true && empty($object) === false) {
             $object = $this->objectEntityMapper->find($object);
         }
 
@@ -2601,7 +2607,7 @@ class FileService
             // Try to get the file by ID.
             try {
                 $nodes = $folder->getById((int)$file);
-                if (!empty($nodes) === true && $nodes[0] instanceof File) {
+                if (empty($nodes) === false && $nodes[0] instanceof File) {
                     $fileNode = $nodes[0];
                     // Check ownership for NextCloud rights issues.
                     $this->checkOwnership($fileNode);
@@ -2680,7 +2686,7 @@ class FileService
             $node = $nodes[0];
 
             // Ensure it's a file, not a folder.
-            if (!($node instanceof File)) {
+            if (($node instanceof File) === false) {
                 return null;
             }
 
@@ -3185,7 +3191,7 @@ class FileService
                             continue;
                         }
                         $file = $userFolder->getById($fileIdInt);
-                        if (!empty($file)) {
+                        if (empty($file) === false) {
                             $files = array_merge($files, $file);
                         }
                     } catch (NotFoundException) {
@@ -3312,7 +3318,7 @@ class FileService
             $this->logger->info(message: "testFileLookup: Testing object folder listing for object " . $object->getId());
             $objectFiles = $this->debugListObjectFiles($object);
             $results['tests']['object_folder_listing'] = [
-                'success' => !empty($objectFiles),
+                'success' => empty($objectFiles) === false,
                 'file_count' => count($objectFiles),
                 'files' => $objectFiles
             ];
@@ -3374,7 +3380,7 @@ class FileService
                 // Test user folder ID lookup.
                 try {
                     $nodes = $userFolder->getById($fileId);
-                    if (!empty($nodes)) {
+                    if (empty($nodes) === false) {
                         $foundById = true;
                     }
                 } catch (\Exception $e) {
@@ -3455,7 +3461,7 @@ class FileService
         }
 
         // Check magic bytes (file signatures) in content.
-        if (!empty($fileContent)) {
+        if (empty($fileContent) === false) {
             $this->detectExecutableMagicBytes(content: $fileContent, fileName: $fileName);
         }
     }//end blockExecutableFile()
@@ -3546,7 +3552,7 @@ class FileService
         $register = $this->registerMapper->find($objectEntity->getRegister());
         $registerFolder = $this->createRegisterFolderById(register: $register, currentUser: $currentUser);
 
-        if ($registerFolder === null) {
+        if ($registerFolder === null || !($registerFolder instanceof Folder)) {
             throw new Exception("Failed to create or access register folder");
         }
 
@@ -3648,8 +3654,13 @@ class FileService
                 $stime = $share->getShareTime();
                 if ($stime !== null) {
                     // getShareTime() returns DateTime|null, convert to timestamp.
-                    $timestamp = $stime instanceof \DateTime ? $stime->getTimestamp() : (int) $stime;
-                    return (new DateTime())->setTimestamp($timestamp)->format('c');
+                    // getShareTime() always returns DateTime|null, so use getTimestamp().
+                    if ($stime instanceof \DateTime) {
+                        $timestamp = $stime->getTimestamp();
+                        return (new DateTime())->setTimestamp($timestamp)->format('c');
+                    }
+                    // If somehow not a DateTime (shouldn't happen), return current time.
+                    return (new DateTime())->format('c');
                 }
             }
         }

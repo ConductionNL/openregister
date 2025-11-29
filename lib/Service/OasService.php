@@ -150,7 +150,7 @@ class OasService
             $sanitizedSchemaName = $this->sanitizeSchemaName($schemaTitle);
 
             // Validate schema definition before adding.
-            if (!empty($schemaDefinition) === true && is_array($schemaDefinition) === true) {
+            if (empty($schemaDefinition) === false && is_array($schemaDefinition) === true) {
                 $this->oas['components']['schemas'][$sanitizedSchemaName] = $schemaDefinition;
 
                 // Add tag for the schema (keep original title for display).
@@ -283,7 +283,7 @@ class OasService
     private function sanitizePropertyDefinition($propertyDefinition): array
     {
         // If it's not an array, convert to basic string type.
-        if (!is_array($propertyDefinition)) {
+        if (is_array($propertyDefinition) === false) {
             return [
                 'type' => 'string',
                 'description' => 'Property value',
@@ -357,12 +357,12 @@ class OasService
         }
 
         // Ensure we have at least a type.
-        if (!isset($cleanDef['type']) === false && !isset($cleanDef['$ref'])) {
+        if (isset($cleanDef['type']) === false && isset($cleanDef['$ref']) === false) {
             $cleanDef['type'] = 'string';
         }
 
         // Add basic description if missing.
-        if (!isset($cleanDef['description']) === false && !isset($cleanDef['$ref'])) {
+        if (isset($cleanDef['description']) === false && isset($cleanDef['$ref']) === false) {
             $cleanDef['description'] = 'Property value';
         }
 
@@ -1261,17 +1261,17 @@ class OasService
     {
         // Check allOf constructs.
         if (($schema['allOf'] ?? null) !== null) {
-            if (!is_array($schema['allOf']) === true || empty($schema['allOf']) === true) {
+            if (is_array($schema['allOf']) === false || empty($schema['allOf']) === true) {
                 unset($schema['allOf']);
             } else {
                 $validAllOfItems = [];
                 foreach ($schema['allOf'] as $index => $item) {
-                    if (!is_array($item) === true || empty($item) === true) {
+                    if (is_array($item) === false || empty($item) === true) {
                     } else {
                         // Validate each allOf item has required structure.
                         if (($item['$ref'] ?? null) !== null && empty($item['$ref']) === false && is_string($item['$ref']) === true) {
                             $validAllOfItems[] = $item;
-                        } elseif (($item['type'] ?? null) !== null || (($item['properties'] ?? null) !== null) === true) {
+                        } else if (($item['type'] ?? null) !== null || (($item['properties'] ?? null) !== null) === true) {
                             $validAllOfItems[] = $item;
                         } else {
                         }
@@ -1289,13 +1289,13 @@ class OasService
 
         // Check $ref validity.
         if (($schema['$ref'] ?? null) !== null) {
-            if (empty($schema['$ref']) === true || !is_string($schema['$ref'])) {
+            if (empty($schema['$ref']) === true || is_string($schema['$ref']) === false) {
                 unset($schema['$ref']);
             } else {
                 // Check if reference points to existing schema.
                 $refPath = str_replace('#/components/schemas/', '', $schema['$ref']);
                 if (strpos($schema['$ref'], '#/components/schemas/') === 0 &&
-                    !isset($this->oas['components']['schemas'][$refPath])) {
+                    isset($this->oas['components']['schemas'][$refPath]) === false) {
                 }
             }
         }

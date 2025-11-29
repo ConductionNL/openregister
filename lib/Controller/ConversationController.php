@@ -42,7 +42,6 @@ use Symfony\Component\Uid\Uuid;
  *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
- *
  */
 class ConversationController extends Controller
 {

@@ -42,7 +42,6 @@ use Psr\Log\LoggerInterface;
  * - Comprehensive logging and error handling
  * - Performance metrics tracking
  * - Automatic cleanup after execution
- *
  */
 class SolrWarmupJob extends QueuedJob
 {
@@ -67,7 +66,6 @@ class SolrWarmupJob extends QueuedJob
      *                        - triggeredBy: What triggered this warmup (default: 'unknown')
      *
      * @return void
-     *
      */
     protected function run($argument): void
     {

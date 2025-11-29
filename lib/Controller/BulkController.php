@@ -31,7 +31,6 @@ use Exception;
 
 /**
  * Bulk operations controller for OpenRegister
- *
  */
 class BulkController extends Controller
 {
@@ -91,7 +90,7 @@ class BulkController extends Controller
     {
         try {
             // Check if user is admin.
-            if (!$this->isCurrentUserAdmin()) {
+            if ($this->isCurrentUserAdmin() === false) {
                 return new JSONResponse(data: ['error' => 'Insufficient permissions. Admin access required.'], statusCode: Http::STATUS_FORBIDDEN);
             }
 
@@ -100,7 +99,7 @@ class BulkController extends Controller
             $uuids = $data['uuids'] ?? [];
 
             // Validate input.
-            if (empty($uuids) === true || !is_array($uuids)) {
+            if (empty($uuids) === true || is_array($uuids) === false) {
                 return new JSONResponse(data: ['error' => 'Invalid input. "uuids" array is required.'], statusCode: Http::STATUS_BAD_REQUEST);
             }
 
@@ -142,7 +141,7 @@ class BulkController extends Controller
     {
         try {
             // Check if user is admin.
-            if (!$this->isCurrentUserAdmin()) {
+            if ($this->isCurrentUserAdmin() === false) {
                 return new JSONResponse(data: ['error' => 'Insufficient permissions. Admin access required.'], statusCode: Http::STATUS_FORBIDDEN);
             }
 
@@ -152,7 +151,7 @@ class BulkController extends Controller
             $datetime = $data['datetime'] ?? true;
 
             // Validate input.
-            if (empty($uuids) === true || !is_array($uuids)) {
+            if (empty($uuids) === true || is_array($uuids) === false) {
                 return new JSONResponse(data: ['error' => 'Invalid input. "uuids" array is required.'], statusCode: Http::STATUS_BAD_REQUEST);
             }
 
@@ -207,7 +206,7 @@ class BulkController extends Controller
     {
         try {
             // Check if user is admin.
-            if (!$this->isCurrentUserAdmin()) {
+            if ($this->isCurrentUserAdmin() === false) {
                 return new JSONResponse(data: ['error' => 'Insufficient permissions. Admin access required.'], statusCode: Http::STATUS_FORBIDDEN);
             }
 
@@ -217,7 +216,7 @@ class BulkController extends Controller
             $datetime = $data['datetime'] ?? true;
 
             // Validate input.
-            if (empty($uuids) === true || !is_array($uuids)) {
+            if (empty($uuids) === true || is_array($uuids) === false) {
                 return new JSONResponse(data: ['error' => 'Invalid input. "uuids" array is required.'], statusCode: Http::STATUS_BAD_REQUEST);
             }
 
@@ -272,7 +271,7 @@ class BulkController extends Controller
     {
         try {
             // Check if user is admin.
-            if (!$this->isCurrentUserAdmin()) {
+            if ($this->isCurrentUserAdmin() === false) {
                 return new JSONResponse(data: ['error' => 'Insufficient permissions. Admin access required.'], statusCode: Http::STATUS_FORBIDDEN);
             }
 
@@ -281,7 +280,7 @@ class BulkController extends Controller
             $objects = $data['objects'] ?? [];
 
             // Validate input.
-            if (empty($objects) === true || !is_array($objects)) {
+            if (empty($objects) === true || is_array($objects) === false) {
                 return new JSONResponse(data: ['error' => 'Invalid input. "objects" array is required.'], statusCode: Http::STATUS_BAD_REQUEST);
             }
 
@@ -349,12 +348,12 @@ class BulkController extends Controller
     {
         try {
             // Check if user is admin.
-            if (!$this->isCurrentUserAdmin()) {
+            if ($this->isCurrentUserAdmin() === false) {
                 return new JSONResponse(data: ['error' => 'Insufficient permissions. Admin access required.'], statusCode: Http::STATUS_FORBIDDEN);
             }
 
             // Validate input.
-            if (!is_numeric($schema)) {
+            if (is_numeric($schema) === false) {
                 return new JSONResponse(data: ['error' => 'Invalid schema ID. Must be numeric.'], statusCode: Http::STATUS_BAD_REQUEST);
             }
 
@@ -400,12 +399,12 @@ class BulkController extends Controller
     {
         try {
             // Check if user is admin.
-            if (!$this->isCurrentUserAdmin()) {
+            if ($this->isCurrentUserAdmin() === false) {
                 return new JSONResponse(data: ['error' => 'Insufficient permissions. Admin access required.'], statusCode: Http::STATUS_FORBIDDEN);
             }
 
             // Validate input.
-            if (!is_numeric($schema)) {
+            if (is_numeric($schema) === false) {
                 return new JSONResponse(data: ['error' => 'Invalid schema ID. Must be numeric.'], statusCode: Http::STATUS_BAD_REQUEST);
             }
 
@@ -450,12 +449,12 @@ class BulkController extends Controller
     {
         try {
             // Check if user is admin.
-            if (!$this->isCurrentUserAdmin()) {
+            if ($this->isCurrentUserAdmin() === false) {
                 return new JSONResponse(data: ['error' => 'Insufficient permissions. Admin access required.'], statusCode: Http::STATUS_FORBIDDEN);
             }
 
             // Validate input.
-            if (!is_numeric($register)) {
+            if (is_numeric($register) === false) {
                 return new JSONResponse(data: ['error' => 'Invalid register ID. Must be numeric.'], statusCode: Http::STATUS_BAD_REQUEST);
             }
 
@@ -494,12 +493,12 @@ class BulkController extends Controller
     {
         try {
             // Check if user is admin.
-            if (!$this->isCurrentUserAdmin()) {
+            if ($this->isCurrentUserAdmin() === false) {
                 return new JSONResponse(data: ['error' => 'Insufficient permissions. Admin access required.'], statusCode: Http::STATUS_FORBIDDEN);
             }
 
             // Validate input.
-            if (!is_numeric($schema)) {
+            if (is_numeric($schema) === false) {
                 return new JSONResponse(data: ['error' => 'Invalid schema ID. Must be numeric.'], statusCode: Http::STATUS_BAD_REQUEST);
             }
 

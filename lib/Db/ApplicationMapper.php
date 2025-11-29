@@ -251,7 +251,6 @@ class ApplicationMapper extends QBMapper
      *
      * @return Application The inserted application with updated ID
      * @throws \Exception If user doesn't have create permission
-     *
      */
     public function insert(Entity $entity): Entity
     {
@@ -288,7 +287,6 @@ class ApplicationMapper extends QBMapper
      *
      * @return Application The updated application
      * @throws \Exception If user doesn't have update permission or access to this organisation
-     *
      */
     public function update(Entity $entity): Entity
     {
@@ -322,7 +320,6 @@ class ApplicationMapper extends QBMapper
      *
      * @return Application The deleted application
      * @throws \Exception If user doesn't have delete permission or access to this organisation
-     *
      */
     public function delete(Entity $entity): Entity
     {

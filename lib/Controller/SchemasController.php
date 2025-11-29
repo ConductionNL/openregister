@@ -43,7 +43,6 @@ use Psr\Log\LoggerInterface;
 
 /**
  * Class SchemasController
- *
  */
 class SchemasController extends Controller
 {

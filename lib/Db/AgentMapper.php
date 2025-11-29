@@ -43,14 +43,14 @@ use Symfony\Component\Uid\Uuid;
  * @package OCA\OpenRegister\Db
  *
  * @template-extends QBMapper<Agent>
- * @method Agent insert(Entity $entity)
- * @method Agent update(Entity $entity)
- * @method Agent insertOrUpdate(Entity $entity)
- * @method Agent delete(Entity $entity)
- * @method Agent find(int|string $id)
- * @method Agent findEntity(IQueryBuilder $query)
- * @method Agent[] findAll(int|null $limit = null, int|null $offset = null)
- * @method list<Agent> findEntities(IQueryBuilder $query)
+ * @method           Agent insert(Entity $entity)
+ * @method           Agent update(Entity $entity)
+ * @method           Agent insertOrUpdate(Entity $entity)
+ * @method           Agent delete(Entity $entity)
+ * @method           Agent find(int|string $id)
+ * @method           Agent findEntity(IQueryBuilder $query)
+ * @method           Agent[] findAll(int|null $limit = null, int|null $offset = null)
+ * @method           list<Agent> findEntities(IQueryBuilder $query)
  */
 class AgentMapper extends QBMapper
 {
@@ -430,8 +430,7 @@ class AgentMapper extends QBMapper
         /*
          * @var Agent $entity
          */
-        /*
-         */
+
         if ($entity instanceof Agent) {
             // Ensure UUID is set.
             $uuid = $entity->getUuid();

@@ -38,7 +38,6 @@ use Psr\Log\LoggerInterface;
  * @package  OCA\OpenRegister\Controller
  * @author   OpenRegister Team
  * @license  AGPL-3.0-or-later
- *
  */
 class FileTextController extends Controller
 {

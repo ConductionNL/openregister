@@ -438,7 +438,7 @@ class SaveObjects
         $current = $data;
 
         foreach ($keys as $key) {
-            if (!is_array($current) || isset($current[$key]) === false) {
+            if (is_array($current) === false || isset($current[$key]) === false) {
                 return null;
             }
             $current = $current[$key];
@@ -572,7 +572,7 @@ class SaveObjects
         $current = $object;
 
         foreach ($keys as $key) {
-            if (!is_array($current) || isset($current[$key]) === false) {
+            if (is_array($current) === false || isset($current[$key]) === false) {
                 return null;
             }
             $current = $current[$key];
@@ -756,7 +756,6 @@ class SaveObjects
             $schemaId = $selfData['schema'] ?? null;
             if (($schemaId !== null) === true && in_array($schemaId, $schemaIds, true) === false) {
                 $schemaIds[] = $schemaId;
-            }
             }
         }
 
@@ -995,10 +994,8 @@ class SaveObjects
 
                 // PERFORMANCE: Accept any non-empty string as ID, prioritize CSV 'id' column.
                 $providedId = $object['id'] ?? $selfData['id'] ?? null;
-                if (($providedId !== null) === true && empty(trim($providedId)) === true) {
-                    continue;
-                }
-                $selfData['uuid'] = $providedId;
+                if (($providedId !== null) === true && empty(trim($providedId)) === false) {
+                    $selfData['uuid'] = $providedId;
 // Also set in @self for consistency.
                 } else {
                     $selfData['uuid'] = Uuid::v4()->toRfc4122();
@@ -1279,6 +1276,10 @@ class SaveObjects
             $invalidCount = count($transformationResult['invalid']);
             $result['invalid'] = array_merge($result['invalid'], $transformationResult['invalid']);
             $result['statistics']['invalid'] += $invalidCount;
+            // 'errors' key may not be in statistics type definition, initialize if needed.
+            if (!array_key_exists('errors', $result['statistics'])) {
+                $result['statistics']['errors'] = 0;
+            }
             $result['statistics']['errors'] += $invalidCount;
         }
 
@@ -1655,7 +1656,7 @@ class SaveObjects
 
             // Check for inversedBy in array items (array of object relations).
             // CRITICAL FIX: Preserve property-level writeBack if it's true.
-            if (!$inversedBy && (($items['inversedBy'] ?? null) !== null)) {
+            if (($inversedBy === false || $inversedBy === null) === true && (($items['inversedBy'] ?? null) !== null) === true) {
                 $inversedBy = $items['inversedBy'];
                 $rawItemsWriteBack = $items['writeBack'] ?? false;
                 $itemsWriteBack = $this->castToBoolean($rawItemsWriteBack);
@@ -1764,28 +1765,27 @@ class SaveObjects
                     if (($objectsByUuid[$value] ?? null) !== null) {
                         $targetObject = &$objectsByUuid[$value];
                         $existingValues = $targetObject[$inversedBy] ?? [];
-                        if (!is_array($existingValues)) {
+                        if (is_array($existingValues) === false) {
                             $existingValues = [];
                         }
-                        if (!in_array($objectUuid, $existingValues)) {
+                        if (in_array($objectUuid, $existingValues, true) === false) {
                             $existingValues[] = $objectUuid;
                             $targetObject[$inversedBy] = $existingValues;
                             $appliedCount++;
                         }
                         $processedCount++;
                     }
-                }
-                // Handle array of object relations.
-                else if (($propertyInfo['isArray'] === true) && is_array($value) === true) {
+                } else if (($propertyInfo['isArray'] === true) && is_array($value) === true) {
+                    // Handle array of object relations.
                     foreach ($value as $relatedUuid) {
                         if (is_string($relatedUuid) === true && \Symfony\Component\Uid\Uuid::isValid($relatedUuid) === true) {
                             if (($objectsByUuid[$relatedUuid] ?? null) !== null) {
                                 $targetObject = &$objectsByUuid[$relatedUuid];
                                 $existingValues = $targetObject[$inversedBy] ?? [];
-                                if (!is_array($existingValues)) {
+                                if (is_array($existingValues) === false) {
                                     $existingValues = [];
                                 }
-                                if (!in_array($objectUuid, $existingValues)) {
+                                if (in_array($objectUuid, $existingValues, true) === false) {
                                     $existingValues[] = $objectUuid;
                                     $targetObject[$inversedBy] = $existingValues;
                                     $appliedCount++;
@@ -1864,7 +1864,7 @@ class SaveObjects
 
             // Accept any non-empty string as ID, prioritize CSV 'id' column over @self.id.
             $providedId = $object['id'] ?? $selfData['id'] ?? null;
-            if (($providedId !== null) === true && !empty(trim($providedId)) === true) {
+            if (($providedId !== null) === true && empty(trim($providedId)) === false) {
                 // Accept any non-empty string as identifier.
                 $selfData['uuid'] = $providedId;
 // Also set in @self for consistency.
@@ -2035,7 +2035,7 @@ class SaveObjects
                 // FIXED: Use 'object' instead of 'data' and handle both formats.
                 if (($objectData['object'] ?? null) !== null) {
                     $data = is_string($objectData['object']) === true ? json_decode($objectData['object'], true) : $objectData['object'];
-                } elseif (($objectData['data'] ?? null) !== null) {
+                } else if (($objectData['data'] ?? null) !== null) {
                     // Legacy support.
                     $data = is_string($objectData['data']) === true ? json_decode($objectData['data'], true) : $objectData['data'];
                 } else {
@@ -2103,7 +2103,7 @@ class SaveObjects
 
         foreach ($transformedObjects as $index => $objectData) {
             // Primary UUID identifier.
-            if (!empty($objectData['uuid'])) {
+            if (empty($objectData['uuid']) === false) {
                 $identifiers['uuids'][] = $objectData['uuid'];
 
                 // DEBUG: Log UUID extraction for first few objects.
@@ -2124,19 +2124,19 @@ class SaveObjects
             }
 
             // Slug identifier from @self metadata.
-            if (!empty($objectData['@self']['slug'])) {
+            if (empty($objectData['@self']['slug']) === false) {
                 $identifiers['slugs'][] = $objectData['@self']['slug'];
             }
 
             // URI identifier from @self metadata.
-            if (!empty($objectData['@self']['uri'])) {
+            if (empty($objectData['@self']['uri']) === false) {
                 $identifiers['uris'][] = $objectData['@self']['uri'];
             }
 
             // Custom ID fields that might be used for identification.
             $customIdFields = ['id', 'identifier', 'externalId', 'sourceId'];
             foreach ($customIdFields as $field) {
-                if (!empty($objectData[$field])) {
+                if (empty($objectData[$field]) === false) {
                     $identifiers['custom_ids'][$field][] = $objectData[$field];
                 }
             }
@@ -2171,19 +2171,19 @@ class SaveObjects
         $allIdentifiers = [];
 
         // Collect all identifiers into a single array for bulk search.
-        if (!empty($extractedIds['uuids'])) {
+        if (empty($extractedIds['uuids']) === false) {
             $allIdentifiers = array_merge($allIdentifiers, $extractedIds['uuids']);
         }
-        if (!empty($extractedIds['slugs'])) {
+        if (empty($extractedIds['slugs']) === false) {
             $allIdentifiers = array_merge($allIdentifiers, $extractedIds['slugs']);
         }
-        if (!empty($extractedIds['uris'])) {
+        if (empty($extractedIds['uris']) === false) {
             $allIdentifiers = array_merge($allIdentifiers, $extractedIds['uris']);
         }
 
         // Add custom ID values.
         foreach ($extractedIds['custom_ids'] as $field => $values) {
-            if (!empty($values)) {
+            if (empty($values) === false) {
                 $allIdentifiers = array_merge($allIdentifiers, $values);
             }
         }
@@ -2218,7 +2218,7 @@ class SaveObjects
             if (is_array($objectData) === true) {
                 $customIdFields = ['id', 'identifier', 'externalId', 'sourceId'];
                 foreach ($customIdFields as $field) {
-                    if (!empty($objectData[$field])) {
+                    if (empty($objectData[$field]) === false) {
                         $existingObjects[$objectData[$field]] = $obj;
                     }
                 }
@@ -2244,7 +2244,7 @@ class SaveObjects
         $existingObjects = [];
 
         // PERFORMANCE: Focus only on UUID lookups for large imports (most reliable and fastest).
-        if (!empty($extractedIds['uuids'])) {
+        if (empty($extractedIds['uuids']) === false) {
             $foundObjects = $this->objectEntityMapper->findAll(ids: $extractedIds['uuids'], includeDeleted: false);
 
             // PERFORMANCE: Index only by UUID for speed.
@@ -2301,7 +2301,7 @@ class SaveObjects
                 if ($incomingHash === $existingHash) {
                     $result['skip'][] = $existingObject;
                 } else {
-                    if (($incomingData['object'] ?? null) !== null && is_array($incomingData['object']) === true && !empty($incomingData['object']) === true) {
+                    if (($incomingData['object'] ?? null) !== null && is_array($incomingData['object']) === true && empty($incomingData['object']) === false) {
                         $existingObject->setObject($incomingData['object']);
                         if (($incomingData['updated'] ?? null) !== null) {
                             $existingObject->setUpdated(new \DateTime($incomingData['updated']));
@@ -2347,7 +2347,7 @@ class SaveObjects
     private function findExistingObjectByPrimaryId(array $incomingData, array $existingObjects): ?object
     {
         // Only check UUID for maximum performance.
-        if (!empty($incomingData['uuid']) === true && (($existingObjects[$incomingData['uuid']] ?? null) !== null)) {
+        if (empty($incomingData['uuid']) === false && (($existingObjects[$incomingData['uuid']] ?? null) !== null)) {
             return $existingObjects[$incomingData['uuid']];
         }
 
@@ -2366,24 +2366,24 @@ class SaveObjects
     private function findExistingObjectByAnyIdentifier(array $incomingData, array $existingObjects): ?object
     {
         // Check UUID first (most reliable).
-        if (!empty($incomingData['uuid']) === true && (($existingObjects[$incomingData['uuid']] ?? null) !== null)) {
+        if (empty($incomingData['uuid']) === false && (($existingObjects[$incomingData['uuid']] ?? null) !== null)) {
             return $existingObjects[$incomingData['uuid']];
         }
 
         // Check slug from @self metadata.
-        if (!empty($incomingData['@self']['slug']) === true && (($existingObjects[$incomingData['@self']['slug']] ?? null) !== null)) {
+        if (empty($incomingData['@self']['slug']) === false && (($existingObjects[$incomingData['@self']['slug']] ?? null) !== null)) {
             return $existingObjects[$incomingData['@self']['slug']];
         }
 
         // Check URI from @self metadata.
-        if (!empty($incomingData['@self']['uri']) === true && (($existingObjects[$incomingData['@self']['uri']] ?? null) !== null)) {
+        if (empty($incomingData['@self']['uri']) === false && (($existingObjects[$incomingData['@self']['uri']] ?? null) !== null)) {
             return $existingObjects[$incomingData['@self']['uri']];
         }
 
         // Check custom ID fields.
         $customIdFields = ['id', 'identifier', 'externalId', 'sourceId'];
         foreach ($customIdFields as $field) {
-            if (!empty($incomingData[$field]) === true && (($existingObjects[$incomingData[$field]] ?? null) !== null)) {
+            if (empty($incomingData[$field]) === false && (($existingObjects[$incomingData[$field]] ?? null) !== null)) {
                 return $existingObjects[$incomingData[$field]];
             }
         }
@@ -2425,7 +2425,7 @@ class SaveObjects
         // Update core fields.
         if (($newObjectData['object'] ?? null) !== null) {
             $existingObject->setObject($newObjectData['object']);
-        } elseif (($newObjectData['data'] ?? null) !== null) {
+        } else if (($newObjectData['data'] ?? null) !== null) {
             // Legacy support: 'data' should be 'object'.
             $existingObject->setObject($newObjectData['data']);
         }
@@ -2540,7 +2540,7 @@ class SaveObjects
                 $relatedObjectIds = is_array($objectData[$propertyName]) === true ? $objectData[$propertyName] : [$objectData[$propertyName]];
 
                 foreach ($relatedObjectIds as $relatedId) {
-                    if (!empty($relatedId) === true && !empty($inverseConfig['writeBack'])) {
+                    if (empty($relatedId) === false && empty($inverseConfig['writeBack']) === false) {
                         $allRelatedIds[] = $relatedId;
                         $objectRelationsMap[$index][] = $relatedId;
                     }
@@ -2550,7 +2550,7 @@ class SaveObjects
 
         // PERFORMANCE OPTIMIZATION: Single bulk fetch instead of N+1 queries.
         $relatedObjectsMap = [];
-        if (!empty($allRelatedIds)) {
+        if (empty($allRelatedIds) === false) {
             $uniqueRelatedIds = array_unique($allRelatedIds);
 
             try {
@@ -2588,7 +2588,7 @@ class SaveObjects
                 $relatedObjectIds = is_array($objectData[$propertyName]) === true ? $objectData[$propertyName] : [$objectData[$propertyName]];
 
                 foreach ($relatedObjectIds as $relatedId) {
-                    if (!empty($relatedId) === true && (($relatedObjectsMap[$relatedId] ?? null) !== null)) {
+                    if (empty($relatedId) === false && (($relatedObjectsMap[$relatedId] ?? null) !== null)) {
                         $writeBackOperations[] = [
                             'targetObject' => $relatedObjectsMap[$relatedId],
                             'sourceUuid' => $savedObject->getUuid(),
@@ -2600,7 +2600,7 @@ class SaveObjects
         }
 
         // Execute writeBack operations with context.
-        if (!empty($writeBackOperations)) {
+        if (empty($writeBackOperations) === false) {
             $this->performBulkWriteBackUpdatesWithContext($writeBackOperations);
         }
     }//end handlePostSaveInverseRelations()
@@ -2643,12 +2643,12 @@ class SaveObjects
             }
 
             // Ensure it's an array.
-            if (!is_array($objectData[$inverseProperty])) {
+            if (is_array($objectData[$inverseProperty]) === false) {
                 $objectData[$inverseProperty] = [$objectData[$inverseProperty]];
             }
 
             // Add source UUID to inverse property if not already present.
-            if (!in_array($sourceUuid, $objectData[$inverseProperty])) {
+            if (in_array($sourceUuid, $objectData[$inverseProperty], true) === false) {
                 $objectData[$inverseProperty][] = $sourceUuid;
             } else {
                 continue;
@@ -2773,13 +2773,13 @@ class SaveObjects
 
         foreach ($data as $key => $value) {
             // Skip if key is not a string or is empty.
-            if (!is_string($key) === true || empty($key) === true) {
+            if (is_string($key) === false || empty($key) === true) {
                 continue;
             }
 
             $currentPath = ($prefix !== '') === true ? $prefix.'.'.$key : $key;
 
-            if (is_array($value) === true && !empty($value) === true) {
+            if (is_array($value) === true && empty($value) === false) {
                 // Check if this is an array property in the schema.
                 $propertyConfig   = $schemaProperties[$key] ?? null;
                 $isArrayOfObjects = ($propertyConfig !== null) === true &&
@@ -2898,10 +2898,14 @@ class SaveObjects
             // Must contain at least one hyphen or underscore (indicating it's likely an ID).
             // AND must not contain spaces or common text words.
             if ((strpos($value, '-') !== false || strpos($value, '_') !== false) &&
-                !preg_match('/\s/', $value) &&
-                !in_array(strtolower($value), ['applicatie', 'systeemsoftware', 'open-source', 'closed-source'])) {
+                preg_match('/\s/', $value) === false &&
+                in_array(strtolower($value), ['applicatie', 'systeemsoftware', 'open-source', 'closed-source'], true) === false) {
                 return true;
             }
         }
 
-        ret
+        return false;
+    }//end isReference()
+
+
+}//end class

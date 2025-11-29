@@ -42,7 +42,7 @@ use Opis\JsonSchema\Format;
  * @package  OpenRegister
  * @author   Conduction AI <info@conduction.nl>
  * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @version   GIT: <git_id>
+ * @version  GIT: <git_id>
  * @link     https://www.conduction.nl
  */
 class SemVerFormat implements Format

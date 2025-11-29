@@ -39,8 +39,6 @@ use OCP\IDBConnection;
  * @method list<WebhookLog> findEntities(IQueryBuilder $query)
  *
  * @template-extends QBMapper<WebhookLog>
- *
-
  */
 class WebhookLogMapper extends QBMapper
 {
@@ -50,7 +48,6 @@ class WebhookLogMapper extends QBMapper
      * WebhookLogMapper constructor
      *
      * @param IDBConnection $db Database connection
-     *
      */
     public function __construct(IDBConnection $db)
     {
@@ -171,7 +168,6 @@ class WebhookLogMapper extends QBMapper
      * @param Entity $entity WebhookLog entity to insert
      *
      * @return WebhookLog The inserted log
-     *
      */
     public function insert(Entity $entity): Entity
     {
@@ -191,7 +187,6 @@ class WebhookLogMapper extends QBMapper
      * @param DateTime $before Delete logs created before this date
      *
      * @return int Number of deleted logs
-     *
      */
     public function deleteOldLogs(DateTime $before): int
     {

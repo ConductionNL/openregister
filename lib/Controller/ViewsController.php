@@ -33,7 +33,6 @@ use OCP\AppFramework\Db\DoesNotExistException;
  *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
- *
  */
 class ViewsController extends Controller
 {

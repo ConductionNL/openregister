@@ -1373,7 +1373,6 @@ class TextExtractionService
                 // Iterate through rows and columns.
                 for ($row = 1; $row <= $highestRow; $row++) {
                     $rowData = [];
-                    //
                     for ($col = 'A'; $col !== $highestColumn; $col++) {
                         $value = $sheet->getCell($col.$row)->getValue();
                         if ($value !== null && $value !== '') {

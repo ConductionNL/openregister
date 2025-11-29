@@ -104,9 +104,24 @@ class UploadService
         }
 
         if (empty($data['url']) === false) {
-            $phpArray           = $this->getJSONfromURL($data['url']);
-            $phpArray['source'] = $data['url'];
-            return $phpArray;
+            $phpArray = $this->getJSONfromURL($data['url']);
+            // JSONResponse doesn't implement ArrayAccess, convert to array.
+            if (is_array($phpArray)) {
+                $phpArray['source'] = $data['url'];
+                return $phpArray;
+            }
+
+            // If it's a JSONResponse, extract data.
+            if (method_exists($phpArray, 'getData')) {
+                $phpArrayData = $phpArray->getData();
+                if (is_array($phpArrayData)) {
+                    $phpArrayData['source'] = $data['url'];
+                    return $phpArrayData;
+                }
+            }
+
+            // Fallback: return error response.
+            return new JSONResponse(data: ['error' => 'Failed to parse JSON from URL'], statusCode: 400);
         }
 
         $phpArray = $data['json'];
@@ -136,7 +151,7 @@ class UploadService
     {
         try {
             $response = $this->client->request('GET', $url);
-        } catch (GuzzleHttp\Exception\BadResponseException $e) {
+        } catch (\GuzzleHttp\Exception\BadResponseException $e) {
             return new JSONResponse(data: ['error' => 'Failed to do a GET api-call on url: '.$url.' '.$e->getMessage()], statusCode: 400);
         }
 
@@ -180,7 +195,7 @@ class UploadService
     {
         // @todo: Implement file reading logic here.
         // For now, return a simple array to ensure code consistency.
-        throw new Exception('File upload handling is not yet implemented');
+        throw new \Exception('File upload handling is not yet implemented');
 
     }//end getJSONfromFile()
 
@@ -214,7 +229,7 @@ class UploadService
                         $schema->setUuid((string) Uuid::v4());
                         $this->schemaMapper->insert($schema);
                     }
-                } catch (DoesNotExistException $e) {
+                } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
                     // None found so, Create a new schema.
                     $schema = new Schema();
                     $schema->setTitle($schemaName);

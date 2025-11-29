@@ -117,9 +117,9 @@ class SolrSetup
         $this->logger->info(
                 'SOLR Setup: Using authenticated HTTP client from GuzzleSolrService',
                 [
-                    'has_credentials' => !empty($this->solrConfig['username']) === true && !empty($this->solrConfig['password']),
+                    'has_credentials' => empty($this->solrConfig['username']) === false && empty($this->solrConfig['password']) === false,
                     'username'        => $this->solrConfig['username'] ?? 'not_set',
-                    'password_set'    => !empty($this->solrConfig['password']),
+                    'password_set'    => empty($this->solrConfig['password']) === false,
                     'host'            => $this->solrConfig['host'] ?? 'unknown',
                     'port'            => $this->solrConfig['port'] ?? 'not_set',
                     'scheme'          => $this->solrConfig['scheme'] ?? 'not_set',
@@ -263,7 +263,8 @@ class SolrSetup
      */
     private function getTenantCollectionName(): string
     {
-        $baseCollectionName = $this->solrConfig['core'] ?? 'openregister';
+        // solrConfig may contain 'core' key even if not in type definition.
+        $baseCollectionName = (is_array($this->solrConfig) && array_key_exists('core', $this->solrConfig)) ? $this->solrConfig['core'] : 'openregister';
         return $this->solrService->getTenantSpecificCollectionName($baseCollectionName);
 
     }//end getTenantCollectionName()
@@ -276,7 +277,16 @@ class SolrSetup
      */
     private function getTenantId(): string
     {
-        return $this->solrService->getTenantId();
+        // getTenantId doesn't exist, use getTenantSpecificCollectionName to derive tenant ID.
+        // Extract tenant ID from collection name or use a default.
+        $collectionName = $this->solrService->getTenantSpecificCollectionName('openregister');
+        // Extract tenant ID from collection name pattern (e.g., "openregister_nc_xxx" -> "nc_xxx").
+        if (preg_match('/_nc_([a-f0-9]+)$/', $collectionName, $matches)) {
+            return 'nc_'.$matches[1];
+        }
+
+        // Fallback: use a default tenant ID.
+        return 'default';
 
     }//end getTenantId()
 
@@ -289,7 +299,8 @@ class SolrSetup
     private function getTenantConfigSetName(): string
     {
         // Use the configSet from configuration (defaults to '_default').
-        $configSetName = $this->solrConfig['configSet'] ?? '_default';
+        // solrConfig may contain 'configSet' key even if not in type definition.
+        $configSetName = (is_array($this->solrConfig) && array_key_exists('configSet', $this->solrConfig)) ? $this->solrConfig['configSet'] : '_default';
 
         // If using _default, return it as-is (no tenant suffix needed).
         if ($configSetName === '_default') {
@@ -971,7 +982,7 @@ class SolrSetup
             $requestOptions = ['timeout' => 10];
 
             // Add authentication if configured.
-            if (!empty($this->solrConfig['username']) === true && !empty($this->solrConfig['password'])) {
+            if (empty($this->solrConfig['username']) === false && empty($this->solrConfig['password']) === false) {
                 $requestOptions['auth'] = [$this->solrConfig['username'], $this->solrConfig['password']];
             }
 
@@ -1101,7 +1112,7 @@ class SolrSetup
                     'configSet'                 => $newConfigSetName,
                     'template'                  => $templateConfigSetName,
                     'url'                       => $url,
-                    'authentication_configured' => !empty($this->solrConfig['username']) === true && !empty($this->solrConfig['password']),
+                    'authentication_configured' => empty($this->solrConfig['username']) === false && empty($this->solrConfig['password']) === false,
                 ]
                 );
 
@@ -1199,7 +1210,7 @@ class SolrSetup
             // Check for authentication issues.
             if (strpos($e->getMessage(), '401') !== false || strpos($e->getMessage(), 'Unauthorized') !== false) {
                 $logData['authentication_issue'] = true;
-                $logData['has_credentials']      = !empty($this->solrConfig['username']) === true && !empty($this->solrConfig['password']);
+                $logData['has_credentials']      = empty($this->solrConfig['username']) === false && empty($this->solrConfig['password']) === false;
             }
 
             // Check for network connectivity issues.
@@ -1264,7 +1275,7 @@ class SolrSetup
             // Add specific error categorization.
             if (strpos($e->getMessage(), '401') !== false || strpos($e->getMessage(), 'Unauthorized') !== false) {
                 $this->lastErrorDetails['error_category']  = 'authentication_failure';
-                $this->lastErrorDetails['has_credentials'] = !empty($this->solrConfig['username']) === true && !empty($this->solrConfig['password']);
+                $this->lastErrorDetails['has_credentials'] = empty($this->solrConfig['username']) === false && empty($this->solrConfig['password']) === false;
             } else if (strpos($e->getMessage(), 'Connection refused') !== false
                 || strpos($e->getMessage(), 'Could not resolve host') !== false
                 || strpos($e->getMessage(), 'timeout') !== false
@@ -1842,7 +1853,7 @@ class SolrSetup
             $requestOptions = ['timeout' => 10];
 
             // Add authentication if configured.
-            if (!empty($this->solrConfig['username']) === true && !empty($this->solrConfig['password'])) {
+            if (empty($this->solrConfig['username']) === false && empty($this->solrConfig['password']) === false) {
                 $requestOptions['auth'] = [$this->solrConfig['username'], $this->solrConfig['password']];
             }
 
@@ -1998,7 +2009,7 @@ class SolrSetup
                     );
 
                 // Track newly created collection.
-                if (!in_array($collectionName, $this->infrastructureCreated['collections_created'])) {
+                if (in_array($collectionName, $this->infrastructureCreated['collections_created'], true) === false) {
                     $this->infrastructureCreated['collections_created'][] = $collectionName;
                 }
 
@@ -2089,7 +2100,7 @@ class SolrSetup
         // Path to our packaged configSet ZIP file (fixed version with proper XML structure).
         $zipPath = __DIR__.'/../../resources/solr/openregister-configset-fixed.zip';
 
-        if (!file_exists($zipPath)) {
+        if (file_exists($zipPath) === false) {
             $this->logger->error(
                     'ConfigSet ZIP file not found',
                     [
@@ -2223,7 +2234,7 @@ class SolrSetup
                         );
 
                 // Track newly created configSet.
-                if (!in_array($configSetName, $this->infrastructureCreated['configsets_created'])) {
+                if (in_array($configSetName, $this->infrastructureCreated['configsets_created'], true) === false) {
                     $this->infrastructureCreated['configsets_created'][] = $configSetName;
                 }
 
@@ -3173,7 +3184,7 @@ class SolrSetup
 
         // Check tenant configSet exists.
         $tenantConfigSetName = $this->getTenantConfigSetName();
-        if (!$this->configSetExists($tenantConfigSetName)) {
+        if ($this->configSetExists($tenantConfigSetName) === false) {
             $this->logger->error(
                     'Validation failed: tenant configSet missing',
                     [
@@ -3184,7 +3195,7 @@ class SolrSetup
         }
 
         // Check tenant collection exists.
-        if (!$this->solrService->collectionExists($tenantCollectionName)) {
+        if ($this->solrService->collectionExists($tenantCollectionName) === false) {
             $this->logger->error(
                     'Validation failed: tenant collection missing',
                     [
@@ -3195,7 +3206,7 @@ class SolrSetup
         }
 
         // Test tenant collection query functionality.
-        if (!$this->testCollectionQuery($tenantCollectionName)) {
+        if ($this->testCollectionQuery($tenantCollectionName) === false) {
             $this->logger->error(
                     'Validation failed: tenant collection query test failed',
                     [

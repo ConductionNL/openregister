@@ -104,8 +104,8 @@ class Version1Date20250904170000 extends SimpleMigrationStep
     /**
      * Optimize relationship tables with appropriate indexes
      *
-     * @param \OCP\DB\Types\ITable $table  The table to optimize
-     * @param IOutput              $output Migration output
+     * @param \Doctrine\DBAL\Schema\Table $table  The table to optimize
+     * @param IOutput                     $output Migration output
      *
      * @return void
      */

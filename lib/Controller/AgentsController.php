@@ -38,7 +38,6 @@ use Exception;
  * REST API controller for managing AI agents.
  *
  * @package OCA\OpenRegister\Controller
- *
  */
 class AgentsController extends Controller
 {

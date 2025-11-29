@@ -28,7 +28,6 @@ use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Create webhook_logs table for webhook delivery logging
- *
  */
 class Version1Date20250126000000 extends SimpleMigrationStep
 {

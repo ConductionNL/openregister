@@ -40,7 +40,6 @@ use Psr\Log\LoggerInterface;
  * - Extracts text from object properties, metadata, and relationships
  *
  * @package OCA\OpenRegister\BackgroundJob
- *
  */
 class ObjectTextExtractionJob extends QueuedJob
 {
@@ -53,7 +52,6 @@ class ObjectTextExtractionJob extends QueuedJob
      * @param TextExtractionService $textExtractionService Text extraction service
      * @param LoggerInterface       $logger                Logger instance
      * @param IAppConfig            $config                Application configuration
-     *
      */
     public function __construct(
         ITimeFactory $timeFactory,
@@ -75,7 +73,6 @@ class ObjectTextExtractionJob extends QueuedJob
      * @param array $argument Job arguments containing object_id
      *
      * @return void
-     *
      */
     protected function run($argument): void
     {

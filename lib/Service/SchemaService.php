@@ -197,7 +197,7 @@ class SchemaService
 
             foreach ($objectData as $propertyName => $propertyValue) {
                 // Track usage count.
-                if (!isset($usageStats['counts'][$propertyName])) {
+                if (isset($usageStats['counts'][$propertyName]) === false) {
                     $usageStats['counts'][$propertyName] = 0;
                 }
 
@@ -211,7 +211,7 @@ class SchemaService
                 // Analyze data type and characteristics.
                 $propertyAnalysis = $this->analyzePropertyValue($propertyValue);
 
-                if (!isset($discoveredProperties[$propertyName])) {
+                if (isset($discoveredProperties[$propertyName]) === false) {
                     $discoveredProperties[$propertyName] = [
                         'name'             => $propertyName,
                         'types'            => [],
@@ -539,7 +539,7 @@ class SchemaService
 
         // Merge array structure analysis.
         if ($newAnalysis['array_structure'] === true) {
-            if (!$existingAnalysis['array_structure']) {
+            if (($existingAnalysis['array_structure'] === false)) {
                 $existingAnalysis['array_structure'] = $newAnalysis['array_structure'];
             }
         }
@@ -647,7 +647,7 @@ class SchemaService
             $itemTypes = [];
             foreach ($array as $item) {
                 $type = gettype($item);
-                if (!isset($itemTypes[$type])) {
+                if (isset($itemTypes[$type]) === false) {
                     $itemTypes[$type] = 0;
                 }
 
@@ -685,7 +685,7 @@ class SchemaService
             $object = get_object_vars($object);
         }
 
-        if (!is_array($object)) {
+        if (is_array($object) === false) {
             return ['type' => 'scalar', 'value' => $object];
         }
 
@@ -791,13 +791,13 @@ class SchemaService
             }
 
             // Handle nested objects.
-            if (!empty($analysis['object_structure']) === true && $analysis['object_structure']['type'] === 'object') {
+            if (empty($analysis['object_structure']) === false && $analysis['object_structure']['type'] === 'object') {
                 $suggestion['type']       = 'object';
                 $suggestion['properties'] = $this->generateNestedProperties($analysis['object_structure']);
             }
 
             // Handle arrays.
-            if (!empty($analysis['array_structure']) === true && $analysis['array_structure']['type'] === 'list') {
+            if (empty($analysis['array_structure']) === false && $analysis['array_structure']['type'] === 'list') {
                 $suggestion['type']  = 'array';
                 $suggestion['items'] = $this->generateArrayItemType($analysis['array_structure']);
             }
@@ -843,7 +843,7 @@ class SchemaService
 
         foreach ($existingProperties as $propertyName => $propertyConfig) {
             // Skip if we don't have analysis data for this property.
-            if (!isset($discoveredProperties[$propertyName])) {
+            if (isset($discoveredProperties[$propertyName]) === false) {
                 continue;
             }
 
@@ -851,7 +851,7 @@ class SchemaService
             $currentConfig = $propertyConfig;
             $improvement   = $this->comparePropertyWithAnalysis($propertyName, $currentConfig, $analysis);
 
-            if (!empty($improvement['issues'])) {
+            if (empty($improvement['issues']) === false) {
                 $usagePercentage = $analysis['usage_percentage'] ?? 0;
                 $confidence      = $usagePercentage >= 80 ? 'high' : ($usagePercentage >= 50 ? 'medium' : 'low');
 
@@ -973,7 +973,7 @@ class SchemaService
             }
 
             // Check for missing pattern.
-            if (!empty($analysis['string_patterns'])) {
+            if (empty($analysis['string_patterns']) === false) {
                 $currentPattern = $currentConfig['pattern'] ?? null;
                 $mainPattern    = $analysis['string_patterns'][0];
                 if ($currentPattern === null || $currentPattern === '') {
@@ -998,7 +998,7 @@ class SchemaService
 
                 // Check for missing minimum.
                 $currentMin = $currentConfig['minimum'] ?? null;
-                if (!$currentMin && $range['min'] !== $range['max']) {
+                if (($currentMin === false) && $range['min'] !== $range['max']) {
                     $issues[]      = "missing_minimum";
                     $suggestions[] = [
                         'type'        => 'constraint',
@@ -1020,7 +1020,7 @@ class SchemaService
 
                 // Check for missing maximum.
                 $currentMax = $currentConfig['maximum'] ?? null;
-                if (!$currentMax && $range['min'] !== $range['max']) {
+                if (($currentMax === false) && $range['min'] !== $range['max']) {
                     $issues[]      = "missing_maximum";
                     $suggestions[] = [
                         'type'        => 'constraint',
@@ -1204,7 +1204,7 @@ class SchemaService
         if ($dominantType === 'string') {
             // If most values are consistently numeric strings, recommend number/integer.
             if (in_array('integer_string', $stringPatterns, true) === true
-                && !in_array('float_string', $stringPatterns, true)
+                && in_array('float_string', $stringPatterns, true) === false
             ) {
                 return 'integer';
             } else if (in_array('float_string', $stringPatterns, true) === true) {

@@ -87,7 +87,7 @@ class ConfigurationService
     /**
      * OpenConnector service instance for handling OpenConnector operations.
      *
-     * @var \OCA\OpenConnector\Service\ConfigurationService The OpenConnector service instance.
+     * @var object|null The OpenConnector service instance (from openconnector app).
      */
     private $openConnectorConfigurationService;
 
@@ -594,7 +594,7 @@ class ConfigurationService
      * @param  string $url The input URL to evaluate
      * @return string The numeric value if found, or the original URL
      *
-     * @throws         \InvalidArgumentException If the URL is not a string
+     * @throws \InvalidArgumentException If the URL is not a string
      */
     private function getLastNumericSegment(string $url): string
     {
@@ -978,7 +978,7 @@ class ConfigurationService
                         ]
                         );
 
-                if (!isset($schemaData['title']) === false && is_string($key) === true) {
+                if (isset($schemaData['title']) === true && is_string($key) === true) {
                     $schemaData['title'] = $key;
                 }
 
@@ -1469,7 +1469,7 @@ class ConfigurationService
                     }
 
                     // Only set title to key if no title exists, to preserve existing titles.
-                    if (!isset($property['title']) === false || empty($property['title']) === true) {
+                    if (isset($property['title']) === true || empty($property['title']) === true) {
                         $property['title'] = $key;
                     }
 
@@ -1507,7 +1507,7 @@ class ConfigurationService
                         }
                     }
 
-                    if (!isset($property['type'])) {
+                    if (isset($property['type']) === false) {
                         $property['type'] = 'string';
                     }
 
@@ -1568,7 +1568,7 @@ class ConfigurationService
                     if (($property['objectConfiguration']['schema'] ?? null) !== null) {
                         $schemaSlug = $property['objectConfiguration']['schema'];
                         // Only process non-empty schema slugs.
-                        if (!empty($schemaSlug)) {
+                        if (empty($schemaSlug) === false) {
                             if (($this->schemasMap[$schemaSlug] ?? null) !== null) {
                                 $property['objectConfiguration']['schema'] = $this->schemasMap[$schemaSlug]->getId();
                             } else {
@@ -1630,7 +1630,7 @@ class ConfigurationService
                     if (($property['items']['objectConfiguration']['schema'] ?? null) !== null) {
                         $schemaSlug = $property['items']['objectConfiguration']['schema'];
                         // Only process non-empty schema slugs.
-                        if (!empty($schemaSlug)) {
+                        if (empty($schemaSlug) === false) {
                             if (($this->schemasMap[$schemaSlug] ?? null) !== null) {
                                 $property['items']['objectConfiguration']['schema'] = $this->schemasMap[$schemaSlug]->getId();
                             } else {
@@ -1742,7 +1742,7 @@ class ConfigurationService
             $data = $this->ensureArrayStructure($data);
 
             // Validate required @self metadata.
-            if (!isset($data['@self']['register']) === false || !isset($data['@self']['schema']) === false || !isset($data['name'])) {
+            if (isset($data['@self']['register']) === true || isset($data['@self']['schema']) === true || isset($data['name']) === false) {
                 $this->logger->warning(message: 'Object data missing required @self metadata (register, schema) or name field');
                 return null;
             }
@@ -1764,7 +1764,7 @@ class ConfigurationService
                     );
 
             $existingObject = null;
-            if (!empty($existingObjects)) {
+            if (empty($existingObjects) === false) {
                 $existingObject = $existingObjects[0];
                 // Take the first match.
                 $existingObjectData = $existingObject->jsonSerialize();
@@ -1807,7 +1807,7 @@ class ConfigurationService
             $this->objectService->setSchema($schemaId);
 
             // Ensure version is set in @self metadata.
-            if (!isset($data['@self']['version'])) {
+            if (isset($data['@self']['version']) === false) {
                 $data['@self']['version'] = $objectVersion;
             }
 
@@ -1906,7 +1906,7 @@ class ConfigurationService
             $fullPath = $this->appDataPath.'/../../../'.$filePath;
             $fullPath = realpath($fullPath);
 
-            if ($fullPath === false || !file_exists($fullPath)) {
+            if ($fullPath === false || file_exists($fullPath) === false) {
                 throw new Exception("Configuration file not found: {$filePath}");
             }
 
@@ -1924,15 +1924,15 @@ class ConfigurationService
 
             // Set the sourceUrl in the data if not already set.
             // This allows the cron job to track the file location.
-            if (!isset($data['x-openregister'])) {
+            if (isset($data['x-openregister']) === false) {
                 $data['x-openregister'] = [];
             }
 
-            if (!isset($data['x-openregister']['sourceUrl'])) {
+            if (isset($data['x-openregister']['sourceUrl']) === false) {
                 $data['x-openregister']['sourceUrl'] = $filePath;
             }
 
-            if (!isset($data['x-openregister']['sourceType'])) {
+            if (isset($data['x-openregister']['sourceType']) === false) {
                 $data['x-openregister']['sourceType'] = 'local';
             }
 
@@ -2143,19 +2143,19 @@ class ConfigurationService
                 $existingObjectIds   = $configuration->getObjects();
 
                 foreach ($result['registers'] as $register) {
-                    if ($register instanceof Register && !in_array($register->getId(), $existingRegisterIds, true)) {
+                    if ($register instanceof Register && in_array($register->getId(), $existingRegisterIds, true) === false) {
                         $existingRegisterIds[] = $register->getId();
                     }
                 }
 
                 foreach ($result['schemas'] as $schema) {
-                    if ($schema instanceof Schema && !in_array($schema->getId(), $existingSchemaIds, true)) {
+                    if ($schema instanceof Schema && in_array($schema->getId(), $existingSchemaIds, true) === false) {
                         $existingSchemaIds[] = $schema->getId();
                     }
                 }
 
                 foreach ($result['objects'] as $object) {
-                    if ($object instanceof ObjectEntity && !in_array($object->getId(), $existingObjectIds, true)) {
+                    if ($object instanceof ObjectEntity && in_array($object->getId(), $existingObjectIds, true) === false) {
                         $existingObjectIds[] = $object->getId();
                     }
                 }

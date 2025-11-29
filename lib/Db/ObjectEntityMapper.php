@@ -301,9 +301,9 @@ class ObjectEntityMapper extends QBMapper
 // Adjust buffer based on detected packet size.
                 if ($maxPacketSize > 67108864) { // > 64MB
                     $this->maxPacketSizeBuffer = 0.6; // 60% buffer
-                } elseif ($maxPacketSize > 33554432) { // > 32MB
+                } else if ($maxPacketSize > 33554432) { // > 32MB
                     $this->maxPacketSizeBuffer = 0.5; // 50% buffer
-                } elseif ($maxPacketSize > 16777216) { // > 16MB
+                } else if ($maxPacketSize > 16777216) { // > 16MB
                     $this->maxPacketSizeBuffer = 0.4; // 40% buffer
                 } else {
                     $this->maxPacketSizeBuffer = 0.3; // 30% buffer for smaller packet sizes
@@ -390,7 +390,7 @@ class ObjectEntityMapper extends QBMapper
         try {
 // Use optimized method to check if user has any authorization exceptions.
             $hasExceptions = $this->authorizationExceptionService->userHasExceptionsOptimized($userId);
-            if (!$hasExceptions) {
+            if (($hasExceptions === false)) {
 // No exceptions for this user, fall back to normal RBAC.
             }
 
@@ -492,7 +492,7 @@ class ObjectEntityMapper extends QBMapper
 
 // Check object-level group permissions.
         $objectGroups = $object->getGroups();
-        if (!empty($objectGroups) === false && ($objectGroups[$action] ?? null) !== null) {
+        if (empty($objectGroups) === true && ($objectGroups[$action] ?? null) !== null) {
             if ($userObj !== null) {
                 $userGroups = $this->groupManager->getUserGroupIds($userObj);
                 $allowedGroups = $objectGroups[$action];
@@ -595,7 +595,7 @@ class ObjectEntityMapper extends QBMapper
         $rbacMethodStart = microtime(true);
 
 // If RBAC is disabled, skip all permission filtering.
-        if ($rbac === false || !$this->isRbacEnabled()) {
+        if ($rbac === false || $this->isRbacEnabled() === false) {
             $this->logger->info('🔓 RBAC DISABLED - Skipping authorization checks', [
                 'rbacParam' => $rbac,
                 'rbacConfigEnabled' => $this->isRbacEnabled()
@@ -752,7 +752,7 @@ class ObjectEntityMapper extends QBMapper
     private function applyOrganizationFilters(IQueryBuilder $qb, string $objectTableAlias = 'o', ?array $activeOrganisationUuids = null, bool $multi = true): void
     {
 // If multitenancy is disabled, skip all organization filtering.
-        if ($multi === false || !$this->isMultiTenancyEnabled()) {
+        if ($multi === false || $this->isMultiTenancyEnabled() === false) {
             return;
         }
 
@@ -852,7 +852,7 @@ class ObjectEntityMapper extends QBMapper
         $orgConditions = $qb->expr()->orX();
 
 // If we have active organizations, include objects from those organizations (including parent orgs).
-        if ($activeOrganisationUuids !== null && !empty($activeOrganisationUuids)) {
+        if ($activeOrganisationUuids !== null && empty($activeOrganisationUuids) === false) {
 // Objects explicitly belonging to the user's organization or parent organizations.
             $orgConditions->add(
                 $qb->expr()->in($organizationColumn, $qb->createNamedParameter($activeOrganisationUuids, IQueryBuilder::PARAM_STR_ARRAY))
@@ -1594,14 +1594,14 @@ class ObjectEntityMapper extends QBMapper
         $performanceBypass = ($_GET['_bypass_auth'] ?? '') === 'true' || ($_SERVER['HTTP_X_BYPASS_AUTH'] ?? '') === 'true';
 
         // **PERFORMANCE OPTIMIZATION**: Detect simple vs complex requests early
-        $hasExtend = !empty($query['_extend'] ?? []);
-        $hasComplexFields = !empty($query['_fields'] ?? null);
-        $isSimpleRequest = !$hasExtend && !$hasComplexFields;
+        $hasExtend = empty($query['_extend'] ?? []) === false;
+        $hasComplexFields = empty($query['_fields'] ?? null) === false;
+        $isSimpleRequest = ($hasExtend === false) && ($hasComplexFields === false);
 
         // **PERFORMANCE OPTIMIZATION**: Smart RBAC skipping for public data (30-40% improvement)
         $isSimplePublicRequest = $isSimpleRequest && $published !== false && empty($cleanQuery) && $search === null;
         // Smart bypass: only when RBAC explicitly disabled and it's a simple public request.
-        $smartBypass = $isSimplePublicRequest && !$rbac;
+        $smartBypass = $isSimplePublicRequest && ($rbac === false);
 
 // Build base query - different for count vs search.
         if ($count === true) {
@@ -1652,7 +1652,7 @@ class ObjectEntityMapper extends QBMapper
             $this->logger->info('⚠️  PERFORMANCE BYPASS MODE - Skipping all authorization checks', [
                 'WARNING' => 'This should ONLY be used for performance testing!'
             ]);
-        } elseif ($smartBypass === true) {
+        } else if ($smartBypass === true) {
             $this->logger->debug('🚀 PERFORMANCE: Smart RBAC bypass for public data', [
                 'reason' => 'simple_public_request',
                 'expectedImprovement' => '30-40%',
@@ -2128,7 +2128,7 @@ class ObjectEntityMapper extends QBMapper
         // If published filter is set, only include objects that are currently published
         // However, if bypassPublishedFilter is true, we don't apply this filter as published objects
 // will be included via the organization filter bypass logic.
-        if ($published === true && !$bypassPublishedFilter) {
+        if ($published === true && ($bypassPublishedFilter === false)) {
             $now = (new \DateTime())->format('Y-m-d H:i:s');
             $publishedColumn = $tableAlias === true ? $tableAlias . '.published' : 'published';
             $depublishedColumn = $tableAlias === true ? $tableAlias . '.depublished' : 'depublished';
@@ -2475,7 +2475,7 @@ class ObjectEntityMapper extends QBMapper
             ->from('openregister_objects')
             ->where($qb->expr()->eq('id', $qb->createNamedParameter($entity->getId())));
 
-        if (!$includeDeleted) {
+        if (($includeDeleted === false)) {
             $qb->andWhere($qb->expr()->isNull('deleted'));
         }
 
@@ -3774,16 +3774,16 @@ class ObjectEntityMapper extends QBMapper
                 $size += strlen($key);
                 if (is_string($value) === true) {
                     $size += strlen($value);
-                } elseif (is_array($value) === true) {
+                } else if (is_array($value) === true) {
                     $size += strlen(json_encode($value));
-                } elseif (is_numeric($value) === true) {
+                } else if (is_numeric($value) === true) {
                     $size += strlen((string) $value);
                 } else {
 // Default estimate for other types.
                 }
             }
             return $size;
-        } elseif (is_object($object) === true) {
+        } else if (is_object($object) === true) {
 // For ObjectEntity objects (update case).
             $size = 0;
             $reflection = new \ReflectionClass($object);
@@ -3793,9 +3793,9 @@ class ObjectEntityMapper extends QBMapper
 
                 if (is_string($value) === true) {
                     $size += strlen($value);
-                } elseif (is_array($value) === true) {
+                } else if (is_array($value) === true) {
                     $size += strlen(json_encode($value));
-                } elseif (is_numeric($value) === true) {
+                } else if (is_numeric($value) === true) {
                     $size += strlen((string) $value);
                 } else {
 // Default estimate for other types.
@@ -4067,7 +4067,7 @@ class ObjectEntityMapper extends QBMapper
             $batchSuccess = false;
             $currentBatchSize = $batchSize;
 
-            while ($batchRetryCount <= $maxBatchRetries && !$batchSuccess) {
+            while ($batchRetryCount <= $maxBatchRetries && ($batchSuccess === false)) {
                 try {
                     $stmt = $this->db->prepare($batchSql);
                     $result = $stmt->execute($parameters);
@@ -4593,7 +4593,7 @@ class ObjectEntityMapper extends QBMapper
                 if ($hardDelete === true) {
 // Force hard delete for all objects when hardDelete flag is set.
                     $hardDeleteIds[] = $object['id'];
-                } elseif (empty($object['deleted']) === true) {
+                } else if (empty($object['deleted']) === true) {
 // No deleted value set - perform soft delete.
                     $softDeleteIds[] = $object['id'];
                 } else {
@@ -4604,7 +4604,7 @@ class ObjectEntityMapper extends QBMapper
             }
 
 // Perform soft deletes (set deleted timestamp).
-            if (!empty($softDeleteIds)) {
+            if (empty($softDeleteIds) === false) {
                 $currentTime = (new \DateTime())->format('Y-m-d H:i:s');
                 $qb = $this->db->getQueryBuilder();
                 $qb->update($tableName)
@@ -4618,7 +4618,7 @@ class ObjectEntityMapper extends QBMapper
             }
 
 // Perform hard deletes (remove from database).
-            if (!empty($hardDeleteIds)) {
+            if (empty($hardDeleteIds) === false) {
                 $qb = $this->db->getQueryBuilder();
                 $qb->delete($tableName)
                     ->where($qb->expr()->in('id', $qb->createNamedParameter($hardDeleteIds, \Doctrine\DBAL\Connection::PARAM_INT_ARRAY)));
@@ -4668,7 +4668,7 @@ class ObjectEntityMapper extends QBMapper
         if ($datetime === false) {
 // Unset published timestamp.
             $publishedValue = null;
-        } elseif ($datetime instanceof \DateTime) {
+        } else if ($datetime instanceof \DateTime) {
 // Use provided datetime.
             $publishedValue = $datetime->format('Y-m-d H:i:s');
         } else {
@@ -4703,7 +4703,7 @@ class ObjectEntityMapper extends QBMapper
             $objectIds = array_column($objects, 'id');
             $chunkPublishedIds = array_column($objects, 'uuid');
 
-            if (!empty($objectIds)) {
+            if (empty($objectIds) === false) {
 // Update published timestamp for this chunk.
                 $qb = $this->db->getQueryBuilder();
                 $qb->update($tableName);
@@ -4764,7 +4764,7 @@ class ObjectEntityMapper extends QBMapper
         if ($datetime === false) {
 // Unset depublished timestamp.
             $depublishedValue = null;
-        } elseif ($datetime instanceof \DateTime) {
+        } else if ($datetime instanceof \DateTime) {
 // Use provided datetime.
             $depublishedValue = $datetime->format('Y-m-d H:i:s');
         } else {
@@ -4799,7 +4799,7 @@ class ObjectEntityMapper extends QBMapper
             $objectIds = array_column($objects, 'id');
             $chunkDepublishedIds = array_column($objects, 'uuid');
 
-            if (!empty($objectIds)) {
+            if (empty($objectIds) === false) {
 // Update depublished timestamp for this chunk.
                 $qb = $this->db->getQueryBuilder();
                 $qb->update($tableName);
@@ -4913,7 +4913,7 @@ class ObjectEntityMapper extends QBMapper
 
         // When publishAll is true, include ALL objects (both published and unpublished)
 // When publishAll is false, only include objects that are not published.
-        if (!$publishAll) {
+        if (($publishAll === false)) {
             $qb->andWhere($qb->expr()->isNull('published'));
         }
 
@@ -4970,7 +4970,7 @@ class ObjectEntityMapper extends QBMapper
 
         // When hardDelete is true, include ALL objects (both soft-deleted and not deleted)
 // When hardDelete is false, only include objects that are not soft-deleted.
-        if (!$hardDelete) {
+        if (($hardDelete === false)) {
             $qb->andWhere($qb->expr()->isNull('deleted'));
         }
 
@@ -5230,7 +5230,7 @@ class ObjectEntityMapper extends QBMapper
             try {
 
 // Ensure we have array data for INSERT operations.
-                if (!is_array($objectData)) {
+                if (is_array($objectData) === false) {
                     continue;
                 }
 
@@ -5340,7 +5340,7 @@ class ObjectEntityMapper extends QBMapper
                     );
                 }
 
-                if (!empty($conditions)) {
+                if (empty($conditions) === false) {
                     $qb->where($qb->expr()->orX(...$conditions));
                 }
 
@@ -5652,7 +5652,7 @@ class ObjectEntityMapper extends QBMapper
         }
 
         // **QUERY HINT 2**: For RBAC-enabled queries, suggest specific execution plan
-        if (!$skipRbac) {
+        if (($skipRbac === false)) {
 // RBAC queries should prioritize owner-based indexes.
             $this->logger->debug('🚀 QUERY OPTIMIZATION: RBAC enabled - using owner-based indexes');
         }

@@ -500,7 +500,7 @@ class SolrSchemaService
                     );
 
             // Ensure tenant collection exists.
-            if (!$this->solrService->ensureTenantCollection()) {
+            if ($this->solrService->ensureTenantCollection() === false) {
                 throw new \Exception('Failed to ensure tenant collection exists');
             }
 
@@ -516,7 +516,7 @@ class SolrSchemaService
             $stats['core_fields_created'] = count(self::CORE_METADATA_FIELDS);
 
             // STEP 3: Apply resolved field definitions to SOLR.
-            if (!empty($resolvedFields['fields'])) {
+            if (empty($resolvedFields['fields']) === false) {
                 $this->applySolrFields($resolvedFields['fields'], $force);
                 $stats['fields_created'] = count($resolvedFields['fields']);
             }
@@ -610,7 +610,7 @@ class SolrSchemaService
 
             // $schemaProperties is already an array from getProperties()
             $properties = $schemaProperties;
-            if (!is_array($properties)) {
+            if (is_array($properties) === false) {
                 $this->logger->warning(
                         'Invalid schema properties',
                         [
@@ -633,7 +633,7 @@ class SolrSchemaService
                 }
 
                 // Initialize field tracking.
-                if (!isset($fieldDefinitions[$fieldNameStr])) {
+                if (isset($fieldDefinitions[$fieldNameStr]) === false) {
                     $fieldDefinitions[$fieldNameStr] = [
                         'types'       => [],
                         'schemas'     => [],
@@ -642,7 +642,7 @@ class SolrSchemaService
                 }
 
                 // Track this field type and schema.
-                if (!isset($fieldDefinitions[$fieldNameStr]['types'][$fieldType])) {
+                if (isset($fieldDefinitions[$fieldNameStr]['types'][$fieldType]) === false) {
                     $fieldDefinitions[$fieldNameStr]['types'][$fieldType] = 0;
                 }
 
@@ -802,7 +802,7 @@ class SolrSchemaService
         $instanceId    = $this->config->getSystemValue('instanceid', 'default');
         $overwriteHost = $this->config->getSystemValue('overwrite.cli.url', '');
 
-        if (!empty($overwriteHost)) {
+        if (empty($overwriteHost) === false) {
             return 'nc_'.hash('crc32', $overwriteHost);
         }
 
@@ -821,7 +821,7 @@ class SolrSchemaService
     private function mirrorSingleSchema($schema, bool $force=false): array
     {
         $properties = $schema->getProperties();
-        if (empty($properties) === true || !is_array($properties)) {
+        if (empty($properties) === true || is_array($properties) === false) {
             return ['fields' => 0, 'message' => 'No properties to mirror'];
         }
 
@@ -845,12 +845,12 @@ class SolrSchemaService
                 $solrFields[$solrFieldName] = [
                     'type'        => $solrFieldType,
                     'stored'      => true,
-                    'indexed'     => !$isFileField,
+                    'indexed'     => ($isFileField === false),
                 // File fields are stored but not indexed.
                     'multiValued' => $this->isMultiValued($fieldDefinition),
-                    'docValues'   => $isFacetable && !$isFileField,
+                    'docValues'   => $isFacetable && ($isFileField === false),
                 // File fields can't have docValues.
-                    'facetable'   => $isFacetable && !$isFileField,
+                    'facetable'   => $isFacetable && ($isFileField === false),
                 // File fields can't be faceted.
                 ];
                 $fieldsCreated++;
@@ -858,7 +858,7 @@ class SolrSchemaService
         }//end foreach
 
         // Apply fields to SOLR collection.
-        if (!empty($solrFields)) {
+        if (empty($solrFields) === false) {
             $this->applySolrFields($solrFields, $force);
         }
 
@@ -1033,7 +1033,7 @@ class SolrSchemaService
         // Dimension count - stored for validation, not searched.
         ];
 
-        return !in_array($fieldName, $nonIndexedFields);
+        return in_array($fieldName, $nonIndexedFields, true) === false;
 
     }//end shouldCoreFieldBeIndexed()
 
@@ -1176,7 +1176,7 @@ class SolrSchemaService
         // Dimension count - stored for validation, not searched.
         ];
 
-        return !in_array($fieldName, $nonIndexedFields);
+        return in_array($fieldName, $nonIndexedFields, true) === false;
 
     }//end shouldFileFieldBeIndexed()
 
@@ -1288,11 +1288,12 @@ class SolrSchemaService
             $objectCollection = $settings['solr']['objectCollection'] ?? $settings['solr']['collection'] ?? null;
             $fileCollection   = $settings['solr']['fileCollection'] ?? null;
 
-            if ($objectCollection === true) {
+            // ensureVectorFieldType expects a string collection name, not boolean.
+            if (is_string($objectCollection) && empty($objectCollection) === false) {
                 $this->ensureVectorFieldType($objectCollection, 4096, 'cosine');
             }
 
-            if ($fileCollection === true) {
+            if (is_string($fileCollection) && empty($fileCollection) === false) {
                 $this->ensureVectorFieldType($fileCollection, 4096, 'cosine');
             }
         } catch (\Exception $e) {
@@ -1302,7 +1303,7 @@ class SolrSchemaService
                         'error' => $e->getMessage(),
                     ]
                     );
-        }
+        }//end try
 
         // STEP 2: Ensure core metadata fields.
         $successCount = 0;
@@ -1421,7 +1422,7 @@ class SolrSchemaService
         // Get object collection from settings.
         $settings         = $this->settingsService->getSettings();
         $objectCollection = $settings['solr']['objectCollection'] ?? null;
-        if (!$objectCollection) {
+        if (($objectCollection === false)) {
             // Fall back to default collection if object collection not configured.
             $objectCollection = $settings['solr']['collection'] ?? 'openregister';
         }
@@ -1490,7 +1491,7 @@ class SolrSchemaService
         // Get file collection from settings.
         $settings       = $this->settingsService->getSettings();
         $fileCollection = $settings['solr']['fileCollection'] ?? null;
-        if (!$fileCollection) {
+        if (($fileCollection === null) || ($fileCollection === false)) {
             // File collection might not be configured yet.
             $fileCollection = 'openregister_files';
         }
@@ -1569,7 +1570,7 @@ class SolrSchemaService
             ];
 
             // Add authentication if configured.
-            if (!empty($solrConfig['username']) === true && !empty($solrConfig['password'])) {
+            if (empty($solrConfig['username']) === false && empty($solrConfig['password']) === false) {
                 $requestOptions['auth'] = [
                     $solrConfig['username'],
                     $solrConfig['password'],
@@ -1582,7 +1583,7 @@ class SolrSchemaService
             $responseBody = $response->getBody();
             $schemaData   = json_decode($responseBody, true);
 
-            if (!$schemaData || !isset($schemaData['schema']['fields'])) {
+            if (($schemaData === false) || isset($schemaData['schema']['fields']) === false) {
                 $this->logger->warning(
                         'No fields data returned from SOLR',
                         [
@@ -1856,7 +1857,7 @@ class SolrSchemaService
         $settings   = $this->settingsService->getSettings();
         $collection = $collectionType === 'files' ? ($settings['solr']['fileCollection'] ?? null) : ($settings['solr']['objectCollection'] ?? $settings['solr']['collection'] ?? 'openregister');
 
-        if (!$collection) {
+        if (($collection === null) || ($collection === false)) {
             return [
                 'success'       => false,
                 'message'       => "No collection configured for type: {$collectionType}",

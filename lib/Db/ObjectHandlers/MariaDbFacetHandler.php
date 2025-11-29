@@ -222,7 +222,7 @@ class MariaDbFacetHandler
                     foreach ($fieldValue as $value) {
                         $stringValue = $this->normalizeValue($value);
                         if ($stringValue !== null && $stringValue !== '') {
-                            if (!isset($valueCounts[$stringValue])) {
+                            if (isset($valueCounts[$stringValue]) === false) {
                                 $valueCounts[$stringValue] = 0;
                             }
 
@@ -233,7 +233,7 @@ class MariaDbFacetHandler
                     // For single values, count normally.
                     $stringValue = $this->normalizeValue($fieldValue);
                     if ($stringValue !== null && $stringValue !== '') {
-                        if (!isset($valueCounts[$stringValue])) {
+                        if (isset($valueCounts[$stringValue]) === false) {
                             $valueCounts[$stringValue] = 0;
                         }
 
@@ -502,7 +502,7 @@ class MariaDbFacetHandler
         }
 
         // Apply IDs filter if provided.
-        if ($ids !== null && is_array($ids) === true && !empty($ids)) {
+        if ($ids !== null && is_array($ids) === true && empty($ids) === false) {
             $this->applyIdsFilter(queryBuilder: $queryBuilder, ids: $ids);
         }
 
@@ -520,7 +520,7 @@ class MariaDbFacetHandler
                 ARRAY_FILTER_USE_KEY
                 );
 
-        if (!empty($objectFilters)) {
+        if (empty($objectFilters) === false) {
             $this->applyObjectFieldFilters(queryBuilder: $queryBuilder, objectFilters: $objectFilters);
         }
 
@@ -626,7 +626,7 @@ class MariaDbFacetHandler
         $orConditions = $queryBuilder->expr()->orX();
 
         // Add integer ID condition if we have any.
-        if (!empty($integerIds)) {
+        if (empty($integerIds) === false) {
             $orConditions->add(
                 $queryBuilder->expr()->in(
                     'id',
@@ -636,7 +636,7 @@ class MariaDbFacetHandler
         }
 
         // Add UUID condition if we have any.
-        if (!empty($stringIds)) {
+        if (empty($stringIds) === false) {
             $orConditions->add(
                 $queryBuilder->expr()->in(
                     'uuid',
@@ -674,7 +674,7 @@ class MariaDbFacetHandler
     {
         foreach ($metadataFilters as $field => $value) {
             // Handle simple values (backwards compatibility).
-            if (!is_array($value)) {
+            if (is_array($value) === false) {
                 if ($value === 'IS NOT NULL') {
                     $queryBuilder->andWhere($queryBuilder->expr()->isNotNull($field));
                 } else if ($value === 'IS NULL') {
@@ -793,7 +793,7 @@ class MariaDbFacetHandler
             $jsonPath = '$.'.$field;
 
             // Handle simple values (backwards compatibility).
-            if (!is_array($value)) {
+            if (is_array($value) === false) {
                 if ($value === 'IS NOT NULL') {
                     $queryBuilder->andWhere(
                         $queryBuilder->expr()->isNotNull(
@@ -1207,7 +1207,7 @@ class MariaDbFacetHandler
             }
 
             // Initialize field analysis if not exists.
-            if (!isset($fieldAnalysis[$fieldPath])) {
+            if (isset($fieldAnalysis[$fieldPath]) === false) {
                 $fieldAnalysis[$fieldPath] = [
                     'count'         => 0,
                     'types'         => [],
@@ -1225,7 +1225,7 @@ class MariaDbFacetHandler
                 $fieldAnalysis[$fieldPath]['is_array'] = true;
 
                 // Check if it's an array of objects (nested structure).
-                if (!empty($value) === true && is_array($value[0]) === true) {
+                if (empty($value) === false && is_array($value[0]) === true) {
                     $fieldAnalysis[$fieldPath]['is_nested'] = true;
                     // Recursively analyze nested objects.
                     $this->analyzeObjectFields($value[0], $fieldAnalysis, $fieldPath, $depth + 1);
@@ -1274,7 +1274,7 @@ class MariaDbFacetHandler
     {
         $type = $this->determineValueType($value);
 
-        if (!isset($fieldAnalysis['types'][$type])) {
+        if (isset($fieldAnalysis['types'][$type]) === false) {
             $fieldAnalysis['types'][$type] = 0;
         }
 
@@ -1302,7 +1302,7 @@ class MariaDbFacetHandler
         // Convert value to string for storage.
         $stringValue = $this->valueToString($value);
 
-        if (!in_array($stringValue, $fieldAnalysis['sample_values']) && count($fieldAnalysis['sample_values']) < 20) {
+        if (in_array($stringValue, $fieldAnalysis['sample_values'], true) === false && count($fieldAnalysis['sample_values']) < 20) {
             $fieldAnalysis['sample_values'][] = $stringValue;
         }
 
@@ -1515,7 +1515,7 @@ class MariaDbFacetHandler
     private function isArrayOfSimpleValues(array $analysis): bool
     {
         // If it's not an array, it's not an array of simple values.
-        if (!($analysis['is_array'] ?? false)) {
+        if (($analysis['is_array'] ?? false) === false) {
             return false;
         }
 
@@ -1526,10 +1526,8 @@ class MariaDbFacetHandler
             // Check if all types are simple (string, integer, float, boolean, numeric_string, date).
             $simpleTypes = ['string', 'integer', 'float', 'boolean', 'numeric_string', 'date'];
 
-            /*
-             */
             foreach (array_keys($types) as $type) {
-                if (!in_array($type, $simpleTypes)) {
+                if (in_array($type, $simpleTypes, true) === false) {
                     return false;
                 }
             }

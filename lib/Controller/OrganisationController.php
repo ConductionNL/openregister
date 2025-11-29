@@ -38,7 +38,6 @@ use Exception;
  * and organisation CRUD operations.
  *
  * @package OCA\OpenRegister\Controller
- *
  */
 class OrganisationController extends Controller
 {

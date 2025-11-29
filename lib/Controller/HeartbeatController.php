@@ -25,7 +25,6 @@ use OCP\IRequest;
 
 /**
  * Controller for handling heartbeat requests to prevent connection timeouts.
- *
  */
 class HeartbeatController extends Controller
 {

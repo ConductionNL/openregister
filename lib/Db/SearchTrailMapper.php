@@ -42,14 +42,14 @@ use Symfony\Component\Uid\Uuid;
  *
  * @package OCA\OpenRegister\Db
  *
- * @method         SearchTrail insert(Entity $entity)
- * @method         SearchTrail update(Entity $entity)
- * @method         SearchTrail insertOrUpdate(Entity $entity)
- * @method         SearchTrail delete(Entity $entity)
- * @method         SearchTrail find(int|string $id)
- * @method         SearchTrail findEntity(IQueryBuilder $query)
- * @method         SearchTrail[] findAll(int|null $limit = null, int|null $offset = null)
- * @method         list<SearchTrail> findEntities(IQueryBuilder $query)
+ * @method SearchTrail insert(Entity $entity)
+ * @method SearchTrail update(Entity $entity)
+ * @method SearchTrail insertOrUpdate(Entity $entity)
+ * @method SearchTrail delete(Entity $entity)
+ * @method SearchTrail find(int|string $id)
+ * @method SearchTrail findEntity(IQueryBuilder $query)
+ * @method SearchTrail[] findAll(int|null $limit = null, int|null $offset = null)
+ * @method list<SearchTrail> findEntities(IQueryBuilder $query)
  */
 class SearchTrailMapper extends QBMapper
 {
@@ -403,7 +403,9 @@ class SearchTrailMapper extends QBMapper
             ->orderBy('date_period', 'ASC');
 
         // Add date formatting based on database type.
-        if ($this->db->getDatabasePlatform()->getName() === 'mysql') {
+        // getDatabasePlatform() returns a platform instance.
+        $platform = $this->db->getDatabasePlatform();
+        if ($platform->getName() === 'mysql') {
             $qb->addSelect($qb->createFunction("DATE_FORMAT(created, '{$dateFormat}') AS date_period"));
         } else {
             // For SQLite and PostgreSQL - convert MySQL format to SQLite format.

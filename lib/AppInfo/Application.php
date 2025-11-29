@@ -132,7 +132,6 @@ use OCA\OpenRegister\Event\OrganisationDeletedEvent;
  * @license AGPL-3.0-or-later
  *
  * @link https://github.com/nextcloud/server/blob/master/apps-extra/openregister
- *
  */
 class Application extends App implements IBootstrap
 {
@@ -146,6 +145,7 @@ class Application extends App implements IBootstrap
 
     /**
      * Constructor for the Application class
+     *
      * @return void
      */
     public function __construct()

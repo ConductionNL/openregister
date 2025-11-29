@@ -41,7 +41,6 @@ use Psr\Log\LoggerInterface;
  *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
- *
  */
 class ChatController extends Controller
 {

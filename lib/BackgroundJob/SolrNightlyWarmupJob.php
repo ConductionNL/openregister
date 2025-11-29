@@ -43,7 +43,6 @@ use Psr\Log\LoggerInterface;
  * - Detailed logging and monitoring
  * - Configurable via OpenRegister settings
  * - Automatic error handling and recovery
- *
  */
 class SolrNightlyWarmupJob extends TimedJob
 {
@@ -69,7 +68,6 @@ class SolrNightlyWarmupJob extends TimedJob
      * @param ITimeFactory $time Time factory for job scheduling
      *
      * @return void
-     *
      */
     public function __construct(ITimeFactory $time)
     {
@@ -91,7 +89,6 @@ class SolrNightlyWarmupJob extends TimedJob
      * @param array $argument Job arguments (unused for recurring jobs)
      *
      * @return void
-     *
      */
     protected function run($argument): void
     {

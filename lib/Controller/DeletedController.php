@@ -33,7 +33,6 @@ use OCP\IUserSession;
  * Class DeletedController
  *
  * Controller for managing soft deleted objects
- *
  */
 class DeletedController extends Controller
 {

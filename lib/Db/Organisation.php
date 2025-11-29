@@ -344,17 +344,14 @@ class Organisation extends Entity implements JsonSerializable
      */
     public function addRole(array $role): static
     {
-        //
         if ($this->roles === null) {
-            //
-            $this->roles = [];
+                $this->roles = [];
         }
 
         // Check if role with same ID already exists.
         $roleId = $role['id'] ?? $role['name'] ?? null;
         if ($roleId !== null) {
             $exists = false;
-            //
             foreach ($this->roles as $existingRole) {
                 $existingId = $existingRole['id'] ?? $existingRole['name'] ?? null;
                 if ($existingId === $roleId) {
@@ -364,8 +361,7 @@ class Organisation extends Entity implements JsonSerializable
             }
 
             if ($exists === false) {
-                //
-                $this->roles[] = $role;
+                                $this->roles[] = $role;
             }
         }
 
@@ -383,13 +379,11 @@ class Organisation extends Entity implements JsonSerializable
      */
     public function removeRole(string $roleId): static
     {
-        //
         if ($this->roles === null) {
             return $this;
         }
 
-        //
-        $this->roles = array_values(
+                $this->roles = array_values(
                 array_filter(
                 $this->roles,
                 function ($role) use ($roleId) {
@@ -413,7 +407,6 @@ class Organisation extends Entity implements JsonSerializable
      */
     public function hasRole(string $roleId): bool
     {
-        //
         if ($this->roles === null) {
             return false;
         }
@@ -439,12 +432,10 @@ class Organisation extends Entity implements JsonSerializable
      */
     public function getRole(string $roleId): ?array
     {
-        //
         if ($this->roles === null) {
             return null;
         }
 
-        //
         foreach ($this->roles as $role) {
             $currentId = $role['id'] ?? $role['name'] ?? null;
             if ($currentId === $roleId) {

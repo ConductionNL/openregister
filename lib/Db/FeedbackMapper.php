@@ -43,7 +43,7 @@ use OCP\IDBConnection;
  * @method Feedback[] findAll(int|null $limit = null, int|null $offset = null)
  * @method list<Feedback> findEntities(IQueryBuilder $query)
  *
- * @extends        QBMapper<Feedback>
+ * @extends QBMapper<Feedback>
  */
 class FeedbackMapper extends QBMapper
 {
@@ -66,7 +66,7 @@ class FeedbackMapper extends QBMapper
      *
      * @param Entity $entity Entity to insert
      *
-     * @return         Feedback Inserted entity
+     * @return Feedback Inserted entity
      */
     public function insert(Entity $entity): Feedback
     {
@@ -93,7 +93,7 @@ class FeedbackMapper extends QBMapper
      *
      * @param Entity $entity Entity to update
      *
-     * @return         Feedback Updated entity
+     * @return Feedback Updated entity
      */
     public function update(Entity $entity): Feedback
     {

@@ -21,6 +21,7 @@ namespace OCA\OpenRegister\Service;
 
 use OCP\Http\Client\IClient;
 use GuzzleHttp\Exception\GuzzleException;
+use GuzzleHttp\Exception\RequestException;
 use OCP\IConfig;
 use OCP\ICache;
 use OCP\ICacheFactory;
@@ -271,7 +272,7 @@ class GitHubService
             $statusCode   = null;
 
             // Extract HTTP status code if available.
-            if ($e->hasResponse() === true) {
+            if ($e instanceof RequestException && $e->hasResponse() === true) {
                 $statusCode = $e->getResponse()->getStatusCode();
             }
 
@@ -793,7 +794,7 @@ class GitHubService
                     );
         } catch (GuzzleException $e) {
             $statusCode = null;
-            if ($e->hasResponse() === true) {
+            if ($e instanceof RequestException && $e->hasResponse() === true) {
                 $statusCode = $e->getResponse()->getStatusCode();
             }
 
@@ -972,7 +973,7 @@ class GitHubService
             $errorMessage = $e->getMessage();
             $statusCode   = null;
 
-            if ($e->hasResponse() === true) {
+            if ($e instanceof RequestException && $e->hasResponse() === true) {
                 $statusCode   = $e->getResponse()->getStatusCode();
                 $responseBody = $e->getResponse()->getBody()->getContents();
                 $errorData    = json_decode($responseBody, true);
@@ -1043,7 +1044,7 @@ class GitHubService
             return $fileInfo['sha'] ?? null;
         } catch (GuzzleException $e) {
             // File doesn't exist or other error.
-            if ($e->hasResponse() === true && $e->getResponse()->getStatusCode() === 404) {
+            if ($e instanceof RequestException && $e->hasResponse() === true && $e->getResponse()->getStatusCode() === 404) {
                 return null;
                 // File doesn't exist, which is fine for new files.
             }

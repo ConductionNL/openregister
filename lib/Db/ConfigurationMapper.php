@@ -42,14 +42,14 @@ use OCP\IUserSession;
  * @package OCA\OpenRegister\Db
  *
  * @template-extends QBMapper<Configuration>
- * @method Configuration insert(Entity $entity)
- * @method Configuration update(Entity $entity)
- * @method Configuration insertOrUpdate(Entity $entity)
- * @method Configuration delete(Entity $entity)
- * @method Configuration find(int|string $id)
- * @method Configuration findEntity(IQueryBuilder $query)
- * @method Configuration[] findAll(int|null $limit = null, int|null $offset = null)
- * @method list<Configuration> findEntities(IQueryBuilder $query)
+ * @method           Configuration insert(Entity $entity)
+ * @method           Configuration update(Entity $entity)
+ * @method           Configuration insertOrUpdate(Entity $entity)
+ * @method           Configuration delete(Entity $entity)
+ * @method           Configuration find(int|string $id)
+ * @method           Configuration findEntity(IQueryBuilder $query)
+ * @method           Configuration[] findAll(int|null $limit = null, int|null $offset = null)
+ * @method           list<Configuration> findEntities(IQueryBuilder $query)
  *
  * @extends QBMapper<Configuration>
  */
@@ -375,8 +375,7 @@ class ConfigurationMapper extends QBMapper
         /*
          * @var Configuration $entity
          */
-        /*
-         */
+
         if ($entity instanceof Configuration) {
             // Generate UUID if not set.
             if (empty($entity->getUuid()) === true) {

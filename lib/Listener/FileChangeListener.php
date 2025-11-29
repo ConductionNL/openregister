@@ -57,7 +57,6 @@ class FileChangeListener implements IEventListener
      * @param SettingsService       $settingsService       Settings service
      * @param IJobList              $jobList               Job list for queuing background jobs
      * @param LoggerInterface       $logger                Logger
-     *
      */
     public function __construct(
         private readonly TextExtractionService $textExtractionService,

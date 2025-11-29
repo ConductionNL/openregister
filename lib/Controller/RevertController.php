@@ -31,7 +31,6 @@ use OCA\OpenRegister\Exception\LockedException;
 /**
  * Class RevertController
  * Handles all object reversion operations
- *
  */
 class RevertController extends Controller
 {

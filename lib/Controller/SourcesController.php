@@ -27,7 +27,6 @@ use OCP\IRequest;
 
 /**
  * Class SourcesController
- *
  */
 class SourcesController extends Controller
 {

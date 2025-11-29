@@ -414,14 +414,12 @@ class ChatService
         $totalSources = max($numSourcesFiles, $numSourcesObjects);
 
         // Get view filters if agent has views configured.
-        /*
-         */
         $viewFilters = [];
-        if ($agent !== null && $agent->getViews() !== null && !empty($agent->getViews())) {
+        if ($agent !== null && $agent->getViews() !== null && empty($agent->getViews()) === false) {
             $agentViews = $agent->getViews();
 
             // If selectedViews provided, filter to only those views.
-            if (!empty($selectedViews)) {
+            if (empty($selectedViews) === false) {
                 $viewFilters = array_intersect($agentViews, $selectedViews);
                 $this->logger->info(
                     message: '[ChatService] Using filtered views',
@@ -441,7 +439,7 @@ class ChatService
                     ]
                         );
             }
-        } else if (!empty($selectedViews)) {
+        } else if (empty($selectedViews) === false) {
             // User selected views but agent has no views configured - use selected ones.
             $viewFilters = $selectedViews;
             $this->logger->info(
@@ -470,7 +468,7 @@ class ChatService
             }
 
             // Only add entity_type filter if we're filtering.
-            if (!empty($entityTypes) === true && count($entityTypes) < 2) {
+            if (empty($entityTypes) === false && count($entityTypes) < 2) {
                 $vectorFilters['entity_type'] = $entityTypes;
             }
 
@@ -500,7 +498,7 @@ class ChatService
             }//end if
 
             // Ensure results is an array.
-            if (!is_array($results)) {
+            if (is_array($results) === false) {
                 $this->logger->warning(
                     message: '[ChatService] Search returned non-array result',
                     context: [
@@ -518,7 +516,7 @@ class ChatService
 
             foreach ($results as $result) {
                 // Skip if result is not an array.
-                if (!is_array($result)) {
+                if (is_array($result) === false) {
                     $this->logger->warning(
                         message: '[ChatService] Skipping non-array result',
                         context: [
@@ -592,8 +590,8 @@ class ChatService
                 $contextText .= "{$source['text']}\n\n";
 
                 // Stop if we've reached limits for both types.
-                if ((!$includeFiles || $fileSourceCount >= $numSourcesFiles)
-                    && (!$includeObjects || $objectSourceCount >= $numSourcesObjects)
+                if ((($includeFiles === false) === true || $fileSourceCount >= $numSourcesFiles)
+                    && (($includeObjects === false) === true || $objectSourceCount >= $numSourcesObjects)
                 ) {
                     break;
                 }
@@ -616,7 +614,7 @@ class ChatService
                     );
 
             // DEBUG: Log first source.
-            if (!empty($sources)) {
+            if (empty($sources) === false) {
                 $this->logger->info(
                     message: '[ChatService] First source details',
                     context: [
@@ -689,41 +687,41 @@ class ChatService
     private function extractSourceName(array $result): string
     {
         // First check top-level fields.
-        if (!empty($result['title'])) {
+        if (empty($result['title']) === false) {
             return $result['title'];
         }
 
-        if (!empty($result['name'])) {
+        if (empty($result['name']) === false) {
             return $result['name'];
         }
 
-        if (!empty($result['filename'])) {
+        if (empty($result['filename']) === false) {
             return $result['filename'];
         }
 
         // Check metadata for object_title, file_name, etc.
-        if (!empty($result['metadata'])) {
+        if (empty($result['metadata']) === false) {
             $metadata = is_array($result['metadata']) === true ? $result['metadata'] : json_decode($result['metadata'], true);
 
-            if (!empty($metadata['object_title'])) {
+            if (empty($metadata['object_title']) === false) {
                 return $metadata['object_title'];
             }
 
-            if (!empty($metadata['file_name'])) {
+            if (empty($metadata['file_name']) === false) {
                 return $metadata['file_name'];
             }
 
-            if (!empty($metadata['name'])) {
+            if (empty($metadata['name']) === false) {
                 return $metadata['name'];
             }
 
-            if (!empty($metadata['title'])) {
+            if (empty($metadata['title']) === false) {
                 return $metadata['title'];
             }
         }
 
         // Fallback to entity ID.
-        if (!empty($result['entity_id'])) {
+        if (empty($result['entity_id']) === false) {
             $type = $result['entity_type'] ?? 'Item';
             // Capitalize first letter for display.
             $type = ucfirst($type);
@@ -768,13 +766,13 @@ class ChatService
                     context: [
                         'role'          => $role,
                         'contentLength' => strlen($content ?? ''),
-                        'hasContent'    => !empty($content),
-                        'hasRole'       => !empty($role),
+                        'hasContent'    => empty($content) === false,
+                        'hasRole'       => empty($role) === false,
                     ]
                     );
 
             // Only add messages that have both role and content.
-            if (!empty($role) === true && !empty($content)) {
+            if (empty($role) === false && empty($content) === false) {
                 // Use static factory methods based on role.
                 if ($role === 'user') {
                     $history[] = LLPhantMessage::user($content);
@@ -794,8 +792,8 @@ class ChatService
                 $this->logger->warning(
                     message: '[ChatService] Skipping message with missing role or content',
                     context: [
-                        'hasRole'    => !empty($role),
-                        'hasContent' => !empty($content),
+                        'hasRole'    => empty($role) === false,
+                        'hasContent' => empty($content) === false,
                     ]
                         );
             }//end if
@@ -849,7 +847,7 @@ class ChatService
         $toolsStartTime = microtime(true);
         $tools          = $this->getAgentTools($agent, $selectedTools);
         $toolsTime      = microtime(true) - $toolsStartTime;
-        if (!empty($tools)) {
+        if (empty($tools) === false) {
             $this->logger->info(
                     message: '[ChatService] Agent has tools enabled',
                     context: [
@@ -874,7 +872,7 @@ class ChatService
                 context: [
                     'provider'  => $chatProvider,
                     'llmConfig' => $llmConfig,
-                    'hasTools'  => !empty($tools),
+                    'hasTools'  => empty($tools) === false,
                 ]
                 );
 
@@ -892,7 +890,7 @@ class ChatService
                 $config->url = rtrim($ollamaConfig['url'], '/').'/api/';
                 // Use agent model if set and not empty, otherwise fallback to global config.
                 $agentModel    = $agent?->getModel();
-                $config->model = (!empty($agentModel)) ? $agentModel : ($ollamaConfig['chatModel'] ?? 'llama2');
+                $config->model = (empty($agentModel) === false) ? $agentModel : ($ollamaConfig['chatModel'] ?? 'llama2');
 
                 // Set temperature from agent or default.
                 if ($agent?->getTemperature() !== null) {
@@ -911,9 +909,9 @@ class ChatService
                     $config->apiKey = $openaiConfig['apiKey'];
                     // Use agent model if set and not empty, otherwise fallback to global config.
                     $agentModel    = $agent?->getModel();
-                    $config->model = (!empty($agentModel)) ? $agentModel : ($openaiConfig['chatModel'] ?? 'gpt-4o-mini');
+                    $config->model = (empty($agentModel) === false) ? $agentModel : ($openaiConfig['chatModel'] ?? 'gpt-4o-mini');
 
-                    if (!empty($openaiConfig['organizationId'])) {
+                    if (empty($openaiConfig['organizationId']) === false) {
                         $config->organizationId = $openaiConfig['organizationId'];
                     }
                 } else if ($chatProvider === 'fireworks') {
@@ -925,11 +923,11 @@ class ChatService
                     $config->apiKey = $fireworksConfig['apiKey'];
                     // Use agent model if set and not empty, otherwise fallback to global config.
                     $agentModel    = $agent?->getModel();
-                    $config->model = (!empty($agentModel)) ? $agentModel : ($fireworksConfig['chatModel'] ?? 'accounts/fireworks/models/llama-v3p1-8b-instruct');
+                    $config->model = (empty($agentModel) === false) ? $agentModel : ($fireworksConfig['chatModel'] ?? 'accounts/fireworks/models/llama-v3p1-8b-instruct');
 
                     // Fireworks AI uses OpenAI-compatible API.
                     $baseUrl = rtrim($fireworksConfig['baseUrl'] ?? 'https://api.fireworks.ai/inference/v1', '/');
-                    if (!str_ends_with($baseUrl, '/v1')) {
+                    if (str_ends_with($baseUrl, '/v1') === false) {
                         $baseUrl .= '/v1';
                     }
 
@@ -947,7 +945,7 @@ class ChatService
             // Build system prompt.
             $systemPrompt = $agent?->getPrompt() ?? "You are a helpful AI assistant that helps users find and understand information in their data.";
 
-            if (!empty($context['text'])) {
+            if (empty($context['text']) === false) {
                 $systemPrompt .= "\n\nUse the following context to answer the user's question:\n\n";
                 $systemPrompt .= "CONTEXT:\n".$context['text']."\n\n";
                 $systemPrompt .= "If the context doesn't contain relevant information, say so honestly. ";
@@ -962,7 +960,7 @@ class ChatService
 
             // Convert tools to functions if agent has tools enabled.
             $functions = [];
-            if (!empty($tools)) {
+            if (empty($tools) === false) {
                 $functions = $this->convertToolsToFunctions($tools);
             }
 
@@ -982,7 +980,7 @@ class ChatService
                 $chat = new OllamaChat($config);
 
                 // Add functions if available - Ollama supports tools via LLPhant!
-                if (!empty($functions)) {
+                if (empty($functions) === false) {
                     // Convert array-based function definitions to FunctionInfo objects.
                     $functionInfoObjects = $this->convertFunctionsToFunctionInfo($functions, $tools);
                     $chat->setTools($functionInfoObjects);
@@ -997,7 +995,7 @@ class ChatService
                 $chat = new OpenAIChat($config);
 
                 // Add functions if available.
-                if (!empty($functions)) {
+                if (empty($functions) === false) {
                     // Convert array-based function definitions to FunctionInfo objects.
                     $functionInfoObjects = $this->convertFunctionsToFunctionInfo($functions, $tools);
                     $chat->setTools($functionInfoObjects);
@@ -1099,7 +1097,7 @@ class ChatService
                     $config->apiKey = $fireworksConfig['apiKey'];
                     $config->model  = 'accounts/fireworks/models/llama-v3p1-8b-instruct';
                     $baseUrl        = rtrim($fireworksConfig['baseUrl'] ?? 'https://api.fireworks.ai/inference/v1', '/');
-                    if (!str_ends_with($baseUrl, '/v1')) {
+                    if (str_ends_with($baseUrl, '/v1') === false) {
                         $baseUrl .= '/v1';
                     }
 
@@ -1218,7 +1216,7 @@ class ChatService
         }
 
         // Check if base title exists.
-        if (!in_array($baseTitle, $existingTitles)) {
+        if (in_array($baseTitle, $existingTitles, true) === false) {
             return $baseTitle;
         }
 
@@ -1279,7 +1277,7 @@ class ChatService
 
         try {
             // Validate provider.
-            if (!in_array($provider, ['openai', 'fireworks', 'ollama'])) {
+            if (in_array($provider, ['openai', 'fireworks', 'ollama'], true) === false) {
                 throw new \Exception("Unsupported provider: {$provider}");
             }
 
@@ -1311,7 +1309,7 @@ class ChatService
                     $llphantConfig->apiKey = $config['apiKey'];
                     $llphantConfig->model  = $config['chatModel'] ?? $config['model'] ?? 'gpt-4o-mini';
 
-                    if (!empty($config['organizationId'])) {
+                    if (empty($config['organizationId']) === false) {
                         $llphantConfig->organizationId = $config['organizationId'];
                     }
                 } else if ($provider === 'fireworks') {
@@ -1325,7 +1323,7 @@ class ChatService
                     // Fireworks AI uses OpenAI-compatible API but needs specific URL format.
                     $baseUrl = rtrim($config['baseUrl'] ?? 'https://api.fireworks.ai/inference/v1', '/');
                     // Ensure the URL ends with /v1 for compatibility.
-                    if (!str_ends_with($baseUrl, '/v1')) {
+                    if (str_ends_with($baseUrl, '/v1') === false) {
                         $baseUrl .= '/v1';
                     }
 
@@ -1357,8 +1355,7 @@ class ChatService
                     context: [
                         'provider' => $provider,
                         'model'    => $llphantConfig->model,
-                        /*
-                         */
+
                         'url'      => $llphantConfig->url ?? 'default',
                     ]
                         );
@@ -1399,8 +1396,7 @@ class ChatService
                     'testMessage'    => $testMessage,
                     'response'       => $response,
                     'responseLength' => strlen($response),
-                    /*
-                     */
+
                     'url'            => $llphantConfig->url ?? null,
                 ],
             ];
@@ -1536,7 +1532,7 @@ class ChatService
         }
 
         $data = is_string($response) === true ? json_decode($response, true) : [];
-        if (!isset($data['choices'][0]['message']['content'])) {
+        if (isset($data['choices'][0]['message']['content']) === false) {
             throw new \Exception("Unexpected Fireworks API response format: ".(is_string($response) === true ? $response : 'Invalid response'));
         }
 
@@ -1565,7 +1561,7 @@ class ChatService
 
             // Note: Function calling with Fireworks AI is not yet implemented.
         // Functions will be ignored for Fireworks provider.
-        if (!empty($functions)) {
+        if (empty($functions) === false) {
             $this->logger->warning(
                     message: '[ChatService] Function calling not yet supported for Fireworks AI. Tools will be ignored.',
                     context: [
@@ -1651,7 +1647,7 @@ class ChatService
         }
 
         $data = is_string($response) === true ? json_decode($response, true) : [];
-        if (!isset($data['choices'][0]['message']['content'])) {
+        if (isset($data['choices'][0]['message']['content']) === false) {
             throw new \Exception("Unexpected Fireworks API response format: ".(is_string($response) === true ? $response : 'Invalid response'));
         }
 
@@ -1797,7 +1793,7 @@ class ChatService
                 $config->apiKey = $fireworksConfig['apiKey'];
                 $config->model  = 'accounts/fireworks/models/llama-v3p1-8b-instruct';
                 $baseUrl        = rtrim($fireworksConfig['baseUrl'] ?? 'https://api.fireworks.ai/inference/v1', '/');
-                if (!str_ends_with($baseUrl, '/v1')) {
+                if (str_ends_with($baseUrl, '/v1') === false) {
                     $baseUrl .= '/v1';
                 }
 
@@ -1893,7 +1889,7 @@ class ChatService
         }
 
         // If selectedTools provided, filter enabled tools.
-        if (!empty($selectedTools)) {
+        if (empty($selectedTools) === false) {
             $enabledToolIds = array_intersect($enabledToolIds, $selectedTools);
             $this->logger->info(
                     message: '[ChatService] Filtering tools',
