@@ -115,7 +115,6 @@ use Psr\Log\LoggerInterface;
  *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
- *
  */
 class SettingsController extends Controller
 {
@@ -549,7 +548,7 @@ class SettingsController extends Controller
             }
 
             // Validate parameters.
-            if (!in_array($mode, ['serial', 'parallel'])) {
+            if (in_array($mode, ['serial', 'parallel'], true) === false) {
                 return new JSONResponse(
                     data: [
                         'error' => 'Invalid mode parameter. Must be "serial" or "parallel"',
@@ -1324,7 +1323,7 @@ class SettingsController extends Controller
                         'enabled'         => $solrSettings['enabled'] ?? false,
                         'host'            => $solrSettings['host'] ?? 'not_set',
                         'port'            => $solrSettings['port'] ?? 'not_set',
-                        'has_credentials' => !empty($solrSettings['username']) === true && !empty($solrSettings['password']),
+                        'has_credentials' => empty($solrSettings['username']) === false && empty($solrSettings['password']) === false,
                     ]
                     );
 
@@ -1473,7 +1472,7 @@ class SettingsController extends Controller
             }//end if
         } catch (\Exception $e) {
             // Get logger for error logging if not already available.
-            if (!isset($logger)) {
+            if (isset($logger) === false) {
                 $logger = \OC::$server->get(\Psr\Log\LoggerInterface::class);
             }
 
@@ -1549,7 +1548,7 @@ class SettingsController extends Controller
             // Get SOLR settings directly.
             $solrSettings = $this->settingsService->getSolrSettings();
 
-            if (!$solrSettings['enabled']) {
+            if (($solrSettings['enabled'] === false)) {
                 return new JSONResponse(
                         data: [
                             'success' => false,
@@ -1872,7 +1871,7 @@ class SettingsController extends Controller
             $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
 
             // Check if SOLR is available first.
-            if (!$guzzleSolrService->isAvailable()) {
+            if ($guzzleSolrService->isAvailable() === false) {
                 return new JSONResponse(
                         data: [
                             'success' => false,
@@ -1984,7 +1983,7 @@ class SettingsController extends Controller
             $solrSchemaService = $this->container->get(SolrSchemaService::class);
 
             // Check if SOLR is available first.
-            if (!$guzzleSolrService->isAvailable()) {
+            if ($guzzleSolrService->isAvailable() === false) {
                 return new JSONResponse(
                         data: [
                             'success' => false,
@@ -2010,7 +2009,7 @@ class SettingsController extends Controller
             // Create missing fields for OBJECT collection.
             try {
                 $objectStatus = $solrSchemaService->getObjectCollectionFieldStatus();
-                if (!empty($objectStatus['missing'])) {
+                if (empty($objectStatus['missing']) === false) {
                     $objectResult       = $solrSchemaService->createMissingFields(
                         collectionType: 'objects',
                         missingFields: $objectStatus['missing'],
@@ -2036,7 +2035,7 @@ class SettingsController extends Controller
             // Create missing fields for FILE collection.
             try {
                 $fileStatus = $solrSchemaService->getFileCollectionFieldStatus();
-                if (!empty($fileStatus['missing'])) {
+                if (empty($fileStatus['missing']) === false) {
                     $fileResult       = $solrSchemaService->createMissingFields(
                         collectionType: 'files',
                         missingFields: $fileStatus['missing'],
@@ -2279,7 +2278,7 @@ class SettingsController extends Controller
             $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
 
             // Check if SOLR is available first.
-            if (!$guzzleSolrService->isAvailable()) {
+            if ($guzzleSolrService->isAvailable() === false) {
                 return new JSONResponse(
                         data: [
                             'success' => false,
@@ -2298,7 +2297,7 @@ class SettingsController extends Controller
             $expectedFields = $this->getExpectedSchemaFields();
             $fieldsInfo     = $guzzleSolrService->getFieldsConfiguration();
 
-            if (!$fieldsInfo['success']) {
+            if (($fieldsInfo['success'] === false)) {
                 return new JSONResponse(
                         data: [
                             'success' => false,
@@ -2410,7 +2409,7 @@ class SettingsController extends Controller
 
         // Find missing fields (expected but not in SOLR).
         foreach ($expectedFields as $fieldName => $expectedConfig) {
-            if (!isset($actualFields[$fieldName])) {
+            if (isset($actualFields[$fieldName]) === false) {
                 $missing[] = [
                     'field'           => $fieldName,
                     'expected_type'   => $expectedConfig['type'] ?? 'unknown',
@@ -2426,7 +2425,7 @@ class SettingsController extends Controller
                 continue;
             }
 
-            if (!isset($expectedFields[$fieldName])) {
+            if (isset($expectedFields[$fieldName]) === false) {
                 $extra[] = [
                     'field'         => $fieldName,
                     'actual_type'   => $actualField['type'] ?? 'unknown',
@@ -2588,7 +2587,7 @@ class SettingsController extends Controller
             $guzzleSolrService = $this->container->get(\OCA\OpenRegister\Service\GuzzleSolrService::class);
 
             // Check if SOLR is available.
-            if (!$guzzleSolrService->isAvailable()) {
+            if ($guzzleSolrService->isAvailable() === false) {
                 return new JSONResponse(
                         data: [
                             'success' => false,
@@ -2638,7 +2637,7 @@ class SettingsController extends Controller
             $guzzleSolrService = $this->container->get(\OCA\OpenRegister\Service\GuzzleSolrService::class);
 
             // Check if SOLR is available.
-            if (!$guzzleSolrService->isAvailable()) {
+            if ($guzzleSolrService->isAvailable() === false) {
                 return new JSONResponse(
                         data: [
                             'success' => false,
@@ -2816,7 +2815,7 @@ class SettingsController extends Controller
             }
 
             // Validate mode parameter.
-            if (!in_array($mode, ['serial', 'parallel', 'hyper'])) {
+            if (in_array($mode, ['serial', 'parallel', 'hyper'], true) === false) {
                 return new JSONResponse(
                         data: [
                             'error' => 'Invalid mode parameter. Must be "serial", "parallel", or "hyper"',
@@ -3205,14 +3204,10 @@ class SettingsController extends Controller
     {
         try {
             // Get database platform information.
-            /*
-             * @var AbstractPlatform $platform
-             */
+            // Note: getDatabasePlatform() returns a platform instance, but we avoid type hinting it.
             $platform = $this->db->getDatabasePlatform();
-            /*
-             * @var string $platformName
-             */
-            $platformName = $platform->getName();
+            // Get platform name as string.
+            $platformName = method_exists($platform, 'getName') ? $platform->getName() : 'unknown';
 
             // Determine database type and version.
             $dbType            = 'Unknown';
@@ -3665,7 +3660,7 @@ class SettingsController extends Controller
                     ]
                     );
 
-            $response = curl_exec($ch);
+            $response  = curl_exec($ch);
             $httpCode  = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             $curlError = curl_error($ch);
             curl_close($ch);
@@ -3691,7 +3686,7 @@ class SettingsController extends Controller
             }
 
             $data = json_decode($response, true);
-            if (!isset($data['models']) || !is_array($data['models'])) {
+            if (isset($data['models']) === false || is_array($data['models']) === false) {
                 return new JSONResponse(
                         data: [
                             'success' => false,
@@ -4138,7 +4133,7 @@ class SettingsController extends Controller
             // Get GuzzleSolrService for prediction.
             $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
 
-            if (!$guzzleSolrService->isAvailable()) {
+            if ($guzzleSolrService->isAvailable() === false) {
                 return new JSONResponse(
                         data: [
                             'success'    => false,
@@ -4203,7 +4198,7 @@ class SettingsController extends Controller
                     );
 
             // Validate field name.
-            if (empty($fieldName) === true || !is_string($fieldName)) {
+            if (empty($fieldName) === true || is_string($fieldName) === false) {
                 return new JSONResponse(
                         data: [
                             'success' => false,
@@ -5286,14 +5281,14 @@ class SettingsController extends Controller
 
             if (($data['github_token'] ?? null) !== null) {
                 // Only save if not masked.
-                if (!str_contains($data['github_token'], '***')) {
+                if (str_contains($data['github_token'], '***') === false) {
                     $this->config->setValueString('openregister', 'github_api_token', $data['github_token']);
                 }
             }
 
             if (($data['gitlab_token'] ?? null) !== null) {
                 // Only save if not masked.
-                if (!str_contains($data['gitlab_token'], '***')) {
+                if (str_contains($data['gitlab_token'], '***') === false) {
                     $this->config->setValueString('openregister', 'gitlab_api_token', $data['gitlab_token']);
                 }
             }

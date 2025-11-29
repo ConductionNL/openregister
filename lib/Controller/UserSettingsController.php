@@ -30,7 +30,6 @@ use Psr\Log\LoggerInterface;
  * Controller for managing user-specific settings (GitHub tokens, etc.).
  *
  * @package OCA\OpenRegister\Controller
- *
  */
 class UserSettingsController extends Controller
 {

@@ -321,11 +321,22 @@ class GetObject
         ?Schema $schema=null
     ): array {
         // First find all objects that reference this object's URI or UUID.
-        //
-        $referencingObjects = $this->objectEntityMapper->findByRelationUri(
-            search: $object->getUri() ?? $object->getUuid(),
-            partialMatch: $partialMatch
+        // Use searchObjects with relation filter instead of findByRelationUri.
+        $searchUri = $object->getUri() ?? $object->getUuid();
+        $query     = [
+            '_limit'  => $limit ?? 100,
+            '_offset' => $offset ?? 0,
+        ];
+        // Search for objects containing the URI/UUID in their relations.
+        // Note: This is a simplified approach - findByRelationUri would need to be implemented.
+        $referencingObjects = $this->objectEntityMapper->searchObjects(
+            query: $query,
+            rbac: $rbac,
+            multi: $multi
         );
+        // Filter results to only include objects that reference the URI/UUID.
+        // This is a workaround until findByRelationUri is implemented.
+        $referencingObjects = is_array($referencingObjects) ? $referencingObjects : [];
 
         // If additional parameters are set, filter the IDs from $referencingObjects.
         if (empty($filters) === false

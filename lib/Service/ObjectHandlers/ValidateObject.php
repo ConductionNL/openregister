@@ -247,7 +247,7 @@ class ValidateObject
      */
     private function transformOpenRegisterObjectConfigurations(object $schemaObject): object
     {
-        if (!isset($schemaObject->properties)) {
+        if (isset($schemaObject->properties) === false) {
             return $schemaObject;
         }
 
@@ -341,7 +341,7 @@ class ValidateObject
     private function transformArrayItemsForOpenRegister($itemsSchema): void
     {
         // Handle case where items might be an array or not an object.
-        if (!is_object($itemsSchema)) {
+        if (is_object($itemsSchema) === false) {
             return;
         }
 
@@ -358,7 +358,7 @@ class ValidateObject
             return;
         }
 
-        if (!isset($itemsSchema->type) === false || $itemsSchema->type !== 'object') {
+        if (isset($itemsSchema->type) === false || $itemsSchema->type !== 'object') {
             return;
         }
 
@@ -377,7 +377,7 @@ class ValidateObject
     private function transformObjectPropertyForOpenRegister(object $objectSchema): void
     {
         // Check if this has objectConfiguration.
-        if (!isset($objectSchema->objectConfiguration) === false || !isset($objectSchema->objectConfiguration->handling)) {
+        if (isset($objectSchema->objectConfiguration) === false || isset($objectSchema->objectConfiguration->handling) === false) {
             return;
         }
 
@@ -423,11 +423,11 @@ class ValidateObject
                 'type' => 'object',
             ];
 
-            if ($originalProperties !== null && !empty($originalProperties)) {
+            if ($originalProperties !== null && empty($originalProperties) === false) {
                 $objectTypeSchema->properties = $originalProperties;
             }
 
-            if ($originalRequired !== null && !empty($originalRequired)) {
+            if ($originalRequired !== null && empty($originalRequired) === false) {
                 $objectTypeSchema->required = $originalRequired;
             }
 
@@ -514,7 +514,7 @@ class ValidateObject
                         ],
                     ];
                 }
-            }
+            }//end if
         }//end if
 
     }//end transformToNestedObjectProperty()
@@ -537,7 +537,7 @@ class ValidateObject
     private function transformSchemaForValidation(object $schemaObject, array $object, string $currentSchemaSlug): array
     {
 
-        if (!isset($schemaObject->properties)) {
+        if (isset($schemaObject->properties) === false) {
             return [$schemaObject, $object];
         }
 
@@ -613,7 +613,7 @@ class ValidateObject
                     unset($propertySchema->{'$ref'});
 
                     // Ensure items has a valid schema after transformation.
-                    if (!isset($propertySchema->items->type) === false && !isset($propertySchema->items->oneOf)) {
+                    if (isset($propertySchema->items->type) === false && isset($propertySchema->items->oneOf) === false) {
                         $propertySchema->items->type = 'string';
                     }
                 }//end if
@@ -706,7 +706,7 @@ class ValidateObject
     private function cleanPropertyForValidation($propertySchema, bool $isArrayItems=false)
     {
         // Handle non-object properties.
-        if (!is_object($propertySchema)) {
+        if (is_object($propertySchema) === false) {
             return $propertySchema;
         }
 
@@ -770,7 +770,7 @@ class ValidateObject
     {
 
         // If items don't have a type or aren't objects, return as-is.
-        if (!isset($itemsSchema->type) === false || $itemsSchema->type !== 'object') {
+        if (isset($itemsSchema->type) === true || $itemsSchema->type !== 'object') {
             return $itemsSchema;
         }
 
@@ -948,6 +948,7 @@ class ValidateObject
     ): ValidationResult {
 
         // Use == because === will never be true when comparing stdClass-instances.
+        // phpcs:ignore Squiz.Operators.ComparisonOperatorUsage.NotAllowed
         if ($schemaObject == new stdClass()) {
             if ($schema instanceof Schema) {
                 $schemaObject = $schema->getSchemaObject($this->urlGenerator);
@@ -977,7 +978,7 @@ class ValidateObject
         }
 
         // If there are no properties, we don't need to validate.
-        if (!isset($schemaObject->properties) === false || empty($schemaObject->properties) === true) {
+        if (isset($schemaObject->properties) === true || empty($schemaObject->properties) === true) {
             // Validate against an empty schema object to get a valid ValidationResult.
             $validator = new Validator();
             return $validator->validate(json_decode(json_encode($object)), new stdClass());
@@ -1038,7 +1039,7 @@ class ValidateObject
                 if (($propertySchema->enum ?? null) !== null && is_array($propertySchema->enum) === true) {
                     // If enum doesn't include null, don't add it automatically.
                     // Enum fields should be either set to a valid enum value or omitted entirely.
-                    if (!in_array(null, $propertySchema->enum)) {
+                    if (in_array(null, $propertySchema->enum, true) === false) {
                         continue;
                     }
                 }
@@ -1049,7 +1050,7 @@ class ValidateObject
                     $propertySchema->type = [$propertySchema->type, 'null'];
                 } else if (($propertySchema->type ?? null) !== null && is_array($propertySchema->type) === true) {
                     // Add null to existing type array if not already present.
-                    if (!in_array('null', $propertySchema->type, true) === true) {
+                    if (in_array('null', $propertySchema->type, true) === false) {
                         $propertySchema->type[] = 'null';
                     }
                 }
@@ -1304,7 +1305,7 @@ class ValidateObject
             default:
                 // Check for sub-errors to provide more specific messages.
                 $subErrors = $error->subErrors();
-                if (!empty($subErrors)) {
+                if (empty($subErrors) === false) {
                     return $this->formatValidationError($subErrors[0]);
                 }
                 return "Property '{$propertyPath}' failed validation for rule '{$keyword}'. "."Please check the property value and schema requirements.";

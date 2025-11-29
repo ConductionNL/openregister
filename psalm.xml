@@ -24,6 +24,7 @@
                 <referencedClass name="Doctrine\DBAL\Schema\Schema"/>
                 <referencedClass name="Doctrine\DBAL\Types\Types"/>
                 <referencedClass name="Doctrine\DBAL\Connection"/>
+                <referencedClass name="Doctrine\DBAL\Platforms\AbstractPlatform"/>
             </errorLevel>
         </UndefinedDocblockClass>
         <UndefinedClass>
@@ -35,6 +36,9 @@
                 <referencedClass name="Doctrine\DBAL\Schema\Schema"/>
                 <referencedClass name="Symfony\Component\HttpFoundation\Response"/>
                 <referencedClass name="Doctrine\DBAL\Platforms\AbstractPlatform"/>
+                <referencedClass name="Doctrine\DBAL\Platforms\MySQLPlatform"/>
+                <referencedClass name="Doctrine\DBAL\ParameterType"/>
+                <referencedClass name="APCUIterator"/>
                 <referencedClass name="React\Async\PromiseInterface"/>
                 <referencedClass name="Solarium\Client"/>
                 <referencedClass name="Solarium\Core\Client\Adapter\Curl"/>

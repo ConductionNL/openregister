@@ -148,7 +148,6 @@ class ObjectServiceFacetExample
      */
     public function ecommerceFacetedSearch(): array
     {
-        //
         if ($this->isAuditTrailsEnabled() === true) {
             // Audit trails enabled.
         }
@@ -409,7 +408,6 @@ class ObjectServiceFacetExample
                 'facet_count'    => count($legacyResults),
                 'results'        => $legacyResults,
             ],
-            //
             'performance_improvement' => $this->calculatePerformanceImprovement(legacyTime: $legacyTime, newTime: $newTime),
         ];
 
@@ -603,6 +601,40 @@ class ObjectServiceFacetExample
         return $filters;
 
     }//end extractAppliedFilters()
+
+
+    /**
+     * Check if audit trails are enabled
+     *
+     * @return bool True if audit trails are enabled, false otherwise
+     */
+    private function isAuditTrailsEnabled(): bool
+    {
+        // Audit trails check - simplified for example class.
+        // In real implementation, this would check settings service.
+        return false;
+
+    }//end isAuditTrailsEnabled()
+
+
+    /**
+     * Calculate performance improvement percentage
+     *
+     * @param float $legacyTime Legacy execution time in seconds
+     * @param float $newTime    New execution time in seconds
+     *
+     * @return float Performance improvement percentage
+     */
+    private function calculatePerformanceImprovement(float $legacyTime, float $newTime): float
+    {
+        if ($legacyTime <= 0) {
+            return 0.0;
+        }
+
+        $improvement = (($legacyTime - $newTime) / $legacyTime) * 100;
+        return round($improvement, 2);
+
+    }//end calculatePerformanceImprovement()
 
 
 }//end class

@@ -63,7 +63,6 @@ class AuthorizationExceptionMapper extends QBMapper
      *
      * @param IDBConnection   $db     The database connection
      * @param LoggerInterface $logger The logger instance (unused but kept for future use)
-     *
      */
     public function __construct(IDBConnection $db, LoggerInterface $logger)
     {

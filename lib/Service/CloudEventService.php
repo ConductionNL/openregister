@@ -66,7 +66,10 @@ class CloudEventService
     ): array {
         // Get request body.
         $requestBody = $request->getParams();
-        $rawBody     = $request->getRawBody();
+        $rawBody     = '';
+        if (method_exists($request, 'getRawBody') === true) {
+            $rawBody = $request->getRawBody();
+        }
 
         // Parse JSON body if present.
         $parsedBody = [];

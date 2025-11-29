@@ -1296,7 +1296,8 @@ class MagicMapper
         $table->addColumn($column['name'], $column['type'], $options);
 
         // Set primary key if specified.
-        if (($column['primary'] ?? null) !== null && $column['primary'] === true) {
+        // Column array may contain additional keys not in type definition.
+        if (is_array($column) && array_key_exists('primary', $column) && $column['primary'] === true) {
             $table->setPrimaryKey([$column['name']]);
         }
 

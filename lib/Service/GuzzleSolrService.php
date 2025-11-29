@@ -130,9 +130,11 @@ class GuzzleSolrService
      * @param OrganisationService|null $organisationService Organisation service for organisation operations
      * @param OrganisationMapper|null  $organisationMapper  Organisation mapper for database operations
      */
+
+
     /**
      * @param IClientService $clientService HTTP client service (unused but kept for future use)
-     * @param IConfig        $config       Nextcloud configuration (unused but kept for future use)
+     * @param IConfig        $config        Nextcloud configuration (unused but kept for future use)
      */
     public function __construct(
         private readonly SettingsService $settingsService,
@@ -636,7 +638,9 @@ class GuzzleSolrService
             } else {
                 // Clear all SOLR availability cache entries.
                 if (function_exists('apcu_delete') === true && class_exists('\APCUIterator') === true) {
-                    /** @var \APCUIterator $iterator */
+                    /*
+                     * @var object $iterator
+                     */
                     $iterator = new \APCUIterator('/^solr_availability_/');
                     apcu_delete($iterator);
                 }
@@ -2360,7 +2364,8 @@ class GuzzleSolrService
         if ($this->isAvailable() === false) {
             $connectionTest = $this->testConnection();
             // Connection test may return 'error' key or other structure.
-            $errorMessage = (is_array($connectionTest) && isset($connectionTest['error'])) ? $connectionTest['error'] : 'Unknown connection error';
+            // Type definition doesn't include 'error', so use array access with proper check.
+            $errorMessage = (is_array($connectionTest) && array_key_exists('error', $connectionTest)) ? $connectionTest['error'] : 'Unknown connection error';
             throw new \Exception(
                 'SOLR service is not available. Connection test failed: '.$errorMessage.'. Please verify that SOLR is running and accessible at the configured URL.'
             );
@@ -4792,7 +4797,7 @@ class GuzzleSolrService
     {
         try {
             // solrConfig may contain additional keys not in type definition.
-            $zookeeperHosts = (is_array($this->solrConfig) && isset($this->solrConfig['zookeeperHosts'])) ? $this->solrConfig['zookeeperHosts'] : 'zookeeper:2181';
+            $zookeeperHosts = (is_array($this->solrConfig) && array_key_exists('zookeeperHosts', $this->solrConfig)) ? $this->solrConfig['zookeeperHosts'] : 'zookeeper:2181';
             $hosts          = explode(',', $zookeeperHosts);
 
             $successfulHosts = [];
@@ -5626,8 +5631,8 @@ class GuzzleSolrService
         try {
             // Get both objectCollection and fileCollection from settings.
             // solrConfig may contain additional keys not in type definition.
-            $objectCollection = (is_array($this->solrConfig) && isset($this->solrConfig['objectCollection'])) ? $this->solrConfig['objectCollection'] : null;
-            $fileCollection   = (is_array($this->solrConfig) && isset($this->solrConfig['fileCollection'])) ? $this->solrConfig['fileCollection'] : null;
+            $objectCollection = (is_array($this->solrConfig) && array_key_exists('objectCollection', $this->solrConfig)) ? $this->solrConfig['objectCollection'] : null;
+            $fileCollection   = (is_array($this->solrConfig) && array_key_exists('fileCollection', $this->solrConfig)) ? $this->solrConfig['fileCollection'] : null;
 
             // Fallback to legacy collection if new collections are not configured.
             if (($this->solrConfig['collection'] ?? null) !== null) {
@@ -6617,9 +6622,9 @@ class GuzzleSolrService
     /**
      * Process a single batch directly without ReactPHP promises
      *
-     * @param  ObjectEntityMapper $objectMapper Object mapper instance
-     * @param  array              $job          Batch job array
-     * @param  array              $schemaIds    Optional array of schema IDs to filter by
+     * @param  \OCA\OpenRegister\Db\ObjectEntityMapper $objectMapper Object mapper instance
+     * @param  array                                   $job          Batch job array
+     * @param  array                                   $schemaIds    Optional array of schema IDs to filter by
      * @return array Result array with success status and indexed count
      */
     private function processBatchDirectly($objectMapper, array $job, array $schemaIds=[]): array
@@ -7039,8 +7044,8 @@ class GuzzleSolrService
      * This method indexes 5 objects per schema to test the new schema-aware mapping system.
      * Objects without schema properties will only have metadata indexed.
      *
-     * @param ObjectEntityMapper $objectMapper Object mapper for database operations
-     * @param SchemaMapper       $schemaMapper Schema mapper for database operations
+     * @param \OCA\OpenRegister\Db\ObjectEntityMapper $objectMapper Object mapper for database operations
+     * @param SchemaMapper                            $schemaMapper Schema mapper for database operations
      *
      * @return array Test results with statistics
      */
@@ -8769,7 +8774,7 @@ class GuzzleSolrService
             ];
 
             // Add authentication if configured.
-            if (!empty($this->solrConfig['username']) === true && !empty($this->solrConfig['password'])) {
+            if (empty($this->solrConfig['username']) === false && empty($this->solrConfig['password']) === false) {
                 $requestOptions['auth'] = [
                     $this->solrConfig['username'],
                     $this->solrConfig['password'],
@@ -9753,7 +9758,7 @@ class GuzzleSolrService
                         ]
                     );
                 }
-            } else if (!in_array($fieldName, ['_version_', 'id', '_text_'])) {
+            } else if (in_array($fieldName, ['_version_', 'id', '_text_'], true) === false) {
                 // Object field (exclude system fields).
                 $fieldType = $this->inferFieldType($values);
                 $fieldInfo = [
@@ -9893,7 +9898,7 @@ class GuzzleSolrService
 
         // Add current filters.
         foreach ($filters as $filter) {
-            if (!empty($filter)) {
+            if (empty($filter) === false) {
                 $filterQueries[] = $filter;
             }
         }
@@ -9911,7 +9916,7 @@ class GuzzleSolrService
         ];
 
         // Add filter queries.
-        if (!empty($filterQueries)) {
+        if (empty($filterQueries) === false) {
             $queryParams['fq'] = $filterQueries;
         }
 
@@ -10006,7 +10011,7 @@ class GuzzleSolrService
 
         // Build domain filter for applying filter queries to facets.
         $domainFilter = null;
-        if (!empty($filterQueries)) {
+        if (empty($filterQueries) === false) {
             $domainFilter = [
                 'filter' => $filterQueries,
             ];
@@ -10310,7 +10315,7 @@ class GuzzleSolrService
 
         // Add any additional filters from the query.
         foreach ($filters as $filter) {
-            if (!empty($filter)) {
+            if (empty($filter) === false) {
                 $filterQueries[] = $filter;
             }
         }
@@ -10328,7 +10333,7 @@ class GuzzleSolrService
         ];
 
         // Add filter queries.
-        if (!empty($filterQueries)) {
+        if (empty($filterQueries) === false) {
             $queryParams['fq'] = $filterQueries;
         }
 
@@ -10559,12 +10564,12 @@ class GuzzleSolrService
                 $customConfig = $facetConfig['facets'][$configFieldName];
 
                 // Apply custom title.
-                if (!empty($customConfig['title'])) {
+                if (empty($customConfig['title']) === false) {
                     $facetData['title'] = $customConfig['title'];
                 }
 
                 // Apply custom description.
-                if (!empty($customConfig['description'])) {
+                if (empty($customConfig['description']) === false) {
                     $facetData['description'] = $customConfig['description'];
                 }
 
@@ -10638,7 +10643,7 @@ class GuzzleSolrService
             $facetConfig     = $settingsService->getSolrFacetConfiguration();
 
             // Check if global order is defined.
-            if (!empty($facetConfig['global_order'])) {
+            if (empty($facetConfig['global_order']) === false) {
                 $globalOrder  = $facetConfig['global_order'];
                 $sortedFacets = [];
 
@@ -10919,7 +10924,7 @@ class GuzzleSolrService
 
         // Resolve UUIDs to names using object cache service.
         $resolvedNames = [];
-        if (!empty($potentialUuids)) {
+        if (empty($potentialUuids) === false) {
             // Lazy-load ObjectCacheService from container.
             $objectCacheService = $this->getObjectCacheService();
 
@@ -11588,8 +11593,8 @@ class GuzzleSolrService
                 $shardCount   = count($shards);
                 $replicaCount = 0;
                 $allActive    = true;
-                $activeArray  = []; // Array to track active replicas for health/status checks
-
+                $activeArray  = [];
+                // Array to track active replicas for health/status checks
                 foreach ($shards as $shard) {
                     $replicas      = $shard['replicas'] ?? [];
                     $replicaCount += count($replicas);
@@ -12000,7 +12005,7 @@ class GuzzleSolrService
             ];
 
             // Add authentication if configured.
-            if (!empty($this->solrConfig['username']) === true && !empty($this->solrConfig['password'])) {
+            if (empty($this->solrConfig['username']) === false && empty($this->solrConfig['password']) === false) {
                 $requestOptions['auth'] = [
                     $this->solrConfig['username'],
                     $this->solrConfig['password'],
@@ -12071,14 +12076,14 @@ class GuzzleSolrService
                 $fileTextMapper = \OC::$server->get(\OCA\OpenRegister\Db\FileTextMapper::class);
                 $fileText       = $fileTextMapper->findByFileId($fileId);
 
-                if (!$fileText || $fileText->getExtractionStatus() !== 'completed') {
+                if (($fileText === false) || $fileText->getExtractionStatus() !== 'completed') {
                     $errors[] = "File $fileId: No extracted text available";
                     $failed++;
                     continue;
                 }
 
                 // Check if file has been chunked during extraction.
-                if (!$fileText->getChunked() || !$fileText->getChunksJson()) {
+                if ($fileText->getChunked() === false || $fileText->getChunksJson() === false) {
                     $errors[] = "File $fileId: Text not chunked. Re-extract the file to generate chunks.";
                     $failed++;
                     continue;
@@ -12173,7 +12178,7 @@ class GuzzleSolrService
 
             // Check if collection exists.
             $collections = $this->listCollections();
-            if (!in_array($fileCollection, $collections)) {
+            if (in_array($fileCollection, $collections, true) === false) {
                 return [
                     'success'      => true,
                     'total_chunks' => 0,
@@ -12197,7 +12202,7 @@ class GuzzleSolrService
             ];
 
             // Add authentication if configured.
-            if (!empty($this->solrConfig['username']) === true && !empty($this->solrConfig['password'])) {
+            if (empty($this->solrConfig['username']) === false && empty($this->solrConfig['password']) === false) {
                 $requestOptions['auth'] = [
                     $this->solrConfig['username'],
                     $this->solrConfig['password'],
@@ -12612,7 +12617,7 @@ class GuzzleSolrService
     /**
      * Get collection health status.
      *
-     * @param array<string, mixed> $allActive All active collections data.
+     * @param array<int, string> $allActive Array of active replica states.
      *
      * @return string Health status ('healthy', 'degraded', 'unhealthy').
      */
@@ -12631,7 +12636,7 @@ class GuzzleSolrService
     /**
      * Get collection status.
      *
-     * @param array<string, mixed> $allActive All active collections data.
+     * @param array<int, string> $allActive Array of active replica states.
      *
      * @return string Status ('active', 'inactive', 'unknown').
      */

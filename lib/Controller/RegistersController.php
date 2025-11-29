@@ -49,7 +49,6 @@ use Exception;
 
 /**
  * Class RegistersController
- *
  */
 class RegistersController extends Controller
 {

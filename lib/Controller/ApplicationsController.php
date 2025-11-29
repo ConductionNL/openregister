@@ -34,7 +34,6 @@ use Exception;
  * REST API controller for managing applications.
  *
  * @package OCA\OpenRegister\Controller
- *
  */
 class ApplicationsController extends Controller
 {

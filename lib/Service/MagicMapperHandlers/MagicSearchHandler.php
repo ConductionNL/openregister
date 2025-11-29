@@ -348,8 +348,8 @@ class MagicSearchHandler
      * Execute search query and convert results to ObjectEntity objects
      *
      * @param IQueryBuilder $qb        Query builder to execute
-     * @param Register      $register Register context
-     * @param Schema        $schema   Schema context
+     * @param Register      $register  Register context
+     * @param Schema        $schema    Schema context
      * @param string        $tableName Table name for object conversion
      *
      * @return ObjectEntity[]

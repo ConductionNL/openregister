@@ -293,16 +293,15 @@ class MySQLJsonService implements IDatabaseJsonService
                 continue;
             }
 
-            //
             if (is_array($value) === true) {
                 // Handle array of values with IN clause and contains check.
                 $builder->createNamedParameter(
-                    value: $value,
-                    type: IQueryBuilder::PARAM_STR_ARRAY,
-                    placeHolder: ":value$filter"
+                value: $value,
+                type: IQueryBuilder::PARAM_STR_ARRAY,
+                placeHolder: ":value$filter"
                 );
                 $builder->andWhere(
-                    "(json_unquote(json_extract(object, :path$filter)) IN (:value$filter))".$this->getMultipleContains($value, $filter, $builder)
+                "(json_unquote(json_extract(object, :path$filter)) IN (:value$filter))".$this->getMultipleContains($value, $filter, $builder)
                 );
                 continue;
             }

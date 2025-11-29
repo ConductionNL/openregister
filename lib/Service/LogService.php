@@ -45,7 +45,6 @@ class LogService
     /**
      * @param RegisterMapper $registerMapper Register mapper (unused but kept for future use)
      * @param SchemaMapper   $schemaMapper   Schema mapper (unused but kept for future use)
-     *
      */
     public function __construct(
         private readonly AuditTrailMapper $auditTrailMapper,

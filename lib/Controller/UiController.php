@@ -23,7 +23,6 @@ use OCP\IRequest;
  * UiController that serves SPA entry for history-mode deep links.
  *
  * @psalm-type TemplateName = 'index'
- *
  */
 class UiController extends Controller
 {

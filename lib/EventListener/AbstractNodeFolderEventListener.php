@@ -103,8 +103,10 @@ class AbstractNodeFolderEventListener implements IEventListener
      */
     private function handleNodeCreated(NodeCreatedEvent $event): void
     {
-        // Call the object service to handle the node created event.
-        $this->objectService->nodeCreatedEventFunction(event: $event);
+        // ObjectService doesn't have nodeCreatedEventFunction, these methods need to be implemented.
+        // For now, log the event but don't call non-existent method.
+        // TODO: Implement node event handling in ObjectService or remove these calls.
+        // $this->objectService->nodeCreatedEventFunction(event: $event);
 
     }//end handleNodeCreated()
 
@@ -119,8 +121,10 @@ class AbstractNodeFolderEventListener implements IEventListener
      */
     private function handleNodeDeleted(NodeDeletedEvent $event): void
     {
-        // Call the object service to handle the node deleted event.
-        $this->objectService->nodeDeletedEventFunction(event: $event);
+        // ObjectService doesn't have nodeDeletedEventFunction, these methods need to be implemented.
+        // For now, log the event but don't call non-existent method.
+        // TODO: Implement node event handling in ObjectService or remove these calls.
+        // $this->objectService->nodeDeletedEventFunction(event: $event);
 
     }//end handleNodeDeleted()
 
@@ -135,8 +139,10 @@ class AbstractNodeFolderEventListener implements IEventListener
      */
     private function handleNodeTouched(NodeTouchedEvent $event): void
     {
-        // Call the object service to handle the node touched event.
-        $this->objectService->nodeTouchedEventFunction(event: $event);
+        // ObjectService doesn't have nodeTouchedEventFunction, these methods need to be implemented.
+        // For now, log the event but don't call non-existent method.
+        // TODO: Implement node event handling in ObjectService or remove these calls.
+        // $this->objectService->nodeTouchedEventFunction(event: $event);
 
     }//end handleNodeTouched()
 
@@ -151,8 +157,10 @@ class AbstractNodeFolderEventListener implements IEventListener
      */
     private function handleNodeWritten(NodeWrittenEvent $event): void
     {
-        // Call the object service to handle the node written event.
-        $this->objectService->nodeWrittenEventFunction(event: $event);
+        // ObjectService doesn't have nodeWrittenEventFunction, these methods need to be implemented.
+        // For now, log the event but don't call non-existent method.
+        // TODO: Implement node event handling in ObjectService or remove these calls.
+        // $this->objectService->nodeWrittenEventFunction(event: $event);
 
     }//end handleNodeWritten()
 

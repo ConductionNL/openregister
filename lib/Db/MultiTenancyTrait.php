@@ -54,9 +54,8 @@ trait MultiTenancyTrait
      */
     protected function getActiveOrganisationUuid(): ?string
     {
-        /*
-         */
-        if (!isset($this->organisationService)) {
+
+        if (isset($this->organisationService) === false) {
             return null;
         }
 
@@ -77,9 +76,8 @@ trait MultiTenancyTrait
      */
     protected function getActiveOrganisationUuids(): array
     {
-        /*
-         */
-        if (!isset($this->organisationService)) {
+
+        if (isset($this->organisationService) === false) {
             return [];
         }
 
@@ -95,9 +93,8 @@ trait MultiTenancyTrait
      */
     protected function getCurrentUserId(): ?string
     {
-        /*
-         */
-        if (!isset($this->userSession)) {
+
+        if (isset($this->userSession) === false) {
             return null;
         }
 
@@ -119,9 +116,7 @@ trait MultiTenancyTrait
             return false;
         }
 
-        /*
-         */
-        if (!isset($this->groupManager)) {
+        if (isset($this->groupManager) === false) {
             return false;
         }
 
@@ -176,11 +171,9 @@ trait MultiTenancyTrait
         }
 
         // Check if multitenancy is enabled (if appConfig is available).
-        /*
-         */
         if (($this->appConfig ?? null) !== null) {
             $multitenancyConfig = $this->appConfig->getValueString('openregister', 'multitenancy', '');
-            if (!empty($multitenancyConfig)) {
+            if (empty($multitenancyConfig) === false) {
                 $multitenancyData    = json_decode($multitenancyConfig, true);
                 $multitenancyEnabled = $multitenancyData['enabled'] ?? true;
 
@@ -197,7 +190,7 @@ trait MultiTenancyTrait
 
         // Get current user.
         // Check if userSession is available before accessing it.
-        if (!isset($this->userSession)) {
+        if (isset($this->userSession) === false) {
             if (($this->logger ?? null) !== null) {
                 $this->logger->debug('[MultiTenancyTrait] UserSession not available, skipping filter');
             }
@@ -226,8 +219,7 @@ trait MultiTenancyTrait
 
         // Check if published objects should bypass multi-tenancy (objects table only).
         $publishedBypassEnabled = false;
-        /*
-         */
+
         if (($enablePublished === true) === true && (($this->appConfig ?? null) !== null) === true) {
             $multitenancyConfig = $this->appConfig->getValueString('openregister', 'multitenancy', '');
             if (empty($multitenancyConfig) === false) {
@@ -252,7 +244,7 @@ trait MultiTenancyTrait
 
             // Check if user is admin.
             // Check if groupManager is available before accessing it.
-            if (!isset($this->groupManager)) {
+            if (isset($this->groupManager) === false) {
                 $userGroups = [];
             } else {
                 $userGroups = $this->groupManager->getUserGroupIds($user);
@@ -297,8 +289,7 @@ trait MultiTenancyTrait
         // CASE 2: Active organisation(s) set - check for system default organisation.
         // Get default organisation UUID from configuration (not deprecated is_default column).
         $systemDefaultOrgUuid = null;
-        /*
-         */
+
         if (($this->organisationService ?? null) !== null) {
             $systemDefaultOrgUuid = $this->organisationService->getDefaultOrganisationId();
         }
@@ -321,8 +312,7 @@ trait MultiTenancyTrait
         }
 
         $adminOverrideEnabled = false;
-        /*
-         */
+
         if (($isAdmin === true) === true && (($this->appConfig ?? null) !== null) === true) {
             $multitenancyConfig = $this->appConfig->getValueString('openregister', 'multitenancy', '');
             if (empty($multitenancyConfig) === false) {
@@ -358,8 +348,6 @@ trait MultiTenancyTrait
             $qb->expr()->in($organisationColumn, $qb->createNamedParameter($activeOrganisationUuids, IQueryBuilder::PARAM_STR_ARRAY))
         );
 
-        /*
-         */
         if (($this->logger ?? null) !== null) {
             $this->logger->debug(
                     '[MultiTenancyTrait] Added organisation filter',
@@ -381,8 +369,6 @@ trait MultiTenancyTrait
                 $qb->expr()->andX(
                     $qb->expr()->isNotNull($publishedColumn),
                     $qb->expr()->lte($publishedColumn, $qb->createNamedParameter($now)),
-                    /*
-                     */
                     $qb->expr()->orX(
                         $qb->expr()->isNull($depublishedColumn),
                         $qb->expr()->gt($depublishedColumn, $qb->createNamedParameter($now))
@@ -427,7 +413,7 @@ trait MultiTenancyTrait
     protected function setOrganisationOnCreate(Entity $entity): void
     {
         // Only set organisation if the entity has an organisation property.
-        if (!method_exists($entity, 'getOrganisation') || !method_exists($entity, 'setOrganisation')) {
+        if (method_exists($entity, 'getOrganisation') === false || method_exists($entity, 'setOrganisation') === false) {
             return;
         }
 
@@ -455,7 +441,7 @@ trait MultiTenancyTrait
     protected function verifyOrganisationAccess(Entity $entity): void
     {
         // Check if entity has organisation property.
-        if (!method_exists($entity, 'getOrganisation')) {
+        if (method_exists($entity, 'getOrganisation') === false) {
             return;
         }
 
@@ -515,9 +501,7 @@ trait MultiTenancyTrait
         }
 
         // Get active organisation.
-        /*
-         */
-        if (!isset($this->organisationService)) {
+        if (isset($this->organisationService) === false) {
             // No organisation service, allow access (backward compatibility).
             return true;
         }
@@ -538,9 +522,7 @@ trait MultiTenancyTrait
         }
 
         // Get user's groups.
-        /*
-         */
-        if (!isset($this->groupManager)) {
+        if (isset($this->groupManager) === false) {
             // No group manager, allow access (backward compatibility).
             return true;
         }
@@ -560,13 +542,13 @@ trait MultiTenancyTrait
         }
 
         // Check if the entity type exists in authorization.
-        if (!isset($authorization[$entityType])) {
+        if (isset($authorization[$entityType]) === false) {
             // Entity type not in authorization, allow access (backward compatibility).
             return true;
         }
 
         // Check if the action exists for this entity type.
-        if (!isset($authorization[$entityType][$action])) {
+        if (isset($authorization[$entityType][$action]) === false) {
             // Action not configured, allow access (backward compatibility).
             return true;
         }
@@ -608,7 +590,7 @@ trait MultiTenancyTrait
      */
     protected function verifyRbacPermission(string $action, string $entityType): void
     {
-        if (!$this->hasRbacPermission($action, $entityType)) {
+        if ($this->hasRbacPermission($action, $entityType) === false) {
             throw new \Exception(
                 "Access denied: You do not have permission to {$action} {$entityType} entities.",
                 Response::HTTP_FORBIDDEN

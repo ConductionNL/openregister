@@ -38,7 +38,6 @@ use Psr\Log\LoggerInterface;
  * Controller for managing configurations (CRUD and management operations).
  *
  * @package OCA\OpenRegister\Controller
- *
  */
 class ConfigurationController extends Controller
 {

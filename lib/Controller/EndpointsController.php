@@ -40,7 +40,6 @@ use Psr\Log\LoggerInterface;
  * @author   Conduction <info@conduction.nl>
  * @license  EUPL-1.2
  * @link     https://github.com/ConductionNL/openregister
- *
  */
 class EndpointsController extends Controller
 {

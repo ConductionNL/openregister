@@ -202,8 +202,6 @@ class SaveObject
 
         // Try direct slug match as last resort.
         try {
-            /*
-             */
             $schema = $this->schemaMapper->findBySlug($slug);
             if ($schema !== null) {
                 return (string) $schema->getId();
@@ -287,11 +285,13 @@ class SaveObject
 
         // Try direct slug match as last resort.
         try {
-            /*
-             */
-            $register = $this->registerMapper->findBySlug($slug);
-            if ($register !== null) {
-                return (string) $register->getId();
+            // RegisterMapper doesn't have findBySlug, use searchObjects or find instead.
+            // Try to find register by slug using searchObjects.
+            $registers = $this->registerMapper->findAll();
+            foreach ($registers as $register) {
+                if ($register->getSlug() === $slug) {
+                    return (string) $register->getId();
+                }
             }
         } catch (Exception $e) {
             // Register not found.
@@ -340,7 +340,7 @@ class SaveObject
 
                 $currentPath = (($prefix !== null && $prefix !== '') === true) ? $prefix.'.'.$key : $key;
 
-                if (is_array($value) === true && !empty($value) === false) {
+                if (is_array($value) === true && empty($value) === true) {
                     // Check if this is an array property in the schema.
                     $propertyConfig   = $schemaProperties[$key] ?? null;
                     $isArrayOfObjects = $propertyConfig &&
@@ -358,7 +358,7 @@ class SaveObject
                                     schema: $schema
                                 );
                                 $relations     = array_merge($relations, $itemRelations);
-                            } else if (is_string($item) === true && !empty($item) === false) {
+                            } else if (is_string($item) === true && empty($item) === false) {
                                 // String values in object arrays are always treated as relations.
                                 $relations[$currentPath.'.'.$index] = $item;
                             }
@@ -374,7 +374,7 @@ class SaveObject
                                     schema: $schema
                                 );
                                 $relations     = array_merge($relations, $itemRelations);
-                            } else if (is_string($item) === true && !empty($item) === false && trim($item) !== '') {
+                            } else if (is_string($item) === true && empty($item) === false && trim($item) !== '') {
                                 // Check if the string looks like a reference.
                                 if ($this->isReference($item) === true) {
                                     $relations[$currentPath.'.'.$index] = $item;
@@ -382,7 +382,7 @@ class SaveObject
                             }
                         }
                     }//end if
-                } else if (is_string($value) === true && !empty($value) === false && trim($value) !== '') {
+                } else if (is_string($value) === true && empty($value) === false && trim($value) !== '') {
                     $shouldTreatAsRelation = false;
 
                     // Check schema property configuration first.
@@ -462,8 +462,8 @@ class SaveObject
             // Must contain at least one hyphen or underscore (indicating it's likely an ID).
             // AND must not contain spaces or common text words.
             if ((strpos($value, '-') !== false || strpos($value, '_') !== false)
-                && !preg_match('/\s/', $value)
-                && !in_array(strtolower($value), ['applicatie', 'systeemsoftware', 'open-source', 'closed-source'])
+                && preg_match('/\s/', $value) === false
+                && in_array(strtolower($value), ['applicatie', 'systeemsoftware', 'open-source', 'closed-source'], true) === false
             ) {
                 return true;
             }
@@ -573,7 +573,7 @@ class SaveObject
             // 3. Single file ID: 123.
             // 4. Single file object: {accessUrl: ...}
             // 5. String URL.
-            if (is_array($imageValue) === true && !empty($imageValue)) {
+            if (is_array($imageValue) === true && empty($imageValue) === false) {
                 // Check if first element is a file ID or file object.
                 $firstElement = $imageValue[0] ?? null;
 
@@ -748,7 +748,7 @@ class SaveObject
         $current = $data;
 
         foreach ($keys as $key) {
-            if (!is_array($current) || !array_key_exists($key, $current)) {
+            if (is_array($current) === false || array_key_exists($key, $current) === false) {
                 return null;
             }
 
@@ -756,7 +756,7 @@ class SaveObject
         }
 
         // Convert to string if it's not null and not already a string.
-        if ($current !== null && !is_string($current)) {
+        if ($current !== null && is_string($current) === false) {
             $current = (string) $current;
         }
 
@@ -896,7 +896,7 @@ class SaveObject
         try {
             $schemaObject = json_decode(json_encode($schema->getSchemaObject($this->urlGenerator)), associative: true);
 
-            if (!isset($schemaObject['properties']) === false || !is_array($schemaObject['properties'])) {
+            if (isset($schemaObject['properties']) === false || is_array($schemaObject['properties']) === false) {
                 return $data;
             }
         } catch (Exception $e) {
@@ -906,7 +906,7 @@ class SaveObject
         // Convert the properties array to a processable array.
         $properties = array_map(
                 function (string $key, array $property) {
-                    if (!isset($property['default'])) {
+                    if (isset($property['default']) === false) {
                         $property['default'] = null;
                     }
 
@@ -942,13 +942,13 @@ class SaveObject
             // Determine if default should be applied based on behavior.
             if ($defaultBehavior === 'falsy') {
                 // Apply default if property is missing, null, empty string, or empty array/object.
-                $shouldApplyDefault = !isset($data[$key])
+                $shouldApplyDefault = isset($data[$key]) === false
                     || $data[$key] === null
                     || $data[$key] === ''
                     || (is_array($data[$key]) === true && empty($data[$key]));
             } else {
                 // Default behavior: only apply if property is missing or null.
-                $shouldApplyDefault = !isset($data[$key]) === false || $data[$key] === null;
+                $shouldApplyDefault = isset($data[$key]) === false || $data[$key] === null;
             }
 
             if ($shouldApplyDefault === true) {
@@ -978,7 +978,7 @@ class SaveObject
         $mergedData = array_merge($data, $renderedDefaultValues, $constantValues);
 
         // Generate slug if not present and schema has slug configuration.
-        if (!isset($mergedData['slug']) === false && !isset($mergedData['@self']['slug'])) {
+        if (isset($mergedData['slug']) === false && isset($mergedData['@self']['slug']) === false) {
             $slug = $this->generateSlug(data: $mergedData, schema: $schema);
             if ($slug !== null) {
                 // Set slug in the data (will be applied to entity in setSelfMetadata).
@@ -1134,12 +1134,12 @@ class SaveObject
         // Process single object properties that need cascading.
         foreach ($objectProperties as $property => $definition) {
             // Skip if property not present in data.
-            if (!isset($data[$property])) {
+            if (isset($data[$property]) === false) {
                 continue;
             }
 
             // Skip if the property is empty or not an array/object.
-            if (empty($data[$property]) === true || (!is_array($data[$property]) === true && !is_object($data[$property]))) {
+            if (empty($data[$property]) === true || (is_array($data[$property]) === false && is_object($data[$property]) === false)) {
                 continue;
             }
 
@@ -1176,7 +1176,7 @@ class SaveObject
         // Process array object properties that need cascading.
         foreach ($arrayObjectProperties as $property => $definition) {
             // Skip if property not present, empty, or not an array.
-            if (!isset($data[$property]) === false || empty($data[$property]) === true || !is_array($data[$property])) {
+            if (isset($data[$property]) === false || empty($data[$property]) === true || is_array($data[$property]) === false) {
                 continue;
             }
 
@@ -1255,7 +1255,7 @@ class SaveObject
         }
 
         // Validate that we have the necessary configuration.
-        if (!isset($property['items']['$ref'])) {
+        if (isset($property['items']['$ref']) === false) {
             return [];
         }
 
@@ -1292,7 +1292,7 @@ class SaveObject
     private function cascadeSingleObject(ObjectEntity $objectEntity, array $definition, array $object): ?string
     {
         // Validate that we have the necessary configuration.
-        if (!isset($definition['$ref'])) {
+        if (isset($definition['$ref']) === false) {
             return null;
         }
 
@@ -1313,7 +1313,7 @@ class SaveObject
             // Check if the inversedBy property already exists and is an array.
             if (($object[$inversedByProperty] ?? null) !== null && is_array($object[$inversedByProperty]) === true) {
                 // Add to existing array if not already present.
-                if (!in_array($objectId, $object[$inversedByProperty])) {
+                if (in_array($objectId, $object[$inversedByProperty], true) === false) {
                     $object[$inversedByProperty][] = $objectId;
                 }
             } else {
@@ -1442,7 +1442,7 @@ class SaveObject
             }
 
             // Skip if we don't have the necessary configuration.
-            if (!$inverseProperty || !$targetSchema) {
+            if (($inverseProperty === false || $inverseProperty === null) === true || ($targetSchema === false || $targetSchema === null) === true) {
                 continue;
             }
 
@@ -1453,7 +1453,7 @@ class SaveObject
             }
 
             // Ensure targetUuids is an array.
-            if (!is_array($targetUuids)) {
+            if (is_array($targetUuids) === false) {
                 $targetUuids = [$targetUuids];
             }
 
@@ -1461,7 +1461,7 @@ class SaveObject
             $validUuids = array_filter(
             $targetUuids,
            function ($uuid) {
-                return !empty($uuid) === true && is_string($uuid) && trim($uuid) !== '' && preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $uuid);
+                return empty($uuid) === false && is_string($uuid) && trim($uuid) !== '' && preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $uuid);
            }
             );
 
@@ -1482,17 +1482,17 @@ class SaveObject
                     $targetData = $targetObject->getObject();
 
                     // Initialize inverse property as array if it doesn't exist.
-                    if (!isset($targetData[$inverseProperty])) {
+                    if (isset($targetData[$inverseProperty]) === false) {
                         $targetData[$inverseProperty] = [];
                     }
 
                     // Ensure inverse property is an array.
-                    if (!is_array($targetData[$inverseProperty])) {
+                    if (is_array($targetData[$inverseProperty]) === false) {
                         $targetData[$inverseProperty] = [$targetData[$inverseProperty]];
                     }
 
                     // Add current object's UUID to the inverse property if not already present.
-                    if (!in_array($objectEntity->getUuid(), $targetData[$inverseProperty])) {
+                    if (in_array($objectEntity->getUuid(), $targetData[$inverseProperty], true) === false) {
                         $targetData[$inverseProperty][] = $objectEntity->getUuid();
                     }
 
@@ -1555,7 +1555,7 @@ class SaveObject
 
         foreach ($properties as $propertyName => $propertyDefinition) {
             // Skip if property is not in the data.
-            if (!isset($sanitizedData[$propertyName])) {
+            if (isset($sanitizedData[$propertyName]) === false) {
                 continue;
             }
 
@@ -1568,7 +1568,7 @@ class SaveObject
                 if ($value === '') {
                     // Empty string to null for object properties.
                     $sanitizedData[$propertyName] = null;
-                } else if (is_array($value) === true && empty($value) === true && !$isRequired) {
+                } else if (is_array($value) === true && empty($value) === true && ($isRequired === false)) {
                     // Empty object {} to null for non-required object properties.
                     $sanitizedData[$propertyName] = null;
                 } else if (is_array($value) === true && empty($value) === true && ($isRequired === true)) {
@@ -1674,7 +1674,7 @@ class SaveObject
         unset($data['id']);
 
         // Process uploaded files and inject them into data.
-        if ($uploadedFiles !== null && !empty($uploadedFiles)) {
+        if ($uploadedFiles !== null && empty($uploadedFiles) === false) {
             $data = $this->processUploadedFiles(uploadedFiles: $uploadedFiles, data: $data);
         }
 
@@ -1945,7 +1945,7 @@ class SaveObject
         // Always respect user's active organisation regardless of multitenancy settings.
         // BUT: Don't override if organisation was explicitly set via @self metadata (e.g., for organization activation).
         if (($objectEntity->getOrganisation() === null || $objectEntity->getOrganisation() === '')
-            && !isset($selfData['organisation'])
+            && isset($selfData['organisation']) === false
         ) {
             $organisationUuid = $this->organisationService->getOrganisationForNewEntity();
             $objectEntity->setOrganisation($organisationUuid);
@@ -2025,7 +2025,7 @@ class SaveObject
     {
         // Extract and set slug property if present (check both @self and data).
         $slug = $selfData['slug'] ?? $data['slug'] ?? null;
-        if (!empty($slug)) {
+        if (empty($slug) === false) {
             $objectEntity->setSlug($slug);
         }
 
@@ -2049,7 +2049,7 @@ class SaveObject
                     ]
                     );
 
-            if (!empty($publishedValue)) {
+            if (empty($publishedValue) === false) {
                 try {
                     // Convert string to DateTime if it's a valid date string.
                     if (is_string($publishedValue) === true) {
@@ -2081,7 +2081,7 @@ class SaveObject
         }//end if
 
         // Extract and set depublished property if present.
-        if (array_key_exists('depublished', $selfData) === true && !empty($selfData['depublished']) === false) {
+        if (array_key_exists('depublished', $selfData) === true && empty($selfData['depublished']) === false) {
             try {
                 // Convert string to DateTime if it's a valid date string.
                 if (is_string($selfData['depublished']) === true) {
@@ -2094,11 +2094,11 @@ class SaveObject
             $objectEntity->setDepublished(null);
         }
 
-        if (array_key_exists('owner', $selfData) === true && !empty($selfData['owner']) === false) {
+        if (array_key_exists('owner', $selfData) === true && empty($selfData['owner']) === false) {
             $objectEntity->setOwner($selfData['owner']);
         }
 
-        if (array_key_exists('organisation', $selfData) === true && !empty($selfData['organisation']) === false) {
+        if (array_key_exists('organisation', $selfData) === true && empty($selfData['organisation']) === false) {
             $objectEntity->setOrganisation($selfData['organisation']);
         }
 
@@ -2288,7 +2288,7 @@ class SaveObject
             // If the field already has a value in $data, the uploaded file takes precedence.
             if ($isArrayField === true) {
                 // For array fields, append to array.
-                if (!isset($data[$cleanFieldName])) {
+                if (isset($data[$cleanFieldName]) === false) {
                     $data[$cleanFieldName] = [];
                 }
 
@@ -2320,7 +2320,7 @@ class SaveObject
         if ($schema !== null && $propertyName !== null) {
             $schemaProperties = $schema->getProperties() ?? [];
 
-            if (!isset($schemaProperties[$propertyName])) {
+            if (isset($schemaProperties[$propertyName]) === false) {
                 return false;
                 // Property not in schema, not a file.
             }
@@ -2556,12 +2556,12 @@ class SaveObject
     private function isFileObject(array $value): bool
     {
         // Must have an ID.
-        if (!isset($value['id'])) {
+        if (isset($value['id']) === false) {
             return false;
         }
 
         // Must have either title or path (typical file object properties).
-        if (!isset($value['title']) === false && !isset($value['path'])) {
+        if (isset($value['title']) === false && isset($value['path']) === false) {
             return false;
         }
 
@@ -2617,7 +2617,7 @@ class SaveObject
         $schemaProperties = $schema->getProperties() ?? [];
 
         // Get property configuration for this file property.
-        if (!isset($schemaProperties[$propertyName])) {
+        if (isset($schemaProperties[$propertyName]) === false) {
             throw new Exception("Property '$propertyName' not found in schema configuration");
         }
 
@@ -2670,7 +2670,7 @@ class SaveObject
 
         if ($isArrayProperty === true) {
             // Handle array of files.
-            if (!is_array($fileValue)) {
+            if (is_array($fileValue) === false) {
                 throw new Exception("Property '$propertyName' is configured as array but received non-array value");
             }
 
@@ -3025,7 +3025,7 @@ class SaveObject
         $errorPrefix = $index !== null ? "Existing file at $propertyName[$index]" : "Existing file at $propertyName";
 
         // Validate MIME type.
-        if (($fileConfig['allowedTypes'] ?? null) !== null && !empty($fileConfig['allowedTypes']) === true) {
+        if (($fileConfig['allowedTypes'] ?? null) !== null && empty($fileConfig['allowedTypes']) === false) {
             $fileMimeType = $file->getMimeType();
             if (in_array($fileMimeType, $fileConfig['allowedTypes'], true) === false) {
                 throw new Exception(
@@ -3072,7 +3072,7 @@ class SaveObject
     {
         $autoTags = $this->prepareAutoTags(fileConfig: $fileConfig, propertyName: $propertyName, index: $index);
 
-        if (!empty($autoTags)) {
+        if (empty($autoTags) === false) {
             // Get existing tags and merge with auto tags.
             try {
                 $formattedFile = $this->fileService->formatFile($file);
@@ -3190,7 +3190,7 @@ class SaveObject
         }
 
         // Validate MIME type.
-        if (($fileConfig['allowedTypes'] ?? null) !== null && !empty($fileConfig['allowedTypes']) === true) {
+        if (($fileConfig['allowedTypes'] ?? null) !== null && empty($fileConfig['allowedTypes']) === false) {
             if (in_array($fileData['mimeType'], $fileConfig['allowedTypes'], true) === false) {
                 throw new \OCA\OpenRegister\Exception\ValidationException(
                     "$errorPrefix has invalid type '{$fileData['mimeType']}'. "."Allowed types: ".implode(', ', $fileConfig['allowedTypes'])
@@ -3312,7 +3312,7 @@ class SaveObject
         }
 
         // Check magic bytes (file signatures) in content.
-        if (($fileData['content'] ?? null) !== null && !empty($fileData['content']) === true) {
+        if (($fileData['content'] ?? null) !== null && empty($fileData['content']) === false) {
             $this->detectExecutableMagicBytes(content: $fileData['content'], errorPrefix: $errorPrefix);
         }
 
@@ -3741,10 +3741,10 @@ class SaveObject
         }
 
         // For objects/arrays with content, check recursively.
-        if (is_array($value) === true && !empty($value)) {
+        if (is_array($value) === true && empty($value) === false) {
             // If it's an associative array (object-like), check if it's effectively empty.
             if (array_keys($value) !== range(0, count($value) - 1)) {
-                return !$this->isEffectivelyEmptyObject($value);
+                return $this->isEffectivelyEmptyObject($value) === false;
             }
 
             // For indexed arrays, check if any element is not empty.

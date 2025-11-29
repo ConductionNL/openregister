@@ -215,8 +215,7 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
                 [
                     'object_id'       => $objectId,
                     'has_@self'       => isset($objectData['@self']) === true,
-                    //
-                    '@self_keys'      => $this->getSelfKeys($objectData),
+                    '@self_keys'      => $this->extractSelfKeys($objectData),
                     'register_direct' => $objectData['_register'] ?? $objectData['register'] ?? 'none',
                     'register_@self'  => $objectData['@self']['register'] ?? 'none',
                 ]
@@ -237,6 +236,9 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
         if ($description === null) {
             $description = $objectData['beschrijving'] ?? $objectData['summary'] ?? $objectData['_summary'] ?? '';
         }
+
+        // Extract @self keys for logging.
+        $selfKeys = $this->extractSelfKeys($objectData);
 
         return [
             'entity_type'         => 'object',
@@ -266,6 +268,24 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
         ];
 
     }//end prepareVectorMetadata()
+
+
+    /**
+     * Extract @self keys from object data
+     *
+     * @param array $objectData Object data
+     *
+     * @return array<string> Array of @self keys
+     */
+    private function extractSelfKeys(array $objectData): array
+    {
+        if (!isset($objectData['@self']) || !is_array($objectData['@self'])) {
+            return [];
+        }
+
+        return array_keys($objectData['@self']);
+
+    }//end extractSelfKeys()
 
 
     /**

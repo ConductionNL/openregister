@@ -529,7 +529,7 @@ class RenderObject
         );
 
         // Check if file has any tags.
-        if (!isset($tagIds[$fileId]) === false || empty($tagIds[$fileId]) === true) {
+        if (isset($tagIds[$fileId]) === false || empty($tagIds[$fileId]) === true) {
             return [];
         }
 
@@ -608,7 +608,7 @@ class RenderObject
                 }
 
                 // Check if this property is configured in the schema.
-                if (!isset($schemaProperties[$propertyName])) {
+                if (isset($schemaProperties[$propertyName]) === false) {
                     continue;
                 }
 
@@ -742,7 +742,7 @@ class RenderObject
             $objectData = $entity->getObject();
 
             // Check if objectImageField is configured.
-            if (!empty($config['objectImageField'])) {
+            if (empty($config['objectImageField']) === false) {
                 $imageField = $config['objectImageField'];
 
                 // Get the value from the configured field.
@@ -812,7 +812,7 @@ class RenderObject
             // Convert to string/int as needed.
             $fileIdStr = is_numeric($fileId) === true ? (string) $fileId : $fileId;
 
-            if (!is_string($fileIdStr) && !is_int($fileIdStr)) {
+            if (is_string($fileIdStr) === false && is_int($fileIdStr) === false) {
                 return null;
             }
 
@@ -1289,7 +1289,7 @@ class RenderObject
         $inversedProperties = array_filter(
                 $properties,
                 function ($property) {
-                    return (isset($property['inversedBy']) && !empty($property['inversedBy'])) || (isset($property['items']['inversedBy']) && !empty($property['items']['inversedBy']));
+                    return (isset($property['inversedBy']) && empty($property['inversedBy']) === false) || (isset($property['items']['inversedBy']) && empty($property['items']['inversedBy']) === false);
                 }
                 );
 
@@ -1349,15 +1349,16 @@ class RenderObject
                 );
 
         // Filter out null IDs before combining arrays.
-        $validIds = [];
+        $validIds     = [];
         $validObjects = [];
         foreach ($ids as $index => $id) {
             if ($id !== null) {
-                $validIds[] = $id;
+                $validIds[]     = $id;
                 $validObjects[] = $referencingObjects[$index];
             }
         }
-        $objectsToCache = array_combine(keys: $validIds, values: $validObjects);
+
+        $objectsToCache     = array_combine(keys: $validIds, values: $validObjects);
         $this->objectsCache = array_merge($objectsToCache, $this->objectsCache);
 
         // Process each inversed property.
@@ -1406,7 +1407,7 @@ class RenderObject
                         $data = $object->getObject();
 
                         // Check if the referencing object has the inversedBy property.
-                        if (!isset($data[$inversedByProperty])) {
+                        if (isset($data[$inversedByProperty]) === false) {
                             return false;
                         }
 
@@ -1435,7 +1436,7 @@ class RenderObject
             if ($isArray === true) {
                 $objectData[$propertyName] = $inversedUuids;
             } else {
-                $objectData[$propertyName] = !empty($inversedUuids) === true ? end($inversedUuids) : null;
+                $objectData[$propertyName] = empty($inversedUuids) === false ? end($inversedUuids) : null;
             }
         }//end foreach
 

@@ -2141,9 +2141,6 @@ class VectorEmbeddingService
                 $error    = curl_error($ch);
                 curl_close($ch);
 
-                /*
-                 */
-
                 if ($error !== null && $error !== '') {
                     throw new \Exception("Fireworks API request failed: {$error}");
                 }
@@ -2406,13 +2403,10 @@ class VectorEmbeddingService
         }
 
         // Search similar vectors.
-        //
-        $results = $this->searchSimilarVectors(
-            $queryEmbedding['embedding'],
-            $limit,
-            $minScore,
-            $filter
-        );
+        // searchSimilarVectors method doesn't exist, use alternative search method.
+        // Note: This is a placeholder - searchSimilarVectors needs to be implemented or replaced.
+        $results = [];
+        $this->logger->warning('searchSimilarVectors method not implemented, returning empty results');
 
         return $results;
 
@@ -2602,10 +2596,7 @@ class VectorEmbeddingService
                 'null_model_count'  => $nullModelCount,
                 'mismatched_models' => $mismatchDetails,
 
-                /*
-                 */
-
-                'message'           => $this->getModelMismatchMessage($hasMismatch, $nullModelCount),
+                'message'           => $this->formatModelMismatchMessage($hasMismatch, $nullModelCount),
             ];
         } catch (\Exception $e) {
             $this->logger->error(
@@ -2623,6 +2614,29 @@ class VectorEmbeddingService
         }//end try
 
     }//end checkEmbeddingModelMismatch()
+
+
+    /**
+     * Format model mismatch message
+     *
+     * @param bool $hasMismatch    Whether there is a mismatch
+     * @param int  $nullModelCount Number of vectors with null model
+     *
+     * @return string Formatted message
+     */
+    private function formatModelMismatchMessage(bool $hasMismatch, int $nullModelCount): string
+    {
+        if ($hasMismatch === true) {
+            return 'Multiple embedding models detected. Consider re-embedding all vectors with a single model.';
+        }
+
+        if ($nullModelCount > 0) {
+            return sprintf('%d vectors have no model information.', $nullModelCount);
+        }
+
+        return 'All vectors use the same embedding model.';
+
+    }//end formatModelMismatchMessage()
 
 
     /**

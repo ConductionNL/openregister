@@ -44,7 +44,6 @@ echo "==========================================\n\n";
 
 // ObjectEntity field definitions for SOLR schema
 // Based on ObjectEntity.php metadata properties
-
 $fieldDefinitions = [
     // **CRITICAL**: Core tenant field with self_ prefix (consistent naming).
     'self_tenant'         => [
@@ -392,4 +391,5 @@ if ($successCount === $totalFields) {
     echo "⚠️  Some fields failed to configure. Check SOLR logs for details.\n";
     exit(1);
 }
+
 // End of deprecated code

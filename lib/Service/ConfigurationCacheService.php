@@ -168,7 +168,11 @@ class ConfigurationCacheService
     public function clearAllCaches(): void
     {
         // Get all session keys and remove those that match our prefix.
-        $sessionKeys = $this->session->getKeys();
+        $sessionKeys = [];
+        if (method_exists($this->session, 'getKeys') === true) {
+            $sessionKeys = $this->session->getKeys();
+        }
+
         foreach ($sessionKeys as $key) {
             if (strpos($key, self::SESSION_KEY_PREFIX) === 0) {
                 $this->session->remove($key);

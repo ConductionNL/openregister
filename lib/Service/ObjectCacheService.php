@@ -268,7 +268,7 @@ class ObjectCacheService
                 ]
                 );
 
-        if ($solrService === null || !$solrService->isAvailable()) {
+        if ($solrService === null || $solrService->isAvailable() === false) {
             $this->logger->debug(
                     'SOLR service unavailable, skipping indexing',
                     [
@@ -323,7 +323,7 @@ class ObjectCacheService
     {
         // Get SOLR service using factory pattern (performance optimized).
         $solrService = $this->getSolrService();
-        if ($solrService === null || !$solrService->isAvailable()) {
+        if ($solrService === null || $solrService->isAvailable() === false) {
             return true;
             // Graceful degradation.
         }
@@ -527,8 +527,8 @@ class ObjectCacheService
     /**
      * Extract text content from array recursively
      *
-     * @param array      $data         Array to extract text from
-     * @param array|null $textContent  Reference to text content array
+     * @param array      $data        Array to extract text from
+     * @param array|null $textContent Reference to text content array
      *
      * @return void
      */
@@ -554,7 +554,7 @@ class ObjectCacheService
      */
     private function isDateString($value): bool
     {
-        if (!is_string($value)) {
+        if (is_string($value) === false) {
             return false;
         }
 
@@ -606,7 +606,7 @@ class ObjectCacheService
         // Filter out already cached objects.
         $identifiersToLoad = array_filter(
             array_unique($identifiers),
-            fn($id) => !isset($this->objectCache[(string) $id])
+            fn($id) => isset($this->objectCache[(string) $id]) === false
         );
 
         if (empty($identifiersToLoad) === true) {
@@ -704,7 +704,7 @@ class ObjectCacheService
 
         // Extract all relationship IDs.
         foreach ($objects as $object) {
-            if (!$object instanceof ObjectEntity) {
+            if (($object instanceof ObjectEntity) === false) {
                 continue;
             }
 
@@ -1072,21 +1072,9 @@ class ObjectCacheService
 
         // **SCHEMA-WIDE INVALIDATION**: Clear ALL search caches for this schema.
         // This ensures colleagues see each other's changes immediately.
-        $schemaIdInt = null;
-        if ($schemaId !== null) {
-            /*
-             * @var int|string $schemaId
-             */
-            $schemaIdInt = is_string($schemaId) === true ? (int) $schemaId : (int) $schemaId;
-        }
-
-        $registerIdInt = null;
-        if ($registerId !== null) {
-            /*
-             * @var int|string $registerId
-             */
-            $registerIdInt = is_string($registerId) === true ? (int) $registerId : (int) $registerId;
-        }
+        // schemaId and registerId are already typed as ?int, so no conversion needed.
+        $schemaIdInt   = $schemaId;
+        $registerIdInt = $registerId;
 
         $this->clearSchemaRelatedCaches(schemaId: $schemaIdInt, registerId: $registerIdInt, operation: $operation);
 
@@ -1116,8 +1104,10 @@ class ObjectCacheService
      */
     private function clearObjectFromCache(ObjectEntity $object): void
     {
-        // Remove by ID.
-        unset($this->objectCache[$object->getId()]);
+        // Remove by ID. Ensure ID is string for array key.
+        $objectId    = $object->getId();
+        $objectIdKey = is_string($objectId) ? $objectId : (string) $objectId;
+        unset($this->objectCache[$objectIdKey]);
 
         // Remove by UUID if available.
         if (($object->getUuid() !== null) === true) {
@@ -1457,7 +1447,7 @@ class ObjectCacheService
         }
 
         // Check distributed cache for missing identifiers.
-        if (!empty($missingIdentifiers) === true && $this->nameDistributedCache !== null) {
+        if (empty($missingIdentifiers) === false && $this->nameDistributedCache !== null) {
             $distributedResults = [];
             foreach ($missingIdentifiers as $key) {
                 try {
@@ -1478,7 +1468,7 @@ class ObjectCacheService
         }
 
         // Load remaining missing names from database.
-        if (!empty($missingIdentifiers)) {
+        if (empty($missingIdentifiers) === false) {
             $this->stats['name_misses'] += count($missingIdentifiers);
 
             try {
@@ -1497,7 +1487,7 @@ class ObjectCacheService
                 }
 
                 // STEP 2: Try to find remaining identifiers as objects.
-                if (!empty($missingIdentifiers)) {
+                if (empty($missingIdentifiers) === false) {
                     $objects = $this->objectEntityMapper->findMultiple($missingIdentifiers);
                     foreach ($objects as $object) {
                         $name          = $object->getName() ?? $object->getUuid();
@@ -1717,7 +1707,7 @@ class ObjectCacheService
     {
         // Get SOLR service using factory pattern (performance optimized).
         $solrService = $this->getSolrService();
-        if ($solrService === null || !$solrService->isAvailable()) {
+        if ($solrService === null || $solrService->isAvailable() === false) {
             return [
                 'success' => false,
                 'message' => 'SOLR service is not available',
@@ -1774,12 +1764,20 @@ class ObjectCacheService
             while (true) {
                 $batchStartTime = microtime(true);
 
-                // Load batch of objects.
-                $objects = $this->objectEntityMapper->findInBatches(
+                // Load batch of objects using findAll with limit/offset.
+                $filters = [];
+                if ($registerId !== null) {
+                    $filters['register'] = $registerId;
+                }
+
+                if ($schemaId !== null) {
+                    $filters['schema'] = $schemaId;
+                }
+
+                $objects = $this->objectEntityMapper->findAll(
+                    limit: $batchSize,
                     offset: $offset,
-                    batchSize: $batchSize,
-                    registerId: $registerId,
-                    schemaId: $schemaId
+                    filters: $filters
                 );
 
                 if (empty($objects) === true) {
@@ -1812,7 +1810,7 @@ class ObjectCacheService
                 }
 
                 // Bulk index documents in SOLR.
-                if (!empty($solrDocuments)) {
+                if (empty($solrDocuments) === false) {
                     $bulkResult = $solrService->bulkIndex(documents: $solrDocuments, commit: true);
                     if ($bulkResult === false) {
                         $batchErrors += count($solrDocuments);
@@ -1939,7 +1937,7 @@ class ObjectCacheService
     {
         // Get SOLR service using factory pattern (performance optimized).
         $solrService = $this->getSolrService();
-        if ($solrService === null || !$solrService->isAvailable()) {
+        if ($solrService === null || $solrService->isAvailable() === false) {
             return true;
             // Graceful degradation.
         }

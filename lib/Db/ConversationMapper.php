@@ -36,14 +36,14 @@ use OCP\IDBConnection;
  * @package OCA\OpenRegister\Db
  *
  * @template-extends QBMapper<Conversation>
- * @method Conversation insert(Entity $entity)
- * @method Conversation update(Entity $entity)
- * @method Conversation insertOrUpdate(Entity $entity)
- * @method Conversation delete(Entity $entity)
- * @method Conversation find(int|string $id)
- * @method Conversation findEntity(IQueryBuilder $query)
- * @method Conversation[] findAll(int|null $limit = null, int|null $offset = null)
- * @method list<Conversation> findEntities(IQueryBuilder $query)
+ * @method           Conversation insert(Entity $entity)
+ * @method           Conversation update(Entity $entity)
+ * @method           Conversation insertOrUpdate(Entity $entity)
+ * @method           Conversation delete(Entity $entity)
+ * @method           Conversation find(int|string $id)
+ * @method           Conversation findEntity(IQueryBuilder $query)
+ * @method           Conversation[] findAll(int|null $limit = null, int|null $offset = null)
+ * @method           list<Conversation> findEntities(IQueryBuilder $query)
  */
 class ConversationMapper extends QBMapper
 {

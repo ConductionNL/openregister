@@ -672,7 +672,7 @@ class SettingsService
             $settings = $this->getSettings();
 
             // Assign default owners and organizations to objects that don't have them.
-            if (!empty($settings['rbac']['defaultObjectOwner']) || !empty($settings['multitenancy']['defaultObjectTenant'])) {
+            if (empty($settings['rbac']['defaultObjectOwner']) === false || empty($settings['multitenancy']['defaultObjectTenant']) === false) {
                 try {
                     $defaultOwner        = $settings['rbac']['defaultObjectOwner'] ?? null;
                     $defaultOrganisation = $settings['multitenancy']['defaultObjectTenant'] ?? null;
@@ -1301,9 +1301,12 @@ class SettingsService
             $this->schemaCacheService->clearAllCaches();
             $afterStats = $this->schemaCacheService->getCacheStatistics();
 
+            // Stats arrays may contain 'entries' key even if not in type definition.
+            $beforeEntries = (is_array($beforeStats) && array_key_exists('entries', $beforeStats)) ? $beforeStats['entries'] : 0;
+            $afterEntries  = (is_array($afterStats) && array_key_exists('entries', $afterStats)) ? $afterStats['entries'] : 0;
             return [
                 'service' => 'schema',
-                'cleared' => $beforeStats['entries'] - $afterStats['entries'],
+                'cleared' => $beforeEntries - $afterEntries,
                 'before'  => $beforeStats,
                 'after'   => $afterStats,
                 'success' => true,
@@ -1315,7 +1318,7 @@ class SettingsService
                 'success' => false,
                 'error'   => $e->getMessage(),
             ];
-        }
+        }//end try
 
     }//end clearSchemaCache()
 
@@ -1359,7 +1362,6 @@ class SettingsService
      * @param string|null $userId Specific user ID (unused, kept for API compatibility)
      *
      * @return array Clear operation results
-     *
      */
     private function clearDistributedCache(?string $userId=null): array
     {
@@ -1507,8 +1509,8 @@ class SettingsService
             }//end foreach
 
             return [
-                'success' => !empty($successfulHosts),
-                'message' => !empty($successfulHosts) === true ? 'Zookeeper accessible via '.implode(', ', $successfulHosts) : 'Zookeeper not accessible via any host',
+                'success' => empty($successfulHosts) === false,
+                'message' => empty($successfulHosts) === false ? 'Zookeeper accessible via '.implode(', ', $successfulHosts) : 'Zookeeper not accessible via any host',
                 'details' => [
                     'zookeeper_hosts'  => $zookeeperHosts,
                     'successful_hosts' => $successfulHosts,
@@ -1553,7 +1555,7 @@ class SettingsService
                 );
             } else {
                 // Regular hostname - append port (default to 8983 if not provided).
-                $port    = !empty($solrSettings['port']) === true ? $solrSettings['port'] : 8983;
+                $port    = empty($solrSettings['port']) === false ? $solrSettings['port'] : 8983;
                 $baseUrl = sprintf(
                     '%s://%s:%d%s',
                     $solrSettings['scheme'],
@@ -1637,12 +1639,12 @@ class SettingsService
             } else if (($data['responseHeader']['status'] ?? null) !== null && $data['responseHeader']['status'] === 0) {
                 // System info response.
                 $isValidResponse = true;
-            } else if (is_array($data) === true && !empty($data)) {
+            } else if (is_array($data) === true && empty($data) === false) {
                 // Any valid JSON response indicates SOLR is responding.
                 $isValidResponse = true;
             }
 
-            if (!$isValidResponse) {
+            if (($isValidResponse === false)) {
                 return [
                     'success' => false,
                     'message' => 'SOLR admin endpoint returned invalid response',
@@ -1708,7 +1710,7 @@ class SettingsService
                 );
             } else {
                 // Regular hostname - append port (default to 8983 if not provided).
-                $port    = !empty($solrSettings['port']) === true ? $solrSettings['port'] : 8983;
+                $port    = empty($solrSettings['port']) === false ? $solrSettings['port'] : 8983;
                 $baseUrl = sprintf(
                     '%s://%s:%d%s',
                     $solrSettings['scheme'],
@@ -1848,7 +1850,7 @@ class SettingsService
                 );
             } else {
                 // Regular hostname - append port (default to 8983 if not provided).
-                $port    = !empty($solrSettings['port']) === true ? $solrSettings['port'] : 8983;
+                $port    = empty($solrSettings['port']) === false ? $solrSettings['port'] : 8983;
                 $baseUrl = sprintf(
                     '%s://%s:%d%s',
                     $solrSettings['scheme'],
@@ -1889,7 +1891,7 @@ class SettingsService
             $data = json_decode($response, true);
 
             // Check for successful query response.
-            if (!isset($data['responseHeader']['status']) === false || $data['responseHeader']['status'] !== 0) {
+            if (isset($data['responseHeader']['status']) === true || $data['responseHeader']['status'] !== 0) {
                 return [
                     'success' => false,
                     'message' => 'Collection query returned error',
@@ -1946,7 +1948,7 @@ class SettingsService
         try {
             $solrSettings = $this->getSolrSettings();
 
-            if (!$solrSettings['enabled']) {
+            if (($solrSettings['enabled'] === false)) {
                 return [
                     'success' => false,
                     'message' => 'SOLR is disabled in settings',
@@ -2152,7 +2154,7 @@ class SettingsService
     private function transformSolrStatsToDashboard(array $rawStats): array
     {
         // If SOLR is not available, return error structure.
-        if (!($rawStats['available'] ?? false)) {
+        if (($rawStats['available'] ?? false) === false) {
             return [
                 'overview'     => [
                     'available'         => false,

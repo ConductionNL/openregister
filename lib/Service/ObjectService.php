@@ -1606,7 +1606,7 @@ class ObjectService
                     "ids"     => $ids,
                 ]
             );
-        } elseif ($returnEmpty === false) {
+        } else if ($returnEmpty === false) {
             $objects = $this->findAll(
                 config: [
                     "limit"     => $limit,
@@ -1890,7 +1890,7 @@ class ObjectService
         foreach ($params as $key => $value) {
             if (str_starts_with(haystack: $key, needle: '_') === true) {
                 $specialParams[$key] = $value;
-            } elseif (in_array(needle: $key, haystack: $metadataFields) === true) {
+            } else if (in_array(needle: $key, haystack: $metadataFields) === true) {
                 // Only add to @self if not already set from function parameters.
                 if (isset($query['@self'][$key]) === false) {
                     $query['@self'][$key] = $value;
@@ -1960,7 +1960,7 @@ class ObjectService
                     $registerArray = [];
                     if (is_array($registerValue) === true) {
                         $registerArray = $registerValue;
-                    } elseif ($registerValue !== null && $registerValue !== false) {
+                    } else if ($registerValue !== null && $registerValue !== false) {
                         $registerArray = [$registerValue];
                     }
                     $query['@self']['register'] = array_unique(array_merge(
@@ -1978,7 +1978,7 @@ class ObjectService
                     $schemaArray = [];
                     if (is_array($schemaValue) === true) {
                         $schemaArray = $schemaValue;
-                    } elseif ($schemaValue !== null && $schemaValue !== false) {
+                    } else if ($schemaValue !== null && $schemaValue !== false) {
                         $schemaArray = [$schemaValue];
                     }
                     $query['@self']['schema'] = array_unique(array_merge(
@@ -2107,10 +2107,10 @@ class ObjectService
         }
 
         // **CRITICAL PERFORMANCE OPTIMIZATION**: Detect simple vs complex rendering needs.
-        $hasExtend = !empty($query['_extend'] ?? []);
-        $hasFields = !empty($query['_fields'] ?? null);
-        $hasFilter = !empty($query['_filter'] ?? null);
-        $hasUnset = !empty($query['_unset'] ?? null);
+        $hasExtend = empty($query['_extend'] ?? []) === false;
+        $hasFields = empty($query['_fields'] ?? null) === false;
+        $hasFilter = empty($query['_filter'] ?? null) === false;
+        $hasUnset = empty($query['_unset'] ?? null) === false;
         $hasComplexRendering = $hasExtend || $hasFields || $hasFilter || $hasUnset;
 
         // Get active organization context for multi-tenancy (only if multi is enabled).
@@ -2255,7 +2255,7 @@ class ObjectService
                         // Skip invalid register data.
                         continue;
                     }
-                } elseif ($register instanceof \OCA\OpenRegister\Db\Register) {
+                } else if ($register instanceof \OCA\OpenRegister\Db\Register) {
                     $validRegisters[] = $register;
                 }
             }
@@ -2279,7 +2279,7 @@ class ObjectService
                         // Skip invalid schema data.
                         continue;
                     }
-                } elseif ($schema instanceof \OCA\OpenRegister\Db\Schema) {
+                } else if ($schema instanceof \OCA\OpenRegister\Db\Schema) {
                     $validSchemas[] = $schema;
                 }
             }
@@ -2382,7 +2382,7 @@ class ObjectService
 
         // **PERFORMANCE DETECTION**: Check if this is a potentially slow operation.
         $objectCount = count($objects);
-        $isLargeDataset = $objectCount > 20 || !empty($extend);
+        $isLargeDataset = $objectCount > 20 || empty($extend) === false;
 
         if ($isLargeDataset === true) {
             $this->logger->info(message: '📊 PERFORMANCE: Large dataset detected, using circuit breakers', context: [
@@ -2429,7 +2429,7 @@ class ObjectService
             'renderTime' => $renderTime . 'ms',
             'objectCount' => $objectCount,
             'avgPerObject' => $this->calculateAvgPerObject(objectCount: $objectCount, totalTime: $renderTime),
-            'ultraCacheEnabled' => !empty($this->renderHandler->getUltraCacheSize())
+            'ultraCacheEnabled' => empty($this->renderHandler->getUltraCacheSize()) === false
         ]);
 
         return $objects;
@@ -2913,7 +2913,7 @@ class ObjectService
         $mapperStart = microtime(true);
 
         // **PERFORMANCE DETECTION**: Determine if this is a complex request requiring async processing.
-        $hasFacets = !empty($query['_facets']);
+        $hasFacets = empty($query['_facets']) === false;
         $hasFacetable = ($query['_facetable'] ?? false) === true || ($query['_facetable'] ?? false) === 'true';
         $isComplexRequest = $hasFacets || $hasFacetable;
 
@@ -2936,8 +2936,8 @@ class ObjectService
         // **PERFORMANCE OPTIMIZATION**: Simple requests - minimal operations for sub-500ms performance.
         $this->logger->debug(message: 'Simple request detected, using optimized path', context: [
             'limit' => $query['_limit'] ?? 20,
-            'hasExtend' => !empty($query['_extend']),
-            'hasSearch' => !empty($query['_search'])
+            'hasExtend' => empty($query['_extend']) === false,
+            'hasSearch' => empty($query['_search']) === false
         ]);
 
         // Extract pagination parameters.
@@ -3066,7 +3066,7 @@ class ObjectService
                     'totalPages' => $this->calculateTotalPages(total: $total, limit: $limit),
                     'currentPage' => $page,
                     'limit' => $limit,
-                    'hasExtend' => !empty($extend),
+                    'hasExtend' => empty($extend) === false,
                     'extendCount' => count($extend ?? []),
                 ],
                 'recommendations' => $this->getPerformanceRecommendations(totalTime: $totalTime, perfTimings: $perfTimings, query: $query),
@@ -3111,7 +3111,7 @@ class ObjectService
                     'Implement pagination with smaller page sizes'
                 ]
             ];
-        } elseif ($totalTime > 500) {
+        } else if ($totalTime > 500) {
             $recommendations[] = [
                 'type' => 'warning',
                 'issue' => 'Slow response time',
@@ -3277,13 +3277,13 @@ class ObjectService
         if (empty($query['_extend']) === false) {
             if (is_array($query['_extend']) === true) {
                 $extendCount = count($query['_extend']);
-            } elseif (is_string($query['_extend']) === true) {
+            } else if (is_string($query['_extend']) === true) {
                 // Count comma-separated extend fields.
                 $extendCount = count(array_filter(array_map('trim', explode(',', $query['_extend']))));
             }
         }
         $hasComplexExtend = $extendCount > 2;
-        $hasFacets = !empty($query['_facets']) || ($query['_facetable'] ?? false);
+        $hasFacets = empty($query['_facets']) === false || ($query['_facetable'] ?? false);
         $hasLargeLimit = ($query['_limit'] ?? 20) > 50;
 
         // Count filter criteria (excluding system parameters).
@@ -3316,7 +3316,7 @@ class ObjectService
             }
             // Convert comma-separated string to array.
             $extend = array_filter(array_map('trim', explode(',', $extend)));
-        } elseif (is_array($extend) === false) {
+        } else if (is_array($extend) === false) {
             return [];
         }
 
@@ -4363,8 +4363,12 @@ class ObjectService
         }//end foreach
 
         // PERFORMANCE OPTIMIZATION: Execute all writeBack updates in a single bulk operation.
+        // Use saveObjectsHandler's method for bulk writeBack updates.
         if (empty($bulkWriteBackUpdates) === false) {
-            $this->performBulkWriteBackUpdates(array_values($bulkWriteBackUpdates));
+            $this->saveObjectsHandler->handlePostSaveInverseRelations(
+                savedObjects: array_values($bulkWriteBackUpdates),
+                schemaCache: []
+            );
         }
 
 
@@ -4674,7 +4678,7 @@ class ObjectService
                 } catch (\Exception $e) {
                     $mergeReport['warnings'][] = 'Failed to transfer files: '.$e->getMessage();
                 }
-            } elseif ($fileAction === 'delete' && $sourceObject->getFolder() !== null) {
+            } else if ($fileAction === 'delete' && $sourceObject->getFolder() !== null) {
                 try {
                     $deleteResult = $this->deleteObjectFiles($sourceObject);
                     $mergeReport['actions']['files']           = $deleteResult['files'];
@@ -4984,7 +4988,7 @@ class ObjectService
 
                             // If creation failed, keep original item to avoid empty array.
                             $createdUuids[] = $createdUuid ?? $item;
-                        } elseif (is_string($item) === true && $this->isUuid($item) === true) {
+                        } else if (is_string($item) === true && $this->isUuid($item) === true) {
                             // This is already a UUID, keep it.
                             $createdUuids[] = $item;
                         }
@@ -4992,7 +4996,7 @@ class ObjectService
 
                     $object[$propertyName] = $createdUuids;
                 }
-            } elseif (isset($definition['inversedBy']) === true && $definition['type'] !== 'array') {
+            } else if (isset($definition['inversedBy']) === true && $definition['type'] !== 'array') {
                 // Handle single object properties.
                 if (is_array($propertyValue) === true && $this->isUuid($propertyValue) === false) {
                     // This is a nested object, create it first.
@@ -5125,7 +5129,7 @@ class ObjectService
                             $allRelatedIds[] = $relatedId;
                         }
                     }
-                } elseif (is_string($value) === true && $this->isUuid($value) === true) {
+                } else if (is_string($value) === true && $this->isUuid($value) === true) {
                     // Handle single ID.
                     $allRelatedIds[] = $value;
                 }
@@ -6372,9 +6376,9 @@ class ObjectService
         // Base batch size calculation based on dataset size.
         if ($totalObjects <= 50) {
             return 10; // Small datasets: small batches for quick turnaround.
-        } elseif ($totalObjects <= 200) {
+        } else if ($totalObjects <= 200) {
             return 25; // Medium datasets: balanced batches.
-        } elseif ($totalObjects <= 500) {
+        } else if ($totalObjects <= 500) {
             return 50; // Large datasets: bigger batches for efficiency.
         } else {
             return 100; // Very large datasets: maximum efficiency batches.
@@ -6521,7 +6525,7 @@ class ObjectService
                             ]);
                         }
 
-                    } elseif (is_string($value) === true && empty($value) === false) {
+                    } else if (is_string($value) === true && empty($value) === false) {
                         // Handle single relationship ID.
                         $allIds[] = $value;
                         $extractedCount++;
@@ -6805,7 +6809,8 @@ class ObjectService
         }
 
         // **ULTRA-SELECTIVE LOADING**: Load only absolutely essential fields for 500ms target.
-        $qb = $this->objectEntityMapper->getDB()->getQueryBuilder();
+        // ObjectEntityMapper extends QBMapper which has $this->db property.
+        $qb = $this->objectEntityMapper->db->getQueryBuilder();
 
         $qb->select(
             'o.id',

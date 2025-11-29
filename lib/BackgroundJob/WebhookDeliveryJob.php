@@ -31,7 +31,6 @@ use Psr\Log\LoggerInterface;
  *
  * This job handles asynchronous webhook delivery, particularly for retries
  * after failed delivery attempts.
- *
  */
 class WebhookDeliveryJob extends QueuedJob
 {
@@ -65,7 +64,6 @@ class WebhookDeliveryJob extends QueuedJob
      * @param WebhookMapper   $webhookMapper  Webhook mapper
      * @param WebhookService  $webhookService Webhook service
      * @param LoggerInterface $logger         Logger
-     *
      */
     public function __construct(
         ITimeFactory $time,
@@ -91,7 +89,6 @@ class WebhookDeliveryJob extends QueuedJob
      *                        - attempt: Current attempt number
      *
      * @return void
-     *
      */
     protected function run($argument): void
     {

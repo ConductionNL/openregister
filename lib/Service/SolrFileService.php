@@ -704,8 +704,7 @@ class SolrFileService
      */
     private function commandExists(string $command): bool
     {
-        /*
-         */
+
         $result = shell_exec(sprintf('which %s 2>/dev/null', escapeshellarg($command)));
         return !empty($result);
 
@@ -773,7 +772,6 @@ class SolrFileService
                 [
                     'chunk_count'      => count($chunks),
                     'chunking_time_ms' => $chunkingTime,
-                    //
                     'avg_chunk_size'   => $this->calculateAvgChunkSize($chunks),
                 ]
                 );
@@ -1302,7 +1300,9 @@ class SolrFileService
                             );
                 } else {
                     $stats['failed']++;
-                    $stats['errors'][$fileText->getFileId()] = $result['error'] ?? ($result['message'] ?? 'Unknown error');
+                    // Result array may contain 'error' or 'message' keys even if not in type definition.
+                    $errorMsg = (is_array($result) && array_key_exists('error', $result)) ? $result['error'] : ((is_array($result) && array_key_exists('message', $result)) ? $result['message'] : 'Unknown error');
+                    $stats['errors'][$fileText->getFileId()] = $errorMsg;
                 }//end if
             } catch (\Exception $e) {
                 $stats['failed']++;

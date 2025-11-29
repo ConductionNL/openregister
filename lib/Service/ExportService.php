@@ -76,7 +76,6 @@ class ExportService
      * @param IUserManager       $userManager        The user manager (unused but kept for future use)
      * @param IGroupManager      $groupManager       The group manager
      * @param ObjectService      $objectService      The object service
-     *
      */
     public function __construct(
         ObjectEntityMapper $objectEntityMapper,
@@ -135,8 +134,7 @@ class ExportService
                 function (callable $resolve, callable $reject) use ($register, $schema, $filters) {
                     try {
                         $spreadsheet = $this->exportToExcel(register: $register, schema: $schema, filters: $filters);
-                        /*
-                         */
+
                         $resolve($spreadsheet);
                     } catch (\Throwable $e) {
                         $reject($e);
@@ -198,8 +196,7 @@ class ExportService
                 function (callable $resolve, callable $reject) use ($register, $schema, $filters) {
                     try {
                         $csv = $this->exportToCsv(register: $register, schema: $schema, filters: $filters);
-                        /*
-                         */
+
                         $resolve($csv);
                     } catch (\Throwable $e) {
                         $reject($e);
@@ -367,8 +364,7 @@ class ExportService
 
                 // Always use the property key as the header to ensure consistent data access.
                 $headers[$col] = $fieldName;
-                /*
-                 */
+
                 $col++;
             }
         }

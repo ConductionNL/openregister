@@ -29,7 +29,6 @@ use OCP\IRequest;
 /**
  * Class SearchTrailController
  * Handles all search trail related operations and analytics
- *
  */
 class SearchTrailController extends Controller
 {
@@ -858,8 +857,6 @@ class SearchTrailController extends Controller
     {
         try {
             // Get the search trail mapper from the container.
-            /*
-             */
             /*
              * @var \OCA\OpenRegister\Db\SearchTrailMapper $searchTrailMapper
              */

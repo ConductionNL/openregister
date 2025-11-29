@@ -27,7 +27,6 @@ use OCP\IRequest;
 use Exception;
 /**
  * Class TagsController
- *
  */
 class TagsController extends Controller
 {

@@ -29,7 +29,6 @@ use OCP\IRequest;
 /**
  * Class AuditTrailController
  * Handles all audit trail related operations
- *
  */
 class AuditTrailController extends Controller
 {

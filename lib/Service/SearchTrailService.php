@@ -225,7 +225,6 @@ class SearchTrailService
             'results' => $enrichedTrails,
             'total'   => $total,
             'page'    => $processedConfig['page'],
-            //
             'pages'   => $this->calculatePages($total, $processedConfig['limit']),
             'limit'   => $processedConfig['limit'],
             'offset'  => $processedConfig['offset'],
@@ -989,6 +988,25 @@ class SearchTrailService
         return $trails;
 
     }//end enrichTrailsWithNames()
+
+
+    /**
+     * Calculate total number of pages
+     *
+     * @param int $total Total number of items
+     * @param int $limit Items per page
+     *
+     * @return int Total number of pages
+     */
+    private function calculatePages(int $total, int $limit): int
+    {
+        if ($limit <= 0) {
+            return 0;
+        }
+
+        return (int) ceil($total / $limit);
+
+    }//end calculatePages()
 
 
 }//end class

@@ -41,7 +41,6 @@ use Psr\Log\LoggerInterface;
  * @author   Conduction <info@conduction.nl>
  * @license  AGPL-3.0-or-later
  * @link     https://github.com/ConductionNL/openregister
- *
  */
 class WebhooksController extends Controller
 {

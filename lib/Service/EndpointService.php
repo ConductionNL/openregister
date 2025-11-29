@@ -228,28 +228,28 @@ class EndpointService
     {
         try {
             // Get required services.
-            $agentMapper = \OC::$server->get(\OCA\OpenRegister\Db\AgentMapper::class);
-            $toolRegistry = \OC::$server->get(\OCA\OpenRegister\Service\ToolRegistry::class);
+            $agentMapper     = \OC::$server->get(\OCA\OpenRegister\Db\AgentMapper::class);
+            $toolRegistry    = \OC::$server->get(\OCA\OpenRegister\Service\ToolRegistry::class);
             $settingsService = \OC::$server->get(\OCA\OpenRegister\Service\SettingsService::class);
-            
+
             $agentId = $endpoint->getTargetId();
             $this->logger->info('[EndpointService] Executing agent endpoint', ['agentId' => $agentId]);
-            
+
             // Find agent by UUID.
             $agent = $agentMapper->findByUuid($agentId);
-            
+
             if (!$agent) {
                 return [
                     'success'    => false,
                     'statusCode' => 404,
                     'response'   => null,
-                    'error'      => 'Agent not found: ' . $agentId,
+                    'error'      => 'Agent not found: '.$agentId,
                 ];
             }
-            
+
             // Extract message from request.
             $message = $request['data']['message'] ?? $request['message'] ?? '';
-            
+
             if (empty($message) === true) {
                 return [
                     'success'    => false,
@@ -258,21 +258,24 @@ class EndpointService
                     'error'      => 'Message is required',
                 ];
             }
-            
-            $this->logger->info('[EndpointService] Executing agent', [
-                'agent' => $agent->getName(),
-                'provider' => $agent->getProvider(),
-                'model' => $agent->getModel(),
-                'message' => substr($message, 0, 100),
-            ]);
-            
+
+            $this->logger->info(
+                    '[EndpointService] Executing agent',
+                    [
+                        'agent'    => $agent->getName(),
+                        'provider' => $agent->getProvider(),
+                        'model'    => $agent->getModel(),
+                        'message'  => substr($message, 0, 100),
+                    ]
+                    );
+
             // Get LLM configuration.
             $llmConfig = $settingsService->getSettings()['llm'] ?? [];
-            
+
             // Prepare tools/functions for the agent.
-            $functions = [];
+            $functions  = [];
             $agentTools = $agent->getTools() ?? [];
-            
+
             if (!empty($agentTools)) {
                 foreach ($agentTools as $toolName) {
                     try {
@@ -280,52 +283,65 @@ class EndpointService
                         if ($tool !== null) {
                             $tool->setAgent($agent);
                             $toolFunctions = $tool->getFunctions();
-                            $functions = array_merge($functions, $toolFunctions);
-                            
-                            $this->logger->debug('[EndpointService] Added tool functions', [
-                                'tool' => $toolName,
-                                'functions' => count($toolFunctions),
-                            ]);
+                            $functions     = array_merge($functions, $toolFunctions);
+
+                            $this->logger->debug(
+                                    '[EndpointService] Added tool functions',
+                                    [
+                                        'tool'      => $toolName,
+                                        'functions' => count($toolFunctions),
+                                    ]
+                                    );
                         }
                     } catch (\Exception $e) {
-                        $this->logger->warning('[EndpointService] Failed to load tool: ' . $toolName, [
-                            'error' => $e->getMessage(),
-                        ]);
-                    }
-                }
-            }
-            
-            $this->logger->info('[EndpointService] Agent has tools configured', [
-                'totalFunctions' => count($functions),
-            ]);
-            
+                        $this->logger->warning(
+                                '[EndpointService] Failed to load tool: '.$toolName,
+                                [
+                                    'error' => $e->getMessage(),
+                                ]
+                                );
+                    }//end try
+                }//end foreach
+            }//end if
+
+            $this->logger->info(
+                    '[EndpointService] Agent has tools configured',
+                    [
+                        'totalFunctions' => count($functions),
+                    ]
+                    );
+
             // Call LLM based on provider.
             if ($agent->getProvider() === 'ollama') {
                 $ollamaConfig = $llmConfig['ollamaConfig'] ?? [];
-                $ollamaUrl = $ollamaConfig['url'] ?? 'http://host.docker.internal:11434';
-                
-                $this->logger->info('[EndpointService] Calling Ollama', [
-                    'url' => $ollamaUrl,
-                    'model' => $agent->getModel(),
-                    'functionsAvailable' => count($functions),
-                ]);
-                
+                $ollamaUrl    = $ollamaConfig['url'] ?? 'http://host.docker.internal:11434';
+
+                $this->logger->info(
+                        '[EndpointService] Calling Ollama',
+                        [
+                            'url'                => $ollamaUrl,
+                            'model'              => $agent->getModel(),
+                            'functionsAvailable' => count($functions),
+                        ]
+                        );
+
                 // Build messages.
                 $messages = [];
                 if (($agent->getPrompt() !== null && $agent->getPrompt() !== '') === true) {
                     $messages[] = [
-                        'role' => 'system',
+                        'role'    => 'system',
                         'content' => $agent->getPrompt(),
                     ];
                 }
+
                 $messages[] = [
-                    'role' => 'user',
+                    'role'    => 'user',
                     'content' => $message,
                 ];
-                
+
                 // Call Ollama API directly.
                 $response = $this->callOllamaWithTools($ollamaUrl, $agent->getModel(), $messages, $functions, $agent, $toolRegistry);
-                
+
                 return [
                     'success'    => true,
                     'statusCode' => 200,
@@ -336,22 +352,24 @@ class EndpointService
                     'success'    => false,
                     'statusCode' => 501,
                     'response'   => null,
-                    'error'      => 'Provider ' . $agent->getProvider() . ' not yet implemented for endpoint execution',
+                    'error'      => 'Provider '.$agent->getProvider().' not yet implemented for endpoint execution',
                 ];
-            }
-            
+            }//end if
         } catch (\Exception $e) {
-            $this->logger->error('[EndpointService] Error executing agent endpoint: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString(),
-            ]);
-            
+            $this->logger->error(
+                    '[EndpointService] Error executing agent endpoint: '.$e->getMessage(),
+                    [
+                        'trace' => $e->getTraceAsString(),
+                    ]
+                    );
+
             return [
                 'success'    => false,
                 'statusCode' => 500,
                 'response'   => null,
                 'error'      => $e->getMessage(),
             ];
-        }
+        }//end try
 
     }//end executeAgentEndpoint()
 
@@ -359,150 +377,175 @@ class EndpointService
     /**
      * Call Ollama API with function calling support
      *
-     * @param string $ollamaUrl  Ollama API URL
-     * @param string $model      Model name
-     * @param array  $messages   Message history
-     * @param array  $functions  Available functions
-     * @param mixed  $agent      The agent object
+     * @param string $ollamaUrl    Ollama API URL
+     * @param string $model        Model name
+     * @param array  $messages     Message history
+     * @param array  $functions    Available functions
+     * @param mixed  $agent        The agent object
      * @param mixed  $toolRegistry Tool registry
      *
      * @return array Response from Ollama/function execution
      */
     private function callOllamaWithTools(string $ollamaUrl, string $model, array $messages, array $functions, $agent, $toolRegistry): array
     {
-        $maxIterations = 5; // Prevent infinite loops.
+        $maxIterations = 5;
+        // Prevent infinite loops.
         $iteration = 0;
-        
+
         while ($iteration < $maxIterations) {
             $iteration++;
-            
-            $this->logger->debug('[EndpointService] Calling Ollama (iteration ' . $iteration . ')', [
-                'model' => $model,
-                'messages' => count($messages),
-                'tools' => count($functions),
-            ]);
-            
+
+            $this->logger->debug(
+                    '[EndpointService] Calling Ollama (iteration '.$iteration.')',
+                    [
+                        'model'    => $model,
+                        'messages' => count($messages),
+                        'tools'    => count($functions),
+                    ]
+                    );
+
             // Build Ollama chat request.
             $requestData = [
-                'model' => $model,
+                'model'    => $model,
                 'messages' => $messages,
-                'stream' => false,
+                'stream'   => false,
             ];
-            
+
             // Add tools if available.
             if (!empty($functions)) {
-                $requestData['tools'] = array_map(function($func) {
-                    // Ensure parameters.properties is an object, not an array.
-                    $parameters = $func['parameters'] ?? ['type' => 'object', 'properties' => new \stdClass()];
-                    
-                    // Convert empty properties array to object for JSON encoding.
-                    if (($parameters['properties'] ?? null) !== null && is_array($parameters['properties']) === true && empty($parameters['properties']) === true) {
-                        $parameters['properties'] = new \stdClass();
-                    }
-                    
-                    return [
-                        'type' => 'function',
-                        'function' => [
-                            'name' => $func['name'],
-                            'description' => $func['description'] ?? '',
-                            'parameters' => $parameters,
-                        ],
-                    ];
-                }, $functions);
-            }
-            
+                $requestData['tools'] = array_map(
+                        function ($func) {
+                            // Ensure parameters.properties is an object, not an array.
+                            $parameters = $func['parameters'] ?? ['type' => 'object', 'properties' => new \stdClass()];
+
+                            // Convert empty properties array to object for JSON encoding.
+                            if (($parameters['properties'] ?? null) !== null && is_array($parameters['properties']) === true && empty($parameters['properties']) === true) {
+                                $parameters['properties'] = new \stdClass();
+                            }
+
+                            return [
+                                'type'     => 'function',
+                                'function' => [
+                                    'name'        => $func['name'],
+                                    'description' => $func['description'] ?? '',
+                                    'parameters'  => $parameters,
+                                ],
+                            ];
+                        },
+                        $functions
+                        );
+            }//end if
+
             // Call Ollama.
-            $ch = curl_init(rtrim($ollamaUrl, '/') . '/api/chat');
+            $ch = curl_init(rtrim($ollamaUrl, '/').'/api/chat');
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_POST, true);
             curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($requestData));
             curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
             curl_setopt($ch, CURLOPT_TIMEOUT, 120);
-            
+
             $response = curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             curl_close($ch);
-            
+
             if ($httpCode !== 200) {
-                $this->logger->error('[EndpointService] Ollama API error', [
-                    'httpCode' => $httpCode,
-                    'response' => $response,
-                ]);
-                
+                $this->logger->error(
+                        '[EndpointService] Ollama API error',
+                        [
+                            'httpCode' => $httpCode,
+                            'response' => $response,
+                        ]
+                        );
+
                 return [
-                    'error' => 'Ollama API error: HTTP ' . $httpCode,
+                    'error'   => 'Ollama API error: HTTP '.$httpCode,
                     'details' => $response,
                 ];
             }
-            
+
             $result = json_decode($response, true);
-            
+
             if (!$result || !isset($result['message'])) {
                 return [
-                    'error' => 'Invalid response from Ollama',
+                    'error'    => 'Invalid response from Ollama',
                     'response' => $response,
                 ];
             }
-            
+
             $assistantMessage = $result['message'];
-            $messages[] = $assistantMessage;
-            
-            $this->logger->debug('[EndpointService] Ollama response received', [
-                'role' => $assistantMessage['role'] ?? null,
-                'hasContent' => !empty($assistantMessage['content']),
-                'hasToolCalls' => !empty($assistantMessage['tool_calls']),
-            ]);
-            
+            $messages[]       = $assistantMessage;
+
+            $this->logger->debug(
+                    '[EndpointService] Ollama response received',
+                    [
+                        'role'         => $assistantMessage['role'] ?? null,
+                        'hasContent'   => !empty($assistantMessage['content']),
+                        'hasToolCalls' => !empty($assistantMessage['tool_calls']),
+                    ]
+                    );
+
             // Check if LLM wants to call a tool.
             if (!empty($assistantMessage['tool_calls'])) {
-                $this->logger->info('[EndpointService] LLM requested tool calls', [
-                    'count' => count($assistantMessage['tool_calls']),
-                ]);
-                
+                $this->logger->info(
+                        '[EndpointService] LLM requested tool calls',
+                        [
+                            'count' => count($assistantMessage['tool_calls']),
+                        ]
+                        );
+
                 // Execute each tool call.
                 foreach ($assistantMessage['tool_calls'] as $toolCall) {
                     $functionName = $toolCall['function']['name'] ?? null;
-                    $rawArgs = $toolCall['function']['arguments'] ?? '{}';
+                    $rawArgs      = $toolCall['function']['arguments'] ?? '{}';
                     $functionArgs = (is_string($rawArgs) === true) === true ? json_decode($rawArgs, true) : $rawArgs;
-                    
-                    $this->logger->info('[EndpointService] Executing tool call', [
-                        'function' => $functionName,
-                        'arguments' => $functionArgs,
-                    ]);
-                    
+
+                    $this->logger->info(
+                            '[EndpointService] Executing tool call',
+                            [
+                                'function'  => $functionName,
+                                'arguments' => $functionArgs,
+                            ]
+                            );
+
                     // Find and execute the tool function.
                     $functionResult = $this->executeToolFunction($functionName, $functionArgs, $agent, $toolRegistry);
-                    
+
                     // Add tool result to messages.
+                    // If result is already a string, use as-is; otherwise JSON encode.
+                    $content = is_string($functionResult) ? $functionResult : json_encode($functionResult);
+
                     $messages[] = [
-                        'role' => 'tool',
-                        'content' => json_encode($functionResult),
-                        'tool_call_id' => $toolCall['id'] ?? 'tool_' . $iteration,
+                        'role'         => 'tool',
+                        'content'      => $content,
+                        'tool_call_id' => $toolCall['id'] ?? 'tool_'.$iteration,
                     ];
-                    
-                    $this->logger->info('[EndpointService] Tool executed', [
-                        'function' => $functionName,
-                        'success' => !isset($functionResult['error']),
-                    ]);
-                }
-                
+
+                    $this->logger->info(
+                            '[EndpointService] Tool executed',
+                            [
+                                'function' => $functionName,
+                                'success'  => !isset($functionResult['error']),
+                            ]
+                            );
+                }//end foreach
+
                 // Continue loop to get final response from LLM.
                 continue;
-            }
-            
+            }//end if
+
             // No more tool calls - return final response.
             return [
-                'answer' => $assistantMessage['content'] ?? '',
-                'iterations' => $iteration,
+                'answer'        => $assistantMessage['content'] ?? '',
+                'iterations'    => $iteration,
                 'toolCallsMade' => $iteration > 1,
             ];
-        }
-        
+        }//end while
+
         // Max iterations reached.
         return [
-            'answer' => 'Maximum iterations reached',
+            'answer'     => 'Maximum iterations reached',
             'iterations' => $iteration,
-            'warning' => 'Agent may not have completed the task',
+            'warning'    => 'Agent may not have completed the task',
         ];
 
     }//end callOllamaWithTools()
@@ -523,7 +566,7 @@ class EndpointService
         try {
             // Get agent's tools.
             $agentTools = $agent->getTools() ?? [];
-            
+
             // Find which tool has this function.
             foreach ($agentTools as $toolName) {
                 try {
@@ -531,58 +574,72 @@ class EndpointService
                     if (!$tool) {
                         continue;
                     }
-                    
+
                     $tool->setAgent($agent);
-                    
+
                     // Check if this tool has the function.
                     $toolFunctions = $tool->getFunctions();
-                    $hasFunction = false;
-                    
+                    $hasFunction   = false;
+
                     foreach ($toolFunctions as $func) {
                         if ($func['name'] === $functionName) {
                             $hasFunction = true;
                             break;
                         }
                     }
-                    
+
                     if ($hasFunction === true) {
-                        $this->logger->info('[EndpointService] Calling tool function', [
-                            'tool' => $toolName,
-                            'function' => $functionName,
-                            'arguments' => $arguments,
-                        ]);
-                        
+                        $this->logger->info(
+                                '[EndpointService] Calling tool function',
+                                [
+                                    'tool'      => $toolName,
+                                    'function'  => $functionName,
+                                    'arguments' => $arguments,
+                                ]
+                                );
+
                         // Call the function via __call magic method.
                         // The tool's __call handles name conversion (e.g., cms_create_menu -> createMenu).
                         // Spread the arguments array as individual parameters to avoid double-wrapping.
                         $result = $tool->$functionName(...array_values([$arguments]));
-                        
-                        return [
-                            'success' => true,
-                            'result' => $result,
-                        ];
-                    }
+
+                        // If result is JSON string (from __call), decode it.
+                        if (is_string($result)) {
+                            $decoded = json_decode($result, true);
+                            if ($decoded !== null) {
+                                $result = $decoded;
+                            }
+                        }
+
+                        return $result;
+                    }//end if
                 } catch (\Exception $e) {
-                    $this->logger->error('[EndpointService] Error checking tool: ' . $toolName, [
-                        'error' => $e->getMessage(),
-                    ]);
-                }
-            }
-            
+                    $this->logger->error(
+                            '[EndpointService] Error checking tool: '.$toolName,
+                            [
+                                'error' => $e->getMessage(),
+                            ]
+                            );
+                }//end try
+            }//end foreach
+
             return [
-                'error' => 'Function not found: ' . $functionName,
+                'error' => 'Function not found: '.$functionName,
             ];
-            
         } catch (\Exception $e) {
-            $this->logger->error('[EndpointService] Error executing tool function', [
-                'function' => $functionName,
-                'error' => $e->getMessage(),
-            ]);
-            
+            $this->logger->error(
+                    '[EndpointService] Error executing tool function',
+                    [
+                        'function' => $functionName,
+                        'error'    => $e->getMessage(),
+                    ]
+                    );
+
             return [
                 'error' => $e->getMessage(),
             ];
-        }
+        }//end try
+
     }//end executeToolFunction()
 
 

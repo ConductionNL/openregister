@@ -179,12 +179,16 @@ class WebhookInterceptorService
                 $webhookLog->setErrorMessage($e->getMessage());
 
                 // Get status code from exception if available.
-                if ($e instanceof GuzzleException && $e->hasResponse() === true) {
-                    $webhookLog->setStatusCode($e->getResponse()->getStatusCode());
-                    try {
-                        $webhookLog->setResponseBody((string) $e->getResponse()->getBody());
-                    } catch (\Exception $bodyException) {
-                        // Ignore body reading errors.
+                // GuzzleException methods exist but Psalm may not recognize them without proper type check.
+                if ($e instanceof \GuzzleHttp\Exception\RequestException && $e->hasResponse() === true) {
+                    $response = $e->getResponse();
+                    if ($response !== null) {
+                        $webhookLog->setStatusCode($response->getStatusCode());
+                        try {
+                            $webhookLog->setResponseBody((string) $response->getBody());
+                        } catch (\Exception $bodyException) {
+                            // Ignore body reading errors.
+                        }
                     }
                 }
 

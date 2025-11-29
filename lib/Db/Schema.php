@@ -885,8 +885,6 @@ class Schema extends Entity implements JsonSerializable
         }
 
         // If it's a JSON string, decode it.
-        /*
-         */
         if (is_string($this->configuration) === true) {
             $decoded = json_decode($this->configuration, true);
             if (json_last_error() === JSON_ERROR_NONE) {
@@ -1109,8 +1107,6 @@ class Schema extends Entity implements JsonSerializable
         }
 
         // If it's a JSON string, decode it.
-        /*
-         */
         if (is_string($this->facets) === true) {
             $decoded = json_decode($this->facets, true);
             if (json_last_error() === JSON_ERROR_NONE) {
@@ -1121,8 +1117,6 @@ class Schema extends Entity implements JsonSerializable
         }
 
         // Otherwise, it's already an array.
-        /*
-         */
         return $this->facets;
 
     }//end getFacets()

@@ -41,7 +41,6 @@ use Psr\Log\LoggerInterface;
  * - Respects extraction scope and file type settings
  * - Detailed logging and error handling
  * - Automatic retry for failed files
- *
  */
 class CronFileTextExtractionJob extends TimedJob
 {
@@ -62,7 +61,6 @@ class CronFileTextExtractionJob extends TimedJob
      * @param ITimeFactory $time Time factory for job scheduling
      *
      * @return void
-     *
      */
     public function __construct(ITimeFactory $time)
     {
@@ -83,7 +81,6 @@ class CronFileTextExtractionJob extends TimedJob
      * @param array $argument Job arguments (unused for recurring jobs)
      *
      * @return void
-     *
      */
     protected function run($argument): void
     {

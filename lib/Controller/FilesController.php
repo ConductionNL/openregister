@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * FilesController
  *
  * Controller for file operations in the OpenRegister application.
@@ -40,7 +40,6 @@ use OCP\IRequest;
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
- *
  */
 class FilesController extends Controller
 {
@@ -326,7 +325,9 @@ class FilesController extends Controller
             $fileName = $files['name'] ?? null;
             if ($fileName !== null) {
                 // $fileName can be string or array from $_FILES.
-                /** @var string|array<int, string> $fileName */
+                /*
+                 * @var string|array<int, string> $fileName
+                 */
                 if (is_array($fileName) === false) {
                     // Single file upload.
                     $tags = $data['tags'] ?? '';
@@ -346,7 +347,9 @@ class FilesController extends Controller
                 } else {
                     // Multiple file upload.
                     // Loop through each file using the count of 'name'.
-                    /** @var array<int, string> $fileName */
+                    /*
+                     * @var array<int, string> $fileName
+                     */
                     for ($i = 0; $i < count($fileName); $i++) {
                         $tags = $data['tags'][$i] ?? '';
                         if (is_array($tags) === false) {

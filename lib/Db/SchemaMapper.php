@@ -41,14 +41,14 @@ use OCA\OpenRegister\Db\ObjectEntityMapper;
  *
  * @package OCA\OpenRegister\Db
  *
- * @method         Schema insert(Entity $entity)
- * @method         Schema update(Entity $entity)
- * @method         Schema insertOrUpdate(Entity $entity)
- * @method         Schema delete(Entity $entity)
- * @method         Schema find(int|string $id)
- * @method         Schema findEntity(IQueryBuilder $query)
- * @method         Schema[] findAll(int|null $limit = null, int|null $offset = null)
- * @method         list<Schema> findEntities(IQueryBuilder $query)
+ * @method Schema insert(Entity $entity)
+ * @method Schema update(Entity $entity)
+ * @method Schema insertOrUpdate(Entity $entity)
+ * @method Schema delete(Entity $entity)
+ * @method Schema find(int|string $id)
+ * @method Schema findEntity(IQueryBuilder $query)
+ * @method Schema[] findAll(int|null $limit = null, int|null $offset = null)
+ * @method list<Schema> findEntities(IQueryBuilder $query)
  */
 class SchemaMapper extends QBMapper
 {
@@ -157,6 +157,26 @@ class SchemaMapper extends QBMapper
         return $schema;
 
     }//end find()
+
+
+    /**
+     * Find schema by slug
+     *
+     * @param string $slug The slug of the schema
+     *
+     * @return Schema|null The schema if found, null otherwise
+     */
+    public function findBySlug(string $slug): ?Schema
+    {
+        try {
+            return $this->find($slug);
+        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+            return null;
+        } catch (\OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
+            return null;
+        }
+
+    }//end findBySlug()
 
 
     /**
@@ -436,7 +456,7 @@ class SchemaMapper extends QBMapper
     {
         foreach ($properties as $key => &$property) {
             // If property is not an array, skip.
-            if (!is_array($property)) {
+            if (is_array($property) === false) {
                 continue;
             }
 
@@ -447,7 +467,7 @@ class SchemaMapper extends QBMapper
                 } else if (is_object($property['$ref']) === true && (($property['$ref']->id ?? null) !== null)) {
                     $property['$ref'] = $property['$ref']->id;
                 } else if (is_int($property['$ref']) === true) {
-                } else if (!is_string($property['$ref']) && $property['$ref'] !== '') {
+                } else if (is_string($property['$ref']) === false && $property['$ref'] !== '') {
                     throw new \Exception("Schema property '$key' has a \$ref that is not a string or empty: ".print_r($property['$ref'], true));
                 }
             }
@@ -567,7 +587,7 @@ class SchemaMapper extends QBMapper
         $schema = $this->find(id: $id);
 
         // Set or update the version.
-        if (!isset($object['version'])) {
+        if (isset($object['version']) === false) {
             $currentVersion = $schema->getVersion() ?? '0.0.0';
             $version        = explode('.', $currentVersion);
             $version[2]     = ((int) $version[2] + 1);
@@ -778,7 +798,7 @@ class SchemaMapper extends QBMapper
     {
         foreach ($properties as $property) {
             // Skip non-array properties.
-            if (!is_array($property)) {
+            if (is_array($property) === false) {
                 continue;
             }
 
@@ -797,7 +817,7 @@ class SchemaMapper extends QBMapper
 
                 // Check if the ref contains the target schema slug in JSON Schema format.
                 // Format: "#/components/schemas/slug" or "components/schemas/slug" etc.
-                if (is_string($ref) === true && !empty($targetSchemaSlug) === false) {
+                if (is_string($ref) === true && empty($targetSchemaSlug) === false) {
                     if (str_contains($ref, '/schemas/'.$targetSchemaSlug) === true
                         || str_contains($ref, 'schemas/'.$targetSchemaSlug) === true
                         || str_ends_with($ref, '/'.$targetSchemaSlug) === true
@@ -806,8 +826,8 @@ class SchemaMapper extends QBMapper
                     }
                 }
 
-                // Check if the ref contains the target schema UUID.
-                if (is_string($ref) === true && !empty($targetSchemaUuid)) {
+                // Check if the entity contains the target schema UUID.
+                if (is_string($ref) === true && empty($targetSchemaUuid) === false) {
                     if (str_contains($ref, $targetSchemaUuid) === true) {
                         return true;
                     }
@@ -868,7 +888,7 @@ class SchemaMapper extends QBMapper
 
         // Analyze properties for facetable fields.
         foreach ($properties as $fieldName => $property) {
-            if (!is_array($property)) {
+            if (is_array($property) === false) {
                 continue;
             }
 
@@ -1311,7 +1331,7 @@ class SchemaMapper extends QBMapper
         // Apply child properties on top with validation.
         foreach ($childProperties as $propertyName => $childProperty) {
             // If property doesn't exist in parent, it's new - allowed.
-            if (!isset($merged[$propertyName])) {
+            if (isset($merged[$propertyName]) === false) {
                 $merged[$propertyName] = $childProperty;
                 continue;
             }
@@ -1460,7 +1480,7 @@ class SchemaMapper extends QBMapper
 
         foreach ($childProperty as $key => $childValue) {
             // If key doesn't exist in parent, it's new - allowed.
-            if (!isset($merged[$key])) {
+            if (isset($merged[$key]) === false) {
                 $merged[$key] = $childValue;
                 continue;
             }
@@ -1493,7 +1513,7 @@ class SchemaMapper extends QBMapper
 
                 // Include parent nested properties not in child.
                 foreach ($parentValue as $nestedKey => $nestedParent) {
-                    if (!isset($mergedNested[$nestedKey])) {
+                    if (isset($mergedNested[$nestedKey]) === false) {
                         $mergedNested[$nestedKey] = $nestedParent;
                     }
                 }
@@ -1560,7 +1580,7 @@ class SchemaMapper extends QBMapper
                         "Schema '{$schemaId}': Property '{$propertyName}' cannot change type from ".json_encode($parentValue)." to ".json_encode($childValue)." (adds types not in parent)"
                     );
                 }
-            } else if (!is_array($parentValue) === true && !is_array($childValue)) {
+            } else if (is_array($parentValue) === false && is_array($childValue) === false) {
                 throw new \Exception(
                     "Schema '{$schemaId}': Property '{$propertyName}' cannot change type from "."'{$parentValue}' to '{$childValue}'"
                 );
@@ -1643,7 +1663,7 @@ class SchemaMapper extends QBMapper
         string $schemaId
     ): void {
         // If parent had validation and child removes it, that's relaxing.
-        if (!empty($parentProperty) === true && empty($childProperty) === true) {
+        if (empty($parentProperty) === false && empty($childProperty) === true) {
             throw new \Exception(
                 "Schema '{$schemaId}': Property '{$propertyName}' cannot remove constraints "."(parent had value, child is empty)"
             );
@@ -1777,7 +1797,7 @@ class SchemaMapper extends QBMapper
 
         foreach ($childProperties as $propertyName => $childProperty) {
             // If property doesn't exist in parent, it's new - include in delta.
-            if (!isset($parentProperties[$propertyName])) {
+            if (isset($parentProperties[$propertyName]) === false) {
                 $delta[$propertyName] = $childProperty;
                 continue;
             }
@@ -1838,7 +1858,7 @@ class SchemaMapper extends QBMapper
         $delta = [];
 
         foreach ($childProperty as $key => $value) {
-            if (!isset($parentProperty[$key])) {
+            if (isset($parentProperty[$key]) === false) {
                 // New field in child.
                 $delta[$key] = $value;
             } else if ($this->arePropertiesDifferent($parentProperty[$key], $value) === true) {

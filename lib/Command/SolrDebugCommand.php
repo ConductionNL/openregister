@@ -385,10 +385,11 @@ class SolrDebugCommand extends Command
             if (($collectionsData['cluster']['collections'] ?? null) !== null) {
                 $collectionCount = count($collectionsData['cluster']['collections']);
                 $output->writeln("  <info>✅ Found $collectionCount collections (SolrCloud mode)</info>");
-                foreach (array_keys($collectionsData['cluster']['collections']) as $collectionName) {
-                    // Ensure collectionName is a string (array_keys returns string|int keys).
-                    $collectionNameStr = (string) $collectionName;
-                    $output->writeln("    - <comment>".$collectionNameStr."</comment>");
+                // Iterate over collections directly to get string keys.
+                // Collection names in Solr are always strings.
+                foreach ($collectionsData['cluster']['collections'] as $collectionName => $collectionData) {
+                    // $collectionName is guaranteed to be a string when iterating over array.
+                    $output->writeln("    - <comment>".$collectionName."</comment>");
                 }
             }
         } else {
