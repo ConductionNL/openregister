@@ -177,8 +177,8 @@ class DeleteObject
         Schema | int | string $schema,
         string $uuid,
         ?string $originalObjectId=null,
-        bool $rbac=true,
-        bool $multi=true
+        bool $_rbac=true,
+        bool $_multi=true
     ): bool {
         try {
             $object = $this->objectEntityMapper->find($uuid, null, null, true);

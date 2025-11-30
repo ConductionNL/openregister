@@ -433,6 +433,7 @@ class WebhookInterceptorService
         }
 
         // Set the value at the final nested path.
+        /** @psalm-suppress UnusedVariable */
         $current = $value;
 
     }//end setNestedValue()

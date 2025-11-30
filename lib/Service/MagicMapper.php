@@ -2287,7 +2287,7 @@ class MagicMapper
      *
      * @return bool True if MagicMapper should be used for this register+schema
      */
-    public function isMagicMappingEnabled(Register $register, Schema $schema): bool
+    public function isMagicMappingEnabled(Register $_register, Schema $schema): bool
     {
         // Check schema configuration for magic mapping flag.
         $configuration = $schema->getConfiguration();

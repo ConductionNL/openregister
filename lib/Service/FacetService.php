@@ -262,7 +262,7 @@ class FacetService
      *
      * @return array Facetable field configuration
      */
-    public function getFacetableFields(array $baseQuery, int $limit=100): array
+    public function getFacetableFields(array $baseQuery, int $_limit=100): array
     {
         $startTime = microtime(true);
 

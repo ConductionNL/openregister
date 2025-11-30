@@ -6557,7 +6557,7 @@ class GuzzleSolrService
      * @param  bool  $dryRun         If true, only returns what would be created without making changes
      * @return array{success: bool, message: string, created?: array, errors?: array, dry_run?: bool}
      */
-    public function createMissingFields(array $expectedFields=[], bool $dryRun=false): array
+    public function createMissingFields(array $expectedFields=[], bool $_dryRun=false): array
     {
         if ($this->isAvailable() === false) {
             return [
@@ -8409,7 +8409,7 @@ class GuzzleSolrService
      * @param  string $fieldName Field name
      * @return array Facet data with custom configuration applied
      */
-    private function applyFacetConfiguration(array $_facetData, string $fieldName): array
+    private function applyFacetConfiguration(array $facetData, string $fieldName): array
     {
         try {
             // Get facet configuration from settings service.

@@ -2124,7 +2124,7 @@ class FileService
      * @phpstan-param array<int, string> $tags
      * @psalm-param array<int, string> $tags
      */
-    public function addFile(ObjectEntity | string $objectEntity, string $fileName, string $content, bool $share = false, array $tags = [], int | string | Schema | null $schema = null, int | string | Register | null $register = null, int|string|null $registerId = null): File
+    public function addFile(ObjectEntity | string $objectEntity, string $fileName, string $content, bool $share = false, array $tags = [], int | string | Schema | null $_schema = null, int | string | Register | null $_register = null, int|string|null $registerId = null): File
     {
 		try {
 			// Ensure we have an ObjectEntity instance.

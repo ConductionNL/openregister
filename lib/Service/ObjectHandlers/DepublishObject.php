@@ -52,8 +52,8 @@ class DepublishObject
     public function depublish(
         string $uuid,
         ?DateTime $date=null,
-        bool $rbac=true,
-        bool $multi=true
+        bool $_rbac=true,
+        bool $_multi=true
     ): ObjectEntity {
         // Get the object.
         $object = $this->objectEntityMapper->find($uuid);

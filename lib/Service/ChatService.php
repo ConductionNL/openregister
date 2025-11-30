@@ -183,7 +183,7 @@ class ChatService
      * @param ToolRegistry           $toolRegistry       Tool registry for dynamic tool loading
      */
     public function __construct(
-        IDBConnection $db,
+        IDBConnection $_db,
         ConversationMapper $conversationMapper,
         MessageMapper $messageMapper,
         AgentMapper $agentMapper,
@@ -191,9 +191,9 @@ class ChatService
         GuzzleSolrService $solrService,
         SettingsService $settingsService,
         LoggerInterface $logger,
-        RegisterTool $registerTool,
-        SchemaTool $schemaTool,
-        ObjectsTool $objectsTool,
+        RegisterTool $_registerTool,
+        SchemaTool $_schemaTool,
+        ObjectsTool $_objectsTool,
         ToolRegistry $toolRegistry
     ) {
         $this->conversationMapper = $conversationMapper;
