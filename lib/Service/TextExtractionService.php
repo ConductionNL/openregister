@@ -271,9 +271,11 @@ class TextExtractionService
         ];
 
         $chunks = $this->textToChunks(
-            text: $payload['text'],
-            sourceType: $payload['source_type'],
-            sourceId: $payload['source_id']
+            $payload,
+            [
+                'source_type' => $payload['source_type'],
+                'source_id' => $payload['source_id']
+            ]
         );
 
         // Persist chunks to database.

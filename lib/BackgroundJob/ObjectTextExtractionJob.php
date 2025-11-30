@@ -43,8 +43,26 @@ use Psr\Log\LoggerInterface;
  */
 class ObjectTextExtractionJob extends QueuedJob
 {
+    /**
+     * Configuration service
+     *
+     * @var IAppConfig
+     */
+    private IAppConfig $config;
 
+    /**
+     * Logger service
+     *
+     * @var LoggerInterface
+     */
+    private LoggerInterface $logger;
 
+    /**
+     * Text extraction service
+     *
+     * @var TextExtractionService
+     */
+    private TextExtractionService $textExtractionService;
 
     /**
      * Run the background job

@@ -41,6 +41,10 @@ use OCP\IRequest;
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
  */
+/**
+ * @psalm-suppress UnusedClass
+ */
+
 class FilesController extends Controller
 {
 

@@ -53,6 +53,10 @@ use OCP\AppFramework\Http\DataDownloadResponse;
 
 /**
  */
+/**
+ * @psalm-suppress UnusedClass
+ */
+
 class ObjectsController extends Controller
 {
 

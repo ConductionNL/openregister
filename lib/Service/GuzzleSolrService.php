@@ -5519,7 +5519,7 @@ class GuzzleSolrService
                 try {
                     // Get 5 objects for this schema.
                     $objects = $objectMapper->searchObjects(
-                            searchParams: [
+                            [
                                 'schema'  => $schemaId,
                                 '_limit'  => 5,
                                 '_offset' => 0,

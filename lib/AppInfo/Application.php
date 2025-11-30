@@ -358,9 +358,7 @@ class Application extends App implements IBootstrap
                 RenderObject::class,
                 function ($container) {
                     return new RenderObject(
-                    $container->get('OCP\IURLGenerator'),
                     $container->get('OCA\OpenRegister\Db\FileMapper'),
-                    $container->get('OCA\OpenRegister\Service\FileService'),
                     $container->get(ObjectEntityMapper::class),
                     $container->get('OCA\OpenRegister\Db\RegisterMapper'),
                     $container->get('OCA\OpenRegister\Db\SchemaMapper'),
@@ -397,7 +395,6 @@ class Application extends App implements IBootstrap
                     $container->get(SchemaMapper::class),
                     $container->get(RegisterMapper::class),
                     $container->get(SaveObject::class),
-                    $container->get(ValidateObject::class),
                     $container->get('OCP\IUserSession'),
                     $container->get(OrganisationService::class),
                     $container->get('Psr\Log\LoggerInterface')
@@ -431,8 +428,6 @@ class Application extends App implements IBootstrap
                     $container->get('Psr\Log\LoggerInterface'),
                     $container->get(FacetService::class),
                     $container->get(ObjectCacheService::class),
-                    $container->get(SchemaCacheService::class),
-                    $container->get(SchemaFacetCacheService::class),
                     $container->get(SettingsService::class),
                     $container
                     );
@@ -540,19 +535,9 @@ class Application extends App implements IBootstrap
                     return new GuzzleSolrService(
                     $container->get(SettingsService::class),
                     $container->get('Psr\Log\LoggerInterface'),
-                    $container->get('OCP\Http\Client\IClientService'),
-                    $container->get('OCP\IConfig'),
                     $container->get(SchemaMapper::class),
-                    // Add SchemaMapper for schema-aware mapping.
                     $container->get(RegisterMapper::class),
-                    // Add RegisterMapper for register access.
-                    $container->get(OrganisationService::class),
-                    // Add OrganisationService for multi-tenancy.
-                    $container->get(OrganisationMapper::class)
-                    // Add OrganisationMapper for organisation label resolution.
-                    // Note: RenderObject removed to avoid circular dependency with ObjectCacheService.
-                    // ObjectCacheService will be resolved lazily from container to avoid circular dependency.
-                    // SolrSchemaService will be resolved lazily to avoid circular dependency.
+                    $container->get(OrganisationService::class)
                     );
                 }
                 );
@@ -605,8 +590,6 @@ class Application extends App implements IBootstrap
                     return new NamedEntityRecognitionService(
                     $container->get(GdprEntityMapper::class),
                     $container->get(EntityRelationMapper::class),
-                    $container->get(ChunkMapper::class),
-                    $container->get(SettingsService::class),
                     $container->get(id: 'OCP\IDBConnection'),
                     $container->get(id: 'Psr\Log\LoggerInterface')
                     );
@@ -681,8 +664,6 @@ class Application extends App implements IBootstrap
                     return new TextExtractionService(
                     $container->get(id: 'OCA\OpenRegister\Db\FileMapper'),
                     $container->get(ChunkMapper::class),
-                    $container->get(GdprEntityMapper::class),
-                    $container->get(EntityRelationMapper::class),
                     $container->get(id: 'OCP\Files\IRootFolder'),
                     $container->get(id: 'OCP\IDBConnection'),
                     $container->get(id: 'Psr\Log\LoggerInterface'),
