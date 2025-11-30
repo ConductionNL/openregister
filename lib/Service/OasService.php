@@ -127,11 +127,14 @@ class OasService
             }
 
             // Update info while preserving base contact and license.
-            $this->oas['info'] = array_merge($this->oas['info'], [
-                'title'       => $register->getTitle().' API',
-                'version'     => $register->getVersion(),
-                'description' => $description,
-            ]);
+            $this->oas['info'] = array_merge(
+                $this->oas['info'],
+                [
+                    'title'       => $register->getTitle().' API',
+                    'version'     => $register->getVersion(),
+                    'description' => $description,
+                ]
+            );
         }
 
         // Initialize tags array.
@@ -160,6 +163,7 @@ class OasService
                 ];
             } else {
             }
+            // end if
         }
 
         // Initialize paths array.
@@ -295,14 +299,40 @@ class OasService
 
         // Standard OpenAPI schema keywords that are allowed.
         $allowedSchemaKeywords = [
-            'type', 'format', 'description', 'example', 'examples',
-            'default', 'enum', 'const', 'multipleOf', 'maximum',
-            'exclusiveMaximum', 'minimum', 'exclusiveMinimum',
-            'maxLength', 'minLength', 'pattern', 'maxItems',
-            'minItems', 'uniqueItems', 'maxProperties', 'minProperties',
-            'required', 'properties', 'items', 'additionalProperties',
-            'allOf', 'anyOf', 'oneOf', 'not', '$ref', 'nullable',
-            'readOnly', 'writeOnly', 'title'
+            'type',
+            'format',
+            'description',
+            'example',
+            'examples',
+            'default',
+            'enum',
+            'const',
+            'multipleOf',
+            'maximum',
+            'exclusiveMaximum',
+            'minimum',
+            'exclusiveMinimum',
+            'maxLength',
+            'minLength',
+            'pattern',
+            'maxItems',
+            'minItems',
+            'uniqueItems',
+            'maxProperties',
+            'minProperties',
+            'required',
+            'properties',
+            'items',
+            'additionalProperties',
+            'allOf',
+            'anyOf',
+            'oneOf',
+            'not',
+            '$ref',
+            'nullable',
+            'readOnly',
+            'writeOnly',
+            'title',
         ];
 
         // Copy only valid OpenAPI schema keywords.

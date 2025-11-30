@@ -217,8 +217,8 @@ class HyperFacetHandler
      * @phpstan-param array<string, mixed> $facetConfig
      * @phpstan-param array<string, mixed> $baseQuery
      * @phpstan-return array<string, mixed>
-     * @psalm-param   array<string, mixed> $facetConfig
-     * @psalm-return   array<string, mixed>
+     * @psalm-param array<string, mixed> $facetConfig
+     * @psalm-return array<string, mixed>
      */
     public function getHyperOptimizedFacets(array $facetConfig, array $baseQuery = []): array
     {
