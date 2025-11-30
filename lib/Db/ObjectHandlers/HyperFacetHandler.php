@@ -15,10 +15,8 @@ declare(strict_types=1);
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * @version GIT: <git-id>
- *
- * @link https://OpenRegister.app
+ * @version   GIT: <git-id>
+ * @link      https://OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Db\ObjectHandlers;
@@ -65,16 +63,14 @@ use React\Promise\PromiseInterface;
  * - Popular combinations: <10ms from cache
  * - Large datasets: Progressive enhancement (fast→accurate)
  *
- * @category   Handler
- * @package    OCA\OpenRegister\Db\ObjectHandlers
+ * @category Handler
+ * @package  OCA\OpenRegister\Db\ObjectHandlers
  *
- * @author     Conduction Development Team <dev@conduction.nl>
- * @copyright  2024 Conduction B.V.
- * @license    EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * @version    GIT: <git-id>
- *
- * @link       https://www.OpenRegister.app
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version   GIT: <git-id>
+ * @link      https://www.OpenRegister.app
  */
 class HyperFacetHandler
 {
@@ -217,8 +213,8 @@ class HyperFacetHandler
      * @phpstan-param array<string, mixed> $facetConfig
      * @phpstan-param array<string, mixed> $baseQuery
      * @phpstan-return array<string, mixed>
-     * @psalm-param array<string, mixed> $facetConfig
-     * @psalm-return array<string, mixed>
+     * @psalm-param   array<string, mixed> $facetConfig
+     * @psalm-return  array<string, mixed>
      */
     public function getHyperOptimizedFacets(array $facetConfig, array $baseQuery = []): array
     {
@@ -309,7 +305,7 @@ class HyperFacetHandler
      * @phpstan-param array<string, mixed> $baseQuery
      * @phpstan-return array<string, mixed>
      * @psalm-param   array<string, mixed> $baseQuery
-     * @psalm-return   array<string, mixed>
+     * @psalm-return  array<string, mixed>
      */
     private function analyzeDatasetSize(array $baseQuery): array
     {
@@ -424,7 +420,7 @@ class HyperFacetHandler
      * @psalm-param   array<string, mixed> $facetConfig
      * @psalm-param   array<string, mixed> $baseQuery
      * @psalm-param   array<string, mixed> $datasetStats
-     * @psalm-return   array<string, mixed>
+     * @psalm-return  array<string, mixed>
      */
     private function calculateExactFacetsParallel(array $facetConfig, array $baseQuery, array $datasetStats): array
     {
@@ -479,7 +475,7 @@ class HyperFacetHandler
      * @psalm-param   array<string, mixed> $facetConfig
      * @psalm-param   array<string, mixed> $baseQuery
      * @psalm-param   array<string, mixed> $datasetStats
-     * @psalm-return   array<string, mixed>
+     * @psalm-return  array<string, mixed>
      */
     private function calculateSampledFacetsParallel(array $facetConfig, array $baseQuery, array $datasetStats): array
     {
@@ -532,7 +528,7 @@ class HyperFacetHandler
      * @psalm-param   array<string, mixed> $facetConfig
      * @psalm-param   array<string, mixed> $baseQuery
      * @psalm-param   array<string, mixed> $datasetStats
-     * @psalm-return   array<string, mixed>
+     * @psalm-return  array<string, mixed>
      */
     private function calculateApproximateFacetsHyperLogLog(array $facetConfig, array $baseQuery, array $datasetStats): array
     {
@@ -577,7 +573,7 @@ class HyperFacetHandler
      * @phpstan-param array<string, mixed> $baseQuery
      * @phpstan-return PromiseInterface
      * @psalm-param   array<string, mixed> $metadataFacets
-     * @psalm-return   PromiseInterface
+     * @psalm-return  PromiseInterface
      */
     private function processMetadataFacetsParallel(array $metadataFacets, array $baseQuery): PromiseInterface
     {
@@ -634,7 +630,7 @@ class HyperFacetHandler
      * @psalm-param   array<string> $fields
      * @psalm-param   array<string, mixed> $facetConfig
      * @psalm-param   array<string, mixed> $baseQuery
-     * @psalm-return   array<string, mixed>
+     * @psalm-return  array<string, mixed>
      */
     private function getBatchedMetadataFacets(array $fields, array $facetConfig, array $baseQuery): array
     {
@@ -992,7 +988,7 @@ class HyperFacetHandler
      * @phpstan-param array<string, mixed> $facetConfig
      * @phpstan-return array<array<string, mixed>>
      * @psalm-param   array<string, mixed> $facetConfig
-     * @psalm-return   array<array<string, mixed>>
+     * @psalm-return  array<array<string, mixed>>
      */
     private function separateFacetTypes(array $facetConfig): array
     {
