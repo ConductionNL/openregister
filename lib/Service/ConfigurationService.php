@@ -697,7 +697,7 @@ class ConfigurationService
     /**
      * @return array<array-key, mixed>|JSONResponse
      */
-    private function getJSONfromFile(array $uploadedFile, ?string $type=null): array | JSONResponse
+    private function getJSONfromFile(array $uploadedFile, ?string $_type=null): array | JSONResponse
     {
         // Check for upload errors.
         if ($uploadedFile['error'] !== UPLOAD_ERR_OK) {

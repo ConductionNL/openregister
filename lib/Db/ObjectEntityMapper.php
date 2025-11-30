@@ -637,7 +637,7 @@ class ObjectEntityMapper extends QBMapper
      *
      * @return ObjectEntity The ObjectEntity.
      */
-    public function find(string | int $identifier, ?Register $register=null, ?Schema $schema=null, bool $includeDeleted=false, bool $rbac=true, bool $multi=true): ObjectEntity
+    public function find(string | int $identifier, ?Register $register=null, ?Schema $schema=null, bool $includeDeleted=false, bool $_rbac=true, bool $_multi=true): ObjectEntity
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -751,7 +751,7 @@ class ObjectEntityMapper extends QBMapper
         ?Schema $schema = null,
         ?bool $published = false,
         bool $rbac = true,
-        bool $multi = true
+        bool $_multi = true
     ): array {
         // Filter out system variables (starting with _).
         $filters = array_filter(
@@ -1492,7 +1492,7 @@ class ObjectEntityMapper extends QBMapper
      *
      * @return int The number of objects matching the criteria
      */
-    public function countSearchObjects(array $query = [], ?string $activeOrganisationUuid = null, bool $rbac = true, bool $multi = true, ?array $ids = null, ?string $uses = null): int
+    public function countSearchObjects(array $query = [], ?string $_activeOrganisationUuid = null, bool $_rbac = true, bool $_multi = true, ?array $ids = null, ?string $uses = null): int
     {
 // Extract options from query (prefixed with _).
         $search = $this->processSearchParameter($query['_search'] ?? null);
@@ -1733,7 +1733,7 @@ class ObjectEntityMapper extends QBMapper
      *
      * @return Register|Schema|array|null The processed value
      */
-    private function processRegisterSchemaValue(mixed $value, string $type): mixed
+    private function processRegisterSchemaValue(mixed $value, string $_type): mixed
     {
         if ($value === null) {
             return null;
@@ -1818,7 +1818,7 @@ class ObjectEntityMapper extends QBMapper
         ?Schema $schema=null,
         ?bool $published=false,
         bool $rbac=true,
-        bool $multi=true
+        bool $_multi=true
     ): int {
         $qb = $this->db->getQueryBuilder();
 
@@ -3031,7 +3031,7 @@ class ObjectEntityMapper extends QBMapper
      * @phpstan-param array<int, array<string, mixed>> $insertObjects
      * @psalm-param array<int, array<string, mixed>> $insertObjects
      */
-    private function calculateOptimalBatchSize(array $insertObjects, array $columns): int
+    private function calculateOptimalBatchSize(array $insertObjects, array $_columns): int
     {
 // Start with a very conservative batch size to prevent packet size issues.
         $baseBatchSize = 25;
