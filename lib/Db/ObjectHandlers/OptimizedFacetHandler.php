@@ -83,7 +83,7 @@ class OptimizedFacetHandler
      *
      * @return array Combined facet results
      */
-    public function getBatchedFacets(array $facetConfig, array $baseQuery = []): array
+    public function getBatchedFacets(array $facetConfig, array $baseQuery =[]): array
     {
         $results = [];
 
