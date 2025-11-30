@@ -432,6 +432,8 @@ class WebhookInterceptorService
             $current = &$current[$key];
         }
 
+        // Set the value at the final nested path.
+        $current = $value;
 
     }//end setNestedValue()
 

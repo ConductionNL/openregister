@@ -3810,6 +3810,7 @@ class ObjectService
             // Get the URL generator from the SaveObject handler.
             $urlGenerator         = new \ReflectionClass($this->saveHandler);
             $urlGeneratorProperty = $urlGenerator->getProperty('urlGenerator');
+            /** @psalm-suppress UnusedMethodCall */
             $urlGeneratorProperty->setAccessible(true);
             $urlGeneratorInstance = $urlGeneratorProperty->getValue($this->saveHandler);
 

@@ -2997,6 +2997,7 @@ class ObjectEntityMapper extends QBMapper
             $size = 0;
             $reflection = new \ReflectionClass($object);
             foreach ($reflection->getProperties() as $property) {
+                /** @psalm-suppress UnusedMethodCall */
                 $property->setAccessible(true);
                 $value = $property->getValue($object);
 
@@ -3515,6 +3516,7 @@ class ObjectEntityMapper extends QBMapper
 
         try {
             $property = $reflection->getProperty($column);
+            /** @psalm-suppress UnusedMethodCall */
             $property->setAccessible(true);
             $value = $property->getValue($entity);
         } catch (\ReflectionException $e) {

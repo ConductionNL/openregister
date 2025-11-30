@@ -543,9 +543,9 @@ class VectorEmbeddingService
         string $model,
         int $dimensions,
         int $chunkIndex=0,
-        int $totalChunks=1,
-        ?string $chunkText=null,
-        array $metadata=[]
+        int $_totalChunks=1,
+        ?string $_chunkText=null,
+        array $_metadata=[]
     ): string {
         $this->logger->debug(
                 message: '[VectorEmbeddingService] Storing vector in Solr',
