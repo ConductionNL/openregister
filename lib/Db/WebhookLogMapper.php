@@ -157,6 +157,8 @@ class WebhookLogMapper extends QBMapper
      * @param Entity $entity WebhookLog entity to insert
      *
      * @return WebhookLog The inserted log
+     *
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function insert(Entity $entity): Entity
     {

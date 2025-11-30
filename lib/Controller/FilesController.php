@@ -339,12 +339,6 @@ class FilesController extends Controller
                         $tags = explode(',', $tags);
                     }
 
-                    /**
-                     * @var string $typeValue
-                     * @var string $tmpNameValue
-                     * @var int $errorValue
-                     * @var int $sizeValue
-                     */
                     $typeValue = $files['type'] ?? '';
                     $tmpNameValue = $files['tmp_name'] ?? '';
                     $errorValue = $files['error'] ?? UPLOAD_ERR_NO_FILE;

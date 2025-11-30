@@ -21,7 +21,9 @@ namespace OCA\OpenRegister\Db;
 
 use OCP\AppFramework\Db\Entity;
 use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCP\IAppConfig;
 use OCP\Security\ISecureRandom;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Response;
 use OCP\AppFramework\Http\JSONResponse;
 
@@ -45,7 +47,19 @@ use OCP\AppFramework\Http\JSONResponse;
  */
 trait MultiTenancyTrait
 {
+    /**
+     * Optional app config for multitenancy settings
+     *
+     * @var IAppConfig|null
+     */
+    protected ?IAppConfig $appConfig = null;
 
+    /**
+     * Optional logger for debug logging
+     *
+     * @var LoggerInterface|null
+     */
+    protected ?LoggerInterface $logger = null;
 
     /**
      * Get the active organisation UUID from the session.
@@ -376,7 +390,9 @@ trait MultiTenancyTrait
                 )
             );
 
-            $this->logger->debug('[MultiTenancyTrait] Added published objects bypass');
+            if (($this->logger ?? null) !== null) {
+                $this->logger->debug('[MultiTenancyTrait] Added published objects bypass');
+            }
         }//end if
 
         // Include NULL organisation entities for admins with default org (legacy data).
@@ -390,7 +406,9 @@ trait MultiTenancyTrait
         if (($allowNullOrg === true) && ($isSystemDefaultOrg === true) && ($isAdmin === true)) {
             $orgConditions->add($qb->expr()->isNull($organisationColumn));
 
-            $this->logger->debug('[MultiTenancyTrait] Added NULL org access for admin with default org');
+            if (($this->logger ?? null) !== null) {
+                $this->logger->debug('[MultiTenancyTrait] Added NULL org access for admin with default org');
+            }
         }
 
         // Apply the conditions.

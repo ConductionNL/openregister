@@ -1147,6 +1147,8 @@ class ConfigurationService
      * @return Configuration The created or updated configuration
      *
      * @throws Exception If configuration creation/update fails
+     *
+     * @psalm-suppress UnusedReturnValue
      */
     private function createOrUpdateConfiguration(array $data, string $appId, string $version, array $result, ?string $owner=null): Configuration
     {

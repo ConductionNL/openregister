@@ -249,6 +249,8 @@ class ViewMapper extends QBMapper
      *
      * @return View The deleted view
      * @throws \Exception If user doesn't have delete permission or access to this organisation
+     *
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function delete(Entity $entity): View
     {

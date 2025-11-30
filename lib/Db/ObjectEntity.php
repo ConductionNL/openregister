@@ -715,6 +715,8 @@ class ObjectEntity extends Entity implements JsonSerializable
      * @throws Exception If object is already locked by another user
      *
      * @return bool True if lock was successful
+     *
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function lock(IUserSession $userSession, ?string $process=null, ?int $duration=3600): bool
     {
@@ -777,6 +779,8 @@ class ObjectEntity extends Entity implements JsonSerializable
      * @throws Exception If object is locked by another user
      *
      * @return bool True if unlock was successful
+     *
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function unlock(IUserSession $userSession): bool
     {

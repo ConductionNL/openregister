@@ -248,6 +248,8 @@ class WebhookMapper extends QBMapper
      * @param bool    $incrementOnly Only increment counters, don't update timestamps
      *
      * @return Webhook
+     *
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function updateStatistics(Webhook $webhook, bool $success, bool $incrementOnly=false): Webhook
     {

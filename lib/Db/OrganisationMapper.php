@@ -507,6 +507,8 @@ class OrganisationMapper extends QBMapper
      * @return Organisation The updated organisation
      *
      * @throws DoesNotExistException If organisation not found
+     *
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function addUserToOrganisation(string $organisationUuid, string $userId): Organisation
     {
@@ -526,6 +528,8 @@ class OrganisationMapper extends QBMapper
      * @return Organisation The updated organisation
      *
      * @throws DoesNotExistException If organisation not found
+     *
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function removeUserFromOrganisation(string $organisationUuid, string $userId): Organisation
     {

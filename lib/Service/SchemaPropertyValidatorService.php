@@ -238,6 +238,8 @@ class SchemaPropertyValidatorService
      *
      * @psalm-return   bool
      * @phpstan-return bool
+     *
+     * @psalm-suppress UnusedReturnValue
      */
     private function validateFileProperty(array $property, string $path): bool
     {

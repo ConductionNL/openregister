@@ -252,6 +252,8 @@ class ConfigurationMapper extends QBMapper
      * @throws \Exception If configuration not found or user doesn't have permission
      *
      * @since 0.2.10
+     *
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function updateSyncStatus(int $id, string $status, \DateTime $syncDate, string $message=''): Configuration
     {
@@ -365,6 +367,8 @@ class ConfigurationMapper extends QBMapper
      *
      * @return Configuration The deleted configuration
      * @throws \Exception If user doesn't have delete permission or access to this organisation
+     *
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function delete(Entity $entity): Entity
     {

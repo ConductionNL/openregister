@@ -179,6 +179,8 @@ class SaveObjects
      *
      * @return Register The loaded register
      * @throws \Exception If register cannot be found
+     *
+     * @psalm-suppress UnusedReturnValue
      */
     private function loadRegisterWithCache(int|string $registerId): Register
     {

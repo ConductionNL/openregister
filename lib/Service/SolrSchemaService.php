@@ -1178,6 +1178,8 @@ class SolrSchemaService
      *
      * @param  bool $force Force update existing fields
      * @return bool Success status
+     *
+     * @psalm-suppress UnusedReturnValue
      */
     private function ensureCoreMetadataFields(bool $force=false): bool
     {
@@ -1471,6 +1473,8 @@ class SolrSchemaService
      * @param  array $solrFields SOLR field definitions
      * @param  bool  $force      Force update existing fields
      * @return bool Success status
+     *
+     * @psalm-suppress UnusedReturnValue
      */
     private function applySolrFields(array $solrFields, bool $force=false): bool
     {

@@ -1167,7 +1167,7 @@ class ObjectEntityMapper extends QBMapper
             'queryKeys' => array_keys($query),
             'rbac' => $rbac,
             'multi' => $multi,
-            'activeOrg' => $activeOrganisationUuid === true ? 'set' : 'null'
+            'activeOrg' => ($activeOrganisationUuid !== null) ? 'set' : 'null'
         ]);
 
 // Extract options from query (prefixed with _).
