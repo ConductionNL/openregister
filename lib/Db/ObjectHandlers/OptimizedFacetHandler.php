@@ -14,10 +14,8 @@ declare(strict_types=1);
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * @version GIT: <git-id>
- *
- * @link https://OpenRegister.app
+ * @version   GIT: <git-id>
+ * @link      https://OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Db\ObjectHandlers;
@@ -75,9 +73,8 @@ class OptimizedFacetHandler
      *
      * @phpstan-param array<string, array> $facetConfig
      * @phpstan-param array<string, mixed> $baseQuery
-     *
-     * @psalm-param array<string, array> $facetConfig
-     * @psalm-param array<string, mixed> $baseQuery
+     * @psalm-param   array<string, array> $facetConfig
+     * @psalm-param   array<string, mixed> $baseQuery
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
@@ -140,9 +137,8 @@ class OptimizedFacetHandler
      *
      * @phpstan-param array<string, array> $metadataConfig
      * @phpstan-param array<string, mixed> $baseQuery
-     *
-     * @psalm-param array<string, array> $metadataConfig
-     * @psalm-param array<string, mixed> $baseQuery
+     * @psalm-param   array<string, array> $metadataConfig
+     * @psalm-param   array<string, mixed> $baseQuery
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
@@ -177,9 +173,8 @@ class OptimizedFacetHandler
      *
      * @phpstan-param string $field
      * @phpstan-param array<string, mixed> $baseQuery
-     *
-     * @psalm-param string $field
-     * @psalm-param array<string, mixed> $baseQuery
+     * @psalm-param   string $field
+     * @psalm-param   array<string, mixed> $baseQuery
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
@@ -235,9 +230,8 @@ class OptimizedFacetHandler
      *
      * @phpstan-param string $field
      * @phpstan-param array<string, mixed> $baseQuery
-     *
-     * @psalm-param string $field
-     * @psalm-param array<string, mixed> $baseQuery
+     * @psalm-param   string $field
+     * @psalm-param   array<string, mixed> $baseQuery
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
@@ -310,9 +304,8 @@ class OptimizedFacetHandler
      *
      * @phpstan-param IQueryBuilder $queryBuilder
      * @phpstan-param array<string, mixed> $baseQuery
-     *
-     * @psalm-param IQueryBuilder $queryBuilder
-     * @psalm-param array<string, mixed> $baseQuery
+     * @psalm-param   IQueryBuilder $queryBuilder
+     * @psalm-param   array<string, mixed> $baseQuery
      *
      * @return void
      */
@@ -374,8 +367,7 @@ class OptimizedFacetHandler
      * @param array $baseQuery Base query filters
      *
      * @phpstan-param array<string, mixed> $baseQuery
-     *
-     * @psalm-param array<string, mixed> $baseQuery
+     * @psalm-param   array<string, mixed> $baseQuery
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
@@ -416,9 +408,8 @@ class OptimizedFacetHandler
      *
      * @phpstan-param array<string, mixed> $facetConfig
      * @phpstan-param array<string, mixed> $baseQuery
-     *
-     * @psalm-param array<string, mixed> $facetConfig
-     * @psalm-param array<string, mixed> $baseQuery
+     * @psalm-param   array<string, mixed> $facetConfig
+     * @psalm-param   array<string, mixed> $baseQuery
      *
      * @return string Cache key
      */
@@ -437,9 +428,8 @@ class OptimizedFacetHandler
      *
      * @phpstan-param string $field
      * @phpstan-param mixed $value
-     *
-     * @psalm-param string $field
-     * @psalm-param mixed $value
+     * @psalm-param   string $field
+     * @psalm-param   mixed $value
      *
      * @return string Human-readable label
      */
