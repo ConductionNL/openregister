@@ -3702,7 +3702,7 @@ class ObjectEntityMapper extends QBMapper
         $publishedIds = [];
 
 
-        foreach ($chunks as $chunkIndex => $uuidChunk) {
+        foreach ($chunks as $_chunkIndex => $uuidChunk) {
 
 // Check database connection health before processing chunk.
             try {
@@ -3796,7 +3796,7 @@ class ObjectEntityMapper extends QBMapper
         $depublishedIds = [];
 
 
-        foreach ($chunks as $chunkIndex => $uuidChunk) {
+        foreach ($chunks as $_chunkIndex => $uuidChunk) {
 
 // Check database connection health before processing chunk.
             try {

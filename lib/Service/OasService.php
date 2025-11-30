@@ -1259,7 +1259,7 @@ class OasService
                 unset($schema['allOf']);
             } else {
                 $validAllOfItems = [];
-                foreach ($schema['allOf'] as $index => $item) {
+                foreach ($schema['allOf'] as $_index => $item) {
                     if (is_array($item) === false || empty($item) === true) {
                     } else {
                         // Validate each allOf item has required structure.

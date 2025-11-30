@@ -260,7 +260,7 @@ class ValidateObject
             return $schemaObject;
         }
 
-        foreach ($schemaObject->properties as $propertyName => $propertySchema) {
+        foreach ($schemaObject->properties as $_propertyName => $propertySchema) {
             $this->transformPropertyForOpenRegister($propertySchema);
         }
 
@@ -332,7 +332,7 @@ class ValidateObject
 
         // Recursively transform nested properties.
         if (($propertySchema->properties ?? null) !== null) {
-            foreach ($propertySchema->properties as $nestedPropertyName => $nestedPropertySchema) {
+            foreach ($propertySchema->properties as $_nestedPropertyName => $nestedPropertySchema) {
                 $this->transformPropertyForOpenRegister($nestedPropertySchema);
             }
         }
@@ -552,7 +552,7 @@ class ValidateObject
 
         $propertiesArray = (array) $schemaObject->properties;
         // Step 1: Handle circular references.
-        foreach ($propertiesArray as $propertyName => $propertySchema) {
+        foreach ($propertiesArray as $_propertyName => $propertySchema) {
             // Check if this property has a $ref that references the current schema.
             if ($this->isSelfReference(propertySchema: $propertySchema, schemaSlug: $currentSchemaSlug) === true) {
                 // Check if this is a related-object with objectConfiguration.
@@ -1038,7 +1038,7 @@ class ValidateObject
         // Modify schema to allow null values for non-required fields.
         // This ensures that null values are valid for optional fields.
         if (($schemaObject->properties ?? null) !== null) {
-            foreach ($schemaObject->properties as $propertyName => $propertySchema) {
+            foreach ($schemaObject->properties as $_propertyName => $propertySchema) {
                 // Skip required fields - they should not allow null unless explicitly defined.
                 if (in_array($propertyName, $requiredFields) === true) {
                     continue;
