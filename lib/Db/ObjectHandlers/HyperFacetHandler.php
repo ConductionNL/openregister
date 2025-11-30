@@ -104,10 +104,14 @@ class HyperFacetHandler
     /**
      * Cache TTL constants for different data types
      */
-    private const FACET_RESULT_TTL = 300;      // 5 minutes - facet results
-    private const FRAGMENT_CACHE_TTL = 900;    // 15 minutes - query fragments
-    private const CARDINALITY_TTL = 3600;      // 1 hour - cardinality estimates
-    private const SCHEMA_FACET_TTL = 86400;    // 24 hours - schema facet configs
+    // 5 minutes - facet results.
+    private const FACET_RESULT_TTL = 300;
+    // 15 minutes - query fragments.
+    private const FRAGMENT_CACHE_TTL = 900;
+    // 1 hour - cardinality estimates.
+    private const CARDINALITY_TTL = 3600;
+    // 24 hours - schema facet configs.
+    private const SCHEMA_FACET_TTL = 86400;
 
     /**
      * Thresholds for switching between exact and approximate calculations
@@ -122,9 +126,12 @@ class HyperFacetHandler
     /**
      * Sampling rates for different dataset sizes
      */
-    private const SMALL_SAMPLE_RATE = 1.0;    // 100% - exact
-    private const MEDIUM_SAMPLE_RATE = 0.1;   // 10% sampling
-    private const LARGE_SAMPLE_RATE = 0.05;   // 5% sampling
+    // 100% - exact.
+    private const SMALL_SAMPLE_RATE = 1.0;
+    // 10% sampling.
+    private const MEDIUM_SAMPLE_RATE = 0.1;
+    // 5% sampling.
+    private const LARGE_SAMPLE_RATE = 0.05;
 
 
     /**
@@ -164,18 +171,17 @@ class HyperFacetHandler
 
             // **LAYER 3**: Cardinality estimation cache (local is sufficient).
             $this->cardinalityCache = $this->cacheFactory->createLocal('openregister_cardinality');
-
         } catch (\Exception $e) {
             // Fallback to local caches if distributed unavailable.
             try {
-                $this->facetCache = $this->cacheFactory->createLocal('openregister_facets');
-                $this->fragmentCache = $this->cacheFactory->createLocal('openregister_facet_fragments');
-                $this->cardinalityCache = $this->cacheFactory->createLocal('openregister_cardinality');
+                $this->facetCache         = $this->cacheFactory->createLocal('openregister_facets');
+                $this->fragmentCache      = $this->cacheFactory->createLocal('openregister_facet_fragments');
+                $this->cardinalityCache    = $this->cacheFactory->createLocal('openregister_cardinality');
             } catch (\Exception $fallbackError) {
                 // No caching available - will use in-memory caching.
                 $this->logger->warning('Facet caching unavailable, performance will be reduced');
-            }
-        }
+            }//end try
+        }//end try
 
     }//end initializeCaches()
 
@@ -216,32 +222,38 @@ class HyperFacetHandler
      * @psalm-param    array<string, mixed> $facetConfig
      * @psalm-return   array<string, mixed>
      */
-    public function getHyperOptimizedFacets(array $facetConfig, array $baseQuery = []): array
+    public function getHyperOptimizedFacets(array $facetConfig, array $baseQuery=[]): array
     {
         $startTime = microtime(true);
 
         // **STEP 1**: Lightning-fast cache check.
-        $cacheKey = $this->generateIntelligentCacheKey($facetConfig, $baseQuery);
+        $cacheKey     = $this->generateIntelligentCacheKey($facetConfig, $baseQuery);
         $cachedResult = $this->getCachedFacetResult($cacheKey);
 
         if ($cachedResult !== null) {
-            $this->logger->debug('Hyper cache hit - instant facet response', [
-                'cacheKey' => substr($cacheKey, 0, 20) . '...',
-                'responseTime' => '<10ms',
-                'source' => 'cache_layer_1'
-            ]);
+            $this->logger->debug(
+                'Hyper cache hit - instant facet response',
+                [
+                    'cacheKey'     => substr($cacheKey, 0, 20).'...',
+                    'responseTime' => '<10ms',
+                    'source'       => 'cache_layer_1',
+                ]
+            );
             return $cachedResult;
-        }
+        }//end if
 
         // **STEP 2**: Intelligent dataset analysis for optimization strategy selection.
-        $datasetStats = $this->analyzeDatasetSize($baseQuery);
+        $datasetStats         = $this->analyzeDatasetSize($baseQuery);
         $optimizationStrategy = $this->selectOptimizationStrategy($datasetStats);
 
-        $this->logger->debug('Dataset analysis completed', [
-            'estimatedSize' => $datasetStats['estimated_size'],
-            'strategy' => $optimizationStrategy,
-            'analysisTime' => round((microtime(true) - $startTime) * 1000, 2) . 'ms'
-        ]);
+        $this->logger->debug(
+            'Dataset analysis completed',
+            [
+                'estimatedSize' => $datasetStats['estimated_size'],
+                'strategy'      => $optimizationStrategy,
+                'analysisTime'  => round((microtime(true) - $startTime) * 1000, 2).'ms',
+            ]
+        );
 
         // **STEP 3**: Execute optimized facet calculation based on strategy.
         switch ($optimizationStrategy) {
@@ -812,11 +824,11 @@ class HyperFacetHandler
      *
      * @return string Intelligent cache key
      *
-     * @phpstan-param array<string, mixed> $facetConfig
-     * @phpstan-param array<string, mixed> $baseQuery
+     * @phpstan-param  array<string, mixed> $facetConfig
+     * @phpstan-param  array<string, mixed> $baseQuery
      * @phpstan-return string
-     * @psalm-param   array<string, mixed> $facetConfig
-     * @psalm-param   array<string, mixed> $baseQuery
+     * @psalm-param    array<string, mixed> $facetConfig
+     * @psalm-param    array<string, mixed> $baseQuery
      * @psalm-return   string
      */
     private function generateIntelligentCacheKey(array $facetConfig, array $baseQuery): string
@@ -985,10 +997,10 @@ class HyperFacetHandler
      *
      * @return array Array containing [metadataFacets, jsonFacets]
      *
-     * @phpstan-param array<string, mixed> $facetConfig
+     * @phpstan-param  array<string, mixed> $facetConfig
      * @phpstan-return array<array<string, mixed>>
-     * @psalm-param   array<string, mixed> $facetConfig
-     * @psalm-return  array<array<string, mixed>>
+     * @psalm-param    array<string, mixed> $facetConfig
+     * @psalm-return   array<array<string, mixed>>
      */
     private function separateFacetTypes(array $facetConfig): array
     {
