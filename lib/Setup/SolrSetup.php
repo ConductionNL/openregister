@@ -863,7 +863,7 @@ class SolrSetup
      */
     private function allComponentsSuccessful(array $components): bool
     {
-        foreach ($components as $component => $result) {
+        foreach ($components as $_component => $result) {
             if (($result['success'] ?? false) === false) {
                 return false;
             }

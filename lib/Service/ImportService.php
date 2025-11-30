@@ -768,7 +768,9 @@ class ImportService
                 continue;
             }
 
-            $firstChar = $key[0] ?? '';
+            // Ensure $key is a string before accessing as array
+            $keyString = is_string($key) ? $key : (string)$key;
+            $firstChar = $keyString[0] ?? '';
 
             if ($firstChar === '_') {
                 // REQUIREMENT: Columns starting with _ are completely ignored.

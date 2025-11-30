@@ -376,15 +376,17 @@ class FilesController extends Controller
                          */
                         $typeArray = is_array($files['type'] ?? null) ? $files['type'] : null;
                         $tmpNameArray = is_array($files['tmp_name'] ?? null) ? $files['tmp_name'] : null;
+                        /** @var array<int, int>|null $errorArray */
                         $errorArray = is_array($files['error'] ?? null) ? $files['error'] : null;
+                        /** @var array<int, int>|null $sizeArray */
                         $sizeArray = is_array($files['size'] ?? null) ? $files['size'] : null;
 
                         $uploadedFiles[] = [
                             'name'     => $fileName[$i] ?? '',
                             'type'     => ($typeArray !== null && isset($typeArray[$i])) ? $typeArray[$i] : '',
                             'tmp_name' => ($tmpNameArray !== null && isset($tmpNameArray[$i])) ? $tmpNameArray[$i] : '',
-                            'error'    => ($errorArray !== null && isset($errorArray[$i])) ? $errorArray[$i] : UPLOAD_ERR_NO_FILE,
-                            'size'     => ($sizeArray !== null && isset($sizeArray[$i])) ? $sizeArray[$i] : 0,
+                            'error'    => (is_array($errorArray) && isset($errorArray[$i])) ? $errorArray[$i] : UPLOAD_ERR_NO_FILE,
+                            'size'     => (is_array($sizeArray) && isset($sizeArray[$i])) ? $sizeArray[$i] : 0,
                             'share'    => $data['share'] === 'true',
                             'tags'     => $tags,
                         ];

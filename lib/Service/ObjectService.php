@@ -721,7 +721,8 @@ class ObjectService
     ): int {
         // Add register and schema IDs to filters// Ensure we have both register and schema set.
         if ($this->currentRegister !== null && empty($config['filers']['register']) === true) {
-            $filters['register'] = $this->currentRegister->getId();
+            // $filters is intentionally unused here as we're modifying $config directly
+            $_filters = ['register' => $this->currentRegister->getId()];
         }
 
         if ($this->currentSchema !== null && empty($config['filers']['schema']) === true) {
@@ -1085,7 +1086,7 @@ class ObjectService
 
             $objects  = $this->findAll(config: ['filters' => $value]);
             $foundIds = array_map(
-                    function (ObjectEntity $object) use ($property, $key) {
+                    function (ObjectEntity $object) use ($property, $_key) {
                         $idRaw = $object->jsonSerialize()[$property['inversedBy']];
 
                         if (Uuid::isValid($idRaw) === true) {
@@ -4349,7 +4350,7 @@ class ObjectService
         foreach ($normalized as $key => $value) {
             if (preg_match('/^(.*)_(in|gt|lt|gte|lte|isnull)$/', $key, $matches) === 1) {
                 $matches[0];
-                [$fullMatch, $base, $suffix] = $matches;
+                [$_fullMatch, $base, $suffix] = $matches;
 
                 switch ($suffix) {
                     case 'in':

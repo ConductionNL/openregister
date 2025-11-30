@@ -827,7 +827,7 @@ class SaveObjects
             $object['@self'] = $selfData;
 
             // Handle pre-validation cascading for inversedBy properties.
-            [$processedObject, $uuid] = $this->handlePreValidationCascading(object: $object, schema: $schema, uuid: $selfData['id']);
+            [$processedObject, $_uuid] = $this->handlePreValidationCascading(object: $object, schema: $schema, uuid: $selfData['id']);
 
             $preparedObjects[$index] = $processedObject;
         }//end foreach
@@ -912,7 +912,7 @@ class SaveObjects
         $preparedObjects = [];
         $invalidObjects = [];
 
-        foreach ($objects as $index => $object) {
+        foreach ($objects as $_index => $object) {
             // NO ERROR SUPPRESSION: Let single-schema preparation errors bubble up immediately!
             $selfData = $object['@self'] ?? [];
 
@@ -1529,7 +1529,7 @@ class SaveObjects
 
         // Create direct UUID to object reference mapping.
         $objectsByUuid = [];
-        foreach ($preparedObjects as $index => &$object) {
+        foreach ($preparedObjects as $_index => &$object) {
             $selfData   = $object['@self'] ?? [];
             $objectUuid = $selfData['id'] ?? null;
             if ($objectUuid !== null && $objectUuid !== '') {
@@ -1538,7 +1538,7 @@ class SaveObjects
         }
 
         // Process inverse relations using cached analysis.
-        foreach ($preparedObjects as $index => &$object) {
+        foreach ($preparedObjects as $_index => &$object) {
             $selfData   = $object['@self'] ?? [];
             $schemaId   = $selfData['schema'] ?? null;
             $objectUuid = $selfData['id'] ?? null;
@@ -1569,9 +1569,9 @@ class SaveObjects
                         if (in_array($objectUuid, $existingValues, true) === false) {
                             $existingValues[] = $objectUuid;
                             $targetObject[$inversedBy] = $existingValues;
-                            $appliedCount++;
+                            $_appliedCount++;
                         }
-                        $processedCount++;
+                        $_processedCount++;
                     }
                 } else if (($propertyInfo['isArray'] === true) && is_array($value) === true) {
                     // Handle array of object relations.
@@ -1586,9 +1586,9 @@ class SaveObjects
                                 if (in_array($objectUuid, $existingValues, true) === false) {
                                     $existingValues[] = $objectUuid;
                                     $targetObject[$inversedBy] = $existingValues;
-                                    $appliedCount++;
+                                    $_appliedCount++;
                                 }
-                                $processedCount++;
+                                $_processedCount++;
                             }
                         }
                     }

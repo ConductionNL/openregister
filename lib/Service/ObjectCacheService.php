@@ -437,7 +437,7 @@ class ObjectCacheService
      */
     private function extractTextFromArray(array $data, array &$textContent): void
     {
-        foreach ($data as $key => $value) {
+        foreach ($data as $_key => $value) {
             if (is_string($value) === true) {
                 $textContent[] = $value;
             } else if (is_array($value) === true) {

@@ -633,14 +633,18 @@ class ObjectsController extends Controller
                 // Handle array uploads: images[] becomes images with array values.
                 // We need to preserve all files, so use indexed keys: images[0], images[1], etc.
                 $fileCount = count($fileData['name']);
+                /** @var array<int, int> $errorArray */
+                $errorArray = is_array($fileData['error']) ? $fileData['error'] : [];
+                /** @var array<int, int> $sizeArray */
+                $sizeArray = is_array($fileData['size']) ? $fileData['size'] : [];
                 for ($i = 0; $i < $fileCount; $i++) {
                     // Use indexed key to preserve all files: images[0], images[1], images[2].
                     $uploadedFiles[$fieldName.'['.$i.']'] = [
                         'name'     => $fileData['name'][$i],
                         'type'     => $fileData['type'][$i],
                         'tmp_name' => $fileData['tmp_name'][$i],
-                        'error'    => $fileData['error'][$i],
-                        'size'     => $fileData['size'][$i],
+                        'error'    => $errorArray[$i] ?? UPLOAD_ERR_NO_FILE,
+                        'size'     => $sizeArray[$i] ?? 0,
                     ];
                 }
             } else {
@@ -748,14 +752,18 @@ class ObjectsController extends Controller
                 // Handle array uploads: images[] becomes images with array values.
                 // We need to preserve all files, so use indexed keys: images[0], images[1], etc.
                 $fileCount = count($fileData['name']);
+                /** @var array<int, int> $errorArray */
+                $errorArray = is_array($fileData['error']) ? $fileData['error'] : [];
+                /** @var array<int, int> $sizeArray */
+                $sizeArray = is_array($fileData['size']) ? $fileData['size'] : [];
                 for ($i = 0; $i < $fileCount; $i++) {
                     // Use indexed key to preserve all files: images[0], images[1], images[2].
                     $uploadedFiles[$fieldName.'['.$i.']'] = [
                         'name'     => $fileData['name'][$i],
                         'type'     => $fileData['type'][$i],
                         'tmp_name' => $fileData['tmp_name'][$i],
-                        'error'    => $fileData['error'][$i],
-                        'size'     => $fileData['size'][$i],
+                        'error'    => $errorArray[$i] ?? UPLOAD_ERR_NO_FILE,
+                        'size'     => $sizeArray[$i] ?? 0,
                     ];
                 }
             } else {
