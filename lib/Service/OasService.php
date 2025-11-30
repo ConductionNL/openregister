@@ -47,31 +47,6 @@ class OasService
     private array $oas = [];
 
 
-    /**
-     * Constructor for OasService
-     *
-     * @param RegisterMapper  $registerMapper The register mapper for fetching registers
-     * @param SchemaMapper    $schemaMapper   The schema mapper for fetching schemas
-     * @param IURLGenerator   $urlGenerator   The URL generator for creating paths
-     * @param IConfig         $config         The config service for app settings
-     * @param LoggerInterface $logger         The logger interface
-     *
-     * @return void
-     */
-    public function __construct(
-        private readonly RegisterMapper $registerMapper,
-        private readonly SchemaMapper $schemaMapper,
-        private readonly IURLGenerator $urlGenerator
-        /*
-        private readonly IConfig $config,
-        private readonly LoggerInterface $logger
-        */
-    ) {
-        // Initialize the OAS array with the base OAS.
-        $this->oas = $this->getBaseOas();
-
-    }//end __construct()
-
 
     /**
      * Create OpenAPI Specification for register(s)

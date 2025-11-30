@@ -40,14 +40,6 @@ class SearchTrailService
 {
 
     /**
-     * The default retention period for search trails (in days).
-     * Trails older than this will be automatically deleted by self-clearing.
-     *
-     * @var integer
-     */
-    private int $retentionDays = 365;
-
-    /**
      * Whether self-clearing (automatic cleanup) is enabled.
      * Disabled by default - cleanup should be handled by cron jobs.
      *

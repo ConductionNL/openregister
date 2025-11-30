@@ -218,7 +218,7 @@ class EndpointsController extends Controller
                 context: [
                     'id'   => $endpoint->getId(),
                     'name' => $endpoint->getName(),
-                    'path' => $endpoint->endpoint,
+                    'path' => $endpoint->getEndpoint(),
                 ]
             );
 

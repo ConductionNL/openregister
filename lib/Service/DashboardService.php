@@ -40,30 +40,6 @@ class DashboardService
 {
 
 
-    /**
-     * Constructor for DashboardService
-     *
-     * @param RegisterMapper     $registerMapper   The register mapper instance
-     * @param SchemaMapper       $schemaMapper     The schema mapper instance
-     * @param ObjectEntityMapper $objectMapper     The object entity mapper instance
-     * @param AuditTrailMapper   $auditTrailMapper The audit trail mapper instance
-     * @param WebhookLogMapper   $webhookLogMapper The webhook log mapper instance
-     * @param IDBConnection      $db               The database connection instance
-     * @param LoggerInterface    $logger           The logger instance
-     *
-     * @return void
-     */
-    public function __construct(
-        private readonly RegisterMapper $registerMapper,
-        private readonly SchemaMapper $schemaMapper,
-        private readonly ObjectEntityMapper $objectMapper,
-        private readonly AuditTrailMapper $auditTrailMapper,
-        private readonly WebhookLogMapper $webhookLogMapper,
-        private readonly LoggerInterface $logger
-    ) {
-
-    }//end __construct()
-
 
     /**
      * Get statistics for a register/schema combination

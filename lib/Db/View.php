@@ -199,20 +199,6 @@ class View extends Entity implements JsonSerializable
     }//end getOrganisation()
 
 
-    /**
-     * Set the organisation UUID
-     *
-     * @param string|null $organisation The organisation UUID
-     *
-     * @return void
-     */
-    public function setOrganisation(?string $organisation): void
-    {
-        $this->organisation = $organisation;
-        $this->markFieldUpdated('organisation');
-
-    }//end setOrganisation()
-
 
     /**
      * Get the array version of this entity
@@ -384,17 +370,6 @@ class View extends Entity implements JsonSerializable
     }//end hydrate()
 
 
-    /**
-     * Get the configuration that manages this view (transient property)
-     *
-     * @return Configuration|null The managing configuration or null
-     */
-    public function getManagedByConfigurationEntity(): ?Configuration
-    {
-        return $this->managedByConfiguration;
-
-    }//end getManagedByConfigurationEntity()
-
 
     /**
      * Set the configuration that manages this view (transient property)
@@ -409,35 +384,6 @@ class View extends Entity implements JsonSerializable
 
     }//end setManagedByConfigurationEntity()
 
-
-    /**
-     * Check if this view is managed by a configuration
-     *
-     * Returns true if this view's ID appears in any of the provided configurations' views arrays.
-     *
-     * @param array<Configuration> $configurations Array of Configuration entities to check against
-     *
-     * @return bool True if managed by a configuration, false otherwise
-     *
-     * @phpstan-param array<Configuration> $configurations
-     * @psalm-param   array<Configuration> $configurations
-     */
-    public function isManagedByConfiguration(array $configurations): bool
-    {
-        if (empty($configurations) === true || $this->id === null) {
-            return false;
-        }
-
-        foreach ($configurations as $configuration) {
-            $views = $configuration->getViews();
-            if (in_array($this->id, $views, true) === true) {
-                return true;
-            }
-        }
-
-        return false;
-
-    }//end isManagedByConfiguration()
 
 
     /**

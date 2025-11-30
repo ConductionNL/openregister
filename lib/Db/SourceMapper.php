@@ -83,30 +83,6 @@ class SourceMapper extends QBMapper
     private IEventDispatcher $eventDispatcher;
 
 
-    /**
-     * Constructor for the SourceMapper
-     *
-     * @param IDBConnection       $db                  The database connection
-     * @param OrganisationService $organisationService Organisation service for multi-tenancy
-     * @param IUserSession        $userSession         User session
-     * @param IGroupManager       $groupManager        Group manager for RBAC
-     * @param IEventDispatcher    $eventDispatcher     Event dispatcher
-     */
-    public function __construct(
-        IDBConnection $db,
-        OrganisationService $organisationService,
-        IUserSession $userSession,
-        IGroupManager $groupManager,
-        IEventDispatcher $eventDispatcher
-    ) {
-        parent::__construct($db, 'openregister_sources');
-        $this->organisationService = $organisationService;
-        $this->userSession         = $userSession;
-        $this->groupManager        = $groupManager;
-        $this->eventDispatcher     = $eventDispatcher;
-
-    }//end __construct()
-
 
     /**
      * Finds a source by id

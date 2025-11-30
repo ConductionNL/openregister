@@ -45,24 +45,6 @@ class FileTextExtractionJob extends QueuedJob
 {
 
 
-    /**
-     * Constructor
-     *
-     * @param ITimeFactory          $timeFactory           Time factory for job scheduling
-     * @param TextExtractionService $textExtractionService Text extraction service
-     * @param LoggerInterface       $logger                Logger instance
-     * @param IAppConfig            $config                Application configuration
-     */
-    public function __construct(
-        ITimeFactory $timeFactory,
-        private readonly TextExtractionService $textExtractionService,
-        private readonly LoggerInterface $logger,
-        private readonly IAppConfig $config,
-    ) {
-        parent::__construct($timeFactory);
-
-    }//end __construct()
-
 
     /**
      * Run the background job

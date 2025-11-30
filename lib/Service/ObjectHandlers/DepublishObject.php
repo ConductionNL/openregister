@@ -32,17 +32,6 @@ class DepublishObject
 {
 
 
-    /**
-     * Constructor for DepublishObject
-     *
-     * @param ObjectEntityMapper $objectEntityMapper The object entity mapper
-     */
-    public function __construct(
-        private readonly ObjectEntityMapper $objectEntityMapper
-    ) {
-
-    }//end __construct()
-
 
     /**
      * Depublish an object

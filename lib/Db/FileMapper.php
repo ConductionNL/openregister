@@ -82,19 +82,6 @@ class FileMapper extends QBMapper
     private readonly IURLGenerator $urlGenerator;
 
 
-    /**
-     * FileMapper constructor.
-     *
-     * @param IDBConnection $db           The database connection
-     * @param IURLGenerator $urlGenerator URL generator for share links
-     */
-    public function __construct(IDBConnection $db, IURLGenerator $urlGenerator)
-    {
-        parent::__construct($db, 'filecache');
-        $this->urlGenerator = $urlGenerator;
-
-    }//end __construct()
-
 
     /**
      * Get all files for a given node (parent) and/or file IDs with share information and owner data.

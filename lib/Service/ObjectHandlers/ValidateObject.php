@@ -67,23 +67,6 @@ class ValidateObject
     public const VALIDATION_ERROR_MESSAGE = 'Invalid object';
 
 
-    /**
-     * Constructor for ValidateObject handler.
-     *
-     * @param IURLGenerator      $urlGenerator URL generator service.
-     * @param IAppConfig         $config       Application configuration service.
-     * @param SchemaMapper       $schemaMapper Schema mapper service.
-     * @param ObjectEntityMapper $objectMapper Object Entity Mapper
-     */
-    public function __construct(
-        private readonly IURLGenerator $urlGenerator,
-        private readonly IAppConfig $config,
-        private readonly SchemaMapper $schemaMapper,
-        private readonly ObjectEntityMapper $objectMapper,
-    ) {
-
-    }//end __construct()
-
 
     /**
      * Pre-processes a schema object to resolve all schema references.
@@ -1139,39 +1122,6 @@ class ValidateObject
 
     }//end removeQueryParameters()
 
-
-    /**
-     * Validates custom rules for an object against its schema.
-     *
-     * @param array  $object The object to validate.
-     * @param Schema $schema The schema containing custom rules.
-     *
-     * @return void
-     *
-     * @throws ValidationException If validation fails.
-     */
-    private function validateCustomRules(array $object, Schema $schema): void
-    {
-        $customRules = $schema->getCustomRules();
-        if (empty($customRules) === true) {
-            return;
-        }
-
-        foreach ($customRules as $rule) {
-            if (($rule['type'] ?? null) !== null && $rule['type'] === 'regex') {
-                $pattern = $rule['pattern'];
-                $value   = $object[$rule['property']] ?? null;
-
-                if ($value !== null && preg_match($pattern, $value) === false) {
-                    throw new ValidationException(
-                        message: $rule['message'] ?? self::VALIDATION_ERROR_MESSAGE,
-                        code: 0
-                    );
-                }
-            }
-        }
-
-    }//end validateCustomRules()
 
 
     /**

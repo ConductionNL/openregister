@@ -120,8 +120,8 @@ class TextExtractionService
     public function __construct(
         private readonly FileMapper $fileMapper,
         private readonly ChunkMapper $chunkMapper,
-        private readonly GdprEntityMapper $entityMapper,
-        private readonly EntityRelationMapper $entityRelationMapper,
+
+
         private readonly IRootFolder $rootFolder,
         private readonly IDBConnection $db,
         private readonly LoggerInterface $logger,
@@ -779,7 +779,6 @@ class TextExtractionService
             }
 
             // Extract text based on mime type.
-            $extractedText = null;
 
             // Text-based files that can be read directly.
             $textMimeTypes = [

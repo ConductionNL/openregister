@@ -107,9 +107,9 @@ class RenderObject
      * @param LoggerInterface        $logger             Logger for performance monitoring.
      */
     public function __construct(
-        private readonly IURLGenerator $urlGenerator,
+
         private readonly FileMapper $fileMapper,
-        private readonly FileService $fileService,
+
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly RegisterMapper $registerMapper,
         private readonly SchemaMapper $schemaMapper,
@@ -121,114 +121,6 @@ class RenderObject
 
     }//end __construct()
 
-
-    /**
-     * Preload all related objects for bulk operations to prevent N+1 queries
-     *
-     * This method analyzes all objects and their extend requirements, collects
-     * all related object IDs, and loads them in bulk to eliminate N+1 query problems.
-     *
-     * @param array $objects Array of ObjectEntity objects to analyze
-     * @param array $extend  Array of properties to extend
-     *
-     * @return array Array of preloaded objects indexed by ID/UUID
-     *
-     * @phpstan-param  array<ObjectEntity> $objects
-     * @phpstan-param  array<string> $extend
-     * @phpstan-return array<string, ObjectEntity>
-     * @psalm-param    array<ObjectEntity> $objects
-     * @psalm-param    array<string> $extend
-     * @psalm-return   array<string, ObjectEntity>
-     */
-    public function preloadRelatedObjects(array $objects, array $extend): array
-    {
-        if ($objects === [] || $extend === []) {
-            return [];
-        }
-
-        $allRelatedIds = [];
-
-        // Step 1: Collect all relationship IDs from all objects.
-        foreach ($objects as $object) {
-            if (($object instanceof ObjectEntity) === false) {
-                continue;
-            }
-
-            $objectData = $object->getObject();
-
-            foreach ($extend as $extendField) {
-                // Skip special fields.
-                if (str_starts_with($extendField, '@') === true) {
-                    continue;
-                }
-
-                $value = $objectData[$extendField] ?? null;
-
-                if (is_array($value) === true) {
-                    // Multiple relationships.
-                    foreach ($value as $relatedId) {
-                        if (is_string($relatedId) === true || is_int($relatedId) === true) {
-                            $allRelatedIds[] = (string) $relatedId;
-                        }
-                    }
-                } else if (is_string($value) === true || is_int($value) === true) {
-                    // Single relationship.
-                    $allRelatedIds[] = (string) $value;
-                }
-            }
-        }//end foreach
-
-        // Step 2: Remove duplicates and empty values.
-        $uniqueIds = array_filter(array_unique($allRelatedIds), fn($id) => $id !== '');
-
-        if ($uniqueIds === []) {
-            return [];
-        }
-
-        // Step 3: Use ObjectCacheService for optimized bulk loading.
-        try {
-            $preloadStart   = microtime(true);
-            $relatedObjects = $this->objectCacheService->preloadObjects($uniqueIds);
-            $preloadTime    = round((microtime(true) - $preloadStart) * 1000, 2);
-
-            $this->logger->debug(
-                    'ObjectCache preload completed',
-                    [
-                        'preloadTime'  => $preloadTime.'ms',
-                        'requestedIds' => count($uniqueIds),
-                        'foundObjects' => count($relatedObjects),
-                    ]
-                    );
-
-            // Step 4: Index by both ID and UUID for quick lookup.
-            $indexedObjects = [];
-            foreach ($relatedObjects as $relatedObject) {
-                if ($relatedObject instanceof ObjectEntity) {
-                    $indexedObjects[$relatedObject->getId()] = $relatedObject;
-                    if (($relatedObject->getUuid() !== null) === true) {
-                        $indexedObjects[$relatedObject->getUuid()] = $relatedObject;
-                    }
-                }
-            }
-
-            // Step 5: Add to local cache for backward compatibility.
-            $this->objectsCache = array_merge($this->objectsCache, $indexedObjects);
-
-            return $indexedObjects;
-        } catch (\Exception $e) {
-            // Log error but don't break the process.
-            $this->logger->error(
-                    'Bulk preloading failed',
-                    [
-                        'exception' => $e->getMessage(),
-                        'uniqueIds' => count($uniqueIds),
-                        'objects'   => count($objects),
-                    ]
-                    );
-            return [];
-        }//end try
-
-    }//end preloadRelatedObjects()
 
 
     /**
@@ -356,79 +248,7 @@ class RenderObject
     }//end getObject()
 
 
-    /**
-     * Pre-cache multiple registers
-     *
-     * @param array<int|string> $ids Array of register IDs to cache
-     *
-     * @return void
-     */
-    private function preloadRegisters(array $ids): void
-    {
-        // Filter out IDs that are not already cached and cache them.
-        array_filter(
-                $ids,
-                function ($id) {
-                    if (!isset($this->registersCache[$id])) {
-                        $this->getRegister($id);
-                    }
 
-                    return false;
-                    // Return false to ensure array_filter doesn't keep any elements.
-                }
-                );
-
-    }//end preloadRegisters()
-
-
-    /**
-     * Pre-cache multiple schemas
-     *
-     * @param array<int|string> $ids Array of schema IDs to cache
-     *
-     * @return void
-     */
-    private function preloadSchemas(array $ids): void
-    {
-        // Filter out IDs that are not already cached and cache them.
-        array_filter(
-                $ids,
-                function ($id) {
-                    if (!isset($this->schemasCache[$id])) {
-                        $this->getSchema($id);
-                    }
-
-                    return false;
-                    // Return false to ensure array_filter doesn't keep any elements.
-                }
-                );
-
-    }//end preloadSchemas()
-
-
-    /**
-     * Pre-cache multiple objects
-     *
-     * @param array<int|string> $ids Array of object IDs or UUIDs to cache
-     *
-     * @return void
-     */
-    private function preloadObjects(array $ids): void
-    {
-        // Filter out IDs that are not already cached and cache them.
-        array_filter(
-                $ids,
-                function ($id) {
-                    if (!isset($this->objectsCache[$id])) {
-                        $this->getObject($id);
-                    }
-
-                    return false;
-                    // Return false to ensure array_filter doesn't keep any elements.
-                }
-                );
-
-    }//end preloadObjects()
 
 
     /**
@@ -1366,9 +1186,6 @@ class RenderObject
             $objectData[$propertyName] = [];
 
             // Extract inversedBy configuration based on property structure.
-            $inversedByProperty = null;
-            $targetSchema       = null;
-            $isArray            = false;
 
             // Check if this is an array property with inversedBy in items.
             if (($propertyConfig['type'] ?? null) !== null && ($propertyConfig['type'] === 'array') === true && (($propertyConfig['items']['inversedBy'] ?? null) !== null) === true) {
@@ -1524,60 +1341,7 @@ class RenderObject
     }//end removeQueryParameters()
 
 
-    /**
-     * Gets the string before a dot in a given input.
-     *
-     * @param string $input The input string to process.
-     *
-     * @return string The substring before the first dot.
-     */
-    private function getStringBeforeDot(string $input): string
-    {
-        $dotPosition = strpos($input, '.');
-        if ($dotPosition === false) {
-            return $input;
-        }
 
-        return substr($input, 0, $dotPosition);
-
-    }//end getStringBeforeDot()
-
-
-    /**
-     * Gets the string after the last slash in a given input.
-     *
-     * @param string $input The input string to process.
-     *
-     * @return string The substring after the last slash.
-     */
-    private function getStringAfterLastSlash(string $input): string
-    {
-        $lastSlashPosition = strrpos($input, '/');
-        if ($lastSlashPosition === false) {
-            return $input;
-        }
-
-        return substr($input, $lastSlashPosition + 1);
-
-    }//end getStringAfterLastSlash()
-
-
-    /**
-     * Get file modified time
-     *
-     * @param array<string,mixed> $fileRecord File record array
-     *
-     * @return string|null Formatted datetime string or null
-     */
-    private function getFileModifiedTime(array $fileRecord): ?string
-    {
-        if (($fileRecord['mtime'] ?? null) !== null) {
-            return (new \DateTime())->setTimestamp($fileRecord['mtime'])->format('c');
-        }
-
-        return null;
-
-    }//end getFileModifiedTime()
 
 
 }//end class

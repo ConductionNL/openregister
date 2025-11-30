@@ -60,28 +60,6 @@ class ViewUpdatedEvent extends Event
     }//end __construct()
 
 
-    /**
-     * Get the updated view.
-     *
-     * @return View The view after update.
-     */
-    public function getNewView(): View
-    {
-        return $this->newView;
-
-    }//end getNewView()
-
-
-    /**
-     * Get the original view.
-     *
-     * @return View The view before update.
-     */
-    public function getOldView(): View
-    {
-        return $this->oldView;
-
-    }//end getOldView()
 
 
 }//end class

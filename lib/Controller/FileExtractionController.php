@@ -69,11 +69,6 @@ class FileExtractionController extends Controller
     /**
      * Get all files tracked in the extraction system.
      *
-     * @param int|null    $limit  Maximum number of files to return
-     * @param int|null    $offset Offset for pagination
-     * @param string|null $status Filter by extraction status
-     * @param string|null $search Search by file name or path
-     *
      * @return JSONResponse List of files with extraction information
      *
      * @NoAdminRequired

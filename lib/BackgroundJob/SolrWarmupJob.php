@@ -186,64 +186,6 @@ class SolrWarmupJob extends QueuedJob
     }//end run()
 
 
-    /**
-     * Check if SOLR is available for warmup.
-     *
-     * @param GuzzleSolrService $solrService The SOLR service
-     * @param LoggerInterface   $logger      The logger
-     *
-     * @return bool True if SOLR is available
-     */
-    private function isSolrAvailable(GuzzleSolrService $solrService, LoggerInterface $logger): bool
-    {
-        try {
-            $connectionTest = $solrService->testConnection();
-
-            if (($connectionTest['success'] ?? false) === true) {
-                return true;
-            }
-
-            $logger->info(
-                    message: 'SOLR connection test failed during warmup job',
-                    context: [
-                        'test_result' => $connectionTest,
-                    ]
-                    );
-
-            return false;
-        } catch (\Exception $e) {
-            $logger->warning(
-                    message: 'SOLR availability check failed during warmup job',
-                    context: [
-                        'error' => $e->getMessage(),
-                    ]
-                    );
-
-            return false;
-        }//end try
-
-    }//end isSolrAvailable()
-
-
-    /**
-     * Calculate objects per second performance metric.
-     *
-     * @param array $result        Warmup result
-     * @param float $executionTime Total execution time in seconds
-     *
-     * @return float Objects indexed per second
-     */
-    private function calculateObjectsPerSecond(array $result, float $executionTime): float
-    {
-        $objectsIndexed = $result['operations']['objects_indexed'] ?? 0;
-
-        if ($executionTime > 0 && $objectsIndexed > 0) {
-            return round($objectsIndexed / $executionTime, 2);
-        }
-
-        return 0.0;
-
-    }//end calculateObjectsPerSecond()
 
 
 }//end class
