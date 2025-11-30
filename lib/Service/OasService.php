@@ -46,7 +46,26 @@ class OasService
      */
     private array $oas = [];
 
+    /**
+     * Register mapper
+     *
+     * @var RegisterMapper
+     */
+    private RegisterMapper $registerMapper;
 
+    /**
+     * Schema mapper
+     *
+     * @var SchemaMapper
+     */
+    private SchemaMapper $schemaMapper;
+
+    /**
+     * URL generator
+     *
+     * @var IURLGenerator
+     */
+    private IURLGenerator $urlGenerator;
 
     /**
      * Create OpenAPI Specification for register(s)

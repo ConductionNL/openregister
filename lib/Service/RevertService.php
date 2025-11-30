@@ -36,8 +36,33 @@ use Psr\Container\ContainerInterface;
  */
 class RevertService
 {
+    /**
+     * Audit trail mapper
+     *
+     * @var AuditTrailMapper
+     */
+    private AuditTrailMapper $auditTrailMapper;
 
+    /**
+     * Container
+     *
+     * @var ContainerInterface
+     */
+    private ContainerInterface $container;
 
+    /**
+     * Event dispatcher
+     *
+     * @var IEventDispatcher
+     */
+    private IEventDispatcher $eventDispatcher;
+
+    /**
+     * Object entity mapper
+     *
+     * @var ObjectEntityMapper
+     */
+    private ObjectEntityMapper $objectEntityMapper;
 
     /**
      * Revert an object to a previous state

@@ -34,8 +34,19 @@ use Psr\Log\LoggerInterface;
  */
 class ViewService
 {
+    /**
+     * View mapper
+     *
+     * @var ViewMapper
+     */
+    private ViewMapper $viewMapper;
 
-
+    /**
+     * Logger
+     *
+     * @var LoggerInterface
+     */
+    private LoggerInterface $logger;
 
     /**
      * Find a view by ID.

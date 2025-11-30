@@ -36,6 +36,20 @@ use OCP\IURLGenerator;
  * data from mappers and generates responses or downloadable files.
  */
 class DownloadService
+    /**
+     * Register mapper
+     *
+     * @var RegisterMapper
+     */
+    private RegisterMapper $registerMapper;
+
+    /**
+     * Schema mapper
+     *
+     * @var SchemaMapper
+     */
+    private SchemaMapper $schemaMapper;
+
 {
 
 
