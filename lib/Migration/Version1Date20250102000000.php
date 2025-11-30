@@ -11,10 +11,8 @@
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * @version GIT: <git-id>
- *
- * @link https://OpenRegister.app
+ * @version   GIT: <git-id>
+ * @link      https://OpenRegister.app
  */
 
 declare(strict_types=1);
@@ -36,12 +34,15 @@ use OCP\IDBConnection;
  */
 class Version1Date20250102000000 extends SimpleMigrationStep
 {
+
+
     /**
      * Database connection
      *
      * @var IDBConnection
      */
     private IDBConnection $connection;
+
 
     /**
      * Constructor
@@ -51,7 +52,10 @@ class Version1Date20250102000000 extends SimpleMigrationStep
     public function __construct(IDBConnection $connection)
     {
         $this->connection = $connection;
-    }
+
+    }//end __construct()
+
+
 
     /**
      * Pre-schema change operations
@@ -65,8 +69,9 @@ class Version1Date20250102000000 extends SimpleMigrationStep
     public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
         // No pre-schema changes required.
-
     }//end preSchemaChange()
+
+
 
     /**
      * Apply schema changes to add roles field
@@ -88,11 +93,15 @@ class Version1Date20250102000000 extends SimpleMigrationStep
 
             // Add groups field (JSON array of Nextcloud group IDs).
             if ($table->hasColumn('groups') === false) {
-                $table->addColumn('groups', Types::JSON, [
-                    'notnull' => false,
-                    'default' => '[]',
-                    'comment' => 'Array of Nextcloud group IDs that have access to this organisation'
-                ]);
+                $table->addColumn(
+                    'groups',
+                    Types::JSON,
+                    [
+                        'notnull' => false,
+                        'default' => '[]',
+                        'comment' => 'Array of Nextcloud group IDs that have access to this organisation',
+                    ]
+                );
                 $output->info(message: 'Added groups column to organisations table');
             }
         }

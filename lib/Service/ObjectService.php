@@ -1770,7 +1770,7 @@ class ObjectService
      * @param array|null      $ids           Optional array of specific IDs to filter
      *
      * @phpstan-param  array<string, mixed> $requestParams
-     * @psalm-param    array<string, mixed> $requestParams
+     * @psalm-param     array<string, mixed> $requestParams
      *
      * @return array<string, mixed> Query array containing:
      *                               - @self: Metadata filters (register, schema, etc.)
@@ -2085,7 +2085,7 @@ class ObjectService
      * @param array|null $views Optional view IDs to apply
      *
      * @phpstan-param array<string, mixed> $query
-     * @psalm-param array<string, mixed> $query
+     * @psalm-param   array<string, mixed> $query
      *
      * @return array<int, ObjectEntity>|int An array of ObjectEntity objects matching the criteria, or integer count if _count is true
      *
@@ -2455,9 +2455,8 @@ class ObjectService
      *
      * @phpstan-param array<string, mixed> $query
      * @phpstan-return int
-     *
-     * @psalm-param array<string, mixed> $query
-     * @psalm-return int
+     * @psalm-param   array<string, mixed> $query
+     * @psalm-return  int
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
@@ -2753,9 +2752,8 @@ class ObjectService
      *
      * @phpstan-param array<string, mixed> $query
      * @phpstan-return array<string, mixed>
-     *
-     * @psalm-param array<string, mixed> $query
-     * @psalm-return array<string, mixed>
+     * @psalm-param   array<string, mixed> $query
+     * @psalm-return  array<string, mixed>
      *
      * @throws \OCP\DB\Exception If a database error occurs
      * @throws \Exception If Solr search fails and cannot be recovered
@@ -3490,9 +3488,8 @@ class ObjectService
      *
      * @phpstan-param array<string, mixed> $query
      * @phpstan-return PromiseInterface<array<string, mixed>>
-     *
-     * @psalm-param array<string, mixed> $query
-     * @psalm-return PromiseInterface<array<string, mixed>>
+     * @psalm-param   array<string, mixed> $query
+     * @psalm-return  PromiseInterface<array<string, mixed>>
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
@@ -4111,10 +4108,10 @@ class ObjectService
      *
      * @return array Modified object data with hydrated @self metadata
      *
-     * @psalm-param   array $objectData
      * @phpstan-param array $objectData
-     * @psalm-return   array
+     * @psalm-param   array $objectData
      * @phpstan-return array
+     * @psalm-return  array
      */
     private function hydrateObjectMetadataFromData(array $objectData, Schema $schema): array
     {
@@ -5807,7 +5804,7 @@ class ObjectService
      * @throws \Exception If the publishing operation fails
      *
      * @phpstan-return array{published_count: int, published_uuids: array<int, string>, schema_id: int}
-     * @psalm-return array{published_count: int, published_uuids: array<int, string>, schema_id: int}
+     * @psalm-return   array{published_count: int, published_uuids: array<int, string>, schema_id: int}
      */
     public function publishObjectsBySchema(int $schemaId, bool $publishAll = false): array
     {
@@ -5922,7 +5919,7 @@ class ObjectService
      * @throws \Exception If the deletion operation fails
      *
      * @phpstan-return array{deleted_count: int, deleted_uuids: array<int, string>, register_id: int}
-     * @psalm-return array{deleted_count: int, deleted_uuids: array<int, string>, register_id: int}
+     * @psalm-return   array{deleted_count: int, deleted_uuids: array<int, string>, register_id: int}
      */
     public function deleteObjectsByRegister(int $registerId): array
     {

@@ -53,7 +53,6 @@ declare(strict_types=1);
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @version   GIT: <git_id>
  * @link      https://www.OpenRegister.app
- *
  * @since     2.0.0 Initial SaveObjects implementation with performance optimizations
  */
 
