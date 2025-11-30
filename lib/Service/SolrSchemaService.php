@@ -896,7 +896,7 @@ class SolrSchemaService
      * @param  string $fieldType SOLR field type (unused, kept for API compatibility)
      * @return bool True if field should be multi-valued
      */
-    private function isCoreFieldMultiValued(string $fieldName, string $fieldType): bool
+    private function isCoreFieldMultiValued(string $fieldName, string $_fieldType): bool
     {
         // Only these core fields are legitimately multi-valued.
         $multiValuedCoreFields = [

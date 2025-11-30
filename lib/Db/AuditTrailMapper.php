@@ -466,6 +466,7 @@ class AuditTrailMapper extends QBMapper
                 // Use reflection to set the value if it's a protected property.
                 $reflection = new \ReflectionClass($object);
                 $property   = $reflection->getProperty($field);
+                /** @psalm-suppress UnusedMethodCall */
                 $property->setAccessible(true);
                 $property->setValue($object, $change['old']);
             }

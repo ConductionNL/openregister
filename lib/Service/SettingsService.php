@@ -1123,7 +1123,7 @@ class SettingsService
      *
      * @return array Clear operation results
      */
-    private function clearObjectCache(?string $userId=null): array
+    private function clearObjectCache(?string $_userId=null): array
     {
         try {
             $objectCacheService = $this->container->get(ObjectCacheService::class);
@@ -1242,7 +1242,7 @@ class SettingsService
      *
      * @return array Clear operation results
      */
-    private function clearSchemaCache(?string $userId=null): array
+    private function clearSchemaCache(?string $_userId=null): array
     {
         try {
             $beforeStats = $this->schemaCacheService->getCacheStatistics();
@@ -1278,7 +1278,7 @@ class SettingsService
      *
      * @return array Clear operation results
      */
-    private function clearFacetCache(?string $userId=null): array
+    private function clearFacetCache(?string $_userId=null): array
     {
         try {
             $beforeStats = $this->schemaFacetCacheService->getCacheStatistics();
@@ -1311,7 +1311,7 @@ class SettingsService
      *
      * @return array Clear operation results
      */
-    private function clearDistributedCache(?string $userId=null): array
+    private function clearDistributedCache(?string $_userId=null): array
     {
         try {
             $distributedCache = $this->cacheFactory->createDistributed('openregister');
