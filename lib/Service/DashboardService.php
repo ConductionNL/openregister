@@ -74,6 +74,13 @@ class DashboardService
     private LoggerInterface $logger;
 
     /**
+     * Schema mapper
+     *
+     * @var SchemaMapper
+     */
+    private SchemaMapper $schemaMapper;
+
+    /**
      * Get statistics for a register/schema combination
      *
      * @param int      $registerId The register ID

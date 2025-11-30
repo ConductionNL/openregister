@@ -66,7 +66,33 @@ class ValidateObject
      */
     public const VALIDATION_ERROR_MESSAGE = 'Invalid object';
 
+    /**
+     * Configuration service
+     *
+     * @var IAppConfig
+     */
+    private IAppConfig $config;
 
+    /**
+     * Object mapper
+     *
+     * @var ObjectEntityMapper
+     */
+    private ObjectEntityMapper $objectMapper;
+
+    /**
+     * Schema mapper
+     *
+     * @var SchemaMapper
+     */
+    private SchemaMapper $schemaMapper;
+
+    /**
+     * URL generator
+     *
+     * @var IURLGenerator
+     */
+    private IURLGenerator $urlGenerator;
 
     /**
      * Pre-processes a schema object to resolve all schema references.

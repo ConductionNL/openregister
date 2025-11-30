@@ -95,6 +95,13 @@ class OrganisationService
     private OrganisationMapper $organisationMapper;
 
     /**
+     * App config for storing user preferences
+     *
+     * @var IAppConfig
+     */
+    private IAppConfig $appConfig;
+
+    /**
      * User session for getting current user
      *
      * @var IUserSession

@@ -47,8 +47,12 @@ use Symfony\Component\Yaml\Yaml;
  */
 class UploadService
 {
-
-
+    /**
+     * HTTP client
+     *
+     * @var Client
+     */
+    private Client $client;
 
     /**
      * Gets the uploaded json from the request data. And returns it as a PHP array.
