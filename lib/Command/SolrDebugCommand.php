@@ -55,6 +55,9 @@ class SolrDebugCommand extends Command
         private readonly SettingsService $settingsService,
         private readonly LoggerInterface $logger,
         private readonly IConfig $config,
+        /**
+         * @psalm-suppress UnusedProperty
+         */
         private readonly IClientService $clientService
     ) {
         parent::__construct();

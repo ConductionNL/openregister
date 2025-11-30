@@ -3138,6 +3138,8 @@ class ObjectService
      * @throws DoesNotExistException
      *
      * @deprecated
+     *
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function unlockObject(string|int $identifier): ObjectEntity
     {

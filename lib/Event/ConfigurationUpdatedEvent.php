@@ -32,6 +32,8 @@ class ConfigurationUpdatedEvent extends Event
      * The updated configuration state.
      *
      * @var Configuration The configuration after update.
+     *
+     * @psalm-suppress UnusedProperty
      */
     private Configuration $newConfiguration;
 
@@ -39,6 +41,8 @@ class ConfigurationUpdatedEvent extends Event
      * The previous configuration state.
      *
      * @var Configuration The configuration before update.
+     *
+     * @psalm-suppress UnusedProperty
      */
     private Configuration $oldConfiguration;
 

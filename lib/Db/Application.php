@@ -68,6 +68,8 @@ use Symfony\Component\Uid\Uuid;
  * @method void setCreated(?DateTime $created)
  * @method DateTime|null getUpdated()
  * @method void setUpdated(?DateTime $updated)
+ *
+ * @psalm-suppress PossiblyUnusedMethod
  */
 class Application extends Entity implements JsonSerializable
 {

@@ -83,6 +83,8 @@ class FacetService
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly SchemaMapper $schemaMapper,
         /**
+         *
+         * @psalm-suppress UnusedProperty
          */
         private readonly ICacheFactory $cacheFactory,
         private readonly IUserSession $userSession,

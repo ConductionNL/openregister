@@ -106,6 +106,8 @@ class SchemaPropertyValidatorService
      *
      * @throws Exception If the property definition is invalid
      * @return bool True if the property is valid
+     *
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function validateProperty(array $property, string $path=''): bool
     {

@@ -32,6 +32,8 @@ class OrganisationUpdatedEvent extends Event
      * The updated organisation state.
      *
      * @var Organisation The organisation after update.
+     *
+     * @psalm-suppress UnusedProperty
      */
     private Organisation $newOrganisation;
 
@@ -39,6 +41,8 @@ class OrganisationUpdatedEvent extends Event
      * The previous organisation state.
      *
      * @var Organisation The organisation before update.
+     *
+     * @psalm-suppress UnusedProperty
      */
     private Organisation $oldOrganisation;
 

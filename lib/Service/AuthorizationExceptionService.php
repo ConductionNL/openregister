@@ -57,6 +57,8 @@ class AuthorizationExceptionService
      * User session instance
      *
      * @var IUserSession
+     *
+     * @psalm-suppress UnusedProperty
      */
     private IUserSession $userSession;
 
@@ -78,6 +80,8 @@ class AuthorizationExceptionService
      * Cache factory instance
      *
      * @var ICacheFactory|null
+     *
+     * @psalm-suppress UnusedProperty
      */
     private ?ICacheFactory $cacheFactory;
 

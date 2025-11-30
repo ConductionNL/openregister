@@ -853,6 +853,8 @@ class OrganisationService
      * @param bool $clearPersistent Whether to also clear persistent active organisation setting
      *
      * @return bool True if cache cleared
+     *
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function clearCache(bool $clearPersistent=false): bool
     {

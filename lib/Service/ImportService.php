@@ -1643,6 +1643,8 @@ class ImportService
      * @param bool  $immediate     Whether to run immediately (default: false, 30s delay)
      *
      * @return bool True if job was scheduled successfully
+     *
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function scheduleSmartSolrWarmup(array $importSummary, bool $immediate = false): bool
     {

@@ -1671,6 +1671,8 @@ class FileService
      * @throws Exception If creating the share link fails
      *
      * @return string The share link
+     *
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function createShareLink(string $path, ?int $shareType=3, ?int $permissions=null): string
     {

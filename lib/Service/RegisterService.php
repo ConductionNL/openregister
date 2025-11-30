@@ -178,6 +178,8 @@ class RegisterService
      * @return Register The deleted register
      *
      * @throws Exception If register has attached objects or deletion fails
+     *
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function delete(Register $register): Register
     {
