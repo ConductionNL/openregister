@@ -1392,6 +1392,8 @@ class FileService
      * @throws Exception If creating the share fails
      *
      * @return IShare The Created IShare object
+     *
+     * @psalm-suppress UnusedReturnValue
      */
     private function createShare(array $shareData): IShare
     {
@@ -2148,9 +2150,6 @@ class FileService
             // Security: Block executable files.
             $this->blockExecutableFile(fileName: $fileName, fileContent: $content);
 
-            /**
-             * @var File $file
-             */
             $file = $folder->newFile($fileName);
 
             // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues.

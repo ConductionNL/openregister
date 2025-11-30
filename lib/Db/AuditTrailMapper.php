@@ -568,6 +568,8 @@ class AuditTrailMapper extends QBMapper
      * @throws \OCP\AppFramework\Db\DoesNotExistException If the entity does not exist
      *
      * @return AuditTrail The updated entity
+     *
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function update(Entity $entity): AuditTrail
     {

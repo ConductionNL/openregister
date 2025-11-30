@@ -131,6 +131,8 @@ class ConversationMapper extends QBMapper
      * @param Entity $entity The conversation entity to delete
      *
      * @return Conversation The deleted conversation entity
+     *
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function delete(Entity $entity): Conversation
     {
@@ -400,6 +402,8 @@ class ConversationMapper extends QBMapper
      *
      * @throws DoesNotExistException
      * @throws MultipleObjectsReturnedException
+     *
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function softDelete(int $id): Conversation
     {

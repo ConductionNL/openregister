@@ -834,7 +834,7 @@ class RenderObject
      * @param array $extend     The fields that should be extended
      * @param int   $depth      The current depth.
      *
-     * @return array|Dot
+     * @return array
      */
     private function handleWildcardExtends(array $objectData, array &$extend, int $depth): array
     {
@@ -887,11 +887,11 @@ class RenderObject
     /**
      * Handle extends on a dot array
      *
-     * @param array      $data       The data to extend.
-     * @param array      $extend     The fields to extend.
-     * @param int        $depth      The current depth.
-     * @param bool|null  $allFlag    If we extend all or not.
-     * @param array|null $visitedIds All ids we already handled.
+     * @param array $data       The data to extend.
+     * @param array $extend     The fields to extend.
+     * @param int   $depth      The current depth.
+     * @param bool  $allFlag    If we extend all or not.
+     * @param array $visitedIds All ids we already handled.
      *
      * @return array
      *

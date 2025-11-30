@@ -414,6 +414,8 @@ class AgentMapper extends QBMapper
      *
      * @return Agent The deleted agent
      * @throws \Exception If user doesn't have delete permission or access to this organisation
+     *
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function delete(Entity $entity): Entity
     {

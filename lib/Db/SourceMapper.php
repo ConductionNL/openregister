@@ -243,6 +243,8 @@ class SourceMapper extends QBMapper
      *
      * @return Source The deleted source
      * @throws \Exception If user doesn't have delete permission or access to this organisation
+     *
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function delete(Entity $entity): Source
     {

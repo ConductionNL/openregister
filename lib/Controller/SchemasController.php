@@ -753,7 +753,7 @@ class SchemasController extends Controller
      * Applies user-confirmed property updates to a schema based on exploration
      * results. This allows schemas to be updated with newly discovered properties.
      *
-     * @param string $id The ID of the schema to update
+     * @param int $id The ID of the schema to update
      *
      * @return JSONResponse Success confirmation with updated schema
      *

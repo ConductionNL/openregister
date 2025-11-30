@@ -231,6 +231,8 @@ class EndpointMapper extends QBMapper
      *
      * @return Endpoint
      * @throws \Exception
+     *
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function delete(Entity $entity): Endpoint
     {

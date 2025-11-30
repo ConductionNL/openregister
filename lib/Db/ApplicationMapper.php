@@ -296,6 +296,8 @@ class ApplicationMapper extends QBMapper
      *
      * @return Application The deleted application
      * @throws \Exception If user doesn't have delete permission or access to this organisation
+     *
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function delete(Entity $entity): Entity
     {

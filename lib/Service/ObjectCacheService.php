@@ -243,6 +243,8 @@ class ObjectCacheService
      * @param bool         $commit Whether to commit immediately
      *
      * @return bool True if indexing was successful or SOLR unavailable
+     *
+     * @psalm-suppress UnusedReturnValue
      */
     private function indexObjectInSolr(ObjectEntity $object, bool $commit=false): bool
     {
@@ -311,6 +313,8 @@ class ObjectCacheService
      * @param bool         $commit Whether to commit immediately
      *
      * @return bool True if removal was successful or SOLR unavailable
+     *
+     * @psalm-suppress UnusedReturnValue
      */
     private function removeObjectFromSolr(ObjectEntity $object, bool $commit=false): bool
     {
@@ -430,8 +434,8 @@ class ObjectCacheService
     /**
      * Extract text content from array recursively
      *
-     * @param array      $data        Array to extract text from
-     * @param array|null $textContent Reference to text content array
+     * @param array $data        Array to extract text from
+     * @param array $textContent Reference to text content array
      *
      * @return void
      */

@@ -163,6 +163,8 @@ class MessageMapper extends QBMapper
      * @param int $conversationId Conversation ID
      *
      * @return \OCP\DB\IResult|int Number of messages deleted
+     *
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function deleteByConversation(int $conversationId): int|\OCP\DB\IResult
     {

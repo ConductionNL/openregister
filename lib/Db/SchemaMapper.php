@@ -586,6 +586,8 @@ class SchemaMapper extends QBMapper
      * @throws \Exception If user doesn't have delete permission or access to this organisation
      *
      * @return Schema The deleted schema
+     *
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function delete(Entity $schema): Schema
     {
