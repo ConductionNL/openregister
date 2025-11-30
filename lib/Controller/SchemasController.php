@@ -44,6 +44,10 @@ use Psr\Log\LoggerInterface;
 /**
  * Class SchemasController
  */
+/**
+ * @psalm-suppress UnusedClass
+ */
+
 class SchemasController extends Controller
 {
 

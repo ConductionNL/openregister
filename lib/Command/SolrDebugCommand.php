@@ -222,10 +222,8 @@ class SolrDebugCommand extends Command
 
             // Create GuzzleSolrService from settings.
             $solrService = new GuzzleSolrService(
-                settingsService: $this->settingsService,
-                logger: $this->logger,
-                clientService: $this->clientService,
-                config: $this->config
+                $this->settingsService,
+                $this->logger
             );
             // Test setup.
             $setup  = new SolrSetup($solrService, $this->logger);

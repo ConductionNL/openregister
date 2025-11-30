@@ -34,6 +34,10 @@ use OCP\IUserSession;
  *
  * Controller for managing soft deleted objects
  */
+/**
+ * @psalm-suppress UnusedClass
+ */
+
 class DeletedController extends Controller
 {
 

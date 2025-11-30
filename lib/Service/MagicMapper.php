@@ -259,8 +259,7 @@ class MagicMapper
             $this->userSession,
             $this->groupManager,
             $this->userManager,
-            $this->appConfig,
-            $this->logger
+            $this->appConfig
         );
 
         $this->bulkHandler = new MagicBulkHandler(
@@ -272,9 +271,7 @@ class MagicMapper
             $this->db,
             $this->userSession,
             $this->groupManager,
-            $this->userManager,
-            $this->appConfig,
-            $this->logger
+            $this->userManager
         );
 
         $this->facetHandler = new MagicFacetHandler(

@@ -3756,7 +3756,7 @@ class ObjectService
                     $fileName = $file->getName();
 
                     // Delete the file using FileService.
-                    $this->fileService->deleteFile(file: $file, objectEntity: $sourceObject);
+                    $this->fileService->deleteFile($file, $sourceObject);
 
                     $result['files'][] = [
                         'name'    => $fileName,

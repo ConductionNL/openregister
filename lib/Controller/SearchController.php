@@ -29,6 +29,10 @@ use OCA\OpenRegister\Service\GuzzleSolrService;
  * Controller for handling search operations in the application.
  * Provides functionality to search across the application using the Nextcloud search service.
  */
+/**
+ * @psalm-suppress UnusedClass
+ */
+
 class SearchController extends Controller
 {
 
