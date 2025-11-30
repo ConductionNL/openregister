@@ -42,7 +42,6 @@ class Version1Date20250801000000 extends SimpleMigrationStep
      */
     private IDBConnection $connection;
 
-
     /**
      * Constructor
      *
@@ -53,7 +52,6 @@ class Version1Date20250801000000 extends SimpleMigrationStep
         $this->connection = $connection;
 
     }//end __construct()
-
 
 
     /**
@@ -68,6 +66,7 @@ class Version1Date20250801000000 extends SimpleMigrationStep
     public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
         // No pre-schema changes required.
+
     }//end preSchemaChange()
 
 
