@@ -266,7 +266,7 @@ class SolrEventListener implements IEventListener
 
             // Trigger reindex of all objects using this schema.
             $this->triggerSchemaReindex($newSchema->getId());
-            // End if
+            // End if.
         }
 
     }//end handleSchemaUpdated()
@@ -295,7 +295,6 @@ class SolrEventListener implements IEventListener
 
         // When a schema is deleted, we should remove all objects using this schema from Solr.
         // This is handled automatically when objects are deleted, but we log it for tracking.
-
     }//end handleSchemaDeleted()
 
 

@@ -13,10 +13,8 @@
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * @version GIT: <git-id>
- *
- * @link https://OpenRegister.app
+ * @version   GIT: <git-id>
+ * @link      https://OpenRegister.app
  */
 
 declare(strict_types=1);
@@ -35,12 +33,15 @@ use OCP\IDBConnection;
  */
 class Version1Date20250801000000 extends SimpleMigrationStep
 {
+
+
     /**
      * Database connection
      *
      * @var IDBConnection
      */
     private IDBConnection $connection;
+
 
     /**
      * Constructor
@@ -50,7 +51,10 @@ class Version1Date20250801000000 extends SimpleMigrationStep
     public function __construct(IDBConnection $connection)
     {
         $this->connection = $connection;
-    }
+
+    }//end __construct()
+
+
 
     /**
      * Pre-schema change operations
@@ -64,8 +68,9 @@ class Version1Date20250801000000 extends SimpleMigrationStep
     public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
         // No pre-schema changes required.
-
     }//end preSchemaChange()
+
+
 
     /**
      * Apply schema changes for multi-tenancy
@@ -87,19 +92,27 @@ class Version1Date20250801000000 extends SimpleMigrationStep
 
             // Add users field (JSON array of user IDs).
             if ($table->hasColumn('users') === false) {
-                $table->addColumn('users', Types::JSON, [
-                    'notnull' => false,
-                    'default' => '[]'
-                ]);
+                $table->addColumn(
+                    'users',
+                    Types::JSON,
+                    [
+                        'notnull' => false,
+                        'default' => '[]',
+                    ]
+                );
                 $output->info(message: 'Added users column to organisations table');
             }
 
             // Add owner field (user ID who owns the organisation).
             if ($table->hasColumn('owner') === false) {
-                $table->addColumn('owner', Types::STRING, [
-                    'notnull' => false,
-                    'length' => 255
-                ]);
+                $table->addColumn(
+                    'owner',
+                    Types::STRING,
+                    [
+                        'notnull' => false,
+                        'length'  => 255,
+                    ]
+                );
                 $output->info(message: 'Added owner column to organisations table');
             }
 
