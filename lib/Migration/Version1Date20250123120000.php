@@ -68,7 +68,6 @@ class Version1Date20250123120000 extends SimpleMigrationStep
     public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
         // No pre-schema changes required.
-
     }//end preSchemaChange()
 
 
