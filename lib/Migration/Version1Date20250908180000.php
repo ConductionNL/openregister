@@ -9,13 +9,11 @@
  * @category Migration
  * @package  OCA\OpenRegister\Migration
  *
- * @author   Conduction Development Team <info@conduction.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * @version  GIT: <git_id>
- *
- * @link     https://www.OpenRegister.nl
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version   GIT: <git_id>
+ * @link      https://www.OpenRegister.nl
  */
 
 declare(strict_types=1);
@@ -38,6 +36,7 @@ use OCP\Migration\SimpleMigrationStep;
 class Version1Date20250908180000 extends SimpleMigrationStep
 {
 
+
     /**
      * Enhance updated column with ON UPDATE CURRENT_TIMESTAMP
      *
@@ -57,8 +56,11 @@ class Version1Date20250908180000 extends SimpleMigrationStep
         $output->info(message: '🔧 This migration requires manual SQL execution for ON UPDATE functionality');
         $output->info(message: 'ℹ️  Nextcloud schema wrapper has limited support for MySQL-specific timestamp features');
 
-        return null; // No schema changes via wrapper - will use postSchemaChange.
-    }
+        // No schema changes via wrapper - will use postSchemaChange.
+        return null;
+
+    }//end changeSchema()
+
 
     /**
      * Execute raw SQL to modify updated column behavior
@@ -89,14 +91,16 @@ class Version1Date20250908180000 extends SimpleMigrationStep
             $output->info(message: '   • created = updated → Object was just created (INSERT)');
             $output->info(message: '   • created ≠ updated → Object was updated (UPDATE)');
             $output->info(message: '🚀 Bulk imports can now distinguish creates vs updates per-object!');
-
         } catch (\Exception $e) {
-            $output->info(message: '❌ Failed to modify updated column: ' . $e->getMessage());
+            $output->info(message: '❌ Failed to modify updated column: '.$e->getMessage());
             $output->info(message: '⚠️  This may prevent precise create/update tracking');
             $output->info(
                 message: '💡 Manual SQL fix: See migration docs for ALTER TABLE command'
             );
+            // end try
         }//end try
+
     }//end postSchemaChange()
+
 
 }//end class
