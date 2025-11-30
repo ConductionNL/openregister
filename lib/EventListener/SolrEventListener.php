@@ -100,7 +100,7 @@ class SolrEventListener implements IEventListener
                         'app'        => 'openregister',
                     ]
                 );
-            }
+            }//end if
         } catch (\Exception $e) {
             // Log errors but don't break the application flow.
             $this->logger->error(
@@ -112,11 +112,9 @@ class SolrEventListener implements IEventListener
                     'app'        => 'openregister',
                 ]
             );
-            // end try
-        }
+        }//end try
 
     }//end handle()
-
 
 
     /**
@@ -144,7 +142,6 @@ class SolrEventListener implements IEventListener
         $this->objectCacheService->invalidateForObjectChange($object, 'create');
 
     }//end handleObjectCreated()
-
 
 
     /**
@@ -176,7 +173,6 @@ class SolrEventListener implements IEventListener
     }//end handleObjectUpdated()
 
 
-
     /**
      * Handle object deletion event
      *
@@ -202,7 +198,6 @@ class SolrEventListener implements IEventListener
         $this->objectCacheService->invalidateForObjectChange($object, 'delete');
 
     }//end handleObjectDeleted()
-
 
 
     /**
@@ -318,7 +313,6 @@ class SolrEventListener implements IEventListener
     }//end schemaFieldsChanged()
 
 
-
     /**
      * Trigger reindex of all objects using a specific schema
      *
@@ -340,5 +334,6 @@ class SolrEventListener implements IEventListener
         );
 
     }//end triggerSchemaReindex()
+
 
 }//end class

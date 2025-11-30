@@ -71,8 +71,8 @@ class OptimizedFacetHandler
      * @param array $facetConfig Configuration for multiple facets
      * @param array $baseQuery   Base query filters to apply
      *
-     * @phpstan-param array<string, array> $facetConfig
-     * @phpstan-param array<string, mixed> $baseQuery
+     * @phpstan-param  array<string, array> $facetConfig
+     * @phpstan-param  array<string, mixed> $baseQuery
      * @psalm-param    array<string, array> $facetConfig
      * @psalm-param    array<string, mixed> $baseQuery
      *

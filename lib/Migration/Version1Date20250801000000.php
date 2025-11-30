@@ -42,6 +42,7 @@ class Version1Date20250801000000 extends SimpleMigrationStep
      */
     private IDBConnection $connection;
 
+
     /**
      * Constructor
      *
@@ -137,7 +138,8 @@ class Version1Date20250801000000 extends SimpleMigrationStep
         }
 
         return $schema;
-    }
+
+    }//end changeSchema()
 
 
     /**
