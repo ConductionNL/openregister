@@ -170,7 +170,7 @@ class EndpointService
      * @phpstan-return array{success: bool, statusCode: int, response: mixed, error?: string}
      * @psalm-return   array{success: bool, statusCode: int, response: mixed, error?: string}
      */
-    private function executeViewEndpoint(Endpoint $endpoint, array $request): array
+    private function executeViewEndpoint(Endpoint $_endpoint, array $_request): array
     {
         // Placeholder for view execution logic.
         // This would integrate with the view service to execute the view.
@@ -193,7 +193,7 @@ class EndpointService
      * @phpstan-return array{success: bool, statusCode: int, response: mixed, error?: string}
      * @psalm-return   array{success: bool, statusCode: int, response: mixed, error?: string}
      */
-    private function executeAgentEndpoint(Endpoint $endpoint, array $request): array
+    private function executeAgentEndpoint(Endpoint $_endpoint, array $_request): array
     {
         try {
             // Get required services.
@@ -446,7 +446,7 @@ class EndpointService
      * @phpstan-return array{success: bool, statusCode: int, response: mixed, error?: string}
      * @psalm-return   array{success: bool, statusCode: int, response: mixed, error?: string}
      */
-    private function executeWebhookEndpoint(Endpoint $endpoint, array $request): array
+    private function executeWebhookEndpoint(Endpoint $_endpoint, array $_request): array
     {
         // Placeholder for webhook execution logic.
         // This would integrate with the webhook service to trigger the webhook.
@@ -469,7 +469,7 @@ class EndpointService
      * @phpstan-return array{success: bool, statusCode: int, response: mixed, error?: string}
      * @psalm-return   array{success: bool, statusCode: int, response: mixed, error?: string}
      */
-    private function executeRegisterEndpoint(Endpoint $endpoint, array $request): array
+    private function executeRegisterEndpoint(Endpoint $_endpoint, array $_request): array
     {
         // Placeholder for register execution logic.
         // This would integrate with the register/object service to handle CRUD operations.
@@ -492,7 +492,7 @@ class EndpointService
      * @phpstan-return array{success: bool, statusCode: int, response: mixed, error?: string}
      * @psalm-return   array{success: bool, statusCode: int, response: mixed, error?: string}
      */
-    private function executeSchemaEndpoint(Endpoint $endpoint, array $request): array
+    private function executeSchemaEndpoint(Endpoint $_endpoint, array $_request): array
     {
         // Placeholder for schema execution logic.
         // This would integrate with the schema/object service to handle schema-specific operations.

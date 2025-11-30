@@ -720,7 +720,7 @@ class SearchTrailService
      *     total_periods?: int<1, max>
      * }
      */
-    private function calculateActivityInsights(array $activity, string $interval): array
+    private function calculateActivityInsights(array $activity, string $_interval): array
     {
         if ($activity === []) {
             return [
