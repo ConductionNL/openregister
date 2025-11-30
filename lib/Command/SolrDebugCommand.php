@@ -387,7 +387,7 @@ class SolrDebugCommand extends Command
                 $output->writeln("  <info>✅ Found $collectionCount collections (SolrCloud mode)</info>");
                 // Iterate over collections directly to get string keys.
                 // Collection names in Solr are always strings.
-                foreach ($collectionsData['cluster']['collections'] as $collectionName => $collectionData) {
+                foreach ($collectionsData['cluster']['collections'] as $collectionName => $_collectionData) {
                     // $collectionName is guaranteed to be a string when iterating over array.
                     $output->writeln("    - <comment>".$collectionName."</comment>");
                 }

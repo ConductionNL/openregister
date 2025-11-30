@@ -59,43 +59,12 @@ class WebhookService
     private LoggerInterface $logger;
 
     /**
-     * Background job list
-     *
-     * @var IJobList
-     */
-    private IJobList $jobList;
-
-    /**
      * Webhook log mapper
      *
      * @var WebhookLogMapper
      */
     private WebhookLogMapper $webhookLogMapper;
 
-
-    /**
-     * Constructor
-     *
-     * @param WebhookMapper    $webhookMapper  Webhook mapper
-     * @param WebhookLogMapper $webhookLogMapper Webhook log mapper
-     * @param Client           $client         HTTP client
-     * @param LoggerInterface  $logger         Logger
-     * @param IJobList         $jobList        Background job list
-     */
-    public function __construct(
-        WebhookMapper $webhookMapper,
-        WebhookLogMapper $webhookLogMapper,
-        Client $client,
-        LoggerInterface $logger,
-        IJobList $jobList
-    ) {
-        $this->webhookMapper   = $webhookMapper;
-        $this->webhookLogMapper = $webhookLogMapper;
-        $this->client          = $client;
-        $this->logger          = $logger;
-        $this->jobList         = $jobList;
-
-    }//end __construct()
 
 
     /**

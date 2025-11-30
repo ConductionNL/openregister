@@ -38,27 +38,6 @@ class RevertService
 {
 
 
-    /**
-     * Constructor for RevertService
-     *
-     * @param AuditTrailMapper   $auditTrailMapper   The audit trail mapper
-     * @param ObjectEntityMapper $objectEntityMapper The object entity mapper
-     * @param RegisterMapper     $registerMapper     The register mapper
-     * @param SchemaMapper       $schemaMapper       The schema mapper
-     * @param ContainerInterface $container          The DI container
-     * @param IEventDispatcher   $eventDispatcher    The event dispatcher
-     */
-    public function __construct(
-        private readonly AuditTrailMapper $auditTrailMapper,
-        private readonly ObjectEntityMapper $objectEntityMapper,
-        private readonly RegisterMapper $registerMapper,
-        private readonly SchemaMapper $schemaMapper,
-        private readonly ContainerInterface $container,
-        private readonly IEventDispatcher $eventDispatcher
-    ) {
-
-    }//end __construct()
-
 
     /**
      * Revert an object to a previous state

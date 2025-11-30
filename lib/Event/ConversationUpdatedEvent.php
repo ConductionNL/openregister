@@ -60,28 +60,6 @@ class ConversationUpdatedEvent extends Event
     }//end __construct()
 
 
-    /**
-     * Get the updated conversation.
-     *
-     * @return Conversation The conversation after update.
-     */
-    public function getNewConversation(): Conversation
-    {
-        return $this->newConversation;
-
-    }//end getNewConversation()
-
-
-    /**
-     * Get the original conversation.
-     *
-     * @return Conversation The conversation before update.
-     */
-    public function getOldConversation(): Conversation
-    {
-        return $this->oldConversation;
-
-    }//end getOldConversation()
 
 
 }//end class

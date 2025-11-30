@@ -38,23 +38,6 @@ class RegisterService
 {
 
 
-    /**
-     * Constructor for RegisterService.
-     *
-     * @param RegisterMapper      $registerMapper      Mapper for register operations.
-     * @param FileService         $fileService         Service for file operations.
-     * @param LoggerInterface     $logger              Logger for error handling.
-     * @param OrganisationService $organisationService Service for organisation operations.
-     */
-    public function __construct(
-        private readonly RegisterMapper $registerMapper,
-        private readonly FileService $fileService,
-        private readonly LoggerInterface $logger,
-        private readonly OrganisationService $organisationService
-    ) {
-
-    }//end __construct()
-
 
     /**
      * Find a register by ID with optional extensions.
@@ -74,19 +57,6 @@ class RegisterService
 
     }//end find()
 
-
-    /**
-     * Find multiple registers by IDs.
-     *
-     * @param array $ids The IDs of the registers to find
-     *
-     * @return array Array of found registers
-     */
-    public function findMultiple(array $ids): array
-    {
-        return $this->registerMapper->findMultiple($ids);
-
-    }//end findMultiple()
 
 
     /**
@@ -191,75 +161,9 @@ class RegisterService
     }//end delete()
 
 
-    /**
-     * Get schemas associated with a register.
-     *
-     * @param int $registerId The ID of the register
-     *
-     * @return array Array of schemas
-     */
-    public function getSchemasByRegisterId(int $registerId): array
-    {
-        return $this->registerMapper->getSchemasByRegisterId($registerId);
-
-    }//end getSchemasByRegisterId()
 
 
-    /**
-     * Get first register with a specific schema.
-     *
-     * @param int $schemaId The ID of the schema
-     *
-     * @return int|null The register ID or null if not found
-     */
-    public function getFirstRegisterWithSchema(int $schemaId): ?int
-    {
-        return $this->registerMapper->getFirstRegisterWithSchema($schemaId);
 
-    }//end getFirstRegisterWithSchema()
-
-
-    /**
-     * Check if a register has a schema with specific title.
-     *
-     * @param int    $registerId  The ID of the register
-     * @param string $schemaTitle The title of the schema
-     *
-     * @return \OCA\OpenRegister\Db\Schema|null The schema if found
-     */
-    public function hasSchemaWithTitle(int $registerId, string $schemaTitle): ?\OCA\OpenRegister\Db\Schema
-    {
-        return $this->registerMapper->hasSchemaWithTitle($registerId, $schemaTitle);
-
-    }//end hasSchemaWithTitle()
-
-
-    /**
-     * Get ID to slug mappings.
-     *
-     * @return string[] Array mapping IDs to slugs
-     *
-     * @psalm-return array<string, string>
-     */
-    public function getIdToSlugMap(): array
-    {
-        return $this->registerMapper->getIdToSlugMap();
-
-    }//end getIdToSlugMap()
-
-
-    /**
-     * Get slug to ID mappings.
-     *
-     * @return string[] Array mapping slugs to IDs
-     *
-     * @psalm-return array<string, string>
-     */
-    public function getSlugToIdMap(): array
-    {
-        return $this->registerMapper->getSlugToIdMap();
-
-    }//end getSlugToIdMap()
 
 
     /**

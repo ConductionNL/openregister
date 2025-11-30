@@ -44,7 +44,6 @@ use Symfony\Component\Uid\Uuid;
  * @method AuditTrail[] findAll(int|null $limit = null, int|null $offset = null)
  * @method list<AuditTrail> findEntities(IQueryBuilder $query)
  *
- * @template         T of AuditTrail
  * @template-extends QBMapper<AuditTrail>
  */
 class AuditTrailMapper extends QBMapper
@@ -57,21 +56,6 @@ class AuditTrailMapper extends QBMapper
      */
     private ObjectEntityMapper $objectEntityMapper;
 
-
-    /**
-     * Constructor for the AuditTrailMapper
-     *
-     * @param IDBConnection      $db                 The database connection
-     * @param ObjectEntityMapper $objectEntityMapper The object entity mapper
-     *
-     * @return void
-     */
-    public function __construct(IDBConnection $db, ObjectEntityMapper $objectEntityMapper)
-    {
-        parent::__construct(db: $db, tableName: 'openregister_audit_trails', entityClass: AuditTrail::class);
-        $this->objectEntityMapper = $objectEntityMapper;
-
-    }//end __construct()
 
 
     /**
@@ -225,68 +209,6 @@ class AuditTrailMapper extends QBMapper
     }//end findAll()
 
 
-    /**
-     * Finds all audit trails for a given object
-     *
-     * @param string     $identifier       The id or uuid of the object
-     * @param int|null   $limit            The limit of the results
-     * @param int|null   $offset           The offset of the results
-     * @param array|null $filters          The filters to apply
-     * @param array|null $searchConditions The search conditions to apply
-     * @param array|null $searchParams     The search parameters to apply
-     *
-     * @return array The audit trails
-     */
-    public function findAllUuid(
-        string $identifier,
-        ?int $limit=null,
-        ?int $offset=null,
-        ?array $filters=[],
-        ?array $searchConditions=[],
-        ?array $searchParams=[]
-    ): array {
-        try {
-            $object            = $this->objectEntityMapper->find(identifier: $identifier);
-            $objectId          = $object->getId();
-            $filters['object'] = $objectId;
-            return $this->findAll(limit: $limit, offset: $offset, filters: $filters);
-        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-            // Object not found.
-            return [];
-        }
-
-    }//end findAllUuid()
-
-
-    /**
-     * Creates an audit trail from an array
-     *
-     * @param array $object The object to create the audit trail from
-     *
-     * @return AuditTrail The created audit trail
-     */
-    public function createFromArray(array $object): AuditTrail
-    {
-        $auditTrail = new AuditTrail();
-        $auditTrail->hydrate(object: $object);
-
-        // Set uuid if not provided.
-        if ($auditTrail->getUuid() === null) {
-            $auditTrail->setUuid((string) Uuid::v4());
-        }
-
-        // Set default expiration date if not provided (30 days from now).
-        if ($auditTrail->getExpires() === null) {
-            $auditTrail->setExpires(new \DateTime('+30 days'));
-        }
-
-        // Set the size to the byte size of the serialized object, with a minimum default of 14 bytes.
-        $serializedSize = strlen(serialize($object));
-        $auditTrail->setSize(max($serializedSize, 14));
-
-        return $this->insert(entity: $auditTrail);
-
-    }//end createFromArray()
 
 
     /**
@@ -634,9 +556,9 @@ class AuditTrailMapper extends QBMapper
      * @throws \OCP\DB\Exception If a database error occurs
      * @throws \OCP\AppFramework\Db\DoesNotExistException If the entity does not exist
      *
-     * @return Entity The updated entity
+     * @return AuditTrail The updated entity
      */
-    public function update(Entity $entity): Entity
+    public function update(Entity $entity): AuditTrail
     {
         // Recalculate size before update, with a minimum default of 14 bytes.
         $serializedSize = strlen(serialize($entity->jsonSerialize()));
@@ -1078,184 +1000,6 @@ class AuditTrailMapper extends QBMapper
     }//end clearAllLogs()
 
 
-    /**
-     * Count audit trails with optional filters
-     *
-     * @param array|null $filters The filters to apply (same format as findAll)
-     *
-     * @return int The count of audit trails matching the filters
-     */
-    public function count(?array $filters=[]): int
-    {
-        $qb = $this->db->getQueryBuilder();
-
-        $qb->select($qb->func()->count('*'))
-            ->from('openregister_audit_trails');
-
-        // Filter out system variables (starting with _).
-        $filters = array_filter(
-            $filters ?? [],
-            function ($key) {
-                return !str_starts_with($key, '_');
-            },
-            ARRAY_FILTER_USE_KEY
-        );
-
-        // Apply filters.
-        foreach ($filters as $field => $value) {
-            // Ensure the field is a valid column name.
-            if (in_array(
-                    $field,
-                    [
-                        'id',
-                        'uuid',
-                        'schema',
-                        'register',
-                        'object',
-                        'action',
-                        'changed',
-                        'user',
-                        'user_name',
-                        'session',
-                        'request',
-                        'ip_address',
-                        'version',
-                        'created',
-                        'expires',
-                    ]
-                    ) === false
-            ) {
-                continue;
-            }
-
-            if ($value === 'IS NOT NULL') {
-                $qb->andWhere($qb->expr()->isNotNull($field));
-            } else if ($value === 'IS NULL') {
-                $qb->andWhere($qb->expr()->isNull($field));
-            } else if (is_array($value) === true) {
-                // Handle array values like ['IS NULL', ''].
-                $conditions = [];
-                foreach ($value as $val) {
-                    if ($val === 'IS NULL') {
-                        $conditions[] = $qb->expr()->isNull($field);
-                    } else if ($val === 'IS NOT NULL') {
-                        $conditions[] = $qb->expr()->isNotNull($field);
-                    } else {
-                        $conditions[] = $qb->expr()->eq($field, $qb->createNamedParameter($val));
-                    }
-                }
-
-                if (empty($conditions) === false) {
-                    $qb->andWhere($qb->expr()->orX(...$conditions));
-                }
-            } else {
-                // Handle comma-separated values (e.g., action=create,update).
-                if (strpos($value, ',') !== false) {
-                    $values = array_map('trim', explode(',', $value));
-                    $qb->andWhere($qb->expr()->in($field, $qb->createNamedParameter($values, IQueryBuilder::PARAM_STR_ARRAY)));
-                } else {
-                    $qb->andWhere($qb->expr()->eq($field, $qb->createNamedParameter($value)));
-                }
-            }//end if
-        }//end foreach
-
-        $result = $qb->executeQuery();
-        $row    = $result->fetch();
-
-        return (int) ($row['COUNT(*)'] ?? 0);
-
-    }//end count()
-
-
-    /**
-     * Sum the size of audit trails with optional filters
-     *
-     * @param array|null $filters The filters to apply (same format as findAll)
-     *
-     * @return int The total size of audit trails matching the filters in bytes
-     */
-    public function sizeAuditTrails(?array $filters=[]): int
-    {
-        $qb = $this->db->getQueryBuilder();
-
-        $qb->select($qb->createFunction('COALESCE(SUM(CAST(size AS UNSIGNED)), 0)'))
-            ->from($this->getTableName());
-
-        // Filter out system variables (starting with _).
-        $filters = array_filter(
-            $filters ?? [],
-            function ($key) {
-                return !str_starts_with($key, '_');
-            },
-            ARRAY_FILTER_USE_KEY
-        );
-
-        // Apply filters.
-        foreach ($filters as $field => $value) {
-            // Ensure the field is a valid column name.
-            if (in_array(
-                    $field,
-                    [
-                        'id',
-                        'uuid',
-                        'schema',
-                        'register',
-                        'object',
-                        'action',
-                        'changed',
-                        'user',
-                        'user_name',
-                        'session',
-                        'request',
-                        'ip_address',
-                        'version',
-                        'created',
-                        'expires',
-                        'size',
-                    ]
-                    ) === false
-            ) {
-                continue;
-            }
-
-            if ($value === 'IS NOT NULL') {
-                $qb->andWhere($qb->expr()->isNotNull($field));
-            } else if ($value === 'IS NULL') {
-                $qb->andWhere($qb->expr()->isNull($field));
-            } else if (is_array($value) === true) {
-                // Handle array values like ['IS NULL', ''].
-                $conditions = [];
-                foreach ($value as $val) {
-                    if ($val === 'IS NULL') {
-                        $conditions[] = $qb->expr()->isNull($field);
-                    } else if ($val === 'IS NOT NULL') {
-                        $conditions[] = $qb->expr()->isNotNull($field);
-                    } else {
-                        $conditions[] = $qb->expr()->eq($field, $qb->createNamedParameter($val));
-                    }
-                }
-
-                if (empty($conditions) === false) {
-                    $qb->andWhere($qb->expr()->orX(...$conditions));
-                }
-            } else {
-                // Handle comma-separated values (e.g., action=create,update).
-                if (strpos($value, ',') !== false) {
-                    $values = array_map('trim', explode(',', $value));
-                    $qb->andWhere($qb->expr()->in($field, $qb->createNamedParameter($values, IQueryBuilder::PARAM_STR_ARRAY)));
-                } else {
-                    $qb->andWhere($qb->expr()->eq($field, $qb->createNamedParameter($value)));
-                }
-            }//end if
-        }//end foreach
-
-        $result = $qb->executeQuery();
-        $size   = $result->fetchOne();
-        $result->closeCursor();
-
-        return (int) ($size ?? 0);
-
-    }//end sizeAuditTrails()
 
 
     /**

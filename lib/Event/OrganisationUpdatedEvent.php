@@ -60,28 +60,6 @@ class OrganisationUpdatedEvent extends Event
     }//end __construct()
 
 
-    /**
-     * Get the updated organisation.
-     *
-     * @return Organisation The organisation after update.
-     */
-    public function getNewOrganisation(): Organisation
-    {
-        return $this->newOrganisation;
-
-    }//end getNewOrganisation()
-
-
-    /**
-     * Get the original organisation.
-     *
-     * @return Organisation The organisation before update.
-     */
-    public function getOldOrganisation(): Organisation
-    {
-        return $this->oldOrganisation;
-
-    }//end getOldOrganisation()
 
 
 }//end class

@@ -1784,7 +1784,7 @@ class MagicMapper
     {
         $registerId = $register->getId();
         $schemaId   = $schema->getId();
-        $cacheKey   = $this->getCacheKey($registerId, $schemaId);
+        $this->getCacheKey($registerId, $schemaId);
 
         $currentVersion = $this->getStoredRegisterSchemaVersion($registerId, $schemaId);
         $newVersion     = $this->calculateRegisterSchemaVersion($register, $schema);

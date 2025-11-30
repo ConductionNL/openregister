@@ -203,31 +203,7 @@ class ImportService
      *
      * @return PromiseInterface<array<string, array>> Promise that resolves to import summary.
      */
-    /**
-     * Import data from Excel file asynchronously.
-     *
-     * @param string        $filePath  The path to the Excel file.
-     * @param Register|null $register  Optional register to associate with imported objects.
-     * @param Schema|null   $schema    Optional schema to associate with imported objects.
-     * @param int           $chunkSize Number of rows to process in each chunk (default: 100).
-     *
-     * @return PromiseInterface Promise that resolves to import summary with created/updated/unchanged/errors.
-     */
-    public function importFromExcelAsync(
-        string $filePath,
-        ?Register $register=null,
-        ?Schema $schema=null,
-        int $chunkSize=self::DEFAULT_CHUNK_SIZE
-    ): PromiseInterface {
-        return new Promise(
-            function (callable $resolve, callable $reject) use ($filePath, $register, $schema, $chunkSize) {
-                // NO ERROR SUPPRESSION: Let Excel import errors bubble up immediately!
-                $result = $this->importFromExcel(filePath: $filePath, register: $register, schema: $schema, chunkSize: $chunkSize);
-                $resolve($result);
-            }
-        );
 
-    }//end importFromExcelAsync()
 
 
     /**
@@ -292,32 +268,6 @@ class ImportService
 
     }//end importFromExcel()
 
-
-    /**
-     * Import data from CSV file asynchronously.
-     *
-     * @param string        $filePath  The path to the CSV file.
-     * @param Register|null $register  Optional register to associate with imported objects.
-     * @param Schema|null   $schema    Optional schema to associate with imported objects.
-     * @param int           $chunkSize Number of rows to process in each chunk (default: 100).
-     *
-     * @return PromiseInterface Promise that resolves to import summary with created/updated/unchanged/errors.
-     */
-    public function importFromCsvAsync(
-        string $filePath,
-        ?Register $register=null,
-        ?Schema $schema=null,
-        int $chunkSize=self::DEFAULT_CHUNK_SIZE
-    ): PromiseInterface {
-        return new Promise(
-            function (callable $resolve, callable $reject) use ($filePath, $register, $schema, $chunkSize) {
-                // NO ERROR SUPPRESSION: Let CSV import errors bubble up immediately!
-                $result = $this->importFromCsv(filePath: $filePath, register: $register, schema: $schema, chunkSize: $chunkSize);
-                $resolve($result);
-            }
-        );
-
-    }//end importFromCsvAsync()
 
 
     /**
@@ -477,68 +427,6 @@ class ImportService
     }//end processMultiSchemaSpreadsheetAsync()
 
 
-    /**
-     * Process spreadsheet data asynchronously with chunked processing
-     *
-     * @param Spreadsheet   $spreadsheet The spreadsheet to process
-     * @param Register|null $register    Optional register to associate with imported objects
-     * @param Schema|null   $schema      Optional schema to associate with imported objects
-     * @param int           $chunkSize   Number of rows to process in each chunk
-     *
-     * @return         array<string, array> Summary of import: ['created'=>[], 'updated'=>[], 'unchanged'=>[], 'errors'=>[]]
-     * @phpstan-return array{created: array<int|string>, updated: array<int|string>, unchanged: array<int|string>, errors: array<mixed>}
-     * @psalm-return   array{created: array<int|string>, updated: array<int|string>, unchanged: array<int|string>, errors: array<mixed>}
-     */
-    private function processSpreadsheetAsync(
-        Spreadsheet $spreadsheet,
-        ?Register $register=null,
-        ?Schema $schema=null,
-        int $chunkSize=self::DEFAULT_CHUNK_SIZE
-    ): array {
-        $sheet      = $spreadsheet->getActiveSheet();
-        $highestRow = $sheet->getHighestRow();
-
-        // Step 1: Build column mapping array using PhpSpreadsheet built-in methods.
-        $columnMapping = $this->buildColumnMapping($sheet);
-
-        // Get schema properties for reference.
-        if ($schema !== null) {
-            $schemaProperties = $schema->getProperties();
-        } else {
-            $schemaProperties = [];
-        }
-
-        // Step 2: Process data in chunks to prevent memory overflow.
-        $summary = [
-            'found'     => 0,
-            'created'   => [],
-            'updated'   => [],
-            'unchanged' => [],
-            'errors'    => [],
-        ];
-
-        // Process rows in chunks.
-        for ($startRow = 2; $startRow <= $highestRow; $startRow += $chunkSize) {
-            $endRow       = min($startRow + $chunkSize - 1, $highestRow);
-            $chunkSummary = $this->processChunk(sheet: $sheet, columnMapping: $columnMapping, startRow: $startRow, endRow: $endRow, register: $register, schema: $schema, schemaProperties: $schemaProperties);
-
-            // Merge chunk results into main summary.
-            $summary['found']    += $chunkSummary['found'];
-            $summary['created']   = array_merge($summary['created'], $chunkSummary['created']);
-            $summary['updated']   = array_merge($summary['updated'], $chunkSummary['updated']);
-            $summary['unchanged'] = array_merge($summary['unchanged'], $chunkSummary['unchanged']);
-            $summary['errors']    = array_merge($summary['errors'], $chunkSummary['errors']);
-
-            // Force garbage collection after each chunk to prevent memory leaks.
-            if (function_exists('gc_collect_cycles') === true) {
-                gc_collect_cycles();
-            }
-        }
-
-        return $summary;
-
-    }//end processSpreadsheetAsync()
-
 
     /**
      * Process spreadsheet with single schema using batch saving for better performance
@@ -683,7 +571,6 @@ class ImportService
         // NO ERROR SUPPRESSION: Row parsing errors will bubble up immediately - no need to collect them.
 
         $totalImportTime = microtime(true) - $startTime;
-        $overallRowsPerSecond = count($allObjects) / max($totalImportTime, 0.001);
 
         return $summary;
 
@@ -841,195 +728,6 @@ class ImportService
     }//end processCsvSheet()
 
 
-    /**
-     * Process spreadsheet chunks concurrently using ReactPHP for better performance
-     *
-     * This method uses ReactPHP promises to process multiple chunks concurrently,
-     * which can significantly improve performance for large imports while maintaining
-     * memory efficiency through smaller chunks.
-     *
-     * @param \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet         The worksheet to process
-     * @param array<string, string>                         $columnMapping Column mapping
-     * @param int                                           $startRow      Starting row number
-     * @param int                                           $endRow        Ending row number
-     * @param Register                                      $register      The register
-     * @param Schema                                        $schema        The schema
-     * @param int                                           $chunkSize     Size of each processing chunk
-     * @param bool                                          $validation    Whether to validate objects
-     * @param bool                                          $events        Whether to dispatch events
-     *
-     * @return array<string, array> Processing summary
-     * @phpstan-return array{found: int, created: array<string>, updated: array<string>, errors: array<mixed>}
-     * @psalm-return   array{found: int, created: array<string>, updated: array<string>, errors: array<mixed>}
-     */
-    private function processSpreadsheetConcurrent(
-        \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet,
-        array $columnMapping,
-        int $startRow,
-        int $endRow,
-        Register $register,
-        Schema $schema,
-        int $chunkSize = self::MIN_CONCURRENT_CHUNK_SIZE,
-        bool $validation = false,
-        bool $events = false
-    ): array {
-        $summary = [
-            'found'   => 0,
-            'created' => [],
-            'updated' => [],
-            'errors'  => [],
-        ];
-
-        // Create chunks for concurrent processing.
-        $chunks = [];
-        for ($chunkStart = $startRow; $chunkStart <= $endRow; $chunkStart += $chunkSize) {
-            $chunkEnd = min($chunkStart + $chunkSize - 1, $endRow);
-            $chunks[] = ['start' => $chunkStart, 'end' => $chunkEnd];
-        }
-
-
-        // Process chunks in concurrent batches.
-        $batchSize = self::MAX_CONCURRENT;
-        for ($i = 0; $i < count($chunks); $i += $batchSize) {
-            $batch = array_slice($chunks, $i, $batchSize);
-            $promises = [];
-
-            // Create promises for concurrent chunk processing.
-            foreach ($batch as $chunk) {
-                $promises[] = new Promise(function (callable $resolve, callable $reject) use ($sheet, $columnMapping, $chunk, $register, $schema, $validation, $events) {
-                    // NO ERROR SUPPRESSION: Let Excel chunk processing errors bubble up immediately!
-                    // Process chunk.
-                    $chunkResult = $this->processExcelChunk(sheet: $sheet, columnMapping: $columnMapping, startRow: $chunk['start'], endRow: $chunk['end'], register: $register, schema: $schema);
-
-                    if (!empty($chunkResult['objects'])) {
-                        // Save objects for this chunk.
-                        $saveResult = $this->objectService->saveObjects(
-                            objects: $chunkResult['objects'],
-                            register: $register,
-                            schema: $schema,
-                            rbac: true,
-                            multi: true,
-                            validation: $validation,
-                            events: $events
-                        );
-
-                        $result = [
-                            'found'   => count($chunkResult['objects']),
-                            'created' => array_map(fn($obj) => $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['saved'] ?? []),
-                            'updated' => array_map(fn($obj) => $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['updated'] ?? []),
-                            'errors'  => $chunkResult['errors'] ?? [],
-                        ];
-
-                        // Add validation errors if any.
-                        if ($validation === true && empty($saveResult['invalid'] ?? []) === false) {
-                            foreach ($saveResult['invalid'] as $invalidItem) {
-                                $result['errors'][] = [
-                                    'rows'  => $chunk['start'] . '-' . $chunk['end'],
-                                    'object' => $invalidItem['object'] ?? $invalidItem,
-                                    'error' => $invalidItem['error'] ?? 'Validation failed',
-                                    'type'  => $invalidItem['type'] ?? 'ValidationException',
-                                ];
-                            }
-                        }
-                    } else {
-                        $result = [
-                            'found'   => 0,
-                            'created' => [],
-                            'updated' => [],
-                            'errors'  => $chunkResult['errors'] ?? [],
-                        ];
-                    }
-
-                    $resolve($result);
-                });
-            }
-
-            // Process batch of promises concurrently.
-            // NO ERROR SUPPRESSION: Let concurrent processing errors bubble up immediately!
-            $batchResults = \React\Async\await(\React\Promise\all($promises));
-
-            // Merge results from concurrent processing.
-            foreach ($batchResults as $result) {
-                $summary['found'] += $result['found'];
-                $summary['created'] = array_merge($summary['created'], $result['created']);
-                $summary['updated'] = array_merge($summary['updated'], $result['updated']);
-                $summary['errors'] = array_merge($summary['errors'], $result['errors']);
-            }
-
-
-            // Memory cleanup after each batch.
-            unset($batchResults, $promises);
-            gc_collect_cycles();
-        }
-
-        return $summary;
-    }//end processSpreadsheetConcurrent()
-
-
-    /**
-     * Process a chunk of CSV rows and prepare objects for batch saving
-     *
-     * @param \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet         The worksheet
-     * @param array<string, string>                         $columnMapping Column mapping
-     * @param int                                           $startRow      Starting row number
-     * @param int                                           $endRow        Ending row number
-     * @param Register                                      $register      The register
-     * @param Schema                                        $schema        The schema
-     *
-     * @return array<string, array> Chunk processing result
-     * @phpstan-return array{objects: array<int, array<string, mixed>>, errors: array<int, array<string, mixed>>}
-     * @psalm-return   array{objects: array<int, array<string, mixed>>, errors: array<int, array<string, mixed>>}
-     */
-    private function processCsvChunk(
-        \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet,
-        array $columnMapping,
-        int $startRow,
-        int $endRow,
-        Register $register,
-        Schema $schema
-    ): array {
-        $objects = [];
-        $startMemory = memory_get_usage(true);
-
-        for ($row = $startRow; $row <= $endRow; $row++) {
-            // NO ERROR SUPPRESSION: Let CSV chunk processing errors bubble up immediately!
-            $rowData = $this->extractRowData(sheet: $sheet, columnMapping: $columnMapping, row: $row);
-
-            if (empty($rowData) === true) {
-                // Skip empty rows.
-                continue;
-            }
-
-            // Transform row data to object format.
-            $object = $this->transformCsvRowToObject(rowData: $rowData, register: $register, schema: $schema, rowIndex: $row);
-
-            if ($object !== null) {
-                $objects[] = $object;
-            }
-
-            // Memory management: check memory usage every 10 rows.
-            if ($row % 10 === 0) {
-                $currentMemory = memory_get_usage(true);
-                $memoryIncrease = $currentMemory - $startMemory;
-
-                // Log memory usage for monitoring.
-                if ($memoryIncrease > 50 * 1024 * 1024) { // 50MB threshold
-                }
-
-                // Force garbage collection if memory usage is high.
-                if ($memoryIncrease > 100 * 1024 * 1024) { // 100MB threshold
-                    gc_collect_cycles();
-                }
-            }
-        }
-
-        // Final memory cleanup (memory stats tracked elsewhere).
-
-        return [
-            'objects' => $objects,
-        ];
-
-    }//end processCsvChunk()
 
 
     /**
@@ -1332,7 +1030,7 @@ class ImportService
             $cellValue    = $sheet->getCell($columnLetter.'1')->getValue();
 
             if ($cellValue !== null && trim($cellValue) !== '') {
-                $cleanColumnName = trim((string) $cellValue);
+                $cleanColumnName = trim($cellValue);
                 $columnMapping[$columnLetter] = $cleanColumnName;
             } else {
                 // Found empty column, stop here.
@@ -1758,65 +1456,6 @@ class ImportService
     }//end stringToArray()
 
 
-    /**
-     * Estimate data complexity by analyzing a sample of rows
-     *
-     * @param \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet         The worksheet
-     * @param array<string, string>                         $columnMapping Column mapping
-     * @param int                                           $sampleSize    Number of rows to sample
-     *
-     * @return float Average field length across sampled rows
-     */
-    private function estimateDataComplexity(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet, array $columnMapping, int $sampleSize): float
-    {
-        $totalLength = 0;
-        $fieldCount = 0;
-        // Skip header row (row 1).
-        $startRow = 2;
-
-        for ($row = $startRow; $row < $startRow + $sampleSize; $row++) {
-            foreach (array_keys($columnMapping) as $columnLetter) {
-                $cellValue = $sheet->getCell($columnLetter . $row)->getValue();
-                if ($cellValue !== null) {
-                    $totalLength += strlen((string) $cellValue);
-                    $fieldCount++;
-                }
-            }
-        }
-
-// Default to 50 if no data.
-    }//end estimateDataComplexity()
-
-
-    /**
-     * Calculate optimal chunk size based on data complexity
-     *
-     * @param int   $baseChunkSize     Base chunk size
-     * @param float $avgFieldLength    Average field length
-     * @param int   $columnCount       Number of columns
-     *
-     * @return int Optimized chunk size
-     */
-    private function calculateOptimalChunkSize(int $baseChunkSize, float $avgFieldLength, int $columnCount): int
-    {
-        // Calculate complexity score based on average field length and column count.
-        $complexityScore = ($avgFieldLength * $columnCount) / 100;
-
-        // Adjust chunk size based on complexity.
-        if ($complexityScore > 10) {
-            // Very complex data - use minimal chunk size.
-            return max(self::MINIMAL_CHUNK_SIZE, intval($baseChunkSize / 4));
-        } else if ($complexityScore > 5) {
-            // Moderately complex data - reduce chunk size.
-            return max(self::MINIMAL_CHUNK_SIZE, intval($baseChunkSize / 2));
-        } else if ($complexityScore > 2) {
-            // Slightly complex data - minor reduction.
-            return max(self::MINIMAL_CHUNK_SIZE, intval($baseChunkSize * 0.8));
-        }
-
-        // Simple data - use base chunk size.
-        return $baseChunkSize;
-    }//end calculateOptimalChunkSize()
 
 
     /**

@@ -90,40 +90,6 @@ class RegisterMapper extends QBMapper
     private readonly ObjectEntityMapper $objectEntityMapper;
 
 
-    /**
-     * Constructor for RegisterMapper
-     *
-     * @param IDBConnection       $db                  The database connection
-     * @param SchemaMapper        $schemaMapper        The schema mapper
-     * @param IEventDispatcher    $eventDispatcher     The event dispatcher
-     * @param ObjectEntityMapper  $objectEntityMapper  The object entity mapper
-     * @param OrganisationService $organisationService The organisation service (for multi-tenancy)
-     * @param IUserSession        $userSession         The user session (for multi-tenancy)
-     * @param IGroupManager       $groupManager        The group manager (for RBAC)
-     *
-     * @return void
-     */
-    public function __construct(
-        IDBConnection $db,
-        SchemaMapper $schemaMapper,
-        IEventDispatcher $eventDispatcher,
-        ObjectEntityMapper $objectEntityMapper,
-        OrganisationService $organisationService,
-        IUserSession $userSession,
-        IGroupManager $groupManager
-    ) {
-        parent::__construct($db, 'openregister_registers');
-        $this->schemaMapper       = $schemaMapper;
-        $this->eventDispatcher    = $eventDispatcher;
-        $this->objectEntityMapper = $objectEntityMapper;
-
-        // Initialize multi-tenancy trait dependencies.
-        $this->organisationService = $organisationService;
-        $this->userSession         = $userSession;
-        $this->groupManager        = $groupManager;
-
-    }//end __construct()
-
 
     /**
      * Find a register by its ID, with optional extension for statistics

@@ -318,8 +318,6 @@ class Application extends App implements IBootstrap
                     $container->get('OCP\IURLGenerator'),
                     $container->get(OrganisationService::class),
                     $container->get(ObjectCacheService::class),
-                    $container->get(SchemaCacheService::class),
-                    $container->get(SchemaFacetCacheService::class),
                     $container->get(SettingsService::class),
                     $container->get('Psr\Log\LoggerInterface'),
                     new \Twig\Loader\ArrayLoader([])
@@ -335,8 +333,6 @@ class Application extends App implements IBootstrap
                     $container->get(ObjectEntityMapper::class),
                     $container->get(FileService::class),
                     $container->get(ObjectCacheService::class),
-                    $container->get(SchemaCacheService::class),
-                    $container->get(SchemaFacetCacheService::class),
                     $container->get('OCA\OpenRegister\Db\AuditTrailMapper'),
                     $container->get(SettingsService::class),
                     $container->get('Psr\Log\LoggerInterface')

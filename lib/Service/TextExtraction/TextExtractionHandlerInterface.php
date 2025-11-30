@@ -29,13 +29,6 @@ interface TextExtractionHandlerInterface
 {
 
 
-    /**
-     * Get the source type this handler supports.
-     *
-     * @return string Source type identifier (e.g., 'file', 'object', 'agenda', 'email')
-     */
-    public function getSourceType(): string;
-
 
     /**
      * Extract text from a source.
@@ -65,17 +58,6 @@ interface TextExtractionHandlerInterface
     public function extractText(int $sourceId, array $sourceMeta, bool $force=false): array;
 
 
-    /**
-     * Check if source needs extraction or re-extraction.
-     *
-     * @param int  $sourceId        Source identifier.
-     * @param int  $sourceTimestamp Source modification timestamp.
-     * @param bool $force           Force flag.
-     *
-     * @return bool True if extraction is needed.
-     */
-    public function needsExtraction(int $sourceId, int $sourceTimestamp, bool $force): bool;
-
 
     /**
      * Get source metadata for a given source ID.
@@ -88,15 +70,6 @@ interface TextExtractionHandlerInterface
      */
     public function getSourceMetadata(int $sourceId): array;
 
-
-    /**
-     * Get the timestamp when the source was last modified.
-     *
-     * @param int $sourceId Source identifier.
-     *
-     * @return int Unix timestamp.
-     */
-    public function getSourceTimestamp(int $sourceId): int;
 
 
 }//end interface

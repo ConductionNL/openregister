@@ -72,51 +72,6 @@ class WebhookMapper extends QBMapper
     private IGroupManager $groupManager;
 
 
-    /**
-     * WebhookMapper constructor
-     *
-     * @param IDBConnection       $db                  Database connection
-     * @param OrganisationService $organisationService Organisation service
-     * @param IUserSession        $userSession         User session
-     * @param IGroupManager       $groupManager        Group manager
-     */
-    public function __construct(
-        IDBConnection $db,
-        OrganisationService $organisationService,
-        IUserSession $userSession,
-        IGroupManager $groupManager
-    ) {
-        parent::__construct($db, 'openregister_webhooks', Webhook::class);
-        $this->organisationService = $organisationService;
-        $this->userSession         = $userSession;
-        $this->groupManager        = $groupManager;
-
-    }//end __construct()
-
-
-    /**
-     * Find webhook by UUID
-     *
-     * @param string $uuid Webhook UUID
-     *
-     * @return Webhook
-     * @throws DoesNotExistException
-     * @throws MultipleObjectsReturnedException
-     */
-    public function findByUuid(string $uuid): Webhook
-    {
-        $qb = $this->db->getQueryBuilder();
-
-        $qb->select('*')
-            ->from($this->getTableName())
-            ->where($qb->expr()->eq('uuid', $qb->createNamedParameter($uuid)));
-
-        // Apply organisation filter.
-        $this->applyOrganisationFilter($qb);
-
-        return $this->findEntity($qb);
-
-    }//end findByUuid()
 
 
     /**

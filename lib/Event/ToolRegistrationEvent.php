@@ -105,16 +105,5 @@ class ToolRegistrationEvent extends Event
     }//end registerTool()
 
 
-    /**
-     * Get the registry
-     *
-     * @return ToolRegistry Tool registry instance
-     */
-    public function getRegistry(): ToolRegistry
-    {
-        return $this->registry;
-
-    }//end getRegistry()
-
 
 }//end class

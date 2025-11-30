@@ -32,17 +32,6 @@ class PublishObject
 {
 
 
-    /**
-     * Constructor for PublishObject
-     *
-     * @param ObjectEntityMapper $objectEntityMapper The object entity mapper
-     */
-    public function __construct(
-        private readonly ObjectEntityMapper $objectEntityMapper
-    ) {
-
-    }//end __construct()
-
 
     /**
      * Publish an object

@@ -91,35 +91,6 @@ class ViewMapper extends QBMapper
     private IEventDispatcher $eventDispatcher;
 
 
-    /**
-     * Constructor for ViewMapper
-     *
-     * @param IDBConnection             $db                        The database connection
-     * @param OrganisationService       $organisationService       Organisation service for multi-tenancy
-     * @param IUserSession              $userSession               User session
-     * @param IGroupManager             $groupManager              Group manager for RBAC
-     * @param ConfigurationCacheService $configurationCacheService Configuration cache service
-     * @param IEventDispatcher          $eventDispatcher           Event dispatcher
-     *
-     * @return void
-     */
-    public function __construct(
-        IDBConnection $db,
-        OrganisationService $organisationService,
-        IUserSession $userSession,
-        IGroupManager $groupManager,
-        ConfigurationCacheService $configurationCacheService,
-        IEventDispatcher $eventDispatcher
-    ) {
-        parent::__construct($db, 'openregister_view');
-        $this->organisationService = $organisationService;
-        $this->userSession         = $userSession;
-        $this->groupManager        = $groupManager;
-        $this->configurationCacheService = $configurationCacheService;
-        $this->eventDispatcher           = $eventDispatcher;
-
-    }//end __construct()
-
 
     /**
      * Find a view by its ID
@@ -296,23 +267,6 @@ class ViewMapper extends QBMapper
 
     }//end delete()
 
-
-    /**
-     * Delete a view by ID
-     *
-     * @param int|string $id The ID of the view to delete
-     *
-     * @return void
-     *
-     * @throws \OCP\AppFramework\Db\DoesNotExistException If view not found
-     * @throws \Exception If user doesn't have delete permission
-     */
-    public function deleteById($id): void
-    {
-        $entity = $this->find($id);
-        $this->delete($entity);
-
-    }//end deleteById()
 
 
     /**

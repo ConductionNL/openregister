@@ -60,28 +60,6 @@ class ConfigurationUpdatedEvent extends Event
     }//end __construct()
 
 
-    /**
-     * Get the updated configuration.
-     *
-     * @return Configuration The configuration after update.
-     */
-    public function getNewConfiguration(): Configuration
-    {
-        return $this->newConfiguration;
-
-    }//end getNewConfiguration()
-
-
-    /**
-     * Get the original configuration.
-     *
-     * @return Configuration The configuration before update.
-     */
-    public function getOldConfiguration(): Configuration
-    {
-        return $this->oldConfiguration;
-
-    }//end getOldConfiguration()
 
 
 }//end class

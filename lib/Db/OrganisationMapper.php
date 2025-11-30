@@ -497,28 +497,6 @@ class OrganisationMapper extends QBMapper
     }//end getStatistics()
 
 
-    /**
-     * Remove user from all organisations
-     *
-     * @param string $userId The user ID to remove
-     *
-     * @return int Number of organisations updated
-     */
-    public function removeUserFromAll(string $userId): int
-    {
-        $organisations = $this->findByUserId($userId);
-        $updated       = 0;
-
-        foreach ($organisations as $organisation) {
-            $organisation->removeUser($userId);
-            $this->update($organisation);
-            $updated++;
-        }
-
-        return $updated;
-
-    }//end removeUserFromAll()
-
 
     /**
      * Add user to organisation by UUID
@@ -558,145 +536,10 @@ class OrganisationMapper extends QBMapper
     }//end removeUserFromOrganisation()
 
 
-    /**
-     * Find the default organisation
-     *
-     * @deprecated Use OrganisationService::getDefaultOrganisation() instead
-     *
-     * @return Organisation The default organisation
-     *
-     * @throws DoesNotExistException If no default organisation found
-     */
-    public function findDefault(): Organisation
-    {
-        // Default organisation is now managed via config, not database.
-        throw new \Exception('findDefault() is deprecated. Use OrganisationService::getDefaultOrganisation() instead.');
-
-    }//end findDefault()
 
 
-    /**
-     * Find the default organisation for a specific user
-     *
-     * @param string $userId The user ID
-     *
-     * @return Organisation The default organisation for the user
-     *
-     * @throws DoesNotExistException If no default organisation found for user
-     *
-     * @deprecated Use OrganisationService::getDefaultOrganisation() instead
-     */
-    public function findDefaultForUser(string $userId): Organisation
-    {
-        // Default organisation is now managed via config, not database.
-        throw new \Exception('findDefaultForUser() is deprecated. Use OrganisationService::getDefaultOrganisation() instead.');
-
-    }//end findDefaultForUser()
 
 
-    /**
-     * Create a default organisation
-     *
-     * @deprecated Use OrganisationService::createOrganisation() and setDefaultOrganisationId() instead
-     *
-     * @return Organisation The created default organisation
-     */
-    public function createDefault(): Organisation
-    {
-        // Default organisation is now managed via config, not database.
-        throw new \Exception('createDefault() is deprecated. Use OrganisationService::createOrganisation() and setDefaultOrganisationId() instead.');
-
-    }//end createDefault()
-
-
-    /**
-     * Create an organisation with a specific UUID
-     *
-     * @param string $name        Organisation name
-     * @param string $description Organisation description
-     * @param string $uuid        Specific UUID to use
-     * @param string $owner       Owner user ID
-     * @param array  $users       Array of user IDs
-     * @param bool   $isDefault
-     *
-     * @return Organisation The created organisation
-     *
-     * @throws \Exception If UUID is invalid or already exists
-     */
-    public function createWithUuid(
-        string $name,
-        string $description='',
-        string $uuid='',
-        string $owner='',
-        array $users=[]
-    ): Organisation {
-        // Debug logging.
-        $this->logger->info(
-                '[OrganisationMapper::createWithUuid] Starting with parameters:',
-                [
-                    'name'        => $name,
-                    'description' => $description,
-                    'uuid'        => $uuid,
-                    'owner'       => $owner,
-                    'users'       => $users,
-                ]
-                );
-
-        $organisation = new Organisation();
-        $organisation->setName($name);
-        $organisation->setDescription($description);
-        $organisation->setOwner($owner);
-        $organisation->setUsers($users);
-
-        // Set UUID if provided, otherwise let save() generate one.
-        if ($uuid !== '') {
-            $this->logger->info('[OrganisationMapper::createWithUuid] Setting UUID: '.$uuid);
-            $organisation->setUuid($uuid);
-            $this->logger->info('[OrganisationMapper::createWithUuid] UUID after setting: '.$organisation->getUuid());
-        } else {
-            $this->logger->info('[OrganisationMapper::createWithUuid] No UUID provided, will generate in save()');
-        }
-
-        $this->logger->info('[OrganisationMapper::createWithUuid] About to call save() with UUID: '.$organisation->getUuid());
-        return $this->save($organisation);
-
-    }//end createWithUuid()
-
-
-    /**
-     * Set an organisation as the default and update all entities without organisation
-     *
-     * @param Organisation $organisation The organisation to set as default
-     *
-     * @return bool True if successful
-     */
-    public function setAsDefault(Organisation $organisation): bool
-    {
-        // Default organisation is now managed via config, not database.
-        throw new \Exception('setAsDefault() is deprecated. Use OrganisationService::setDefaultOrganisationId() instead.');
-
-    }//end setAsDefault()
-
-
-    /**
-     * Find organisations updated after a specific datetime
-     *
-     * @param DateTime $cutoffTime The cutoff time to search after
-     *
-     * @return array Array of Organisation entities updated after the cutoff time
-     */
-    public function findUpdatedAfter(\DateTime $cutoffTime): array
-    {
-        $qb = $this->db->getQueryBuilder();
-
-        $qb->select('*')
-            ->from($this->getTableName())
-            ->where($qb->expr()->gt('updated', $qb->createNamedParameter($cutoffTime->format('Y-m-d H:i:s'))))
-            ->orderBy('updated', 'DESC');
-
-        return $this->findEntities($qb);
-
-    }//end findUpdatedAfter()
 
 
     /**

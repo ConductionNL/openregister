@@ -31,13 +31,6 @@ class SchemaPropertyValidatorService
 {
 
     /**
-     * Logger instance for logging operations
-     *
-     * @var LoggerInterface The logger instance
-     */
-    private LoggerInterface $logger;
-
-    /**
      * Valid JSON Schema types
      *
      * @var array<string> List of valid JSON Schema types
@@ -103,17 +96,6 @@ class SchemaPropertyValidatorService
         'semver',
     ];
 
-
-    /**
-     * Constructor
-     *
-     * @param LoggerInterface $logger The logger instance
-     */
-    public function __construct(LoggerInterface $logger)
-    {
-        $this->logger = $logger;
-
-    }//end __construct()
 
 
     /**
@@ -235,28 +217,6 @@ class SchemaPropertyValidatorService
     }//end validateProperties()
 
 
-    /**
-     * Get the list of valid types
-     *
-     * @return array<string> List of valid JSON Schema types
-     */
-    public function getValidTypes(): array
-    {
-        return $this->validTypes;
-
-    }//end getValidTypes()
-
-
-    /**
-     * Get the list of valid string formats
-     *
-     * @return array<string> List of valid string formats
-     */
-    public function getValidStringFormats(): array
-    {
-        return $this->validStringFormats;
-
-    }//end getValidStringFormats()
 
 
     /**

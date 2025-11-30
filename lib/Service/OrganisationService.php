@@ -272,7 +272,6 @@ class OrganisationService
     private function fetchDefaultOrganisationFromDatabase(): Organisation
     {
         // Try to get default organisation UUID from settings.
-        $defaultOrgUuid = null;
         if ($this->settingsService !== null) {
             $defaultOrgUuid = $this->settingsService->getDefaultOrganisationUuid();
         } else {
@@ -628,7 +627,7 @@ class OrganisationService
         }
 
         try {
-            $organisation = $this->organisationMapper->removeUserFromOrganisation(organisationUuid: $organisationUuid, userId: $userId);
+            $this->organisationMapper->removeUserFromOrganisation(organisationUuid: $organisationUuid, userId: $userId);
 
             // If this was the active organisation, clear cache and reset.
             $activeOrg = $this->getActiveOrganisation();
@@ -757,24 +756,6 @@ class OrganisationService
 
     }//end createOrganisation()
 
-
-    /**
-     * Create a new organisation with a specific UUID
-     *
-     * @param string $name           Organisation name
-     * @param string $description    Organisation description
-     * @param string $uuid           Specific UUID to use
-     * @param bool   $addCurrentUser Whether to add current user as owner and member
-     *
-     * @return Organisation The created organisation
-     *
-     * @throws Exception If user not logged in, UUID is invalid, or organisation creation fails
-     */
-    public function createOrganisationWithUuid(string $name, string $description, string $uuid, bool $addCurrentUser=true): Organisation
-    {
-        return $this->createOrganisation(name: $name, description: $description, addCurrentUser: $addCurrentUser, uuid: $uuid);
-
-    }//end createOrganisationWithUuid()
 
 
     /**
@@ -1353,33 +1334,6 @@ class OrganisationService
 
     }//end setDefaultOrganisationId()
 
-
-    /**
-     * Get the default organisation object
-     *
-     * @return Organisation|null The default organisation, or null if not set
-     */
-    public function getDefaultOrganisation(): ?Organisation
-    {
-        $defaultOrgId = $this->getDefaultOrganisationId();
-        if ($defaultOrgId === null) {
-            return null;
-        }
-
-        try {
-            return $this->organisationMapper->findByUuid($defaultOrgId);
-        } catch (\Exception $e) {
-            $this->logger->warning(
-                    'Default organisation not found',
-                    [
-                        'uuid'  => $defaultOrgId,
-                        'error' => $e->getMessage(),
-                    ]
-                    );
-            return null;
-        }
-
-    }//end getDefaultOrganisation()
 
 
     /**
