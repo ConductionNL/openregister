@@ -341,7 +341,7 @@ class SaveObjects
 
         // SINGLE PATH PROCESSING - Process all chunks the same way regardless of size.
         foreach ($chunks as $chunkIndex => $objectsChunk) {
-            $chunkStart = microtime(true);
+            microtime(true);
 
             // Process the current chunk and get the result.
             $chunkResult = $this->processObjectsChunk(objects: $objectsChunk, schemaCache: $globalSchemaCache, rbac: $rbac, multi: $multi, validation: $validation, events: $events);
@@ -361,7 +361,7 @@ class SaveObjects
 // TODO: Renamed from 'skipped'.
 
             // Calculate chunk processing time and speed.
-            $chunkTime  = microtime(true) - $chunkStart;
+            microtime(true) - $chunkStart;
 
             // Store per-chunk statistics for transparency and debugging.
             if (isset($result['chunkStatistics']) === false) {
@@ -668,7 +668,7 @@ class SaveObjects
      */
     private function prepareObjectsForBulkSave(array $objects): array
     {
-        $startTime   = microtime(true);
+        microtime(true);
 
 
         // Early return for empty arrays.
@@ -836,7 +836,7 @@ class SaveObjects
         $this->handleBulkInverseRelationsWithAnalysis(preparedObjects: $preparedObjects, schemaAnalysis: $schemaAnalysis);
 
         // Performance logging.
-        $endTime      = microtime(true);
+        microtime(true);
 
 
         // Return prepared objects, schema cache, and any invalid objects found during preparation.

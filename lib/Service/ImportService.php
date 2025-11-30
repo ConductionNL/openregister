@@ -477,7 +477,7 @@ class ImportService
 
         // REMOVED ERROR SUPPRESSION: Let bulk save errors bubble up immediately!
 
-        $startTime = microtime(true);
+        microtime(true);
 
         // Get the active sheet.
         $sheet = $spreadsheet->getActiveSheet();
@@ -570,7 +570,7 @@ class ImportService
 
         // NO ERROR SUPPRESSION: Row parsing errors will bubble up immediately - no need to collect them.
 
-        $totalImportTime = microtime(true) - $startTime;
+        microtime(true) - $startTime;
 
         return $summary;
 

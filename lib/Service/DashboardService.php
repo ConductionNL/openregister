@@ -38,8 +38,40 @@ use Psr\Log\LoggerInterface;
  */
 class DashboardService
 {
+    /**
+     * Object entity mapper
+     *
+     * @var ObjectEntityMapper
+     */
+    private ObjectEntityMapper $objectMapper;
 
+    /**
+     * Audit trail mapper
+     *
+     * @var AuditTrailMapper
+     */
+    private AuditTrailMapper $auditTrailMapper;
 
+    /**
+     * Webhook log mapper
+     *
+     * @var WebhookLogMapper
+     */
+    private WebhookLogMapper $webhookLogMapper;
+
+    /**
+     * Register mapper
+     *
+     * @var RegisterMapper
+     */
+    private RegisterMapper $registerMapper;
+
+    /**
+     * Logger
+     *
+     * @var LoggerInterface
+     */
+    private LoggerInterface $logger;
 
     /**
      * Get statistics for a register/schema combination

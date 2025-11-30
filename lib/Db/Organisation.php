@@ -207,6 +207,16 @@ class Organisation extends Entity implements JsonSerializable
      */
     protected ?array $children = null;
 
+    /**
+     * Array of role definitions for this organisation
+     *
+     * Custom roles/groups for role-based access control (RBAC).
+     * This is typically populated from the authorization field or computed on-demand.
+     *
+     * @var array|null Array of role definitions
+     */
+    protected ?array $roles = null;
+
 
     /**
      * Organisation constructor
