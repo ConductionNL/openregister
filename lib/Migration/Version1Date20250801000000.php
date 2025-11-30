@@ -116,24 +116,28 @@ class Version1Date20250801000000 extends SimpleMigrationStep
 
             // Add slug field (URL-friendly identifier).
             if ($table->hasColumn('slug') === false) {
-                $table->addColumn('slug', Types::STRING, [
-                    'notnull' => false,
-                    'length' => 255
-                ]);
+                $table->addColumn(
+                    'slug',
+                    Types::STRING,
+                    [
+                        'notnull' => false,
+                        'length'  => 255,
+                    ]
+                );
                 $output->info(message: 'Added slug column to organisations table');
-            }
+            }//end if
 
             // Add unique constraints for uuid and slug.
             if ($table->hasColumn('uuid') === true && $table->hasIndex('organisations_uuid_unique') === false) {
                 $table->addUniqueIndex(['uuid'], 'organisations_uuid_unique');
                 $output->info(message: 'Added unique constraint on uuid column');
-            }
+            }//end if
 
             if ($table->hasColumn('slug') === true && $table->hasIndex('organisations_slug_unique') === false) {
                 $table->addUniqueIndex(['slug'], 'organisations_slug_unique');
                 $output->info(message: 'Added unique constraint on slug column');
-            }
-        }
+            }//end if
+        }//end if
 
         return $schema;
 
@@ -154,4 +158,6 @@ class Version1Date20250801000000 extends SimpleMigrationStep
         // No post-schema changes required.
 
     }//end postSchemaChange()
-}
+
+
+}//end class

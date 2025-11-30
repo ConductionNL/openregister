@@ -67,6 +67,7 @@ class Version1Date20250102000001 extends SimpleMigrationStep
     public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
         // No pre-schema changes required.
+
     }//end preSchemaChange()
 
 
@@ -104,6 +105,7 @@ class Version1Date20250102000001 extends SimpleMigrationStep
         }
 
         return $schema;
+
     }//end changeSchema()
 
 
@@ -122,5 +124,6 @@ class Version1Date20250102000001 extends SimpleMigrationStep
         $output->info(message: 'All existing organisations are now active by default');
 
     }//end postSchemaChange()
-}//end class
 
+
+}//end class
