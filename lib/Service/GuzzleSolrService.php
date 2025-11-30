@@ -1970,7 +1970,7 @@ class GuzzleSolrService
      *
      * @return string|null SOLR field name (clean, no suffixes - field types defined in SOLR setup)
      */
-    private function mapFieldToSolrType(string $fieldName, string $fieldType, $fieldValue): ?string
+    private function mapFieldToSolrType(string $fieldName, string $_fieldType, $_fieldValue): ?string
     {
         // Avoid conflicts with core SOLR fields and self_ metadata fields.
         if (in_array($fieldName, ['id', 'tenant_id', '_version_']) === true || str_starts_with($fieldName, 'self_') === true) {
@@ -2198,7 +2198,7 @@ class GuzzleSolrService
      *
      * @return void
      */
-    private function applyAdditionalFilters(array &$solrQuery, bool $rbac, bool $multi, bool $published, bool $deleted): void
+    private function applyAdditionalFilters(array &$solrQuery, bool $rbac, bool $_multi, bool $_published, bool $_deleted): void
     {
         $filters = $solrQuery['fq'] ?? [];
 
@@ -5392,7 +5392,7 @@ class GuzzleSolrService
      * @param  array                                   $schemaIds    Optional array of schema IDs to filter by
      * @return array Array of ObjectEntity objects with searchable schemas
      */
-    private function fetchSearchableObjects(\OCA\OpenRegister\Db\ObjectEntityMapper $objectMapper, int $limit, int $offset, array $schemaIds=[]): array
+    private function fetchSearchableObjects(\OCA\OpenRegister\Db\ObjectEntityMapper $_objectMapper, int $_limit, int $_offset, array $_schemaIds=[]): array
     {
         try {
             // Use direct database query to fetch objects with searchable schemas.
@@ -7097,7 +7097,7 @@ class GuzzleSolrService
      * @param  array $schemaIds  Optional array of schema IDs to filter by (empty = all schemas)
      * @return array Memory usage prediction
      */
-    private function predictWarmupMemoryUsage(int $maxObjects, array $schemaIds=[]): array
+    private function predictWarmupMemoryUsage(int $_maxObjects, array $_schemaIds=[]): array
     {
         try {
             // Get current memory info.
@@ -7630,7 +7630,7 @@ class GuzzleSolrService
      * @param  array $originalQuery The original OpenRegister query
      * @return array Contextual facet data with both facetable fields and extended data
      */
-    private function getContextualFacetsFromSameQuery(array $solrQuery, array $originalQuery): array
+    private function getContextualFacetsFromSameQuery(array $solrQuery, array $_originalQuery): array
     {
 
         $collectionName = $this->getActiveCollectionName();
@@ -7865,7 +7865,7 @@ class GuzzleSolrService
      * @param  array $searchFacets Facets from current search results
      * @return array Processed contextual facet data
      */
-    private function processContextualFacetsFromSearchResults(array $searchFacets): array
+    private function processContextualFacetsFromSearchResults(array $_searchFacets): array
     {
         // For now, return empty structure - we'll implement this if needed.
         // Most of the time we'll use the optimized call instead.
@@ -8409,7 +8409,7 @@ class GuzzleSolrService
      * @param  string $fieldName Field name
      * @return array Facet data with custom configuration applied
      */
-    private function applyFacetConfiguration(array $facetData, string $fieldName): array
+    private function applyFacetConfiguration(array $_facetData, string $fieldName): array
     {
         try {
             // Get facet configuration from settings service.

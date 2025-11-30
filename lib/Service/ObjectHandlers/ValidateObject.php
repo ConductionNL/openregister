@@ -106,7 +106,7 @@ class ValidateObject
      *
      * @return object The processed schema object with resolved references
      */
-    private function preprocessSchemaReferences(object $schemaObject, array $visited=[], bool $skipUuidTransformed=false): object
+    private function preprocessSchemaReferences(object $schemaObject, array $visited=[], bool $_skipUuidTransformed=false): object
     {
         // Clone the schema object to avoid modifying the original.
         $processedSchema = json_decode(json_encode($schemaObject));
@@ -657,7 +657,7 @@ class ValidateObject
      *
      * @return object The cleaned schema object
      */
-    private function cleanSchemaForValidation(object $schemaObject, bool $isArrayItems=false): object
+    private function cleanSchemaForValidation(object $schemaObject, bool $_isArrayItems=false): object
     {
 
         // Clone the schema object to avoid modifying the original.

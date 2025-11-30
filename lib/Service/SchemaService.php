@@ -155,7 +155,7 @@ class SchemaService
      *
      * @return array Analysis results with discovered properties and statistics
      */
-    private function analyzeObjectProperties(array $objects, array $existingProperties=[]): array
+    private function analyzeObjectProperties(array $objects, array $_existingProperties=[]): array
     {
         $discoveredProperties = [];
         $usageStats           = [];
@@ -809,7 +809,7 @@ class SchemaService
      *
      * @return array Array of improvement suggestions for existing properties
      */
-    private function analyzeExistingProperties(array $existingProperties, array $discoveredProperties, array $usageStats): array
+    private function analyzeExistingProperties(array $existingProperties, array $discoveredProperties, array $_usageStats): array
     {
         $improvements = [];
 

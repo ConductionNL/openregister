@@ -1866,7 +1866,7 @@ class SaveObject
         Schema $schema,
         array $data,
         array $selfData,
-        bool $multi
+        bool $_multi
     ): ObjectEntity {
         // Set @self metadata properties.
         $this->setSelfMetadata(objectEntity: $objectEntity, selfData: $selfData, data: $data);

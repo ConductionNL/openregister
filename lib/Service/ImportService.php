@@ -1067,7 +1067,7 @@ class ImportService
         int $endRow,
         ?Register $register,
         ?Schema $schema,
-        array $schemaProperties
+        array $_schemaProperties
     ): array {
         $chunkSummary = [
             'found'     => 0,
@@ -1178,7 +1178,7 @@ class ImportService
      *
      * @return array<string, mixed> Processing result
      */
-    private function processRow(array $rowData, Register $register, Schema $schema, int $rowIndex): array
+    private function processRow(array $rowData, Register $register, Schema $schema, int $_rowIndex): array
     {
         // NO ERROR SUPPRESSION: Let processRow errors bubble up immediately!
         // Separate regular properties from system properties starting with _ or @self.
@@ -1480,7 +1480,7 @@ class ImportService
      *
      * @return void
      */
-    private function validateObjectProperties(array $objectData, string $schemaId): void
+    private function validateObjectProperties(array $objectData, string $_schemaId): void
     {
         // Check for invalid properties (common mistakes).
         $invalidProperties = ['data', 'content', 'body', 'payload'];

@@ -1310,7 +1310,7 @@ class MagicMapper
      *
      * @return void
      */
-    private function createTableIndexes(string $tableName, Register $register, Schema $schema): void
+    private function createTableIndexes(string $tableName, Register $_register, Schema $_schema): void
     {
         try {
             // Create unique index on UUID.
@@ -1630,7 +1630,7 @@ class MagicMapper
      *
      * @return ObjectEntity|null ObjectEntity or null if conversion fails
      */
-    private function convertRowToObjectEntity(array $row, Register $register, Schema $schema): ?ObjectEntity
+    private function convertRowToObjectEntity(array $row, Register $_register, Schema $_schema): ?ObjectEntity
     {
         try {
             $objectEntity = new ObjectEntity();

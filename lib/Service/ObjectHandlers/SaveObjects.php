@@ -1125,7 +1125,7 @@ class SaveObjects
      *
      * @return array Processing result for this chunk with bulk operation statistics
      */
-    private function processObjectsChunk(array $objects, array $schemaCache, bool $rbac, bool $multi, bool $validation, bool $events): array
+    private function processObjectsChunk(array $objects, array $schemaCache, bool $_rbac, bool $_multi, bool $_validation, bool $_events): array
     {
         $startTime = microtime(true);
 
@@ -1859,7 +1859,7 @@ class SaveObjects
      *
      * @return array Array of ObjectEntity objects representing saved objects
      */
-    private function reconstructSavedObjects(array $insertObjects, array $updateObjects, array $savedObjectIds, array $existingObjects): array
+    private function reconstructSavedObjects(array $insertObjects, array $updateObjects, array $_savedObjectIds, array $_existingObjects): array
     {
         $savedObjects = [];
 

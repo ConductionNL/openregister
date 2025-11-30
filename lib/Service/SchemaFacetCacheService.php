@@ -606,7 +606,7 @@ class SchemaFacetCacheService
      *
      * @psalm-return list{0: 'date_histogram'|'terms', 1?: 'range'}
      */
-    private function determineFacetTypesFromProperty(string $type, string $format): array
+    private function determineFacetTypesFromProperty(string $type, string $_format): array
     {
         switch ($type) {
             case 'string':

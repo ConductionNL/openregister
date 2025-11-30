@@ -506,7 +506,7 @@ class RenderObject
      * @psalm-return   mixed
      * @phpstan-return mixed
      */
-    private function hydrateFileProperty($propertyValue, array $propertyConfig, string $propertyName)
+    private function hydrateFileProperty($propertyValue, array $propertyConfig, string $_propertyName)
     {
         $isArrayProperty = ($propertyConfig['type'] ?? '') === 'array';
 
@@ -1137,13 +1137,13 @@ class RenderObject
     private function handleInversedProperties(
         ObjectEntity $entity,
         array $objectData,
-        int $depth,
-        ?array $filter=[],
-        ?array $fields=[],
-        ?array $unset=[],
-        ?array $registers=[],
-        ?array $schemas=[],
-        ?array $objects=[]
+        int $_depth,
+        ?array $_filter=[],
+        ?array $_fields=[],
+        ?array $_unset=[],
+        ?array $_registers=[],
+        ?array $_schemas=[],
+        ?array $_objects=[]
     ): array {
         // Get the schema for this object.
         $schema = $this->getSchema($entity->getSchema());
