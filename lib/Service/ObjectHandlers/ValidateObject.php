@@ -1085,6 +1085,8 @@ class ValidateObject
      * @return string The schema content in JSON format.
      *
      * @throws GuzzleException If there is an error during schema fetching.
+     *
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function resolveSchema(Uri $uri): string
     {

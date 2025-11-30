@@ -92,6 +92,8 @@ class SearchTrailService
      * @return SearchTrail The created search trail entity
      *
      * @throws Exception If search trail creation fails
+     *
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function createSearchTrail(
         array $query,
@@ -139,6 +141,8 @@ class SearchTrailService
      *              'Self-clearing: no expired entries to delete',
      *     cleanup_date?: string
      * }
+     *
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function clearExpiredSearchTrails(): array
     {

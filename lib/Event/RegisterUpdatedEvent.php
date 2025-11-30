@@ -32,6 +32,8 @@ class RegisterUpdatedEvent extends Event
      * The updated register state
      *
      * @var Register The register after update
+     *
+     * @psalm-suppress UnusedProperty
      */
     private Register $newRegister;
 
@@ -39,6 +41,8 @@ class RegisterUpdatedEvent extends Event
      * The previous register state
      *
      * @var Register The register before update
+     *
+     * @psalm-suppress UnusedProperty
      */
     private Register $oldRegister;
 

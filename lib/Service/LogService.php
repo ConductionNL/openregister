@@ -48,6 +48,8 @@ class LogService
      * Register mapper
      *
      * @var RegisterMapper
+     *
+     * @psalm-suppress UnusedProperty
      */
     private RegisterMapper $registerMapper;
 
@@ -55,6 +57,8 @@ class LogService
      * Schema mapper
      *
      * @var SchemaMapper
+     *
+     * @psalm-suppress UnusedProperty
      */
     private SchemaMapper $schemaMapper;
 

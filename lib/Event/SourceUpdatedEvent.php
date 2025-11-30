@@ -32,6 +32,8 @@ class SourceUpdatedEvent extends Event
      * The updated source state.
      *
      * @var Source The source after update.
+     *
+     * @psalm-suppress UnusedProperty
      */
     private Source $newSource;
 
@@ -39,6 +41,8 @@ class SourceUpdatedEvent extends Event
      * The previous source state.
      *
      * @var Source The source before update.
+     *
+     * @psalm-suppress UnusedProperty
      */
     private Source $oldSource;
 

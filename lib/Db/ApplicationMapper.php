@@ -50,6 +50,8 @@ use OCP\IUserSession;
  * @method list<Application> findEntities(IQueryBuilder $query)
  *
  * @template-extends QBMapper<Application>
+ *
+ * @psalm-suppress PossiblyUnusedMethod
  */
 class ApplicationMapper extends QBMapper
 {

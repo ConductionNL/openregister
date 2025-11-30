@@ -876,6 +876,8 @@ class VectorEmbeddingService
      * @return int The ID of the inserted vector
      *
      * @throws \Exception If storage fails
+     *
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function storeVector(
         string $entityType,

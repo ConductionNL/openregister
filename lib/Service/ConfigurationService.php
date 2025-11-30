@@ -1678,6 +1678,8 @@ class ConfigurationService
      * @throws Exception If file cannot be read or import fails
      *
      * @since 0.2.10
+     *
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function importFromFilePath(string $appId, string $filePath, string $version, bool $force=false): array
     {

@@ -79,6 +79,8 @@ class GuzzleSolrService
      * Cached SOLR field types to avoid repeated API calls
      *
      * @var array|null
+     *
+     * @psalm-suppress UnusedProperty
      */
     private ?array $cachedSolrFieldTypes = null;
 
@@ -136,6 +138,9 @@ class GuzzleSolrService
 
         private readonly ?SchemaMapper $schemaMapper=null,
         private readonly ?RegisterMapper $registerMapper=null,
+        /**
+         * @psalm-suppress UnusedProperty
+         */
         private readonly ?OrganisationService $organisationService=null,
         private readonly ?OrganisationMapper $organisationMapper=null,
     ) {

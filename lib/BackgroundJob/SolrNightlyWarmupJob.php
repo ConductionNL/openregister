@@ -205,6 +205,8 @@ class SolrNightlyWarmupJob extends TimedJob
      * @param float $executionTime Total execution time in seconds
      *
      * @return float Objects indexed per second
+     *
+     * @psalm-suppress UnusedMethod
      */
     private function calculateObjectsPerSecond(array $result, float $executionTime): float
     {
@@ -226,6 +228,8 @@ class SolrNightlyWarmupJob extends TimedJob
      * @param array $operations Operations array
      *
      * @return int Number of successful warmup queries
+     *
+     * @psalm-suppress UnusedMethod
      */
     private function countSuccessfulWarmupQueries(array $operations): int
     {
@@ -249,6 +253,8 @@ class SolrNightlyWarmupJob extends TimedJob
      * @param array $result Warmup result
      *
      * @return float Efficiency percentage
+     *
+     * @psalm-suppress UnusedMethod
      */
     private function calculateWarmupEfficiency(array $result): float
     {

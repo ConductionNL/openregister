@@ -66,8 +66,17 @@ class MagicRbacHandler
      * @param LoggerInterface $logger       Logger for debugging and error reporting
      */
     public function __construct(
+        /**
+         * @psalm-suppress UnusedProperty
+         */
         private readonly IUserSession $userSession,
+        /**
+         * @psalm-suppress UnusedProperty
+         */
         private readonly IGroupManager $groupManager,
+        /**
+         * @psalm-suppress UnusedProperty
+         */
         private readonly IUserManager $userManager,
         private readonly IAppConfig $appConfig,
 

@@ -341,6 +341,8 @@ class SolrSchemaService
      * @param string $similarity Similarity function: 'cosine', 'dot_product', or 'euclidean'
      *
      * @return bool Success status
+     *
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function ensureVectorFieldType(
         string $collection,

@@ -72,6 +72,8 @@ use InvalidArgumentException;
  * @method void setUpdatedAt(?DateTime $updatedAt)
  * @method bool|null getActive()
  * @method void setActive(?bool $active)
+ *
+ * @psalm-suppress PossiblyUnusedMethod
  */
 class AuthorizationException extends Entity implements JsonSerializable
 {

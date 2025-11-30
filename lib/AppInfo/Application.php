@@ -17,6 +17,8 @@
  * @version GIT: <git-id>
  *
  * @link https://OpenRegister.app
+ *
+ * @psalm-suppress UnusedClass
  */
 
 declare(strict_types=1);
