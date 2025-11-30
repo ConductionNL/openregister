@@ -147,7 +147,12 @@ class ConfigurationService
      */
     private ObjectService $objectService;
 
-
+    /**
+     * Application data path
+     *
+     * @var string The application data path
+     */
+    private string $appDataPath;
 
     /**
      * Attempts to retrieve the OpenConnector service from the container.
