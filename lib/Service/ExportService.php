@@ -78,9 +78,9 @@ class ExportService
      * @param ObjectService      $objectService      The object service
      */
     public function __construct(
-        ObjectEntityMapper $objectEntityMapper,
+        ObjectEntityMapper $_objectEntityMapper,
         RegisterMapper $registerMapper,
-        IUserManager $userManager,
+        IUserManager $_userManager,
         IGroupManager $groupManager,
         ObjectService $objectService
     ) {

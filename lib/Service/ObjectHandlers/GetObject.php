@@ -92,7 +92,7 @@ class GetObject
         string $id,
         ?Register $register=null,
         ?Schema $schema=null,
-        ?array $extend=[],
+        ?array $_extend=[],
         bool $files=false,
         bool $rbac=true,
         bool $multi=true
@@ -136,7 +136,7 @@ class GetObject
         string $id,
         ?Register $register=null,
         ?Schema $schema=null,
-        ?array $extend=[],
+        ?array $_extend=[],
         bool $files=false,
         bool $rbac=true,
         bool $multi=true
@@ -181,7 +181,7 @@ class GetObject
         array $filters=[],
         array $sort=[],
         ?string $search=null,
-        ?array $extend=[],
+        ?array $_extend=[],
         bool $files=false,
         ?string $uses=null,
         ?Register $register=null,
@@ -276,8 +276,8 @@ class GetObject
         ?array $filters=[],
         ?array $sort=['created' => 'DESC'],
         ?string $search=null,
-        bool $rbac=true,
-        bool $multi=true
+        bool $_rbac=true,
+        bool $_multi=true
     ): array {
         // Ensure object ID is always included in filters.
         $filters['object'] = $object->getId();
