@@ -104,13 +104,11 @@ use Symfony\Component\Uid\Uuid;
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
- * @author   Conduction Development Team <info@conduction.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * @version GIT: <git_id>
- *
- * @link https://www.OpenRegister.app
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version   GIT: <git_id>
+ * @link      https://www.OpenRegister.app
  *
  * @since 1.0.0 Initial ObjectService implementation
  * @since 1.5.0 Added bulk operations and performance optimizations
@@ -158,13 +156,13 @@ class ObjectService
     /**
      * Constructor for ObjectService.
      *
-     * @param DeleteObject            $deleteHandler            Handler for object deletion.
-     * @param GetObject               $getHandler              Handler for object retrieval.
+     * @param DeleteObject            $deleteHandler           Handler for object deletion.
+     * @param GetObject               $getHandler             Handler for object retrieval.
      * @param RenderObject            $renderHandler           Handler for object rendering.
      * @param SaveObject              $saveHandler             Handler for individual object saving.
      * @param SaveObjects             $saveObjectsHandler      Handler for bulk object saving operations.
-     * @param ValidateObject          $validateHandler        Handler for object validation.
-     * @param PublishObject           $publishHandler         Handler for object publication.
+     * @param ValidateObject          $validateHandler         Handler for object validation.
+     * @param PublishObject           $publishHandler          Handler for object publication.
      * @param DepublishObject         $depublishHandler        Handler for object depublication.
      * @param RegisterMapper          $registerMapper          Mapper for register operations.
      * @param SchemaMapper            $schemaMapper            Mapper for schema operations.
@@ -231,8 +229,8 @@ class ObjectService
      *
      * @param string $appId Unique identifier for the external app
      *
-     * @phpstan-param  string $appId
-     * @psalm-param    string $appId
+     * @phpstan-param string $appId
+     * @psalm-param   string $appId
      *
      * @return self For method chaining
      *
