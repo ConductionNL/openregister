@@ -71,16 +71,16 @@ class OptimizedFacetHandler
      * @param array $facetConfig Configuration for multiple facets
      * @param array $baseQuery   Base query filters to apply
      *
-     * @phpstan-param  array<string, array> $facetConfig
-     * @phpstan-param  array<string, mixed> $baseQuery
-     * @psalm-param    array<string, array> $facetConfig
-     * @psalm-param    array<string, mixed> $baseQuery
+     * @phpstan-param array<string, array> $facetConfig
+     * @phpstan-param array<string, mixed> $baseQuery
+     * @psalm-param   array<string, array> $facetConfig
+     * @psalm-param   array<string, mixed> $baseQuery
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
      * @return array Combined facet results
      */
-    public function getBatchedFacets(array $facetConfig, array $baseQuery =[]): array
+    public function getBatchedFacets(array $facetConfig, array $baseQuery=[]): array
     {
         $results = [];
 
@@ -92,8 +92,8 @@ class OptimizedFacetHandler
         }
 
         // Separate metadata facets from JSON field facets.
-        $metadataFacets = [];
-        $jsonFieldFacets = [];
+        $metadataFacets   = [];
+        $jsonFieldFacets  = [];
 
         foreach ($facetConfig as $facetName => $config) {
             if ($facetName === '@self' && is_array($config) === true) {
