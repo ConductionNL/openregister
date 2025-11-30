@@ -100,6 +100,89 @@ use Psr\Log\LoggerInterface;
  */
 class SettingsService
 {
+    /**
+     * Configuration service
+     *
+     * @var IConfig
+     */
+    private IConfig $config;
+
+    /**
+     * Audit trail mapper
+     *
+     * @var AuditTrailMapper
+     */
+    private AuditTrailMapper $auditTrailMapper;
+
+    /**
+     * Cache factory
+     *
+     * @var ICacheFactory
+     */
+    private ICacheFactory $cacheFactory;
+
+    /**
+     * Container
+     *
+     * @var ContainerInterface
+     */
+    private ContainerInterface $container;
+
+    /**
+     * Group manager
+     *
+     * @var IGroupManager
+     */
+    private IGroupManager $groupManager;
+
+    /**
+     * Logger
+     *
+     * @var LoggerInterface
+     */
+    private LoggerInterface $logger;
+
+    /**
+     * Object entity mapper
+     *
+     * @var ObjectEntityMapper
+     */
+    private ObjectEntityMapper $objectEntityMapper;
+
+    /**
+     * Organisation mapper
+     *
+     * @var OrganisationMapper
+     */
+    private OrganisationMapper $organisationMapper;
+
+    /**
+     * Schema cache service
+     *
+     * @var SchemaCacheService
+     */
+    private SchemaCacheService $schemaCacheService;
+
+    /**
+     * Schema facet cache service
+     *
+     * @var SchemaFacetCacheService
+     */
+    private SchemaFacetCacheService $schemaFacetCacheService;
+
+    /**
+     * Search trail mapper
+     *
+     * @var SearchTrailMapper
+     */
+    private SearchTrailMapper $searchTrailMapper;
+
+    /**
+     * User manager
+     *
+     * @var IUserManager
+     */
+    private IUserManager $userManager;
 
     /**
      * This property holds the name of the application, which is used for identification and configuration purposes.

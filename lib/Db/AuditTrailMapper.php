@@ -48,6 +48,17 @@ use Symfony\Component\Uid\Uuid;
  */
 class AuditTrailMapper extends QBMapper
 {
+    /**
+     * Constructor for the AuditTrailMapper
+     *
+     * @param IDBConnection      $db                 The database connection
+     * @param ObjectEntityMapper $objectEntityMapper The object entity mapper
+     */
+    public function __construct(IDBConnection $db, ObjectEntityMapper $objectEntityMapper)
+    {
+        parent::__construct($db, 'openregister_audit_trails', AuditTrail::class);
+        $this->objectEntityMapper = $objectEntityMapper;
+    }
 
     /**
      * The object entity mapper instance

@@ -83,6 +83,97 @@ use Psr\Log\LoggerInterface;
 class FileService
 {
     /**
+     * Configuration service
+     *
+     * @var IConfig
+     */
+    private IConfig $config;
+
+    /**
+     * File mapper
+     *
+     * @var FileMapper
+     */
+    private FileMapper $fileMapper;
+
+    /**
+     * Group manager
+     *
+     * @var IGroupManager
+     */
+    private IGroupManager $groupManager;
+
+    /**
+     * Logger
+     *
+     * @var LoggerInterface
+     */
+    private LoggerInterface $logger;
+
+    /**
+     * Object entity mapper
+     *
+     * @var ObjectEntityMapper
+     */
+    private ObjectEntityMapper $objectEntityMapper;
+
+    /**
+     * Register mapper
+     *
+     * @var RegisterMapper
+     */
+    private RegisterMapper $registerMapper;
+
+    /**
+     * Root folder
+     *
+     * @var IRootFolder
+     */
+    private IRootFolder $rootFolder;
+
+    /**
+     * Share manager
+     *
+     * @var IManager
+     */
+    private IManager $shareManager;
+
+    /**
+     * System tag manager
+     *
+     * @var ISystemTagManager
+     */
+    private ISystemTagManager $systemTagManager;
+
+    /**
+     * System tag mapper
+     *
+     * @var ISystemTagObjectMapper
+     */
+    private ISystemTagObjectMapper $systemTagMapper;
+
+    /**
+     * URL generator
+     *
+     * @var IURLGenerator
+     */
+    private IURLGenerator $urlGenerator;
+
+    /**
+     * User manager
+     *
+     * @var IUserManager
+     */
+    private IUserManager $userManager;
+
+    /**
+     * User session
+     *
+     * @var IUserSession
+     */
+    private IUserSession $userSession;
+
+    /**
      * Root folder name for all OpenRegister files.
      *
      * @var        string

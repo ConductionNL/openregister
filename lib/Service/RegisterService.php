@@ -36,8 +36,33 @@ use Psr\Log\LoggerInterface;
  */
 class RegisterService
 {
+    /**
+     * Register mapper
+     *
+     * @var RegisterMapper
+     */
+    private RegisterMapper $registerMapper;
 
+    /**
+     * File service
+     *
+     * @var FileService
+     */
+    private FileService $fileService;
 
+    /**
+     * Organisation service
+     *
+     * @var OrganisationService
+     */
+    private OrganisationService $organisationService;
+
+    /**
+     * Logger
+     *
+     * @var LoggerInterface
+     */
+    private LoggerInterface $logger;
 
     /**
      * Find a register by ID with optional extensions.

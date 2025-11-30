@@ -30,18 +30,33 @@ use OCA\OpenRegister\Db\SchemaMapper;
  */
 class LogService
 {
-
+    /**
+     * Audit trail mapper
+     *
+     * @var AuditTrailMapper
+     */
+    private AuditTrailMapper $auditTrailMapper;
 
     /**
-     * Constructor for LogService
+     * Object entity mapper
      *
-     * @param AuditTrailMapper   $auditTrailMapper   The audit trail mapper
-     * @param ObjectEntityMapper $objectEntityMapper The object entity mapper
-     * @param RegisterMapper     $registerMapper     The register mapper
-     * @param SchemaMapper       $schemaMapper       The schema mapper
+     * @var ObjectEntityMapper
      */
+    private ObjectEntityMapper $objectEntityMapper;
 
+    /**
+     * Register mapper
+     *
+     * @var RegisterMapper
+     */
+    private RegisterMapper $registerMapper;
 
+    /**
+     * Schema mapper
+     *
+     * @var SchemaMapper
+     */
+    private SchemaMapper $schemaMapper;
 
     /**
      * Get logs for an object

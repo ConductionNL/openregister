@@ -51,6 +51,26 @@ class EndpointMapper extends QBMapper
     use MultiTenancyTrait;
 
     /**
+     * EndpointMapper constructor
+     *
+     * @param IDBConnection       $db                  Database connection
+     * @param OrganisationService $organisationService Organisation service
+     * @param IUserSession        $userSession         User session
+     * @param IGroupManager       $groupManager        Group manager
+     */
+    public function __construct(
+        IDBConnection $db,
+        OrganisationService $organisationService,
+        IUserSession $userSession,
+        IGroupManager $groupManager
+    ) {
+        parent::__construct($db, 'openregister_endpoints', Endpoint::class);
+        $this->organisationService = $organisationService;
+        $this->userSession         = $userSession;
+        $this->groupManager        = $groupManager;
+    }
+
+    /**
      * Organisation service for multi-tenancy
      *
      * @var OrganisationService
