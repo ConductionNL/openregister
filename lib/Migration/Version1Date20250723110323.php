@@ -119,6 +119,7 @@ class Version1Date20250723110323 extends SimpleMigrationStep
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
         // No post-schema changes required.
+
     }//end postSchemaChange()
 
 

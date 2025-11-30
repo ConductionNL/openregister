@@ -92,13 +92,13 @@ class OptimizedFacetHandler
         }
 
         // Separate metadata facets from JSON field facets.
-        $metadataFacets   = [];
-        $jsonFieldFacets  = [];
+        $metadataFacets  = [];
+        $jsonFieldFacets = [];
 
         foreach ($facetConfig as $facetName => $config) {
             if ($facetName === '@self' && is_array($config) === true) {
                 $metadataFacets = $config;
-            } elseif ($facetName !== '@self') {
+            } else if ($facetName !== '@self') {
                 $jsonFieldFacets[$facetName] = $config;
             }
         }
@@ -115,6 +115,7 @@ class OptimizedFacetHandler
             if ($type === 'terms') {
                 $results[$fieldName] = $this->getOptimizedJsonTermsFacet($fieldName, $baseQuery);
             }
+
             // Add other facet types as needed.
         }
 
@@ -154,6 +155,7 @@ class OptimizedFacetHandler
             if ($type === 'terms') {
                 $results[$field] = $this->getOptimizedMetadataTermsFacet($field, $baseQuery);
             }
+
             // Add other facet types as needed (date_histogram, range).
         }
 
@@ -193,15 +195,14 @@ class OptimizedFacetHandler
             ->orderBy('doc_count', 'DESC')
             ->setMaxResults(100);
         // Limit results for performance.
-
         // Apply optimized base filters.
         $this->applyOptimizedBaseFilters($queryBuilder, $baseQuery);
 
-        $result = $queryBuilder->executeQuery();
+        $result  = $queryBuilder->executeQuery();
         $buckets = [];
 
         while (($row = $result->fetch()) !== false) {
-            $key = $row[$field];
+            $key   = $row[$field];
             $label = $this->getFieldLabel($field, $key);
 
             $buckets[] = [
@@ -240,7 +241,7 @@ class OptimizedFacetHandler
     private function getOptimizedJsonTermsFacet(string $field, array $baseQuery): array
     {
         $queryBuilder = $this->db->getQueryBuilder();
-        $jsonPath = '$.' . $field;
+        $jsonPath     = '$'.$field;
 
         // Check if we should skip this facet due to too much data.
         $estimatedRows = $this->estimateRowCount($baseQuery);
@@ -255,24 +256,23 @@ class OptimizedFacetHandler
 
         // Use optimized JSON query with limits.
         $queryBuilder->selectAlias(
-                $queryBuilder->createFunction("JSON_UNQUOTE(JSON_EXTRACT(object, " . $queryBuilder->createNamedParameter($jsonPath) . "))"),
+                $queryBuilder->createFunction("JSON_UNQUOTE(JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath)."))"),
                 'field_value'
             )
             ->selectAlias($queryBuilder->createFunction('COUNT(*)'), 'doc_count')
             ->from('openregister_objects')
             ->where(
                 $queryBuilder->expr()->isNotNull(
-                    $queryBuilder->createFunction("JSON_EXTRACT(object, " . $queryBuilder->createNamedParameter($jsonPath) . ")")
+                    $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
                 )
             )
             ->groupBy('field_value')
             ->orderBy('doc_count', 'DESC');
         // Limit results for performance.
-
         // Apply optimized base filters.
         $this->applyOptimizedBaseFilters($queryBuilder, $baseQuery);
 
-        $result = $queryBuilder->executeQuery();
+        $result  = $queryBuilder->executeQuery();
         $buckets = [];
 
         while (($row = $result->fetch()) !== false) {
@@ -312,9 +312,8 @@ class OptimizedFacetHandler
     private function applyOptimizedBaseFilters(IQueryBuilder $queryBuilder, array $baseQuery): void
     {
         // Apply filters in order of index selectivity (most selective first).
-
         // 1. Most selective: ID-based filters.
-        if (($baseQuery['_ids'] ?? null) !== null && is_array($baseQuery['_ids']) === true && !empty($baseQuery['_ids']) === false) {
+        if (($baseQuery['_ids'] ?? null) !== null && is_array($baseQuery['_ids']) === true && empty($baseQuery['_ids']) === false) {
             $queryBuilder->andWhere(
                 $queryBuilder->expr()->in('id', $queryBuilder->createNamedParameter($baseQuery['_ids'], \Doctrine\DBAL\Connection::PARAM_INT_ARRAY))
             );
