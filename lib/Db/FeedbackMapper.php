@@ -47,8 +47,15 @@ use OCP\IDBConnection;
  */
 class FeedbackMapper extends QBMapper
 {
-
-
+    /**
+     * Constructor for FeedbackMapper
+     *
+     * @param IDBConnection $db Database connection
+     */
+    public function __construct(IDBConnection $db)
+    {
+        parent::__construct($db, 'openregister_feedback', Feedback::class);
+    }
 
     /**
      * Override insert to generate UUID and timestamps
