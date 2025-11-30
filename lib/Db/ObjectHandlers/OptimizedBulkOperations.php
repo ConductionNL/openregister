@@ -174,7 +174,7 @@ class OptimizedBulkOperations
      *
      * @return array Array of processed UUIDs
      */
-    private function processUnifiedChunk(array $objects, int $chunkNumber, int $totalChunks): array
+    private function processUnifiedChunk(array $objects, int $chunkNumber, int $_totalChunks): array
     {
         if (empty($objects) === true) {
             return [];

@@ -103,7 +103,7 @@ class RegisterMapper extends QBMapper
      *
      * @throws \Exception If RBAC permission check fails
      */
-    public function find(string | int $id, ?array $extend=[]): Register
+    public function find(string | int $id, ?array $_extend=[]): Register
     {
         // Verify RBAC permission to read registers @todo: remove this hotfix for solr
         // $this->verifyRbacPermission('read', 'register');.
@@ -209,7 +209,7 @@ class RegisterMapper extends QBMapper
         ?array $filters=[],
         ?array $searchConditions=[],
         ?array $searchParams=[],
-        ?array $extend=[]
+        ?array $_extend=[]
     ): array {
         // Verify RBAC permission to read registers
         // $this->verifyRbacPermission('read', 'register');.

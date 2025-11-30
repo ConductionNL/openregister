@@ -104,7 +104,7 @@ class SchemaMapper extends QBMapper
      * @return Schema The schema, possibly with stats and resolved extensions
      * @throws \Exception If user doesn't have read permission
      */
-    public function find(string | int $id, ?array $extend=[]): Schema
+    public function find(string | int $id, ?array $_extend=[]): Schema
     {
         // Verify RBAC permission to read @todo: remove this hotfix for solr
         // $this->verifyRbacPermission('read', 'schema');.
@@ -235,7 +235,7 @@ class SchemaMapper extends QBMapper
         ?array $filters=[],
         ?array $searchConditions=[],
         ?array $searchParams=[],
-        ?array $extend=[]
+        ?array $_extend=[]
     ): array {
         // Verify RBAC permission to read
         // $this->verifyRbacPermission('read', 'schema');.

@@ -255,7 +255,7 @@ class ConfigurationMapper extends QBMapper
      *
      * @psalm-suppress PossiblyUnusedReturnValue
      */
-    public function updateSyncStatus(int $id, string $status, \DateTime $syncDate, string $message=''): Configuration
+    public function updateSyncStatus(int $id, string $status, \DateTime $syncDate, string $_message=''): Configuration
     {
         // Verify RBAC permission to update.
         $this->verifyRbacPermission('update', 'configuration');

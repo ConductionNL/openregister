@@ -651,7 +651,7 @@ class ChatService
      *
      * @return array Search results
      */
-    private function searchKeywordOnly(string $query, int $limit): array
+    private function searchKeywordOnly(string $query, int $_limit): array
     {
         $results = $this->solrService->searchObjectsPaginated(
             query: ['_search' => $query],
