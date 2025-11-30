@@ -87,11 +87,11 @@ class WebhookService
         LoggerInterface $logger,
         IJobList $jobList
     ) {
-        $this->webhookMapper   = $webhookMapper;
-        $this->webhookLogMapper = $webhookLogMapper;
-        $this->client          = $client;
-        $this->logger          = $logger;
-        $this->jobList         = $jobList;
+        $this->webhookMapper    = $webhookMapper;
+        $this->webhookLogMapper  = $webhookLogMapper;
+        $this->client            = $client;
+        $this->logger            = $logger;
+        $this->jobList           = $jobList;
 
     }//end __construct()
 

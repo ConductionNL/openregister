@@ -73,8 +73,8 @@ class OptimizedFacetHandler
      *
      * @phpstan-param array<string, array> $facetConfig
      * @phpstan-param array<string, mixed> $baseQuery
-     * @psalm-param   array<string, array> $facetConfig
-     * @psalm-param   array<string, mixed> $baseQuery
+     * @psalm-param    array<string, array> $facetConfig
+     * @psalm-param    array<string, mixed> $baseQuery
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *

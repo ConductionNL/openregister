@@ -210,11 +210,11 @@ class HyperFacetHandler
      *
      * @return array Optimized facet results with performance metadata
      *
-     * @phpstan-param array<string, mixed> $facetConfig
-     * @phpstan-param array<string, mixed> $baseQuery
+     * @phpstan-param  array<string, mixed> $facetConfig
+     * @phpstan-param  array<string, mixed> $baseQuery
      * @phpstan-return array<string, mixed>
-     * @psalm-param   array<string, mixed> $facetConfig
-     * @psalm-return  array<string, mixed>
+     * @psalm-param    array<string, mixed> $facetConfig
+     * @psalm-return   array<string, mixed>
      */
     public function getHyperOptimizedFacets(array $facetConfig, array $baseQuery = []): array
     {
@@ -302,10 +302,10 @@ class HyperFacetHandler
      *
      * @return array Dataset statistics for optimization decisions
      *
-     * @phpstan-param array<string, mixed> $baseQuery
+     * @phpstan-param  array<string, mixed> $baseQuery
      * @phpstan-return array<string, mixed>
-     * @psalm-param   array<string, mixed> $baseQuery
-     * @psalm-return  array<string, mixed>
+     * @psalm-param    array<string, mixed> $baseQuery
+     * @psalm-return   array<string, mixed>
      */
     private function analyzeDatasetSize(array $baseQuery): array
     {
@@ -369,9 +369,9 @@ class HyperFacetHandler
      *
      * @return string Optimization strategy identifier
      *
-     * @phpstan-param array<string, mixed> $datasetStats
+     * @phpstan-param  array<string, mixed> $datasetStats
      * @phpstan-return string
-     * @psalm-param   array<string, mixed> $datasetStats
+     * @psalm-param    array<string, mixed> $datasetStats
      * @psalm-return   string
      */
     private function selectOptimizationStrategy(array $datasetStats): string
@@ -413,14 +413,14 @@ class HyperFacetHandler
      *
      * @return array Exact facet results
      *
-     * @phpstan-param array<string, mixed> $facetConfig
-     * @phpstan-param array<string, mixed> $baseQuery
-     * @phpstan-param array<string, mixed> $datasetStats
+     * @phpstan-param  array<string, mixed> $facetConfig
+     * @phpstan-param  array<string, mixed> $baseQuery
+     * @phpstan-param  array<string, mixed> $datasetStats
      * @phpstan-return array<string, mixed>
-     * @psalm-param   array<string, mixed> $facetConfig
-     * @psalm-param   array<string, mixed> $baseQuery
-     * @psalm-param   array<string, mixed> $datasetStats
-     * @psalm-return  array<string, mixed>
+     * @psalm-param    array<string, mixed> $facetConfig
+     * @psalm-param    array<string, mixed> $baseQuery
+     * @psalm-param    array<string, mixed> $datasetStats
+     * @psalm-return   array<string, mixed>
      */
     private function calculateExactFacetsParallel(array $facetConfig, array $baseQuery, array $datasetStats): array
     {
@@ -468,14 +468,14 @@ class HyperFacetHandler
      *
      * @return array Sampled facet results with confidence intervals
      *
-     * @phpstan-param array<string, mixed> $facetConfig
-     * @phpstan-param array<string, mixed> $baseQuery
-     * @phpstan-param array<string, mixed> $datasetStats
+     * @phpstan-param  array<string, mixed> $facetConfig
+     * @phpstan-param  array<string, mixed> $baseQuery
+     * @phpstan-param  array<string, mixed> $datasetStats
      * @phpstan-return array<string, mixed>
-     * @psalm-param   array<string, mixed> $facetConfig
-     * @psalm-param   array<string, mixed> $baseQuery
-     * @psalm-param   array<string, mixed> $datasetStats
-     * @psalm-return  array<string, mixed>
+     * @psalm-param    array<string, mixed> $facetConfig
+     * @psalm-param    array<string, mixed> $baseQuery
+     * @psalm-param    array<string, mixed> $datasetStats
+     * @psalm-return   array<string, mixed>
      */
     private function calculateSampledFacetsParallel(array $facetConfig, array $baseQuery, array $datasetStats): array
     {
@@ -521,14 +521,14 @@ class HyperFacetHandler
      *
      * @return array Approximate facet results with accuracy indicators
      *
-     * @phpstan-param array<string, mixed> $facetConfig
-     * @phpstan-param array<string, mixed> $baseQuery
-     * @phpstan-param array<string, mixed> $datasetStats
+     * @phpstan-param  array<string, mixed> $facetConfig
+     * @phpstan-param  array<string, mixed> $baseQuery
+     * @phpstan-param  array<string, mixed> $datasetStats
      * @phpstan-return array<string, mixed>
-     * @psalm-param   array<string, mixed> $facetConfig
-     * @psalm-param   array<string, mixed> $baseQuery
-     * @psalm-param   array<string, mixed> $datasetStats
-     * @psalm-return  array<string, mixed>
+     * @psalm-param    array<string, mixed> $facetConfig
+     * @psalm-param    array<string, mixed> $baseQuery
+     * @psalm-param    array<string, mixed> $datasetStats
+     * @psalm-return   array<string, mixed>
      */
     private function calculateApproximateFacetsHyperLogLog(array $facetConfig, array $baseQuery, array $datasetStats): array
     {
@@ -569,11 +569,11 @@ class HyperFacetHandler
      *
      * @return PromiseInterface Promise resolving to metadata facet results
      *
-     * @phpstan-param array<string, mixed> $metadataFacets
-     * @phpstan-param array<string, mixed> $baseQuery
+     * @phpstan-param  array<string, mixed> $metadataFacets
+     * @phpstan-param  array<string, mixed> $baseQuery
      * @phpstan-return PromiseInterface
-     * @psalm-param   array<string, mixed> $metadataFacets
-     * @psalm-return  PromiseInterface
+     * @psalm-param    array<string, mixed> $metadataFacets
+     * @psalm-return   PromiseInterface
      */
     private function processMetadataFacetsParallel(array $metadataFacets, array $baseQuery): PromiseInterface
     {
@@ -623,14 +623,14 @@ class HyperFacetHandler
      *
      * @return array Batched facet results
      *
-     * @phpstan-param array<string> $fields
-     * @phpstan-param array<string, mixed> $facetConfig
-     * @phpstan-param array<string, mixed> $baseQuery
+     * @phpstan-param  array<string> $fields
+     * @phpstan-param  array<string, mixed> $facetConfig
+     * @phpstan-param  array<string, mixed> $baseQuery
      * @phpstan-return array<string, mixed>
-     * @psalm-param   array<string> $fields
-     * @psalm-param   array<string, mixed> $facetConfig
-     * @psalm-param   array<string, mixed> $baseQuery
-     * @psalm-return  array<string, mixed>
+     * @psalm-param    array<string> $fields
+     * @psalm-param    array<string, mixed> $facetConfig
+     * @psalm-param    array<string, mixed> $baseQuery
+     * @psalm-return   array<string, mixed>
      */
     private function getBatchedMetadataFacets(array $fields, array $facetConfig, array $baseQuery): array
     {
