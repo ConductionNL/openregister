@@ -35,7 +35,6 @@ use OCP\IDBConnection;
 class Version1Date20250102000001 extends SimpleMigrationStep
 {
 
-
     /**
      * Database connection
      *

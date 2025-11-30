@@ -34,7 +34,6 @@ use OCP\IDBConnection;
 class Version1Date20250801000000 extends SimpleMigrationStep
 {
 
-
     /**
      * Database connection
      *
@@ -69,7 +68,6 @@ class Version1Date20250801000000 extends SimpleMigrationStep
         // No pre-schema changes required.
 
     }//end preSchemaChange()
-
 
 
     /**
