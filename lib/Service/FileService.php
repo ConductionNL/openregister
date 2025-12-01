@@ -177,7 +177,7 @@ class FileService
     /**
      * Root folder name for all OpenRegister files.
      *
-     * @var string
+     * @var            string
      * @readonly
      * @psalm-readonly
      */
@@ -186,7 +186,7 @@ class FileService
     /**
      * Application group name.
      *
-     * @var string
+     * @var            string
      * @readonly
      * @psalm-readonly
      */
@@ -195,7 +195,7 @@ class FileService
     /**
      * Application user name.
      *
-     * @var string
+     * @var            string
      * @readonly
      * @psalm-readonly
      */
@@ -204,7 +204,7 @@ class FileService
     /**
      * File tag type identifier.
      *
-     * @var string
+     * @var            string
      * @readonly
      * @psalm-readonly
      */
@@ -223,7 +223,7 @@ class FileService
      *
      * @return array{cleanPath: string, fileName: string} Array containing the cleaned path and extracted filename
      *
-     * @psalm-return  array{cleanPath: string, fileName: string}
+     * @psalm-return   array{cleanPath: string, fileName: string}
      * @phpstan-return array{cleanPath: string, fileName: string}
      */
     private function extractFileNameFromPath(string $filePath): array
@@ -554,7 +554,7 @@ class FileService
      *
      * @throws Exception If the user folder cannot be accessed
      *
-     * @psalm-return  Folder
+     * @psalm-return   Folder
      * @phpstan-return Folder
      */
     private function getOpenRegisterUserFolder(): Folder
@@ -576,7 +576,7 @@ class FileService
      *
      * @return Node|null The Node if found, null otherwise
      *
-     * @psalm-return Node|null
+     * @psalm-return   Node|null
      * @phpstan-return Node|null
      */
     private function getNodeById(int $nodeId): ?Node
@@ -607,7 +607,7 @@ class FileService
      *
      * @throws Exception If the entity folder cannot be accessed
      *
-     * @psalm-return array<int, Node>
+     * @psalm-return   array<int, Node>
      * @phpstan-return array<int, Node>
      */
     public function getFilesForEntity(Register | ObjectEntity $entity, ?bool $sharedFilesOnly = false): array
@@ -642,7 +642,7 @@ class FileService
      *
      * @return Folder|null The folder Node or null if not found
      *
-     * @psalm-return Folder|null
+     * @psalm-return   Folder|null
      * @phpstan-return Folder|null
      */
     private function getRegisterFolderById(Register $register): ?Folder
@@ -682,7 +682,7 @@ class FileService
      *
      * @return Folder|null The folder Node or null if not found
      *
-     * @psalm-return Folder|null
+     * @psalm-return   Folder|null
      * @phpstan-return Folder|null
      */
     public function getObjectFolder(ObjectEntity|string $objectEntity, int|string|null $registerId = null): ?Folder
@@ -725,7 +725,7 @@ class FileService
      *
      * @return Node|null The created folder Node or null on failure
      *
-     * @psalm-return Node|null
+     * @psalm-return   Node|null
      * @phpstan-return Node|null
      */
     private function createFolderPath(string $folderPath): ?Node
@@ -861,7 +861,7 @@ class FileService
      * @TODO: where files exist but can't be accessed due to permission problems.
      * @TODO: This should be removed once the underlying NextCloud rights issue is resolved.
      *
-     * @psalm-return bool
+     * @psalm-return   bool
      * @phpstan-return bool
      */
     private function ownFile(Node $file): bool
@@ -901,7 +901,7 @@ class FileService
      * @TODO: where files exist but can't be accessed due to permission problems.
      * @TODO: This should be removed once the underlying NextCloud rights issue is resolved.
      *
-     * @psalm-return void
+     * @psalm-return   void
      * @phpstan-return void
      */
     private function checkOwnership(Node $file): void
@@ -1224,7 +1224,7 @@ class FileService
      * @phpstan-param array<int, array<string, mixed>> $formattedFiles
      * @psalm-param array<string, mixed> $filters
      * @phpstan-param array<string, mixed> $filters
-     * @psalm-return array<int, array<string, mixed>>
+     * @psalm-return   array<int, array<string, mixed>>
      * @phpstan-return array<int, array<string, mixed>>
      */
     private function applyFileFilters(array $formattedFiles, array $filters): array
@@ -1439,7 +1439,7 @@ class FileService
      *
      * @throws Exception If share creation fails
      *
-     * @psalm-return IShare|null
+     * @psalm-return   IShare|null
      * @phpstan-return IShare|null
      */
     private function shareFolderWithUser(Node $folder, string $userId, int $permissions = 31): ?IShare
@@ -1477,7 +1477,7 @@ class FileService
      *
      * @return IUser|null The currently active user or null if no user is logged in
      *
-     * @psalm-return IUser|null
+     * @psalm-return   IUser|null
      * @phpstan-return IUser|null
      */
     private function getCurrentUser(): ?IUser
@@ -2088,7 +2088,7 @@ class FileService
      *
      * @return string The object tag in format 'object:uuid' or 'object:id'
      *
-     * @psalm-return string
+     * @psalm-return   string
      * @phpstan-return string
      */
     private function generateObjectTag(ObjectEntity|string $objectEntity): string
@@ -2273,7 +2273,7 @@ class FileService
      *
      * @return array An array of tag names
      *
-     * @psalm-return array<int, string>
+     * @psalm-return   array<int, string>
      *
      * @phpstan-return array<int, string>
      */
@@ -2315,7 +2315,7 @@ class FileService
      * @throws NotFoundException If the folder is not found
      * @throws DoesNotExistException If the object ID is not found
      *
-     * @psalm-return array<int, Node>
+     * @psalm-return   array<int, Node>
      * @phpstan-return array<int, Node>
      */
     public function getFiles(ObjectEntity | string $object, ?bool $sharedFilesOnly = false): array
@@ -2350,7 +2350,7 @@ class FileService
      * @phpstan-param ObjectEntity|string|null $object
      * @psalm-param string|int $file
      * @phpstan-param string|int $file
-     * @psalm-return File|null
+     * @psalm-return   File|null
      * @phpstan-return File|null
      */
     public function getFile(ObjectEntity|string|null $object = null, string|int $file = ''): ?File
@@ -2505,7 +2505,7 @@ class FileService
      * @throws NotFoundException If the file is not found
      * @throws NotPermittedException If sharing is not permitted
      *
-     * @psalm-return File
+     * @psalm-return   File
      * @phpstan-return File
      */
     public function publishFile(ObjectEntity | string $object, string | int $file): File
@@ -2626,7 +2626,7 @@ class FileService
      * @throws NotFoundException If the file is not found
      * @throws NotPermittedException If sharing operations are not permitted
      *
-     * @psalm-return File
+     * @psalm-return   File
      * @phpstan-return File
      */
     public function unpublishFile(ObjectEntity | string $object, string|int $filePath): File
@@ -2754,7 +2754,7 @@ class FileService
      *     mimeType: string
      * } Information about the created ZIP file
      *
-     * @psalm-return array{path: string, filename: string, size: int, mimeType: string}
+     * @psalm-return   array{path: string, filename: string, size: int, mimeType: string}
      * @phpstan-return array{path: string, filename: string, size: int, mimeType: string}
      */
     public function createObjectFilesZip(ObjectEntity | string $object, ?string $zipName = null): array
@@ -2874,7 +2874,7 @@ class FileService
      *
      * @return string Human-readable error message
      *
-     * @psalm-return string
+     * @psalm-return   string
      * @phpstan-return string
      */
     private function getZipErrorMessage(int $errorCode): string
@@ -3124,7 +3124,7 @@ class FileService
      * @throws NotPermittedException If folder creation is not permitted
      * @throws NotFoundException If parent folders do not exist
      *
-     * @psalm-return int|null
+     * @psalm-return   int|null
      * @phpstan-return int|null
      */
     public function createObjectFolderWithoutUpdate(ObjectEntity $objectEntity, ?IUser $currentUser = null): ?int
