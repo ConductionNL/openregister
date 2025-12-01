@@ -78,9 +78,9 @@ class ExportService
      * @param ObjectService      $objectService      The object service
      */
     public function __construct(
-        ObjectEntityMapper $objectEntityMapper,
+        ObjectEntityMapper $_objectEntityMapper,
         RegisterMapper $registerMapper,
-        IUserManager $userManager,
+        IUserManager $_userManager,
         IGroupManager $groupManager,
         ObjectService $objectService
     ) {
@@ -117,33 +117,6 @@ class ExportService
     }//end isUserAdmin()
 
 
-    /**
-     * Export data to Excel format asynchronously
-     *
-     * @param Register|null $register Optional register to filter by
-     * @param Schema|null   $schema   Optional schema to filter by
-     * @param array         $filters  Additional filters to apply
-     *
-     * @return Promise Promise that resolves with the generated spreadsheet
-     *
-     * @psalm-return Promise<mixed>
-     */
-    public function exportToExcelAsync(?Register $register=null, ?Schema $schema=null, array $filters=[]): Promise
-    {
-        return new Promise(
-                function (callable $resolve, callable $reject) use ($register, $schema, $filters) {
-                    try {
-                        $spreadsheet = $this->exportToExcel(register: $register, schema: $schema, filters: $filters);
-
-                        $resolve($spreadsheet);
-                    } catch (\Throwable $e) {
-                        $reject($e);
-                    }
-                }
-                );
-
-    }//end exportToExcelAsync()
-
 
     /**
      * Export data to Excel format
@@ -178,33 +151,6 @@ class ExportService
 
     }//end exportToExcel()
 
-
-    /**
-     * Export data to CSV format asynchronously
-     *
-     * @param Register|null $register Optional register to filter by
-     * @param Schema|null   $schema   Optional schema to filter by
-     * @param array         $filters  Additional filters to apply
-     *
-     * @return Promise Promise that resolves with the CSV content
-     *
-     * @psalm-return Promise<mixed>
-     */
-    public function exportToCsvAsync(?Register $register=null, ?Schema $schema=null, array $filters=[]): Promise
-    {
-        return new Promise(
-                function (callable $resolve, callable $reject) use ($register, $schema, $filters) {
-                    try {
-                        $csv = $this->exportToCsv(register: $register, schema: $schema, filters: $filters);
-
-                        $resolve($csv);
-                    } catch (\Throwable $e) {
-                        $reject($e);
-                    }
-                }
-                );
-
-    }//end exportToCsvAsync()
 
 
     /**

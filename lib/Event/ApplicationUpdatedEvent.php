@@ -32,6 +32,8 @@ class ApplicationUpdatedEvent extends Event
      * The updated application state.
      *
      * @var Application The application after update.
+     *
+     * @psalm-suppress UnusedProperty
      */
     private Application $newApplication;
 
@@ -39,6 +41,8 @@ class ApplicationUpdatedEvent extends Event
      * The previous application state.
      *
      * @var Application The application before update.
+     *
+     * @psalm-suppress UnusedProperty
      */
     private Application $oldApplication;
 
@@ -60,28 +64,6 @@ class ApplicationUpdatedEvent extends Event
     }//end __construct()
 
 
-    /**
-     * Get the updated application.
-     *
-     * @return Application The application after update.
-     */
-    public function getNewApplication(): Application
-    {
-        return $this->newApplication;
-
-    }//end getNewApplication()
-
-
-    /**
-     * Get the original application.
-     *
-     * @return Application The application before update.
-     */
-    public function getOldApplication(): Application
-    {
-        return $this->oldApplication;
-
-    }//end getOldApplication()
 
 
 }//end class

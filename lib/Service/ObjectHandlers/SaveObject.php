@@ -136,8 +136,8 @@ class SaveObject
         private readonly IURLGenerator $urlGenerator,
         private readonly OrganisationService $organisationService,
         private readonly ObjectCacheService $objectCacheService,
-        private readonly SchemaCacheService $schemaCacheService,
-        private readonly SchemaFacetCacheService $schemaFacetCacheService,
+
+
         private readonly SettingsService $settingsService,
         private readonly LoggerInterface $logger,
         ArrayLoader $arrayLoader,
@@ -937,7 +937,6 @@ class SaveObject
             }
 
             $defaultBehavior    = $property['defaultBehavior'] ?? 'false';
-            $shouldApplyDefault = false;
 
             // Determine if default should be applied based on behavior.
             if ($defaultBehavior === 'falsy') {
@@ -1016,7 +1015,7 @@ class SaveObject
             }
 
             // Convert to string and generate slug.
-            $slug = $this->createSlug((string) $value);
+            $slug = $this->createSlug($value);
 
             // Ensure uniqueness by appending timestamp if needed.
             $timestamp  = time();
@@ -1647,11 +1646,11 @@ class SaveObject
         array $data,
         ?string $uuid=null,
         ?int $folderId=null,
-        bool $rbac=true,
+        bool $_rbac=true,
         bool $multi=true,
         bool $persist=true,
         bool $silent=false,
-        bool $validation=true,
+        bool $_validation=true,
         ?array $uploadedFiles=null
     ): ObjectEntity {
 
@@ -1680,7 +1679,6 @@ class SaveObject
 
         // Debug logging can be added here if needed.
         // Set schema ID based on input type.
-        $schemaId = null;
         if ($schema instanceof Schema === true) {
             $schemaId = $schema->getId();
         } else {
@@ -1698,7 +1696,6 @@ class SaveObject
             }
         }
 
-        $registerId = null;
         if ($register instanceof Register === true) {
             $registerId = $register->getId();
         } else {
@@ -1869,7 +1866,7 @@ class SaveObject
         Schema $schema,
         array $data,
         array $selfData,
-        bool $multi
+        bool $_multi
     ): ObjectEntity {
         // Set @self metadata properties.
         $this->setSelfMetadata(objectEntity: $objectEntity, selfData: $selfData, data: $data);
@@ -2143,83 +2140,6 @@ class SaveObject
     }//end prepareObjectData()
 
 
-    /**
-     * Prepares an object for saving without persisting to database.
-     *
-     * This method applies all the same transformations as saveObject but returns
-     * the prepared ObjectEntity without saving it to the database.
-     *
-     * @param Register|int|string|null $register The register containing the object.
-     * @param Schema|int|string        $schema   The schema to validate against.
-     * @param array                    $data     The object data to prepare.
-     * @param string|null              $uuid     The UUID of the object to update (if updating).
-     * @param int|null                 $folderId The folder ID to set on the object (optional).
-     * @param bool                     $rbac     Whether to apply RBAC checks (default: true).
-     * @param bool                     $multi    Whether to apply multitenancy filtering (default: true).
-     *
-     * @return ObjectEntity The prepared object entity.
-     *
-     * @throws Exception If there is an error during preparation.
-     */
-    public function prepareObject(
-        Register | int | string | null $register,
-        Schema | int | string $schema,
-        array $data,
-        ?string $uuid=null,
-        ?int $folderId=null,
-        bool $rbac=true,
-        bool $multi=true
-    ): ObjectEntity {
-        return $this->saveObject(
-            register: $register,
-            schema: $schema,
-            data: $data,
-            uuid: $uuid,
-            folderId: $folderId,
-            rbac: $rbac,
-            multi: $multi,
-            persist: false,
-            validation: true
-        );
-
-    }//end prepareObject()
-
-
-    /**
-     * Sets default values for an object entity.
-     *
-     * @param ObjectEntity $objectEntity The object entity to set defaults for.
-     *
-     * @return ObjectEntity The object entity with defaults set.
-     */
-    public function setDefaults(ObjectEntity $objectEntity): ObjectEntity
-    {
-        if ($objectEntity->getCreatedAt() === null) {
-            $objectEntity->setCreatedAt(new DateTime());
-        }
-
-        if ($objectEntity->getUpdatedAt() === null) {
-            $objectEntity->setUpdatedAt(new DateTime());
-        }
-
-        if ($objectEntity->getUuid() === null) {
-            $objectEntity->setUuid(Uuid::v4()->toRfc4122());
-        }
-
-        $user = $this->userSession->getUser();
-        if ($user !== null) {
-            if ($objectEntity->getCreatedBy() === null) {
-                $objectEntity->setCreatedBy($user->getUID());
-            }
-
-            if ($objectEntity->getUpdatedBy() === null) {
-                $objectEntity->setUpdatedBy($user->getUID());
-            }
-        }
-
-        return $objectEntity;
-
-    }//end setDefaults()
 
 
     /**
@@ -3110,9 +3030,7 @@ class SaveObject
      */
     private function parseFileData(string $fileContent): array
     {
-        $content   = '';
         $mimeType  = 'application/octet-stream';
-        $extension = 'bin';
 
         // Handle data URI format (data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...).
         if (strpos($fileContent, 'data:') === 0) {
@@ -3602,7 +3520,6 @@ class SaveObject
         unset($data['@self'], $data['id']);
 
         // Set register ID based on input type.
-        $registerId = null;
         if ($register instanceof Register === true) {
             $registerId = $register->getId();
         } else {
@@ -3610,7 +3527,6 @@ class SaveObject
         }
 
         // Set schema ID based on input type.
-        $schemaId = null;
         if ($schema instanceof Schema === true) {
             $schemaId = $schema->getId();
         } else {

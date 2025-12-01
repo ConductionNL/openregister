@@ -28,6 +28,10 @@ use OCP\IRequest;
 /**
  * Class SourcesController
  */
+/**
+ * @psalm-suppress UnusedClass
+ */
+
 class SourcesController extends Controller
 {
 

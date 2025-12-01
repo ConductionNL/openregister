@@ -52,26 +52,5 @@ class EntityRelationMapper extends QBMapper
     }//end __construct()
 
 
-    /**
-     * Find relations by entity ID.
-     *
-     * @param int $entityId Entity identifier.
-     *
-     * @return EntityRelation[]
-     */
-    public function findByEntity(int $entityId): array
-    {
-        $qb = $this->db->getQueryBuilder();
-        $qb->select('*')
-            ->from($this->getTableName())
-            ->where(
-                $qb->expr()->eq('entity_id', $qb->createNamedParameter($entityId, IQueryBuilder::PARAM_INT))
-            )
-            ->orderBy('created_at', 'DESC');
-
-        return $this->findEntities($qb);
-
-    }//end findByEntity()
-
 
 }//end class

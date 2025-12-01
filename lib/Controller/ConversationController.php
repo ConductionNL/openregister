@@ -43,6 +43,10 @@ use Symfony\Component\Uid\Uuid;
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  */
+/**
+ * @psalm-suppress UnusedClass
+ */
+
 class ConversationController extends Controller
 {
 

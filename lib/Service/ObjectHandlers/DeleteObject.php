@@ -94,10 +94,8 @@ class DeleteObject
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly FileService $fileService,
         private readonly ObjectCacheService $objectCacheService,
-        /**
-         */
-        private readonly SchemaCacheService $schemaCacheService,
-        private readonly SchemaFacetCacheService $schemaFacetCacheService,
+
+
         AuditTrailMapper $auditTrailMapper,
         SettingsService $settingsService,
         LoggerInterface $logger
@@ -122,7 +120,7 @@ class DeleteObject
     {
         if ($object instanceof JsonSerializable) {
             $objectEntity = $object;
-            $object       = $object->jsonSerialize();
+            $object->jsonSerialize();
         } else {
             $objectEntity = $this->objectEntityMapper->find($object['id']);
         }
@@ -151,7 +149,7 @@ class DeleteObject
 
         // Create audit trail for delete if audit trails are enabled.
         if ($this->isAuditTrailsEnabled() === true) {
-            $log = $this->auditTrailMapper->createAuditTrail(old: $objectEntity, new: null, action: 'delete');
+            $this->auditTrailMapper->createAuditTrail(old: $objectEntity, new: null, action: 'delete');
             // $result->setLastLog($log->jsonSerialize());
         }
 
@@ -179,8 +177,8 @@ class DeleteObject
         Schema | int | string $schema,
         string $uuid,
         ?string $originalObjectId=null,
-        bool $rbac=true,
-        bool $multi=true
+        bool $_rbac=true,
+        bool $_multi=true
     ): bool {
         try {
             $object = $this->objectEntityMapper->find($uuid, null, null, true);

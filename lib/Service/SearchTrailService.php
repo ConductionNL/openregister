@@ -40,14 +40,6 @@ class SearchTrailService
 {
 
     /**
-     * The default retention period for search trails (in days).
-     * Trails older than this will be automatically deleted by self-clearing.
-     *
-     * @var integer
-     */
-    private int $retentionDays = 365;
-
-    /**
      * Whether self-clearing (automatic cleanup) is enabled.
      * Disabled by default - cleanup should be handled by cron jobs.
      *
@@ -100,6 +92,8 @@ class SearchTrailService
      * @return SearchTrail The created search trail entity
      *
      * @throws Exception If search trail creation fails
+     *
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function createSearchTrail(
         array $query,
@@ -147,6 +141,8 @@ class SearchTrailService
      *              'Self-clearing: no expired entries to delete',
      *     cleanup_date?: string
      * }
+     *
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function clearExpiredSearchTrails(): array
     {
@@ -546,7 +542,7 @@ class SearchTrailService
      *     cleanup_date?: string
      * }
      */
-    public function cleanupSearchTrails(?DateTime $before=null): array
+    public function cleanupSearchTrails(?DateTime $_before=null): array
     {
         try {
             // Note: clearLogs() only removes expired entries, ignoring the $before parameter
@@ -724,7 +720,7 @@ class SearchTrailService
      *     total_periods?: int<1, max>
      * }
      */
-    private function calculateActivityInsights(array $activity, string $interval): array
+    private function calculateActivityInsights(array $activity, string $_interval): array
     {
         if ($activity === []) {
             return [

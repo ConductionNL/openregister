@@ -32,6 +32,10 @@ use Exception;
  *
  * @psalm-suppress UnusedClass - This controller is registered via routes.php and used by Nextcloud's routing system
  */
+/**
+ * @psalm-suppress UnusedClass
+ */
+
 class OasController extends Controller
 {
 

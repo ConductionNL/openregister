@@ -134,59 +134,8 @@ class Message extends Entity implements JsonSerializable
     }//end __construct()
 
 
-    /**
-     * Validate UUID format
-     *
-     * @param string $uuid The UUID to validate
-     *
-     * @return bool True if UUID format is valid
-     */
-    public static function isValidUuid(string $uuid): bool
-    {
-        try {
-            Uuid::fromString($uuid);
-            return true;
-        } catch (\InvalidArgumentException $e) {
-            return false;
-        }
-
-    }//end isValidUuid()
 
 
-    /**
-     * Check if message is from user
-     *
-     * @return bool True if user message
-     */
-    public function isUser(): bool
-    {
-        return $this->role === self::ROLE_USER;
-
-    }//end isUser()
-
-
-    /**
-     * Check if message is from assistant
-     *
-     * @return bool True if assistant message
-     */
-    public function isAssistant(): bool
-    {
-        return $this->role === self::ROLE_ASSISTANT;
-
-    }//end isAssistant()
-
-
-    /**
-     * Check if message has RAG sources
-     *
-     * @return bool True if sources exist
-     */
-    public function hasSources(): bool
-    {
-        return !empty($this->sources);
-
-    }//end hasSources()
 
 
     /**

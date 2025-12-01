@@ -30,19 +30,12 @@ use OCA\OpenRegister\Db\Schema;
  */
 class DepublishObject
 {
-
-
     /**
-     * Constructor for DepublishObject
+     * Object entity mapper
      *
-     * @param ObjectEntityMapper $objectEntityMapper The object entity mapper
+     * @var ObjectEntityMapper
      */
-    public function __construct(
-        private readonly ObjectEntityMapper $objectEntityMapper
-    ) {
-
-    }//end __construct()
-
+    private ObjectEntityMapper $objectEntityMapper;
 
     /**
      * Depublish an object
@@ -59,8 +52,8 @@ class DepublishObject
     public function depublish(
         string $uuid,
         ?DateTime $date=null,
-        bool $rbac=true,
-        bool $multi=true
+        bool $_rbac=true,
+        bool $_multi=true
     ): ObjectEntity {
         // Get the object.
         $object = $this->objectEntityMapper->find($uuid);

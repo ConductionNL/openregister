@@ -50,6 +50,10 @@ use Exception;
 /**
  * Class RegistersController
  */
+/**
+ * @psalm-suppress UnusedClass
+ */
+
 class RegistersController extends Controller
 {
 

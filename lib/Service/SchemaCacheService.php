@@ -223,102 +223,7 @@ class SchemaCacheService
     }//end clearSchemaCache()
 
 
-    /**
-     * Get multiple schemas with batch caching optimization
-     *
-     * @param array<int> $schemaIds Array of schema IDs to retrieve
-     *
-     * @return array<int, Schema> Array of schemas indexed by ID
-     *
-     * @throws \OCP\DB\Exception If a database error occurs
-     */
-    public function getSchemas(array $schemaIds): array
-    {
-        if ($schemaIds === []) {
-            return [];
-        }
 
-        $schemas     = [];
-        $uncachedIds = [];
-
-        // Check cache for each schema.
-        foreach ($schemaIds as $schemaId) {
-            $schema = $this->getSchema($schemaId);
-            if ($schema !== null) {
-                $schemas[$schemaId] = $schema;
-            } else {
-                $uncachedIds[] = $schemaId;
-            }
-        }
-
-        // Batch load uncached schemas.
-        if (empty($uncachedIds) === false) {
-            $loadedSchemas = $this->schemaMapper->findMultiple($uncachedIds);
-            foreach ($loadedSchemas as $schema) {
-                $schemas[$schema->getId()] = $schema;
-                $this->cacheSchema($schema);
-            }
-        }
-
-        return $schemas;
-
-    }//end getSchemas()
-
-
-    /**
-     * Get cached facetable fields for a schema
-     *
-     * This method returns the cached facetable field configuration for a schema,
-     * which is computed from the schema properties and cached for performance.
-     *
-     * @param int $schemaId The schema ID
-     *
-     * @return array|null The cached facetable fields or null if not cached
-     *
-     * @throws \OCP\DB\Exception If a database error occurs
-     */
-    public function getFacetableFields(int $schemaId): ?array
-    {
-        $cacheKey = $this->buildCacheKey($schemaId, self::CACHE_KEY_FACETABLE_FIELDS);
-
-        // Check in-memory cache first.
-        if ((self::$memoryCache[$cacheKey] ?? null) !== null) {
-            return self::$memoryCache[$cacheKey];
-        }
-
-        // Check database cache.
-        $cachedData = $this->getCachedData($schemaId, self::CACHE_KEY_FACETABLE_FIELDS);
-        if ($cachedData !== null) {
-            // Store in memory cache.
-            self::$memoryCache[$cacheKey] = $cachedData;
-            return $cachedData;
-        }
-
-        return null;
-
-    }//end getFacetableFields()
-
-
-    /**
-     * Cache facetable fields for a schema
-     *
-     * @param int   $schemaId        The schema ID
-     * @param array $facetableFields The facetable fields to cache
-     * @param int   $ttl             Cache TTL in seconds
-     *
-     * @return void
-     *
-     * @throws \OCP\DB\Exception If a database error occurs
-     */
-    public function cacheFacetableFields(int $schemaId, array $facetableFields, int $ttl=self::DEFAULT_TTL): void
-    {
-        $this->setCachedData($schemaId, self::CACHE_KEY_FACETABLE_FIELDS, $facetableFields, $ttl);
-
-        // Also store in memory cache.
-        $cacheKey = $this->buildCacheKey($schemaId, self::CACHE_KEY_FACETABLE_FIELDS);
-        self::$memoryCache[$cacheKey] = $facetableFields;
-
-    }//end cacheFacetableFields()
 
 
     /**
@@ -448,23 +353,6 @@ class SchemaCacheService
     }//end invalidateForSchemaChange()
 
 
-    /**
-     * Invalidate cache for a specific schema (legacy method)
-     *
-     * @param int $schemaId The schema ID to invalidate
-     *
-     * @return void
-     *
-     * @throws \OCP\DB\Exception If a database error occurs
-     *
-     * @deprecated Use invalidateForSchemaChange() instead
-     */
-    public function invalidateSchema(int $schemaId): void
-    {
-        $this->invalidateForSchemaChange($schemaId, 'update');
-
-    }//end invalidateSchema()
-
 
     /**
      * Clear all schema caches (Administrative Operation)
@@ -502,19 +390,6 @@ class SchemaCacheService
 
     }//end clearAllCaches()
 
-
-    /**
-     * Clear all schema cache (legacy method)
-     *
-     * @deprecated Use clearAllCaches() instead
-     * @return     void
-     * @throws     \OCP\DB\Exception If a database error occurs
-     */
-    public function clearAll(): void
-    {
-        $this->clearAllCaches();
-
-    }//end clearAll()
 
 
     /**
@@ -557,19 +432,6 @@ class SchemaCacheService
     }//end cleanExpiredEntries()
 
 
-    /**
-     * Clean expired cache entries (legacy method)
-     *
-     * @deprecated Use cleanExpiredEntries() instead
-     * @return     int Number of expired entries removed
-     * @throws     \OCP\DB\Exception If a database error occurs
-     */
-    public function cleanExpired(): int
-    {
-        return $this->cleanExpiredEntries();
-
-    }//end cleanExpired()
-
 
     /**
      * Get comprehensive cache statistics
@@ -611,19 +473,6 @@ class SchemaCacheService
 
     }//end getCacheStatistics()
 
-
-    /**
-     * Get cache statistics (legacy method)
-     *
-     * @deprecated Use getCacheStatistics() instead
-     * @return     array<string, mixed> Cache statistics
-     * @throws     \OCP\DB\Exception If a database error occurs
-     */
-    public function getStatistics(): array
-    {
-        return $this->getCacheStatistics();
-
-    }//end getStatistics()
 
 
     /**

@@ -427,6 +427,8 @@ class Schema extends Entity implements JsonSerializable
      * @throws \Exception If the properties are invalid
      *
      * @return bool True if the properties are valid
+     *
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function validateProperties(SchemaPropertyValidatorService $validator): bool
     {
@@ -459,6 +461,8 @@ class Schema extends Entity implements JsonSerializable
      * @throws \InvalidArgumentException If the authorization structure is invalid
      *
      * @return bool True if the authorization structure is valid
+     *
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function validateAuthorization(): bool
     {

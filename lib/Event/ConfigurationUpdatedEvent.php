@@ -32,6 +32,8 @@ class ConfigurationUpdatedEvent extends Event
      * The updated configuration state.
      *
      * @var Configuration The configuration after update.
+     *
+     * @psalm-suppress UnusedProperty
      */
     private Configuration $newConfiguration;
 
@@ -39,6 +41,8 @@ class ConfigurationUpdatedEvent extends Event
      * The previous configuration state.
      *
      * @var Configuration The configuration before update.
+     *
+     * @psalm-suppress UnusedProperty
      */
     private Configuration $oldConfiguration;
 
@@ -60,28 +64,6 @@ class ConfigurationUpdatedEvent extends Event
     }//end __construct()
 
 
-    /**
-     * Get the updated configuration.
-     *
-     * @return Configuration The configuration after update.
-     */
-    public function getNewConfiguration(): Configuration
-    {
-        return $this->newConfiguration;
-
-    }//end getNewConfiguration()
-
-
-    /**
-     * Get the original configuration.
-     *
-     * @return Configuration The configuration before update.
-     */
-    public function getOldConfiguration(): Configuration
-    {
-        return $this->oldConfiguration;
-
-    }//end getOldConfiguration()
 
 
 }//end class

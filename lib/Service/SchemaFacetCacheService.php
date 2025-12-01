@@ -136,103 +136,7 @@ class SchemaFacetCacheService
     }//end __construct()
 
 
-    /**
-     * Get facetable fields configuration for a schema
-     *
-     * This method returns the cached facetable field configuration based on
-     * schema properties. It analyzes schema properties to determine which
-     * fields can be faceted and what facet types are appropriate.
-     *
-     * @param int $schemaId The schema ID
-     *
-     * @return array<string, mixed> Facetable fields configuration
-     *
-     * @throws \OCP\DB\Exception If a database error occurs
-     */
-    public function getFacetableFields(int $schemaId): array
-    {
-        $cacheKey = "facetable_fields_{$schemaId}";
 
-        // Check in-memory cache.
-        if ((self::$facetConfigCache[$cacheKey] ?? null) !== null) {
-            $this->logger->debug('Facetable fields cache hit (memory)', ['schemaId' => $schemaId]);
-            return self::$facetConfigCache[$cacheKey];
-        }
-
-        // Check if we have cached facet configuration.
-        $cachedConfig = $this->getCachedFacetData($schemaId, 'facetable_fields');
-        if ($cachedConfig !== null) {
-            self::$facetConfigCache[$cacheKey] = $cachedConfig;
-            $this->logger->debug('Facetable fields cache hit (database)', ['schemaId' => $schemaId]);
-            return $cachedConfig;
-        }
-
-        // Generate facetable fields from schema and cache.
-        $facetableFields = $this->generateFacetableFieldsFromSchema($schemaId);
-        $this->cacheFacetableFields($schemaId, $facetableFields);
-
-        return $facetableFields;
-
-    }//end getFacetableFields()
-
-
-    /**
-     * Get cached facet results for specific facet configuration
-     *
-     * @param int    $schemaId    The schema ID
-     * @param string $facetType   The facet type (terms, date_histogram, range)
-     * @param string $fieldName   The field name for the facet
-     * @param array  $facetConfig Optional facet configuration (intervals, ranges, etc.)
-     *
-     * @return array|null Cached facet results or null if not cached
-     *
-     * @throws \OCP\DB\Exception If a database error occurs
-     */
-    public function getCachedFacetResults(int $schemaId, string $facetType, string $fieldName, array $facetConfig=[]): ?array
-    {
-        $cacheKey = $this->buildFacetCacheKey($facetType, $fieldName, $facetConfig);
-        return $this->getCachedFacetData($schemaId, $cacheKey);
-
-    }//end getCachedFacetResults()
-
-
-    /**
-     * Cache facet results for a specific configuration
-     *
-     * @param int    $schemaId     The schema ID
-     * @param string $facetType    The facet type
-     * @param string $fieldName    The field name
-     * @param array  $facetConfig  Facet configuration
-     * @param array  $facetResults The facet results to cache
-     * @param int    $ttl          Cache TTL in seconds
-     *
-     * @return void
-     *
-     * @throws \OCP\DB\Exception If a database error occurs
-     */
-    public function cacheFacetResults(
-        int $schemaId,
-        string $facetType,
-        string $fieldName,
-        array $facetConfig,
-        array $facetResults,
-        int $ttl=self::DEFAULT_FACET_TTL
-    ): void {
-        $cacheKey = $this->buildFacetCacheKey($facetType, $fieldName, $facetConfig);
-        $this->setCachedFacetData($schemaId, $cacheKey, $facetType, $fieldName, $facetConfig, $facetResults, $ttl);
-
-        $this->logger->debug(
-                'Cached facet results',
-                [
-                    'schemaId'    => $schemaId,
-                    'facetType'   => $facetType,
-                    'fieldName'   => $fieldName,
-                    'resultCount' => count($facetResults),
-                    'ttl'         => $ttl,
-                ]
-                );
-
-    }//end cacheFacetResults()
 
 
     /**
@@ -328,23 +232,6 @@ class SchemaFacetCacheService
     }//end invalidateForSchemaChange()
 
 
-    /**
-     * Invalidate all cached facets for a schema (legacy method)
-     *
-     * @param int $schemaId The schema ID to invalidate
-     *
-     * @return void
-     *
-     * @throws \OCP\DB\Exception If a database error occurs
-     *
-     * @deprecated Use invalidateForSchemaChange() instead
-     */
-    public function invalidateSchemaFacets(int $schemaId): void
-    {
-        $this->invalidateForSchemaChange($schemaId, 'update');
-
-    }//end invalidateSchemaFacets()
-
 
     /**
      * Clear all facet caches (Administrative Operation)
@@ -383,19 +270,6 @@ class SchemaFacetCacheService
     }//end clearAllCaches()
 
 
-    /**
-     * Clear all facet cache (legacy method)
-     *
-     * @deprecated Use clearAllCaches() instead
-     * @return     void
-     * @throws     \OCP\DB\Exception If a database error occurs
-     */
-    public function clearAll(): void
-    {
-        $this->clearAllCaches();
-
-    }//end clearAll()
-
 
     /**
      * Clean expired facet cache entries
@@ -433,19 +307,6 @@ class SchemaFacetCacheService
 
     }//end cleanExpiredEntries()
 
-
-    /**
-     * Clean expired facet cache entries (legacy method)
-     *
-     * @deprecated Use cleanExpiredEntries() instead
-     * @return     int Number of expired entries removed
-     * @throws     \OCP\DB\Exception If a database error occurs
-     */
-    public function cleanExpired(): int
-    {
-        return $this->cleanExpiredEntries();
-
-    }//end cleanExpired()
 
 
     /**
@@ -497,19 +358,6 @@ class SchemaFacetCacheService
 
     }//end getCacheStatistics()
 
-
-    /**
-     * Get facet cache statistics (legacy method)
-     *
-     * @deprecated Use getCacheStatistics() instead
-     * @return     array<string, mixed> Cache statistics
-     * @throws     \OCP\DB\Exception If a database error occurs
-     */
-    public function getStatistics(): array
-    {
-        return $this->getCacheStatistics();
-
-    }//end getStatistics()
 
 
     /**
@@ -680,7 +528,7 @@ class SchemaFacetCacheService
 
         // Auto-detect facetable properties based on type.
         $type   = $property['type'] ?? '';
-        $format = $property['format'] ?? '';
+        $property['format'] ?? '';
 
         // Facetable types.
         $facetableTypes = ['string', 'integer', 'number', 'boolean', 'date', 'datetime'];
@@ -758,7 +606,7 @@ class SchemaFacetCacheService
      *
      * @psalm-return list{0: 'date_histogram'|'terms', 1?: 'range'}
      */
-    private function determineFacetTypesFromProperty(string $type, string $format): array
+    private function determineFacetTypesFromProperty(string $type, string $_format): array
     {
         switch ($type) {
             case 'string':

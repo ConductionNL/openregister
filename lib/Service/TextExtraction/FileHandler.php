@@ -258,7 +258,7 @@ class FileHandler implements TextExtractionHandlerInterface
      *
      * @return array{language: string|null, level: string|null, confidence: float|null, method: string|null}
      */
-    private function detectLanguage(string $text): array
+    private function detectLanguage(string $_text): array
     {
         // Simplified language detection - can be enhanced with proper library.
         return [

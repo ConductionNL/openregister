@@ -41,6 +41,10 @@ use OCP\IRequest;
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  */
+/**
+ * @psalm-suppress UnusedClass
+ */
+
 class FileExtractionController extends Controller
 {
 
@@ -68,11 +72,6 @@ class FileExtractionController extends Controller
 
     /**
      * Get all files tracked in the extraction system.
-     *
-     * @param int|null    $limit  Maximum number of files to return
-     * @param int|null    $offset Offset for pagination
-     * @param string|null $status Filter by extraction status
-     * @param string|null $search Search by file name or path
      *
      * @return JSONResponse List of files with extraction information
      *

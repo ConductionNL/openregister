@@ -84,6 +84,97 @@ use Psr\Log\LoggerInterface;
 class FileService
 {
     /**
+     * Configuration service
+     *
+     * @var IConfig
+     */
+    private IConfig $config;
+
+    /**
+     * File mapper
+     *
+     * @var FileMapper
+     */
+    private FileMapper $fileMapper;
+
+    /**
+     * Group manager
+     *
+     * @var IGroupManager
+     */
+    private IGroupManager $groupManager;
+
+    /**
+     * Logger
+     *
+     * @var LoggerInterface
+     */
+    private LoggerInterface $logger;
+
+    /**
+     * Object entity mapper
+     *
+     * @var ObjectEntityMapper
+     */
+    private ObjectEntityMapper $objectEntityMapper;
+
+    /**
+     * Register mapper
+     *
+     * @var RegisterMapper
+     */
+    private RegisterMapper $registerMapper;
+
+    /**
+     * Root folder
+     *
+     * @var IRootFolder
+     */
+    private IRootFolder $rootFolder;
+
+    /**
+     * Share manager
+     *
+     * @var IManager
+     */
+    private IManager $shareManager;
+
+    /**
+     * System tag manager
+     *
+     * @var ISystemTagManager
+     */
+    private ISystemTagManager $systemTagManager;
+
+    /**
+     * System tag mapper
+     *
+     * @var ISystemTagObjectMapper
+     */
+    private ISystemTagObjectMapper $systemTagMapper;
+
+    /**
+     * URL generator
+     *
+     * @var IURLGenerator
+     */
+    private IURLGenerator $urlGenerator;
+
+    /**
+     * User manager
+     *
+     * @var IUserManager
+     */
+    private IUserManager $userManager;
+
+    /**
+     * User session
+     *
+     * @var IUserSession
+     */
+    private IUserSession $userSession;
+
+    /**
      * Root folder name for all OpenRegister files.
      *
      * @var string
@@ -120,42 +211,6 @@ class FileService
     private const FILE_TAG_TYPE = 'files';
 
     /**
-     * Constructor for FileService.
-     *
-     * @param IUserSession           $userSession        The user session
-     * @param IUserManager           $userManager        The user manager
-     * @param LoggerInterface        $logger             The logger interface
-     * @param IRootFolder           $rootFolder         The root folder interface
-     * @param IManager              $shareManager       The share manager interface
-     * @param IURLGenerator         $urlGenerator       URL generator service
-     * @param IConfig               $config             Configuration service
-     * @param RegisterMapper        $registerMapper     Register data mapper
-     * @param SchemaMapper         $schemaMapper       Schema data mapper
-     * @param IGroupManager         $groupManager       Group manager service
-     * @param ISystemTagManager     $systemTagManager   System tag manager
-     * @param ISystemTagObjectMapper $systemTagMapper    System tag object mapper
-     * @param ObjectEntityMapper    $objectEntityMapper Object entity mapper
-     * @param FileMapper            $fileMapper         File mapper for direct database operations
-     */
-    public function __construct(
-        private readonly IUserSession $userSession,
-        private readonly IUserManager $userManager,
-        private readonly LoggerInterface $logger,
-        private readonly IRootFolder $rootFolder,
-        private readonly IManager $shareManager,
-        private readonly IURLGenerator $urlGenerator,
-        private readonly IConfig $config,
-        private readonly RegisterMapper $registerMapper,
-        private readonly IGroupManager $groupManager,
-        private readonly ISystemTagManager $systemTagManager,
-        private readonly ISystemTagObjectMapper $systemTagMapper,
-        private readonly ObjectEntityMapper $objectEntityMapper,
-        private readonly FileMapper $fileMapper
-    ) {
-        // Dependency injection confirmed working - debug logging removed.
-    }//end __construct()
-
-    /**
      * Clean and extract filename from a file path that may contain folder ID prefixes.
      *
      * This utility method handles the common pattern of cleaning file paths and extracting
@@ -189,88 +244,6 @@ class FileService
             'fileName' => $fileName
         ];
     }//end extractFileNameFromPath()
-
-    /**
-     * Creates a new version of a file if the object is updated.
-     *
-     * @param File        $file     The file to update
-     * @param string|null $filename Optional new filename for the file
-     *
-     * @return File The updated file with a new version
-     */
-    public function createNewVersion(File $file, ?string $filename=null): File
-    {
-        // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues.
-        $this->checkOwnership($file);
-
-        // VersionManager is optional (requires files_versions app).
-        /*
-        if (class_exists(\OCA\Files_Versions\Versions\VersionManager::class) === true) {
-            $versionManager = \OC::$server->get(\OCA\Files_Versions\Versions\VersionManager::class);
-            $versionManager->createVersion(user: $this->userManager->get(self::APP_USER), file: $file);
-        }
-        */
-
-        if ($filename !== null) {
-            $file->move(targetPath: $file->getParent()->getPath().'/'.$filename);
-        }
-
-        return $file;
-    }//end createNewVersion()
-
-    /**
-     * Get a specific version of a file.
-     *
-     * @param Node   $file    The file to get a version for
-     * @param string $version The version to retrieve
-     *
-     * @return Node|null The requested version of the file or null if not found
-     */
-    public function getVersion(Node $file, string $version): ?Node
-    {
-        if ($file instanceof File === false) {
-            return $file;
-        }
-
-        // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues.
-        $this->checkOwnership($file);
-
-        // VersionManager is optional (requires files_versions app).
-        /*
-        if (class_exists(\OCA\Files_Versions\Versions\VersionManager::class) === true) {
-            $versionManager = \OC::$server->get(\OCA\Files_Versions\Versions\VersionManager::class);
-            return $versionManager->getVersionFile($this->userManager->get(self::APP_USER), $file, $version);
-        }
-        */
-
-        return null;
-    }//end getVersion()
-
-    /**
-     * Creates a folder for a Register (used for storing files of Schemas/Objects).
-     *
-     * @param Register|int $register The Register to create the folder for
-     *
-     * @throws Exception In case we can't create the folder because it is not permitted
-     *
-     * @return string The path to the folder
-     */
-    public function createRegisterFolder(Register | int $register): string
-    {
-        if (is_int($register) === true) {
-            $register = $this->registerMapper->find($register);
-        }
-
-        $registerFolderName = $this->getRegisterFolderName($register);
-        // @todo maybe we want to use ShareLink here for register->folder as well?
-        $register->setFolder($this::ROOT_FOLDER."/$registerFolderName");
-        $this->registerMapper->update($register);
-
-        $folderPath = $this::ROOT_FOLDER."/$registerFolderName";
-        $this->createFolder(folderPath: $folderPath);
-
-        return $folderPath;
-    }//end createRegisterFolder()
 
     /**
      * Get the name for the folder of a Register (used for storing files of Schemas/Objects).
@@ -639,7 +612,6 @@ class FileService
      */
     public function getFilesForEntity(Register | ObjectEntity $entity, ?bool $sharedFilesOnly = false): array
     {
-        $folder = null;
 
         if ($entity instanceof Register) {
             $folder = $this->getRegisterFolderById($entity);
@@ -805,19 +777,6 @@ class FileService
             throw new Exception("Can't create folder $folderPath");
         }
     }//end createFolderPath()
-
-    /**
-     * Returns a link to the given folder path.
-     *
-     * @param string $folderPath The path to a folder in NextCloud
-     *
-     * @return string The URL to access the folder through the web interface
-     */
-    private function getFolderLink(string $folderPath): string
-    {
-        $folderPath = str_replace('%2F', '/', urlencode($folderPath));
-        return $this->getCurrentDomain()."/index.php/apps/files/files?dir=$folderPath";
-    }//end getFolderLink()
 
     /**
      * Returns a share link for the given IShare object.
@@ -1009,29 +968,6 @@ class FileService
             $this->logger->debug(message: "checkOwnership: Other exception while checking file {$file->getName()}: " . $e->getMessage());
         }
     }//end checkOwnership()
-
-    /**
-     * Gets a NextCloud Node object for the given file or folder path.
-     *
-     * @param string $path The path to get the Node object for
-     *
-     * @return Node|null The Node object if found, null otherwise
-     */
-    public function getNode(string $path): ?Node
-    {
-        try {
-            $userFolder = $this->getOpenRegisterUserFolder();
-            $node = $userFolder->get(path: $path);
-
-            // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues.
-            $this->checkOwnership($node);
-
-            return $node;
-        } catch (NotFoundException | NotPermittedException $e) {
-            $this->logger->error(message: $e->getMessage());
-            return null;
-        }
-    }//end getNode()
 
     /**
      * Formats a single Node file into a metadata array.
@@ -1442,48 +1378,6 @@ class FileService
     }//end findShares()
 
     /**
-     * Try to find a IShare object with given $path & $shareType.
-     *
-     * @param string   $path      The path to a file we are trying to find a IShare object for
-     * @param int|null $shareType The shareType of the share we are trying to find (default: 3 for public link)
-     *
-     * @return IShare|null An IShare object if found, null otherwise
-     */
-    public function findShare(string $path, ?int $shareType=3): ?IShare
-    {
-        $path = trim(string: $path, characters: '/');
-        // Use the OpenRegister system user for consistency.
-        $userId = $this->getUser()->getUID();
-
-        try {
-            $userFolder = $this->getOpenRegisterUserFolder();
-        } catch (Exception) {
-            $this->logger->error(message: "Can't find share for $path because OpenRegister user folder couldn't be found.");
-            return null;
-        }
-
-        try {
-            // Note: if we ever want to find shares for folders instead of files, this should work for folders as well?
-            $file = $userFolder->get(path: $path);
-        } catch (NotFoundException $e) {
-            $this->logger->error(message: "Can't find share for $path because file doesn't exist.");
-            return null;
-        }
-
-        if ($file instanceof File) {
-            // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues.
-            $this->checkOwnership($file);
-
-            $shares = $this->shareManager->getSharesBy(userId: $userId, shareType: $shareType, path: $file, reshares: true);
-            if (count($shares) > 0) {
-                return $shares[0];
-            }
-        }
-
-        return null;
-    }//end findShare()
-
-    /**
      * Creates a IShare object using the $shareData array data.
      *
      * @param array{
@@ -1499,6 +1393,8 @@ class FileService
      * @throws Exception If creating the share fails
      *
      * @return IShare The Created IShare object
+     *
+     * @psalm-suppress UnusedReturnValue
      */
     private function createShare(array $shareData): IShare
     {
@@ -1776,6 +1672,8 @@ class FileService
      * @throws Exception If creating the share link fails
      *
      * @return string The share link
+     *
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function createShareLink(string $path, ?int $shareType=3, ?int $permissions=null): string
     {
@@ -1818,36 +1716,6 @@ class FileService
             throw new Exception('Can\'t create share link.');
         }
     }//end createShareLink()
-
-    /**
-     * Deletes all share links for a file or folder.
-     *
-     * @param Node $file The file or folder whose shares should be deleted
-     *
-     * @throws Exception If the shares cannot be deleted
-     *
-     * @return Node The file with shares deleted
-     */
-    public function deleteShareLinks(Node $file): Node
-    {
-        // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues.
-        $this->checkOwnership($file);
-
-        // IShare documentation see https://nextcloud-server.netlify.app/classes/ocp-share-ishare.
-        $shares = $this->findShares($file);
-
-        foreach ($shares as $share) {
-            try {
-                $this->shareManager->deleteShare($share);
-                $this->logger->info(message: "Successfully deleted share for path: {$share->getNode()->getPath()}.");
-            } catch (Exception $e) {
-                $this->logger->error(message: "Failed to delete share for path {$share->getNode()->getPath()}: ".$e->getMessage());
-                throw new Exception("Failed to delete share for path {$share->getNode()->getPath()}: ".$e->getMessage());
-            }
-        }
-
-        return $file;
-    }//end deleteShareLinks()
 
     /**
      * Creates a new folder in NextCloud, unless it already exists.
@@ -1966,7 +1834,7 @@ class FileService
         } else {
             // Handle string file paths (existing logic).
             // Clean file path and extract filename using utility method.
-            $pathInfo = $this->extractFileNameFromPath((string)$filePath);
+            $pathInfo = $this->extractFileNameFromPath($filePath);
             $filePath = $pathInfo['cleanPath'];
             $fileName = $pathInfo['fileName'];
 
@@ -2103,19 +1971,6 @@ class FileService
     }//end updateFile()
 
     /**
-     * Constructs a file path for a specific object.
-     *
-     * @param string|ObjectEntity $object   The object entity or object UUID
-     * @param string             $filePath The relative file path within the object folder
-     *
-     * @return string The complete file path
-     */
-    public function getObjectFilePath(string | ObjectEntity $object, string $filePath): string
-    {
-        return $object->getFolder().'/'.$filePath;
-    }//end getObjectFilePath()
-
-    /**
      * Deletes a file from NextCloud.
      *
      * This method can accept either a file path string, file ID integer, or a Node object for deletion.
@@ -2166,96 +2021,6 @@ class FileService
 
         return true;
     }//end deleteFile()
-
-    /**
-     * Update an object's files array by removing a deleted file reference.
-     *
-     * This method searches through the object's files array and removes any entries
-     * that reference the deleted file path. It handles both absolute and relative paths.
-     *
-     * @param ObjectEntity $object           The object entity to update
-     * @param string       $deletedFilePath  The path of the deleted file
-     *
-     * @return void
-     *
-     * @throws Exception If updating the object fails
-     *
-     * @psalm-return void
-     * @phpstan-return void
-     */
-    private function updateObjectFilesArray(ObjectEntity $object, string $deletedFilePath): void
-    {
-        try {
-            // Get the current files array from the object.
-            $objectFiles = $object->getFiles() ?? [];
-
-            if (empty($objectFiles) === true) {
-                $this->logger->debug(message: "Object {$object->getId()} has no files array to update");
-                return;
-            }
-
-            $originalCount = count($objectFiles);
-            $updatedFiles = [];
-
-            // Extract just the filename from the deleted file path for comparison.
-            $deletedFileName = basename($deletedFilePath);
-
-            // Filter out any files that match the deleted file.
-            foreach ($objectFiles as $fileEntry) {
-                $shouldKeep = true;
-
-                // Handle different possible structures of file entries.
-                if (is_array($fileEntry) === true) {
-                    // Check various possible path fields in the file entry.
-                    $pathFields = ['path', 'title', 'name', 'filename', 'accessUrl', 'downloadUrl'];
-
-                    foreach ($pathFields as $field) {
-                        if (($fileEntry[$field] ?? null) !== null) {
-                            $entryPath = $fileEntry[$field];
-                            $entryFileName = basename($entryPath);
-
-                            // Check if this entry references the deleted file.
-                            if ($entryPath === $deletedFilePath ||
-                                $entryFileName === $deletedFileName ||
-                                str_ends_with($entryPath, $deletedFilePath) === true) {
-                                $shouldKeep = false;
-                                $this->logger->info(message: "Removing file entry from object {$object->getId()}: $entryPath");
-                                break;
-                            }
-                        }
-                    }
-                } else if (is_string($fileEntry) === true) {
-                    // Handle simple string entries.
-                    $entryFileName = basename($fileEntry);
-                    if ($fileEntry === $deletedFilePath ||
-                        $entryFileName === $deletedFileName ||
-                        str_ends_with($fileEntry, $deletedFilePath) === true) {
-                        $shouldKeep = false;
-                        $this->logger->info(message: "Removing file entry from object {$object->getId()}: $fileEntry");
-                    }
-                }
-
-                if ($shouldKeep === true) {
-                    $updatedFiles[] = $fileEntry;
-                }
-            }
-
-            // Only update the object if files were actually removed.
-            if (count($updatedFiles) < $originalCount) {
-                $removedCount = $originalCount - count($updatedFiles);
-                $this->logger->info(message: "Removed $removedCount file reference(s) from object {$object->getId()}");
-
-//                $object->setFiles($updatedFiles);
-//                $this->objectEntityMapper->update($object);
-            } else {
-                $this->logger->debug(message: "No file references found to remove from object {$object->getId()}");
-            }
-
-        } catch (Exception $e) {
-            $this->logger->error(message: "Failed to update object files array for object {$object->getId()}: " . $e->getMessage());
-            throw new Exception("Failed to update object files array: " . $e->getMessage());
-        }
-    }//end updateObjectFilesArray()
 
     /**
      * Attach tags to a file.
@@ -2360,7 +2125,7 @@ class FileService
      * @phpstan-param array<int, string> $tags
      * @psalm-param array<int, string> $tags
      */
-    public function addFile(ObjectEntity | string $objectEntity, string $fileName, string $content, bool $share = false, array $tags = [], int | string | Schema | null $schema = null, int | string | Register | null $register = null, int|string|null $registerId = null): File
+    public function addFile(ObjectEntity | string $objectEntity, string $fileName, string $content, bool $share = false, array $tags = [], int | string | Schema | null $_schema = null, int | string | Register | null $_register = null, int|string|null $registerId = null): File
     {
 		try {
 			// Ensure we have an ObjectEntity instance.
@@ -2388,9 +2153,6 @@ class FileService
             // Security: Block executable files.
             $this->blockExecutableFile(fileName: $fileName, fileContent: $content);
 
-            /**
-             * @var File $file
-             */
             $file = $folder->newFile($fileName);
 
             // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues.
@@ -2757,7 +2519,6 @@ class FileService
         $originalFile = $file;
         $this->logger->info(message: "publishFile: Original file parameter received: '$originalFile'");
 
-        $fileNode = null;
 
         // If $file is an integer (file ID), try to find the file directly by ID.
         if (is_int($file) === true) {
@@ -2774,7 +2535,7 @@ class FileService
         } else {
             // Handle string file paths (existing logic).
             // Clean file path and extract filename using utility method.
-            $pathInfo = $this->extractFileNameFromPath((string)$file);
+            $pathInfo = $this->extractFileNameFromPath($file);
             $filePath = $pathInfo['cleanPath'];
             $fileName = $pathInfo['fileName'];
 
@@ -2879,7 +2640,6 @@ class FileService
         $originalFilePath = $filePath;
         $this->logger->info(message: "unpublishFile: Original file path received: '$originalFilePath'");
 
-        $file = null;
 
         // If $filePath is an integer (file ID), try to find the file directly by ID.
         if (is_int($filePath) === true) {
@@ -2896,7 +2656,7 @@ class FileService
         } else {
             // Handle string file paths (existing logic).
             // Clean file path and extract filename using utility method.
-            $pathInfo = $this->extractFileNameFromPath((string)$filePath);
+            $pathInfo = $this->extractFileNameFromPath($filePath);
             $filePath = $pathInfo['cleanPath'];
             $fileName = $pathInfo['fileName'];
 
@@ -3149,67 +2909,6 @@ class FileService
     }//end getZipErrorMessage()
 
     /**
-     * Find all files tagged with a specific object identifier.
-     *
-     * This method searches for files that have been tagged with the 'object:' prefix
-     * followed by the specified object identifier (UUID or ID).
-     *
-     * @param string $objectIdentifier The object UUID or ID to search for
-     *
-     * @return array Array of file nodes that belong to the specified object
-     *
-     * @throws \Exception If there's an error during the search
-     *
-     * @psalm-return array<int, Node>
-     * @phpstan-return array<int, Node>
-     */
-    public function findFilesByObjectId(string $objectIdentifier): array
-    {
-        try {
-            // Create the object tag we're looking for.
-            $objectTag = 'object:' . $objectIdentifier;
-
-            // Get the tag object.
-            $tag = $this->systemTagManager->getTag(tagName: $objectTag, userVisible: true, userAssignable: true);
-
-            // Get all file IDs that have this tag.
-            $fileIds = $this->systemTagMapper->getObjectIdsForTags(
-                tagIds: [$tag->getId()],
-                objectType: self::FILE_TAG_TYPE
-            );
-
-            $files = [];
-            if (empty($fileIds) === false) {
-                // Get the user folder to resolve file paths.
-                $userFolder = $this->getOpenRegisterUserFolder();
-
-                // Convert file IDs to actual file nodes.
-                foreach ($fileIds as $fileId) {
-                    try {
-                        // Ensure fileId is an integer for getById.
-                        $fileIdInt = (is_numeric($fileId) === true) === true ? (int) $fileId : null;
-                        if ($fileIdInt === null) {
-                            continue;
-                        }
-                        $file = $userFolder->getById($fileIdInt);
-                        if (empty($file) === false) {
-                            $files = array_merge($files, $file);
-                        }
-                    } catch (NotFoundException) {
-                        // File might have been deleted, skip it.
-                        continue;
-                    }
-                }
-            }
-
-            return $files;
-        } catch (\Exception $e) {
-            $this->logger->error(message: 'Failed to find files by object ID: ' . $e->getMessage());
-            throw new \Exception('Failed to find files by object ID: ' . $e->getMessage());
-        }
-    }//end findFilesByObjectId()
-
-    /**
      * Debug method to find a file by its ID anywhere in the OpenRegister folder structure
      *
      * @param int $fileId The file ID to search for
@@ -3288,125 +2987,6 @@ class FileService
             return [];
         }
     }//end debugListObjectFiles()
-
-    /**
-     * Test method to verify file ID lookup functionality
-     * This method can be called to test if files can be found by ID
-     *
-     * @param int $fileId The file ID to test lookup for
-     * @param ObjectEntity|null $object Optional object to test object folder lookup
-     *
-     * @return array Test results
-     */
-    public function testFileLookup(int $fileId, ?ObjectEntity $object = null): array
-    {
-        $results = [
-            'file_id' => $fileId,
-            'object_id' => $this->getObjectId($object),
-            'tests' => []
-        ];
-
-        // Test 1: Find file by ID in OpenRegister folder.
-        $this->logger->info(message: "testFileLookup: Testing file ID lookup for file $fileId");
-        $fileInfo = $this->debugFindFileById($fileId);
-        $results['tests']['find_by_id'] = [
-            'success' => $fileInfo !== null,
-            'file_info' => $fileInfo
-        ];
-
-        // Test 2: If object provided, test object folder listing.
-        if ($object !== null) {
-            $this->logger->info(message: "testFileLookup: Testing object folder listing for object " . $object->getId());
-            $objectFiles = $this->debugListObjectFiles($object);
-            $results['tests']['object_folder_listing'] = [
-                'success' => empty($objectFiles) === false,
-                'file_count' => count($objectFiles),
-                'files' => $objectFiles
-            ];
-
-            // Test 3: Check if the file ID is in the object's folder.
-            $fileInObjectFolder = false;
-            foreach ($objectFiles as $file) {
-                if ($file['id'] === $fileId) {
-                    $fileInObjectFolder = true;
-                    break;
-                }
-            }
-            $results['tests']['file_in_object_folder'] = [
-                'success' => $fileInObjectFolder,
-                'message' => $this->getFileInObjectFolderMessage(fileInObjectFolder: $fileInObjectFolder, fileId: $fileId)
-            ];
-        }
-
-        // Test 4: Test updateFile with file ID path format.
-        if ($fileInfo !== null) {
-            $testPath = $fileId . '/' . $fileInfo['name'];
-            $this->logger->info(message: "testFileLookup: Testing updateFile with path: $testPath");
-
-            try {
-                // Don't actually update, just test the lookup logic.
-                $userFolder = $this->getOpenRegisterUserFolder();
-
-                // Simulate the updateFile logic.
-                $fileName = $fileInfo['name'];
-                $foundByFilename = false;
-                $foundByPath = false;
-                $foundById = false;
-
-                // Test object folder lookup if object provided.
-                if ($object !== null) {
-                    try {
-                        $objectFolder = $this->getObjectFolder($object);
-                        if ($objectFolder !== null) {
-                            try {
-                                $file = $objectFolder->get($fileName);
-                                $foundByFilename = true;
-                            } catch (\Exception $e) {
-                                // Not found by filename.
-                            }
-                        }
-                    } catch (\Exception $e) {
-                        // Object folder error.
-                    }
-                }
-
-                // Test user folder path lookup.
-                try {
-                    $file = $userFolder->get($testPath);
-                    $foundByPath = true;
-                } catch (\Exception $e) {
-                    // Not found by path.
-                }
-
-                // Test user folder ID lookup.
-                try {
-                    $nodes = $userFolder->getById($fileId);
-                    if (empty($nodes) === false) {
-                        $foundById = true;
-                    }
-                } catch (\Exception $e) {
-                    // Not found by ID.
-                }
-
-                $results['tests']['updateFile_simulation'] = [
-                    'test_path' => $testPath,
-                    'found_by_filename_in_object_folder' => $foundByFilename,
-                    'found_by_path_in_user_folder' => $foundByPath,
-                    'found_by_id_in_user_folder' => $foundById,
-                    'success' => $foundByFilename || $foundByPath || $foundById
-                ];
-
-            } catch (\Exception $e) {
-                $results['tests']['updateFile_simulation'] = [
-                    'error' => $e->getMessage(),
-                    'success' => false
-                ];
-            }
-        }
-
-        $this->logger->info(message: "testFileLookup: Test results: " . json_encode($results));
-        return $results;
-    }//end testFileLookup()
 
     /**
      * Blocks executable files from being uploaded for security.

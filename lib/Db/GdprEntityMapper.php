@@ -52,33 +52,5 @@ class GdprEntityMapper extends QBMapper
     }//end __construct()
 
 
-    /**
-     * Find entities by type and value prefix.
-     *
-     * @param string      $type   Entity type.
-     * @param string|null $search Optional search string.
-     *
-     * @return GdprEntity[]
-     */
-    public function findByType(string $type, ?string $search=null): array
-    {
-        $qb = $this->db->getQueryBuilder();
-        $qb->select('*')
-            ->from($this->getTableName())
-            ->where(
-                $qb->expr()->eq('type', $qb->createNamedParameter($type, IQueryBuilder::PARAM_STR))
-            )
-            ->orderBy('detected_at', 'DESC');
-
-        if ($search !== null && $search !== '') {
-            $qb->andWhere(
-                $qb->expr()->like('value', $qb->createNamedParameter('%'.addcslashes($search, '%_\\').'%'))
-            );
-        }
-
-        return $this->findEntities($qb);
-
-    }//end findByType()
-
 
 }//end class

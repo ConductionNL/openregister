@@ -62,7 +62,6 @@ class Version1Date20250712080102 extends SimpleMigrationStep
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /** @var ISchemaWrapper $schema */
         $schema = $schemaClosure();
 
         if ($schema->hasTable('openregister_search_trails') === false) {

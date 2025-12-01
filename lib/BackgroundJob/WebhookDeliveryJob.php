@@ -31,6 +31,8 @@ use Psr\Log\LoggerInterface;
  *
  * This job handles asynchronous webhook delivery, particularly for retries
  * after failed delivery attempts.
+ *
+ * @psalm-suppress UnusedClass
  */
 class WebhookDeliveryJob extends QueuedJob
 {

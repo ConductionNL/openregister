@@ -30,6 +30,10 @@ use OCP\IRequest;
  * Class SearchTrailController
  * Handles all search trail related operations and analytics
  */
+/**
+ * @psalm-suppress UnusedClass
+ */
+
 class SearchTrailController extends Controller
 {
 

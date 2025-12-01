@@ -207,6 +207,16 @@ class Organisation extends Entity implements JsonSerializable
      */
     protected ?array $children = null;
 
+    /**
+     * Array of role definitions for this organisation
+     *
+     * Custom roles/groups for role-based access control (RBAC).
+     * This is typically populated from the authorization field or computed on-demand.
+     *
+     * @var array|null Array of role definitions
+     */
+    protected ?array $roles = null;
+
 
     /**
      * Organisation constructor
@@ -335,92 +345,7 @@ class Organisation extends Entity implements JsonSerializable
     }//end getUserIds()
 
 
-    /**
-     * Add a role to this organisation
-     *
-     * @param array $role The role definition to add (e.g., ['id' => 'admin', 'name' => 'Administrator', 'permissions' => [...]])
-     *
-     * @return static Returns this organisation for method chaining
-     */
-    public function addRole(array $role): static
-    {
-        if ($this->roles === null) {
-                $this->roles = [];
-        }
 
-        // Check if role with same ID already exists.
-        $roleId = $role['id'] ?? $role['name'] ?? null;
-        if ($roleId !== null) {
-            $exists = false;
-            foreach ($this->roles as $existingRole) {
-                $existingId = $existingRole['id'] ?? $existingRole['name'] ?? null;
-                if ($existingId === $roleId) {
-                    $exists = true;
-                    break;
-                }
-            }
-
-            if ($exists === false) {
-                                $this->roles[] = $role;
-            }
-        }
-
-        return $this;
-
-    }//end addRole()
-
-
-    /**
-     * Remove a role from this organisation
-     *
-     * @param string $roleId The role ID or name to remove
-     *
-     * @return static Returns this organisation for method chaining
-     */
-    public function removeRole(string $roleId): static
-    {
-        if ($this->roles === null) {
-            return $this;
-        }
-
-                $this->roles = array_values(
-                array_filter(
-                $this->roles,
-                function ($role) use ($roleId) {
-                    $currentId = $role['id'] ?? $role['name'] ?? null;
-                    return $currentId !== $roleId;
-                }
-                )
-                );
-
-        return $this;
-
-    }//end removeRole()
-
-
-    /**
-     * Check if a role exists in this organisation
-     *
-     * @param string $roleId The role ID or name to check
-     *
-     * @return bool True if role exists in this organisation
-     */
-    public function hasRole(string $roleId): bool
-    {
-        if ($this->roles === null) {
-            return false;
-        }
-
-        foreach ($this->roles as $role) {
-            $currentId = $role['id'] ?? $role['name'] ?? null;
-            if ($currentId === $roleId) {
-                return true;
-            }
-        }
-
-        return false;
-
-    }//end hasRole()
 
 
     /**
@@ -678,31 +603,6 @@ class Organisation extends Entity implements JsonSerializable
     }//end setParent()
 
 
-    /**
-     * Check if this organisation has a parent
-     *
-     * @return bool True if organisation has a parent, false otherwise
-     */
-    public function hasParent(): bool
-    {
-        return $this->parent !== null && $this->parent !== '';
-
-    }//end hasParent()
-
-
-    /**
-     * Get child organisation UUIDs
-     *
-     * This property is computed and populated via OrganisationMapper::findChildrenChain().
-     * It is not stored in the database.
-     *
-     * @return array Array of child organisation UUIDs
-     */
-    public function getChildren(): array
-    {
-        return $this->children ?? [];
-
-    }//end getChildren()
 
 
     /**
@@ -722,17 +622,6 @@ class Organisation extends Entity implements JsonSerializable
 
     }//end setChildren()
 
-
-    /**
-     * Check if this organisation has children
-     *
-     * @return bool True if organisation has children, false otherwise
-     */
-    public function hasChildren(): bool
-    {
-        return !empty($this->children);
-
-    }//end hasChildren()
 
 
     /**

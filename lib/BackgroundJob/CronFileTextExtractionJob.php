@@ -55,25 +55,6 @@ class CronFileTextExtractionJob extends TimedJob
     private const DEFAULT_BATCH_SIZE = 10;
 
 
-    /**
-     * Constructor
-     *
-     * @param ITimeFactory $time Time factory for job scheduling
-     *
-     * @return void
-     */
-    public function __construct(ITimeFactory $time)
-    {
-        parent::__construct($time);
-
-        // Set interval to 15 minutes (configurable via settings).
-        $this->setInterval(self::DEFAULT_INTERVAL);
-
-        // Set as time insensitive to run during low-load periods.
-        $this->setTimeSensitivity(IJob::TIME_INSENSITIVE);
-
-    }//end __construct()
-
 
     /**
      * Execute the cron file text extraction job
@@ -228,44 +209,6 @@ class CronFileTextExtractionJob extends TimedJob
 
     }//end run()
 
-
-    /**
-     * Get pending files for extraction based on scope
-     *
-     * @param FileMapper      $fileMapper      File mapper
-     * @param string          $extractionScope Extraction scope (none, all, folders, objects)
-     * @param int             $batchSize       Batch size limit
-     * @param LoggerInterface $logger          Logger
-     *
-     * @return array List of pending files
-     */
-    private function getPendingFiles(
-        FileMapper $fileMapper,
-        string $extractionScope,
-        int $batchSize,
-        LoggerInterface $logger
-    ): array {
-        try {
-            // Get untracked files (files without chunks) based on extraction scope.
-            // Note: Extraction scope filtering may need enhancement based on specific requirements.
-            // For now, we get all untracked files and let TextExtractionService handle scope checking.
-            $files = $fileMapper->findUntrackedFiles($batchSize);
-
-            // Filter by extraction scope if needed.
-            // For 'objects' scope, we'd need to check if files are attached to objects.
-            // For 'folders' scope, we'd need to check if files are in specific folders.
-            // This is a simplified implementation - scope filtering happens in TextExtractionService.
-            return $files;
-        } catch (\Exception $e) {
-            $logger->error(
-                    'Failed to get pending files for cron extraction',
-                    ['error' => $e->getMessage()]
-                    );
-
-            return [];
-        }//end try
-
-    }//end getPendingFiles()
 
 
 }//end class

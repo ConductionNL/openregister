@@ -63,24 +63,6 @@ class ConfigurationCacheService
     private OrganisationService $organisationService;
 
 
-    /**
-     * Constructor
-     *
-     * @param ISession            $session             Session interface
-     * @param ConfigurationMapper $configurationMapper Configuration mapper
-     * @param OrganisationService $organisationService Organisation service
-     */
-    public function __construct(
-        ISession $session,
-        ConfigurationMapper $configurationMapper,
-        OrganisationService $organisationService
-    ) {
-        $this->session = $session;
-        $this->configurationMapper = $configurationMapper;
-        $this->organisationService = $organisationService;
-
-    }//end __construct()
-
 
     /**
      * Get configurations for the active organisation
@@ -118,68 +100,7 @@ class ConfigurationCacheService
     }//end getConfigurationsForActiveOrganisation()
 
 
-    /**
-     * Invalidate the configuration cache for the active organisation
-     *
-     * Call this method when configurations are created, updated, or deleted
-     * to ensure the cache is refreshed on the next request.
-     *
-     * @return void
-     */
-    public function invalidateCache(): void
-    {
-        $activeOrg = $this->organisationService->getActiveOrganisation();
-        if ($activeOrg === null) {
-            return;
-        }
 
-        $orgUuid    = $activeOrg->getUuid();
-        $sessionKey = self::SESSION_KEY_PREFIX.$orgUuid;
-
-        // Remove from session.
-        $this->session->remove($sessionKey);
-
-    }//end invalidateCache()
-
-
-    /**
-     * Invalidate cache for a specific organisation
-     *
-     * @param string $organisationUuid Organisation UUID
-     *
-     * @return void
-     */
-    public function invalidateCacheForOrganisation(string $organisationUuid): void
-    {
-        $sessionKey = self::SESSION_KEY_PREFIX.$organisationUuid;
-        $this->session->remove($sessionKey);
-
-    }//end invalidateCacheForOrganisation()
-
-
-    /**
-     * Clear all configuration caches
-     *
-     * Removes all cached configurations from the session.
-     * Useful for administrative operations or when switching organisations.
-     *
-     * @return void
-     */
-    public function clearAllCaches(): void
-    {
-        // Get all session keys and remove those that match our prefix.
-        $sessionKeys = [];
-        if (method_exists($this->session, 'getKeys') === true) {
-            $sessionKeys = $this->session->getKeys();
-        }
-
-        foreach ($sessionKeys as $key) {
-            if (strpos($key, self::SESSION_KEY_PREFIX) === 0) {
-                $this->session->remove($key);
-            }
-        }
-
-    }//end clearAllCaches()
 
 
 }//end class

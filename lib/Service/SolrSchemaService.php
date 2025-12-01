@@ -310,30 +310,6 @@ class SolrSchemaService
     // Auto-classification results (multiValued=true).
     ];
 
-    /**
-     * Field type mappings from OpenRegister to SOLR
-     *
-     * @var array<string, string>
-     */
-    private array $fieldTypeMappings = [
-        'string'  => '_s',
-    // String, facetable.
-        'text'    => '_t',
-    // Text, searchable.
-        'integer' => '_i',
-    // Integer.
-        'number'  => '_f',
-    // Float.
-        'boolean' => '_b',
-    // Boolean.
-        'date'    => '_dt',
-    // Date/DateTime.
-        'array'   => '_ss',
-    // String array.
-        'object'  => '_json',
-    // JSON object (if supported).
-    ];
-
 
     /**
      * Constructor
@@ -365,6 +341,8 @@ class SolrSchemaService
      * @param string $similarity Similarity function: 'cosine', 'dot_product', or 'euclidean'
      *
      * @return bool Success status
+     *
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function ensureVectorFieldType(
         string $collection,
@@ -811,75 +789,6 @@ class SolrSchemaService
     }//end generateTenantId()
 
 
-    /**
-     * Mirror a single OpenRegister schema to SOLR
-     *
-     * @param  \OCA\OpenRegister\Db\Schema $schema OpenRegister schema entity
-     * @param  bool                        $force  Force update existing fields
-     * @return array Field mapping results
-     */
-    private function mirrorSingleSchema($schema, bool $force=false): array
-    {
-        $properties = $schema->getProperties();
-        if (empty($properties) === true || is_array($properties) === false) {
-            return ['fields' => 0, 'message' => 'No properties to mirror'];
-        }
-
-        $fieldsCreated = 0;
-        $solrFields    = [];
-
-        // Convert OpenRegister properties to SOLR fields.
-        foreach ($properties as $fieldName => $fieldDefinition) {
-            $solrFieldName = $this->generateSolrFieldName($fieldName);
-            $solrFieldType = $this->determineSolrFieldType($fieldDefinition);
-
-            if (($solrFieldName !== null) === true && ($solrFieldType !== null) === true) {
-                $isFacetable = $fieldDefinition['facetable'] ?? true;
-
-                // **FILE TYPE HANDLING**: File fields should not be indexed to avoid size limits
-                $type        = $fieldDefinition['type'] ?? 'string';
-                $format      = $fieldDefinition['format'] ?? '';
-                $isFileField = ($type === 'file' || $format === 'file' || $format === 'binary' ||
-                              in_array($format, ['data-url', 'base64', 'image', 'document']));
-
-                $solrFields[$solrFieldName] = [
-                    'type'        => $solrFieldType,
-                    'stored'      => true,
-                    'indexed'     => ($isFileField === false),
-                // File fields are stored but not indexed.
-                    'multiValued' => $this->isMultiValued($fieldDefinition),
-                    'docValues'   => $isFacetable && ($isFileField === false),
-                // File fields can't have docValues.
-                    'facetable'   => $isFacetable && ($isFileField === false),
-                // File fields can't be faceted.
-                ];
-                $fieldsCreated++;
-            }//end if
-        }//end foreach
-
-        // Apply fields to SOLR collection.
-        if (empty($solrFields) === false) {
-            $this->applySolrFields($solrFields, $force);
-        }
-
-        $this->logger->debug(
-                'Schema mirrored',
-                [
-                    'app'              => 'openregister',
-                    'schema_id'        => $schema->getId(),
-                    'schema_title'     => $schema->getTitle(),
-                    'fields_processed' => $fieldsCreated,
-                    'solr_fields'      => array_keys($solrFields),
-                ]
-                );
-
-        return [
-            'fields'      => $fieldsCreated,
-            'solr_fields' => $solrFields,
-        ];
-
-    }//end mirrorSingleSchema()
-
 
     /**
      * Generate SOLR field name with consistent self_ prefix (no suffixes needed)
@@ -987,7 +896,7 @@ class SolrSchemaService
      * @param  string $fieldType SOLR field type (unused, kept for API compatibility)
      * @return bool True if field should be multi-valued
      */
-    private function isCoreFieldMultiValued(string $fieldName, string $fieldType): bool
+    private function isCoreFieldMultiValued(string $fieldName, string $_fieldType): bool
     {
         // Only these core fields are legitimately multi-valued.
         $multiValuedCoreFields = [
@@ -1271,6 +1180,8 @@ class SolrSchemaService
      *
      * @param  bool $force Force update existing fields
      * @return bool Success status
+     *
+     * @psalm-suppress UnusedReturnValue
      */
     private function ensureCoreMetadataFields(bool $force=false): bool
     {
@@ -1350,66 +1261,6 @@ class SolrSchemaService
 
     }//end ensureCoreMetadataFields()
 
-
-    /**
-     * Ensure file metadata fields exist in file collection
-     *
-     * @param  bool $force Force update existing fields
-     * @return bool Success status
-     */
-    private function ensureFileMetadataFields(bool $force=false): bool
-    {
-        $this->logger->info(
-                '🔧 Ensuring file metadata fields in SOLR schema',
-                [
-                    'field_count' => count(self::FILE_METADATA_FIELDS),
-                    'force'       => $force,
-                ]
-                );
-
-        $successCount = 0;
-        foreach (self::FILE_METADATA_FIELDS as $fieldName => $fieldType) {
-            try {
-                $fieldConfig = [
-                    'type'        => $fieldType,
-                    'stored'      => true,
-                    'indexed'     => $this->shouldFileFieldBeIndexed($fieldName),
-                    'multiValued' => $this->isFileFieldMultiValued($fieldName),
-                    'docValues'   => $this->shouldFileFieldHaveDocValues($fieldName),
-                ];
-
-                if ($this->addOrUpdateSolrField($fieldName, $fieldConfig, $force) === true) {
-                    $successCount++;
-                    $this->logger->debug(
-                            '✅ File metadata field ensured',
-                            [
-                                'field' => $fieldName,
-                                'type'  => $fieldType,
-                            ]
-                            );
-                }
-            } catch (\Exception $e) {
-                $this->logger->error(
-                        '❌ Failed to ensure file metadata field',
-                        [
-                            'field' => $fieldName,
-                            'error' => $e->getMessage(),
-                        ]
-                        );
-            }//end try
-        }//end foreach
-
-        $this->logger->info(
-                'File metadata fields processing completed',
-                [
-                    'successful' => $successCount,
-                    'total'      => count(self::FILE_METADATA_FIELDS),
-                ]
-                );
-
-        return $successCount === count(self::FILE_METADATA_FIELDS);
-
-    }//end ensureFileMetadataFields()
 
 
     /**
@@ -1624,6 +1475,8 @@ class SolrSchemaService
      * @param  array $solrFields SOLR field definitions
      * @param  bool  $force      Force update existing fields
      * @return bool Success status
+     *
+     * @psalm-suppress UnusedReturnValue
      */
     private function applySolrFields(array $solrFields, bool $force=false): bool
     {
@@ -1795,38 +1648,6 @@ class SolrSchemaService
 
     }//end makeSolrSchemaRequest()
 
-
-    /**
-     * Get schema mirroring statistics
-     *
-     * @return array Statistics about current schema state
-     */
-    public function getSchemaStats(): array
-    {
-        try {
-            $tenantId       = $this->settingsService->getTenantId();
-            $organisationId = $this->settingsService->getOrganisationId();
-
-            // Get schema counts.
-            $schemaCount = $this->schemaMapper->findAll(null, null, [$organisationId]);
-
-            return [
-                'success'              => true,
-                'tenant_id'            => $tenantId,
-                'organisation_id'      => $organisationId,
-                'openregister_schemas' => count($schemaCount),
-                'solr_collection'      => $this->solrService->getTenantCollectionName(),
-                'last_sync'            => null,
-            // TODO: Track last sync time.
-            ];
-        } catch (\Exception $e) {
-            return [
-                'success' => false,
-                'error'   => $e->getMessage(),
-            ];
-        }//end try
-
-    }//end getSchemaStats()
 
 
     /**
