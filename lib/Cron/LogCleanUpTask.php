@@ -30,6 +30,8 @@ use Psr\Log\LoggerInterface;
  * to prevent the database from growing indefinitely and maintain performance.
  *
  * @package OCA\OpenRegister\Cron
+ *
+ * @psalm-suppress UnusedClass
  */
 class LogCleanUpTask extends TimedJob
 {

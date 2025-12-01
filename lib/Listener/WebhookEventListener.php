@@ -84,21 +84,6 @@ class WebhookEventListener implements IEventListener
     private LoggerInterface $logger;
 
 
-    /**
-     * Constructor
-     *
-     * @param WebhookService  $webhookService Webhook service
-     * @param LoggerInterface $logger         Logger
-     */
-    public function __construct(
-        WebhookService $webhookService,
-        LoggerInterface $logger
-    ) {
-        $this->webhookService = $webhookService;
-        $this->logger         = $logger;
-
-    }//end __construct()
-
 
     /**
      * Handle event

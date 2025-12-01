@@ -100,33 +100,6 @@ class ConfigurationMapper extends QBMapper
     private const SESSION_KEY_PREFIX = 'openregister_configurations_';
 
 
-    /**
-     * ConfigurationMapper constructor.
-     *
-     * @param IDBConnection       $db                  Database connection instance
-     * @param OrganisationService $organisationService Organisation service for multi-tenancy
-     * @param IUserSession        $userSession         User session
-     * @param IGroupManager       $groupManager        Group manager for RBAC
-     * @param ISession            $session             Session for caching
-     * @param IEventDispatcher    $eventDispatcher     Event dispatcher
-     */
-    public function __construct(
-        IDBConnection $db,
-        OrganisationService $organisationService,
-        IUserSession $userSession,
-        IGroupManager $groupManager,
-        ISession $session,
-        IEventDispatcher $eventDispatcher
-    ) {
-        parent::__construct($db, 'openregister_configurations', Configuration::class);
-        $this->organisationService = $organisationService;
-        $this->userSession         = $userSession;
-        $this->groupManager        = $groupManager;
-        $this->session         = $session;
-        $this->eventDispatcher = $eventDispatcher;
-
-    }//end __construct()
-
 
     /**
      * Find a configuration by its ID
@@ -157,37 +130,6 @@ class ConfigurationMapper extends QBMapper
 
     }//end find()
 
-
-    /**
-     * Find configurations by type
-     *
-     * @param string $type   Configuration type
-     * @param int    $limit  Maximum number of results
-     * @param int    $offset Offset for pagination
-     *
-     * @return Configuration[] Array of configuration entities
-     * @throws \Exception If user doesn't have read permission
-     */
-    public function findByType(string $type, int $limit=50, int $offset=0): array
-    {
-        // Verify RBAC permission to read.
-        $this->verifyRbacPermission('read', 'configuration');
-
-        $qb = $this->db->getQueryBuilder();
-
-        $qb->select('*')
-            ->from($this->tableName)
-            ->where($qb->expr()->eq('type', $qb->createNamedParameter($type, IQueryBuilder::PARAM_STR)))
-            ->setMaxResults($limit)
-            ->setFirstResult($offset)
-            ->orderBy('created', 'DESC');
-
-        // Apply organisation filter.
-        $this->applyOrganisationFilter($qb);
-
-        return $this->findEntities($qb);
-
-    }//end findByType()
 
 
     /**
@@ -297,39 +239,6 @@ class ConfigurationMapper extends QBMapper
     }//end findBySyncEnabled()
 
 
-    /**
-     * Find configurations by local/external status
-     *
-     * @param bool $isLocal True for local configurations, false for external
-     * @param int  $limit   Maximum number of results
-     * @param int  $offset  Offset for pagination
-     *
-     * @return Configuration[] Array of configuration entities
-     * @throws \Exception If user doesn't have read permission
-     *
-     * @since 0.2.10
-     */
-    public function findByIsLocal(bool $isLocal, int $limit=50, int $offset=0): array
-    {
-        // Verify RBAC permission to read.
-        $this->verifyRbacPermission('read', 'configuration');
-
-        $qb = $this->db->getQueryBuilder();
-
-        $qb->select('*')
-            ->from($this->tableName)
-            ->where($qb->expr()->eq('is_local', $qb->createNamedParameter($isLocal, IQueryBuilder::PARAM_BOOL)))
-            ->orderBy('created', 'DESC')
-            ->setMaxResults($limit)
-            ->setFirstResult($offset);
-
-        // Apply organisation filter.
-        $this->applyOrganisationFilter($qb);
-
-        return $this->findEntities($qb);
-
-    }//end findByIsLocal()
-
 
     /**
      * Update synchronization status for a configuration
@@ -343,8 +252,10 @@ class ConfigurationMapper extends QBMapper
      * @throws \Exception If configuration not found or user doesn't have permission
      *
      * @since 0.2.10
+     *
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
-    public function updateSyncStatus(int $id, string $status, \DateTime $syncDate, string $message=''): Configuration
+    public function updateSyncStatus(int $id, string $status, \DateTime $syncDate, string $_message=''): Configuration
     {
         // Verify RBAC permission to update.
         $this->verifyRbacPermission('update', 'configuration');
@@ -456,6 +367,8 @@ class ConfigurationMapper extends QBMapper
      *
      * @return Configuration The deleted configuration
      * @throws \Exception If user doesn't have delete permission or access to this organisation
+     *
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function delete(Entity $entity): Entity
     {
@@ -524,52 +437,6 @@ class ConfigurationMapper extends QBMapper
     }//end updateFromArray()
 
 
-    /**
-     * Count configurations by type
-     *
-     * @param string $type Configuration type
-     *
-     * @return int Number of configurations
-     */
-    public function countByType(string $type): int
-    {
-        $qb = $this->db->getQueryBuilder();
-
-        $qb->select($qb->createFunction('COUNT(*)'))
-            ->from($this->tableName)
-            ->where($qb->expr()->eq('type', $qb->createNamedParameter($type, IQueryBuilder::PARAM_STR)));
-
-        $result = $qb->executeQuery();
-        $count  = $result->fetchOne();
-        $result->closeCursor();
-
-        return (int) $count;
-
-    }//end countByType()
-
-
-    /**
-     * Count configurations by app
-     *
-     * @param string $app App ID
-     *
-     * @return int Number of configurations
-     */
-    public function countByApp(string $app): int
-    {
-        $qb = $this->db->getQueryBuilder();
-
-        $qb->select($qb->createFunction('COUNT(*)'))
-            ->from($this->tableName)
-            ->where($qb->expr()->eq('app', $qb->createNamedParameter($app, IQueryBuilder::PARAM_STR)));
-
-        $result = $qb->executeQuery();
-        $count  = $result->fetchOne();
-        $result->closeCursor();
-
-        return (int) $count;
-
-    }//end countByApp()
 
 
     /**

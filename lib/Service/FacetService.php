@@ -83,6 +83,8 @@ class FacetService
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly SchemaMapper $schemaMapper,
         /**
+         *
+         * @psalm-suppress UnusedProperty
          */
         private readonly ICacheFactory $cacheFactory,
         private readonly IUserSession $userSession,
@@ -260,7 +262,7 @@ class FacetService
      *
      * @return array Facetable field configuration
      */
-    public function getFacetableFields(array $baseQuery, int $limit=100): array
+    public function getFacetableFields(array $baseQuery, int $_limit=100): array
     {
         $startTime = microtime(true);
 

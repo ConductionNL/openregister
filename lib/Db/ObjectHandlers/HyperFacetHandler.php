@@ -434,7 +434,7 @@ class HyperFacetHandler
      * @psalm-param    array<string, mixed> $datasetStats
      * @psalm-return   array<string, mixed>
      */
-    private function calculateExactFacetsParallel(array $facetConfig, array $baseQuery, array $datasetStats): array
+    private function calculateExactFacetsParallel(array $facetConfig, array $baseQuery, array $_datasetStats): array
     {
         // **OPTIMIZATION**: Separate metadata facets from JSON facets for optimal processing.
         [$metadataFacets, $jsonFacets] = $this->separateFacetTypes($facetConfig);
@@ -1067,7 +1067,7 @@ class HyperFacetHandler
 
 
     // Placeholder methods that would need to be implemented based on specific requirements.
-    private function processJsonFacetsParallel(array $jsonFacets, array $baseQuery): PromiseInterface
+    private function processJsonFacetsParallel(array $_jsonFacets, array $_baseQuery): PromiseInterface
     {
         return new Promise(function ($resolve) {
             // Simplified for now.
@@ -1120,7 +1120,7 @@ class HyperFacetHandler
      *
      * @return array Facet results
      */
-    private function calculateMetadataFacetsHyperFast(array $config, array $baseQuery): array
+    private function calculateMetadataFacetsHyperFast(array $_config, array $_baseQuery): array
     {
 // Simplified - would use index-optimized queries.
     }
@@ -1154,7 +1154,7 @@ class HyperFacetHandler
      *
      * @return array Facet results
      */
-    private function calculateSingleMetadataFacet(string $field, array $config, array $baseQuery): array
+    private function calculateSingleMetadataFacet(string $_field, array $_config, array $_baseQuery): array
     {
 // Would implement specific facet calculation.
     }
@@ -1167,7 +1167,7 @@ class HyperFacetHandler
      *
      * @return string Human-readable label
      */
-    private function getFieldLabel(string $field, mixed $value): string
+    private function getFieldLabel(string $_field, mixed $_value): string
     {
 // Simplified label generation.
     }
@@ -1180,7 +1180,7 @@ class HyperFacetHandler
      *
      * @return void
      */
-    private function applyJsonFieldFilters(IQueryBuilder $queryBuilder, array $filters): void
+    private function applyJsonFieldFilters(IQueryBuilder $_queryBuilder, array $_filters): void
     {
         // Apply JSON field filters efficiently.
     }

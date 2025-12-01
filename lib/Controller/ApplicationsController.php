@@ -35,6 +35,10 @@ use Exception;
  *
  * @package OCA\OpenRegister\Controller
  */
+/**
+ * @psalm-suppress UnusedClass
+ */
+
 class ApplicationsController extends Controller
 {
 

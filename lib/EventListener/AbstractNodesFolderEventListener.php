@@ -92,7 +92,7 @@ class AbstractNodesFolderEventListener implements IEventListener
      *
      * @return void
      */
-    private function handleNodeCopied(NodeCopiedEvent $event): void
+    private function handleNodeCopied(NodeCopiedEvent $_event): void
     {
         // phpcs:ignore.
         // $this->objectService->nodeCopiedEventFunction();
@@ -106,7 +106,7 @@ class AbstractNodesFolderEventListener implements IEventListener
      *
      * @return void
      */
-    private function handleNodeRenamed(NodeRenamedEvent $event): void
+    private function handleNodeRenamed(NodeRenamedEvent $_event): void
     {
         // phpcs:ignore.
         // $this->objectService->nodeRenamedEventFunction();

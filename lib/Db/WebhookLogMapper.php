@@ -44,17 +44,6 @@ class WebhookLogMapper extends QBMapper
 {
 
 
-    /**
-     * WebhookLogMapper constructor
-     *
-     * @param IDBConnection $db Database connection
-     */
-    public function __construct(IDBConnection $db)
-    {
-        parent::__construct($db, 'openregister_webhook_logs', WebhookLog::class);
-
-    }//end __construct()
-
 
     /**
      * Find a webhook log by ID
@@ -168,6 +157,8 @@ class WebhookLogMapper extends QBMapper
      * @param Entity $entity WebhookLog entity to insert
      *
      * @return WebhookLog The inserted log
+     *
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function insert(Entity $entity): Entity
     {
@@ -180,24 +171,6 @@ class WebhookLogMapper extends QBMapper
 
     }//end insert()
 
-
-    /**
-     * Delete old logs
-     *
-     * @param DateTime $before Delete logs created before this date
-     *
-     * @return int Number of deleted logs
-     */
-    public function deleteOldLogs(DateTime $before): int
-    {
-        $qb = $this->db->getQueryBuilder();
-
-        $qb->delete($this->getTableName())
-            ->where($qb->expr()->lt('created', $qb->createNamedParameter($before, IQueryBuilder::PARAM_DATE)));
-
-        return $qb->executeStatement();
-
-    }//end deleteOldLogs()
 
 
     /**

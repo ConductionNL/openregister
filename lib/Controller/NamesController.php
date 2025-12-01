@@ -50,6 +50,10 @@ use Psr\Log\LoggerInterface;
  * @version   GIT: <git_id>
  * @copyright 2024 Conduction b.v.
  */
+/**
+ * @psalm-suppress UnusedClass
+ */
+
 class NamesController extends Controller
 {
 

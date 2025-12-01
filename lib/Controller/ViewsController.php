@@ -34,6 +34,10 @@ use OCP\AppFramework\Db\DoesNotExistException;
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  */
+/**
+ * @psalm-suppress UnusedClass
+ */
+
 class ViewsController extends Controller
 {
 

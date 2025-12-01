@@ -26,6 +26,10 @@ use OCP\IRequest;
 /**
  * Controller for handling heartbeat requests to prevent connection timeouts.
  */
+/**
+ * @psalm-suppress UnusedClass
+ */
+
 class HeartbeatController extends Controller
 {
 

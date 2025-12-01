@@ -85,30 +85,6 @@ class AgentMapper extends QBMapper
     private IEventDispatcher $eventDispatcher;
 
 
-    /**
-     * AgentMapper constructor.
-     *
-     * @param IDBConnection       $db                  Database connection instance
-     * @param OrganisationService $organisationService Organisation service for multi-tenancy
-     * @param IUserSession        $userSession         User session
-     * @param IGroupManager       $groupManager        Group manager for RBAC
-     * @param IEventDispatcher    $eventDispatcher     Event dispatcher
-     */
-    public function __construct(
-        IDBConnection $db,
-        OrganisationService $organisationService,
-        IUserSession $userSession,
-        IGroupManager $groupManager,
-        IEventDispatcher $eventDispatcher
-    ) {
-        parent::__construct($db, 'openregister_agents', Agent::class);
-        $this->organisationService = $organisationService;
-        $this->userSession         = $userSession;
-        $this->groupManager        = $groupManager;
-        $this->eventDispatcher     = $eventDispatcher;
-
-    }//end __construct()
-
 
     /**
      * Find an agent by its ID
@@ -288,68 +264,6 @@ class AgentMapper extends QBMapper
     }//end canUserModifyAgent()
 
 
-    /**
-     * Find agents by owner
-     *
-     * @param string $owner  Owner user ID
-     * @param int    $limit  Maximum number of results
-     * @param int    $offset Offset for pagination
-     *
-     * @return Agent[] Array of agent entities
-     * @throws \Exception If user doesn't have read permission
-     */
-    public function findByOwner(string $owner, int $limit=50, int $offset=0): array
-    {
-        // Verify RBAC permission to read.
-        $this->verifyRbacPermission('read', 'agent');
-
-        $qb = $this->db->getQueryBuilder();
-
-        $qb->select('*')
-            ->from($this->tableName)
-            ->where($qb->expr()->eq('owner', $qb->createNamedParameter($owner, IQueryBuilder::PARAM_STR)))
-            ->setMaxResults($limit)
-            ->setFirstResult($offset)
-            ->orderBy('created', 'DESC');
-
-        // Apply organisation filter.
-        $this->applyOrganisationFilter($qb);
-
-        return $this->findEntities($qb);
-
-    }//end findByOwner()
-
-
-    /**
-     * Find agents by type
-     *
-     * @param string $type   Agent type
-     * @param int    $limit  Maximum number of results
-     * @param int    $offset Offset for pagination
-     *
-     * @return Agent[] Array of agent entities
-     * @throws \Exception If user doesn't have read permission
-     */
-    public function findByType(string $type, int $limit=50, int $offset=0): array
-    {
-        // Verify RBAC permission to read.
-        $this->verifyRbacPermission('read', 'agent');
-
-        $qb = $this->db->getQueryBuilder();
-
-        $qb->select('*')
-            ->from($this->tableName)
-            ->where($qb->expr()->eq('type', $qb->createNamedParameter($type, IQueryBuilder::PARAM_STR)))
-            ->setMaxResults($limit)
-            ->setFirstResult($offset)
-            ->orderBy('created', 'DESC');
-
-        // Apply organisation filter, allowing NULL organisation for legacy/global agents.
-        $this->applyOrganisationFilter($qb, 'organisation', true);
-
-        return $this->findEntities($qb);
-
-    }//end findByType()
 
 
     /**
@@ -500,6 +414,8 @@ class AgentMapper extends QBMapper
      *
      * @return Agent The deleted agent
      * @throws \Exception If user doesn't have delete permission or access to this organisation
+     *
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function delete(Entity $entity): Entity
     {

@@ -33,6 +33,8 @@ use Exception;
  * Can automatically import updates if configured.
  *
  * @package OCA\OpenRegister\Cron
+ *
+ * @psalm-suppress UnusedClass
  */
 class ConfigurationCheckJob extends TimedJob
 {

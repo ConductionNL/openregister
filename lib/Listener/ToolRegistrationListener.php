@@ -76,30 +76,6 @@ class ToolRegistrationListener implements IEventListener
     private AgentTool $agentTool;
 
 
-    /**
-     * Constructor
-     *
-     * @param RegisterTool    $registerTool    Register tool
-     * @param SchemaTool      $schemaTool      Schema tool
-     * @param ObjectsTool     $objectsTool     Objects tool
-     * @param ApplicationTool $applicationTool Application tool
-     * @param AgentTool       $agentTool       Agent tool
-     */
-    public function __construct(
-        RegisterTool $registerTool,
-        SchemaTool $schemaTool,
-        ObjectsTool $objectsTool,
-        ApplicationTool $applicationTool,
-        AgentTool $agentTool
-    ) {
-        $this->registerTool    = $registerTool;
-        $this->schemaTool      = $schemaTool;
-        $this->objectsTool     = $objectsTool;
-        $this->applicationTool = $applicationTool;
-        $this->agentTool       = $agentTool;
-
-    }//end __construct()
-
 
     /**
      * Handle the event

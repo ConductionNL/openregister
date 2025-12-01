@@ -238,7 +238,7 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
         }
 
         // Extract @self keys for logging.
-        $selfKeys = $this->extractSelfKeys($objectData);
+        $this->extractSelfKeys($objectData);
 
         return [
             'entity_type'         => 'object',

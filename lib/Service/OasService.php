@@ -46,32 +46,26 @@ class OasService
      */
     private array $oas = [];
 
+    /**
+     * Register mapper
+     *
+     * @var RegisterMapper
+     */
+    private RegisterMapper $registerMapper;
 
     /**
-     * Constructor for OasService
+     * Schema mapper
      *
-     * @param RegisterMapper  $registerMapper The register mapper for fetching registers
-     * @param SchemaMapper    $schemaMapper   The schema mapper for fetching schemas
-     * @param IURLGenerator   $urlGenerator   The URL generator for creating paths
-     * @param IConfig         $config         The config service for app settings
-     * @param LoggerInterface $logger         The logger interface
-     *
-     * @return void
+     * @var SchemaMapper
      */
-    public function __construct(
-        private readonly RegisterMapper $registerMapper,
-        private readonly SchemaMapper $schemaMapper,
-        private readonly IURLGenerator $urlGenerator
-        /*
-        private readonly IConfig $config,
-        private readonly LoggerInterface $logger
-        */
-    ) {
-        // Initialize the OAS array with the base OAS.
-        $this->oas = $this->getBaseOas();
+    private SchemaMapper $schemaMapper;
 
-    }//end __construct()
-
+    /**
+     * URL generator
+     *
+     * @var IURLGenerator
+     */
+    private IURLGenerator $urlGenerator;
 
     /**
      * Create OpenAPI Specification for register(s)
@@ -1295,7 +1289,7 @@ class OasService
                 unset($schema['allOf']);
             } else {
                 $validAllOfItems = [];
-                foreach ($schema['allOf'] as $index => $item) {
+                foreach ($schema['allOf'] as $_index => $item) {
                     if (is_array($item) === false || empty($item) === true) {
                     } else {
                         // Validate each allOf item has required structure.

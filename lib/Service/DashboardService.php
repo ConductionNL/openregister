@@ -38,32 +38,47 @@ use Psr\Log\LoggerInterface;
  */
 class DashboardService
 {
-
+    /**
+     * Object entity mapper
+     *
+     * @var ObjectEntityMapper
+     */
+    private ObjectEntityMapper $objectMapper;
 
     /**
-     * Constructor for DashboardService
+     * Audit trail mapper
      *
-     * @param RegisterMapper     $registerMapper   The register mapper instance
-     * @param SchemaMapper       $schemaMapper     The schema mapper instance
-     * @param ObjectEntityMapper $objectMapper     The object entity mapper instance
-     * @param AuditTrailMapper   $auditTrailMapper The audit trail mapper instance
-     * @param WebhookLogMapper   $webhookLogMapper The webhook log mapper instance
-     * @param IDBConnection      $db               The database connection instance
-     * @param LoggerInterface    $logger           The logger instance
-     *
-     * @return void
+     * @var AuditTrailMapper
      */
-    public function __construct(
-        private readonly RegisterMapper $registerMapper,
-        private readonly SchemaMapper $schemaMapper,
-        private readonly ObjectEntityMapper $objectMapper,
-        private readonly AuditTrailMapper $auditTrailMapper,
-        private readonly WebhookLogMapper $webhookLogMapper,
-        private readonly LoggerInterface $logger
-    ) {
+    private AuditTrailMapper $auditTrailMapper;
 
-    }//end __construct()
+    /**
+     * Webhook log mapper
+     *
+     * @var WebhookLogMapper
+     */
+    private WebhookLogMapper $webhookLogMapper;
 
+    /**
+     * Register mapper
+     *
+     * @var RegisterMapper
+     */
+    private RegisterMapper $registerMapper;
+
+    /**
+     * Logger
+     *
+     * @var LoggerInterface
+     */
+    private LoggerInterface $logger;
+
+    /**
+     * Schema mapper
+     *
+     * @var SchemaMapper
+     */
+    private SchemaMapper $schemaMapper;
 
     /**
      * Get statistics for a register/schema combination

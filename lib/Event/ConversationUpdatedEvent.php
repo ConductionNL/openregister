@@ -32,6 +32,8 @@ class ConversationUpdatedEvent extends Event
      * The updated conversation state.
      *
      * @var Conversation The conversation after update.
+     *
+     * @psalm-suppress UnusedProperty
      */
     private Conversation $newConversation;
 
@@ -39,6 +41,8 @@ class ConversationUpdatedEvent extends Event
      * The previous conversation state.
      *
      * @var Conversation The conversation before update.
+     *
+     * @psalm-suppress UnusedProperty
      */
     private Conversation $oldConversation;
 
@@ -60,28 +64,6 @@ class ConversationUpdatedEvent extends Event
     }//end __construct()
 
 
-    /**
-     * Get the updated conversation.
-     *
-     * @return Conversation The conversation after update.
-     */
-    public function getNewConversation(): Conversation
-    {
-        return $this->newConversation;
-
-    }//end getNewConversation()
-
-
-    /**
-     * Get the original conversation.
-     *
-     * @return Conversation The conversation before update.
-     */
-    public function getOldConversation(): Conversation
-    {
-        return $this->oldConversation;
-
-    }//end getOldConversation()
 
 
 }//end class

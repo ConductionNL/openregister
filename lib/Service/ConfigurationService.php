@@ -147,58 +147,12 @@ class ConfigurationService
      */
     private ObjectService $objectService;
 
-
     /**
-     * Constructor
+     * Application data path
      *
-     * @param SchemaMapper                      $schemaMapper        The schema mapper instance
-     * @param RegisterMapper                    $registerMapper      The register mapper instance
-     * @param ObjectEntityMapper                $objectEntityMapper  The object mapper instance
-     * @param ConfigurationMapper               $configurationMapper The configuration mapper instance
-     * @param SchemaPropertyValidatorService    $validator           The schema property validator instance
-     * @param LoggerInterface                   $logger              The logger instance
-     * @param \OCP\App\IAppManager              $appManager          The app manager instance
-     * @param \Psr\Container\ContainerInterface $container           The container instance
-     * @param \OCP\IAppConfig                   $appConfig           The app config instance
-     * @param Client                            $client              The HTTP client instance
-     * @param ObjectService                     $objectService       The object service instance
-     * @param ViewHandler                       $viewHandler         The view handler instance
-     * @param AgentHandler                      $agentHandler        The agent handler instance
-     * @param OrganisationHandler               $organisationHandler The organisation handler instance
-     * @param ApplicationHandler                $applicationHandler  The application handler instance
-     * @param SourceHandler                     $sourceHandler       The source handler instance
+     * @var string The application data path
      */
-    public function __construct(
-        SchemaMapper $schemaMapper,
-        RegisterMapper $registerMapper,
-        ObjectEntityMapper $objectEntityMapper,
-        ConfigurationMapper $configurationMapper,
-        SchemaPropertyValidatorService $validator,
-        LoggerInterface $logger,
-        IAppManager $appManager,
-        ContainerInterface $container,
-        IAppConfig $appConfig,
-        Client $client,
-        ObjectService $objectService,
-        ViewHandler $viewHandler,
-        AgentHandler $agentHandler,
-        OrganisationHandler $organisationHandler,
-        ApplicationHandler $applicationHandler,
-        SourceHandler $sourceHandler
-    ) {
-        $this->schemaMapper        = $schemaMapper;
-        $this->registerMapper      = $registerMapper;
-        $this->objectEntityMapper  = $objectEntityMapper;
-        $this->configurationMapper = $configurationMapper;
-        $this->logger        = $logger;
-        $this->appManager    = $appManager;
-        $this->container     = $container;
-        $this->appConfig     = $appConfig;
-        $this->client        = $client;
-        $this->objectService = $objectService;
-
-    }//end __construct()
-
+    private string $appDataPath;
 
     /**
      * Attempts to retrieve the OpenConnector service from the container.
@@ -550,7 +504,7 @@ class ConfigurationService
             if (($property['register'] ?? null) !== null) {
                 if (is_string($property['register']) === true) {
                     $registerId    = $this->getLastNumericSegment(url: $property['register']);
-                    $registerIdStr = (string) $registerId;
+                    $registerIdStr = $registerId;
                     if (($registerIdsAndSlugsMap[$registerIdStr] ?? null) !== null) {
                         /*
                          * @var array<int|string, string> $registerIdsAndSlugsMap
@@ -568,7 +522,7 @@ class ConfigurationService
 
                 if (is_string($property['items']['register']) === true) {
                     $registerId    = $this->getLastNumericSegment(url: $property['items']['register']);
-                    $registerIdStr = (string) $registerId;
+                    $registerIdStr = $registerId;
                     if (($registerIdsAndSlugsMap[$registerIdStr] ?? null) !== null) {
                         /*
                          * @var array<int|string, string> $registerIdsAndSlugsMap
@@ -612,28 +566,6 @@ class ConfigurationService
 
     }//end getLastNumericSegment()
 
-
-    /**
-     * Export an object to OpenAPI format
-     *
-     * @param ObjectEntity $object The object to export
-     *
-     * @return array The OpenAPI object specification
-     */
-    private function exportObject(ObjectEntity $object): array
-    {
-        // Use jsonSerialize to get the JSON representation of the object.
-        $objectArray = $object->jsonSerialize();
-
-        // Remove organisation if present (though objects typically don't have this at top level).
-        // Organisation is instance-specific and should not be exported.
-        if (($objectArray['organisation'] ?? null) !== null) {
-            unset($objectArray['organisation']);
-        }
-
-        return $objectArray;
-
-    }//end exportObject()
 
 
     /**
@@ -765,7 +697,7 @@ class ConfigurationService
     /**
      * @return array<array-key, mixed>|JSONResponse
      */
-    private function getJSONfromFile(array $uploadedFile, ?string $type=null): array | JSONResponse
+    private function getJSONfromFile(array $uploadedFile, ?string $_type=null): array | JSONResponse
     {
         // Check for upload errors.
         if ($uploadedFile['error'] !== UPLOAD_ERR_OK) {
@@ -1215,6 +1147,8 @@ class ConfigurationService
      * @return Configuration The created or updated configuration
      *
      * @throws Exception If configuration creation/update fails
+     *
+     * @psalm-suppress UnusedReturnValue
      */
     private function createOrUpdateConfiguration(array $data, string $appId, string $version, array $result, ?string $owner=null): Configuration
     {
@@ -1722,160 +1656,6 @@ class ConfigurationService
     }//end importSchema()
 
 
-    /**
-     * Import an object from configuration data
-     *
-     * This method imports objects using a combination of register, schema slug, and object name
-     * to determine uniqueness instead of UUID. It also performs version checking to prevent
-     * downgrading existing objects to older versions.
-     *
-     * @param array       $data  The object data.
-     * @param string|null $owner The owner of the object.
-     *
-     * @return ObjectEntity|null The imported object or null if skipped.
-     * @throws Exception If object import fails.
-     */
-    private function importObject(array $data, ?string $owner=null): ?ObjectEntity
-    {
-        try {
-            // Ensure data is consistently an array by converting any stdClass objects.
-            $data = $this->ensureArrayStructure($data);
-
-            // Validate required @self metadata.
-            if (isset($data['@self']['register']) === true || isset($data['@self']['schema']) === true || isset($data['name']) === false) {
-                $this->logger->warning(message: 'Object data missing required @self metadata (register, schema) or name field');
-                return null;
-            }
-
-            $registerId    = $data['@self']['register'];
-            $schemaId      = $data['@self']['schema'];
-            $objectName    = $data['name'];
-            $objectVersion = $data['@self']['version'] ?? $data['version'] ?? '1.0.0';
-
-            // Find existing objects using register, schema, and name combination for uniqueness.
-            $existingObjects = $this->objectEntityMapper->findAll(
-                    limit: null,
-                    offset: null,
-                    filters: [
-                        'register' => $registerId,
-                        'schema'   => $schemaId,
-                        'name'     => $objectName,
-                    ]
-                    );
-
-            $existingObject = null;
-            if (empty($existingObjects) === false) {
-                $existingObject = $existingObjects[0];
-                // Take the first match.
-                $existingObjectData = $existingObject->jsonSerialize();
-                $existingVersion    = $existingObjectData['@self']['version'] ?? $existingObjectData['version'] ?? '1.0.0';
-
-                // Compare versions using version_compare for proper semver comparison.
-                if (version_compare($objectVersion, $existingVersion, '<=') <= 0) {
-                    $this->logger->info(
-                        sprintf(
-                            'Skipping object import as existing version (%s) is newer or equal to import version (%s) for object: %s',
-                            $existingVersion,
-                            $objectVersion,
-                            $objectName
-                        )
-                    );
-                    // Return the existing object without updating.
-                    return $existingObject;
-                }
-
-                $this->logger->info(
-                    sprintf(
-                        'Updating existing object "%s" from version %s to %s',
-                        $objectName,
-                        $existingVersion,
-                        $objectVersion
-                    )
-                );
-            } else {
-                $this->logger->info(
-                    sprintf(
-                        'Creating new object "%s" with version %s',
-                        $objectName,
-                        $objectVersion
-                    )
-                );
-            }//end if
-
-            // Set the register and schema context for the object service.
-            $this->objectService->setRegister($registerId);
-            $this->objectService->setSchema($schemaId);
-
-            // Ensure version is set in @self metadata.
-            if (isset($data['@self']['version']) === false) {
-                $data['@self']['version'] = $objectVersion;
-            }
-
-            // Use existing object's UUID if available, otherwise let the service generate a new one.
-            $uuid = $existingObject === true ? $existingObject->getUuid() : ($data['uuid'] ?? $data['id'] ?? null);
-
-            // Save the object using the object service.
-            $object = $this->objectService->saveObject(
-                object: $data,
-                uuid: $uuid
-            );
-
-            return $object;
-        } catch (Exception $e) {
-            $this->logger->error(message: 'Failed to import object: '.$e->getMessage());
-            throw new Exception('Failed to import object: '.$e->getMessage());
-        }//end try
-
-    }//end importObject()
-
-
-    /**
-     * Import a configuration from Open Connector
-     *
-     * This method attempts to import a configuration from Open Connector if it is available.
-     * It will check if the Open Connector service is available and then call its exportRegister function.
-     *
-     * @param string $registerId The ID of the register to import from Open Connector
-     * @param string $owner      The owner of the configuration
-     *
-     * @return Configuration|null The imported configuration or null if import failed
-     *
-     * @throws Exception If there is an error during import
-     */
-    public function importFromOpenConnector(string $registerId, string $owner): ?Configuration
-    {
-        // Check if Open Connector is available.
-        if ($this->getOpenConnector() === false) {
-            $this->logger->warning(message: 'Open Connector is not available for importing configuration');
-            return null;
-        }
-
-        try {
-            // Call the exportRegister function on the Open Connector service.
-            $exportedData = $this->openConnectorConfigurationService->exportRegister($registerId);
-
-            if (empty($exportedData) === true) {
-                $this->logger->error(message: 'No data received from Open Connector export');
-                return null;
-            }
-
-            // Create a new configuration from the exported data.
-            $configuration = new Configuration();
-            $configuration->setTitle($exportedData['title'] ?? 'Imported from Open Connector');
-            $configuration->setDescription($exportedData['description'] ?? 'Configuration imported from Open Connector');
-            $configuration->setType('openconnector');
-            $configuration->setOwner($owner);
-            $configuration->setVersion($exportedData['version'] ?? '1.0.0');
-            $configuration->setRegisters($exportedData['registers'] ?? []);
-
-            // Save the configuration.
-            return $this->configurationMapper->insert($configuration);
-        } catch (Exception $e) {
-            $this->logger->error(message: 'Failed to import configuration from Open Connector: '.$e->getMessage());
-            throw new Exception('Failed to import configuration from Open Connector: '.$e->getMessage());
-        }//end try
-
-    }//end importFromOpenConnector()
 
 
     /**
@@ -1898,6 +1678,8 @@ class ConfigurationService
      * @throws Exception If file cannot be read or import fails
      *
      * @since 0.2.10
+     *
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function importFromFilePath(string $appId, string $filePath, string $version, bool $force=false): array
     {
@@ -2241,31 +2023,6 @@ class ConfigurationService
 
     }//end importFromApp()
 
-
-    /**
-     * Get the currently configured version for a specific app.
-     *
-     * This method retrieves the stored version information for an app
-     * that was previously imported through the importFromJson method.
-     *
-     * @param string $appId The application ID to get the version for
-     *
-     * @return string|null The stored version string, or null if not found
-     *
-     * @phpstan-return string|null
-     */
-    public function getConfiguredAppVersion(string $appId): ?string
-    {
-        try {
-            $storedVersion = $this->appConfig->getValueString('openregister', "imported_config_{$appId}_version", '');
-
-            return $storedVersion !== '' ? $storedVersion : null;
-        } catch (\Exception $e) {
-            $this->logger->error(message: "Failed to get configured version for app {$appId}: ".$e->getMessage());
-            return null;
-        }
-
-    }//end getConfiguredAppVersion()
 
 
     /**

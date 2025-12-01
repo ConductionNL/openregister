@@ -57,6 +57,8 @@ class AuthorizationExceptionService
      * User session instance
      *
      * @var IUserSession
+     *
+     * @psalm-suppress UnusedProperty
      */
     private IUserSession $userSession;
 
@@ -78,6 +80,8 @@ class AuthorizationExceptionService
      * Cache factory instance
      *
      * @var ICacheFactory|null
+     *
+     * @psalm-suppress UnusedProperty
      */
     private ?ICacheFactory $cacheFactory;
 
@@ -103,114 +107,6 @@ class AuthorizationExceptionService
     private array $groupMembershipCache = [];
 
 
-    /**
-     * Constructor for the AuthorizationExceptionService
-     *
-     * @param AuthorizationExceptionMapper $mapper       The authorization exception mapper
-     * @param IUserSession                 $userSession  The user session
-     * @param IGroupManager                $groupManager The group manager
-     * @param LoggerInterface              $logger       The logger
-     * @param ICacheFactory|null           $cacheFactory Optional cache factory for performance optimization
-     */
-    public function __construct(
-        AuthorizationExceptionMapper $mapper,
-        IUserSession $userSession,
-        IGroupManager $groupManager,
-        LoggerInterface $logger,
-        ?ICacheFactory $cacheFactory=null
-    ) {
-        $this->mapper       = $mapper;
-        $this->userSession  = $userSession;
-        $this->groupManager = $groupManager;
-        $this->logger       = $logger;
-        $this->cacheFactory = $cacheFactory;
-
-        // Initialize cache if available.
-        if ($this->cacheFactory !== null) {
-            try {
-                $this->cache = $this->cacheFactory->createDistributed('openregister_auth_exceptions');
-            } catch (\Exception $e) {
-                $this->logger->warning(
-                        'Failed to initialize authorization exception cache',
-                        [
-                            'exception' => $e->getMessage(),
-                        ]
-                        );
-                $this->cache = null;
-            }
-        }
-
-    }//end __construct()
-
-
-    /**
-     * Create a new authorization exception
-     *
-     * @param string      $type             The exception type (inclusion or exclusion)
-     * @param string      $subjectType      The subject type (user or group)
-     * @param string      $subjectId        The subject ID
-     * @param string      $action           The action (create, read, update, delete)
-     * @param string|null $schemaUuid       Optional schema UUID
-     * @param string|null $registerUuid     Optional register UUID
-     * @param string|null $organizationUuid Optional organization UUID
-     * @param int         $priority         Priority for exception resolution
-     * @param string|null $description      Optional description
-     *
-     * @throws InvalidArgumentException If invalid parameters are provided
-     *
-     * @return AuthorizationException The created authorization exception
-     */
-    public function createException(
-        string $type,
-        string $subjectType,
-        string $subjectId,
-        string $action,
-        ?string $schemaUuid=null,
-        ?string $registerUuid=null,
-        ?string $organizationUuid=null,
-        int $priority=0,
-        ?string $description=null
-    ): AuthorizationException {
-        // Get current user.
-        $user = $this->userSession->getUser();
-        if ($user === null) {
-            throw new InvalidArgumentException('No authenticated user to create authorization exception');
-        }
-
-        // Validate input parameters.
-        $this->validateExceptionParameters($type, $subjectType, $subjectId, $action);
-
-        // Create the exception entity.
-        $exception = new AuthorizationException();
-        $exception->setType($type);
-        $exception->setSubjectType($subjectType);
-        $exception->setSubjectId($subjectId);
-        $exception->setAction($action);
-        $exception->setSchemaUuid($schemaUuid);
-        $exception->setRegisterUuid($registerUuid);
-        $exception->setOrganizationUuid($organizationUuid);
-        $exception->setPriority($priority);
-        $exception->setDescription($description);
-
-        // Save to database.
-        $createdException = $this->mapper->createException($exception, $user->getUID());
-
-        $this->logger->info(
-                'Authorization exception created',
-                [
-                    'uuid'         => $createdException->getUuid(),
-                    'type'         => $type,
-                    'subject_type' => $subjectType,
-                    'subject_id'   => $subjectId,
-                    'action'       => $action,
-                    'schema_uuid'  => $schemaUuid,
-                    'created_by'   => $user->getUID(),
-                ]
-                );
-
-        return $createdException;
-
-    }//end createException()
 
 
     /**
@@ -352,57 +248,6 @@ class AuthorizationExceptionService
     }//end getUserGroupsCached()
 
 
-    /**
-     * Preload exceptions for multiple users to optimize batch operations
-     *
-     * This method loads exceptions for multiple users in a single database query,
-     * significantly improving performance for bulk operations.
-     *
-     * @param array<string> $userIds Array of user IDs to preload exceptions for
-     * @param string        $action  Optional action to filter by
-     *
-     * @return void
-     */
-    public function preloadUserExceptions(array $userIds, string $action=''): void
-    {
-        if (empty($userIds) === true) {
-            return;
-        }
-
-        $this->logger->debug(
-                'Preloading exceptions for users',
-                [
-                    'user_count' => count($userIds),
-                    'action'     => $action,
-                ]
-                );
-
-        // Load user exceptions in batch.
-        foreach ($userIds as $userId) {
-            if (!isset($this->userExceptionCache[$userId])) {
-                $this->userExceptionCache[$userId] = $this->mapper->findBySubject(
-                    AuthorizationException::SUBJECT_TYPE_USER,
-                    $userId
-                );
-            }
-        }
-
-        // Also preload group exceptions for all users.
-        foreach ($userIds as $userId) {
-            $userGroups = $this->getUserGroupsCached($userId);
-            foreach ($userGroups as $groupId) {
-                $groupCacheKey = 'group_'.$groupId;
-                if (!isset($this->userExceptionCache[$groupCacheKey])) {
-                    $this->userExceptionCache[$groupCacheKey] = $this->mapper->findBySubject(
-                        AuthorizationException::SUBJECT_TYPE_GROUP,
-                        $groupId
-                    );
-                }
-            }
-        }
-
-    }//end preloadUserExceptions()
-
 
     /**
      * Clear all caches (useful for testing or after exception changes)
@@ -422,22 +267,6 @@ class AuthorizationExceptionService
 
     }//end clearCache()
 
-
-    /**
-     * Get performance metrics for monitoring
-     *
-     * @return array<string, mixed> Performance metrics
-     */
-    public function getPerformanceMetrics(): array
-    {
-        return [
-            'memory_cache_entries'        => count($this->userExceptionCache),
-            'group_cache_entries'         => count($this->groupMembershipCache),
-            'distributed_cache_available' => $this->cache !== null,
-            'cache_factory_available'     => $this->cacheFactory !== null,
-        ];
-
-    }//end getPerformanceMetrics()
 
 
     /**
@@ -569,40 +398,6 @@ class AuthorizationExceptionService
 
     }//end userHasExceptions()
 
-
-    /**
-     * Get all authorization exceptions for a user (including group exceptions)
-     *
-     * @param string $userId The user ID
-     *
-     * @return array<AuthorizationException> Array of authorization exceptions
-     */
-    public function getUserExceptions(string $userId): array
-    {
-        // Get direct user exceptions.
-        $userExceptions = $this->mapper->findBySubject(AuthorizationException::SUBJECT_TYPE_USER, $userId);
-
-        // Get group exceptions using cached group lookup.
-        $userGroups      = $this->getUserGroupsCached($userId);
-        $groupExceptions = [];
-
-        foreach ($userGroups as $groupId) {
-            $exceptions      = $this->mapper->findBySubject(AuthorizationException::SUBJECT_TYPE_GROUP, $groupId);
-            $groupExceptions = array_merge($groupExceptions, $exceptions);
-        }
-
-        // Combine and sort by priority.
-        $allExceptions = array_merge($userExceptions, $groupExceptions);
-        usort(
-                $allExceptions,
-                function (AuthorizationException $a, AuthorizationException $b): int {
-                    return $b->getPriority() <=> $a->getPriority();
-                }
-                );
-
-        return $allExceptions;
-
-    }//end getUserExceptions()
 
 
     /**

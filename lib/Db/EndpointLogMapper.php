@@ -45,17 +45,6 @@ class EndpointLogMapper extends QBMapper
 {
 
 
-    /**
-     * EndpointLogMapper constructor
-     *
-     * @param IDBConnection $db Database connection
-     */
-    public function __construct(IDBConnection $db)
-    {
-        parent::__construct($db, 'openregister_endpoint_logs', EndpointLog::class);
-
-    }//end __construct()
-
 
     /**
      * Find all endpoint logs
@@ -192,22 +181,6 @@ class EndpointLogMapper extends QBMapper
 
     }//end getStatistics()
 
-
-    /**
-     * Delete old expired logs
-     *
-     * @return int Number of deleted logs
-     */
-    public function deleteExpired(): int
-    {
-        $qb = $this->db->getQueryBuilder();
-
-        $qb->delete($this->getTableName())
-            ->where($qb->expr()->lt('expires', $qb->createNamedParameter(new \DateTime(), IQueryBuilder::PARAM_DATE)));
-
-        return $qb->executeStatement();
-
-    }//end deleteExpired()
 
 
 }//end class

@@ -57,24 +57,6 @@ class NotificationService
     private LoggerInterface $logger;
 
 
-    /**
-     * Constructor
-     *
-     * @param IManager        $notificationManager The notification manager instance
-     * @param IGroupManager   $groupManager        The group manager instance
-     * @param LoggerInterface $logger              The logger instance
-     */
-    public function __construct(
-        IManager $notificationManager,
-        IGroupManager $groupManager,
-        LoggerInterface $logger
-    ) {
-        $this->notificationManager = $notificationManager;
-        $this->groupManager        = $groupManager;
-        $this->logger = $logger;
-
-    }//end __construct()
-
 
     /**
      * Send notification about configuration update availability.

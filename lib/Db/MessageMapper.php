@@ -44,17 +44,6 @@ class MessageMapper extends QBMapper
 {
 
 
-    /**
-     * MessageMapper constructor.
-     *
-     * @param IDBConnection $db Database connection instance
-     */
-    public function __construct(IDBConnection $db)
-    {
-        parent::__construct($db, 'openregister_messages', Message::class);
-
-    }//end __construct()
-
 
     /**
      * Find a message by its ID
@@ -78,28 +67,6 @@ class MessageMapper extends QBMapper
 
     }//end find()
 
-
-    /**
-     * Find a message by its UUID
-     *
-     * @param string $uuid Message UUID
-     *
-     * @return Message The message entity
-     *
-     * @throws DoesNotExistException
-     * @throws MultipleObjectsReturnedException
-     */
-    public function findByUuid(string $uuid): Message
-    {
-        $qb = $this->db->getQueryBuilder();
-
-        $qb->select('*')
-            ->from($this->tableName)
-            ->where($qb->expr()->eq('uuid', $qb->createNamedParameter($uuid, IQueryBuilder::PARAM_STR)));
-
-        return $this->findEntity($qb);
-
-    }//end findByUuid()
 
 
     /**
@@ -186,58 +153,6 @@ class MessageMapper extends QBMapper
     }//end countByConversation()
 
 
-    /**
-     * Count messages by role in a conversation
-     *
-     * @param int    $conversationId Conversation ID
-     * @param string $role           Message role (user or assistant)
-     *
-     * @return int Message count for role
-     */
-    public function countByRole(int $conversationId, string $role): int
-    {
-        $qb = $this->db->getQueryBuilder();
-
-        $qb->select($qb->func()->count('*', 'count'))
-            ->from($this->tableName)
-            ->where($qb->expr()->eq('conversation_id', $qb->createNamedParameter($conversationId, IQueryBuilder::PARAM_INT)))
-            ->andWhere($qb->expr()->eq('role', $qb->createNamedParameter($role, IQueryBuilder::PARAM_STR)));
-
-        $result = $qb->execute();
-        $count  = (int) $result->fetchOne();
-        $result->closeCursor();
-
-        return $count;
-
-    }//end countByRole()
-
-
-    /**
-     * Get the first message in a conversation
-     *
-     * Useful for generating conversation titles from the first user message.
-     *
-     * @param int $conversationId Conversation ID
-     *
-     * @return Message|null The first message or null if conversation is empty
-     */
-    public function findFirstMessage(int $conversationId): ?Message
-    {
-        $qb = $this->db->getQueryBuilder();
-
-        $qb->select('*')
-            ->from($this->tableName)
-            ->where($qb->expr()->eq('conversation_id', $qb->createNamedParameter($conversationId, IQueryBuilder::PARAM_INT)))
-            ->orderBy('created', 'ASC')
-            ->setMaxResults(1);
-
-        try {
-            return $this->findEntity($qb);
-        } catch (DoesNotExistException $e) {
-            return null;
-        }
-
-    }//end findFirstMessage()
 
 
     /**
@@ -248,6 +163,8 @@ class MessageMapper extends QBMapper
      * @param int $conversationId Conversation ID
      *
      * @return \OCP\DB\IResult|int Number of messages deleted
+     *
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function deleteByConversation(int $conversationId): int|\OCP\DB\IResult
     {

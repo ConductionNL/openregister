@@ -66,24 +66,33 @@ class ValidateObject
      */
     public const VALIDATION_ERROR_MESSAGE = 'Invalid object';
 
+    /**
+     * Configuration service
+     *
+     * @var IAppConfig
+     */
+    private IAppConfig $config;
 
     /**
-     * Constructor for ValidateObject handler.
+     * Object mapper
      *
-     * @param IURLGenerator      $urlGenerator URL generator service.
-     * @param IAppConfig         $config       Application configuration service.
-     * @param SchemaMapper       $schemaMapper Schema mapper service.
-     * @param ObjectEntityMapper $objectMapper Object Entity Mapper
+     * @var ObjectEntityMapper
      */
-    public function __construct(
-        private readonly IURLGenerator $urlGenerator,
-        private readonly IAppConfig $config,
-        private readonly SchemaMapper $schemaMapper,
-        private readonly ObjectEntityMapper $objectMapper,
-    ) {
+    private ObjectEntityMapper $objectMapper;
 
-    }//end __construct()
+    /**
+     * Schema mapper
+     *
+     * @var SchemaMapper
+     */
+    private SchemaMapper $schemaMapper;
 
+    /**
+     * URL generator
+     *
+     * @var IURLGenerator
+     */
+    private IURLGenerator $urlGenerator;
 
     /**
      * Pre-processes a schema object to resolve all schema references.
@@ -97,7 +106,7 @@ class ValidateObject
      *
      * @return object The processed schema object with resolved references
      */
-    private function preprocessSchemaReferences(object $schemaObject, array $visited=[], bool $skipUuidTransformed=false): object
+    private function preprocessSchemaReferences(object $schemaObject, array $visited=[], bool $_skipUuidTransformed=false): object
     {
         // Clone the schema object to avoid modifying the original.
         $processedSchema = json_decode(json_encode($schemaObject));
@@ -251,7 +260,7 @@ class ValidateObject
             return $schemaObject;
         }
 
-        foreach ($schemaObject->properties as $propertyName => $propertySchema) {
+        foreach ($schemaObject->properties as $_propertyName => $propertySchema) {
             $this->transformPropertyForOpenRegister($propertySchema);
         }
 
@@ -323,7 +332,7 @@ class ValidateObject
 
         // Recursively transform nested properties.
         if (($propertySchema->properties ?? null) !== null) {
-            foreach ($propertySchema->properties as $nestedPropertyName => $nestedPropertySchema) {
+            foreach ($propertySchema->properties as $_nestedPropertyName => $nestedPropertySchema) {
                 $this->transformPropertyForOpenRegister($nestedPropertySchema);
             }
         }
@@ -543,7 +552,7 @@ class ValidateObject
 
         $propertiesArray = (array) $schemaObject->properties;
         // Step 1: Handle circular references.
-        foreach ($propertiesArray as $propertyName => $propertySchema) {
+        foreach ($propertiesArray as $_propertyName => $propertySchema) {
             // Check if this property has a $ref that references the current schema.
             if ($this->isSelfReference(propertySchema: $propertySchema, schemaSlug: $currentSchemaSlug) === true) {
                 // Check if this is a related-object with objectConfiguration.
@@ -648,7 +657,7 @@ class ValidateObject
      *
      * @return object The cleaned schema object
      */
-    private function cleanSchemaForValidation(object $schemaObject, bool $isArrayItems=false): object
+    private function cleanSchemaForValidation(object $schemaObject, bool $_isArrayItems=false): object
     {
 
         // Clone the schema object to avoid modifying the original.
@@ -944,7 +953,7 @@ class ValidateObject
         array $object,
         Schema | int | string | null $schema=null,
         object $schemaObject=new stdClass(),
-        int $depth=0
+        int $_depth=0
     ): ValidationResult {
 
         // Use == because === will never be true when comparing stdClass-instances.
@@ -1029,7 +1038,7 @@ class ValidateObject
         // Modify schema to allow null values for non-required fields.
         // This ensures that null values are valid for optional fields.
         if (($schemaObject->properties ?? null) !== null) {
-            foreach ($schemaObject->properties as $propertyName => $propertySchema) {
+            foreach ($schemaObject->properties as $_propertyName => $propertySchema) {
                 // Skip required fields - they should not allow null unless explicitly defined.
                 if (in_array($propertyName, $requiredFields) === true) {
                     continue;
@@ -1076,6 +1085,8 @@ class ValidateObject
      * @return string The schema content in JSON format.
      *
      * @throws GuzzleException If there is an error during schema fetching.
+     *
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function resolveSchema(Uri $uri): string
     {
@@ -1139,39 +1150,6 @@ class ValidateObject
 
     }//end removeQueryParameters()
 
-
-    /**
-     * Validates custom rules for an object against its schema.
-     *
-     * @param array  $object The object to validate.
-     * @param Schema $schema The schema containing custom rules.
-     *
-     * @return void
-     *
-     * @throws ValidationException If validation fails.
-     */
-    private function validateCustomRules(array $object, Schema $schema): void
-    {
-        $customRules = $schema->getCustomRules();
-        if (empty($customRules) === true) {
-            return;
-        }
-
-        foreach ($customRules as $rule) {
-            if (($rule['type'] ?? null) !== null && $rule['type'] === 'regex') {
-                $pattern = $rule['pattern'];
-                $value   = $object[$rule['property']] ?? null;
-
-                if ($value !== null && preg_match($pattern, $value) === false) {
-                    throw new ValidationException(
-                        message: $rule['message'] ?? self::VALIDATION_ERROR_MESSAGE,
-                        code: 0
-                    );
-                }
-            }
-        }
-
-    }//end validateCustomRules()
 
 
     /**

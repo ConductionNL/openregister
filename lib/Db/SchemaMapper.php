@@ -90,33 +90,6 @@ class SchemaMapper extends QBMapper
     private IGroupManager $groupManager;
 
 
-    /**
-     * Constructor for the SchemaMapper
-     *
-     * @param IDBConnection                  $db                  The database connection
-     * @param IEventDispatcher               $eventDispatcher     The event dispatcher
-     * @param SchemaPropertyValidatorService $validator           The schema property validator
-     * @param OrganisationService            $organisationService Organisation service for multi-tenancy
-     * @param IUserSession                   $userSession         User session
-     * @param IGroupManager                  $groupManager        Group manager for RBAC
-     */
-    public function __construct(
-        IDBConnection $db,
-        IEventDispatcher $eventDispatcher,
-        SchemaPropertyValidatorService $validator,
-        OrganisationService $organisationService,
-        IUserSession $userSession,
-        IGroupManager $groupManager
-    ) {
-        parent::__construct($db, 'openregister_schemas');
-        $this->eventDispatcher     = $eventDispatcher;
-        $this->validator           = $validator;
-        $this->organisationService = $organisationService;
-        $this->userSession         = $userSession;
-        $this->groupManager        = $groupManager;
-
-    }//end __construct()
-
 
     /**
      * Finds a schema by id, with optional extension for statistics
@@ -131,7 +104,7 @@ class SchemaMapper extends QBMapper
      * @return Schema The schema, possibly with stats and resolved extensions
      * @throws \Exception If user doesn't have read permission
      */
-    public function find(string | int $id, ?array $extend=[]): Schema
+    public function find(string | int $id, ?array $_extend=[]): Schema
     {
         // Verify RBAC permission to read @todo: remove this hotfix for solr
         // $this->verifyRbacPermission('read', 'schema');.
@@ -262,7 +235,7 @@ class SchemaMapper extends QBMapper
         ?array $filters=[],
         ?array $searchConditions=[],
         ?array $searchParams=[],
-        ?array $extend=[]
+        ?array $_extend=[]
     ): array {
         // Verify RBAC permission to read
         // $this->verifyRbacPermission('read', 'schema');.
@@ -613,6 +586,8 @@ class SchemaMapper extends QBMapper
      * @throws \Exception If user doesn't have delete permission or access to this organisation
      *
      * @return Schema The deleted schema
+     *
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function delete(Entity $schema): Schema
     {

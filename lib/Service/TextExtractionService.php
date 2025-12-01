@@ -120,8 +120,8 @@ class TextExtractionService
     public function __construct(
         private readonly FileMapper $fileMapper,
         private readonly ChunkMapper $chunkMapper,
-        private readonly GdprEntityMapper $entityMapper,
-        private readonly EntityRelationMapper $entityRelationMapper,
+
+
         private readonly IRootFolder $rootFolder,
         private readonly IDBConnection $db,
         private readonly LoggerInterface $logger,
@@ -271,9 +271,11 @@ class TextExtractionService
         ];
 
         $chunks = $this->textToChunks(
-            text: $payload['text'],
-            sourceType: $payload['source_type'],
-            sourceId: $payload['source_id']
+            $payload,
+            [
+                'source_type' => $payload['source_type'],
+                'source_id' => $payload['source_id']
+            ]
         );
 
         // Persist chunks to database.
@@ -779,7 +781,6 @@ class TextExtractionService
             }
 
             // Extract text based on mime type.
-            $extractedText = null;
 
             // Text-based files that can be read directly.
             $textMimeTypes = [

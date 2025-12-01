@@ -38,6 +38,8 @@ use Psr\Log\LoggerInterface;
  * Runs periodically to check and sync configurations that have sync enabled.
  *
  * @package OCA\OpenRegister\Cron
+ *
+ * @psalm-suppress UnusedClass
  */
 class SyncConfigurationsJob extends TimedJob
 {

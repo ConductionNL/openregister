@@ -259,8 +259,7 @@ class MagicMapper
             $this->userSession,
             $this->groupManager,
             $this->userManager,
-            $this->appConfig,
-            $this->logger
+            $this->appConfig
         );
 
         $this->bulkHandler = new MagicBulkHandler(
@@ -272,9 +271,7 @@ class MagicMapper
             $this->db,
             $this->userSession,
             $this->groupManager,
-            $this->userManager,
-            $this->appConfig,
-            $this->logger
+            $this->userManager
         );
 
         $this->facetHandler = new MagicFacetHandler(
@@ -1313,7 +1310,7 @@ class MagicMapper
      *
      * @return void
      */
-    private function createTableIndexes(string $tableName, Register $register, Schema $schema): void
+    private function createTableIndexes(string $tableName, Register $_register, Schema $_schema): void
     {
         try {
             // Create unique index on UUID.
@@ -1633,7 +1630,7 @@ class MagicMapper
      *
      * @return ObjectEntity|null ObjectEntity or null if conversion fails
      */
-    private function convertRowToObjectEntity(array $row, Register $register, Schema $schema): ?ObjectEntity
+    private function convertRowToObjectEntity(array $row, Register $_register, Schema $_schema): ?ObjectEntity
     {
         try {
             $objectEntity = new ObjectEntity();
@@ -1784,7 +1781,7 @@ class MagicMapper
     {
         $registerId = $register->getId();
         $schemaId   = $schema->getId();
-        $cacheKey   = $this->getCacheKey($registerId, $schemaId);
+        $this->getCacheKey($registerId, $schemaId);
 
         $currentVersion = $this->getStoredRegisterSchemaVersion($registerId, $schemaId);
         $newVersion     = $this->calculateRegisterSchemaVersion($register, $schema);
@@ -2290,7 +2287,7 @@ class MagicMapper
      *
      * @return bool True if MagicMapper should be used for this register+schema
      */
-    public function isMagicMappingEnabled(Register $register, Schema $schema): bool
+    public function isMagicMappingEnabled(Register $_register, Schema $schema): bool
     {
         // Check schema configuration for magic mapping flag.
         $configuration = $schema->getConfiguration();

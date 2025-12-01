@@ -32,6 +32,8 @@ class AgentUpdatedEvent extends Event
      * The updated agent state.
      *
      * @var Agent The agent after update.
+     *
+     * @psalm-suppress UnusedProperty
      */
     private Agent $newAgent;
 
@@ -39,6 +41,8 @@ class AgentUpdatedEvent extends Event
      * The previous agent state.
      *
      * @var Agent The agent before update.
+     *
+     * @psalm-suppress UnusedProperty
      */
     private Agent $oldAgent;
 
@@ -60,28 +64,6 @@ class AgentUpdatedEvent extends Event
     }//end __construct()
 
 
-    /**
-     * Get the updated agent.
-     *
-     * @return Agent The agent after update.
-     */
-    public function getNewAgent(): Agent
-    {
-        return $this->newAgent;
-
-    }//end getNewAgent()
-
-
-    /**
-     * Get the original agent.
-     *
-     * @return Agent The agent before update.
-     */
-    public function getOldAgent(): Agent
-    {
-        return $this->oldAgent;
-
-    }//end getOldAgent()
 
 
 }//end class

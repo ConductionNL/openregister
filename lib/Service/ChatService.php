@@ -183,7 +183,7 @@ class ChatService
      * @param ToolRegistry           $toolRegistry       Tool registry for dynamic tool loading
      */
     public function __construct(
-        IDBConnection $db,
+        IDBConnection $_db,
         ConversationMapper $conversationMapper,
         MessageMapper $messageMapper,
         AgentMapper $agentMapper,
@@ -191,9 +191,9 @@ class ChatService
         GuzzleSolrService $solrService,
         SettingsService $settingsService,
         LoggerInterface $logger,
-        RegisterTool $registerTool,
-        SchemaTool $schemaTool,
-        ObjectsTool $objectsTool,
+        RegisterTool $_registerTool,
+        SchemaTool $_schemaTool,
+        ObjectsTool $_objectsTool,
         ToolRegistry $toolRegistry
     ) {
         $this->conversationMapper = $conversationMapper;
@@ -414,7 +414,6 @@ class ChatService
         $totalSources = max($numSourcesFiles, $numSourcesObjects);
 
         // Get view filters if agent has views configured.
-        $viewFilters = [];
         if ($agent !== null && $agent->getViews() !== null && empty($agent->getViews()) === false) {
             $agentViews = $agent->getViews();
 
@@ -652,7 +651,7 @@ class ChatService
      *
      * @return array Search results
      */
-    private function searchKeywordOnly(string $query, int $limit): array
+    private function searchKeywordOnly(string $query, int $_limit): array
     {
         $results = $this->solrService->searchObjectsPaginated(
             query: ['_search' => $query],
@@ -2032,64 +2031,6 @@ class ChatService
 
     }//end convertFunctionsToFunctionInfo()
 
-
-    /**
-     * Handle function call from LLM
-     *
-     * Executes a function call requested by the LLM and returns the result.
-     *
-     * @param string      $functionName Function name requested by LLM
-     * @param array       $parameters   Function parameters from LLM
-     * @param array       $tools        Available tools
-     * @param string|null $userId       User ID for context
-     *
-     * @return string JSON-encoded function result
-     */
-    private function handleFunctionCall(string $functionName, array $parameters, array $tools, ?string $userId=null): string
-    {
-        $this->logger->info(
-                message: '[ChatService] Handling function call',
-                context: [
-                    'function'   => $functionName,
-                    'parameters' => $parameters,
-                ]
-                );
-
-        // Find the tool that has this function.
-        foreach ($tools as $tool) {
-            $toolFunctions = $tool->getFunctions();
-            foreach ($toolFunctions as $funcDef) {
-                if ($funcDef['name'] === $functionName) {
-                    try {
-                        $result = $tool->executeFunction($functionName, $parameters, $userId);
-                        return json_encode($result);
-                    } catch (\Exception $e) {
-                        $this->logger->error(
-                                message: '[ChatService] Function execution failed',
-                                context: [
-                                    'function' => $functionName,
-                                    'error'    => $e->getMessage(),
-                                ]
-                                );
-                        return json_encode(
-                                [
-                                    'success' => false,
-                                    'error'   => $e->getMessage(),
-                                ]
-                                );
-                    }
-                }//end if
-            }//end foreach
-        }//end foreach
-
-        return json_encode(
-                [
-                    'success' => false,
-                    'error'   => "Unknown function: {$functionName}",
-                ]
-                );
-
-    }//end handleFunctionCall()
 
 
 }//end class

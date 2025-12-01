@@ -34,21 +34,19 @@ use Psr\Log\LoggerInterface;
  */
 class ViewService
 {
-
+    /**
+     * View mapper
+     *
+     * @var ViewMapper
+     */
+    private ViewMapper $viewMapper;
 
     /**
-     * Constructor for ViewService.
+     * Logger
      *
-     * @param ViewMapper      $viewMapper Mapper for view operations.
-     * @param LoggerInterface $logger     Logger for error handling.
+     * @var LoggerInterface
      */
-    public function __construct(
-        private readonly ViewMapper $viewMapper,
-        private readonly LoggerInterface $logger
-    ) {
-
-    }//end __construct()
-
+    private LoggerInterface $logger;
 
     /**
      * Find a view by ID.
@@ -214,44 +212,6 @@ class ViewService
 
     }//end delete()
 
-
-    /**
-     * Toggle favorite status for a view.
-     *
-     * @param int|string $id    The ID of the view
-     * @param string     $owner The user ID
-     * @param bool       $favor Whether to favor (true) or unfavor (false)
-     *
-     * @return View The updated view
-     *
-     * @throws Exception If operation fails
-     */
-    public function toggleFavorite(int | string $id, string $owner, bool $favor): View
-    {
-        try {
-            $view = $this->find($id, $owner);
-            // GetFavoredBy() always returns an array (non-null), schema: but keeping ?? [] for defensive programming.
-            $favoredBy = $view->getFavoredBy();
-
-            if ($favor === true) {
-                // Add user to favoredBy if not already there.
-                if (in_array($owner, $favoredBy, true) === false) {
-                    $favoredBy[] = $owner;
-                }
-            } else {
-                // Remove user from favoredBy.
-                $favoredBy = array_values(array_filter($favoredBy, fn($userId) => $userId !== $owner));
-            }
-
-            // End if.
-            $view->setFavoredBy($favoredBy);
-            return $this->viewMapper->update($view);
-        } catch (Exception $e) {
-            $this->logger->error(message: 'Error toggling favorite: '.$e->getMessage());
-            throw $e;
-        }//end try
-
-    }//end toggleFavorite()
 
 
     /**

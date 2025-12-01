@@ -32,6 +32,10 @@ use Exception;
 /**
  * Bulk operations controller for OpenRegister
  */
+/**
+ * @psalm-suppress UnusedClass
+ */
+
 class BulkController extends Controller
 {
 

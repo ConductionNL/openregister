@@ -32,6 +32,8 @@ class OrganisationUpdatedEvent extends Event
      * The updated organisation state.
      *
      * @var Organisation The organisation after update.
+     *
+     * @psalm-suppress UnusedProperty
      */
     private Organisation $newOrganisation;
 
@@ -39,6 +41,8 @@ class OrganisationUpdatedEvent extends Event
      * The previous organisation state.
      *
      * @var Organisation The organisation before update.
+     *
+     * @psalm-suppress UnusedProperty
      */
     private Organisation $oldOrganisation;
 
@@ -60,28 +64,6 @@ class OrganisationUpdatedEvent extends Event
     }//end __construct()
 
 
-    /**
-     * Get the updated organisation.
-     *
-     * @return Organisation The organisation after update.
-     */
-    public function getNewOrganisation(): Organisation
-    {
-        return $this->newOrganisation;
-
-    }//end getNewOrganisation()
-
-
-    /**
-     * Get the original organisation.
-     *
-     * @return Organisation The organisation before update.
-     */
-    public function getOldOrganisation(): Organisation
-    {
-        return $this->oldOrganisation;
-
-    }//end getOldOrganisation()
 
 
 }//end class
