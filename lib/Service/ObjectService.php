@@ -2779,8 +2779,8 @@ class ObjectService
         array $query=[],
         bool $rbac=true,
         bool $multi=true,
-        bool $published=false,
-        bool $deleted=false
+        bool $_published=false,
+        bool $_deleted=false
     ): PromiseInterface {
         // Start timing execution.
         $startTime = microtime(true);

@@ -953,7 +953,7 @@ class ValidateObject
         array $object,
         Schema | int | string | null $schema=null,
         object $schemaObject=new stdClass(),
-        int $depth=0
+        int $_depth=0
     ): ValidationResult {
 
         // Use == because === will never be true when comparing stdClass-instances.

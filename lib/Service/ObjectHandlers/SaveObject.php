@@ -1646,11 +1646,11 @@ class SaveObject
         array $data,
         ?string $uuid=null,
         ?int $folderId=null,
-        bool $rbac=true,
+        bool $_rbac=true,
         bool $multi=true,
         bool $persist=true,
         bool $silent=false,
-        bool $validation=true,
+        bool $_validation=true,
         ?array $uploadedFiles=null
     ): ObjectEntity {
 
