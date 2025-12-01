@@ -11,10 +11,8 @@
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * @version GIT: <git-id>
- *
- * @link https://OpenRegister.app
+ * @version   GIT: <git-id>
+ * @link      https://OpenRegister.app
  */
 
 declare(strict_types=1);
@@ -36,12 +34,14 @@ use OCP\IDBConnection;
  */
 class Version1Date20250102000001 extends SimpleMigrationStep
 {
+
     /**
      * Database connection
      *
      * @var IDBConnection
      */
     private IDBConnection $connection;
+
 
     /**
      * Constructor
@@ -51,7 +51,9 @@ class Version1Date20250102000001 extends SimpleMigrationStep
     public function __construct(IDBConnection $connection)
     {
         $this->connection = $connection;
-    }
+
+    }//end __construct()
+
 
     /**
      * Pre-schema change operations
@@ -67,6 +69,7 @@ class Version1Date20250102000001 extends SimpleMigrationStep
         // No pre-schema changes required.
 
     }//end preSchemaChange()
+
 
     /**
      * Apply schema changes to add active field
@@ -88,16 +91,21 @@ class Version1Date20250102000001 extends SimpleMigrationStep
 
             // Add active field (boolean).
             if ($table->hasColumn('active') === false) {
-                $table->addColumn('active', Types::BOOLEAN, [
-                    'notnull' => true,
-                    'default' => true,
-                    'comment' => 'Whether the organisation is active'
-                ]);
+                $table->addColumn(
+                    'active',
+                    Types::BOOLEAN,
+                    [
+                        'notnull' => true,
+                        'default' => true,
+                        'comment' => 'Whether the organisation is active',
+                    ]
+                );
                 $output->info(message: 'Added active column to organisations table');
             }
         }
 
         return $schema;
+
     }//end changeSchema()
 
 
@@ -116,5 +124,6 @@ class Version1Date20250102000001 extends SimpleMigrationStep
         $output->info(message: 'All existing organisations are now active by default');
 
     }//end postSchemaChange()
-}//end class
 
+
+}//end class

@@ -17,15 +17,16 @@ declare(strict_types=1);
  * - Object-specific file operations
  * - Audit trails and data aggregation
  *
- * @category       Service
- * @package        OCA\OpenRegister\Service
- * @author         Conduction Development Team <info@conduction.nl>
- * @copyright      2024 Conduction B.V.
- * @license        EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @version        GIT: <git_id>
- * @link           https://www.OpenRegister.app
+ * @category Service
+ * @package  OCA\OpenRegister\Service
  *
- * @phpstan-type   FileArray array{
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version   GIT: <git_id>
+ * @link      https://www.OpenRegister.app
+ *
+ * @phpstan-type FileArray array{
  *     id: string,
  *     name: string,
  *     path: string,
@@ -85,7 +86,7 @@ class FileService
     /**
      * Root folder name for all OpenRegister files.
      *
-     * @var        string
+     * @var string
      * @readonly
      * @psalm-readonly
      */
@@ -94,7 +95,7 @@ class FileService
     /**
      * Application group name.
      *
-     * @var        string
+     * @var string
      * @readonly
      * @psalm-readonly
      */
@@ -103,7 +104,7 @@ class FileService
     /**
      * Application user name.
      *
-     * @var        string
+     * @var string
      * @readonly
      * @psalm-readonly
      */
@@ -112,7 +113,7 @@ class FileService
     /**
      * File tag type identifier.
      *
-     * @var        string
+     * @var string
      * @readonly
      * @psalm-readonly
      */
@@ -167,7 +168,7 @@ class FileService
      *
      * @return array{cleanPath: string, fileName: string} Array containing the cleaned path and extracted filename
      *
-     * @psalm-return array{cleanPath: string, fileName: string}
+     * @psalm-return  array{cleanPath: string, fileName: string}
      * @phpstan-return array{cleanPath: string, fileName: string}
      */
     private function extractFileNameFromPath(string $filePath): array
@@ -580,7 +581,7 @@ class FileService
      *
      * @throws Exception If the user folder cannot be accessed
      *
-     * @psalm-return Folder
+     * @psalm-return  Folder
      * @phpstan-return Folder
      */
     private function getOpenRegisterUserFolder(): Folder
