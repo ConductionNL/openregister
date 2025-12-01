@@ -44,6 +44,7 @@ use OCP\IDBConnection;
 class EndpointLogMapper extends QBMapper
 {
 
+
     /**
      * Constructor
      *
@@ -52,6 +53,7 @@ class EndpointLogMapper extends QBMapper
     public function __construct(IDBConnection $db)
     {
         parent::__construct($db, 'openregister_endpoint_logs', EndpointLog::class);
+
     }//end __construct()
 
 
@@ -189,7 +191,6 @@ class EndpointLogMapper extends QBMapper
         ];
 
     }//end getStatistics()
-
 
 
 }//end class

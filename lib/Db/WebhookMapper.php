@@ -75,10 +75,10 @@ class WebhookMapper extends QBMapper
     /**
      * Constructor
      *
-     * @param IDBConnection       $db                 Database connection
+     * @param IDBConnection       $db                  Database connection
      * @param OrganisationService $organisationService Organisation service
-     * @param IUserSession        $userSession        User session
-     * @param IGroupManager       $groupManager       Group manager
+     * @param IUserSession        $userSession         User session
+     * @param IGroupManager       $groupManager        Group manager
      */
     public function __construct(
         IDBConnection $db,
@@ -88,8 +88,9 @@ class WebhookMapper extends QBMapper
     ) {
         parent::__construct($db, 'openregister_webhooks', Webhook::class);
         $this->organisationService = $organisationService;
-        $this->userSession = $userSession;
-        $this->groupManager = $groupManager;
+        $this->userSession         = $userSession;
+        $this->groupManager        = $groupManager;
+
     }//end __construct()
 
 

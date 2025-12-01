@@ -168,6 +168,7 @@ class OrganisationService
         IUserSession $userSession,
         ISession $session,
         IConfig $config,
+        IAppConfig $appConfig,
         IGroupManager $groupManager,
         IUserManager $userManager,
         LoggerInterface $logger,
@@ -177,6 +178,7 @@ class OrganisationService
         $this->userSession        = $userSession;
         $this->session            = $session;
         $this->config          = $config;
+        $this->appConfig       = $appConfig;
         $this->groupManager    = $groupManager;
         $this->userManager     = $userManager;
         $this->logger          = $logger;
@@ -764,7 +766,6 @@ class OrganisationService
     }//end createOrganisation()
 
 
-
     /**
      * Check if current user has access to an organisation
      *
@@ -1342,7 +1343,6 @@ class OrganisationService
         $this->clearDefaultOrganisationCache();
 
     }//end setDefaultOrganisationId()
-
 
 
     /**

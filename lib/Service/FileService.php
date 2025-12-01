@@ -210,6 +210,55 @@ class FileService
      */
     private const FILE_TAG_TYPE = 'files';
 
+
+    /**
+     * Constructor
+     *
+     * @param IConfig                 $config             Configuration service
+     * @param FileMapper              $fileMapper         File mapper
+     * @param IGroupManager           $groupManager       Group manager
+     * @param LoggerInterface         $logger             Logger
+     * @param ObjectEntityMapper      $objectEntityMapper Object entity mapper
+     * @param RegisterMapper          $registerMapper     Register mapper
+     * @param IRootFolder             $rootFolder         Root folder
+     * @param IManager                $shareManager       Share manager
+     * @param ISystemTagManager       $systemTagManager   System tag manager
+     * @param ISystemTagObjectMapper  $systemTagMapper    System tag mapper
+     * @param IURLGenerator           $urlGenerator       URL generator
+     * @param IUserManager            $userManager        User manager
+     * @param IUserSession            $userSession        User session
+     */
+    public function __construct(
+        IConfig                $config,
+        FileMapper             $fileMapper,
+        IGroupManager          $groupManager,
+        LoggerInterface        $logger,
+        ObjectEntityMapper     $objectEntityMapper,
+        RegisterMapper         $registerMapper,
+        IRootFolder            $rootFolder,
+        IManager               $shareManager,
+        ISystemTagManager      $systemTagManager,
+        ISystemTagObjectMapper $systemTagMapper,
+        IURLGenerator          $urlGenerator,
+        IUserManager           $userManager,
+        IUserSession           $userSession
+    ) {
+        $this->config             = $config;
+        $this->fileMapper         = $fileMapper;
+        $this->groupManager       = $groupManager;
+        $this->logger             = $logger;
+        $this->objectEntityMapper = $objectEntityMapper;
+        $this->registerMapper    = $registerMapper;
+        $this->rootFolder         = $rootFolder;
+        $this->shareManager       = $shareManager;
+        $this->systemTagManager   = $systemTagManager;
+        $this->systemTagMapper    = $systemTagMapper;
+        $this->urlGenerator       = $urlGenerator;
+        $this->userManager        = $userManager;
+        $this->userSession        = $userSession;
+
+    }//end __construct()
+
     /**
      * Clean and extract filename from a file path that may contain folder ID prefixes.
      *
