@@ -56,6 +56,20 @@ class ConversationMapper extends QBMapper
     private IEventDispatcher $eventDispatcher;
 
 
+    /**
+     * Constructor
+     *
+     * @param IDBConnection     $db             Database connection
+     * @param IEventDispatcher $eventDispatcher Event dispatcher
+     */
+    public function __construct(
+        IDBConnection $db,
+        IEventDispatcher $eventDispatcher
+    ) {
+        parent::__construct($db, 'openregister_conversations', Conversation::class);
+        $this->eventDispatcher = $eventDispatcher;
+    }//end __construct()
+
 
     /**
      * Insert a new conversation entity

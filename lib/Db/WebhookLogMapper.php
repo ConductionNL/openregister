@@ -43,6 +43,18 @@ use OCP\IDBConnection;
 class WebhookLogMapper extends QBMapper
 {
 
+    /**
+     * Constructor for WebhookLogMapper
+     *
+     * @param IDBConnection $db Database connection
+     *
+     * @return void
+     */
+    public function __construct(IDBConnection $db)
+    {
+        parent::__construct($db, 'openregister_webhook_logs', WebhookLog::class);
+
+    }//end __construct()
 
 
     /**

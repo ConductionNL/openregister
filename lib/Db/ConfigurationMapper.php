@@ -92,6 +92,33 @@ class ConfigurationMapper extends QBMapper
      */
     private IEventDispatcher $eventDispatcher;
 
+
+    /**
+     * Constructor
+     *
+     * @param IDBConnection       $db                 Database connection
+     * @param OrganisationService $organisationService Organisation service
+     * @param IUserSession        $userSession        User session
+     * @param IGroupManager       $groupManager       Group manager
+     * @param ISession            $session            Session
+     * @param IEventDispatcher    $eventDispatcher    Event dispatcher
+     */
+    public function __construct(
+        IDBConnection $db,
+        OrganisationService $organisationService,
+        IUserSession $userSession,
+        IGroupManager $groupManager,
+        ISession $session,
+        IEventDispatcher $eventDispatcher
+    ) {
+        parent::__construct($db, 'openregister_configurations', Configuration::class);
+        $this->organisationService = $organisationService;
+        $this->userSession = $userSession;
+        $this->groupManager = $groupManager;
+        $this->session = $session;
+        $this->eventDispatcher = $eventDispatcher;
+    }//end __construct()
+
     /**
      * Session key prefix for storing configurations
      *

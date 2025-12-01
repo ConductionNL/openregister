@@ -91,6 +91,32 @@ class ViewMapper extends QBMapper
     private IEventDispatcher $eventDispatcher;
 
 
+    /**
+     * Constructor
+     *
+     * @param IDBConnection              $db                        Database connection
+     * @param OrganisationService        $organisationService       Organisation service
+     * @param IUserSession               $userSession               User session
+     * @param IGroupManager              $groupManager              Group manager
+     * @param ConfigurationCacheService  $configurationCacheService Configuration cache service
+     * @param IEventDispatcher           $eventDispatcher           Event dispatcher
+     */
+    public function __construct(
+        IDBConnection $db,
+        OrganisationService $organisationService,
+        IUserSession $userSession,
+        IGroupManager $groupManager,
+        ConfigurationCacheService $configurationCacheService,
+        IEventDispatcher $eventDispatcher
+    ) {
+        parent::__construct($db, 'openregister_views', View::class);
+        $this->organisationService = $organisationService;
+        $this->userSession = $userSession;
+        $this->groupManager = $groupManager;
+        $this->configurationCacheService = $configurationCacheService;
+        $this->eventDispatcher = $eventDispatcher;
+    }//end __construct()
+
 
     /**
      * Find a view by its ID

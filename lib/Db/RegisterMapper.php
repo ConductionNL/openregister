@@ -90,6 +90,35 @@ class RegisterMapper extends QBMapper
     private readonly ObjectEntityMapper $objectEntityMapper;
 
 
+    /**
+     * Constructor for RegisterMapper
+     *
+     * @param IDBConnection       $db                 Database connection
+     * @param SchemaMapper       $schemaMapper       Schema mapper
+     * @param IEventDispatcher   $eventDispatcher    Event dispatcher
+     * @param ObjectEntityMapper $objectEntityMapper Object entity mapper
+     * @param IUserSession       $userSession        User session
+     * @param IGroupManager      $groupManager       Group manager
+     *
+     * @return void
+     */
+    public function __construct(
+        IDBConnection $db,
+        SchemaMapper $schemaMapper,
+        IEventDispatcher $eventDispatcher,
+        ObjectEntityMapper $objectEntityMapper,
+        IUserSession $userSession,
+        IGroupManager $groupManager
+    ) {
+        parent::__construct($db, 'openregister_registers', Register::class);
+        $this->schemaMapper = $schemaMapper;
+        $this->eventDispatcher = $eventDispatcher;
+        $this->objectEntityMapper = $objectEntityMapper;
+        $this->userSession = $userSession;
+        $this->groupManager = $groupManager;
+
+    }//end __construct()
+
 
     /**
      * Find a register by its ID, with optional extension for statistics

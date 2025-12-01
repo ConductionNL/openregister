@@ -90,6 +90,35 @@ class SchemaMapper extends QBMapper
     private IGroupManager $groupManager;
 
 
+    /**
+     * Constructor for SchemaMapper
+     *
+     * @param IDBConnection              $db                 Database connection
+     * @param IEventDispatcher          $eventDispatcher    Event dispatcher
+     * @param SchemaPropertyValidatorService $validator     Schema property validator
+     * @param OrganisationService       $organisationService Organisation service
+     * @param IUserSession              $userSession        User session
+     * @param IGroupManager             $groupManager       Group manager
+     *
+     * @return void
+     */
+    public function __construct(
+        IDBConnection $db,
+        IEventDispatcher $eventDispatcher,
+        SchemaPropertyValidatorService $validator,
+        OrganisationService $organisationService,
+        IUserSession $userSession,
+        IGroupManager $groupManager
+    ) {
+        parent::__construct($db, 'openregister_schemas', Schema::class);
+        $this->eventDispatcher = $eventDispatcher;
+        $this->validator = $validator;
+        $this->organisationService = $organisationService;
+        $this->userSession = $userSession;
+        $this->groupManager = $groupManager;
+
+    }//end __construct()
+
 
     /**
      * Finds a schema by id, with optional extension for statistics
