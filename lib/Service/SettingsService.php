@@ -1058,7 +1058,7 @@ class SettingsService
      * @return array Results of cache clearing operations
      * @throws \RuntimeException If cache clearing fails
      */
-    public function clearCache(string $type='all', ?string $userId=null, array $options=[]): array
+    public function clearCache(string $type='all', ?string $userId=null, array $_options=[]): array
     {
         try {
             $results = [
@@ -1394,7 +1394,7 @@ class SettingsService
      * @return array Warmup operation results with statistics and status
      * @throws \RuntimeException If SOLR warmup fails
      */
-    public function warmupSolrIndex(int $batchSize=2000, int $maxObjects=0, string $mode='serial', bool $collectErrors=false): array
+    public function warmupSolrIndex(int $_batchSize=2000, int $maxObjects=0, string $mode='serial', bool $collectErrors=false): array
     {
         try {
             $solrSettings = $this->getSolrSettings();

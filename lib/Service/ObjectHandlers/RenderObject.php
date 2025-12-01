@@ -702,8 +702,8 @@ class RenderObject
         ?array $schemas=[],
         ?array $objects=[],
         ?array $visitedIds=[],
-        bool $rbac=true,
-        bool $multi=true
+        bool $_rbac=true,
+        bool $_multi=true
     ): ObjectEntity {
         if ($entity->getUuid() !== null && in_array($entity->getUuid(), $visitedIds, true) === true) {
             return $entity->setObject(object: ['@circular' => true, 'id' => $entity->getUuid()]);

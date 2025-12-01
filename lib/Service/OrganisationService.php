@@ -416,7 +416,7 @@ class OrganisationService
      *
      * @return array Array of Organisation objects
      */
-    public function getUserOrganisations(bool $useCache=true): array
+    public function getUserOrganisations(bool $_useCache=true): array
     {
         $user = $this->getCurrentUser();
         if ($user === null) {

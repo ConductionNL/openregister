@@ -76,7 +76,7 @@ class WebhookService
      *
      * @return void
      */
-    public function dispatchEvent(Event $event, string $eventName, array $payload): void
+    public function dispatchEvent(Event $_event, string $eventName, array $payload): void
     {
         // Find all webhooks matching this event.
         $webhooks = $this->webhookMapper->findForEvent($eventName);

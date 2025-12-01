@@ -300,7 +300,7 @@ class ApplicationTool extends AbstractTool implements ToolInterface
     public function createApplication(
         string $name,
         ?string $description=null,
-        ?string $domain=null
+        ?string $_domain=null
     ): array {
         try {
             $this->logger->info('[ApplicationTool] Creating application', ['name' => $name]);
@@ -347,7 +347,7 @@ class ApplicationTool extends AbstractTool implements ToolInterface
         string $uuid,
         ?string $name=null,
         ?string $description=null,
-        ?string $domain=null
+        ?string $_domain=null
     ): array {
         try {
             $this->logger->info('[ApplicationTool] Updating application', ['uuid' => $uuid]);

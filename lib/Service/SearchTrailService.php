@@ -542,7 +542,7 @@ class SearchTrailService
      *     cleanup_date?: string
      * }
      */
-    public function cleanupSearchTrails(?DateTime $before=null): array
+    public function cleanupSearchTrails(?DateTime $_before=null): array
     {
         try {
             // Note: clearLogs() only removes expired entries, ignoring the $before parameter
