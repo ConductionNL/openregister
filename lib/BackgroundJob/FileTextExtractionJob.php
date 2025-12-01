@@ -43,6 +43,7 @@ use Psr\Log\LoggerInterface;
  */
 class FileTextExtractionJob extends QueuedJob
 {
+
     /**
      * Configuration service
      *
@@ -63,6 +64,7 @@ class FileTextExtractionJob extends QueuedJob
      * @var TextExtractionService
      */
     private TextExtractionService $textExtractionService;
+
 
     /**
      * Run the background job

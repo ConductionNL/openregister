@@ -61,7 +61,6 @@ class SchemaService
     private LoggerInterface $logger;
 
 
-
     /**
      * Explore objects and discover new properties for a schema
      *
@@ -962,7 +961,6 @@ class SchemaService
 
         // Missing constraints for numbers.
         if ($recommendedType === 'number' || $recommendedType === 'integer' || $currentType === 'number' || $currentType === 'integer') {
-
             if (($analysis['numeric_range'] ?? null) !== null) {
                 $range = $analysis['numeric_range'];
 

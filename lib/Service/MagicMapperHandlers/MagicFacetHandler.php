@@ -68,7 +68,6 @@ class MagicFacetHandler
     }//end __construct()
 
 
-
     /**
      * Get facet data for a metadata field
      *
@@ -448,7 +447,6 @@ class MagicFacetHandler
         }
 
     }//end applyBaseFilters()
-
 
 
     /**

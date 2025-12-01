@@ -70,7 +70,6 @@ class MagicOrganizationHandler
      * @psalm-suppress UnusedParam - db and userManager kept for future use
      */
     public function __construct(
-
         /**
          * @psalm-suppress UnusedProperty
          */
@@ -79,13 +78,11 @@ class MagicOrganizationHandler
          * @psalm-suppress UnusedProperty
          */
         private readonly IGroupManager $groupManager,
-
         private readonly IAppConfig $appConfig,
         private readonly LoggerInterface $logger
     ) {
 
     }//end __construct()
-
 
 
     /**
@@ -196,9 +193,6 @@ class MagicOrganizationHandler
         return $rbacData['adminOverride'] ?? true;
 
     }//end isAdminOverrideEnabled()
-
-
-
 
 
 }//end class

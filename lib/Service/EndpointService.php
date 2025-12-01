@@ -65,7 +65,6 @@ class EndpointService
     private IGroupManager $groupManager;
 
 
-
     /**
      * Test an endpoint by executing it with test data
      *
@@ -341,7 +340,6 @@ class EndpointService
         }//end try
 
     }//end executeAgentEndpoint()
-
 
 
     /**

@@ -107,8 +107,6 @@ class AuthorizationExceptionService
     private array $groupMembershipCache = [];
 
 
-
-
     /**
      * Performance-optimized version of evaluateUserPermission with caching
      *
@@ -248,7 +246,6 @@ class AuthorizationExceptionService
     }//end getUserGroupsCached()
 
 
-
     /**
      * Clear all caches (useful for testing or after exception changes)
      *
@@ -266,7 +263,6 @@ class AuthorizationExceptionService
         $this->logger->debug('Authorization exception caches cleared');
 
     }//end clearCache()
-
 
 
     /**
@@ -397,7 +393,6 @@ class AuthorizationExceptionService
         return false;
 
     }//end userHasExceptions()
-
 
 
     /**

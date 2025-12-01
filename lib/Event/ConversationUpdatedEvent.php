@@ -64,6 +64,4 @@ class ConversationUpdatedEvent extends Event
     }//end __construct()
 
 
-
-
 }//end class

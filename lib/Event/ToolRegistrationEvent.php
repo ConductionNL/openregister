@@ -105,5 +105,4 @@ class ToolRegistrationEvent extends Event
     }//end registerTool()
 
 
-
 }//end class

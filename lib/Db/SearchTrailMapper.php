@@ -759,7 +759,6 @@ class SearchTrailMapper extends QBMapper
     }//end clearLogs()
 
 
-
     /**
      * Apply filters to the query builder
      *
@@ -953,7 +952,6 @@ class SearchTrailMapper extends QBMapper
         $searchTrail->setSession($sessionId);
 
     }//end setUserInformation()
-
 
 
     /**

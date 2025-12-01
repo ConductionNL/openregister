@@ -345,9 +345,6 @@ class Organisation extends Entity implements JsonSerializable
     }//end getUserIds()
 
 
-
-
-
     /**
      * Get a specific role by ID or name
      *
@@ -603,8 +600,6 @@ class Organisation extends Entity implements JsonSerializable
     }//end setParent()
 
 
-
-
     /**
      * Set child organisation UUIDs
      *
@@ -621,7 +616,6 @@ class Organisation extends Entity implements JsonSerializable
         return $this;
 
     }//end setChildren()
-
 
 
     /**

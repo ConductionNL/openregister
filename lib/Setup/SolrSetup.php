@@ -130,9 +130,6 @@ class SolrSetup
     }//end __construct()
 
 
-
-
-
     /**
      * Track a setup step with detailed information
      *
@@ -1806,7 +1803,6 @@ class SolrSetup
     }//end forceConfigSetPropagation()
 
 
-
     /**
      * Create a new SOLR collection using a configSet (SolrCloud)
      *
@@ -2201,8 +2197,6 @@ class SolrSetup
     }//end uploadConfigSet()
 
 
-
-
     /**
      * Configure SOLR schema fields for OpenRegister ObjectEntity metadata
      *
@@ -2452,7 +2446,6 @@ class SolrSetup
     }//end replaceSchemaFieldWithResult()
 
 
-
     /**
      * Get field definitions for ObjectEntity metadata fields (shared method)
      *
@@ -2665,7 +2658,6 @@ class SolrSetup
         ];
 
     }//end getObjectEntityFieldDefinitions()
-
 
 
     /**
@@ -2894,7 +2886,6 @@ class SolrSetup
         return ($data['responseHeader']['status'] ?? -1) === 0;
 
     }//end testCollectionQuery()
-
 
 
 }//end class

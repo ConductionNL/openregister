@@ -52,5 +52,4 @@ class GdprEntityMapper extends QBMapper
     }//end __construct()
 
 
-
 }//end class

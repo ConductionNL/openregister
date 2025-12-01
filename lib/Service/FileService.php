@@ -83,6 +83,7 @@ use Psr\Log\LoggerInterface;
  */
 class FileService
 {
+
     /**
      * Configuration service
      *
@@ -214,41 +215,41 @@ class FileService
     /**
      * Constructor
      *
-     * @param IConfig                 $config             Configuration service
-     * @param FileMapper              $fileMapper         File mapper
-     * @param IGroupManager           $groupManager       Group manager
-     * @param LoggerInterface         $logger             Logger
-     * @param ObjectEntityMapper      $objectEntityMapper Object entity mapper
-     * @param RegisterMapper          $registerMapper     Register mapper
-     * @param IRootFolder             $rootFolder         Root folder
-     * @param IManager                $shareManager       Share manager
-     * @param ISystemTagManager       $systemTagManager   System tag manager
-     * @param ISystemTagObjectMapper  $systemTagMapper    System tag mapper
-     * @param IURLGenerator           $urlGenerator       URL generator
-     * @param IUserManager            $userManager        User manager
-     * @param IUserSession            $userSession        User session
+     * @param IConfig                $config             Configuration service
+     * @param FileMapper             $fileMapper         File mapper
+     * @param IGroupManager          $groupManager       Group manager
+     * @param LoggerInterface        $logger             Logger
+     * @param ObjectEntityMapper     $objectEntityMapper Object entity mapper
+     * @param RegisterMapper         $registerMapper     Register mapper
+     * @param IRootFolder            $rootFolder         Root folder
+     * @param IManager               $shareManager       Share manager
+     * @param ISystemTagManager      $systemTagManager   System tag manager
+     * @param ISystemTagObjectMapper $systemTagMapper    System tag mapper
+     * @param IURLGenerator          $urlGenerator       URL generator
+     * @param IUserManager           $userManager        User manager
+     * @param IUserSession           $userSession        User session
      */
     public function __construct(
-        IConfig                $config,
-        FileMapper             $fileMapper,
-        IGroupManager          $groupManager,
-        LoggerInterface        $logger,
-        ObjectEntityMapper     $objectEntityMapper,
-        RegisterMapper         $registerMapper,
-        IRootFolder            $rootFolder,
-        IManager               $shareManager,
-        ISystemTagManager      $systemTagManager,
+        IConfig $config,
+        FileMapper $fileMapper,
+        IGroupManager $groupManager,
+        LoggerInterface $logger,
+        ObjectEntityMapper $objectEntityMapper,
+        RegisterMapper $registerMapper,
+        IRootFolder $rootFolder,
+        IManager $shareManager,
+        ISystemTagManager $systemTagManager,
         ISystemTagObjectMapper $systemTagMapper,
-        IURLGenerator          $urlGenerator,
-        IUserManager           $userManager,
-        IUserSession           $userSession
+        IURLGenerator $urlGenerator,
+        IUserManager $userManager,
+        IUserSession $userSession
     ) {
         $this->config             = $config;
         $this->fileMapper         = $fileMapper;
         $this->groupManager       = $groupManager;
         $this->logger             = $logger;
         $this->objectEntityMapper = $objectEntityMapper;
-        $this->registerMapper    = $registerMapper;
+        $this->registerMapper     = $registerMapper;
         $this->rootFolder         = $rootFolder;
         $this->shareManager       = $shareManager;
         $this->systemTagManager   = $systemTagManager;
@@ -258,6 +259,7 @@ class FileService
         $this->userSession        = $userSession;
 
     }//end __construct()
+
 
     /**
      * Clean and extract filename from a file path that may contain folder ID prefixes.
@@ -285,14 +287,16 @@ class FileService
         $fileName = $cleanPath;
         if (str_contains($cleanPath, '/') === true) {
             $pathParts = explode('/', $cleanPath);
-            $fileName = end($pathParts);
+            $fileName  = end($pathParts);
         }
 
         return [
             'cleanPath' => $cleanPath,
-            'fileName' => $fileName
+            'fileName'  => $fileName,
         ];
+
     }//end extractFileNameFromPath()
+
 
     /**
      * Get the name for the folder of a Register (used for storing files of Schemas/Objects).
@@ -310,7 +314,9 @@ class FileService
         }
 
         return "$title Register";
+
     }//end getRegisterFolderName()
+
 
     /**
      * Creates a folder for a Schema to store files of Objects.
@@ -374,8 +380,6 @@ class FileService
      */
 
 
-
-
     /**
      * Get the folder name for an Object Entity.
      *
@@ -390,12 +394,14 @@ class FileService
      */
     private function getObjectFolderName(ObjectEntity|string $objectEntity): string
     {
-		if (is_string($objectEntity) === true) {
-			return $objectEntity;
-		}
+        if (is_string($objectEntity) === true) {
+            return $objectEntity;
+        }
 
         return $objectEntity->getUuid() ?? (string) $objectEntity->getId();
-    }
+
+    }//end getObjectFolderName()
+
 
     /**
      * Creates a folder for either a Register or ObjectEntity and stores the folder ID.
@@ -432,7 +438,9 @@ class FileService
             );
             return null;
         }
+
     }//end createEntityFolder()
+
 
     /**
      * Creates a folder for a Register and stores the folder ID.
@@ -447,33 +455,37 @@ class FileService
      *
      * @phpstan-return Node|null
      */
-    private function createRegisterFolderById(Register $register, ?IUser $currentUser = null): ?Node
+    private function createRegisterFolderById(Register $register, ?IUser $currentUser=null): ?Node
     {
         $folderProperty = $register->getFolder();
 
         // Check if folder ID is already set and valid (not legacy string).
         if ($folderProperty !== null && $folderProperty !== '' && is_string($folderProperty) === false) {
             try {
-// Type assertion: after checking it's not a string, it should be numeric (int or float).
-                /** @var int|float $folderProperty */
+                /*
+                 * Type assertion: after checking it's not a string, it should be numeric (int or float).
+                 *
+                 * @var int|float $folderProperty
+                 */
+
                 if (is_numeric($folderProperty) === true) {
-                    $folderId = (int) $folderProperty;
+                    $folderId       = (int) $folderProperty;
                     $existingFolder = $this->getNodeById($folderId);
                     if ($existingFolder !== null && $existingFolder instanceof Folder) {
-                        $this->logger->info(message: "Register folder already exists with ID: " . $folderProperty);
+                        $this->logger->info(message: "Register folder already exists with ID: ".$folderProperty);
                         return $existingFolder;
                     }
                 } else {
                     throw new Exception('Invalid folder ID type');
                 }
             } catch (Exception $e) {
-                $this->logger->warning(message: "Stored folder ID invalid, creating new folder: " . $e->getMessage());
+                $this->logger->warning(message: "Stored folder ID invalid, creating new folder: ".$e->getMessage());
             }
-        }
+        }//end if
 
         // Create the folder path and node.
         $registerFolderName = $this->getRegisterFolderName($register);
-        $folderPath = self::ROOT_FOLDER . '/' . $registerFolderName;
+        $folderPath         = self::ROOT_FOLDER.'/'.$registerFolderName;
 
         $folderNode = $this->createFolderPath($folderPath);
 
@@ -482,7 +494,7 @@ class FileService
             $register->setFolder((string) $folderNode->getId());
             $this->registerMapper->update($register);
 
-            $this->logger->info(message: "Created register folder with ID: " . $folderNode->getId());
+            $this->logger->info(message: "Created register folder with ID: ".$folderNode->getId());
 
             // Transfer ownership to OpenRegister and share with current user if needed.
             $this->transferFolderOwnershipIfNeeded($folderNode);
@@ -494,7 +506,9 @@ class FileService
         }
 
         return $folderNode;
+
     }//end createRegisterFolderById()
+
 
     /**
      * Creates a folder for an ObjectEntity nested under the register folder.
@@ -510,8 +524,11 @@ class FileService
      *
      * @phpstan-return Node|null
      */
-    private function createObjectFolderById(ObjectEntity|string $objectEntity, ?IUser $currentUser = null, int|string|null $registerId = null): ?Node
-    {
+    private function createObjectFolderById(
+        ObjectEntity|string $objectEntity,
+        ?IUser $currentUser=null,
+        int|string|null $registerId=null
+    ): ?Node {
         $folderProperty = null;
         if ($objectEntity instanceof ObjectEntity === true) {
             $folderProperty = $objectEntity->getFolder();
@@ -520,36 +537,41 @@ class FileService
         // Check if folder ID is already set and valid (not legacy string).
         if ($folderProperty !== null && $folderProperty !== '' && is_string($folderProperty) === false) {
             try {
-// Type assertion: after checking it's not a string, it should be numeric (int or float).
-                /** @var int|float $folderProperty */
+                /*
+                 * Type assertion: after checking it's not a string, it should be numeric (int or float).
+                 *
+                 * @var int|float $folderProperty
+                 */
+
                 if (is_numeric($folderProperty) === true) {
-                    $folderId = (int) $folderProperty;
+                    $folderId       = (int) $folderProperty;
                     $existingFolder = $this->getNodeById($folderId);
                     if ($existingFolder !== null && $existingFolder instanceof Folder) {
-                        $this->logger->info(message: "Object folder already exists with ID: " . $folderProperty);
+                        $this->logger->info(message: "Object folder already exists with ID: ".$folderProperty);
                         return $existingFolder;
                     }
                 } else {
                     throw new Exception('Invalid folder ID type');
                 }
             } catch (Exception $e) {
-                $this->logger->warning(message: "Stored folder ID invalid, creating new folder: " . $e->getMessage());
+                $this->logger->warning(message: "Stored folder ID invalid, creating new folder: ".$e->getMessage());
             }
-        }
+        }//end if
 
         // Ensure register folder exists first.
         $register = null;
         if ($objectEntity instanceof ObjectEntity === true) {
             $register = $this->registerMapper->find($objectEntity->getRegister());
             if ($register === null) {
-                throw new Exception("Failed to create file, could not find register for objects register: {$objectEntity->getRegister()}");
+                $registerUuid = $objectEntity->getRegister();
+                throw new Exception("Failed to create file, could not find register for objects register: {$registerUuid}");
             }
         } else if ($registerId !== null) {
             $register = $this->registerMapper->find($registerId);
             if ($register === null) {
                 throw new Exception("Failed to create file, could not find register with register id: $registerId");
             }
-        }
+        }//end if
 
         if ($register === null) {
             throw new Exception("Failed to create file because no objectEntity or registerId given");
@@ -557,7 +579,7 @@ class FileService
 
         $registerFolder = $this->createRegisterFolderById(register: $register, currentUser: $currentUser);
 
-        if ($registerFolder === null || !($registerFolder instanceof Folder)) {
+        if ($registerFolder === null || ($registerFolder instanceof Folder) === false) {
             throw new Exception("Failed to create or access register folder");
         }
 
@@ -567,11 +589,11 @@ class FileService
         try {
             // Try to get existing folder first.
             $objectFolder = $registerFolder->get($objectFolderName);
-            $this->logger->info(message: "Object folder already exists: " . $objectFolderName);
+            $this->logger->info(message: "Object folder already exists: ".$objectFolderName);
         } catch (NotFoundException) {
             // Create new folder if it doesn't exist.
             $objectFolder = $registerFolder->newFolder($objectFolderName);
-            $this->logger->info(message: "Created object folder: " . $objectFolderName);
+            $this->logger->info(message: "Created object folder: ".$objectFolderName);
         }
 
         // Store the folder ID.
@@ -580,7 +602,7 @@ class FileService
             $this->objectEntityMapper->update($objectEntity);
         }
 
-        $this->logger->info(message: "Created object folder with ID: " . $objectFolder->getId());
+        $this->logger->info(message: "Created object folder with ID: ".$objectFolder->getId());
 
         // Transfer ownership to OpenRegister and share with current user if needed.
         $this->transferFolderOwnershipIfNeeded($objectFolder);
@@ -591,7 +613,9 @@ class FileService
         }
 
         return $objectFolder;
+
     }//end createObjectFolderById()
+
 
     /**
      * Get the OpenRegister user root folder.
@@ -609,14 +633,16 @@ class FileService
     private function getOpenRegisterUserFolder(): Folder
     {
         try {
-            $user = $this->getUser();
+            $user       = $this->getUser();
             $userFolder = $this->rootFolder->getUserFolder($user->getUID());
             return $userFolder;
         } catch (Exception $e) {
-            $this->logger->error(message: "Failed to get OpenRegister user folder: " . $e->getMessage());
-            throw new Exception("Cannot access OpenRegister user folder: " . $e->getMessage());
+            $this->logger->error(message: "Failed to get OpenRegister user folder: ".$e->getMessage());
+            throw new Exception("Cannot access OpenRegister user folder: ".$e->getMessage());
         }
+
     }//end getOpenRegisterUserFolder()
+
 
     /**
      * Get a Node by its ID.
@@ -632,16 +658,19 @@ class FileService
     {
         try {
             $userFolder = $this->getOpenRegisterUserFolder();
-            $nodes = $userFolder->getById($nodeId);
+            $nodes      = $userFolder->getById($nodeId);
             if (empty($nodes) === false) {
                 return $nodes[0];
             }
+
             return null;
         } catch (Exception $e) {
-            $this->logger->error(message: "Failed to get node by ID $nodeId: " . $e->getMessage());
+            $this->logger->error(message: "Failed to get node by ID $nodeId: ".$e->getMessage());
             return null;
         }
+
     }//end getNodeById()
+
 
     /**
      * Get files for either a Register or ObjectEntity.
@@ -649,8 +678,8 @@ class FileService
      * This unified method handles file retrieval for both entity types,
      * using the stored folder IDs for stable access.
      *
-     * @param Register|ObjectEntity $entity         The entity to get files for
-     * @param bool|null            $sharedFilesOnly Whether to return only shared files
+     * @param Register|ObjectEntity $entity          The entity to get files for
+     * @param bool|null             $sharedFilesOnly Whether to return only shared files
      *
      * @return Node[] Array of file nodes
      *
@@ -659,7 +688,7 @@ class FileService
      * @psalm-return   array<int, Node>
      * @phpstan-return array<int, Node>
      */
-    public function getFilesForEntity(Register | ObjectEntity $entity, ?bool $sharedFilesOnly = false): array
+    public function getFilesForEntity(Register|ObjectEntity $entity, ?bool $sharedFilesOnly=false): array
     {
 
         if ($entity instanceof Register) {
@@ -669,20 +698,25 @@ class FileService
         }
 
         if ($folder === null) {
-            throw new Exception("Cannot access folder for entity " . $entity->getId());
+            throw new Exception("Cannot access folder for entity ".$entity->getId());
         }
 
         $files = $folder->getDirectoryListing();
 
         if ($sharedFilesOnly === true) {
-            $files = array_filter($files, function ($file) {
-                $shares = $this->findShares($file);
-                return empty($shares) === false;
-            });
+            $files = array_filter(
+                $files,
+                function ($file) {
+                    $shares = $this->findShares($file);
+                    return empty($shares) === false;
+                }
+            );
         }
 
         return array_values($files);
+
     }//end getFilesForEntity()
+
 
     /**
      * Get a register folder by its stored ID.
@@ -705,10 +739,14 @@ class FileService
         }
 
         // Try to get folder by ID.
-        /** @var int|float $folderProperty */
+
+        /*
+         * @var int|float $folderProperty
+         */
+
         if (is_numeric($folderProperty) === true) {
             $folderId = (int) $folderProperty;
-            $folder = $this->getNodeById($folderId);
+            $folder   = $this->getNodeById($folderId);
         } else {
             $this->logger->warning(message: "Invalid folder ID type for register {$register->getId()}, creating new folder");
             return $this->createRegisterFolderById(register: $register);
@@ -721,7 +759,9 @@ class FileService
         // If stored ID is invalid, recreate the folder.
         $this->logger->warning(message: "Register {$register->getId()} has invalid folder ID, recreating folder");
         return $this->createRegisterFolderById($register);
+
     }//end getRegisterFolderById()
+
 
     /**
      * Get an object folder by its stored ID.
@@ -734,7 +774,7 @@ class FileService
      * @psalm-return   Folder|null
      * @phpstan-return Folder|null
      */
-    public function getObjectFolder(ObjectEntity|string $objectEntity, int|string|null $registerId = null): ?Folder
+    public function getObjectFolder(ObjectEntity|string $objectEntity, int|string|null $registerId=null): ?Folder
     {
         $folderProperty = null;
         if ($objectEntity instanceof ObjectEntity === true) {
@@ -747,9 +787,10 @@ class FileService
             if ($objectEntity instanceof ObjectEntity) {
                 $objectEntityId = $objectEntity->getId();
             }
+
             $this->logger->info(message: "Object $objectEntityId has legacy folder property, creating new folder");
             return $this->createObjectFolderById(objectEntity: $objectEntity, registerId: $registerId);
-        }
+        }//end if
 
         // Convert string numeric ID to integer.
         $folderId = (int) $folderProperty;
@@ -765,7 +806,9 @@ class FileService
         $this->logger->warning(message: "Object {$objectEntity->getId()} has invalid folder ID, recreating folder");
 
         return $this->createObjectFolderById(objectEntity: $objectEntity);
+
     }//end getObjectFolder()
+
 
     /**
      * Create a folder path and return the Node.
@@ -822,10 +865,13 @@ class FileService
                 return $node;
             }
         } catch (NotPermittedException $e) {
+            //end try
             $this->logger->error(message: "Can't create folder $folderPath: ".$e->getMessage());
             throw new Exception("Can't create folder $folderPath");
-        }
+        }//end try
+
     }//end createFolderPath()
+
 
     /**
      * Returns a share link for the given IShare object.
@@ -837,7 +883,9 @@ class FileService
     public function getShareLink(IShare $share): string
     {
         return $this->getCurrentDomain().'/index.php/s/'.$share->getToken();
+
     }//end getShareLink()
+
 
     /**
      * Gets and returns the current host/domain with correct protocol.
@@ -846,7 +894,7 @@ class FileService
      */
     private function getCurrentDomain(): string
     {
-        $baseUrl = $this->urlGenerator->getBaseUrl();
+        $baseUrl        = $this->urlGenerator->getBaseUrl();
         $trustedDomains = $this->config->getSystemValue('trusted_domains');
 
         if (($trustedDomains[1] ?? null) !== null) {
@@ -854,7 +902,9 @@ class FileService
         }
 
         return $baseUrl;
+
     }//end getCurrentDomain()
+
 
     /**
      * Gets or creates the OpenCatalogi user for file operations.
@@ -869,7 +919,7 @@ class FileService
 
         if ($openCatalogiUser === null) {
             // Create OpenCatalogi user if it doesn't exist.
-            $password = bin2hex(random_bytes(16)); // Generate random password.
+            $password         = bin2hex(random_bytes(16));
             $openCatalogiUser = $this->userManager->createUser(self::APP_USER, $password);
 
             if ($openCatalogiUser === false) {
@@ -892,10 +942,12 @@ class FileService
 
             // Add the OpenCatalogi user to the group.
             $group->addUser($openCatalogiUser);
-        }
+        }//end if
 
         return $openCatalogiUser;
+
     }//end getUser()
+
 
     /**
      * Set file ownership to the OpenRegister user at database level.
@@ -917,8 +969,8 @@ class FileService
     {
         try {
             $openRegisterUser = $this->getUser();
-            $userId = $openRegisterUser->getUID();
-            $fileId = $file->getId();
+            $userId           = $openRegisterUser->getUID();
+            $fileId           = $file->getId();
 
             $this->logger->info(message: "ownFile: Attempting to set ownership of file {$file->getName()} (ID: $fileId) to user: $userId");
 
@@ -932,10 +984,12 @@ class FileService
 
             return $result;
         } catch (Exception $e) {
-            $this->logger->error(message: "ownFile: Error setting ownership of file {$file->getName()}: " . $e->getMessage());
-            throw new Exception("Failed to set file ownership: " . $e->getMessage());
+            $this->logger->error(message: "ownFile: Error setting ownership of file {$file->getName()}: ".$e->getMessage());
+            throw new Exception("Failed to set file ownership: ".$e->getMessage());
         }
+
     }//end ownFile()
+
 
     /**
      * Check file ownership and fix it if needed to prevent "File not found" errors.
@@ -971,10 +1025,11 @@ class FileService
             $this->logger->warning(message: "checkOwnership: File {$file->getName()} (ID: {$file->getId()}) exists but not accessible, checking ownership");
 
             try {
-                $fileOwner = $file->getOwner();
+                $fileOwner        = $file->getOwner();
                 $openRegisterUser = $this->getUser();
 
                 if ($fileOwner === null || $fileOwner->getUID() !== $openRegisterUser->getUID()) {
+                    // End if.
                     $this->logger->info(message: "checkOwnership: File {$file->getName()} (ID: {$file->getId()}) has incorrect owner, attempting to fix");
 
                     // Try to fix the ownership.
@@ -984,15 +1039,15 @@ class FileService
                         $this->logger->info(message: "checkOwnership: Successfully fixed ownership for file {$file->getName()} (ID: {$file->getId()})");
                     } else {
                         $this->logger->error(message: "checkOwnership: Failed to fix ownership for file {$file->getName()} (ID: {$file->getId()})");
-                        throw new Exception("Failed to fix file ownership for file: " . $file->getName());
+                        throw new Exception("Failed to fix file ownership for file: ".$file->getName());
                     }
                 } else {
                     $this->logger->info(message: "checkOwnership: File {$file->getName()} (ID: {$file->getId()}) already has correct owner, but still not accessible");
-                }
+                }//end if
             } catch (Exception $ownershipException) {
-                $this->logger->error(message: "checkOwnership: Error checking/fixing ownership for file {$file->getName()}: " . $ownershipException->getMessage());
-                throw new Exception("Ownership check failed for file: " . $file->getName());
-            }
+                $this->logger->error(message: "checkOwnership: Error checking/fixing ownership for file {$file->getName()}: ".$ownershipException->getMessage());
+                throw new Exception("Ownership check failed for file: ".$file->getName());
+            }//end try
         } catch (NotPermittedException $e) {
             // Permission denied - likely an ownership issue.
             $this->logger->warning(
@@ -3328,6 +3383,5 @@ class FileService
         return "File $fileId is not in object folder";
     }//end getFileInObjectFolderMessage()
 
+
 }//end class
-
-

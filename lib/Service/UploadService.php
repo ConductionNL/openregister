@@ -47,12 +47,14 @@ use Symfony\Component\Yaml\Yaml;
  */
 class UploadService
 {
+
     /**
      * HTTP client
      *
      * @var Client
      */
     private Client $client;
+
 
     /**
      * Gets the uploaded json from the request data. And returns it as a PHP array.
@@ -184,7 +186,6 @@ class UploadService
         throw new \Exception('File upload handling is not yet implemented');
 
     }//end getJSONfromFile()
-
 
 
 }//end class

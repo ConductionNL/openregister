@@ -251,8 +251,6 @@ class GetObject
     }//end hydrateFiles()
 
 
-
-
     /**
      * Find logs for a given object.
      *

@@ -137,7 +137,6 @@ class SolrFileService
     }//end getFileCollection()
 
 
-
     /**
      * Extract text from a file
      *
@@ -940,8 +939,6 @@ class SolrFileService
         ];
 
     }//end indexFileChunks()
-
-
 
 
     /**

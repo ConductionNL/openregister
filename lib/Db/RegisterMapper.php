@@ -93,7 +93,7 @@ class RegisterMapper extends QBMapper
     /**
      * Constructor for RegisterMapper
      *
-     * @param IDBConnection       $db                 Database connection
+     * @param IDBConnection      $db                 Database connection
      * @param SchemaMapper       $schemaMapper       Schema mapper
      * @param IEventDispatcher   $eventDispatcher    Event dispatcher
      * @param ObjectEntityMapper $objectEntityMapper Object entity mapper
@@ -111,11 +111,11 @@ class RegisterMapper extends QBMapper
         IGroupManager $groupManager
     ) {
         parent::__construct($db, 'openregister_registers', Register::class);
-        $this->schemaMapper = $schemaMapper;
-        $this->eventDispatcher = $eventDispatcher;
+        $this->schemaMapper       = $schemaMapper;
+        $this->eventDispatcher    = $eventDispatcher;
         $this->objectEntityMapper = $objectEntityMapper;
-        $this->userSession = $userSession;
-        $this->groupManager = $groupManager;
+        $this->userSession        = $userSession;
+        $this->groupManager       = $groupManager;
 
     }//end __construct()
 

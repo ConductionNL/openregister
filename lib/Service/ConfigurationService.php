@@ -154,6 +154,7 @@ class ConfigurationService
      */
     private string $appDataPath;
 
+
     /**
      * Attempts to retrieve the OpenConnector service from the container.
      *
@@ -565,7 +566,6 @@ class ConfigurationService
         return is_numeric($lastSegment) === true ? $lastSegment : $url;
 
     }//end getLastNumericSegment()
-
 
 
     /**
@@ -1656,8 +1656,6 @@ class ConfigurationService
     }//end importSchema()
 
 
-
-
     /**
      * Import configuration from a file path.
      *
@@ -2022,7 +2020,6 @@ class ConfigurationService
         }//end try
 
     }//end importFromApp()
-
 
 
     /**

@@ -2032,5 +2032,4 @@ class ChatService
     }//end convertFunctionsToFunctionInfo()
 
 
-
 }//end class

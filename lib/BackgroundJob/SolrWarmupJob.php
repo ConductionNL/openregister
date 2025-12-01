@@ -186,6 +186,4 @@ class SolrWarmupJob extends QueuedJob
     }//end run()
 
 
-
-
 }//end class

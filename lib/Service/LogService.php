@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
  */
 class LogService
 {
+
     /**
      * Audit trail mapper
      *
@@ -61,6 +62,7 @@ class LogService
      * @psalm-suppress UnusedProperty
      */
     private SchemaMapper $schemaMapper;
+
 
     /**
      * Get logs for an object

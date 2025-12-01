@@ -37,6 +37,7 @@ use OCP\IURLGenerator;
  */
 class DownloadService
 {
+
     /**
      * Register mapper
      *
@@ -50,8 +51,6 @@ class DownloadService
      * @var SchemaMapper
      */
     private SchemaMapper $schemaMapper;
-
-
 
 
     /**

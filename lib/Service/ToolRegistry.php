@@ -257,6 +257,4 @@ class ToolRegistry
     }//end getTools()
 
 
-
-
 }//end class

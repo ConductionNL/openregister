@@ -84,7 +84,6 @@ class WebhookInterceptorService
     private WebhookLogMapper $webhookLogMapper;
 
 
-
     /**
      * Intercept request and send to webhooks
      *
@@ -433,7 +432,9 @@ class WebhookInterceptorService
         }
 
         // Set the value at the final nested path.
-        /** @psalm-suppress UnusedVariable */
+        /*
+         * @psalm-suppress UnusedVariable
+         */
         $current = $value;
 
     }//end setNestedValue()

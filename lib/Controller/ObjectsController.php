@@ -632,15 +632,25 @@ class ObjectsController extends Controller
             if (is_array($fileData['name']) === true) {
                 // Handle array uploads: images[] becomes images with array values.
                 // We need to preserve all files, so use indexed keys: images[0], images[1], etc.
-                /** @var array<int, string> $nameArray */
+                /*
+                 * @var array<int, string> $nameArray
+                 */
                 $nameArray = $fileData['name'];
-                /** @var array<int, string> $typeArray */
+                /*
+                 * @var array<int, string> $typeArray
+                 */
                 $typeArray = is_array($fileData['type']) ? $fileData['type'] : [];
-                /** @var array<int, string> $tmpNameArray */
+                /*
+                 * @var array<int, string> $tmpNameArray
+                 */
                 $tmpNameArray = is_array($fileData['tmp_name']) ? $fileData['tmp_name'] : [];
-                /** @var array<int, int> $errorArray */
+                /*
+                 * @var array<int, int> $errorArray
+                 */
                 $errorArray = is_array($fileData['error']) ? $fileData['error'] : [];
-                /** @var array<int, int> $sizeArray */
+                /*
+                 * @var array<int, int> $sizeArray
+                 */
                 $sizeArray = is_array($fileData['size']) ? $fileData['size'] : [];
                 $fileCount = count($nameArray);
                 for ($i = 0; $i < $fileCount; $i++) {
@@ -757,15 +767,25 @@ class ObjectsController extends Controller
             if (is_array($fileData['name']) === true) {
                 // Handle array uploads: images[] becomes images with array values.
                 // We need to preserve all files, so use indexed keys: images[0], images[1], etc.
-                /** @var array<int, string> $nameArray */
+                /*
+                 * @var array<int, string> $nameArray
+                 */
                 $nameArray = $fileData['name'];
-                /** @var array<int, string> $typeArray */
+                /*
+                 * @var array<int, string> $typeArray
+                 */
                 $typeArray = is_array($fileData['type']) ? $fileData['type'] : [];
-                /** @var array<int, string> $tmpNameArray */
+                /*
+                 * @var array<int, string> $tmpNameArray
+                 */
                 $tmpNameArray = is_array($fileData['tmp_name']) ? $fileData['tmp_name'] : [];
-                /** @var array<int, int> $errorArray */
+                /*
+                 * @var array<int, int> $errorArray
+                 */
                 $errorArray = is_array($fileData['error']) ? $fileData['error'] : [];
-                /** @var array<int, int> $sizeArray */
+                /*
+                 * @var array<int, int> $sizeArray
+                 */
                 $sizeArray = is_array($fileData['size']) ? $fileData['size'] : [];
                 $fileCount = count($nameArray);
                 for ($i = 0; $i < $fileCount; $i++) {

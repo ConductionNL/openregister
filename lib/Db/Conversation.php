@@ -150,10 +150,6 @@ class Conversation extends Entity implements JsonSerializable
     }//end __construct()
 
 
-
-
-
-
     /**
      * Soft delete the conversation
      *

@@ -134,10 +134,6 @@ class Message extends Entity implements JsonSerializable
     }//end __construct()
 
 
-
-
-
-
     /**
      * Serialize the message to JSON
      *

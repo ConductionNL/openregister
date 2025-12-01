@@ -94,6 +94,7 @@ class ValidateObject
      */
     private IURLGenerator $urlGenerator;
 
+
     /**
      * Pre-processes a schema object to resolve all schema references.
      *
@@ -1149,7 +1150,6 @@ class ValidateObject
         return $reference;
 
     }//end removeQueryParameters()
-
 
 
     /**

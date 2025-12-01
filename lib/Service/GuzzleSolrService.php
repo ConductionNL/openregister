@@ -134,8 +134,6 @@ class GuzzleSolrService
     public function __construct(
         private readonly SettingsService $settingsService,
         private readonly LoggerInterface $logger,
-
-
         private readonly ?SchemaMapper $schemaMapper=null,
         private readonly ?RegisterMapper $registerMapper=null,
         /**
@@ -597,7 +595,6 @@ class GuzzleSolrService
     }//end setCachedAvailability()
 
 
-
     /**
      * Clear cached SOLR availability result (internal method)
      *
@@ -1012,7 +1009,6 @@ class GuzzleSolrService
         );
 
     }//end createCollection()
-
 
 
     /**
@@ -1775,7 +1771,6 @@ class GuzzleSolrService
     }//end flattenRelationsForSolr()
 
 
-
     /**
      * Extract array fields from dot-notation relations
      *
@@ -2066,7 +2061,6 @@ class GuzzleSolrService
     }//end convertValueForSolr()
 
 
-
     /**
      * Search objects with pagination using OpenRegister query format
      *
@@ -2258,9 +2252,6 @@ class GuzzleSolrService
     }//end applyAdditionalFilters()
 
 
-
-
-
     /**
      * Translate OpenRegister field names to Solr field names for filtering
      *
@@ -2432,7 +2423,6 @@ class GuzzleSolrService
     }//end translateSortableField()
 
 
-
     /**
      * Reconstruct ObjectEntity from Solr document
      *
@@ -2535,7 +2525,6 @@ class GuzzleSolrService
         }
 
     }//end extractTextFromArray()
-
 
 
     /**
@@ -5382,7 +5371,6 @@ class GuzzleSolrService
     }//end getSolrConfig()
 
 
-
     /**
      * Fetch objects that belong to searchable schemas only
      *
@@ -5461,11 +5449,6 @@ class GuzzleSolrService
         }//end try
 
     }//end fetchSearchableObjects()
-
-
-
-
-
 
 
     /**
@@ -5608,7 +5591,6 @@ class GuzzleSolrService
         return $results;
 
     }//end testSchemaAwareMapping()
-
 
 
     /**
@@ -6057,7 +6039,6 @@ class GuzzleSolrService
     }//end clearCache()
 
 
-
     /**
      * Fix mismatched SOLR fields by updating their configuration
      *
@@ -6290,7 +6271,6 @@ class GuzzleSolrService
         }//end try
 
     }//end fixMismatchedFields()
-
 
 
     /**
@@ -7175,7 +7155,6 @@ class GuzzleSolrService
     }//end predictWarmupMemoryUsage()
 
 
-
     /**
      * Parse memory limit string to bytes
      *
@@ -7557,7 +7536,6 @@ class GuzzleSolrService
         $fieldType   = $field['type'] ?? 'string';
         $multiValued = $field['multiValued'] ?? false;
 
-
         // Based on field type.
         switch ($fieldType) {
             case 'boolean':
@@ -7856,7 +7834,6 @@ class GuzzleSolrService
         }
 
     }//end inferFieldType()
-
 
 
     /**
@@ -8276,7 +8253,6 @@ class GuzzleSolrService
         return $objectFieldInfo;
 
     }//end getObjectFieldInfo()
-
 
 
     /**
@@ -9804,7 +9780,6 @@ class GuzzleSolrService
     }//end copyCollection()
 
 
-
     /**
      * Bulk index multiple files
      *
@@ -10103,7 +10078,6 @@ class GuzzleSolrService
         return $prefix;
 
     }//end getBasePrefix()
-
 
 
     /**

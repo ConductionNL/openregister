@@ -47,6 +47,7 @@ use OCP\AppFramework\Http\JSONResponse;
  */
 trait MultiTenancyTrait
 {
+
     /**
      * Optional app config for multitenancy settings
      *
@@ -60,6 +61,7 @@ trait MultiTenancyTrait
      * @var LoggerInterface|null
      */
     protected ?LoggerInterface $logger = null;
+
 
     /**
      * Get the active organisation UUID from the session.

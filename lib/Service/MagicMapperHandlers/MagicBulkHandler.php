@@ -81,10 +81,6 @@ class MagicBulkHandler
     }//end __construct()
 
 
-
-
-
-
     /**
      * Prepare objects for dynamic table structure
      *

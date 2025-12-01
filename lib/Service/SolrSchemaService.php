@@ -789,7 +789,6 @@ class SolrSchemaService
     }//end generateTenantId()
 
 
-
     /**
      * Generate SOLR field name with consistent self_ prefix (no suffixes needed)
      *
@@ -1262,7 +1261,6 @@ class SolrSchemaService
     }//end ensureCoreMetadataFields()
 
 
-
     /**
      * Get missing and extra fields in object collection
      *
@@ -1647,7 +1645,6 @@ class SolrSchemaService
         return ($data['responseHeader']['status'] ?? -1) === 0;
 
     }//end makeSolrSchemaRequest()
-
 
 
     /**

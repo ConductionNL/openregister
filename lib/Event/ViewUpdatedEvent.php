@@ -64,6 +64,4 @@ class ViewUpdatedEvent extends Event
     }//end __construct()
 
 
-
-
 }//end class

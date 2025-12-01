@@ -286,8 +286,6 @@ class SolrObjectService
     }//end convertObjectsToText()
 
 
-
-
     /**
      * Search objects in SOLR
      *
@@ -325,11 +323,6 @@ class SolrObjectService
         return $this->guzzleSolrService->searchObjectsPaginated(query: $query, rbac: $rbac, multi: $multi, published: $published, deleted: $deleted);
 
     }//end searchObjects()
-
-
-
-
-
 
 
     /**

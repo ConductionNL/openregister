@@ -370,7 +370,6 @@ class Agent extends Entity implements JsonSerializable
     }//end __construct()
 
 
-
     /**
      * Check if a user is invited to access this private agent
      *
@@ -387,8 +386,6 @@ class Agent extends Entity implements JsonSerializable
         return in_array($userId, $this->invitedUsers, true);
 
     }//end hasInvitedUser()
-
-
 
 
     /**
@@ -519,10 +516,6 @@ class Agent extends Entity implements JsonSerializable
         ];
 
     }//end jsonSerialize()
-
-
-
-
 
 
     /**

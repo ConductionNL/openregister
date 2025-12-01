@@ -30,12 +30,14 @@ use OCA\OpenRegister\Db\Schema;
  */
 class DepublishObject
 {
+
     /**
      * Object entity mapper
      *
      * @var ObjectEntityMapper
      */
     private ObjectEntityMapper $objectEntityMapper;
+
 
     /**
      * Depublish an object

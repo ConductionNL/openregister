@@ -48,7 +48,6 @@ class ApplicationService
     private LoggerInterface $logger;
 
 
-
     /**
      * Get all applications
      *
@@ -79,7 +78,6 @@ class ApplicationService
         return $this->applicationMapper->find($id);
 
     }//end find()
-
 
 
     /**
@@ -144,7 +142,6 @@ class ApplicationService
         $this->logger->info(message: 'Application deleted successfully', context: ['id' => $id]);
 
     }//end delete()
-
 
 
     /**

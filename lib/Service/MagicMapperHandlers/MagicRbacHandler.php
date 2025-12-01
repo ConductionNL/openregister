@@ -79,11 +79,9 @@ class MagicRbacHandler
          */
         private readonly IUserManager $userManager,
         private readonly IAppConfig $appConfig,
-
     ) {
 
     }//end __construct()
-
 
 
     /**
@@ -126,7 +124,6 @@ class MagicRbacHandler
     }//end applyUnauthenticatedAccess()
 
 
-
     /**
      * Check if RBAC is enabled in app configuration
      *
@@ -164,9 +161,6 @@ class MagicRbacHandler
         return $adminOverride === true;
 
     }//end isAdminOverrideEnabled()
-
-
-
 
 
 }//end class

@@ -36,6 +36,7 @@ use Psr\Container\ContainerInterface;
  */
 class RevertService
 {
+
     /**
      * Audit trail mapper
      *
@@ -63,6 +64,7 @@ class RevertService
      * @var ObjectEntityMapper
      */
     private ObjectEntityMapper $objectEntityMapper;
+
 
     /**
      * Revert an object to a previous state

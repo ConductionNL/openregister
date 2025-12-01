@@ -494,8 +494,6 @@ class MagicSearchHandler
     }//end convertRowToObjectEntity()
 
 
-
-
     /**
      * Sanitize column name for safe database usage
      *

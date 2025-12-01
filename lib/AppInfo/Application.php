@@ -208,7 +208,6 @@ class Application extends App implements IBootstrap
         // NOTE: SearchTrailMapper, ChunkMapper, GdprEntityMapper, EntityRelationMapper
         // can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire them automatically.
-
         // Register AuditTrailMapper with required dependencies.
         $context->registerService(
                 AuditTrailMapper::class,
@@ -222,10 +221,8 @@ class Application extends App implements IBootstrap
 
         // NOTE: WebhookLogMapper can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
-
         // NOTE: OrganisationMapper can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
-
         // Register OrganisationMapper with required dependencies (needed by SchemaMapper).
         $context->registerService(
                 OrganisationMapper::class,
@@ -308,7 +305,6 @@ class Application extends App implements IBootstrap
 
         // NOTE: SearchTrailService can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
-
         /*
          * Register SolrService for advanced search capabilities (disabled due to performance issues).
          * Issue: Even with lazy loading, DI registration causes performance problems.
@@ -345,7 +341,6 @@ class Application extends App implements IBootstrap
 
         // NOTE: FacetService can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
-
         // Register SaveObject with consolidated cache services.
         $context->registerService(
                 SaveObject::class,
@@ -369,39 +364,27 @@ class Application extends App implements IBootstrap
 
         // NOTE: DeleteObject can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
-
         // NOTE: GetObject can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
-
         // NOTE: RenderObject can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
-
         // NOTE: OrganisationService is registered earlier (before SchemaMapper) to break circular dependency.
-
         // NOTE: SaveObjects can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
-
         // NOTE: ObjectService can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
-
         // NOTE: ImportService can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
-
         // NOTE: ExportService can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
-
         // NOTE: SolrEventListener can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
-
         // NOTE: SchemaCacheService can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
-
         // NOTE: SchemaFacetCacheService can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
-
         // NOTE: ObjectsProvider can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
-
         // Register ObjectsProvider as a search provider for Nextcloud search.
         $context->registerSearchProvider(ObjectsProvider::class);
 
@@ -426,7 +409,8 @@ class Application extends App implements IBootstrap
                     $container->get(SearchTrailMapper::class),
                     $container->get('OCP\IUserManager'),
                     $container->get('OCP\IDBConnection'),
-                    null, // ObjectCacheService - lazy-loaded via container
+                    null,
+                    // ObjectCacheService - lazy-loaded via container
                     $container,
                     'openregister'
                     );
@@ -463,22 +447,16 @@ class Application extends App implements IBootstrap
 
         // NOTE: SolrObjectService can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
-
         // NOTE: SolrFileService can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
-
         // NOTE: VectorEmbeddingService can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
-
         // NOTE: NamedEntityRecognitionService can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
-
         // NOTE: FileVectorizationStrategy can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
-
         // NOTE: ObjectVectorizationStrategy can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
-
         // Register unified VectorizationService with strategies.
         $context->registerService(
                 VectorizationService::class,
@@ -498,25 +476,18 @@ class Application extends App implements IBootstrap
 
         // NOTE: ChatService can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
-
         // NOTE: TextExtractionService can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
-
         // NOTE: FileChangeListener can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
-
         // NOTE: ObjectChangeListener can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
-
         // NOTE: SolrSchemaService can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
-
         // NOTE: SolrManagementCommand can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
-
         // NOTE: ToolRegistry can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
-
         // Register GitHubService for GitHub API operations.
         $context->registerService(
                 \OCA\OpenRegister\Service\GitHubService::class,
@@ -532,7 +503,6 @@ class Application extends App implements IBootstrap
 
         // NOTE: DashboardService can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
-
         // Register GitLabService for GitLab API operations.
         // NOTE: Must be registered manually because it requires IClientService->newClient() factory call.
         $context->registerService(

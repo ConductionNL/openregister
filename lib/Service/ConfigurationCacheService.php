@@ -63,7 +63,6 @@ class ConfigurationCacheService
     private OrganisationService $organisationService;
 
 
-
     /**
      * Get configurations for the active organisation
      *
@@ -98,9 +97,6 @@ class ConfigurationCacheService
         return $configurations;
 
     }//end getConfigurationsForActiveOrganisation()
-
-
-
 
 
 }//end class
