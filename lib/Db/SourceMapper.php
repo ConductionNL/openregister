@@ -86,11 +86,11 @@ class SourceMapper extends QBMapper
     /**
      * Constructor
      *
-     * @param IDBConnection       $db                 Database connection
+     * @param IDBConnection       $db                  Database connection
      * @param OrganisationService $organisationService Organisation service
-     * @param IUserSession        $userSession        User session
-     * @param IGroupManager       $groupManager       Group manager
-     * @param IEventDispatcher    $eventDispatcher    Event dispatcher
+     * @param IUserSession        $userSession         User session
+     * @param IGroupManager       $groupManager        Group manager
+     * @param IEventDispatcher    $eventDispatcher     Event dispatcher
      */
     public function __construct(
         IDBConnection $db,
@@ -101,11 +101,11 @@ class SourceMapper extends QBMapper
     ) {
         parent::__construct($db, 'openregister_sources', Source::class);
         $this->organisationService = $organisationService;
-        $this->userSession = $userSession;
-        $this->groupManager = $groupManager;
-        $this->eventDispatcher = $eventDispatcher;
-    }//end __construct()
+        $this->userSession         = $userSession;
+        $this->groupManager        = $groupManager;
+        $this->eventDispatcher     = $eventDispatcher;
 
+    }//end __construct()
 
 
     /**

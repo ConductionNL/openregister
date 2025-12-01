@@ -36,6 +36,7 @@ use Psr\Log\LoggerInterface;
  */
 class RegisterService
 {
+
     /**
      * Register mapper
      *
@@ -64,6 +65,29 @@ class RegisterService
      */
     private LoggerInterface $logger;
 
+
+    /**
+     * Constructor
+     *
+     * @param RegisterMapper      $registerMapper      Register mapper
+     * @param FileService         $fileService         File service
+     * @param OrganisationService $organisationService Organisation service
+     * @param LoggerInterface     $logger              Logger
+     */
+    public function __construct(
+        RegisterMapper $registerMapper,
+        FileService $fileService,
+        OrganisationService $organisationService,
+        LoggerInterface $logger
+    ) {
+        $this->registerMapper      = $registerMapper;
+        $this->fileService         = $fileService;
+        $this->organisationService = $organisationService;
+        $this->logger = $logger;
+
+    }//end __construct()
+
+
     /**
      * Find a register by ID with optional extensions.
      *
@@ -81,7 +105,6 @@ class RegisterService
         return $this->registerMapper->find($id, $extend);
 
     }//end find()
-
 
 
     /**
@@ -112,7 +135,7 @@ class RegisterService
             filters: $filters,
             searchConditions: $searchConditions,
             searchParams: $searchParams,
-            extend: $extend
+            _extend: $extend
         );
 
     }//end findAll()
@@ -186,11 +209,6 @@ class RegisterService
         return $this->registerMapper->delete($register);
 
     }//end delete()
-
-
-
-
-
 
 
     /**

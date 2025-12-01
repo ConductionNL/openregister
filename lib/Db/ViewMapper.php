@@ -94,12 +94,12 @@ class ViewMapper extends QBMapper
     /**
      * Constructor
      *
-     * @param IDBConnection              $db                        Database connection
-     * @param OrganisationService        $organisationService       Organisation service
-     * @param IUserSession               $userSession               User session
-     * @param IGroupManager              $groupManager              Group manager
-     * @param ConfigurationCacheService  $configurationCacheService Configuration cache service
-     * @param IEventDispatcher           $eventDispatcher           Event dispatcher
+     * @param IDBConnection             $db                        Database connection
+     * @param OrganisationService       $organisationService       Organisation service
+     * @param IUserSession              $userSession               User session
+     * @param IGroupManager             $groupManager              Group manager
+     * @param ConfigurationCacheService $configurationCacheService Configuration cache service
+     * @param IEventDispatcher          $eventDispatcher           Event dispatcher
      */
     public function __construct(
         IDBConnection $db,
@@ -111,10 +111,11 @@ class ViewMapper extends QBMapper
     ) {
         parent::__construct($db, 'openregister_views', View::class);
         $this->organisationService = $organisationService;
-        $this->userSession = $userSession;
-        $this->groupManager = $groupManager;
+        $this->userSession         = $userSession;
+        $this->groupManager        = $groupManager;
         $this->configurationCacheService = $configurationCacheService;
-        $this->eventDispatcher = $eventDispatcher;
+        $this->eventDispatcher           = $eventDispatcher;
+
     }//end __construct()
 
 
@@ -294,7 +295,6 @@ class ViewMapper extends QBMapper
         return $entity;
 
     }//end delete()
-
 
 
     /**

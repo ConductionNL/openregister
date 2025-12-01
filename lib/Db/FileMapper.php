@@ -94,6 +94,7 @@ class FileMapper extends QBMapper
     ) {
         parent::__construct($db, 'openregister_files', File::class);
         $this->urlGenerator = $urlGenerator;
+
     }//end __construct()
 
 

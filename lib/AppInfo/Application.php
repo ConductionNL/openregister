@@ -247,6 +247,7 @@ class Application extends App implements IBootstrap
                     $container->get('OCP\IUserSession'),
                     $container->get('OCP\ISession'),
                     $container->get('OCP\IConfig'),
+                    $container->get('OCP\IAppConfig'),
                     $container->get('OCP\IGroupManager'),
                     $container->get('OCP\IUserManager'),
                     $container->get('Psr\Log\LoggerInterface')
@@ -532,8 +533,18 @@ class Application extends App implements IBootstrap
         // NOTE: DashboardService can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
 
-        // NOTE: GitLabService can be autowired (only type-hinted parameters).
-        // Removed manual registration - Nextcloud will autowire it automatically.
+        // Register GitLabService for GitLab API operations.
+        // NOTE: Must be registered manually because it requires IClientService->newClient() factory call.
+        $context->registerService(
+                \OCA\OpenRegister\Service\GitLabService::class,
+                function ($container) {
+                    return new \OCA\OpenRegister\Service\GitLabService(
+                    $container->get('OCP\Http\Client\IClientService')->newClient(),
+                    $container->get(id: 'OCP\IConfig'),
+                    $container->get(id: 'Psr\Log\LoggerInterface')
+                    );
+                }
+                );
 
         // Register Solr event listeners for automatic indexing.
         $context->registerEventListener(ObjectCreatedEvent::class, SolrEventListener::class);

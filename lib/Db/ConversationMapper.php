@@ -59,7 +59,7 @@ class ConversationMapper extends QBMapper
     /**
      * Constructor
      *
-     * @param IDBConnection     $db             Database connection
+     * @param IDBConnection    $db              Database connection
      * @param IEventDispatcher $eventDispatcher Event dispatcher
      */
     public function __construct(
@@ -68,6 +68,7 @@ class ConversationMapper extends QBMapper
     ) {
         parent::__construct($db, 'openregister_conversations', Conversation::class);
         $this->eventDispatcher = $eventDispatcher;
+
     }//end __construct()
 
 
@@ -290,7 +291,6 @@ class ConversationMapper extends QBMapper
     }//end findDeletedByUser()
 
 
-
     /**
      * Find conversations by user and agent with matching title pattern
      *
@@ -332,7 +332,6 @@ class ConversationMapper extends QBMapper
         return $titles;
 
     }//end findTitlesByUserAgent()
-
 
 
     /**
@@ -449,7 +448,6 @@ class ConversationMapper extends QBMapper
         return $this->update($conversation);
 
     }//end restore()
-
 
 
     /**

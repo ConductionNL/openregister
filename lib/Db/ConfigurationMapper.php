@@ -96,12 +96,12 @@ class ConfigurationMapper extends QBMapper
     /**
      * Constructor
      *
-     * @param IDBConnection       $db                 Database connection
+     * @param IDBConnection       $db                  Database connection
      * @param OrganisationService $organisationService Organisation service
-     * @param IUserSession        $userSession        User session
-     * @param IGroupManager       $groupManager       Group manager
-     * @param ISession            $session            Session
-     * @param IEventDispatcher    $eventDispatcher    Event dispatcher
+     * @param IUserSession        $userSession         User session
+     * @param IGroupManager       $groupManager        Group manager
+     * @param ISession            $session             Session
+     * @param IEventDispatcher    $eventDispatcher     Event dispatcher
      */
     public function __construct(
         IDBConnection $db,
@@ -113,11 +113,13 @@ class ConfigurationMapper extends QBMapper
     ) {
         parent::__construct($db, 'openregister_configurations', Configuration::class);
         $this->organisationService = $organisationService;
-        $this->userSession = $userSession;
-        $this->groupManager = $groupManager;
-        $this->session = $session;
+        $this->userSession         = $userSession;
+        $this->groupManager        = $groupManager;
+        $this->session         = $session;
         $this->eventDispatcher = $eventDispatcher;
+
     }//end __construct()
+
 
     /**
      * Session key prefix for storing configurations
@@ -125,7 +127,6 @@ class ConfigurationMapper extends QBMapper
      * @var string
      */
     private const SESSION_KEY_PREFIX = 'openregister_configurations_';
-
 
 
     /**
@@ -156,7 +157,6 @@ class ConfigurationMapper extends QBMapper
         return $this->findEntity($qb);
 
     }//end find()
-
 
 
     /**
@@ -266,14 +266,13 @@ class ConfigurationMapper extends QBMapper
     }//end findBySyncEnabled()
 
 
-
     /**
      * Update synchronization status for a configuration
      *
-     * @param int      $id       Configuration ID
-     * @param string   $status   Sync status: 'success', 'failed', 'pending'
-     * @param DateTime $syncDate Synchronization timestamp
-     * @param string   $message  Optional message about the sync result
+     * @param int      $id        Configuration ID
+     * @param string   $status    Sync status: 'success', 'failed', 'pending'
+     * @param DateTime $syncDate  Synchronization timestamp
+     * @param string   $_message  Optional message about the sync result
      *
      * @return Configuration The updated configuration
      * @throws \Exception If configuration not found or user doesn't have permission
@@ -462,8 +461,6 @@ class ConfigurationMapper extends QBMapper
         return $this->update($object);
 
     }//end updateFromArray()
-
-
 
 
     /**

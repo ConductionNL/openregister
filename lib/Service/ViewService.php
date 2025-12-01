@@ -34,6 +34,7 @@ use Psr\Log\LoggerInterface;
  */
 class ViewService
 {
+
     /**
      * View mapper
      *
@@ -47,6 +48,23 @@ class ViewService
      * @var LoggerInterface
      */
     private LoggerInterface $logger;
+
+
+    /**
+     * Constructor
+     *
+     * @param ViewMapper      $viewMapper View mapper
+     * @param LoggerInterface $logger     Logger
+     */
+    public function __construct(
+        ViewMapper $viewMapper,
+        LoggerInterface $logger
+    ) {
+        $this->viewMapper = $viewMapper;
+        $this->logger     = $logger;
+
+    }//end __construct()
+
 
     /**
      * Find a view by ID.
@@ -211,7 +229,6 @@ class ViewService
         }
 
     }//end delete()
-
 
 
     /**

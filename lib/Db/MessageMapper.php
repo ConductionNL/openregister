@@ -43,6 +43,7 @@ use OCP\IDBConnection;
 class MessageMapper extends QBMapper
 {
 
+
     /**
      * Constructor
      *
@@ -51,6 +52,7 @@ class MessageMapper extends QBMapper
     public function __construct(IDBConnection $db)
     {
         parent::__construct($db, 'openregister_messages', Message::class);
+
     }//end __construct()
 
 
@@ -75,7 +77,6 @@ class MessageMapper extends QBMapper
         return $this->findEntity($qb);
 
     }//end find()
-
 
 
     /**
@@ -160,8 +161,6 @@ class MessageMapper extends QBMapper
         return $count;
 
     }//end countByConversation()
-
-
 
 
     /**
