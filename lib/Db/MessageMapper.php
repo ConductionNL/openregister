@@ -43,6 +43,15 @@ use OCP\IDBConnection;
 class MessageMapper extends QBMapper
 {
 
+    /**
+     * Constructor
+     *
+     * @param IDBConnection $db Database connection
+     */
+    public function __construct(IDBConnection $db)
+    {
+        parent::__construct($db, 'openregister_messages', Message::class);
+    }//end __construct()
 
 
     /**

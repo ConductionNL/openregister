@@ -80,6 +80,37 @@ class DashboardService
      */
     private SchemaMapper $schemaMapper;
 
+
+    /**
+     * Constructor for DashboardService
+     *
+     * @param ObjectEntityMapper $objectMapper     Object entity mapper
+     * @param AuditTrailMapper   $auditTrailMapper Audit trail mapper
+     * @param WebhookLogMapper   $webhookLogMapper Webhook log mapper
+     * @param RegisterMapper     $registerMapper   Register mapper
+     * @param SchemaMapper      $schemaMapper     Schema mapper
+     * @param LoggerInterface   $logger           Logger instance
+     *
+     * @return void
+     */
+    public function __construct(
+        ObjectEntityMapper $objectMapper,
+        AuditTrailMapper $auditTrailMapper,
+        WebhookLogMapper $webhookLogMapper,
+        RegisterMapper $registerMapper,
+        SchemaMapper $schemaMapper,
+        LoggerInterface $logger
+    ) {
+        $this->objectMapper     = $objectMapper;
+        $this->auditTrailMapper = $auditTrailMapper;
+        $this->webhookLogMapper = $webhookLogMapper;
+        $this->registerMapper  = $registerMapper;
+        $this->schemaMapper    = $schemaMapper;
+        $this->logger          = $logger;
+
+    }//end __construct()
+
+
     /**
      * Get statistics for a register/schema combination
      *

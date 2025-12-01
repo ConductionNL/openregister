@@ -35,7 +35,11 @@ use OCA\OpenRegister\Db\ChunkMapper;
 use OCA\OpenRegister\Db\GdprEntityMapper;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Db\FileTextMapper;
+use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\WebhookLogMapper;
 use OCA\OpenRegister\Service\SearchTrailService;
+use OCA\OpenRegister\Service\DashboardService;
+use OCA\OpenRegister\Service\SchemaPropertyValidatorService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\MySQLJsonService;
@@ -168,58 +172,61 @@ class Application extends App implements IBootstrap
     {
         include_once __DIR__.'/../../vendor/autoload.php';
 
-        // @TODO: Usually, services are autowired. Les figure out why we need to do this.
-        // Register SearchTrail components.
+        /*
+         * DEPENDENCY INJECTION STRATEGY:
+         *
+         * Nextcloud supports automatic dependency injection (autowiring) for services with
+         * type-hinted constructor parameters. Most services can be autowired automatically.
+         *
+         * We only manually register services that require:
+         * 1. Circular dependency resolution (e.g., SchemaMapper <-> ObjectEntityMapper <-> RegisterMapper)
+         * 2. Special factory/configuration logic (e.g., VectorizationService with strategy registration)
+         * 3. Services with non-type-hinted parameters (e.g., SaveObject with ArrayLoader)
+         * 4. Services with lazy loading to break circular dependencies (e.g., ObjectCacheService)
+         *
+         * Services with only type-hinted interfaces/classes are automatically resolved by Nextcloud.
+         *
+         * MANUAL REGISTRATION REQUIRED FOR:
+         *
+         * Mappers with circular dependencies (must be registered in correct order):
+         * - SchemaMapper: Used by ObjectEntityMapper, depends on OrganisationService
+         * - ObjectEntityMapper: Used by many services, depends on SchemaMapper
+         * - RegisterMapper: Depends on SchemaMapper and ObjectEntityMapper
+         * - AuditTrailMapper: Depends on ObjectEntityMapper
+         *
+         * Services with special logic:
+         * - ObjectCacheService: Lazy loading of GuzzleSolrService to break circular dependency
+         * - VectorizationService: Factory logic for strategy registration
+         * - SaveObject: Requires ArrayLoader instance
+         * - SettingsService: Currently uses ContainerInterface (to be refactored)
+         */
+
+        // ====================================================================
+        // PHASE 1: MAPPERS WITH CIRCULAR DEPENDENCIES
+        // These must be registered in the correct order to resolve dependencies.
+        // ====================================================================
+        // NOTE: SearchTrailMapper, ChunkMapper, GdprEntityMapper, EntityRelationMapper
+        // can be autowired (only type-hinted parameters).
+        // Removed manual registration - Nextcloud will autowire them automatically.
+
+        // Register AuditTrailMapper with required dependencies.
         $context->registerService(
-                SearchTrailMapper::class,
+                AuditTrailMapper::class,
                 function ($container) {
-                    return new SearchTrailMapper(
-                    $container->get(id: 'OCP\IDBConnection'),
-                    $container->get(id: 'OCP\IRequest'),
-                    $container->get(id: 'OCP\IUserSession')
+                    return new AuditTrailMapper(
+                    $container->get('OCP\IDBConnection'),
+                    $container->get(ObjectEntityMapper::class)
                     );
                 }
                 );
 
-        $context->registerService(
-                ChunkMapper::class,
-                function ($container) {
-                    return new ChunkMapper(
-                    $container->get(id: 'OCP\IDBConnection')
-                    );
-                }
-                );
+        // NOTE: WebhookLogMapper can be autowired (only type-hinted parameters).
+        // Removed manual registration - Nextcloud will autowire it automatically.
 
-        $context->registerService(
-                GdprEntityMapper::class,
-                function ($container) {
-                    return new GdprEntityMapper(
-                    $container->get('OCP\IDBConnection')
-                    );
-                }
-                );
+        // NOTE: OrganisationMapper can be autowired (only type-hinted parameters).
+        // Removed manual registration - Nextcloud will autowire it automatically.
 
-        $context->registerService(
-                EntityRelationMapper::class,
-                function ($container) {
-                    return new EntityRelationMapper(
-                    $container->get('OCP\IDBConnection')
-                    );
-                }
-                );
-
-        $context->registerService(
-                SearchTrailService::class,
-                function ($container) {
-                    return new SearchTrailService(
-                    $container->get(SearchTrailMapper::class),
-                    $container->get(RegisterMapper::class),
-                    $container->get(SchemaMapper::class)
-                    );
-                }
-                );
-
-        // Register OrganisationMapper with required dependencies.
+        // Register OrganisationMapper with required dependencies (needed by SchemaMapper).
         $context->registerService(
                 OrganisationMapper::class,
                 function ($container) {
@@ -230,6 +237,38 @@ class Application extends App implements IBootstrap
                     );
                 }
                 );
+
+        // Register OrganisationService (needed by SchemaMapper, MUST be before SchemaMapper).
+        $context->registerService(
+                OrganisationService::class,
+                function ($container) {
+                    return new OrganisationService(
+                    $container->get(OrganisationMapper::class),
+                    $container->get('OCP\IUserSession'),
+                    $container->get('OCP\ISession'),
+                    $container->get('OCP\IConfig'),
+                    $container->get('OCP\IGroupManager'),
+                    $container->get('OCP\IUserManager'),
+                    $container->get('Psr\Log\LoggerInterface')
+                    );
+                }
+                );
+
+        // Register SchemaMapper with required dependencies (MUST be before ObjectEntityMapper).
+        $context->registerService(
+                SchemaMapper::class,
+                function ($container) {
+                    return new SchemaMapper(
+                    $container->get('OCP\IDBConnection'),
+                    $container->get('OCP\EventDispatcher\IEventDispatcher'),
+                    $container->get(SchemaPropertyValidatorService::class),
+                    $container->get(OrganisationService::class),
+                    $container->get('OCP\IUserSession'),
+                    $container->get('OCP\IGroupManager')
+                    );
+                }
+                );
+
         // Register ObjectEntityMapper with IGroupManager and IUserManager dependencies.
         $context->registerService(
                 ObjectEntityMapper::class,
@@ -251,6 +290,24 @@ class Application extends App implements IBootstrap
                 }
                 );
 
+        // Register RegisterMapper with required dependencies (MUST be after ObjectEntityMapper).
+        $context->registerService(
+                RegisterMapper::class,
+                function ($container) {
+                    return new RegisterMapper(
+                    $container->get('OCP\IDBConnection'),
+                    $container->get(SchemaMapper::class),
+                    $container->get('OCP\EventDispatcher\IEventDispatcher'),
+                    $container->get(ObjectEntityMapper::class),
+                    $container->get('OCP\IUserSession'),
+                    $container->get('OCP\IGroupManager')
+                    );
+                }
+                );
+
+        // NOTE: SearchTrailService can be autowired (only type-hinted parameters).
+        // Removed manual registration - Nextcloud will autowire it automatically.
+
         /*
          * Register SolrService for advanced search capabilities (disabled due to performance issues).
          * Issue: Even with lazy loading, DI registration causes performance problems.
@@ -269,42 +326,24 @@ class Application extends App implements IBootstrap
          */
 
         // Register ObjectCacheService for performance optimization with lightweight SOLR.
+        // NOTE: ObjectCacheService uses IAppContainer for lazy loading GuzzleSolrService to break circular dependency.
+        // This breaks the circular dependency: ObjectCacheService <-> GuzzleSolrService.
         $context->registerService(
                 ObjectCacheService::class,
                 function ($container) {
-                    // Break circular dependency by lazy-loading GuzzleSolrService.
-                    $guzzleSolrService = null;
-                    try {
-                        $guzzleSolrService = $container->get(GuzzleSolrService::class);
-                    } catch (\Exception $e) {
-                        // If GuzzleSolrService is not available, continue without it.
-                    }
-
                     return new ObjectCacheService(
                     $container->get(ObjectEntityMapper::class),
                     $container->get(OrganisationMapper::class),
                     $container->get('Psr\Log\LoggerInterface'),
-                    $guzzleSolrService,
-                    // Lightweight SOLR service enabled!
                     $container->get('OCP\ICacheFactory'),
-                    $container->get('OCP\IUserSession')
+                    $container->get('OCP\IUserSession'),
+                    $container
                     );
                 }
                 );
 
-        // Register FacetService for centralized faceting operations.
-        $context->registerService(
-                FacetService::class,
-                function ($container) {
-                    return new FacetService(
-                    $container->get(ObjectEntityMapper::class),
-                    $container->get(SchemaMapper::class),
-                    $container->get('OCP\ICacheFactory'),
-                    $container->get('OCP\IUserSession'),
-                    $container->get('Psr\Log\LoggerInterface')
-                    );
-                }
-                );
+        // NOTE: FacetService can be autowired (only type-hinted parameters).
+        // Removed manual registration - Nextcloud will autowire it automatically.
 
         // Register SaveObject with consolidated cache services.
         $context->registerService(
@@ -327,205 +366,68 @@ class Application extends App implements IBootstrap
                 }
                 );
 
-        // Register DeleteObject with consolidated cache services.
-        $context->registerService(
-                DeleteObject::class,
-                function ($container) {
-                    return new DeleteObject(
-                    $container->get(ObjectEntityMapper::class),
-                    $container->get(FileService::class),
-                    $container->get(ObjectCacheService::class),
-                    $container->get('OCA\OpenRegister\Db\AuditTrailMapper'),
-                    $container->get(SettingsService::class),
-                    $container->get('Psr\Log\LoggerInterface')
-                    );
-                }
-                );
+        // NOTE: DeleteObject can be autowired (only type-hinted parameters).
+        // Removed manual registration - Nextcloud will autowire it automatically.
 
-        // Register GetObject with SettingsService dependency.
-        $context->registerService(
-                GetObject::class,
-                function ($container) {
-                    return new GetObject(
-                    $container->get(ObjectEntityMapper::class),
-                    $container->get(FileService::class),
-                    $container->get('OCA\OpenRegister\Db\AuditTrailMapper'),
-                    $container->get(SettingsService::class)
-                    );
-                }
-                );
+        // NOTE: GetObject can be autowired (only type-hinted parameters).
+        // Removed manual registration - Nextcloud will autowire it automatically.
 
-        // Register RenderObject with LoggerInterface dependency.
-        $context->registerService(
-                RenderObject::class,
-                function ($container) {
-                    return new RenderObject(
-                    $container->get('OCA\OpenRegister\Db\FileMapper'),
-                    $container->get(ObjectEntityMapper::class),
-                    $container->get('OCA\OpenRegister\Db\RegisterMapper'),
-                    $container->get('OCA\OpenRegister\Db\SchemaMapper'),
-                    $container->get('OCP\SystemTag\ISystemTagManager'),
-                    $container->get('OCP\SystemTag\ISystemTagObjectMapper'),
-                    $container->get(ObjectCacheService::class),
-                    $container->get('Psr\Log\LoggerInterface')
-                    );
-                }
-                );
+        // NOTE: RenderObject can be autowired (only type-hinted parameters).
+        // Removed manual registration - Nextcloud will autowire it automatically.
 
-        // Register OrganisationService with IConfig and IGroupManager dependencies.
-        $context->registerService(
-                OrganisationService::class,
-                function ($container) {
-                    return new OrganisationService(
-                    $container->get(OrganisationMapper::class),
-                    $container->get('OCP\IUserSession'),
-                    $container->get('OCP\ISession'),
-                    $container->get('OCP\IConfig'),
-                    $container->get('OCP\IGroupManager'),
-                    $container->get('OCP\IUserManager'),
-                    $container->get('Psr\Log\LoggerInterface')
-                    );
-                }
-                );
+        // NOTE: OrganisationService is registered earlier (before SchemaMapper) to break circular dependency.
 
-        // Register SaveObjects handler with dependencies.
-        $context->registerService(
-                SaveObjects::class,
-                function ($container) {
-                    return new SaveObjects(
-                    $container->get(ObjectEntityMapper::class),
-                    $container->get(SchemaMapper::class),
-                    $container->get(RegisterMapper::class),
-                    $container->get(SaveObject::class),
-                    $container->get('OCP\IUserSession'),
-                    $container->get(OrganisationService::class),
-                    $container->get('Psr\Log\LoggerInterface')
-                    );
-                }
-                );
+        // NOTE: SaveObjects can be autowired (only type-hinted parameters).
+        // Removed manual registration - Nextcloud will autowire it automatically.
 
-        // Register ObjectService with IGroupManager, IUserManager and LoggerInterface dependencies.
-        $context->registerService(
-                ObjectService::class,
-                function ($container) {
-                    return new ObjectService(
-                    $container->get(DeleteObject::class),
-                    $container->get(GetObject::class),
-                    $container->get(RenderObject::class),
-                    $container->get(SaveObject::class),
-                    $container->get(SaveObjects::class),
-                    $container->get(ValidateObject::class),
-                    $container->get(PublishObject::class),
-                    $container->get(DepublishObject::class),
-                    $container->get(RegisterMapper::class),
-                    $container->get(SchemaMapper::class),
-                    $container->get(ViewMapper::class),
-                    $container->get(ObjectEntityMapper::class),
-                    $container->get(FileService::class),
-                    $container->get('OCP\IUserSession'),
-                    $container->get(SearchTrailService::class),
-                    $container->get('OCP\IGroupManager'),
-                    $container->get('OCP\IUserManager'),
-                    $container->get(OrganisationService::class),
-                    $container->get('Psr\Log\LoggerInterface'),
-                    $container->get(FacetService::class),
-                    $container->get(ObjectCacheService::class),
-                    $container->get(SettingsService::class),
-                    $container
-                    );
-                }
-                );
+        // NOTE: ObjectService can be autowired (only type-hinted parameters).
+        // Removed manual registration - Nextcloud will autowire it automatically.
 
-        // Register ImportService with IUserManager, IGroupManager, and IJobList dependencies.
-        $context->registerService(
-                ImportService::class,
-                function ($container) {
-                    return new ImportService(
-                    $container->get(ObjectEntityMapper::class),
-                    $container->get(SchemaMapper::class),
-                    $container->get(ObjectService::class),
-                    $container->get('Psr\Log\LoggerInterface'),
-                    $container->get('OCP\IUserManager'),
-                    $container->get('OCP\IGroupManager'),
-                    $container->get('OCP\BackgroundJob\IJobList')
-                    );
-                }
-                );
+        // NOTE: ImportService can be autowired (only type-hinted parameters).
+        // Removed manual registration - Nextcloud will autowire it automatically.
 
-        // Register ExportService with IUserManager and IGroupManager dependencies.
-        $context->registerService(
-                ExportService::class,
-                function ($container) {
-                    return new ExportService(
-                    $container->get(ObjectEntityMapper::class),
-                    $container->get(RegisterMapper::class),
-                    $container->get('OCP\IUserManager'),
-                    $container->get('OCP\IGroupManager'),
-                    $container->get(ObjectService::class)
-                    );
-                }
-                );
+        // NOTE: ExportService can be autowired (only type-hinted parameters).
+        // Removed manual registration - Nextcloud will autowire it automatically.
 
-        // Register SolrEventListener for automatic Solr indexing.
-        $context->registerService(
-                SolrEventListener::class,
-                function ($container) {
-                    return new SolrEventListener(
-                    $container->get(ObjectCacheService::class),
-                    $container->get('Psr\Log\LoggerInterface')
-                    );
-                }
-                );
+        // NOTE: SolrEventListener can be autowired (only type-hinted parameters).
+        // Removed manual registration - Nextcloud will autowire it automatically.
 
-        // Register SchemaCacheService for improved schema performance.
-        $context->registerService(
-                SchemaCacheService::class,
-                function ($container) {
-                    return new SchemaCacheService(
-                    $container->get('OCP\IDBConnection'),
-                    $container->get(SchemaMapper::class),
-                    $container->get('Psr\Log\LoggerInterface')
-                    );
-                }
-                );
+        // NOTE: SchemaCacheService can be autowired (only type-hinted parameters).
+        // Removed manual registration - Nextcloud will autowire it automatically.
 
-        // Register SchemaFacetCacheService for predictable facet caching.
-        $context->registerService(
-                SchemaFacetCacheService::class,
-                function ($container) {
-                    return new SchemaFacetCacheService(
-                    $container->get('OCP\IDBConnection'),
-                    $container->get(SchemaMapper::class),
-                    $container->get('Psr\Log\LoggerInterface')
-                    );
-                }
-                );
+        // NOTE: SchemaFacetCacheService can be autowired (only type-hinted parameters).
+        // Removed manual registration - Nextcloud will autowire it automatically.
 
-        // Register ObjectsProvider for Nextcloud search integration.
-        $context->registerService(
-                ObjectsProvider::class,
-                function ($container) {
-                    return new ObjectsProvider(
-                    $container->get('OCP\IL10N'),
-                    $container->get('OCP\IURLGenerator'),
-                    $container->get(ObjectService::class),
-                    $container->get('Psr\Log\LoggerInterface')
-                    );
-                }
-                );
+        // NOTE: ObjectsProvider can be autowired (only type-hinted parameters).
+        // Removed manual registration - Nextcloud will autowire it automatically.
 
         // Register ObjectsProvider as a search provider for Nextcloud search.
         $context->registerSearchProvider(ObjectsProvider::class);
 
-        // Register SolrDebugCommand for SOLR debugging.
+        // Register SettingsService BEFORE GuzzleSolrService to break circular dependency.
+        // NOTE: SettingsService no longer depends on GuzzleSolrService (removed to break circular dependency).
+        // GuzzleSolrService operations are now handled directly in the controller.
+        // SettingsService only uses IAppContainer for lazy loading SchemaMapper and ObjectCacheService.
         $context->registerService(
-                SolrDebugCommand::class,
+                SettingsService::class,
                 function ($container) {
-                    return new SolrDebugCommand(
-                    $container->get(SettingsService::class),
-                    $container->get('Psr\Log\LoggerInterface'),
+                    // ObjectCacheService is not available yet (will be lazy-loaded via container if needed).
+                    return new SettingsService(
                     $container->get('OCP\IConfig'),
-                    $container->get('OCP\Http\Client\IClientService')
+                    $container->get(AuditTrailMapper::class),
+                    $container->get('OCP\ICacheFactory'),
+                    $container->get('OCP\IGroupManager'),
+                    $container->get('Psr\Log\LoggerInterface'),
+                    $container->get(ObjectEntityMapper::class),
+                    $container->get(OrganisationMapper::class),
+                    $container->get(SchemaCacheService::class),
+                    $container->get(SchemaFacetCacheService::class),
+                    $container->get(SearchTrailMapper::class),
+                    $container->get('OCP\IUserManager'),
+                    $container->get('OCP\IDBConnection'),
+                    null, // ObjectCacheService - lazy-loaded via container
+                    $container,
+                    'openregister'
                     );
                 }
                 );
@@ -544,82 +446,37 @@ class Application extends App implements IBootstrap
                 }
                 );
 
-        // Register SolrObjectService for object-specific SOLR operations.
+        // Register SolrDebugCommand for SOLR debugging.
+        // NOTE: Must be registered manually because it depends on SettingsService which has circular dependencies.
         $context->registerService(
-                SolrObjectService::class,
+                SolrDebugCommand::class,
                 function ($container) {
-                    return new SolrObjectService(
-                    $container->get(GuzzleSolrService::class),
+                    return new SolrDebugCommand(
                     $container->get(SettingsService::class),
-                    $container->get(SchemaMapper::class),
-                    $container->get(RegisterMapper::class),
-                    $container->get('Psr\Log\LoggerInterface')
-                    );
-                }
-                );
-
-        // Register SolrFileService for file-specific SOLR operations.
-        $context->registerService(
-                SolrFileService::class,
-                function ($container) {
-                    return new SolrFileService(
-                    $container->get(GuzzleSolrService::class),
-                    $container->get(SettingsService::class),
-                    $container,
                     $container->get('Psr\Log\LoggerInterface'),
-                    $container->get(ChunkMapper::class)
+                    $container->get('OCP\IConfig'),
+                    $container->get('OCP\Http\Client\IClientService')
                     );
                 }
                 );
 
-        // Register VectorEmbeddingService for vector embeddings and semantic search.
-        $context->registerService(
-                VectorEmbeddingService::class,
-                function ($container) {
-                    return new VectorEmbeddingService(
-                    $container->get(id: 'OCP\IDBConnection'),
-                    $container->get(SettingsService::class),
-                    $container->get(GuzzleSolrService::class),
-                    $container->get(id: 'Psr\Log\LoggerInterface')
-                    );
-                }
-                );
+        // NOTE: SolrObjectService can be autowired (only type-hinted parameters).
+        // Removed manual registration - Nextcloud will autowire it automatically.
 
-        // Register NamedEntityRecognitionService for entity extraction and GDPR compliance.
-        $context->registerService(
-                NamedEntityRecognitionService::class,
-                function ($container) {
-                    return new NamedEntityRecognitionService(
-                    $container->get(GdprEntityMapper::class),
-                    $container->get(EntityRelationMapper::class),
-                    $container->get(id: 'OCP\IDBConnection'),
-                    $container->get(id: 'Psr\Log\LoggerInterface')
-                    );
-                }
-                );
+        // NOTE: SolrFileService can be autowired (only type-hinted parameters).
+        // Removed manual registration - Nextcloud will autowire it automatically.
 
-        // Register Vectorization Strategies.
-        $context->registerService(
-                FileVectorizationStrategy::class,
-                function ($container) {
-                    return new FileVectorizationStrategy(
-                    $container->get(ChunkMapper::class),
-                    $container->get(id: 'OCP\IDBConnection'),
-                    $container->get(id: 'Psr\Log\LoggerInterface')
-                    );
-                }
-                );
+        // NOTE: VectorEmbeddingService can be autowired (only type-hinted parameters).
+        // Removed manual registration - Nextcloud will autowire it automatically.
 
-        $context->registerService(
-                ObjectVectorizationStrategy::class,
-                function ($container) {
-                    return new ObjectVectorizationStrategy(
-                    $container->get(ObjectService::class),
-                    $container->get(SettingsService::class),
-                    $container->get(id: 'Psr\Log\LoggerInterface')
-                    );
-                }
-                );
+        // NOTE: NamedEntityRecognitionService can be autowired (only type-hinted parameters).
+        // Removed manual registration - Nextcloud will autowire it automatically.
+
+        // NOTE: FileVectorizationStrategy can be autowired (only type-hinted parameters).
+        // Removed manual registration - Nextcloud will autowire it automatically.
+
+        // NOTE: ObjectVectorizationStrategy can be autowired (only type-hinted parameters).
+        // Removed manual registration - Nextcloud will autowire it automatically.
 
         // Register unified VectorizationService with strategies.
         $context->registerService(
@@ -638,105 +495,26 @@ class Application extends App implements IBootstrap
                 }
                 );
 
-        // Register ChatService for AI chat conversations with RAG.
-        $context->registerService(
-                ChatService::class,
-                function ($container) {
-                    return new ChatService(
-                    $container->get(id: 'OCP\IDBConnection'),
-                    $container->get(\OCA\OpenRegister\Db\ConversationMapper::class),
-                    $container->get(\OCA\OpenRegister\Db\MessageMapper::class),
-                    $container->get(\OCA\OpenRegister\Db\AgentMapper::class),
-                    $container->get(VectorEmbeddingService::class),
-                    $container->get(GuzzleSolrService::class),
-                    $container->get(SettingsService::class),
-                    $container->get(id: 'Psr\Log\LoggerInterface'),
-                    $container->get(\OCA\OpenRegister\Tool\RegisterTool::class),
-                    $container->get(\OCA\OpenRegister\Tool\SchemaTool::class),
-                    $container->get(\OCA\OpenRegister\Tool\ObjectsTool::class),
-                    $container->get(\OCA\OpenRegister\Service\ToolRegistry::class)
-                    );
-                }
-                );
+        // NOTE: ChatService can be autowired (only type-hinted parameters).
+        // Removed manual registration - Nextcloud will autowire it automatically.
 
-        // Register TextExtractionService for file and object text extraction and storage.
-        $context->registerService(
-                TextExtractionService::class,
-                function ($container) {
-                    return new TextExtractionService(
-                    $container->get(id: 'OCA\OpenRegister\Db\FileMapper'),
-                    $container->get(ChunkMapper::class),
-                    $container->get(id: 'OCP\Files\IRootFolder'),
-                    $container->get(id: 'OCP\IDBConnection'),
-                    $container->get(id: 'Psr\Log\LoggerInterface'),
-                    $container->get(ObjectEntityMapper::class),
-                    $container->get(SchemaMapper::class),
-                    $container->get(RegisterMapper::class)
-                    );
-                }
-                );
+        // NOTE: TextExtractionService can be autowired (only type-hinted parameters).
+        // Removed manual registration - Nextcloud will autowire it automatically.
 
-        // Register FileChangeListener for automatic file text extraction (async via background jobs).
-        $context->registerService(
-                FileChangeListener::class,
-                function ($container) {
-                    return new FileChangeListener(
-                    $container->get(TextExtractionService::class),
-                    $container->get(SettingsService::class),
-                    $container->get(id: 'OCP\BackgroundJob\IJobList'),
-                    $container->get(id: 'Psr\Log\LoggerInterface')
-                    );
-                }
-                );
+        // NOTE: FileChangeListener can be autowired (only type-hinted parameters).
+        // Removed manual registration - Nextcloud will autowire it automatically.
 
-        // Register ObjectChangeListener for automatic object text extraction (async via background jobs).
-        $context->registerService(
-                ObjectChangeListener::class,
-                function ($container) {
-                    return new ObjectChangeListener(
-                    $container->get(TextExtractionService::class),
-                    $container->get(SettingsService::class),
-                    $container->get(id: 'OCP\BackgroundJob\IJobList'),
-                    $container->get(id: 'Psr\Log\LoggerInterface')
-                    );
-                }
-                );
+        // NOTE: ObjectChangeListener can be autowired (only type-hinted parameters).
+        // Removed manual registration - Nextcloud will autowire it automatically.
 
-        // Register SolrSchemaService for SOLR schema operations.
-        $context->registerService(
-                SolrSchemaService::class,
-                function ($container) {
-                    return new SolrSchemaService(
-                    $container->get(SchemaMapper::class),
-                    $container->get(GuzzleSolrService::class),
-                    $container->get(SettingsService::class),
-                    $container->get(id: 'Psr\Log\LoggerInterface'),
-                    $container->get(id: 'OCP\IConfig')
-                    );
-                }
-                );
+        // NOTE: SolrSchemaService can be autowired (only type-hinted parameters).
+        // Removed manual registration - Nextcloud will autowire it automatically.
 
-        // Register SolrManagementCommand for production SOLR operations.
-        $context->registerService(
-                SolrManagementCommand::class,
-                function ($container) {
-                    return new SolrManagementCommand(
-                    $container->get(id: 'Psr\Log\LoggerInterface'),
-                    $container->get(GuzzleSolrService::class)
-                    );
-                }
-                );
+        // NOTE: SolrManagementCommand can be autowired (only type-hinted parameters).
+        // Removed manual registration - Nextcloud will autowire it automatically.
 
-        // Register ToolRegistry for agent function tools.
-        $context->registerService(
-                \OCA\OpenRegister\Service\ToolRegistry::class,
-                function ($container) {
-                    return new \OCA\OpenRegister\Service\ToolRegistry(
-                    $container->get(id: 'OCP\EventDispatcher\IEventDispatcher'),
-                    $container->get(id: 'Psr\Log\LoggerInterface')
-                    );
-                }
-                );
+        // NOTE: ToolRegistry can be autowired (only type-hinted parameters).
+        // Removed manual registration - Nextcloud will autowire it automatically.
 
         // Register GitHubService for GitHub API operations.
         $context->registerService(
@@ -751,17 +529,11 @@ class Application extends App implements IBootstrap
                 }
                 );
 
-        // Register GitLabService for GitLab API operations.
-        $context->registerService(
-                \OCA\OpenRegister\Service\GitLabService::class,
-                function ($container) {
-                    return new \OCA\OpenRegister\Service\GitLabService(
-                    $container->get('OCP\Http\Client\IClientService')->newClient(),
-                    $container->get(id: 'OCP\IConfig'),
-                    $container->get(id: 'Psr\Log\LoggerInterface')
-                    );
-                }
-                );
+        // NOTE: DashboardService can be autowired (only type-hinted parameters).
+        // Removed manual registration - Nextcloud will autowire it automatically.
+
+        // NOTE: GitLabService can be autowired (only type-hinted parameters).
+        // Removed manual registration - Nextcloud will autowire it automatically.
 
         // Register Solr event listeners for automatic indexing.
         $context->registerEventListener(ObjectCreatedEvent::class, SolrEventListener::class);

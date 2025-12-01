@@ -36,6 +36,7 @@ use OCP\IURLGenerator;
  * data from mappers and generates responses or downloadable files.
  */
 class DownloadService
+{
     /**
      * Register mapper
      *
@@ -49,8 +50,6 @@ class DownloadService
      * @var SchemaMapper
      */
     private SchemaMapper $schemaMapper;
-
-{
 
 
 

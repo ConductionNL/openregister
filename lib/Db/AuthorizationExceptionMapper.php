@@ -57,6 +57,15 @@ use Symfony\Component\Uid\Uuid;
 class AuthorizationExceptionMapper extends QBMapper
 {
 
+    /**
+     * Constructor
+     *
+     * @param IDBConnection $db Database connection
+     */
+    public function __construct(IDBConnection $db)
+    {
+        parent::__construct($db, 'openregister_authorization_exceptions', AuthorizationException::class);
+    }//end __construct()
 
 
     /**

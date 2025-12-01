@@ -26,7 +26,7 @@ namespace OCA\OpenRegister\Service;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\OrganisationMapper;
-use OCA\OpenRegister\Service\GuzzleSolrService;
+use OCP\AppFramework\IAppContainer;
 use OCP\ICacheFactory;
 use OCP\IMemcache;
 use OCP\IUserSession;
@@ -118,6 +118,13 @@ class ObjectCacheService
      */
     private IUserSession $userSession;
 
+    /**
+     * Container for lazy loading GuzzleSolrService to break circular dependency
+     *
+     * @var IAppContainer|null
+     */
+    private ?IAppContainer $container = null;
+
 
     /**
      * Constructor for ObjectCacheService
@@ -125,17 +132,17 @@ class ObjectCacheService
      * @param ObjectEntityMapper     $objectEntityMapper The object entity mapper
      * @param OrganisationMapper     $organisationMapper The organisation entity mapper
      * @param LoggerInterface        $logger             Logger for performance monitoring
-     * @param GuzzleSolrService|null $guzzleSolrService  Lightweight SOLR service using Guzzle HTTP
      * @param ICacheFactory|null     $cacheFactory       Cache factory for query result caching
      * @param IUserSession|null      $userSession        User session for cache key generation
+     * @param IAppContainer|null     $container          Container for lazy loading GuzzleSolrService (optional)
      */
     public function __construct(
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly OrganisationMapper $organisationMapper,
         private readonly LoggerInterface $logger,
-        private readonly ?GuzzleSolrService $guzzleSolrService=null,
         ?ICacheFactory $cacheFactory=null,
-        ?IUserSession $userSession=null
+        ?IUserSession $userSession=null,
+        ?IAppContainer $container=null
     ) {
         // Initialize query cache if available.
         if ($cacheFactory !== null) {
@@ -167,22 +174,38 @@ class ObjectCacheService
 
 
         };
+        $this->container = $container;
 
     }//end __construct()
 
 
     /**
-     * Get GuzzleSolrService instance using direct DI injection
+     * Get GuzzleSolrService instance using lazy loading from container
      *
-     * Since Guzzle is lightweight, we can use direct DI registration without
-     * performance issues. Returns null if SOLR is unavailable or disabled.
+     * Lazy loads GuzzleSolrService from container to break circular dependency.
+     * Returns null if SOLR is unavailable or disabled.
      *
      * @return GuzzleSolrService|null SOLR service instance or null
      */
     private function getSolrService(): ?GuzzleSolrService
     {
-        // Since Guzzle is lightweight, we use direct DI injection (no factory needed!).
-        return $this->guzzleSolrService;
+        // Lazy-load GuzzleSolrService from container to break circular dependency.
+        if ($this->container === null) {
+            return null;
+        }
+
+        try {
+            return $this->container->get(\OCA\OpenRegister\Service\GuzzleSolrService::class);
+        } catch (\Exception $e) {
+            // If GuzzleSolrService is not available, return null (graceful degradation).
+            $this->logger->debug(
+                    'GuzzleSolrService not available',
+                    [
+                        'error' => $e->getMessage(),
+                    ]
+                    );
+            return null;
+        }
 
     }//end getSolrService()
 

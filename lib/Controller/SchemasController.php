@@ -131,7 +131,7 @@ class SchemasController extends Controller
             filters: $filters,
             searchConditions: [],
             searchParams: [],
-            extend: []
+            _extend: []
         );
         $schemasArr = array_map(fn($schema) => $schema->jsonSerialize(), $schemas);
 

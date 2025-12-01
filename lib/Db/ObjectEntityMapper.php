@@ -93,13 +93,6 @@ class ObjectEntityMapper extends QBMapper
     private SchemaMapper $schemaMapper;
 
     /**
-     * Logger instance
-     *
-     * @var LoggerInterface
-     */
-    private LoggerInterface $logger;
-
-    /**
      * Group manager instance
      *
      * @var IGroupManager
@@ -112,13 +105,6 @@ class ObjectEntityMapper extends QBMapper
      * @var IUserManager
      */
     private IUserManager $userManager;
-
-    /**
-     * App configuration instance
-     *
-     * @var IAppConfig
-     */
-    private IAppConfig $appConfig;
 
     /**
      * Authorization exception service instance

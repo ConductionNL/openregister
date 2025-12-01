@@ -21,19 +21,20 @@ namespace OCA\OpenRegister\Service;
 use Exception;
 use OCP\IAppConfig;
 use OCP\IConfig;
+use OCP\IDBConnection;
 use OCP\IRequest;
 use OCP\App\IAppManager;
-use Psr\Container\ContainerInterface;
+use OCP\AppFramework\IAppContainer;
 use OCP\AppFramework\Http\JSONResponse;
 use OC_App;
 use OCA\OpenRegister\AppInfo\Application;
 use OCP\IGroupManager;
 use OCP\IUserManager;
-use OCA\OpenRegister\Service\GuzzleSolrService;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\SearchTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\ObjectCacheService;
 use OCA\OpenRegister\Service\SchemaCacheService;
@@ -122,11 +123,20 @@ class SettingsService
     private ICacheFactory $cacheFactory;
 
     /**
-     * Container
+     * Database connection (lazy-loaded when needed)
      *
-     * @var ContainerInterface
+     * @var IDBConnection|null
      */
-    private ContainerInterface $container;
+    private ?IDBConnection $db = null;
+
+    /**
+     * Object cache service (lazy-loaded when needed)
+     *
+     * @var ObjectCacheService|null
+     */
+    private ?ObjectCacheService $objectCacheService = null;
+
+
 
     /**
      * Group manager
@@ -206,8 +216,68 @@ class SettingsService
     private const MIN_OPENREGISTER_VERSION = '0.1.7';
 
 
+    /**
+     * Container for lazy loading services to break circular dependencies
+     *
+     * @var IAppContainer|null
+     */
+    private ?IAppContainer $container = null;
 
+    /**
+     * Constructor for SettingsService
+     *
+     * @param IConfig                    $config                 Configuration service
+     * @param AuditTrailMapper          $auditTrailMapper      Audit trail mapper
+     * @param ICacheFactory             $cacheFactory           Cache factory
+     * @param IGroupManager             $groupManager           Group manager
+     * @param LoggerInterface           $logger                 Logger
+     * @param ObjectEntityMapper        $objectEntityMapper     Object entity mapper
+     * @param OrganisationMapper        $organisationMapper     Organisation mapper
+     * @param SchemaCacheService        $schemaCacheService     Schema cache service
+     * @param SchemaFacetCacheService   $schemaFacetCacheService Schema facet cache service
+     * @param SearchTrailMapper         $searchTrailMapper      Search trail mapper
+     * @param IUserManager              $userManager            User manager
+     * @param IDBConnection             $db                     Database connection
+     * @param ObjectCacheService|null   $objectCacheService     Object cache service (optional, lazy-loaded)
+     * @param IAppContainer|null        $container              Container for lazy loading (optional)
+     * @param string                    $appName                Application name
+     *
+     * @return void
+     */
+    public function __construct(
+        IConfig $config,
+        AuditTrailMapper $auditTrailMapper,
+        ICacheFactory $cacheFactory,
+        IGroupManager $groupManager,
+        LoggerInterface $logger,
+        ObjectEntityMapper $objectEntityMapper,
+        OrganisationMapper $organisationMapper,
+        SchemaCacheService $schemaCacheService,
+        SchemaFacetCacheService $schemaFacetCacheService,
+        SearchTrailMapper $searchTrailMapper,
+        IUserManager $userManager,
+        IDBConnection $db,
+        ?ObjectCacheService $objectCacheService = null,
+        ?IAppContainer $container = null,
+        string $appName = 'openregister'
+    ) {
+        $this->config = $config;
+        $this->auditTrailMapper = $auditTrailMapper;
+        $this->cacheFactory = $cacheFactory;
+        $this->groupManager = $groupManager;
+        $this->logger = $logger;
+        $this->objectEntityMapper = $objectEntityMapper;
+        $this->organisationMapper = $organisationMapper;
+        $this->schemaCacheService = $schemaCacheService;
+        $this->schemaFacetCacheService = $schemaFacetCacheService;
+        $this->searchTrailMapper = $searchTrailMapper;
+        $this->userManager = $userManager;
+        $this->db = $db;
+        $this->objectCacheService = $objectCacheService;
+        $this->container = $container;
+        $this->appName = $appName;
 
+    }//end __construct()
 
 
     /**
@@ -217,7 +287,7 @@ class SettingsService
      */
     public function isMultiTenancyEnabled(): bool
     {
-        $multitenancyConfig = $this->config->getValueString($this->appName, 'multitenancy', '');
+        $multitenancyConfig = $this->config->getAppValue($this->appName, 'multitenancy', '');
         if (empty($multitenancyConfig) === true) {
             return false;
         }
@@ -247,7 +317,7 @@ class SettingsService
             ];
 
             // RBAC Settings.
-            $rbacConfig = $this->config->getValueString($this->appName, 'rbac', '');
+            $rbacConfig = $this->config->getAppValue($this->appName, 'rbac', '');
             if (empty($rbacConfig) === true) {
                 $data['rbac'] = [
                     'enabled'             => false,
@@ -268,7 +338,7 @@ class SettingsService
             }
 
             // Multitenancy Settings.
-            $multitenancyConfig = $this->config->getValueString($this->appName, 'multitenancy', '');
+            $multitenancyConfig = $this->config->getAppValue($this->appName, 'multitenancy', '');
             if (empty($multitenancyConfig) === true) {
                 $data['multitenancy'] = [
                     'enabled'                            => false,
@@ -298,7 +368,7 @@ class SettingsService
             $data['availableUsers'] = $this->getAvailableUsers();
 
             // Retention Settings with defaults.
-            $retentionConfig = $this->config->getValueString($this->appName, 'retention', '');
+            $retentionConfig = $this->config->getAppValue($this->appName, 'retention', '');
             if (empty($retentionConfig) === true) {
                 $data['retention'] = [
                     'objectArchiveRetention' => 31536000000,
@@ -336,7 +406,7 @@ class SettingsService
             }//end if
 
             // SOLR Search Configuration.
-            $solrConfig = $this->config->getValueString($this->appName, 'solr', '');
+            $solrConfig = $this->config->getAppValue($this->appName, 'solr', '');
 
             if (empty($solrConfig) === true) {
                 $data['solr'] = [
@@ -484,7 +554,7 @@ class SettingsService
                     'defaultObjectOwner'  => $rbacData['defaultObjectOwner'] ?? '',
                     'adminOverride'       => $rbacData['adminOverride'] ?? true,
                 ];
-                $this->config->setValueString($this->appName, 'rbac', json_encode($rbacConfig));
+                $this->config->setAppValue($this->appName, 'rbac', json_encode($rbacConfig));
             }
 
             // Handle Multitenancy settings.
@@ -498,7 +568,7 @@ class SettingsService
                     'publishedObjectsBypassMultiTenancy' => $multitenancyData['publishedObjectsBypassMultiTenancy'] ?? false,
                     'adminOverride'                      => $multitenancyData['adminOverride'] ?? true,
                 ];
-                $this->config->setValueString($this->appName, 'multitenancy', json_encode($multitenancyConfig));
+                $this->config->setAppValue($this->appName, 'multitenancy', json_encode($multitenancyConfig));
             }
 
             // Handle Retention settings.
@@ -515,7 +585,7 @@ class SettingsService
                     'auditTrailsEnabled'     => $retentionData['auditTrailsEnabled'] ?? true,
                     'searchTrailsEnabled'    => $retentionData['searchTrailsEnabled'] ?? true,
                 ];
-                $this->config->setValueString($this->appName, 'retention', json_encode($retentionConfig));
+                $this->config->setAppValue($this->appName, 'retention', json_encode($retentionConfig));
             }
 
             // Handle SOLR settings.
@@ -543,7 +613,7 @@ class SettingsService
                     'objectCollection'  => $solrData['objectCollection'] ?? null,
                     'fileCollection'    => $solrData['fileCollection'] ?? null,
                 ];
-                $this->config->setValueString($this->appName, 'solr', json_encode($solrConfig));
+                $this->config->setAppValue($this->appName, 'solr', json_encode($solrConfig));
             }//end if
 
             // Return the updated settings.
@@ -583,9 +653,9 @@ class SettingsService
                     // Convert boolean or string to string format for storage.
                     $value = $options[$option] === true || $options[$option] === 'true' ? 'true' : 'false';
                     // Store the value in the configuration.
-                    $this->config->setValueString($this->appName, $option, $value);
+                    $this->config->setAppValue($this->appName, $option, $value);
                     // Retrieve and convert back to boolean for the response.
-                    $updatedOptions[$option] = $this->config->getValueString($this->appName, $option) === 'true';
+                    $updatedOptions[$option] = $this->config->getAppValue($this->appName, $option, '') === 'true';
                 }
             }
 
@@ -739,7 +809,7 @@ class SettingsService
             ];
 
             // Get database connection for optimized queries.
-            $db = $this->container->get('OCP\IDBConnection');
+            $db = $this->db;
 
             // **OPTIMIZED QUERIES**: Use direct SQL COUNT queries for maximum performance
             // 1. Objects table - comprehensive stats with single query
@@ -953,8 +1023,18 @@ class SettingsService
         $now = time();
         if ($cachedStats === null || ($now - $lastUpdate) > 30) {
             try {
-                $objectCacheService = $this->container->get(ObjectCacheService::class);
-                $cachedStats        = $objectCacheService->getStats();
+                $objectCacheService = $this->objectCacheService;
+                if ($objectCacheService === null && $this->container !== null) {
+                    try {
+                        $objectCacheService = $this->container->get(ObjectCacheService::class);
+                    } catch (\Exception $e) {
+                        throw new \Exception('ObjectCacheService not available');
+                    }
+                }
+                if ($objectCacheService === null) {
+                    throw new \Exception('ObjectCacheService not available');
+                }
+                $cachedStats = $objectCacheService->getStats();
             } catch (Exception $e) {
                 // If no object cache stats available, use defaults.
                 $cachedStats = [
@@ -1126,8 +1206,18 @@ class SettingsService
     private function clearObjectCache(?string $_userId=null): array
     {
         try {
-            $objectCacheService = $this->container->get(ObjectCacheService::class);
-            $beforeStats        = $objectCacheService->getStats();
+            $objectCacheService = $this->objectCacheService;
+            if ($objectCacheService === null && $this->container !== null) {
+                try {
+                    $objectCacheService = $this->container->get(ObjectCacheService::class);
+                } catch (\Exception $e) {
+                    throw new \Exception('ObjectCacheService not available');
+                }
+            }
+            if ($objectCacheService === null) {
+                throw new \Exception('ObjectCacheService not available');
+            }
+            $beforeStats = $objectCacheService->getStats();
             $objectCacheService->clearCache();
             $afterStats = $objectCacheService->getStats();
 
@@ -1158,13 +1248,23 @@ class SettingsService
     private function clearNamesCache(): array
     {
         try {
-            $objectCacheService  = $this->container->get(ObjectCacheService::class);
-            $beforeStats         = $objectCacheService->getStats();
+            $objectCacheService = $this->objectCacheService;
+            if ($objectCacheService === null && $this->container !== null) {
+                try {
+                    $objectCacheService = $this->container->get(ObjectCacheService::class);
+                } catch (\Exception $e) {
+                    throw new \Exception('ObjectCacheService not available');
+                }
+            }
+            if ($objectCacheService === null) {
+                throw new \Exception('ObjectCacheService not available');
+            }
+            $beforeStats = $objectCacheService->getStats();
             $beforeNameCacheSize = $beforeStats['name_cache_size'] ?? 0;
 
             $objectCacheService->clearNameCache();
 
-            $afterStats         = $objectCacheService->getStats();
+            $afterStats = $objectCacheService->getStats();
             $afterNameCacheSize = $afterStats['name_cache_size'] ?? 0;
 
             return [
@@ -1202,9 +1302,19 @@ class SettingsService
     public function warmupNamesCache(): array
     {
         try {
-            $startTime          = microtime(true);
-            $objectCacheService = $this->container->get(ObjectCacheService::class);
-            $beforeStats        = $objectCacheService->getStats();
+            $startTime = microtime(true);
+            $objectCacheService = $this->objectCacheService;
+            if ($objectCacheService === null && $this->container !== null) {
+                try {
+                    $objectCacheService = $this->container->get(ObjectCacheService::class);
+                } catch (\Exception $e) {
+                    throw new \Exception('ObjectCacheService not available');
+                }
+            }
+            if ($objectCacheService === null) {
+                throw new \Exception('ObjectCacheService not available');
+            }
+            $beforeStats = $objectCacheService->getStats();
 
             $loadedCount = $objectCacheService->warmupNameCache();
 
@@ -1345,7 +1455,7 @@ class SettingsService
     public function getSolrSettings(): array
     {
         try {
-            $solrConfig = $this->config->getValueString($this->appName, 'solr', '');
+            $solrConfig = $this->config->getAppValue($this->appName, 'solr', '');
             if (empty($solrConfig) === true) {
                 return [
                     'enabled'        => false,
@@ -1394,138 +1504,26 @@ class SettingsService
      * @return array Warmup operation results with statistics and status
      * @throws \RuntimeException If SOLR warmup fails
      */
+    /**
+     * Complete SOLR warmup: mirror schemas and index objects from the database
+     *
+     * @deprecated This method is deprecated. Use GuzzleSolrService->warmupIndex() directly via controller.
+     * This method is kept for backward compatibility but should not be used.
+     * The controller now uses GuzzleSolrService directly to avoid circular dependencies.
+     *
+     * @param  int $batchSize  Number of objects to process per batch (default 1000, parameter kept for API compatibility)
+     * @param  int $maxObjects Maximum number of objects to index (0 = all)
+     * @return array Warmup operation results with statistics and status
+     * @throws \RuntimeException Always throws exception indicating method is deprecated
+     */
     public function warmupSolrIndex(int $_batchSize=2000, int $maxObjects=0, string $mode='serial', bool $collectErrors=false): array
     {
-        try {
-            $solrSettings = $this->getSolrSettings();
-
-            if (($solrSettings['enabled'] === false)) {
-                return [
-                    'success' => false,
-                    'message' => 'SOLR is disabled in settings',
-                    'stats'   => [
-                        'totalProcessed' => 0,
-                        'totalIndexed'   => 0,
-                        'totalErrors'    => 0,
-                        'duration'       => 0,
-                    ],
-                ];
-            }
-
-            // Get SolrService for bulk indexing via direct DI.
-            $solrService = $this->container->get(GuzzleSolrService::class);
-
-            if ($solrService === null) {
-                return [
-                    'success' => false,
-                    'message' => 'SOLR service not available',
-                    'stats'   => [
-                        'totalProcessed' => 0,
-                        'totalIndexed'   => 0,
-                        'totalErrors'    => 0,
-                        'duration'       => 0,
-                    ],
-                ];
-            }
-
-            $startTime = microtime(true);
-
-            // Get all schemas for schema mirroring.
-            $schemas = [];
-            try {
-                $schemaMapper = $this->container->get('OCA\OpenRegister\Db\SchemaMapper');
-                $schemas      = $schemaMapper->findAll();
-            } catch (Exception $e) {
-                // Continue without schema mirroring if schema mapper is not available.
-                $this->logger->warning('Schema mapper not available for warmup', ['error' => $e->getMessage()]);
-            }
-
-            // **COMPLETE WARMUP**: Mirror schemas + index objects + cache warmup
-            $warmupResult = $solrService->warmupIndex($schemas, $maxObjects, $mode, $collectErrors);
-
-            $totalDuration = microtime(true) - $startTime;
-
-            if ($warmupResult['success'] === true) {
-                $operations       = $warmupResult['operations'] ?? [];
-                $indexed          = $operations['objects_indexed'] ?? 0;
-                $schemasProcessed = $operations['schemas_processed'] ?? 0;
-                $fieldsCreated    = $operations['fields_created'] ?? 0;
-                $objectsPerSecond = $totalDuration > 0 ? round($indexed / $totalDuration, 2) : 0;
-
-                return [
-                    'success' => true,
-                    'message' => 'SOLR complete warmup finished successfully',
-                    'stats'   => [
-                        'totalProcessed'    => $indexed,
-                        'totalIndexed'      => $indexed,
-                        'totalErrors'       => $operations['indexing_errors'] ?? 0,
-                        'totalObjectsFound' => $warmupResult['total_objects_found'] ?? 0,
-                        'batchesProcessed'  => $warmupResult['batches_processed'] ?? 0,
-                        'maxObjectsLimit'   => $warmupResult['max_objects_limit'] ?? $maxObjects,
-                        'duration'          => round($totalDuration, 2),
-                        'objectsPerSecond'  => $objectsPerSecond,
-                        'successRate'       => $indexed > 0 ? round((($indexed - ($operations['indexing_errors'] ?? 0)) / $indexed) * 100, 2) : 100.0,
-                        'schemasProcessed'  => $schemasProcessed,
-                        'fieldsCreated'     => $fieldsCreated,
-                        'operations'        => $operations,
-                    ],
-                ];
-            } else {
-                return [
-                    'success' => false,
-                    'message' => $warmupResult['error'] ?? 'SOLR complete warmup failed',
-                    'stats'   => [
-                        'totalProcessed' => 0,
-                        'totalIndexed'   => 0,
-                        'totalErrors'    => 1,
-                        'duration'       => round($totalDuration, 2),
-                        'operations'     => $warmupResult['operations'] ?? [],
-                    ],
-                ];
-            }//end if
-        } catch (Exception $e) {
-            $this->logger->error(
-                    'SOLR warmup failed with exception',
-                    [
-                        'error' => $e->getMessage(),
-                        'class' => get_class($e),
-                        'file'  => $e->getFile(),
-                        'line'  => $e->getLine(),
-                    ]
-                    );
-
-            // **ERROR COLLECTION MODE**: Return errors in response if collectErrors is true
-            if ($collectErrors === true) {
-                return [
-                    'success' => false,
-                    'message' => 'SOLR warmup failed with errors (collected mode)',
-                    'stats'   => [
-                        'totalProcessed'        => 0,
-                        'totalIndexed'          => 0,
-                        'totalErrors'           => 1,
-                        'duration'              => microtime(true) - ($startTime ?? microtime(true)),
-                        'error_collection_mode' => true,
-                    ],
-                    'errors'  => [
-                        [
-                            'type'      => 'warmup_exception',
-                            'message'   => $e->getMessage(),
-                            'class'     => get_class($e),
-                            'file'      => $e->getFile(),
-                            'line'      => $e->getLine(),
-                            'timestamp' => date('c'),
-                        ],
-                    ],
-                ];
-            }//end if
-
-            // **ERROR VISIBILITY**: Re-throw exception to expose errors in controller (default behavior)
-            throw new \RuntimeException(
-                'SOLR warmup failed: '.$e->getMessage(),
-                0,
-                $e
-            );
-        }//end try
+        // NOTE: This method is deprecated. Use GuzzleSolrService->warmupIndex() directly via controller.
+        // This method is kept for backward compatibility but should not be used.
+        // The controller now uses GuzzleSolrService directly to avoid circular dependencies.
+        throw new \RuntimeException(
+            'SettingsService::warmupSolrIndex() is deprecated. Use GuzzleSolrService->warmupIndex() directly via controller.'
+        );
 
     }//end warmupSolrIndex()
 
@@ -1542,8 +1540,18 @@ class SettingsService
     public function getSolrDashboardStats(): array
     {
         try {
-            $objectCacheService = $this->container->get(ObjectCacheService::class);
-            $rawStats           = $objectCacheService->getSolrDashboardStats();
+            $objectCacheService = $this->objectCacheService;
+            if ($objectCacheService === null && $this->container !== null) {
+                try {
+                    $objectCacheService = $this->container->get(ObjectCacheService::class);
+                } catch (\Exception $e) {
+                    throw new \Exception('ObjectCacheService not available');
+                }
+            }
+            if ($objectCacheService === null) {
+                throw new \Exception('ObjectCacheService not available');
+            }
+            $rawStats = $objectCacheService->getSolrDashboardStats();
 
             // Transform the raw stats into the expected dashboard structure.
             return $this->transformSolrStatsToDashboard($rawStats);
@@ -1671,7 +1679,7 @@ class SettingsService
             'cores'        => [
                 'active_core'  => $rawStats['collection'] ?? 'unknown',
                 'core_status'  => $rawStats['available'] ? 'active' : 'inactive',
-                'endpoint_url' => $this->container->get(GuzzleSolrService::class)->getEndpointUrl($rawStats['collection'] ?? null),
+                'endpoint_url' => 'N/A', // Endpoint URL no longer available in SettingsService (use GuzzleSolrService directly)
             ],
             'performance'  => [
                 'total_searches'     => $serviceStats['searches'] ?? 0,
@@ -1737,7 +1745,7 @@ class SettingsService
     public function getSolrSettingsOnly(): array
     {
         try {
-            $solrConfig = $this->config->getValueString($this->appName, 'solr', '');
+            $solrConfig = $this->config->getAppValue($this->appName, 'solr', '');
 
             if (empty($solrConfig) === true) {
                 return [
@@ -1850,7 +1858,7 @@ class SettingsService
     public function getSolrFacetConfiguration(): array
     {
         try {
-            $facetConfig = $this->config->getValueString($this->appName, 'solr_facet_config', '');
+            $facetConfig = $this->config->getAppValue($this->appName, 'solr_facet_config', '');
             if (empty($facetConfig) === true) {
                 return [
                     'facets'           => [],
@@ -1909,7 +1917,7 @@ class SettingsService
             // Validate the configuration structure.
             $validatedConfig = $this->validateFacetConfiguration($facetConfig);
 
-            $this->config->setValueString($this->appName, 'solr_facet_config', json_encode($validatedConfig));
+            $this->config->setAppValue($this->appName, 'solr_facet_config', json_encode($validatedConfig));
             return $validatedConfig;
         } catch (Exception $e) {
             throw new \RuntimeException('Failed to update SOLR facet configuration: '.$e->getMessage());
@@ -1988,7 +1996,7 @@ class SettingsService
     public function getRbacSettingsOnly(): array
     {
         try {
-            $rbacConfig = $this->config->getValueString($this->appName, 'rbac', '');
+            $rbacConfig = $this->config->getAppValue($this->appName, 'rbac', '');
 
             $rbacData = [];
             if (empty($rbacConfig) === true) {
@@ -2063,7 +2071,7 @@ class SettingsService
     public function getOrganisationSettingsOnly(): array
     {
         try {
-            $organisationConfig = $this->config->getValueString($this->appName, 'organisation', '');
+            $organisationConfig = $this->config->getAppValue($this->appName, 'organisation', '');
 
             $organisationData = [];
             if (empty($organisationConfig) === true) {
@@ -2104,7 +2112,7 @@ class SettingsService
                 'auto_create_default_organisation' => $organisationData['auto_create_default_organisation'] ?? true,
             ];
 
-            $this->config->setValueString($this->appName, 'organisation', json_encode($organisationConfig));
+            $this->config->setAppValue($this->appName, 'organisation', json_encode($organisationConfig));
 
             return [
                 'organisation' => $organisationConfig,
@@ -2200,7 +2208,7 @@ class SettingsService
     public function getMultitenancySettingsOnly(): array
     {
         try {
-            $multitenancyConfig = $this->config->getValueString($this->appName, 'multitenancy', '');
+            $multitenancyConfig = $this->config->getAppValue($this->appName, 'multitenancy', '');
 
             $multitenancyData = [];
             if (empty($multitenancyConfig) === true) {
@@ -2273,7 +2281,7 @@ class SettingsService
     public function getLLMSettingsOnly(): array
     {
         try {
-            $llmConfig = $this->config->getValueString($this->appName, 'llm', '');
+            $llmConfig = $this->config->getAppValue($this->appName, 'llm', '');
 
             if (empty($llmConfig) === true) {
                 // Return default configuration.
@@ -2381,7 +2389,7 @@ class SettingsService
                 ],
             ];
 
-            $this->config->setValueString($this->appName, 'llm', json_encode($llmConfig));
+            $this->config->setAppValue($this->appName, 'llm', json_encode($llmConfig));
             return $llmConfig;
         } catch (Exception $e) {
             throw new \RuntimeException('Failed to update LLM settings: '.$e->getMessage());
@@ -2399,7 +2407,7 @@ class SettingsService
     public function getFileSettingsOnly(): array
     {
         try {
-            $fileConfig = $this->config->getValueString($this->appName, 'fileManagement', '');
+            $fileConfig = $this->config->getAppValue($this->appName, 'fileManagement', '');
 
             if (empty($fileConfig) === true) {
                 // Return default configuration.
@@ -2467,7 +2475,7 @@ class SettingsService
                 'dolphinApiKey'        => $fileData['dolphinApiKey'] ?? '',
             ];
 
-            $this->config->setValueString($this->appName, 'fileManagement', json_encode($fileConfig));
+            $this->config->setAppValue($this->appName, 'fileManagement', json_encode($fileConfig));
             return $fileConfig;
         } catch (Exception $e) {
             throw new \RuntimeException('Failed to update File Management settings: '.$e->getMessage());
@@ -2494,7 +2502,7 @@ class SettingsService
     public function getObjectSettingsOnly(): array
     {
         try {
-            $objectConfig = $this->config->getValueString($this->appName, 'objectManagement', '');
+            $objectConfig = $this->config->getAppValue($this->appName, 'objectManagement', '');
 
             if (empty($objectConfig) === true) {
                 return [
@@ -2556,7 +2564,7 @@ class SettingsService
                 'autoRetry'            => $objectData['autoRetry'] ?? true,
             ];
 
-            $this->config->setValueString($this->appName, 'objectManagement', json_encode($objectConfig));
+            $this->config->setAppValue($this->appName, 'objectManagement', json_encode($objectConfig));
             return $objectConfig;
         } catch (Exception $e) {
             throw new \RuntimeException('Failed to update Object Management settings: '.$e->getMessage());
@@ -2574,7 +2582,7 @@ class SettingsService
     public function getRetentionSettingsOnly(): array
     {
         try {
-            $retentionConfig = $this->config->getValueString($this->appName, 'retention', '');
+            $retentionConfig = $this->config->getAppValue($this->appName, 'retention', '');
 
             if (empty($retentionConfig) === true) {
                 return [
