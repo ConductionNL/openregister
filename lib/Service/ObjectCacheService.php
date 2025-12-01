@@ -129,12 +129,12 @@ class ObjectCacheService
     /**
      * Constructor for ObjectCacheService
      *
-     * @param ObjectEntityMapper     $objectEntityMapper The object entity mapper
-     * @param OrganisationMapper     $organisationMapper The organisation entity mapper
-     * @param LoggerInterface        $logger             Logger for performance monitoring
-     * @param ICacheFactory|null     $cacheFactory       Cache factory for query result caching
-     * @param IUserSession|null      $userSession        User session for cache key generation
-     * @param IAppContainer|null     $container          Container for lazy loading GuzzleSolrService (optional)
+     * @param ObjectEntityMapper $objectEntityMapper The object entity mapper
+     * @param OrganisationMapper $organisationMapper The organisation entity mapper
+     * @param LoggerInterface    $logger             Logger for performance monitoring
+     * @param ICacheFactory|null $cacheFactory       Cache factory for query result caching
+     * @param IUserSession|null  $userSession        User session for cache key generation
+     * @param IAppContainer|null $container          Container for lazy loading GuzzleSolrService (optional)
      */
     public function __construct(
         private readonly ObjectEntityMapper $objectEntityMapper,
@@ -174,7 +174,7 @@ class ObjectCacheService
 
 
         };
-        $this->container = $container;
+        $this->container   = $container;
 
     }//end __construct()
 
@@ -375,7 +375,6 @@ class ObjectCacheService
         }//end try
 
     }//end removeObjectFromSolr()
-
 
 
     /**
@@ -606,7 +605,6 @@ class ObjectCacheService
     }//end cacheObject()
 
 
-
     /**
      * Get cache statistics
      *
@@ -641,8 +639,6 @@ class ObjectCacheService
                 );
 
     }//end getStats()
-
-
 
 
     /**
@@ -711,7 +707,7 @@ class ObjectCacheService
      */
     private function clearSchemaRelatedCaches(?int $schemaId=null, ?int $registerId=null, string $operation='unknown'): void
     {
-        $startTime    = microtime(true);
+        $startTime = microtime(true);
 
         // **STRATEGY 1**: Clear all in-memory search caches (fast).
         $this->inMemoryQueryCache = [];
@@ -868,7 +864,6 @@ class ObjectCacheService
                 );
 
     }//end clearObjectFromCache()
-
 
 
     /**
@@ -1402,8 +1397,6 @@ class ObjectCacheService
     // ========================================.
 
 
-
-
     /**
      * Get comprehensive SOLR dashboard statistics
      *
@@ -1511,8 +1504,6 @@ class ObjectCacheService
         }
 
     }//end clearSolrIndexForDashboard()
-
-
 
 
 }//end class

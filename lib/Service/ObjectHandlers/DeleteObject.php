@@ -94,8 +94,6 @@ class DeleteObject
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly FileService $fileService,
         private readonly ObjectCacheService $objectCacheService,
-
-
         AuditTrailMapper $auditTrailMapper,
         SettingsService $settingsService,
         LoggerInterface $logger

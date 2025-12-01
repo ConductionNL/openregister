@@ -136,9 +136,6 @@ class SchemaFacetCacheService
     }//end __construct()
 
 
-
-
-
     /**
      * Cache facetable fields configuration for a schema
      *
@@ -232,7 +229,6 @@ class SchemaFacetCacheService
     }//end invalidateForSchemaChange()
 
 
-
     /**
      * Clear all facet caches (Administrative Operation)
      *
@@ -270,7 +266,6 @@ class SchemaFacetCacheService
     }//end clearAllCaches()
 
 
-
     /**
      * Clean expired facet cache entries
      *
@@ -306,7 +301,6 @@ class SchemaFacetCacheService
         return $deletedCount;
 
     }//end cleanExpiredEntries()
-
 
 
     /**
@@ -357,7 +351,6 @@ class SchemaFacetCacheService
         return $stats;
 
     }//end getCacheStatistics()
-
 
 
     /**
@@ -527,7 +520,7 @@ class SchemaFacetCacheService
         }
 
         // Auto-detect facetable properties based on type.
-        $type   = $property['type'] ?? '';
+        $type = $property['type'] ?? '';
         $property['format'] ?? '';
 
         // Facetable types.

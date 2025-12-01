@@ -101,6 +101,7 @@ use Psr\Log\LoggerInterface;
  */
 class SettingsService
 {
+
     /**
      * Configuration service
      *
@@ -135,8 +136,6 @@ class SettingsService
      * @var ObjectCacheService|null
      */
     private ?ObjectCacheService $objectCacheService = null;
-
-
 
     /**
      * Group manager
@@ -215,7 +214,6 @@ class SettingsService
      */
     private const MIN_OPENREGISTER_VERSION = '0.1.7';
 
-
     /**
      * Container for lazy loading services to break circular dependencies
      *
@@ -223,24 +221,25 @@ class SettingsService
      */
     private ?IAppContainer $container = null;
 
+
     /**
      * Constructor for SettingsService
      *
-     * @param IConfig                    $config                 Configuration service
-     * @param AuditTrailMapper          $auditTrailMapper      Audit trail mapper
-     * @param ICacheFactory             $cacheFactory           Cache factory
-     * @param IGroupManager             $groupManager           Group manager
-     * @param LoggerInterface           $logger                 Logger
-     * @param ObjectEntityMapper        $objectEntityMapper     Object entity mapper
-     * @param OrganisationMapper        $organisationMapper     Organisation mapper
-     * @param SchemaCacheService        $schemaCacheService     Schema cache service
-     * @param SchemaFacetCacheService   $schemaFacetCacheService Schema facet cache service
-     * @param SearchTrailMapper         $searchTrailMapper      Search trail mapper
-     * @param IUserManager              $userManager            User manager
-     * @param IDBConnection             $db                     Database connection
-     * @param ObjectCacheService|null   $objectCacheService     Object cache service (optional, lazy-loaded)
-     * @param IAppContainer|null        $container              Container for lazy loading (optional)
-     * @param string                    $appName                Application name
+     * @param IConfig                 $config                  Configuration service
+     * @param AuditTrailMapper        $auditTrailMapper        Audit trail mapper
+     * @param ICacheFactory           $cacheFactory            Cache factory
+     * @param IGroupManager           $groupManager            Group manager
+     * @param LoggerInterface         $logger                  Logger
+     * @param ObjectEntityMapper      $objectEntityMapper      Object entity mapper
+     * @param OrganisationMapper      $organisationMapper      Organisation mapper
+     * @param SchemaCacheService      $schemaCacheService      Schema cache service
+     * @param SchemaFacetCacheService $schemaFacetCacheService Schema facet cache service
+     * @param SearchTrailMapper       $searchTrailMapper       Search trail mapper
+     * @param IUserManager            $userManager             User manager
+     * @param IDBConnection           $db                      Database connection
+     * @param ObjectCacheService|null $objectCacheService      Object cache service (optional, lazy-loaded)
+     * @param IAppContainer|null      $container               Container for lazy loading (optional)
+     * @param string                  $appName                 Application name
      *
      * @return void
      */
@@ -257,25 +256,25 @@ class SettingsService
         SearchTrailMapper $searchTrailMapper,
         IUserManager $userManager,
         IDBConnection $db,
-        ?ObjectCacheService $objectCacheService = null,
-        ?IAppContainer $container = null,
-        string $appName = 'openregister'
+        ?ObjectCacheService $objectCacheService=null,
+        ?IAppContainer $container=null,
+        string $appName='openregister'
     ) {
-        $this->config = $config;
+        $this->config           = $config;
         $this->auditTrailMapper = $auditTrailMapper;
-        $this->cacheFactory = $cacheFactory;
-        $this->groupManager = $groupManager;
-        $this->logger = $logger;
-        $this->objectEntityMapper = $objectEntityMapper;
-        $this->organisationMapper = $organisationMapper;
-        $this->schemaCacheService = $schemaCacheService;
+        $this->cacheFactory     = $cacheFactory;
+        $this->groupManager     = $groupManager;
+        $this->logger           = $logger;
+        $this->objectEntityMapper      = $objectEntityMapper;
+        $this->organisationMapper      = $organisationMapper;
+        $this->schemaCacheService      = $schemaCacheService;
         $this->schemaFacetCacheService = $schemaFacetCacheService;
-        $this->searchTrailMapper = $searchTrailMapper;
+        $this->searchTrailMapper       = $searchTrailMapper;
         $this->userManager = $userManager;
-        $this->db = $db;
+        $this->db          = $db;
         $this->objectCacheService = $objectCacheService;
-        $this->container = $container;
-        $this->appName = $appName;
+        $this->container          = $container;
+        $this->appName            = $appName;
 
     }//end __construct()
 
@@ -296,7 +295,6 @@ class SettingsService
         return $multitenancyData['enabled'] ?? false;
 
     }//end isMultiTenancyEnabled()
-
 
 
     /**
@@ -623,7 +621,6 @@ class SettingsService
         }//end try
 
     }//end updateSettings()
-
 
 
     /**
@@ -1031,9 +1028,11 @@ class SettingsService
                         throw new \Exception('ObjectCacheService not available');
                     }
                 }
+
                 if ($objectCacheService === null) {
                     throw new \Exception('ObjectCacheService not available');
                 }
+
                 $cachedStats = $objectCacheService->getStats();
             } catch (Exception $e) {
                 // If no object cache stats available, use defaults.
@@ -1048,7 +1047,7 @@ class SettingsService
                     'name_misses'     => 0,
                     'name_warmups'    => 0,
                 ];
-            }
+            }//end try
 
             $lastUpdate = $now;
         }//end if
@@ -1214,9 +1213,11 @@ class SettingsService
                     throw new \Exception('ObjectCacheService not available');
                 }
             }
+
             if ($objectCacheService === null) {
                 throw new \Exception('ObjectCacheService not available');
             }
+
             $beforeStats = $objectCacheService->getStats();
             $objectCacheService->clearCache();
             $afterStats = $objectCacheService->getStats();
@@ -1256,15 +1257,17 @@ class SettingsService
                     throw new \Exception('ObjectCacheService not available');
                 }
             }
+
             if ($objectCacheService === null) {
                 throw new \Exception('ObjectCacheService not available');
             }
-            $beforeStats = $objectCacheService->getStats();
+
+            $beforeStats         = $objectCacheService->getStats();
             $beforeNameCacheSize = $beforeStats['name_cache_size'] ?? 0;
 
             $objectCacheService->clearNameCache();
 
-            $afterStats = $objectCacheService->getStats();
+            $afterStats         = $objectCacheService->getStats();
             $afterNameCacheSize = $afterStats['name_cache_size'] ?? 0;
 
             return [
@@ -1302,7 +1305,7 @@ class SettingsService
     public function warmupNamesCache(): array
     {
         try {
-            $startTime = microtime(true);
+            $startTime          = microtime(true);
             $objectCacheService = $this->objectCacheService;
             if ($objectCacheService === null && $this->container !== null) {
                 try {
@@ -1311,9 +1314,11 @@ class SettingsService
                     throw new \Exception('ObjectCacheService not available');
                 }
             }
+
             if ($objectCacheService === null) {
                 throw new \Exception('ObjectCacheService not available');
             }
+
             $beforeStats = $objectCacheService->getStats();
 
             $loadedCount = $objectCacheService->warmupNameCache();
@@ -1485,11 +1490,6 @@ class SettingsService
     }//end getSolrSettings()
 
 
-
-
-
-
-
     /**
      * Complete SOLR warmup: mirror schemas and index objects from the database
      *
@@ -1504,6 +1504,8 @@ class SettingsService
      * @return array Warmup operation results with statistics and status
      * @throws \RuntimeException If SOLR warmup fails
      */
+
+
     /**
      * Complete SOLR warmup: mirror schemas and index objects from the database
      *
@@ -1548,9 +1550,11 @@ class SettingsService
                     throw new \Exception('ObjectCacheService not available');
                 }
             }
+
             if ($objectCacheService === null) {
                 throw new \Exception('ObjectCacheService not available');
             }
+
             $rawStats = $objectCacheService->getSolrDashboardStats();
 
             // Transform the raw stats into the expected dashboard structure.
@@ -1679,7 +1683,8 @@ class SettingsService
             'cores'        => [
                 'active_core'  => $rawStats['collection'] ?? 'unknown',
                 'core_status'  => $rawStats['available'] ? 'active' : 'inactive',
-                'endpoint_url' => 'N/A', // Endpoint URL no longer available in SettingsService (use GuzzleSolrService directly)
+                'endpoint_url' => 'N/A',
+            // Endpoint URL no longer available in SettingsService (use GuzzleSolrService directly)
             ],
             'performance'  => [
                 'total_searches'     => $serviceStats['searches'] ?? 0,
@@ -1732,8 +1737,6 @@ class SettingsService
         return round($bytes / pow(1024, $factor), 2).' '.$units[$factor];
 
     }//end formatBytesForDashboard()
-
-
 
 
     /**
@@ -2197,7 +2200,6 @@ class SettingsService
      * @return array Multitenancy configuration with available tenants
      * @throws \RuntimeException If Multitenancy settings retrieval fails
      */
-
 
 
     /**

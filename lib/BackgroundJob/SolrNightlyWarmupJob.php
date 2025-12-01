@@ -62,7 +62,6 @@ class SolrNightlyWarmupJob extends TimedJob
     private const DEFAULT_NIGHTLY_MODE = 'parallel';
 
 
-
     /**
      * Execute the nightly SOLR warmup job
      *
@@ -196,8 +195,6 @@ class SolrNightlyWarmupJob extends TimedJob
     }//end run()
 
 
-
-
     /**
      * Calculate objects per second performance metric
      *
@@ -219,7 +216,6 @@ class SolrNightlyWarmupJob extends TimedJob
         return 0.0;
 
     }//end calculateObjectsPerSecond()
-
 
 
     /**
@@ -244,7 +240,6 @@ class SolrNightlyWarmupJob extends TimedJob
         return $count;
 
     }//end countSuccessfulWarmupQueries()
-
 
 
     /**

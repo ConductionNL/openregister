@@ -223,9 +223,6 @@ class SchemaCacheService
     }//end clearSchemaCache()
 
 
-
-
-
     /**
      * Cache a schema object
      *
@@ -353,7 +350,6 @@ class SchemaCacheService
     }//end invalidateForSchemaChange()
 
 
-
     /**
      * Clear all schema caches (Administrative Operation)
      *
@@ -389,7 +385,6 @@ class SchemaCacheService
                 );
 
     }//end clearAllCaches()
-
 
 
     /**
@@ -432,7 +427,6 @@ class SchemaCacheService
     }//end cleanExpiredEntries()
 
 
-
     /**
      * Get comprehensive cache statistics
      *
@@ -472,7 +466,6 @@ class SchemaCacheService
         ];
 
     }//end getCacheStatistics()
-
 
 
     /**

@@ -497,7 +497,6 @@ class OrganisationMapper extends QBMapper
     }//end getStatistics()
 
 
-
     /**
      * Add user to organisation by UUID
      *
@@ -538,12 +537,6 @@ class OrganisationMapper extends QBMapper
         return $this->update($organisation);
 
     }//end removeUserFromOrganisation()
-
-
-
-
-
-
 
 
     /**

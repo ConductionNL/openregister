@@ -38,6 +38,7 @@ use Psr\Log\LoggerInterface;
  */
 class DashboardService
 {
+
     /**
      * Object entity mapper
      *
@@ -88,8 +89,8 @@ class DashboardService
      * @param AuditTrailMapper   $auditTrailMapper Audit trail mapper
      * @param WebhookLogMapper   $webhookLogMapper Webhook log mapper
      * @param RegisterMapper     $registerMapper   Register mapper
-     * @param SchemaMapper      $schemaMapper     Schema mapper
-     * @param LoggerInterface   $logger           Logger instance
+     * @param SchemaMapper       $schemaMapper     Schema mapper
+     * @param LoggerInterface    $logger           Logger instance
      *
      * @return void
      */
@@ -104,9 +105,9 @@ class DashboardService
         $this->objectMapper     = $objectMapper;
         $this->auditTrailMapper = $auditTrailMapper;
         $this->webhookLogMapper = $webhookLogMapper;
-        $this->registerMapper  = $registerMapper;
-        $this->schemaMapper    = $schemaMapper;
-        $this->logger          = $logger;
+        $this->registerMapper   = $registerMapper;
+        $this->schemaMapper     = $schemaMapper;
+        $this->logger           = $logger;
 
     }//end __construct()
 

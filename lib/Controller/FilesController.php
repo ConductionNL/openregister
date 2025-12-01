@@ -326,7 +326,7 @@ class FilesController extends Controller
 
             // Normalize single file upload to array structure.
             // $_FILES can have 'name' as string (single file) or array (multiple files).
-            /**
+            /*
              * @var string|array<int, string>|null $fileName
              */
             $fileName = $files['name'] ?? null;
@@ -339,10 +339,10 @@ class FilesController extends Controller
                         $tags = explode(',', $tags);
                     }
 
-                    $typeValue = $files['type'] ?? '';
+                    $typeValue    = $files['type'] ?? '';
                     $tmpNameValue = $files['tmp_name'] ?? '';
-                    $errorValue = $files['error'] ?? UPLOAD_ERR_NO_FILE;
-                    $sizeValue = $files['size'] ?? 0;
+                    $errorValue   = $files['error'] ?? UPLOAD_ERR_NO_FILE;
+                    $sizeValue    = $files['size'] ?? 0;
 
                     $uploadedFiles[] = [
                         'name'     => $fileName,
@@ -362,17 +362,21 @@ class FilesController extends Controller
                             $tags = explode(',', $tags);
                         }
 
-                        /**
+                        /*
                          * @var array<int, string>|null $typeArray
                          * @var array<int, string>|null $tmpNameArray
                          * @var array<int, int>|null $errorArray
                          * @var array<int, int>|null $sizeArray
                          */
-                        $typeArray = is_array($files['type'] ?? null) ? $files['type'] : null;
+                        $typeArray    = is_array($files['type'] ?? null) ? $files['type'] : null;
                         $tmpNameArray = is_array($files['tmp_name'] ?? null) ? $files['tmp_name'] : null;
-                        /** @var array<int, int>|null $errorArray */
+                        /*
+                         * @var array<int, int>|null $errorArray
+                         */
                         $errorArray = is_array($files['error'] ?? null) ? $files['error'] : null;
-                        /** @var array<int, int>|null $sizeArray */
+                        /*
+                         * @var array<int, int>|null $sizeArray
+                         */
                         $sizeArray = is_array($files['size'] ?? null) ? $files['size'] : null;
 
                         $uploadedFiles[] = [
@@ -384,7 +388,7 @@ class FilesController extends Controller
                             'share'    => $data['share'] === 'true',
                             'tags'     => $tags,
                         ];
-                    }
+                    }//end for
                 }//end if
             }//end if
 

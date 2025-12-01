@@ -107,9 +107,7 @@ class RenderObject
      * @param LoggerInterface        $logger             Logger for performance monitoring.
      */
     public function __construct(
-
         private readonly FileMapper $fileMapper,
-
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly RegisterMapper $registerMapper,
         private readonly SchemaMapper $schemaMapper,
@@ -120,7 +118,6 @@ class RenderObject
     ) {
 
     }//end __construct()
-
 
 
     /**
@@ -246,9 +243,6 @@ class RenderObject
         return $object;
 
     }//end getObject()
-
-
-
 
 
     /**
@@ -1186,7 +1180,6 @@ class RenderObject
             $objectData[$propertyName] = [];
 
             // Extract inversedBy configuration based on property structure.
-
             // Check if this is an array property with inversedBy in items.
             if (($propertyConfig['type'] ?? null) !== null && ($propertyConfig['type'] === 'array') === true && (($propertyConfig['items']['inversedBy'] ?? null) !== null) === true) {
                 $inversedByProperty = $propertyConfig['items']['inversedBy'];
@@ -1339,9 +1332,6 @@ class RenderObject
         return $reference;
 
     }//end removeQueryParameters()
-
-
-
 
 
 }//end class

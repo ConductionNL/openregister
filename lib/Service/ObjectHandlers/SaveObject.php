@@ -136,8 +136,6 @@ class SaveObject
         private readonly IURLGenerator $urlGenerator,
         private readonly OrganisationService $organisationService,
         private readonly ObjectCacheService $objectCacheService,
-
-
         private readonly SettingsService $settingsService,
         private readonly LoggerInterface $logger,
         ArrayLoader $arrayLoader,
@@ -936,7 +934,7 @@ class SaveObject
                 continue;
             }
 
-            $defaultBehavior    = $property['defaultBehavior'] ?? 'false';
+            $defaultBehavior = $property['defaultBehavior'] ?? 'false';
 
             // Determine if default should be applied based on behavior.
             if ($defaultBehavior === 'falsy') {
@@ -2140,8 +2138,6 @@ class SaveObject
     }//end prepareObjectData()
 
 
-
-
     /**
      * Processes uploaded files from multipart/form-data and injects them into object data.
      *
@@ -3030,7 +3026,7 @@ class SaveObject
      */
     private function parseFileData(string $fileContent): array
     {
-        $mimeType  = 'application/octet-stream';
+        $mimeType = 'application/octet-stream';
 
         // Handle data URI format (data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...).
         if (strpos($fileContent, 'data:') === 0) {

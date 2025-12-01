@@ -29,7 +29,6 @@ interface TextExtractionHandlerInterface
 {
 
 
-
     /**
      * Extract text from a source.
      *
@@ -58,7 +57,6 @@ interface TextExtractionHandlerInterface
     public function extractText(int $sourceId, array $sourceMeta, bool $force=false): array;
 
 
-
     /**
      * Get source metadata for a given source ID.
      *
@@ -69,7 +67,6 @@ interface TextExtractionHandlerInterface
      * @throws \OCP\AppFramework\Db\DoesNotExistException If source not found.
      */
     public function getSourceMetadata(int $sourceId): array;
-
 
 
 }//end interface

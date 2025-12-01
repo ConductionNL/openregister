@@ -30,12 +30,14 @@ use OCA\OpenRegister\Db\Schema;
  */
 class PublishObject
 {
+
     /**
      * Object entity mapper
      *
      * @var ObjectEntityMapper
      */
     private ObjectEntityMapper $objectEntityMapper;
+
 
     /**
      * Publish an object

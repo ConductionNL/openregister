@@ -97,7 +97,6 @@ class SchemaPropertyValidatorService
     ];
 
 
-
     /**
      * Validate a property definition against JSON Schema rules
      *
@@ -217,8 +216,6 @@ class SchemaPropertyValidatorService
         return true;
 
     }//end validateProperties()
-
-
 
 
     /**

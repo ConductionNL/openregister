@@ -57,7 +57,6 @@ class NotificationService
     private LoggerInterface $logger;
 
 
-
     /**
      * Send notification about configuration update availability.
      *

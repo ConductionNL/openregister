@@ -1073,7 +1073,6 @@ class MariaDbFacetHandler
     }//end generateRangeKey()
 
 
-
     /**
      * Get sample objects for field analysis
      *

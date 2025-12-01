@@ -93,12 +93,12 @@ class SchemaMapper extends QBMapper
     /**
      * Constructor for SchemaMapper
      *
-     * @param IDBConnection              $db                 Database connection
-     * @param IEventDispatcher          $eventDispatcher    Event dispatcher
-     * @param SchemaPropertyValidatorService $validator     Schema property validator
-     * @param OrganisationService       $organisationService Organisation service
-     * @param IUserSession              $userSession        User session
-     * @param IGroupManager             $groupManager       Group manager
+     * @param IDBConnection                  $db                  Database connection
+     * @param IEventDispatcher               $eventDispatcher     Event dispatcher
+     * @param SchemaPropertyValidatorService $validator           Schema property validator
+     * @param OrganisationService            $organisationService Organisation service
+     * @param IUserSession                   $userSession         User session
+     * @param IGroupManager                  $groupManager        Group manager
      *
      * @return void
      */
@@ -111,11 +111,11 @@ class SchemaMapper extends QBMapper
         IGroupManager $groupManager
     ) {
         parent::__construct($db, 'openregister_schemas', Schema::class);
-        $this->eventDispatcher = $eventDispatcher;
-        $this->validator = $validator;
+        $this->eventDispatcher     = $eventDispatcher;
+        $this->validator           = $validator;
         $this->organisationService = $organisationService;
-        $this->userSession = $userSession;
-        $this->groupManager = $groupManager;
+        $this->userSession         = $userSession;
+        $this->groupManager        = $groupManager;
 
     }//end __construct()
 

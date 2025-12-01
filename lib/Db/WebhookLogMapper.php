@@ -43,6 +43,7 @@ use OCP\IDBConnection;
 class WebhookLogMapper extends QBMapper
 {
 
+
     /**
      * Constructor for WebhookLogMapper
      *
@@ -182,7 +183,6 @@ class WebhookLogMapper extends QBMapper
         return parent::insert($entity);
 
     }//end insert()
-
 
 
     /**

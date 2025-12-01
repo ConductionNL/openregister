@@ -90,8 +90,6 @@ class NamedEntityRecognitionService
     public function __construct(
         private readonly GdprEntityMapper $entityMapper,
         private readonly EntityRelationMapper $entityRelationMapper,
-
-
         private readonly IDBConnection $db,
         private readonly LoggerInterface $logger
     ) {
@@ -224,7 +222,6 @@ class NamedEntityRecognitionService
         ];
 
     }//end extractFromChunk()
-
 
 
     /**

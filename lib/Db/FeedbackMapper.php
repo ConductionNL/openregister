@@ -47,6 +47,8 @@ use OCP\IDBConnection;
  */
 class FeedbackMapper extends QBMapper
 {
+
+
     /**
      * Constructor for FeedbackMapper
      *
@@ -55,14 +57,16 @@ class FeedbackMapper extends QBMapper
     public function __construct(IDBConnection $db)
     {
         parent::__construct($db, 'openregister_feedback', Feedback::class);
-    }
+
+    }//end __construct()
+
 
     /**
      * Override insert to generate UUID and timestamps
      *
      * @param Entity $entity Entity to insert
      *
-     * @return Feedback Inserted entity
+     * @return       Feedback Inserted entity
      * @psalm-return Feedback
      */
     public function insert(Entity $entity): Feedback
@@ -90,7 +94,7 @@ class FeedbackMapper extends QBMapper
      *
      * @param Entity $entity Entity to update
      *
-     * @return Feedback Updated entity
+     * @return       Feedback Updated entity
      * @psalm-return Feedback
      */
     public function update(Entity $entity): Feedback
@@ -99,7 +103,6 @@ class FeedbackMapper extends QBMapper
         return parent::update($entity);
 
     }//end update()
-
 
 
     /**
@@ -126,11 +129,6 @@ class FeedbackMapper extends QBMapper
         }
 
     }//end findByMessage()
-
-
-
-
-
 
 
     /**

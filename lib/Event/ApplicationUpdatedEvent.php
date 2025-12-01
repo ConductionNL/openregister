@@ -64,6 +64,4 @@ class ApplicationUpdatedEvent extends Event
     }//end __construct()
 
 
-
-
 }//end class

@@ -64,6 +64,4 @@ class SourceUpdatedEvent extends Event
     }//end __construct()
 
 
-
-
 }//end class

@@ -52,5 +52,4 @@ class EntityRelationMapper extends QBMapper
     }//end __construct()
 
 
-
 }//end class

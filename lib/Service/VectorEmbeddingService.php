@@ -1565,8 +1565,6 @@ class VectorEmbeddingService
     }//end reciprocalRankFusion()
 
 
-
-
     /**
      * Get vector statistics
      *
@@ -2186,9 +2184,6 @@ class VectorEmbeddingService
         return $dotProduct / ($magnitude1 * $magnitude2);
 
     }//end cosineSimilarity()
-
-
-
 
 
     /**

@@ -76,7 +76,6 @@ class ToolRegistrationListener implements IEventListener
     private AgentTool $agentTool;
 
 
-
     /**
      * Handle the event
      *

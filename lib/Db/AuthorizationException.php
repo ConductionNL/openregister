@@ -405,9 +405,6 @@ class AuthorizationException extends Entity implements JsonSerializable
     }//end isExclusion()
 
 
-
-
-
     /**
      * Serialize the entity to JSON format
      *

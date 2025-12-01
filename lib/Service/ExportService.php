@@ -117,7 +117,6 @@ class ExportService
     }//end isUserAdmin()
 
 
-
     /**
      * Export data to Excel format
      *
@@ -150,7 +149,6 @@ class ExportService
         return $spreadsheet;
 
     }//end exportToExcel()
-
 
 
     /**

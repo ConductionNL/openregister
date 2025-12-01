@@ -64,6 +64,4 @@ class ConfigurationUpdatedEvent extends Event
     }//end __construct()
 
 
-
-
 }//end class

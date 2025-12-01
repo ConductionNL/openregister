@@ -199,7 +199,6 @@ class View extends Entity implements JsonSerializable
     }//end getOrganisation()
 
 
-
     /**
      * Get the array version of this entity
      *
@@ -370,7 +369,6 @@ class View extends Entity implements JsonSerializable
     }//end hydrate()
 
 
-
     /**
      * Set the configuration that manages this view (transient property)
      *
@@ -383,7 +381,6 @@ class View extends Entity implements JsonSerializable
         $this->managedByConfiguration = $configuration;
 
     }//end setManagedByConfigurationEntity()
-
 
 
     /**
