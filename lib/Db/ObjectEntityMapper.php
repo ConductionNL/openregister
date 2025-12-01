@@ -12,10 +12,8 @@
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * @version GIT: <git-id>
- *
- * @link https://OpenRegister.app
+ * @version   GIT: <git-id>
+ * @link      https://OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Db;
@@ -1064,20 +1062,19 @@ class ObjectEntityMapper extends QBMapper
      * @phpstan-param Register|null $register
      * @phpstan-param Schema|null $schema
      * @phpstan-param bool|null $published
-     *
-     * @psalm-param int|null $limit
-     * @psalm-param int|null $offset
-     * @psalm-param array|null $filters
-     * @psalm-param array|null $searchConditions
-     * @psalm-param array|null $searchParams
-     * @psalm-param array $sort
-     * @psalm-param string|null $search
-     * @psalm-param array|null $ids
-     * @psalm-param string|null $uses
-     * @psalm-param bool $includeDeleted
-     * @psalm-param Register|null $register
-     * @psalm-param Schema|null $schema
-     * @psalm-param bool|null $published
+     * @psalm-param   int|null $limit
+     * @psalm-param   int|null $offset
+     * @psalm-param   array|null $filters
+     * @psalm-param   array|null $searchConditions
+     * @psalm-param   array|null $searchParams
+     * @psalm-param   array $sort
+     * @psalm-param   string|null $search
+     * @psalm-param   array|null $ids
+     * @psalm-param   string|null $uses
+     * @psalm-param   bool $includeDeleted
+     * @psalm-param   Register|null $register
+     * @psalm-param   Schema|null $schema
+     * @psalm-param   bool|null $published
      *
      * @throws \OCP\DB\Exception If a database error occurs.
      *
@@ -1498,8 +1495,7 @@ class ObjectEntityMapper extends QBMapper
      * @param array $query The search query array containing filters and options
      *
      * @phpstan-param array<string, mixed> $query
-     *
-     * @psalm-param array<string, mixed> $query
+     * @psalm-param   array<string, mixed> $query
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
@@ -1832,8 +1828,7 @@ class ObjectEntityMapper extends QBMapper
      *                     - _ids: Array of IDs/UUIDs to filter by
      *
      * @phpstan-param array<string, mixed> $query
-     *
-     * @psalm-param array<string, mixed> $query
+     * @psalm-param   array<string, mixed> $query
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
@@ -2100,13 +2095,12 @@ class ObjectEntityMapper extends QBMapper
      * @phpstan-param mixed $register
      * @phpstan-param mixed $schema
      * @phpstan-param string $tableAlias
-     *
-     * @psalm-param IQueryBuilder $queryBuilder
-     * @psalm-param bool $includeDeleted
-     * @psalm-param bool|null $published
-     * @psalm-param mixed $register
-     * @psalm-param mixed $schema
-     * @psalm-param string $tableAlias
+     * @psalm-param   IQueryBuilder $queryBuilder
+     * @psalm-param   bool $includeDeleted
+     * @psalm-param   bool|null $published
+     * @psalm-param   mixed $register
+     * @psalm-param   mixed $schema
+     * @psalm-param   string $tableAlias
      *
      * @return void
      */
@@ -2199,9 +2193,8 @@ class ObjectEntityMapper extends QBMapper
      *
      * @phpstan-param mixed $value
      * @phpstan-param string $type
-     *
-     * @psalm-param mixed $value
-     * @psalm-param string $type
+     * @psalm-param   mixed $value
+     * @psalm-param   string $type
      *
      * @return Register|Schema|array|null The processed value
      */
@@ -2841,10 +2834,9 @@ class ObjectEntityMapper extends QBMapper
      * @phpstan-param int|array|null $registerId
      * @phpstan-param int|array|null $schemaId
      * @phpstan-param array $exclude
-     *
-     * @psalm-param int|array|null $registerId
-     * @psalm-param int|array|null $schemaId
-     * @psalm-param array $exclude
+     * @psalm-param   int|array|null $registerId
+     * @psalm-param   int|array|null $schemaId
+     * @psalm-param   array $exclude
      *
      * @return array<string, int> Array containing statistics about objects:
      *               - total: Total number of objects.
@@ -3131,8 +3123,7 @@ class ObjectEntityMapper extends QBMapper
      *                       - Direct keys: Object field facets
      *
      * @phpstan-param array<string, mixed> $query
-     *
-     * @psalm-param array<string, mixed> $query
+     * @psalm-param   array<string, mixed> $query
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
@@ -3211,9 +3202,8 @@ class ObjectEntityMapper extends QBMapper
      *
      * @phpstan-param array<string, mixed> $baseQuery
      * @phpstan-param int $sampleSize
-     *
-     * @psalm-param array<string, mixed> $baseQuery
-     * @psalm-param int $sampleSize
+     * @psalm-param   array<string, mixed> $baseQuery
+     * @psalm-param   int $sampleSize
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
@@ -3253,8 +3243,7 @@ class ObjectEntityMapper extends QBMapper
      * @param array $baseQuery Base query filters to apply for context
      *
      * @phpstan-param array<string, mixed> $baseQuery
-     *
-     * @psalm-param array<string, mixed> $baseQuery
+     * @psalm-param   array<string, mixed> $baseQuery
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
@@ -3314,8 +3303,7 @@ class ObjectEntityMapper extends QBMapper
      * @param array $baseQuery Base query filters to apply
      *
      * @phpstan-param array<string, mixed> $baseQuery
-     *
-     * @psalm-param array<string, mixed> $baseQuery
+     * @psalm-param   array<string, mixed> $baseQuery
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
@@ -3353,8 +3341,7 @@ class ObjectEntityMapper extends QBMapper
      * @param array $property The property definition
      *
      * @phpstan-param array<string, mixed> $property
-     *
-     * @psalm-param array<string, mixed> $property
+     * @psalm-param   array<string, mixed> $property
      *
      * @return bool True if the property is facetable
      */
@@ -3373,9 +3360,8 @@ class ObjectEntityMapper extends QBMapper
      *
      * @phpstan-param string $propertyKey
      * @phpstan-param array<string, mixed> $property
-     *
-     * @psalm-param string $propertyKey
-     * @psalm-param array<string, mixed> $property
+     * @psalm-param   string $propertyKey
+     * @psalm-param   array<string, mixed> $property
      *
      * @return array|null Field configuration or null if not suitable for faceting
      */
@@ -3494,9 +3480,8 @@ class ObjectEntityMapper extends QBMapper
      *
      * @phpstan-param array<string, mixed> $existing
      * @phpstan-param array<string, mixed> $new
-     *
-     * @psalm-param array<string, mixed> $existing
-     * @psalm-param array<string, mixed> $new
+     * @psalm-param   array<string, mixed> $existing
+     * @psalm-param   array<string, mixed> $new
      *
      * @return array Merged field configuration
      */
@@ -3541,12 +3526,12 @@ class ObjectEntityMapper extends QBMapper
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @phpstan-param array<int, array<string, mixed>> $insertObjects
-     * @phpstan-param array<int, ObjectEntity> $updateObjects
+     * @phpstan-param  array<int, array<string, mixed>> $insertObjects
+     * @phpstan-param  array<int, ObjectEntity> $updateObjects
      * @phpstan-return array<int, string>
-     * @psalm-param array<int, array<string, mixed>> $insertObjects
-     * @psalm-param array<int, ObjectEntity> $updateObjects
-     * @psalm-return array<int, string>
+     * @psalm-param    array<int, array<string, mixed>> $insertObjects
+     * @psalm-param    array<int, ObjectEntity> $updateObjects
+     * @psalm-return   array<int, string>
      */
     public function saveObjects(array $insertObjects = [], array $updateObjects = []): array
     {
@@ -3819,7 +3804,7 @@ class ObjectEntityMapper extends QBMapper
      * @return int Optimal batch size in number of objects
      *
      * @phpstan-param array<int, array<string, mixed>> $insertObjects
-     * @psalm-param array<int, array<string, mixed>> $insertObjects
+     * @psalm-param   array<int, array<string, mixed>> $insertObjects
      */
     private function calculateOptimalBatchSize(array $insertObjects, array $columns): int
     {
@@ -3889,10 +3874,10 @@ class ObjectEntityMapper extends QBMapper
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @phpstan-param array<int, array<string, mixed>> $insertChunk
-     * @psalm-param array<int, array<string, mixed>> $insertChunk
+     * @phpstan-param  array<int, array<string, mixed>> $insertChunk
+     * @psalm-param    array<int, array<string, mixed>> $insertChunk
      * @phpstan-return array<int, string>
-     * @psalm-return array<int, string>
+     * @psalm-return   array<int, string>
      */
     private function processInsertChunk(array $insertChunk): array
     {
@@ -3937,10 +3922,10 @@ class ObjectEntityMapper extends QBMapper
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @phpstan-param array<int, ObjectEntity> $updateChunk
-     * @psalm-param array<int, ObjectEntity> $updateChunk
+     * @phpstan-param  array<int, ObjectEntity> $updateChunk
+     * @psalm-param    array<int, ObjectEntity> $updateChunk
      * @phpstan-return array<int, string>
-     * @psalm-return array<int, string>
+     * @psalm-return   array<int, string>
      */
     private function processUpdateChunk(array $updateChunk): array
     {
@@ -3995,10 +3980,10 @@ class ObjectEntityMapper extends QBMapper
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @phpstan-param array<int, array<string, mixed>> $insertObjects
-     * @psalm-param array<int, array<string, mixed>> $insertObjects
+     * @phpstan-param  array<int, array<string, mixed>> $insertObjects
+     * @psalm-param    array<int, array<string, mixed>> $insertObjects
      * @phpstan-return array<int, string>
-     * @psalm-return array<int, string>
+     * @psalm-return   array<int, string>
      */
     private function bulkInsert(array $insertObjects): array
     {
@@ -4170,10 +4155,10 @@ class ObjectEntityMapper extends QBMapper
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @phpstan-param array<int, ObjectEntity> $updateObjects
-     * @psalm-param array<int, ObjectEntity> $updateObjects
+     * @phpstan-param  array<int, ObjectEntity> $updateObjects
+     * @psalm-param    array<int, ObjectEntity> $updateObjects
      * @phpstan-return array<int, string>
-     * @psalm-return array<int, string>
+     * @psalm-return   array<int, string>
      */
     private function bulkUpdate(array $updateObjects): array
     {
@@ -4451,7 +4436,7 @@ class ObjectEntityMapper extends QBMapper
      * @return array Array of column names
      *
      * @phpstan-return array<int, string>
-     * @psalm-return array<int, string>
+     * @psalm-return   array<int, string>
      */
     private function getEntityColumns(ObjectEntity $entity): array
     {
@@ -4549,10 +4534,10 @@ class ObjectEntityMapper extends QBMapper
      *
      * @return array Array of UUIDs of deleted objects
      *
-     * @phpstan-param array<int, string> $uuids
-     * @psalm-param array<int, string> $uuids
+     * @phpstan-param  array<int, string> $uuids
+     * @psalm-param    array<int, string> $uuids
      * @phpstan-return array<int, string>
-     * @psalm-return array<int, string>
+     * @psalm-return   array<int, string>
      */
     private function bulkDelete(array $uuids, bool $hardDelete = false): array
     {
@@ -4649,10 +4634,10 @@ class ObjectEntityMapper extends QBMapper
      *
      * @return array Array of UUIDs of published objects
      *
-     * @phpstan-param array<int, string> $uuids
-     * @psalm-param array<int, string> $uuids
+     * @phpstan-param  array<int, string> $uuids
+     * @psalm-param    array<int, string> $uuids
      * @phpstan-return array<int, string>
-     * @psalm-return array<int, string>
+     * @psalm-return   array<int, string>
      */
     private function bulkPublish(array $uuids, \DateTime|bool $datetime = true): array
     {
@@ -4745,10 +4730,10 @@ class ObjectEntityMapper extends QBMapper
      *
      * @return array Array of UUIDs of depublished objects
      *
-     * @phpstan-param array<int, string> $uuids
-     * @psalm-param array<int, string> $uuids
+     * @phpstan-param  array<int, string> $uuids
+     * @psalm-param    array<int, string> $uuids
      * @phpstan-return array<int, string>
-     * @psalm-return array<int, string>
+     * @psalm-return   array<int, string>
      */
     private function bulkDepublish(array $uuids, \DateTime|bool $datetime = true): array
     {
@@ -4841,10 +4826,10 @@ class ObjectEntityMapper extends QBMapper
      *
      * @return array Array of UUIDs of deleted objects
      *
-     * @phpstan-param array<int, string> $uuids
-     * @psalm-param array<int, string> $uuids
+     * @phpstan-param  array<int, string> $uuids
+     * @psalm-param    array<int, string> $uuids
      * @phpstan-return array<int, string>
-     * @psalm-return array<int, string>
+     * @psalm-return   array<int, string>
      */
     public function deleteObjects(array $uuids = [], bool $hardDelete = false): array
     {
@@ -4901,7 +4886,7 @@ class ObjectEntityMapper extends QBMapper
      * @throws \Exception If the publishing operation fails
      *
      * @phpstan-return array{published_count: int, published_uuids: array<int, string>, schema_id: int}
-     * @psalm-return array{published_count: int, published_uuids: array<int, string>, schema_id: int}
+     * @psalm-return   array{published_count: int, published_uuids: array<int, string>, schema_id: int}
      */
     public function publishObjectsBySchema(int $schemaId, bool $publishAll = false): array
     {
@@ -4958,7 +4943,7 @@ class ObjectEntityMapper extends QBMapper
      * @throws \Exception If the deletion operation fails
      *
      * @phpstan-return array{deleted_count: int, deleted_uuids: array<int, string>, schema_id: int}
-     * @psalm-return array{deleted_count: int, deleted_uuids: array<int, string>, schema_id: int}
+     * @psalm-return   array{deleted_count: int, deleted_uuids: array<int, string>, schema_id: int}
      */
     public function deleteObjectsBySchema(int $schemaId, bool $hardDelete = false): array
     {
@@ -5014,7 +4999,7 @@ class ObjectEntityMapper extends QBMapper
      * @throws \Exception If the deletion operation fails
      *
      * @phpstan-return array{deleted_count: int, deleted_uuids: array<int, string>, register_id: int}
-     * @psalm-return array{deleted_count: int, deleted_uuids: array<int, string>, register_id: int}
+     * @psalm-return   array{deleted_count: int, deleted_uuids: array<int, string>, register_id: int}
      */
     public function deleteObjectsByRegister(int $registerId): array
     {
@@ -5066,10 +5051,10 @@ class ObjectEntityMapper extends QBMapper
      *
      * @return array Array of UUIDs of published objects
      *
-     * @phpstan-param array<int, string> $uuids
-     * @psalm-param array<int, string> $uuids
+     * @phpstan-param  array<int, string> $uuids
+     * @psalm-param    array<int, string> $uuids
      * @phpstan-return array<int, string>
-     * @psalm-return array<int, string>
+     * @psalm-return   array<int, string>
      */
     public function publishObjects(array $uuids = [], \DateTime|bool $datetime = true): array
     {
@@ -5124,10 +5109,10 @@ class ObjectEntityMapper extends QBMapper
      *
      * @return array Array of UUIDs of depublished objects
      *
-     * @phpstan-param array<int, string> $uuids
-     * @psalm-param array<int, string> $uuids
+     * @phpstan-param  array<int, string> $uuids
+     * @psalm-param    array<int, string> $uuids
      * @phpstan-return array<int, string>
-     * @psalm-return array<int, string>
+     * @psalm-return   array<int, string>
      */
     public function depublishObjects(array $uuids = [], \DateTime|bool $datetime = true): array
     {
@@ -5177,8 +5162,8 @@ class ObjectEntityMapper extends QBMapper
      *
      * @return array Array with 'large' and 'normal' object arrays
      *
-     * @phpstan-param array<int, array<string, mixed>|ObjectEntity> $objects
-     * @phpstan-param int $maxSafeSize
+     * @phpstan-param  array<int, array<string, mixed>|ObjectEntity> $objects
+     * @phpstan-param  int $maxSafeSize
      * @phpstan-return array{large: array<int, array<string, mixed>|ObjectEntity>, normal: array<int, array<string, mixed>|ObjectEntity>}
      */
     private function separateLargeObjects(array $objects, int $maxSafeSize = 1000000): array
@@ -5213,7 +5198,7 @@ class ObjectEntityMapper extends QBMapper
      *
      * @return array Array of processed object UUIDs
      *
-     * @phpstan-param array<int, array<string, mixed>> $largeObjects
+     * @phpstan-param  array<int, array<string, mixed>> $largeObjects
      * @phpstan-return array<int, string>
      */
     private function processLargeObjectsIndividually(array $largeObjects): array

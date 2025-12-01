@@ -13,10 +13,8 @@ declare(strict_types=1);
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * @version GIT: <git-id>
- *
- * @link https://OpenRegister.app
+ * @version   GIT: <git-id>
+ * @link      https://OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Service;
@@ -562,6 +560,7 @@ class ImportService
      * @param bool             $validation  Whether to validate objects against schema definitions
      * @param bool             $events      Whether to dispatch object lifecycle events
      *
+     *
      * @return array<string, array> Sheet processing summary
      * @phpstan-return array<string, array{found: int, created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
      * @psalm-return   array<string, array{found: int, created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
@@ -857,6 +856,7 @@ class ImportService
      * @param int                                           $chunkSize     Size of each processing chunk
      * @param bool                                          $validation    Whether to validate objects
      * @param bool                                          $events        Whether to dispatch events
+     *
      *
      * @return array<string, array> Processing summary
      * @phpstan-return array{found: int, created: array<string>, updated: array<string>, errors: array<mixed>}

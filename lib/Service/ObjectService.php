@@ -104,13 +104,11 @@ use Symfony\Component\Uid\Uuid;
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
- * @author   Conduction Development Team <info@conduction.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * @version GIT: <git_id>
- *
- * @link https://www.OpenRegister.app
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version   GIT: <git_id>
+ * @link      https://www.OpenRegister.app
  *
  * @since 1.0.0 Initial ObjectService implementation
  * @since 1.5.0 Added bulk operations and performance optimizations
@@ -158,13 +156,13 @@ class ObjectService
     /**
      * Constructor for ObjectService.
      *
-     * @param DeleteObject            $deleteHandler            Handler for object deletion.
-     * @param GetObject               $getHandler              Handler for object retrieval.
+     * @param DeleteObject            $deleteHandler           Handler for object deletion.
+     * @param GetObject               $getHandler             Handler for object retrieval.
      * @param RenderObject            $renderHandler           Handler for object rendering.
      * @param SaveObject              $saveHandler             Handler for individual object saving.
      * @param SaveObjects             $saveObjectsHandler      Handler for bulk object saving operations.
-     * @param ValidateObject          $validateHandler        Handler for object validation.
-     * @param PublishObject           $publishHandler         Handler for object publication.
+     * @param ValidateObject          $validateHandler         Handler for object validation.
+     * @param PublishObject           $publishHandler          Handler for object publication.
      * @param DepublishObject         $depublishHandler        Handler for object depublication.
      * @param RegisterMapper          $registerMapper          Mapper for register operations.
      * @param SchemaMapper            $schemaMapper            Mapper for schema operations.
@@ -231,8 +229,8 @@ class ObjectService
      *
      * @param string $appId Unique identifier for the external app
      *
-     * @phpstan-param  string $appId
-     * @psalm-param    string $appId
+     * @phpstan-param string $appId
+     * @psalm-param   string $appId
      *
      * @return self For method chaining
      *
@@ -1771,8 +1769,8 @@ class ObjectService
      * @param int|string|null $schema        Optional schema identifier (should be resolved numeric ID)
      * @param array|null      $ids           Optional array of specific IDs to filter
      *
-     * @phpstan-param  array<string, mixed> $requestParams
-     * @psalm-param    array<string, mixed> $requestParams
+     * @phpstan-param array<string, mixed> $requestParams
+     * @psalm-param   array<string, mixed> $requestParams
      *
      * @return array<string, mixed> Query array containing:
      *                               - @self: Metadata filters (register, schema, etc.)
@@ -2087,7 +2085,7 @@ class ObjectService
      * @param array|null $views Optional view IDs to apply
      *
      * @phpstan-param array<string, mixed> $query
-     * @psalm-param array<string, mixed> $query
+     * @psalm-param   array<string, mixed> $query
      *
      * @return array<int, ObjectEntity>|int An array of ObjectEntity objects matching the criteria, or integer count if _count is true
      *
@@ -2455,11 +2453,10 @@ class ObjectService
      * @param array|null           $ids   Optional array of object IDs to filter by
      * @param string|null          $uses  Optional uses parameter for filtering
      *
-     * @phpstan-param array<string, mixed> $query
+     * @phpstan-param  array<string, mixed> $query
      * @phpstan-return int
-     *
-     * @psalm-param array<string, mixed> $query
-     * @psalm-return int
+     * @psalm-param    array<string, mixed> $query
+     * @psalm-return   int
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
@@ -2493,8 +2490,7 @@ class ObjectService
      *                      - published: Only published objects
      *
      * @phpstan-param array<string, mixed> $config
-     *
-     * @psalm-param array<string, mixed> $config
+     * @psalm-param   array<string, mixed> $config
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
@@ -2567,8 +2563,7 @@ class ObjectService
      *                     - _facets: Facet configuration (required)
      *
      * @phpstan-param array<string, mixed> $query
-     *
-     * @psalm-param array<string, mixed> $query
+     * @psalm-param   array<string, mixed> $query
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
@@ -2604,9 +2599,8 @@ class ObjectService
      *
      * @phpstan-param array<string, mixed> $baseQuery
      * @phpstan-param int $sampleSize
-     *
-     * @psalm-param array<string, mixed> $baseQuery
-     * @psalm-param int $sampleSize
+     * @psalm-param   array<string, mixed> $baseQuery
+     * @psalm-param   int $sampleSize
      *
      * @throws \Exception If facetable field discovery fails
      *
@@ -2629,8 +2623,7 @@ class ObjectService
      * @param array $query The search query array
      *
      * @phpstan-param array<string, mixed> $query
-     *
-     * @psalm-param array<string, mixed> $query
+     * @psalm-param   array<string, mixed> $query
      *
      * @return void
      */
@@ -2753,11 +2746,10 @@ class ObjectService
      * @param string|null $uses     Optional uses parameter for filtering
      * @param array|null  $views    Optional array of view IDs to apply filters from
      *
-     * @phpstan-param array<string, mixed> $query
+     * @phpstan-param  array<string, mixed> $query
      * @phpstan-return array<string, mixed>
-     *
-     * @psalm-param array<string, mixed> $query
-     * @psalm-return array<string, mixed>
+     * @psalm-param    array<string, mixed> $query
+     * @psalm-return   array<string, mixed>
      *
      * @throws \OCP\DB\Exception If a database error occurs
      * @throws \Exception If Solr search fails and cannot be recovered
@@ -3490,11 +3482,10 @@ class ObjectService
      * @param bool                 $published Whether to filter by published status (default: false)
      * @param bool                 $deleted   Whether to include deleted objects (default: false)
      *
-     * @phpstan-param array<string, mixed> $query
+     * @phpstan-param  array<string, mixed> $query
      * @phpstan-return PromiseInterface<array<string, mixed>>
-     *
-     * @psalm-param array<string, mixed> $query
-     * @psalm-return PromiseInterface<array<string, mixed>>
+     * @psalm-param    array<string, mixed> $query
+     * @psalm-return   PromiseInterface<array<string, mixed>>
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
@@ -3695,8 +3686,7 @@ class ObjectService
      * @param bool                 $deleted   Whether to include deleted objects (default: false)
      *
      * @phpstan-param array<string, mixed> $query
-     *
-     * @psalm-param array<string, mixed> $query
+     * @psalm-param   array<string, mixed> $query
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
@@ -4113,10 +4103,10 @@ class ObjectService
      *
      * @return array Modified object data with hydrated @self metadata
      *
-     * @psalm-param   array $objectData
-     * @phpstan-param array $objectData
-     * @psalm-return   array
+     * @phpstan-param  array $objectData
+     * @psalm-param    array $objectData
      * @phpstan-return array
+     * @psalm-return   array
      */
     private function hydrateObjectMetadataFromData(array $objectData, Schema $schema): array
     {
@@ -5809,7 +5799,7 @@ class ObjectService
      * @throws \Exception If the publishing operation fails
      *
      * @phpstan-return array{published_count: int, published_uuids: array<int, string>, schema_id: int}
-     * @psalm-return array{published_count: int, published_uuids: array<int, string>, schema_id: int}
+     * @psalm-return   array{published_count: int, published_uuids: array<int, string>, schema_id: int}
      */
     public function publishObjectsBySchema(int $schemaId, bool $publishAll = false): array
     {
@@ -5867,7 +5857,7 @@ class ObjectService
      * @throws \Exception If the deletion operation fails
      *
      * @phpstan-return array{deleted_count: int, deleted_uuids: array<int, string>, schema_id: int}
-     * @psalm-return array{deleted_count: int, deleted_uuids: array<int, string>, schema_id: int}
+     * @psalm-return   array{deleted_count: int, deleted_uuids: array<int, string>, schema_id: int}
      */
     public function deleteObjectsBySchema(int $schemaId, bool $hardDelete = false): array
     {
@@ -5924,7 +5914,7 @@ class ObjectService
      * @throws \Exception If the deletion operation fails
      *
      * @phpstan-return array{deleted_count: int, deleted_uuids: array<int, string>, register_id: int}
-     * @psalm-return array{deleted_count: int, deleted_uuids: array<int, string>, register_id: int}
+     * @psalm-return   array{deleted_count: int, deleted_uuids: array<int, string>, register_id: int}
      */
     public function deleteObjectsByRegister(int $registerId): array
     {
@@ -5979,8 +5969,8 @@ class ObjectService
      *
      * @phpstan-return array{valid_count: int, invalid_count: int, valid_objects: array<int, array>,
      *                      invalid_objects: array<int, array>, schema_id: int}
-     * @psalm-return array{valid_count: int, invalid_count: int, valid_objects: array<int, array>,
-     *                    invalid_objects: array<int, array>, schema_id: int}
+     * @psalm-return   array{valid_count: int, invalid_count: int, valid_objects: array<int, array>,
+     *                      invalid_objects: array<int, array>, schema_id: int}
      */
     public function validateObjectsBySchema(int $schemaId): array
     {
@@ -6255,23 +6245,22 @@ class ObjectService
      *
      * @return array Array of rendered ObjectEntity objects
      *
-     * @phpstan-param array<ObjectEntity> $objects
-     * @phpstan-param array<string> $extend
-     * @phpstan-param array<string>|null $filter
-     * @phpstan-param array<string>|null $fields
-     * @phpstan-param array<string>|null $unset
-     * @phpstan-param array<int, Register>|null $registers
-     * @phpstan-param array<int, Schema>|null $schemas
+     * @phpstan-param  array<ObjectEntity> $objects
+     * @phpstan-param  array<string> $extend
+     * @phpstan-param  array<string>|null $filter
+     * @phpstan-param  array<string>|null $fields
+     * @phpstan-param  array<string>|null $unset
+     * @phpstan-param  array<int, Register>|null $registers
+     * @phpstan-param  array<int, Schema>|null $schemas
      * @phpstan-return array<ObjectEntity>
-     *
-     * @psalm-param array<ObjectEntity> $objects
-     * @psalm-param array<string> $extend
-     * @psalm-param array<string>|null $filter
-     * @psalm-param array<string>|null $fields
-     * @psalm-param array<string>|null $unset
-     * @psalm-param array<int, Register>|null $registers
-     * @psalm-param array<int, Schema>|null $schemas
-     * @psalm-return array<ObjectEntity>
+     * @psalm-param    array<ObjectEntity> $objects
+     * @psalm-param    array<string> $extend
+     * @psalm-param    array<string>|null $filter
+     * @psalm-param    array<string>|null $fields
+     * @psalm-param    array<string>|null $unset
+     * @psalm-param    array<int, Register>|null $registers
+     * @psalm-param    array<int, Schema>|null $schemas
+     * @psalm-return   array<ObjectEntity>
      */
     private function renderObjectsInParallel(
         array $objects,
@@ -6366,10 +6355,10 @@ class ObjectService
      *
      * @return int Optimal batch size for parallel processing
      *
-     * @phpstan-param int $totalObjects
+     * @phpstan-param  int $totalObjects
      * @phpstan-return int
-     * @psalm-param int $totalObjects
-     * @psalm-return int
+     * @psalm-param    int $totalObjects
+     * @psalm-return   int
      */
     private function calculateOptimalBatchSize(int $totalObjects): int
     {
@@ -6467,12 +6456,12 @@ class ObjectService
      *
      * @return array Array of unique relationship IDs found across all objects (limited)
      *
-     * @phpstan-param array<ObjectEntity> $objects
-     * @phpstan-param array<string> $extend
+     * @phpstan-param  array<ObjectEntity> $objects
+     * @phpstan-param  array<string> $extend
      * @phpstan-return array<string>
-     * @psalm-param array<ObjectEntity> $objects
-     * @psalm-param array<string> $extend
-     * @psalm-return array<string>
+     * @psalm-param    array<ObjectEntity> $objects
+     * @psalm-param    array<string> $extend
+     * @psalm-return   array<string>
      */
     private function extractAllRelationshipIds(array $objects, array $extend): array
     {
@@ -6564,10 +6553,10 @@ class ObjectService
      *
      * @return array Array of objects indexed by ID/UUID for instant lookup
      *
-     * @phpstan-param array<string> $relationshipIds
+     * @phpstan-param  array<string> $relationshipIds
      * @phpstan-return array<string, ObjectEntity>
-     * @psalm-param array<string> $relationshipIds
-     * @psalm-return array<string, ObjectEntity>
+     * @psalm-param    array<string> $relationshipIds
+     * @psalm-return   array<string, ObjectEntity>
      */
     private function bulkLoadRelationshipsBatched(array $relationshipIds): array
     {
@@ -6689,10 +6678,10 @@ class ObjectService
      *
      * @return array Array of objects indexed by ID/UUID for instant lookup
      *
-     * @phpstan-param array<string> $relationshipIds
+     * @phpstan-param  array<string> $relationshipIds
      * @phpstan-return array<string, ObjectEntity>
-     * @psalm-param array<string> $relationshipIds
-     * @psalm-return array<string, ObjectEntity>
+     * @psalm-param    array<string> $relationshipIds
+     * @psalm-return   array<string, ObjectEntity>
      */
     private function bulkLoadRelationshipsParallel(array $relationshipIds): array
     {
@@ -6797,10 +6786,10 @@ class ObjectService
      *
      * @return array Array of ObjectEntity objects with optimized field loading
      *
-     * @phpstan-param array<string> $relationshipIds
+     * @phpstan-param  array<string> $relationshipIds
      * @phpstan-return array<ObjectEntity>
-     * @psalm-param array<string> $relationshipIds
-     * @psalm-return array<ObjectEntity>
+     * @psalm-param    array<string> $relationshipIds
+     * @psalm-return   array<ObjectEntity>
      */
     private function loadRelationshipChunkOptimized(array $relationshipIds): array
     {
@@ -6883,10 +6872,10 @@ class ObjectService
      *
      * @return ObjectEntity|null Lightweight object or null if creation fails
      *
-     * @phpstan-param array<string, mixed> $row
+     * @phpstan-param  array<string, mixed> $row
      * @phpstan-return ObjectEntity|null
-     * @psalm-param array<string, mixed> $row
-     * @psalm-return ObjectEntity|null
+     * @psalm-param    array<string, mixed> $row
+     * @psalm-return   ObjectEntity|null
      */
     private function createLightweightObjectEntity(array $row): ?ObjectEntity
     {
@@ -6970,8 +6959,8 @@ class ObjectService
      *
      * @return array Facetable fields configuration
      *
-     * @phpstan-param array<string, mixed> $baseQuery
-     * @psalm-param   array<string, mixed> $baseQuery
+     * @phpstan-param  array<string, mixed> $baseQuery
+     * @psalm-param    array<string, mixed> $baseQuery
      * @phpstan-return array<string, mixed>
      * @psalm-return   array<string, mixed>
      */
@@ -7093,13 +7082,13 @@ class ObjectService
      *
      * @return array The cached or freshly fetched entities
      *
-     * @phpstan-param string $entityType
-     * @phpstan-param mixed $ids
-     * @phpstan-param callable $fallbackFunc
+     * @phpstan-param  string $entityType
+     * @phpstan-param  mixed $ids
+     * @phpstan-param  callable $fallbackFunc
      * @phpstan-return array<mixed>
-     * @psalm-param   string $entityType
-     * @psalm-param   mixed $ids
-     * @psalm-param   callable $fallbackFunc
+     * @psalm-param    string $entityType
+     * @psalm-param    mixed $ids
+     * @psalm-param    callable $fallbackFunc
      * @psalm-return   array<mixed>
      */
     private function getCachedEntities(string $entityType, mixed $ids, callable $fallbackFunc): array
@@ -7141,8 +7130,8 @@ class ObjectService
      *
      * @return array Array of Schema objects
      *
-     * @phpstan-param array<string, mixed> $baseQuery
-     * @psalm-param   array<string, mixed> $baseQuery
+     * @phpstan-param  array<string, mixed> $baseQuery
+     * @psalm-param    array<string, mixed> $baseQuery
      * @phpstan-return array<Schema>
      * @psalm-return   array<Schema>
      */
