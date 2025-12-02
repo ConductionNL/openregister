@@ -5,8 +5,8 @@ export type TRegister = {
     schemas: string[] // Array of Schema UUIDs
     source: string // Reference to the Source entity
     databaseId: string // Reference to the Database entity
-    published?: boolean
-    depublished?: boolean
+    published?: string | null
+    depublished?: string | null
     tablePrefix?: string
     updated?: string
     created: string

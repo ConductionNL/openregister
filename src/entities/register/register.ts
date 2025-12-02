@@ -17,8 +17,8 @@ export class Register implements TRegister {
 	public quota?: TRegister['quota']
 	public usage?: TRegister['usage']
 	public stats?: TRegister['stats']
-	public published?: boolean
-	public depublished?: boolean
+	public published?: string | null
+	public depublished?: string | null
 
 	constructor(register: TRegister) {
 		this.id = register.id || ''
@@ -47,8 +47,8 @@ export class Register implements TRegister {
 			groups: 0,
 		}
 		this.stats = register.stats
-		this.published = register.published || false
-		this.depublished = register.depublished || false
+		this.published = register.published || null
+		this.depublished = register.depublished || null
 	}
 
 	public validate(): SafeParseReturnType<TRegister, unknown> {
