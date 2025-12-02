@@ -278,4 +278,105 @@ class SolrNightlyWarmupJob extends TimedJob
     }//end calculateWarmupEfficiency()
 
 
+    /**
+     * Check if SOLR is enabled and available.
+     *
+     * @param GuzzleSolrService $solrService     SOLR service instance
+     * @param SettingsService   $settingsService Settings service instance
+     * @param LoggerInterface   $logger          Logger instance
+     *
+     * @return bool True if SOLR is enabled and available, false otherwise
+     */
+    private function isSolrEnabledAndAvailable(
+        GuzzleSolrService $solrService,
+        SettingsService $settingsService,
+        LoggerInterface $logger
+    ): bool {
+        // Check if SOLR is enabled in settings.
+        $solrSettings = $settingsService->getSolrSettings();
+        if (($solrSettings['enabled'] ?? false) === false) {
+            $logger->debug(message: 'SOLR Nightly Warmup Job skipped - SOLR not enabled in settings');
+            return false;
+        }
+
+        // Check if SOLR service is available.
+        if ($solrService->isAvailable() === false) {
+            $logger->debug(message: 'SOLR Nightly Warmup Job skipped - SOLR service not available');
+            return false;
+        }
+
+        return true;
+
+    }//end isSolrEnabledAndAvailable()
+
+
+    /**
+     * Get warmup configuration from settings.
+     *
+     * @param SettingsService $_settingsService Settings service instance (unused, kept for API compatibility)
+     * @param LoggerInterface $_logger          Logger instance (unused, kept for API compatibility)
+     *
+     * @return array Warmup configuration array
+     */
+    private function getWarmupConfiguration(SettingsService $_settingsService, LoggerInterface $_logger): array
+    {
+        /*
+         * @var \OCP\IConfig $config
+         */
+        $config = \OC::$server->get(\OCP\IConfig::class);
+
+        $maxObjects    = $config->getAppValue('openregister', 'solr_nightly_max_objects', (string) self::DEFAULT_NIGHTLY_MAX_OBJECTS);
+        $mode          = $config->getAppValue('openregister', 'solr_nightly_mode', self::DEFAULT_NIGHTLY_MODE);
+        $collectErrors = $config->getAppValue('openregister', 'solr_nightly_collect_errors', 'false') === 'true';
+
+        return [
+            'maxObjects'    => (int) $maxObjects,
+            'mode'          => $mode,
+            'collectErrors' => $collectErrors,
+        ];
+
+    }//end getWarmupConfiguration()
+
+
+    /**
+     * Summarize operations for logging.
+     *
+     * @param array $operations Operations array
+     *
+     * @return array Summary array
+     */
+    private function summarizeOperations(array $operations): array
+    {
+        return [
+            'total'      => count($operations),
+            'successful' => $this->countSuccessfulWarmupQueries($operations),
+            'efficiency' => $this->calculateWarmupEfficiency(['operations' => $operations]),
+        ];
+
+    }//end summarizeOperations()
+
+
+    /**
+     * Log performance statistics.
+     *
+     * @param array           $result        Warmup result
+     * @param float           $executionTime Total execution time in seconds
+     * @param LoggerInterface $logger        Logger instance
+     *
+     * @return void
+     */
+    private function logPerformanceStats(array $result, float $executionTime, LoggerInterface $logger): void
+    {
+        $logger->info(
+            message: 'SOLR Nightly Warmup Performance Stats',
+            context: [
+                'execution_time_seconds' => round($executionTime, 2),
+                'objects_per_second'     => $this->calculateObjectsPerSecond($result, $executionTime),
+                'efficiency_percentage'  => $this->calculateWarmupEfficiency($result),
+            ]
+        );
+
+    }//end logPerformanceStats()
+
+
 }//end class
