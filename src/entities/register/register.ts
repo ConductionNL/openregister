@@ -17,6 +17,8 @@ export class Register implements TRegister {
 	public quota?: TRegister['quota']
 	public usage?: TRegister['usage']
 	public stats?: TRegister['stats']
+	public published?: boolean
+	public depublished?: boolean
 
 	constructor(register: TRegister) {
 		this.id = register.id || ''
@@ -45,6 +47,8 @@ export class Register implements TRegister {
 			groups: 0,
 		}
 		this.stats = register.stats
+		this.published = register.published || false
+		this.depublished = register.depublished || false
 	}
 
 	public validate(): SafeParseReturnType<TRegister, unknown> {
@@ -57,6 +61,8 @@ export class Register implements TRegister {
 			databaseId: z.string().min(1),
 			tablePrefix: z.string(),
 			slug: z.string().min(1),
+			published: z.boolean().optional(),
+			depublished: z.boolean().optional(),
 		})
 
 		return schema.safeParse(this)

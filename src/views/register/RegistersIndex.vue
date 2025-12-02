@@ -153,7 +153,7 @@ import { dashboardStore, registerStore, navigationStore, configurationStore } fr
 										close-after-click
 										@click="publishRegister(register)">
 										<template #icon>
-											<ArrowUp :size="20" />
+											<Publish :size="20" />
 										</template>
 										Publish
 									</NcActionButton>
@@ -162,7 +162,7 @@ import { dashboardStore, registerStore, navigationStore, configurationStore } fr
 										close-after-click
 										@click="depublishRegister(register)">
 										<template #icon>
-											<ArrowDown :size="20" />
+											<PublishOff :size="20" />
 										</template>
 										Depublish
 									</NcActionButton>
@@ -348,7 +348,7 @@ import { dashboardStore, registerStore, navigationStore, configurationStore } fr
 												close-after-click
 												@click="publishRegister(register)">
 												<template #icon>
-													<ArrowUp :size="20" />
+													<Publish :size="20" />
 												</template>
 												Publish
 											</NcActionButton>
@@ -357,7 +357,7 @@ import { dashboardStore, registerStore, navigationStore, configurationStore } fr
 												close-after-click
 												@click="depublishRegister(register)">
 												<template #icon>
-													<ArrowDown :size="20" />
+													<PublishOff :size="20" />
 												</template>
 												Depublish
 											</NcActionButton>
@@ -441,8 +441,8 @@ import ChevronDown from 'vue-material-design-icons/ChevronDown.vue'
 import ChevronUp from 'vue-material-design-icons/ChevronUp.vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 import CloudUploadOutline from 'vue-material-design-icons/CloudUploadOutline.vue'
-import ArrowUp from 'vue-material-design-icons/ArrowUp.vue'
-import ArrowDown from 'vue-material-design-icons/ArrowDown.vue'
+import Publish from 'vue-material-design-icons/Publish.vue'
+import PublishOff from 'vue-material-design-icons/PublishOff.vue'
 import axios from '@nextcloud/axios'
 import { showError, showSuccess } from '@nextcloud/dialogs'
 import PaginationComponent from '../../components/PaginationComponent.vue'
@@ -473,8 +473,8 @@ export default {
 		ChevronUp,
 		CogOutline,
 		CloudUploadOutline,
-		ArrowUp,
-		ArrowDown,
+		Publish,
+		PublishOff,
 		PaginationComponent,
 	},
 	data() {
