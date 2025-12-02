@@ -137,8 +137,16 @@ class SchemaMapper extends QBMapper
                 )
             );
 
-        // Apply organisation filter (all users including admins must have active org)
-        // $this->applyOrganisationFilter($qb);
+        // Apply organisation filter with published entity bypass support
+        // Published schemas can bypass multi-tenancy restrictions if configured
+        $this->applyOrganisationFilter(
+            qb: $qb,
+            columnName: 'organisation',
+            allowNullOrg: true,
+            tableAlias: '',
+            enablePublished: true,
+            multiTenancyEnabled: true
+        );
 
         // Get the schema entity
         $schema = $this->findEntity(query: $qb);
@@ -262,8 +270,16 @@ class SchemaMapper extends QBMapper
             }
         }
 
-        // Apply organisation filter (all users including admins must have active org)
-        // $this->applyOrganisationFilter($qb);
+        // Apply organisation filter with published entity bypass support
+        // Published schemas can bypass multi-tenancy restrictions if configured
+        $this->applyOrganisationFilter(
+            qb: $qb,
+            columnName: 'organisation',
+            allowNullOrg: true,
+            tableAlias: '',
+            enablePublished: true,
+            multiTenancyEnabled: true
+        );
 
         // Just return the entities; do not attach stats here
         return $this->findEntities(query: $qb);
