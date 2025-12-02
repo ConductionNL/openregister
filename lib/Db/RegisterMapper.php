@@ -136,8 +136,16 @@ class RegisterMapper extends QBMapper
                 )
             );
         
-        // Apply organisation filter (all users including admins must have active org)
-        //$this->applyOrganisationFilter($qb);
+        // Apply organisation filter with published entity bypass support
+        // Published registers can bypass multi-tenancy restrictions if configured
+        $this->applyOrganisationFilter(
+            qb: $qb,
+            columnName: 'organisation',
+            allowNullOrg: true,
+            tableAlias: '',
+            enablePublished: true,
+            multiTenancyEnabled: true
+        );
         
         // Just return the entity; do not attach stats here
         return $this->findEntity(query: $qb);

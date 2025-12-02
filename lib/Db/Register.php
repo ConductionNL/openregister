@@ -166,6 +166,28 @@ class Register extends Entity implements JsonSerializable
      */
     protected ?DateTime $deleted = null;
 
+    /**
+     * Publication timestamp.
+     *
+     * When set, this register becomes publicly accessible regardless of organisation restrictions
+     * if published bypass is enabled. The register is considered published when:
+     * - published <= now AND
+     * - (depublished IS NULL OR depublished > now)
+     *
+     * @var DateTime|null Publication timestamp
+     */
+    protected ?DateTime $published = null;
+
+    /**
+     * Depublication timestamp.
+     *
+     * When set, this register becomes inaccessible after this date/time.
+     * Used together with published to control publication lifecycle.
+     *
+     * @var DateTime|null Depublication timestamp
+     */
+    protected ?DateTime $depublished = null;
+
 
     /**
      * Constructor for the Register class
@@ -191,6 +213,8 @@ class Register extends Entity implements JsonSerializable
         $this->addType(fieldName: 'authorization', type: 'json');
         $this->addType(fieldName: 'groups', type: 'json');
         $this->addType(fieldName: 'deleted', type: 'datetime');
+        $this->addType(fieldName: 'published', type: 'datetime');
+        $this->addType(fieldName: 'depublished', type: 'datetime');
 
     }//end __construct()
 
@@ -320,6 +344,16 @@ class Register extends Entity implements JsonSerializable
             $deleted = $this->deleted->format('c');
         }
 
+        $published = null;
+        if (isset($this->published) === true) {
+            $published = $this->published->format('c');
+        }
+
+        $depublished = null;
+        if (isset($this->depublished) === true) {
+            $depublished = $this->depublished->format('c');
+        }
+
         // Always return schemas as array of IDs (int/string)
         $schemas = array_filter(
                 $this->schemas ?? [],
@@ -348,6 +382,8 @@ class Register extends Entity implements JsonSerializable
             'organisation'  => $this->organisation,
             'authorization' => $this->authorization,
             'groups'        => $groups,
+            'published'      => $published,
+            'depublished'    => $depublished,
             'quota'         => [
                 'storage'   => null, // To be set via admin configuration
                 'bandwidth' => null, // To be set via admin configuration
@@ -454,6 +490,60 @@ class Register extends Entity implements JsonSerializable
         return null;
 
     }//end getManagedByConfiguration()
+
+
+    /**
+     * Get the publication timestamp
+     *
+     * @return DateTime|null Publication timestamp
+     */
+    public function getPublished(): ?DateTime
+    {
+        return $this->published;
+
+    }//end getPublished()
+
+
+    /**
+     * Set the publication timestamp
+     *
+     * @param DateTime|null $published Publication timestamp
+     *
+     * @return void
+     */
+    public function setPublished(?DateTime $published): void
+    {
+        $this->published = $published;
+        $this->markFieldUpdated('published');
+
+    }//end setPublished()
+
+
+    /**
+     * Get the depublication timestamp
+     *
+     * @return DateTime|null Depublication timestamp
+     */
+    public function getDepublished(): ?DateTime
+    {
+        return $this->depublished;
+
+    }//end getDepublished()
+
+
+    /**
+     * Set the depublication timestamp
+     *
+     * @param DateTime|null $depublished Depublication timestamp
+     *
+     * @return void
+     */
+    public function setDepublished(?DateTime $depublished): void
+    {
+        $this->depublished = $depublished;
+        $this->markFieldUpdated('depublished');
+
+    }//end setDepublished()
 
 
 }//end class
