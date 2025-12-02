@@ -304,6 +304,9 @@ class SchemaMapper extends QBMapper
 
         // Auto-set organisation from active session
         $this->setOrganisationOnCreate($entity);
+        
+        // Auto-set owner from current user session
+        $this->setOwnerOnCreate($entity);
 
         $entity = parent::insert($entity);
 

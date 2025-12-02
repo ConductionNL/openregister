@@ -410,6 +410,44 @@ trait MultiTenancyTrait
 
 
     /**
+     * Set the owner field on entity creation from the current user session
+     *
+     * This method automatically sets the owner field to the current logged-in user
+     * when creating a new entity. It only sets the owner if:
+     * - The entity has owner getter/setter methods
+     * - The owner is not already set
+     * - A user is currently logged in
+     *
+     * @param Entity $entity The entity being created
+     *
+     * @return void
+     */
+    protected function setOwnerOnCreate(Entity $entity): void
+    {
+        // Only set owner if the entity has an owner property
+        if (!method_exists($entity, 'getOwner') || !method_exists($entity, 'setOwner')) {
+            return;
+        }
+
+        // Only set owner if not already set (allow explicit owner assignment)
+        if ($entity->getOwner() !== null && $entity->getOwner() !== '') {
+            return;
+        }
+
+        // Get current user from session
+        if (isset($this->userSession) === false) {
+            return;
+        }
+
+        $user = $this->userSession->getUser();
+        if ($user !== null) {
+            $entity->setOwner($user->getUID());
+        }
+
+    }//end setOwnerOnCreate()
+
+
+    /**
      * Verify that an entity belongs to the active organisation.
      *
      * Throws an exception if the entity's organisation doesn't match
