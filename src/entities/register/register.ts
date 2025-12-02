@@ -61,8 +61,8 @@ export class Register implements TRegister {
 			databaseId: z.string().min(1),
 			tablePrefix: z.string(),
 			slug: z.string().min(1),
-			published: z.boolean().optional(),
-			depublished: z.boolean().optional(),
+			published: z.string().optional(),
+			depublished: z.string().optional(),
 		})
 
 		return schema.safeParse(this)
