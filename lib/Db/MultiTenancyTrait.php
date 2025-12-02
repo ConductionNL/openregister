@@ -127,7 +127,7 @@ trait MultiTenancyTrait
      *
      * This method provides comprehensive organisation filtering including:
      * - Hierarchical organisation support (active org + all parents)
-     * - Published object bypass for multi-tenancy (objects table only)
+     * - Published entity bypass for multi-tenancy (works for objects, schemas, registers)
      * - Admin override capabilities
      * - System default organisation special handling
      * - NULL organisation legacy data access for admins
@@ -135,7 +135,7 @@ trait MultiTenancyTrait
      *
      * Features:
      * 1. Hierarchical Access: Users see entities from their active org AND parent orgs
-     * 2. Published Objects: Can bypass multi-tenancy if configured (objects table only)
+     * 2. Published Entities: Can bypass multi-tenancy if configured (any table with published/depublished columns)
      * 3. Admin Override: Admins can see all entities if enabled in config
      * 4. Default Org: Special behavior for system-wide default organisation
      * 5. Legacy Data: Admins can access NULL organisation entities
@@ -150,7 +150,8 @@ trait MultiTenancyTrait
      * @param string        $columnName      The column name for organisation (default: 'organisation')
      * @param bool          $allowNullOrg    Whether admins can see NULL organisation entities
      * @param string        $tableAlias      Optional table alias for published/depublished columns
-     * @param bool          $enablePublished Whether to enable published object bypass (objects table only)
+     * @param bool          $enablePublished Whether to enable published entity bypass (works for any table with published/depublished columns)
+     * @param bool          $multiTenancyEnabled Whether multitenancy is enabled (default: true)
      *
      * @return void
      */
@@ -207,7 +208,7 @@ trait MultiTenancyTrait
         // Build fully qualified column name
         $organisationColumn = $tableAlias ? $tableAlias . '.' . $columnName : $columnName;
         
-        // Check if published objects should bypass multi-tenancy (objects table only)
+        // Check if published entities should bypass multi-tenancy (works for objects, schemas, registers)
         $publishedBypassEnabled = false;
         if ($enablePublished === true && isset($this->appConfig) === true) {
             $multitenancyConfig = $this->appConfig->getValueString('openregister', 'multitenancy', '');
@@ -240,7 +241,7 @@ trait MultiTenancyTrait
                 $orgConditions->add($qb->expr()->isNull($organisationColumn));
             }
 
-            // Include published objects if bypass is enabled (objects table only)
+            // Include published entities if bypass is enabled (works for objects, schemas, registers)
             if ($publishedBypassEnabled === true && $enablePublished === true) {
                 $now = (new \DateTime())->format('Y-m-d H:i:s');
                 $publishedColumn = $tableAlias ? $tableAlias . '.published' : 'published';
@@ -327,7 +328,20 @@ trait MultiTenancyTrait
             ]);
         }
 
-        // Include published objects if bypass is enabled (objects table only)
+        // Include published entities if bypass is enabled (works for objects, schemas, registers)
+        // 
+        // BEHAVIOR WHEN ENABLED:
+        // - Published objects bypass RBAC read permissions (anyone can read published objects)
+        // - Published objects bypass organization filtering (visible from ANY organization)
+        // - Published objects do NOT bypass RBAC create/update/delete (still require permissions)
+        //
+        // RESULT: Users see ALL published objects from ALL organizations
+        // This is intentional when publishedObjectsBypassMultiTenancy is enabled in config
+        //
+        // If users report seeing too many objects from other organizations, check:
+        // 1. Is publishedObjectsBypassMultiTenancy enabled in config? (should be false for strict multi-tenancy)
+        // 2. How many objects are currently published?
+        // 3. Are objects being published unintentionally?
         if ($publishedBypassEnabled === true && $enablePublished === true) {
             $now = (new \DateTime())->format('Y-m-d H:i:s');
             $publishedColumn = $tableAlias ? $tableAlias . '.published' : 'published';
@@ -345,7 +359,11 @@ trait MultiTenancyTrait
             );
             
             if (isset($this->logger) === true) {
-                $this->logger->debug('[MultiTenancyTrait] Added published objects bypass');
+                $this->logger->warning('[MultiTenancyTrait] Published bypass enabled - users will see published objects from ALL organizations', [
+                    'config' => 'publishedObjectsBypassMultiTenancy: true',
+                    'impact' => 'All published objects visible across all organizations',
+                    'recommendation' => 'Disable if users should only see objects from their organization'
+                ]);
             }
         }
 

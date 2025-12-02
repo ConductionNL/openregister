@@ -583,10 +583,11 @@ class ObjectEntityMapper extends QBMapper
      * @param string $schemaTableAlias Optional alias for the schemas table (default: 's')
      * @param string|null $userId Optional user ID (defaults to current user)
      * @param bool $rbac Whether to apply RBAC checks (default: true). If false, no filtering is applied.
+     * @param bool $disablePublishedBypass If true, disable published object bypass for RBAC (default: false)
      *
      * @return void
      */
-    private function applyRbacFilters(IQueryBuilder $qb, string $objectTableAlias = 'o', string $schemaTableAlias = 's', ?string $userId = null, bool $rbac = true): void
+    private function applyRbacFilters(IQueryBuilder $qb, string $objectTableAlias = 'o', string $schemaTableAlias = 's', ?string $userId = null, bool $rbac = true, bool $disablePublishedBypass = false): void
     {
         $rbacMethodStart = microtime(true);
 
@@ -705,8 +706,14 @@ class ObjectEntityMapper extends QBMapper
             );
         }
 
-        // Include published objects if bypass is enabled
-        if ($this->shouldPublishedObjectsBypassMultiTenancy()) {
+        // Include published objects if bypass is enabled - published objects bypass RBAC read checks
+        // NOTE: This only bypasses READ permissions, not create/update/delete
+        // Published objects also bypass organization filtering (handled separately in applyOrganisationFilter)
+        // This means published objects are visible to all users regardless of organization or RBAC read permissions
+        // 
+        // EXCEPTION: If disablePublishedBypass=true (e.g., when _published=false is set), skip published bypass
+        // This allows dashboard users to filter to only their organization's objects
+        if (!$disablePublishedBypass && $this->shouldPublishedObjectsBypassMultiTenancy()) {
             $now = (new \DateTime())->format('Y-m-d H:i:s');
             $readConditions->add(
                 $qb->expr()->andX(
@@ -729,173 +736,6 @@ class ObjectEntityMapper extends QBMapper
         ]);
 
     }//end applyRbacFilters()
-
-
-    /**
-     * Apply organization filtering for multi-tenancy
-     *
-     * This method adds WHERE conditions to filter objects based on the user's
-     * active organization. Users can only see objects that belong to their
-     * active organization.
-     *
-     * @param IQueryBuilder $qb The query builder to modify
-     * @param string $objectTableAlias Optional alias for the objects table (default: 'o')
-     * @param array|null $activeOrganisationUuids The active organization UUIDs (including parents) to filter by
-     * @param bool $multi Whether to apply multitenancy filtering (default: true). If false, no filtering is applied.
-     *
-     * @return void
-     */
-    private function applyOrganizationFilters(IQueryBuilder $qb, string $objectTableAlias = 'o', ?array $activeOrganisationUuids = null, bool $multi = true): void
-    {
-        // If multitenancy is disabled, skip all organization filtering
-        if ($multi === false || !$this->isMultiTenancyEnabled()) {
-            return;
-        }
-
-        // Get current user to check if they're admin
-        $user = $this->userSession->getUser();
-        $userId = $user ? $user->getUID() : null;
-
-        if ($userId === null) {
-            // For unauthenticated requests, no automatic published object access - use explicit published filter
-            return;
-        }
-
-        // Use provided active organization UUIDs or fall back to null (no filtering)
-        // However, if bypass is enabled, we still need to apply the bypass logic even without an active organization
-        if (($activeOrganisationUuids === null || empty($activeOrganisationUuids)) && !$this->shouldPublishedObjectsBypassMultiTenancy()) {
-            // If no active organization and bypass is disabled, apply strict filtering
-            // Only allow published objects if bypass is enabled, and NULL organization objects only for admin users
-            $orgConditions = $qb->expr()->orX();
-
-            // Check if user is admin
-            $userGroups = $this->groupManager->getUserGroupIds($user);
-            $isAdmin = in_array('admin', $userGroups);
-
-            // Only admin users can see objects with NULL organization (legacy data)
-            if ($isAdmin) {
-                $orgConditions->add($qb->expr()->isNull($organizationColumn));
-            }
-
-            // Only include published objects if bypass is enabled
-            if ($this->shouldPublishedObjectsBypassMultiTenancy()) {
-                $now = (new \DateTime())->format('Y-m-d H:i:s');
-                $orgConditions->add(
-                    $qb->expr()->andX(
-                        $qb->expr()->isNotNull("{$objectTableAlias}.published"),
-                        $qb->expr()->lte("{$objectTableAlias}.published", $qb->createNamedParameter($now)),
-                        $qb->expr()->orX(
-                            $qb->expr()->isNull("{$objectTableAlias}.depublished"),
-                            $qb->expr()->gt("{$objectTableAlias}.depublished", $qb->createNamedParameter($now))
-                        )
-                    )
-                );
-            }
-
-            // If no conditions were added (non-admin user with bypass disabled), deny all access
-            if ($orgConditions->count() === 0) {
-                $qb->andWhere($qb->expr()->eq('1', $qb->createNamedParameter('0'))); // Always false
-            } else {
-                $qb->andWhere($orgConditions);
-            }
-            return;
-        }
-
-        // Check if this is the system-wide default organization
-        // Get default organisation UUID from configuration (not deprecated is_default column)
-        $systemDefaultOrgUuid = $this->organisationService->getDefaultOrganisationId();
-
-        // Check if one of the active organisations is the system default (for backwards compatibility)
-        $isSystemDefaultOrg = $activeOrganisationUuids !== null && 
-                             $systemDefaultOrgUuid !== null && 
-                             in_array($systemDefaultOrgUuid, $activeOrganisationUuids);
-
-        if ($user !== null) {
-            $userGroups = $this->groupManager->getUserGroupIds($user);
-
-            // Check if user is admin and admin override is enabled
-            if (in_array('admin', $userGroups)) {
-                // If multitenancy admin override is enabled, admin users see all objects regardless of organization
-                if ($this->isMultitenancyAdminOverrideEnabled()) {
-                    return; // No filtering for admin users when override is enabled
-                }
-
-                // If admin override is disabled, apply organization filtering logic for admin users
-                // Admin users see all objects by default, but should respect organization filtering
-                // when an active organization is explicitly set (i.e., when they switch organizations)
-                // EXCEPTION: Admin users with the default organization should see everything (no filtering)
-
-                // If no active organizations are set, admin users see everything (no filtering)
-                if ($activeOrganisationUuids === null || empty($activeOrganisationUuids)) {
-                    return;
-                }
-                // If admin user has the default organization set, they see everything (no filtering)
-                if ($isSystemDefaultOrg) {
-                    return;
-                }
-                // If active organizations ARE set (and not default), admin users should see only those organization's objects
-                // This allows admins to "switch context" to work within a specific organization
-                // Continue with organization filtering logic below
-            }
-        }
-
-        $organizationColumn = $objectTableAlias ? $objectTableAlias . '.organisation' : 'organisation';
-
-        // Build organization filter conditions
-        $orgConditions = $qb->expr()->orX();
-
-        // If we have active organizations, include objects from those organizations (including parent orgs)
-        if ($activeOrganisationUuids !== null && !empty($activeOrganisationUuids)) {
-            // Objects explicitly belonging to the user's organization or parent organizations
-            $orgConditions->add(
-                $qb->expr()->in($organizationColumn, $qb->createNamedParameter($activeOrganisationUuids, IQueryBuilder::PARAM_STR_ARRAY))
-            );
-            $this->logger->debug('🔍 ORG FILTER: Added organization filter (including parents)', [
-                'activeOrgs' => $activeOrganisationUuids,
-                'orgCount' => count($activeOrganisationUuids),
-                'tableAlias' => $objectTableAlias
-            ]);
-        }
-
-        // Include published objects from any organization if configured to do so
-        if ($this->shouldPublishedObjectsBypassMultiTenancy()) {
-            $now = (new \DateTime())->format('Y-m-d H:i:s');
-            $orgConditions->add(
-                $qb->expr()->andX(
-                    $qb->expr()->isNotNull("{$objectTableAlias}.published"),
-                    $qb->expr()->lte("{$objectTableAlias}.published", $qb->createNamedParameter($now)),
-                    $qb->expr()->orX(
-                        $qb->expr()->isNull("{$objectTableAlias}.depublished"),
-                        $qb->expr()->gt("{$objectTableAlias}.depublished", $qb->createNamedParameter($now))
-                    )
-                )
-            );
-            $this->logger->debug('🔍 ORG FILTER: Added published objects bypass', [
-                'bypassEnabled' => true,
-                'tableAlias' => $objectTableAlias,
-                'now' => $now
-            ]);
-        }
-
-        // ONLY if this is the system-wide default organization, include additional objects
-        if ($isSystemDefaultOrg) {
-            // Check if user is admin - only admin users can see objects with NULL organization (legacy data)
-            $userGroups = $this->groupManager->getUserGroupIds($user);
-            $isAdmin = in_array('admin', $userGroups);
-
-            if ($isAdmin) {
-                // Include objects with NULL organization (legacy data) - only for admin users
-                $orgConditions->add(
-                    $qb->expr()->isNull($organizationColumn)
-                );
-            } else {
-            }
-        }
-
-        $qb->andWhere($orgConditions);
-
-
-    }//end applyOrganizationFilters()
 
 
     /**
@@ -1409,8 +1249,14 @@ class ObjectEntityMapper extends QBMapper
      * ### `_published` (bool)
      * Filter for currently published objects only
      * Checks: published <= now AND (depublished IS NULL OR depublished > now)
+     * 
+     * **Special behavior:** Setting `_published=false` disables published object bypass for multi-tenancy.
+     * This means users will only see objects from their own organization, even if published objects
+     * normally bypass organization filtering. Useful for dashboard views where users want to see
+     * only their organization's objects.
      * ```php
-     * '_published' => true
+     * '_published' => true   // Only show published objects (with published bypass enabled)
+     * '_published' => false  // Exclude published objects AND disable published bypass (only user's org)
      * ```
      *
      * ### `_ids` (array|null)
@@ -1518,7 +1364,25 @@ class ObjectEntityMapper extends QBMapper
         $order = $query['_order'] ?? [];
         $search = $this->processSearchParameter($query['_search'] ?? null);
         $includeDeleted = $query['_includeDeleted'] ?? false;
-        $published = $query['_published'] ?? false;
+        // Convert _published to boolean if it exists (handles string "false" from HTTP requests)
+        $published = isset($query['_published']) 
+            ? filter_var($query['_published'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false
+            : false;
+        // Check if _published is explicitly set to false to disable published bypass mechanism
+        // When _published=false: published objects still visible but must respect multi-tenancy and RBAC
+        // - Published objects from user's organization: visible (pass org filter)
+        // - Published objects from other organizations: not visible (don't pass org filter)
+        // - Published objects still need RBAC permissions (bypass disabled)
+        // This is useful for dashboard views where users want to see only their organization's objects
+        $disablePublishedBypass = isset($query['_published']) && $published === false;
+        
+        if ($disablePublishedBypass) {
+            $this->logger->info('🔒 PUBLISHED BYPASS DISABLED - Published objects must respect multi-tenancy and RBAC', [
+                'reason' => '_published=false parameter set',
+                'impact' => 'Published objects will NOT bypass organization filtering or RBAC checks',
+                'note' => 'Published objects from user\'s organization will still be visible'
+            ]);
+        }
         // ids parameter is now passed as method parameter, not from query
         $count = $query['_count'] ?? false;
         $perfTimings['extract_options'] = round((microtime(true) - $extractStart) * 1000, 2);
@@ -1660,7 +1524,8 @@ class ObjectEntityMapper extends QBMapper
         } else {
             // **PERFORMANCE TIMING**: RBAC filtering (suspected bottleneck)
             $rbacStart = microtime(true);
-            $this->applyRbacFilters($queryBuilder, 'o', 's', null, $rbac);
+            // Disable published bypass if _published=false is explicitly set (dashboard users want only their org)
+            $this->applyRbacFilters($queryBuilder, 'o', 's', null, $rbac, $disablePublishedBypass);
             $perfTimings['rbac_filtering'] = round((microtime(true) - $rbacStart) * 1000, 2);
 
             $this->logger->info('🔒 RBAC FILTERING COMPLETED', [
@@ -1671,12 +1536,14 @@ class ObjectEntityMapper extends QBMapper
             // **PERFORMANCE TIMING**: Organization filtering (suspected bottleneck)
             $orgStart = microtime(true);
             // Use enhanced MultiTenancyTrait method with published object bypass
+            // Disable published bypass if _published=false is explicitly set (dashboard users want only their org)
+            $enablePublishedBypass = !$disablePublishedBypass;
             $this->applyOrganisationFilter(
                 qb: $queryBuilder,
                 columnName: 'organisation',
                 allowNullOrg: true,      // Admins can see legacy NULL org objects
                 tableAlias: 'o',
-                enablePublished: true,    // Enable published object bypass for objects table
+                enablePublished: $enablePublishedBypass,    // Disable if _published=false
                 multiTenancyEnabled: $multi
             );
             $perfTimings['org_filtering'] = round((microtime(true) - $orgStart) * 1000, 2);
@@ -2120,6 +1987,9 @@ class ObjectEntityMapper extends QBMapper
         // If published filter is set, only include objects that are currently published
         // However, if bypassPublishedFilter is true, we don't apply this filter as published objects
         // will be included via the organization filter bypass logic
+        // NOTE: When _published=false is set, it disables the bypass mechanism but doesn't exclude published objects
+        // Published objects from user's organization will still be visible (they pass org filter)
+        // Published objects from other organizations won't be visible (they don't pass org filter)
         if ($published === true && !$bypassPublishedFilter) {
             $now = (new \DateTime())->format('Y-m-d H:i:s');
             $publishedColumn = $tableAlias ? $tableAlias . '.published' : 'published';
