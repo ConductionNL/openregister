@@ -944,4 +944,105 @@ class RegistersController extends Controller
     }//end parseBooleanParam()
 
 
+    /**
+     * Publish a register
+     *
+     * This method publishes a register by setting its publication date to now or a specified date.
+     *
+     * @param int $id The ID of the register to publish
+     *
+     * @return JSONResponse A JSON response containing the published register
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function publish(int $id): JSONResponse
+    {
+        try {
+            // Get the publication date from request if provided, otherwise use now
+            $date = null;
+            if ($this->request->getParam('date') !== null) {
+                $date = new \DateTime($this->request->getParam('date'));
+            } else {
+                $date = new \DateTime();
+            }
+
+            // Get the register
+            $register = $this->registerMapper->find($id);
+            
+            // Set published date and clear depublished date if set
+            $register->setPublished($date);
+            $register->setDepublished(null);
+            
+            // Update the register
+            $updatedRegister = $this->registerMapper->update($register);
+            
+            $this->logger->info('Register published', [
+                'register_id' => $id,
+                'published_date' => $date->format('Y-m-d H:i:s')
+            ]);
+
+            return new JSONResponse($updatedRegister->jsonSerialize());
+        } catch (DoesNotExistException $e) {
+            return new JSONResponse(['error' => 'Register not found'], 404);
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to publish register', [
+                'register_id' => $id,
+                'error' => $e->getMessage()
+            ]);
+            return new JSONResponse(['error' => $e->getMessage()], 400);
+        }
+    }//end publish()
+
+
+    /**
+     * Depublish a register
+     *
+     * This method depublishes a register by setting its depublication date to now or a specified date.
+     *
+     * @param int $id The ID of the register to depublish
+     *
+     * @return JSONResponse A JSON response containing the depublished register
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function depublish(int $id): JSONResponse
+    {
+        try {
+            // Get the depublication date from request if provided, otherwise use now
+            $date = null;
+            if ($this->request->getParam('date') !== null) {
+                $date = new \DateTime($this->request->getParam('date'));
+            } else {
+                $date = new \DateTime();
+            }
+
+            // Get the register
+            $register = $this->registerMapper->find($id);
+            
+            // Set depublished date
+            $register->setDepublished($date);
+            
+            // Update the register
+            $updatedRegister = $this->registerMapper->update($register);
+            
+            $this->logger->info('Register depublished', [
+                'register_id' => $id,
+                'depublished_date' => $date->format('Y-m-d H:i:s')
+            ]);
+
+            return new JSONResponse($updatedRegister->jsonSerialize());
+        } catch (DoesNotExistException $e) {
+            return new JSONResponse(['error' => 'Register not found'], 404);
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to depublish register', [
+                'register_id' => $id,
+                'error' => $e->getMessage()
+            ]);
+            return new JSONResponse(['error' => $e->getMessage()], 400);
+        }
+    }//end depublish()
+
+
 }//end class

@@ -148,6 +148,24 @@ import { dashboardStore, registerStore, navigationStore, configurationStore } fr
 										</template>
 										Export
 									</NcActionButton>
+									<NcActionButton
+										v-if="!register.published || (register.depublished && new Date(register.depublished) <= new Date())"
+										close-after-click
+										@click="publishRegister(register)">
+										<template #icon>
+											<ArrowUp :size="20" />
+										</template>
+										Publish
+									</NcActionButton>
+									<NcActionButton
+										v-if="register.published && (!register.depublished || new Date(register.depublished) > new Date())"
+										close-after-click
+										@click="depublishRegister(register)">
+										<template #icon>
+											<ArrowDown :size="20" />
+										</template>
+										Depublish
+									</NcActionButton>
 									<NcActionButton close-after-click @click="registerStore.setRegisterItem(register); navigationStore.setModal('publishRegister')">
 										<template #icon>
 											<CloudUploadOutline :size="20" />
@@ -325,6 +343,24 @@ import { dashboardStore, registerStore, navigationStore, configurationStore } fr
 												</template>
 												Export
 											</NcActionButton>
+											<NcActionButton
+												v-if="!register.published || (register.depublished && new Date(register.depublished) <= new Date())"
+												close-after-click
+												@click="publishRegister(register)">
+												<template #icon>
+													<ArrowUp :size="20" />
+												</template>
+												Publish
+											</NcActionButton>
+											<NcActionButton
+												v-if="register.published && (!register.depublished || new Date(register.depublished) > new Date())"
+												close-after-click
+												@click="depublishRegister(register)">
+												<template #icon>
+													<ArrowDown :size="20" />
+												</template>
+												Depublish
+											</NcActionButton>
 											<NcActionButton close-after-click @click="registerStore.setRegisterItem(register); navigationStore.setModal('publishRegister')">
 												<template #icon>
 													<CloudUploadOutline :size="20" />
@@ -405,8 +441,10 @@ import ChevronDown from 'vue-material-design-icons/ChevronDown.vue'
 import ChevronUp from 'vue-material-design-icons/ChevronUp.vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 import CloudUploadOutline from 'vue-material-design-icons/CloudUploadOutline.vue'
+import ArrowUp from 'vue-material-design-icons/ArrowUp.vue'
+import ArrowDown from 'vue-material-design-icons/ArrowDown.vue'
 import axios from '@nextcloud/axios'
-import { showError } from '@nextcloud/dialogs'
+import { showError, showSuccess } from '@nextcloud/dialogs'
 import PaginationComponent from '../../components/PaginationComponent.vue'
 
 export default {
@@ -435,6 +473,8 @@ export default {
 		ChevronUp,
 		CogOutline,
 		CloudUploadOutline,
+		ArrowUp,
+		ArrowDown,
 		PaginationComponent,
 	},
 	data() {
@@ -697,6 +737,24 @@ export default {
 				this.selectedRegisters.push(registerId)
 			} else {
 				this.selectedRegisters = this.selectedRegisters.filter(id => id !== registerId)
+			}
+		},
+		async publishRegister(register) {
+			try {
+				await registerStore.publishRegister(register.id)
+				showSuccess(t('openregister', 'Register published successfully'))
+			} catch (error) {
+				console.error('Error publishing register:', error)
+				showError(t('openregister', 'Failed to publish register: {error}', { error: error.message }))
+			}
+		},
+		async depublishRegister(register) {
+			try {
+				await registerStore.depublishRegister(register.id)
+				showSuccess(t('openregister', 'Register depublished successfully'))
+			} catch (error) {
+				console.error('Error depublishing register:', error)
+				showError(t('openregister', 'Failed to depublish register: {error}', { error: error.message }))
 			}
 		},
 	},
