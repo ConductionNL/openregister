@@ -186,4 +186,25 @@ class SolrWarmupJob extends QueuedJob
     }//end run()
 
 
+    /**
+     * Check if SOLR is available.
+     *
+     * @param GuzzleSolrService $solrService SOLR service instance
+     * @param LoggerInterface   $logger      Logger instance
+     *
+     * @return bool True if SOLR is available, false otherwise
+     */
+    private function isSolrAvailable(GuzzleSolrService $solrService, LoggerInterface $logger): bool
+    {
+        // Check if SOLR service is available.
+        if ($solrService->isAvailable() === false) {
+            $logger->debug(message: 'SOLR Warmup Job skipped - SOLR service not available');
+            return false;
+        }
+
+        return true;
+
+    }//end isSolrAvailable()
+
+
 }//end class

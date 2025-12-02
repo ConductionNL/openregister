@@ -865,7 +865,7 @@ class FileService
                 return $node;
             }
         } catch (NotPermittedException $e) {
-            //end try
+            // End try.
             $this->logger->error(message: "Can't create folder $folderPath: ".$e->getMessage());
             throw new Exception("Can't create folder $folderPath");
         }//end try
@@ -1022,30 +1022,41 @@ class FileService
             $this->logger->debug(message: "checkOwnership: File {$file->getName()} (ID: {$file->getId()}) is accessible, no ownership fix needed");
         } catch (NotFoundException $e) {
             // File exists but we can't access it - likely an ownership issue.
-            $this->logger->warning(message: "checkOwnership: File {$file->getName()} (ID: {$file->getId()}) exists but not accessible, checking ownership");
+            $this->logger->warning(
+                message: "checkOwnership: File {$file->getName()} (ID: {$file->getId()}) exists but not accessible, checking ownership"
+            );
 
             try {
                 $fileOwner        = $file->getOwner();
                 $openRegisterUser = $this->getUser();
 
                 if ($fileOwner === null || $fileOwner->getUID() !== $openRegisterUser->getUID()) {
-                    // End if.
-                    $this->logger->info(message: "checkOwnership: File {$file->getName()} (ID: {$file->getId()}) has incorrect owner, attempting to fix");
+                    $this->logger->info(
+                        message: "checkOwnership: File {$file->getName()} (ID: {$file->getId()}) has incorrect owner, attempting to fix"
+                    );
 
                     // Try to fix the ownership.
                     $ownershipFixed = $this->ownFile($file);
 
                     if ($ownershipFixed === true) {
-                        $this->logger->info(message: "checkOwnership: Successfully fixed ownership for file {$file->getName()} (ID: {$file->getId()})");
+                        $this->logger->info(
+                            message: "checkOwnership: Successfully fixed ownership for file {$file->getName()} (ID: {$file->getId()})"
+                        );
                     } else {
-                        $this->logger->error(message: "checkOwnership: Failed to fix ownership for file {$file->getName()} (ID: {$file->getId()})");
+                        $this->logger->error(
+                            message: "checkOwnership: Failed to fix ownership for file {$file->getName()} (ID: {$file->getId()})"
+                        );
                         throw new Exception("Failed to fix file ownership for file: ".$file->getName());
                     }
                 } else {
-                    $this->logger->info(message: "checkOwnership: File {$file->getName()} (ID: {$file->getId()}) already has correct owner, but still not accessible");
+                    $this->logger->info(
+                        message: "checkOwnership: File {$file->getName()} (ID: {$file->getId()}) already has correct owner, but still not accessible"
+                    );
                 }//end if
             } catch (Exception $ownershipException) {
-                $this->logger->error(message: "checkOwnership: Error checking/fixing ownership for file {$file->getName()}: ".$ownershipException->getMessage());
+                $this->logger->error(
+                    message: "checkOwnership: Error checking/fixing ownership for file {$file->getName()}: ".$ownershipException->getMessage()
+                );
                 throw new Exception("Ownership check failed for file: ".$file->getName());
             }//end try
         } catch (NotPermittedException $e) {
@@ -1058,19 +1069,32 @@ class FileService
                 $ownershipFixed = $this->ownFile($file);
 
                 if ($ownershipFixed === true) {
-                    $this->logger->info(message: "checkOwnership: Successfully fixed ownership for file {$file->getName()} (ID: {$file->getId()}) after permission error");
+                    $this->logger->info(
+                        message: "checkOwnership: Successfully fixed ownership for file {$file->getName()} "
+                            ."(ID: {$file->getId()}) after permission error"
+                    );
                 } else {
-                    $this->logger->error(message: "checkOwnership: Failed to fix ownership for file {$file->getName()} (ID: {$file->getId()}) after permission error");
-                    throw new Exception("Failed to fix file ownership after permission error: " . $file->getName());
+                    $this->logger->error(
+                        message: "checkOwnership: Failed to fix ownership for file {$file->getName()} "
+                            ."(ID: {$file->getId()}) after permission error"
+                    );
+                    throw new Exception("Failed to fix file ownership after permission error:".$file->getName());
                 }
             } catch (Exception $ownershipException) {
-                $this->logger->error(message: "checkOwnership: Error fixing ownership after permission error for file {$file->getName()}: " . $ownershipException->getMessage());
-                throw new Exception("Ownership fix failed after permission error: " . $file->getName());
-            }
+                $this->logger->error(
+                    message: "checkOwnership: Error fixing ownership after permission error for file {$file->getName()}: "
+                        .$ownershipException->getMessage()
+                );
+                throw new Exception("Ownership fix failed after permission error:".$file->getName());
+            }//end try
         } catch (Exception $e) {
             // Other exceptions - log but don't necessarily fix ownership.
-            $this->logger->debug(message: "checkOwnership: Other exception while checking file {$file->getName()}: " . $e->getMessage());
-        }
+            $this->logger->debug(
+                message: "checkOwnership: Other exception while checking file {$file->getName()}: ".$e->getMessage()
+            );
+        }//end try
+
+    }//end checkOwnership()
     }//end checkOwnership()
 
     /**
@@ -1119,7 +1143,7 @@ class FileService
 
             if (strpos($label, ':') !== false) {
                 list($key, $value) = explode(':', $label, 2);
-                $key = trim($key);
+                $key   = trim($key);
                 $value = trim($value);
 
                 // Skip if key exists in base metadata.
@@ -1155,22 +1179,22 @@ class FileService
      * See https://nextcloud-server.netlify.app/classes/ocp-files-file for the Nextcloud documentation on the File class.
      * See https://nextcloud-server.netlify.app/classes/ocp-files-node for the Nextcloud documentation on the Node superclass.
      *
-     * @param Node[] $files         Array of Node files to format
-     * @param array  $requestParams Optional request parameters including filters:
-     *     _hasLabels: bool,
-     *     _noLabels: bool,
-     *     labels: string|array,
-     *     extension: string,
-     *     extensions: array,
-     *     minSize: int,
-     *     maxSize: int,
-     *     title: string,
-     *     search: string,
-     *     limit: int,
-     *     offset: int,
-     *     order: string|array,
-     *     page: int,
-     *     extend: string|array
+     * @param Node[] $files                              Array of Node files to format
+     * @param array  $requestParams                      Optional request parameters including filters:
+     *                                                   _hasLabels: bool,
+     *                                                   _noLabels: bool,
+     *                                                   labels: string|array,
+     *                                                   extension: string,
+     *                                                   extensions: array,
+     *                                                   minSize: int,
+     *                                                   maxSize: int,
+     *                                                   title: string,
+     *                                                   search: string,
+     *                                                   limit: int,
+     *                                                   offset: int,
+     *                                                   order: string|array,
+     *                                                   page: int,
+     *                                                   extend: string|array
      *
      * @throws InvalidPathException
      * @throws NotFoundException
@@ -1187,15 +1211,15 @@ class FileService
     public function formatFiles(array $files, ?array $requestParams=[]): array
     {
         // Extract pagination parameters.
-        $limit = $requestParams['limit'] ?? $requestParams['_limit'] ?? 20;
+        $limit  = $requestParams['limit'] ?? $requestParams['_limit'] ?? 20;
         $offset = $requestParams['offset'] ?? $requestParams['_offset'] ?? 0;
-// Note: order, extend, and search parameters not currently used in this method.
+        // Note: order, extend, and search parameters not currently used in this method.
         $page = $requestParams['page'] ?? $requestParams['_page'] ?? null;
 
         if ($page !== null && (($limit ?? null) !== null)) {
-            $page = (int) $page;
+            $page   = (int) $page;
             $offset = $limit * ($page - 1);
-        }
+        }//end if
 
         // Extract filter parameters.
         $filters = $this->extractFilterParameters($requestParams);
