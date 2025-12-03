@@ -93,7 +93,7 @@ class CloudEventService
             'time'            => date('c'),
 
             // Optional CloudEvent attributes.
-            'datacontenttype' => $request->getHeader('Content-Type') === true ?: 'application/json',
+            'datacontenttype' => !empty($request->getHeader('Content-Type')) ? $request->getHeader('Content-Type') : 'application/json',
             'subject'         => $this->getSubject($request),
             'dataschema'      => null,
 

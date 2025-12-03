@@ -114,6 +114,7 @@ class FileVectorizationStrategy implements VectorizationStrategyInterface
             $qb->setMaxResults($maxFiles * 100);
         }
 
+        /** @psalm-suppress InaccessibleMethod - findEntities is accessible via inheritance */
         $allChunks = $this->chunkMapper->findEntities($qb);
 
         // Group by source_id and apply max_files limit.

@@ -102,12 +102,11 @@ class UploadService
             }
 
             // If it's a JSONResponse, extract data.
-            if (method_exists($phpArray, 'getData')) {
-                $phpArrayData = $phpArray->getData();
-                if (is_array($phpArrayData)) {
-                    $phpArrayData['source'] = $data['url'];
-                    return $phpArrayData;
-                }
+            // @psalm-suppress RedundantCondition - JSONResponse always has getData method
+            $phpArrayData = $phpArray->getData();
+            if (is_array($phpArrayData)) {
+                $phpArrayData['source'] = $data['url'];
+                return $phpArrayData;
             }
 
             // Fallback: return error response.

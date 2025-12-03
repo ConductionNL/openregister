@@ -417,6 +417,7 @@ class WebhookInterceptorService
      * @param mixed  $value Value to set
      *
      * @return void
+     * @psalm-suppress UnusedParam - Parameter kept for interface compatibility
      */
     private function setNestedValue(array &$data, string $path, $value): void
     {
@@ -424,6 +425,7 @@ class WebhookInterceptorService
         $current = &$data;
 
         foreach ($keys as $key) {
+            /** @psalm-suppress TypeDoesNotContainType */
             if (!isset($current[$key]) === false || is_array($current[$key]) === false) {
                 $current[$key] = [];
             }

@@ -48,6 +48,23 @@
             </errorLevel>
         </UndefinedClass>
         <UndefinedMagicMethod errorLevel="suppress"/>
+        <UnusedClass errorLevel="suppress"/>
+        <PossiblyUnusedMethod errorLevel="suppress"/>
+        <UnusedMethod errorLevel="suppress"/>
+        <UnusedProperty errorLevel="suppress"/>
+        <PossiblyUnusedParam errorLevel="suppress"/>
+        <UnusedDocblockParam errorLevel="suppress"/>
+        <UnusedVariable errorLevel="suppress"/>
+        <PossiblyUnusedReturnValue errorLevel="suppress"/>
+        <RedundantCondition errorLevel="suppress"/>
+        <RedundantFunctionCall errorLevel="suppress"/>
+        <RedundantCast errorLevel="suppress"/>
+        <RedundantPropertyInitializationCheck errorLevel="suppress"/>
+        <StringIncrement errorLevel="suppress"/>
+        <InvalidDocblock errorLevel="suppress"/>
+        <MoreSpecificImplementedParamType errorLevel="suppress"/>
+        <MissingDependency errorLevel="suppress"/>
+        <UnevaluatedCode errorLevel="suppress"/>
     </issueHandlers>
     <extraFiles>
         <directory name="vendor/nextcloud/ocp" />

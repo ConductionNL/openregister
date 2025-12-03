@@ -122,14 +122,14 @@ class ConfigurationService
     /**
      * Map of registers indexed by slug during import, by id during export.
      *
-     * @var array<string, Register> Registers indexed by slug during import, by id during export.
+     * @var array<string|int, Register> Registers indexed by slug during import, by id during export.
      */
     private array $registersMap = [];
 
     /**
      * Map of schemas indexed by slug during import, by id during export.
      *
-     * @var array<string, Schema> Schemas indexed by slug during import, by id during export.
+     * @var array<string|int, Schema> Schemas indexed by slug during import, by id during export.
      */
     private array $schemasMap = [];
 

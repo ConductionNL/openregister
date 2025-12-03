@@ -962,8 +962,17 @@ class ValidateObject
         if ($schemaObject == new stdClass()) {
             if ($schema instanceof Schema) {
                 $schemaObject = $schema->getSchemaObject($this->urlGenerator);
-            } else if (is_int($schema) === true || is_string($schema) === true) {
-                $schemaObject = $this->schemaMapper->find($schema)->getSchemaObject($this->urlGenerator);
+            } else if ($schema !== null) {
+                /** @psalm-suppress TypeDoesNotContainType */
+                /** @psalm-suppress NoValue */
+                if (is_int($schema) === true) {
+                    $schemaObject = $this->schemaMapper->find($schema)->getSchemaObject($this->urlGenerator);
+                /** @psalm-suppress TypeDoesNotContainType */
+                /** @psalm-suppress NoValue */
+                } else if (is_string($schema) === true) { // phpcs:ignore
+                    /** @psalm-suppress TypeDoesNotContainType */
+                    $schemaObject = $this->schemaMapper->find($schema)->getSchemaObject($this->urlGenerator);
+                }
             }
         }
 
@@ -1038,8 +1047,12 @@ class ValidateObject
 
         // Modify schema to allow null values for non-required fields.
         // This ensures that null values are valid for optional fields.
-        if (($schemaObject->properties ?? null) !== null) {
-            foreach ($schemaObject->properties as $_propertyName => $propertySchema) {
+        /** @psalm-suppress NoValue */
+        if (property_exists($schemaObject, 'properties') === true) {
+            $properties = $schemaObject->properties;
+            /** @psalm-suppress TypeDoesNotContainType */
+            if (isset($properties) === true && is_array($properties) === true) {
+                foreach ($properties as $propertyName => $propertySchema) {
                 // Skip required fields - they should not allow null unless explicitly defined.
                 if (in_array($propertyName, $requiredFields) === true) {
                     continue;
@@ -1065,7 +1078,8 @@ class ValidateObject
                     }
                 }
             }//end foreach
-        }//end if
+            }//end if inner
+        }//end if property_exists
 
         $validator = new Validator();
         $validator->setMaxErrors(100);

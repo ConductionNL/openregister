@@ -230,8 +230,8 @@ class ImportService
      * @param bool          $events     Whether to dispatch object lifecycle events (default: false).
      *
      * @return         array<string, array> Summary of import with sheet-based results.
-     * @phpstan-return array<string, array{found: int, created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>, debug?: array, schema?: array{id: int, slug: null|string, title: null|string}}>
-     * @psalm-return   array<string, array{created: array<array-key, mixed>, errors: array<array-key, mixed>, found: int, unchanged: array<array-key, mixed>, updated: array<array-key, mixed>, debug?: array<array-key, mixed>, schema?: array{id: int, slug: null|string, title: null|string}}>
+     * @phpstan-return array<string, array{found: int, created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>, debug?: array, schema?: array{id: int, slug: null|string, title: null|string}, deduplication_efficiency?: string}>
+     * @psalm-return   array<string, array{created: array<array-key, mixed>, errors: array<array-key, mixed>, found: int, unchanged?: array<array-key, mixed>, updated: array<array-key, mixed>, debug?: array{headers: array<never, never>, processableHeaders: array<never, never>, schemaProperties: list<array-key>}, deduplication_efficiency?: non-empty-lowercase-string, schema?: array{id: int, slug: null|string, title: null|string}>
      */
     public function importFromExcel(string $filePath, ?Register $register=null, ?Schema $schema=null, int $chunkSize=self::DEFAULT_CHUNK_SIZE, bool $validation=false, bool $events=false, bool $rbac=true, bool $multi=true, bool $publish=false, ?IUser $currentUser=null): array
     {
@@ -285,8 +285,8 @@ class ImportService
      * @param IUser|null    $currentUser Current user for RBAC checks (default: null).
      *
      * @return         array<string, array> Summary of import with sheet-based results.
-     * @phpstan-return array<string, array{created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>, found?: int, schema?: array{id: int, slug: null|string, title: null|string}}>
-     * @psalm-return   array<string, array{created: array<array-key, mixed>, errors: array<array-key, mixed>, found: int, unchanged: array<array-key, mixed>, updated: array<array-key, mixed>, schema: array{id: int, slug: null|string, title: null|string}}>
+     * @phpstan-return array<string, array{created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>, found?: int, schema?: array{id: int, slug: null|string, title: null|string}, deduplication_efficiency?: string, performance?: array}>
+     * @psalm-return   array<string, array{created: array<array-key, mixed>, errors: array<array-key, mixed>, found: int, unchanged: array<array-key, mixed>, updated: array<array-key, mixed>, schema: array{id: int, slug: null|string, title: null|string}, deduplication_efficiency?: non-empty-lowercase-string, performance?: array{efficiency: 0|float, objectsPerSecond: float, totalFound: int<0, max>, totalProcessed: int<0, max>, totalTime: float, totalTimeMs: float}}>
      */
     public function importFromCsv(
         string $filePath,
@@ -357,8 +357,8 @@ class ImportService
      * @param bool        $events      Whether to dispatch object lifecycle events
      *
      * @return         array<string, array> Summary of import with sheet-based results
-     * @phpstan-return array<string, array{found: int, created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>, schema?: array{id: int, slug: null|string, title: null|string}, debug?: array}>
-     * @psalm-return   array<string, array{created: array<array-key, mixed>, errors: array<array-key, mixed>, found: int, unchanged: array<array-key, mixed>, updated: array<array-key, mixed>, schema?: array{id: int, slug: null|string, title: null|string}, debug?: array}>
+     * @phpstan-return array<string, array{found: int, created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>, schema?: array{id: int, slug: null|string, title: null|string}, debug?: array, deduplication_efficiency?: string}>
+     * @psalm-return   array<string, array{created: array<array-key, mixed>, errors: array<array-key, mixed>, found: int, unchanged?: array<array-key, mixed>, updated: array<array-key, mixed>, debug: array{headers: array<never, never>, processableHeaders: array<never, never>, schemaProperties: list<array-key>}, deduplication_efficiency?: non-empty-lowercase-string, schema: array{id: int, slug: null|string, title: null|string}|null}>
      */
     private function processMultiSchemaSpreadsheetAsync(Spreadsheet $spreadsheet, Register $register, int $chunkSize, bool $validation=false, bool $events=false, bool $rbac=true, bool $multi=true, bool $publish=false, ?IUser $currentUser=null): array
     {
@@ -476,7 +476,7 @@ class ImportService
         ];
 
         // REMOVED ERROR SUPPRESSION: Let bulk save errors bubble up immediately!
-        microtime(true);
+        $startTime = microtime(true);
 
         // Get the active sheet.
         $sheet      = $spreadsheet->getActiveSheet();
@@ -570,7 +570,7 @@ class ImportService
         }//end if
 
         // NO ERROR SUPPRESSION: Row parsing errors will bubble up immediately - no need to collect them.
-        microtime(true) - $startTime;
+        $processingTime = microtime(true) - $startTime;
 
         return $summary;
 
@@ -755,6 +755,7 @@ class ImportService
         $schemaIdKey = is_string($schemaId) ? $schemaId : (string) $schemaId;
 
         if (!isset($this->schemaPropertiesCache[$schemaIdKey])) {
+            /** @psalm-suppress InvalidPropertyAssignmentValue - getProperties() returns array compatible with array<string, array> */
             $this->schemaPropertiesCache[$schemaIdKey] = $schema->getProperties();
         }
 
@@ -818,7 +819,7 @@ class ImportService
         $objectData['@self'] = $selfData;
 
         // Validate that we're not accidentally creating invalid properties.
-        $this->validateObjectProperties(objectData: $objectData, schemaId: (string) $schemaId);
+        $this->validateObjectProperties(objectData: $objectData, _schemaId: (string) $schemaId);
 
         return $objectData;
 
@@ -1111,9 +1112,10 @@ class ImportService
 
             foreach ($processedRows as $index => $rowData) {
                 $promises[] = new Promise(
-                        function (callable $resolve, callable $reject) use ($rowData, $index, $register, $schema, $startRow) {
+                        function (callable $resolve, callable $_reject) use ($rowData, $index, $register, $schema, $startRow) {
                             // NO ERROR SUPPRESSION: Let processRow errors bubble up immediately!
-                            $result = $this->processRow(rowData: $rowData, register: $register, schema: $schema, rowIndex: $startRow + $index);
+                            $result = $this->processRow(rowData: $rowData, register: $register, schema: $schema, _rowIndex: $startRow + $index);
+                            /** @var callable(mixed): void $resolve */
                             $resolve($result);
                         }
                         );
@@ -1123,6 +1125,7 @@ class ImportService
             $batchSize = self::MAX_CONCURRENT;
             for ($i = 0; $i < count($promises); $i += $batchSize) {
                 $batch   = array_slice($promises, $i, $batchSize);
+                /** @psalm-suppress UndefinedFunction - React\Async\await is from external library */
                 $results = \React\Async\await(\React\Promise\all($batch));
 
                 foreach ($results as $result) {

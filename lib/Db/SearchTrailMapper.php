@@ -50,6 +50,8 @@ use Symfony\Component\Uid\Uuid;
  * @method SearchTrail findEntity(IQueryBuilder $query)
  * @method SearchTrail[] findAll(int|null $limit = null, int|null $offset = null)
  * @method list<SearchTrail> findEntities(IQueryBuilder $query)
+ *
+ * @template-extends QBMapper<SearchTrail>
  */
 class SearchTrailMapper extends QBMapper
 {

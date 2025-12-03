@@ -342,10 +342,10 @@ class SaveObjects
 
         // SINGLE PATH PROCESSING - Process all chunks the same way regardless of size.
         foreach ($chunks as $chunkIndex => $objectsChunk) {
-            microtime(true);
+            $chunkStart = microtime(true);
 
             // Process the current chunk and get the result.
-            $chunkResult = $this->processObjectsChunk(objects: $objectsChunk, schemaCache: $globalSchemaCache, rbac: $rbac, multi: $multi, validation: $validation, events: $events);
+            $chunkResult = $this->processObjectsChunk(objects: $objectsChunk, schemaCache: $globalSchemaCache, _rbac: $rbac, _multi: $multi, _validation: $validation, _events: $events);
 
             // Merge chunk results for saved, updated, invalid, errors, and unchanged.
             $result['saved']   = array_merge($result['saved'], $chunkResult['saved']);
@@ -362,7 +362,7 @@ class SaveObjects
 // TODO: Renamed from 'skipped'.
 
             // Calculate chunk processing time and speed.
-            microtime(true) - $chunkStart;
+            $chunkTime = microtime(true) - $chunkStart;
 
             // Store per-chunk statistics for transparency and debugging.
             if (isset($result['chunkStatistics']) === false) {
@@ -395,6 +395,7 @@ class SaveObjects
 
         // Add deduplication efficiency if we have unchanged objects.
         $unchangedCount = count($result['unchanged']);
+        /** @psalm-suppress TypeDoesNotContainType */
         if ($unchangedCount > 0) {
             $totalProcessed = count($result['saved']) + count($result['updated']) + $unchangedCount;
             $result['performance']['deduplicationEfficiency'] = round(($unchangedCount / $totalProcessed) * 100, 1) . '% operations avoided';
@@ -563,6 +564,7 @@ class SaveObjects
             // Try to find the object using the ObjectEntityMapper.
             $referencedObject = $this->objectEntityMapper->find($uuid);
 
+            /** @psalm-suppress TypeDoesNotContainNull - find() throws DoesNotExistException, never returns null */
             if ($referencedObject === null) {
                 return null;
             }
@@ -634,17 +636,23 @@ class SaveObjects
         // ULTRA-PERFORMANCE: Aggressive chunk sizes for sub-1-second imports.
         // Optimized for 33k+ object datasets.
         if ($totalObjects <= 100) {
-// Process all at once for small sets.
+            // Process all at once for small sets.
+            return $totalObjects;
         } else if ($totalObjects <= 1000) {
-// Process all at once for medium sets.
+            // Process all at once for medium sets.
+            return $totalObjects;
         } else if ($totalObjects <= 5000) {
-// Large chunks for large sets.
+            // Large chunks for large sets.
+            return 2000;
         } else if ($totalObjects <= 10000) {
-// Very large chunks.
+            // Very large chunks.
+            return 3000;
         } else if ($totalObjects <= 50000) {
-// Ultra-large chunks for massive datasets.
+            // Ultra-large chunks for massive datasets.
+            return 5000;
         } else {
-// Maximum chunk size for huge datasets.
+            // Maximum chunk size for huge datasets.
+            return 10000;
         }
 
     }//end calculateOptimalChunkSize()
@@ -1333,7 +1341,7 @@ class SaveObjects
             $savedObjectIds = $bulkResult;
 
                 // Fallback counting (less precise).
-            foreach ($insertObjects as $objData) {
+            foreach ($transformedObjects as $objData) {
                 if (in_array($objData['uuid'], $bulkResult) === true) {
                     $result['statistics']['saved']++;
                 }
@@ -1342,7 +1350,7 @@ class SaveObjects
         } else {
             // Fallback for unexpected return format.
             $this->logger->warning("[SaveObjects] Unexpected bulk result format, using fallback");
-            foreach ($insertObjects as $objData) {
+            foreach ($transformedObjects as $objData) {
                 $savedObjectIds[] = $objData['uuid'];
                 $result['statistics']['saved']++;
             }
@@ -1371,7 +1379,8 @@ class SaveObjects
 
         } else {
             // FALLBACK: Use traditional object reconstruction.
-            $savedObjects = $this->reconstructSavedObjects(insertObjects: $insertObjects, updateObjects: $updateObjects, savedObjectIds: $savedObjectIds, existingObjects: []);
+            $updateObjects = [];
+            $savedObjects = $this->reconstructSavedObjects(insertObjects: $transformedObjects, updateObjects: $updateObjects, _savedObjectIds: $savedObjectIds, _existingObjects: []);
 
             // Fallback classification (less precise).
         foreach ($savedObjects as $obj) {
@@ -1561,9 +1570,12 @@ class SaveObjects
 
                 // Handle single object relations.
                 if (($propertyInfo['isArray'] === false) === true && is_string($value) === true && \Symfony\Component\Uid\Uuid::isValid($value) === true) {
-                    if (($objectsByUuid[$value] ?? null) !== null) {
+                    if (isset($objectsByUuid[$value]) === true) {
+                        // @psalm-suppress EmptyArrayAccess - Already checked isset above
                         $targetObject = &$objectsByUuid[$value];
-                        $existingValues = $targetObject[$inversedBy] ?? [];
+                        // @psalm-suppress EmptyArrayAccess - Already checked isset above
+                        $existingValues = ($targetObject[$inversedBy] ?? []);
+                        // @psalm-suppress EmptyArrayAccess - $existingValues is initialized with ?? []
                         if (is_array($existingValues) === false) {
                             $existingValues = [];
                         }
@@ -1578,9 +1590,11 @@ class SaveObjects
                     // Handle array of object relations.
                     foreach ($value as $relatedUuid) {
                         if (is_string($relatedUuid) === true && \Symfony\Component\Uid\Uuid::isValid($relatedUuid) === true) {
-                            if (($objectsByUuid[$relatedUuid] ?? null) !== null) {
+                            if (isset($objectsByUuid[$relatedUuid]) === true) {
+                                // @psalm-suppress EmptyArrayAccess - Already checked isset above
                                 $targetObject = &$objectsByUuid[$relatedUuid];
-                                $existingValues = $targetObject[$inversedBy] ?? [];
+                                // @psalm-suppress EmptyArrayAccess - $targetObject is guaranteed to exist from isset check
+                                $existingValues = ($targetObject[$inversedBy] ?? []);
                                 if (is_array($existingValues) === false) {
                                     $existingValues = [];
                                 }

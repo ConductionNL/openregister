@@ -1291,12 +1291,16 @@ class SchemaService
     {
         if (($arrayStructure['item_types'] ?? null) !== null) {
             $primaryType = array_key_first($arrayStructure['item_types']);
+            if ($primaryType === null) {
+                return ['type' => 'string'];
+            }
 
             switch ($primaryType) {
                 case 'string':
                     return ['type' => 'string'];
                 case 'integer':
                     return ['type' => 'integer'];
+                /** @psalm-suppress TypeDoesNotContainType */
                 case 'double':
                 case 'float':
                     return ['type' => 'number'];

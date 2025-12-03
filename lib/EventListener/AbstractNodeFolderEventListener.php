@@ -76,11 +76,11 @@ class AbstractNodeFolderEventListener implements IEventListener
         }
 
         match (true) {
-            $event instanceof NodeCreatedEvent => $this->handleNodeCreated(event: $event),
-            $event instanceof NodeDeletedEvent => $this->handleNodeDeleted(event: $event),
-            $event instanceof NodeTouchedEvent => $this->handleNodeTouched(event: $event),
-            $event instanceof NodeWrittenEvent => $this->handleNodeWritten(event: $event),
-        default => throw new InvalidArgumentException(message: 'Unsupported event type: '.get_class($event)),
+            $event instanceof NodeCreatedEvent => $this->handleNodeCreated($event),
+            $event instanceof NodeDeletedEvent => $this->handleNodeDeleted($event),
+            $event instanceof NodeTouchedEvent => $this->handleNodeTouched($event),
+            $event instanceof NodeWrittenEvent => $this->handleNodeWritten($event),
+        default => throw new InvalidArgumentException('Unsupported event type: '.get_class($event)),
         };
 
     }//end handle()

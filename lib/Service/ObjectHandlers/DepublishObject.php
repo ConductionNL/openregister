@@ -59,6 +59,7 @@ class DepublishObject
     ): ObjectEntity {
         // Get the object.
         $object = $this->objectEntityMapper->find($uuid);
+        /** @psalm-suppress TypeDoesNotContainNull - find() throws DoesNotExistException, never returns null */
         if ($object === null) {
             throw new Exception('Object not found');
         }

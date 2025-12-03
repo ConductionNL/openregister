@@ -394,11 +394,19 @@ class FileService
      */
     private function getObjectFolderName(ObjectEntity|string $objectEntity): string
     {
+        /** @psalm-suppress TypeDoesNotContainType */
         if (is_string($objectEntity) === true) {
+            /** @psalm-suppress NoValue - guaranteed to return string */
             return $objectEntity;
         }
 
-        return $objectEntity->getUuid() ?? (string) $objectEntity->getId();
+        $uuid = $objectEntity->getUuid();
+        if ($uuid !== null && $uuid !== '') {
+            return $uuid;
+        }
+
+        $id = $objectEntity->getId();
+        return (string) $id;
 
     }//end getObjectFolderName()
 
@@ -467,8 +475,9 @@ class FileService
                  *
                  * @var int|float $folderProperty
                  */
-
+                /** @psalm-suppress TypeDoesNotContainType */
                 if (is_numeric($folderProperty) === true) {
+                    /** @psalm-suppress InvalidCast - numeric value can be cast to int */
                     $folderId       = (int) $folderProperty;
                     $existingFolder = $this->getNodeById($folderId);
                     if ($existingFolder !== null && $existingFolder instanceof Folder) {
@@ -542,8 +551,9 @@ class FileService
                  *
                  * @var int|float $folderProperty
                  */
-
+                /** @psalm-suppress TypeDoesNotContainType */
                 if (is_numeric($folderProperty) === true) {
+                    /** @psalm-suppress InvalidCast - numeric value can be cast to int */
                     $folderId       = (int) $folderProperty;
                     $existingFolder = $this->getNodeById($folderId);
                     if ($existingFolder !== null && $existingFolder instanceof Folder) {
@@ -743,8 +753,9 @@ class FileService
         /*
          * @var int|float $folderProperty
          */
-
+        /** @psalm-suppress TypeDoesNotContainType */
         if (is_numeric($folderProperty) === true) {
+            /** @psalm-suppress InvalidCast - numeric value can be cast to int */
             $folderId = (int) $folderProperty;
             $folder   = $this->getNodeById($folderId);
         } else {
@@ -1568,6 +1579,7 @@ class FileService
      *
      * @psalm-return   IShare|null
      * @phpstan-return IShare|null
+     * @psalm-suppress UnusedReturnValue - Return value may be used by callers
      */
     private function shareFolderWithUser(Node $folder, string $userId, int $permissions = 31): ?IShare
     {
@@ -2362,10 +2374,10 @@ class FileService
 
                 // Update the existing file - pass the object so updateFile can find it in the object folder.
                 return $this->updateFile(
-// Just pass the filename, not the full path.
+                    filePath: $existingFile->getId(),
                     content: $content,
                     tags: $tags,
-// Pass the object so updateFile can locate the file.
+                    object: $objectEntity
                 );
             } else {
                 // File doesn't exist, create it.

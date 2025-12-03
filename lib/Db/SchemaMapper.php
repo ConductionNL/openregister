@@ -50,6 +50,8 @@ use OCA\OpenRegister\Db\ObjectEntityMapper;
  * @method Schema findEntity(IQueryBuilder $query)
  * @method Schema[] findAll(int|null $limit = null, int|null $offset = null)
  * @method list<Schema> findEntities(IQueryBuilder $query)
+ *
+ * @template-extends QBMapper<Schema>
  */
 class SchemaMapper extends QBMapper
 {
@@ -179,6 +181,16 @@ class SchemaMapper extends QBMapper
             enablePublished: $enablePublished,
             multiTenancyEnabled: $multi
         );
+
+        $result = $qb->executeQuery();
+        $row = $result->fetch();
+        $result->closeCursor();
+
+        if ($row === false) {
+            throw new \OCA\OpenRegister\Exception\ValidationException('Schema not found');
+        }
+
+        $schema = Schema::fromRow($row);
 
         // Resolve schema composition if present (allOf, oneOf, anyOf).
         $schema = $this->resolveSchemaExtension($schema);
@@ -360,6 +372,8 @@ class SchemaMapper extends QBMapper
      * @throws \Exception If user doesn't have create permission
      *
      * @return Entity The inserted entity
+     *
+     * @psalm-suppress LessSpecificImplementedReturnType - Schema is more specific than Entity
      */
     public function insert(Entity $entity): Entity
     {
@@ -591,6 +605,8 @@ class SchemaMapper extends QBMapper
      * @throws \Exception If user doesn't have update permission or access to this organisation
      *
      * @return Entity The updated entity
+     *
+     * @psalm-suppress LessSpecificImplementedReturnType - Schema is more specific than Entity
      */
     public function update(Entity $entity): Entity
     {
@@ -672,15 +688,15 @@ class SchemaMapper extends QBMapper
      *
      * @psalm-suppress PossiblyUnusedReturnValue
      */
-    public function delete(Entity $schema): Schema
+    public function delete(Entity $entity): Schema
     {
         // Verify RBAC permission to delete
         // $this->verifyRbacPermission('delete', 'schema');
         // Verify user has access to this organisation.
-        $this->verifyOrganisationAccess($schema);
+        $this->verifyOrganisationAccess($entity);
 
         // Check for attached objects before deleting (using direct database query to avoid circular dependency).
-        $schemaId = method_exists($schema, 'getId') === true ? $schema->getId() : $schema->id;
+        $schemaId = method_exists($entity, 'getId') === true ? $entity->getId() : $entity->id;
 
         // Count objects that reference this schema (excluding soft-deleted objects).
         $qb = $this->db->getQueryBuilder();
@@ -698,11 +714,11 @@ class SchemaMapper extends QBMapper
         }
 
         // Proceed with deletion if no objects are attached.
-        $result = parent::delete($schema);
+        $result = parent::delete($entity);
 
         // Dispatch deletion event.
         $this->eventDispatcher->dispatchTyped(
-            new SchemaDeletedEvent($schema)
+            new SchemaDeletedEvent($entity)
         );
 
         return $result;

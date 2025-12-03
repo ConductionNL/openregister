@@ -452,6 +452,7 @@ class HyperFacetHandler
         }
 
         // Execute all facet calculations in parallel.
+        /** @psalm-suppress UndefinedFunction - React\Async\await is from external library */
         $results = \React\Async\await(\React\Promise\all($promises));
 
         // Combine results from different facet types.
@@ -614,6 +615,7 @@ class HyperFacetHandler
                     'batchOptimization' => 'enabled'
                 ]);
 
+                /** @var callable(mixed): void $resolve */
                 $resolve($results);
             } catch (\Throwable $e) {
                 $reject($e);
@@ -1071,6 +1073,7 @@ class HyperFacetHandler
     {
         return new Promise(function ($resolve) {
             // Simplified for now.
+            /** @var callable(mixed): void $resolve */
             $resolve([]);
         });
     }

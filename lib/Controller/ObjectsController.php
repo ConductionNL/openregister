@@ -635,7 +635,6 @@ class ObjectsController extends Controller
                 // Handle array uploads: images[] becomes images with array values.
                 // We need to preserve all files, so use indexed keys: images[0], images[1], etc.
                 // In PHP $_FILES, when name is an array, all other fields are also arrays.
-                /** @var array<int, string> $nameArray */
                 $nameArray = $nameValue;
                 // Extract values - in $_FILES structure, when name is array, others are arrays too.
                 // Use mixed type and then check to help Psalm understand.
@@ -770,7 +769,6 @@ class ObjectsController extends Controller
                 // Handle array uploads: images[] becomes images with array values.
                 // We need to preserve all files, so use indexed keys: images[0], images[1], etc.
                 // In PHP $_FILES, when name is an array, all other fields are also arrays.
-                /** @var array<int, string> $nameArray */
                 $nameArray = $nameValue;
                 // Extract values - in $_FILES structure, when name is array, others are arrays too.
                 // Use mixed type and then check to help Psalm understand.

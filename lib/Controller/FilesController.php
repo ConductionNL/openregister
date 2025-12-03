@@ -371,9 +371,7 @@ class FilesController extends Controller
                     $errorValue = $files['error'] ?? null;
                     /** @var int|array<int, int>|null $sizeValue */
                     $sizeValue  = $files['size'] ?? null;
-                    /** @var array<int, int>|null $errorArray */
                     $errorArray = is_array($errorValue) ? $errorValue : null;
-                    /** @var array<int, int>|null $sizeArray */
                     $sizeArray  = is_array($sizeValue) ? $sizeValue : null;
 
                     $uploadedFiles[] = [

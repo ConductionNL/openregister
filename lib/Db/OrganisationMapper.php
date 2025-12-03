@@ -53,6 +53,8 @@ use Symfony\Component\Uid\Uuid;
  * @method Organisation findEntity(IQueryBuilder $query)
  * @method Organisation[] findAll(int|null $limit = null, int|null $offset = null)
  * @method list<Organisation> findEntities(IQueryBuilder $query)
+ *
+ * @template-extends QBMapper<Organisation>
  */
 class OrganisationMapper extends QBMapper
 {
@@ -119,7 +121,7 @@ class OrganisationMapper extends QBMapper
          * @var Organisation $oldEntity
          */
         // QBMapper doesn't have a find() method, use findByUuid instead.
-        $oldEntity = $this->findByUuid($entity->getId());
+        $oldEntity = $this->findByUuid((string)$entity->getId());
 
         if ($entity instanceof Organisation) {
             $entity->setUpdated(new \DateTime());

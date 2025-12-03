@@ -133,15 +133,21 @@ class DeleteObject
         $this->deleteObjectFolder($objectEntity);
 
         // Delete the object from database.
+        /** @psalm-suppress InvalidArgument - ObjectEntity extends Entity */
         $result = $this->objectEntityMapper->delete($objectEntity) !== null;
 
         // **CACHE INVALIDATION**: Clear collection and facet caches so deleted objects disappear immediately.
         if ($result === true) {
+            // ObjectEntity has getRegister() and getSchema() methods that return string|null.
+            // Convert to int|null for invalidateForObjectChange which expects ?int.
+            /** @var ObjectEntity $objectEntity */
+            $registerId = $objectEntity->getRegister();
+            $schemaId   = $objectEntity->getSchema();
             $this->objectCacheService->invalidateForObjectChange(
                 object: $objectEntity,
                 operation: 'delete',
-                registerId: $objectEntity->getRegister(),
-                schemaId: $objectEntity->getSchema()
+                registerId: ($registerId !== null && is_numeric($registerId)) ? (int) $registerId : null,
+                schemaId: ($schemaId !== null && is_numeric($schemaId)) ? (int) $schemaId : null
             );
         }
 

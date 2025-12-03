@@ -18,6 +18,7 @@
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
+use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -62,14 +63,17 @@ use OCP\IURLGenerator;
  *   published: string|null
  * }
  *
- * @method array insert(Entity $entity)
- * @method array update(Entity $entity)
- * @method array insertOrUpdate(Entity $entity)
- * @method array delete(Entity $entity)
- * @method array find(int|string $id)
- * @method array findEntity(IQueryBuilder $query)
+ * @method \OCP\AppFramework\Db\Entity insert(\OCP\AppFramework\Db\Entity $entity)
+ * @method \OCP\AppFramework\Db\Entity update(\OCP\AppFramework\Db\Entity $entity)
+ * @method \OCP\AppFramework\Db\Entity insertOrUpdate(\OCP\AppFramework\Db\Entity $entity)
+ * @method \OCP\AppFramework\Db\Entity delete(\OCP\AppFramework\Db\Entity $entity)
+ * @method \OCP\AppFramework\Db\Entity find(int|string $id)
+ * @method \OCP\AppFramework\Db\Entity findEntity(IQueryBuilder $query)
  * @method File[] findAll(int|null $limit = null, int|null $offset = null)
  * @method File[] findEntities(IQueryBuilder $query)
+ * @psalm-suppress LessSpecificImplementedReturnType - File[] is more specific than list<Entity>
+ *
+ * @template-extends QBMapper<Entity>
  */
 class FileMapper extends QBMapper
 {
@@ -92,7 +96,7 @@ class FileMapper extends QBMapper
         IDBConnection $db,
         IURLGenerator $urlGenerator
     ) {
-        parent::__construct($db, 'openregister_files', File::class);
+        parent::__construct($db, 'openregister_files', \OCP\AppFramework\Db\Entity::class);
         $this->urlGenerator = $urlGenerator;
 
     }//end __construct()

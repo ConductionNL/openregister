@@ -237,7 +237,7 @@ class MetricsService
             $qb = $this->db->getQueryBuilder();
 
             $qb->select($qb->func()->count('*', 'count'))
-                ->selectAlias($qb->func()->avg('duration_ms'), 'avg_ms')
+                ->selectAlias($qb->createFunction('AVG(duration_ms)'), 'avg_ms')
                 ->selectAlias($qb->func()->min('duration_ms'), 'min_ms')
                 ->selectAlias($qb->func()->max('duration_ms'), 'max_ms')
                 ->from('openregister_metrics')
@@ -349,7 +349,8 @@ class MetricsService
         $qb->delete('openregister_metrics')
             ->where($qb->expr()->lt('created_at', $qb->createNamedParameter($cutoffTime)));
 
-        return $qb->execute();
+        $result = $qb->execute();
+        return is_int($result) ? $result : (int) $result->rowCount();
 
     }//end cleanOldMetrics()
 
@@ -429,10 +430,13 @@ class MetricsService
             $totalVectors += (int) ($dayData['count'] ?? 0);
         }
 
-        if ($days === 0) {
+        // $days can never be 0 here because we check empty($growthData) === true above
+        /** @psalm-suppress TypeDoesNotContainType */
+        if ($days <= 0) {
             return 0.0;
         }
 
+        /** @psalm-suppress TypeDoesNotContainType */
         return round($totalVectors / $days, 2);
 
     }//end calculateAverageVectorsPerDay()

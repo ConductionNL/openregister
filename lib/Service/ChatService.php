@@ -911,6 +911,7 @@ class ChatService
                     $config->model = (empty($agentModel) === false) ? $agentModel : ($openaiConfig['chatModel'] ?? 'gpt-4o-mini');
 
                     if (empty($openaiConfig['organizationId']) === false) {
+                        /** @psalm-suppress UndefinedPropertyAssignment - LLPhant\OpenAIConfig has dynamic properties */
                         $config->organizationId = $openaiConfig['organizationId'];
                     }
                 } else if ($chatProvider === 'fireworks') {
@@ -937,6 +938,7 @@ class ChatService
 
                 // Set temperature from agent or default (OpenAI/Fireworks).
                 if ($agent?->getTemperature() !== null) {
+                    /** @psalm-suppress UndefinedPropertyAssignment - LLPhant\OpenAIConfig has dynamic properties */
                     $config->temperature = $agent->getTemperature();
                 }
             }//end if
@@ -966,6 +968,7 @@ class ChatService
             // Create chat instance based on provider.
             if ($chatProvider === 'fireworks') {
                 // For Fireworks, use direct HTTP to avoid OpenAI library error handling bugs.
+                /** @psalm-suppress UndefinedPropertyFetch - LLPhant\OllamaConfig has dynamic properties */
                 $response = $this->callFireworksChatAPIWithHistory(
                     $config->apiKey,
                     $config->model,
@@ -1105,6 +1108,7 @@ class ChatService
                     return $this->generateFallbackTitle($firstMessage);
                 }//end if
 
+                /** @psalm-suppress UndefinedPropertyAssignment - LLPhant\OpenAIConfig has dynamic properties */
                 $config->temperature = 0.7;
             }//end if
 
@@ -1116,6 +1120,7 @@ class ChatService
             // Generate title based on provider.
             if ($chatProvider === 'fireworks') {
                 // Use direct HTTP for Fireworks to avoid OpenAI library issues.
+                /** @psalm-suppress UndefinedPropertyFetch - LLPhant\OllamaConfig has dynamic properties */
                 $title = $this->callFireworksChatAPI(
                     $config->apiKey,
                     $config->model,
@@ -1309,6 +1314,7 @@ class ChatService
                     $llphantConfig->model  = $config['chatModel'] ?? $config['model'] ?? 'gpt-4o-mini';
 
                     if (empty($config['organizationId']) === false) {
+                        /** @psalm-suppress UndefinedPropertyAssignment - LLPhant\OpenAIConfig has dynamic properties */
                         $llphantConfig->organizationId = $config['organizationId'];
                     }
                 } else if ($provider === 'fireworks') {
@@ -1331,6 +1337,7 @@ class ChatService
 
                 // Set temperature if provided.
                 if (($config['temperature'] ?? null) !== null) {
+                    /** @psalm-suppress UndefinedPropertyAssignment - LLPhant\OpenAIConfig has dynamic properties */
                     $llphantConfig->temperature = (float) $config['temperature'];
                 }
             }//end if
@@ -1338,6 +1345,7 @@ class ChatService
             // Generate test response based on provider.
             if ($provider === 'fireworks') {
                 // For Fireworks, use direct HTTP to avoid OpenAI library error handling bugs.
+                /** @psalm-suppress UndefinedPropertyFetch - LLPhant\OllamaConfig has dynamic properties */
                 $response = $this->callFireworksChatAPI(
                     $llphantConfig->apiKey,
                     $llphantConfig->model,
@@ -1354,8 +1362,7 @@ class ChatService
                     context: [
                         'provider' => $provider,
                         'model'    => $llphantConfig->model,
-
-                        'url'      => $llphantConfig->url ?? 'default',
+                        'url'      => property_exists($llphantConfig, 'url') && !empty($llphantConfig->url) ? $llphantConfig->url : 'default',
                     ]
                         );
 
@@ -1370,7 +1377,7 @@ class ChatService
                     context: [
                         'provider' => $provider,
                         'model'    => $llphantConfig->model,
-                        'url'      => $llphantConfig->url ?? 'default',
+                        'url'      => property_exists($llphantConfig, 'url') && !empty($llphantConfig->url) ? $llphantConfig->url : 'default',
                     ]
                         );
 
@@ -1395,8 +1402,7 @@ class ChatService
                     'testMessage'    => $testMessage,
                     'response'       => $response,
                     'responseLength' => strlen($response),
-
-                    'url'            => $llphantConfig->url ?? null,
+                    'url'            => property_exists($llphantConfig, 'url') ? $llphantConfig->url : null,
                 ],
             ];
         } catch (OpenAIErrorException $e) {
@@ -1808,6 +1814,7 @@ class ChatService
         // Generate summary based on provider.
         if ($chatProvider === 'fireworks') {
             // Use direct HTTP for Fireworks to avoid OpenAI library issues.
+            /** @psalm-suppress UndefinedPropertyFetch - LLPhant\OllamaConfig has dynamic properties */
             return $this->callFireworksChatAPI(
                 $config->apiKey,
                 $config->model,

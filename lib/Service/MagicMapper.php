@@ -268,10 +268,10 @@ class MagicMapper
         );
 
         $this->organizationHandler = new MagicOrganizationHandler(
-            $this->db,
             $this->userSession,
             $this->groupManager,
-            $this->userManager
+            $this->appConfig,
+            $this->logger
         );
 
         $this->facetHandler = new MagicFacetHandler(
@@ -598,6 +598,7 @@ class MagicMapper
     private function checkTableExistsInDatabase(string $tableName): bool
     {
         try {
+            /** @psalm-suppress UndefinedInterfaceMethod - getSchemaManager() exists on Doctrine DBAL Connection */
             $schemaManager = $this->db->getSchemaManager();
             return $schemaManager->tablesExist([$tableName]);
         } catch (Exception $e) {
@@ -766,7 +767,7 @@ class MagicMapper
      *
      * @return array Array of column definitions
      *
-     * @psalm-return array<string, TableColumnConfig>
+     * @psalm-return array<array-key, array{autoincrement?: bool, default?: mixed, index?: bool, length?: int, name: string, nullable: bool, precision?: int, primary?: bool, scale?: int, type: string, unique?: bool}>
      */
     private function buildTableColumnsFromSchema(Schema $schema): array
     {
@@ -809,7 +810,7 @@ class MagicMapper
      *
      * @return array Array of metadata column definitions
      *
-     * @psalm-return array<string, TableColumnConfig>
+     * @psalm-return array<string, array{autoincrement?: bool, default?: mixed, index?: bool, length?: int, name: string, nullable: bool, precision?: int, primary?: bool, scale?: int, type: string, unique?: bool}>
      */
     private function getMetadataColumns(): array
     {
@@ -1011,7 +1012,7 @@ class MagicMapper
      * @return array|null Column definition or null if property should be skipped
      *
      * @psalm-param  SchemaPropertyConfig $propertyConfig
-     * @psalm-return TableColumnConfig|null
+     * @psalm-return array{default?: mixed|null, index?: bool, length?: int, name: string, nullable: bool, precision?: 10, scale?: 2, type: string, unique?: bool}|null
      */
     private function mapSchemaPropertyToColumn(string $propertyName, array $propertyConfig): ?array
     {
@@ -1195,7 +1196,7 @@ class MagicMapper
      * @return array Column definition
      *
      * @psalm-param  SchemaPropertyConfig $propertyConfig
-     * @psalm-return TableColumnConfig
+     * @psalm-return array{default: mixed|null, index: true, name: string, nullable: bool, precision: 10, scale: 2, type: 'decimal'}
      */
     private function mapNumberProperty(string $columnName, array $propertyConfig): array
     {
@@ -1829,7 +1830,8 @@ class MagicMapper
         $cacheKey  = $this->getCacheKey($registerId, $schemaId);
         $configKey = 'table_version_'.$cacheKey;
 
-        return $this->config->getAppValue('openregister', $configKey, null);
+        $version = $this->config->getAppValue('openregister', $configKey, '');
+        return $version === '' ? null : $version;
 
     }//end getStoredRegisterSchemaVersion()
 
@@ -1942,7 +1944,7 @@ class MagicMapper
             $result = $qb->executeQuery();
             $row    = $result->fetch();
 
-            return $row === true ?: null;
+            return is_array($row) ? $row : null;
         } catch (Exception $e) {
             $this->logger->warning(
                     'Failed to find object in register+schema table',
@@ -2024,6 +2026,7 @@ class MagicMapper
     private function getExistingTableColumns(string $tableName): array
     {
         try {
+            /** @psalm-suppress UndefinedInterfaceMethod - getSchemaManager() exists on Doctrine DBAL Connection */
             $schemaManager = $this->db->getSchemaManager();
             $columns       = $schemaManager->listTableColumns($tableName);
 
@@ -2132,6 +2135,7 @@ class MagicMapper
     private function dropTable(string $tableName): void
     {
         try {
+            /** @psalm-suppress UndefinedInterfaceMethod - getSchemaManager() exists on Doctrine DBAL Connection */
             $schemaManager = $this->db->getSchemaManager();
             $schemaManager->dropTable($tableName);
 
@@ -2175,6 +2179,7 @@ class MagicMapper
      */
     private function isJsonString(string $string): bool
     {
+        /** @psalm-suppress UnusedFunctionCall - json_decode is used to check for errors via json_last_error() */
         json_decode($string);
         return json_last_error() === JSON_ERROR_NONE;
 
@@ -2227,6 +2232,7 @@ class MagicMapper
     public function getExistingRegisterSchemaTables(): array
     {
         try {
+            /** @psalm-suppress UndefinedInterfaceMethod - getSchemaManager() exists on Doctrine DBAL Connection */
             $schemaManager = $this->db->getSchemaManager();
             $allTables     = $schemaManager->listTableNames();
 
