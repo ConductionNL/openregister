@@ -67,6 +67,7 @@ use OCP\AppFramework\IAppContainer;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
+use function React\Promise\all;
 
 /**
  * Primary Object Management Service for OpenRegister
@@ -635,6 +636,7 @@ class ObjectService
         }
 
         // Delegate the findAll operation to the handler.
+        /** @var $objects ObjectEntity[] **/
         $objects = $this->getHandler->findAll(
             limit: $config['limit'] ?? null,
             offset: $config['offset'] ?? null,
@@ -674,18 +676,30 @@ class ObjectService
         }
 
         // Render each object through the object service.
+        $promises = [];
         foreach ($objects as $key => $object) {
-            $objects[$key] = $this->renderHandler->renderEntity(
-                entity: $object,
-                extend: $config['extend'] ?? [],
-                filter: $config['unset'] ?? null,
-                fields: $config['fields'] ?? null,
-                registers: $registers,
-                schemas: $schemas,
-                rbac: $rbac,
-                multi: $multi
+            $promises[$key] = new Promise(
+                function ($resolve, $reject) use ($object, $config, $registers, $schemas, $rbac, $multi) {
+                    try {
+                        $renderedObject = $this->renderHandler->renderEntity(
+                            entity: $object,
+                            extend: $config['extend'] ?? [],
+                            filter: $config['unset'] ?? null,
+                            fields: $config['fields'] ?? null,
+                            registers: $registers,
+                            schemas: $schemas,
+                            rbac: $rbac,
+                            multi: $multi
+                        );
+                        $resolve($renderedObject);
+                    } catch(\Throwable $e) {
+                        $reject($e);
+                    }
+                }
             );
         }
+
+        $objects = Async\await(all($promises));
 
         return $objects;
 
@@ -1306,7 +1320,12 @@ class ObjectService
             unset($specialParams['ids']);
         }
 
-        // Add all special parameters (they'll be handled by searchObjectsPaginated).
+        // Add all special parameters (they'll be handled by searchObjectsPaginated)
+        // Convert boolean-like parameters to actual booleans for consistency
+        if (isset($specialParams['_published'])) {
+            $specialParams['_published'] = filter_var($specialParams['_published'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false;
+        }
+        
         $query = array_merge($query, $specialParams);
 
         return $query;
@@ -1377,13 +1396,11 @@ class ObjectService
                     ));
                 }
 
-                // Apply search terms.
-                if (empty($viewQuery['searchTerms']) === false) {
-                    if (is_array($viewQuery['searchTerms']) === true) {
-                        $searchTerms = implode(' ', $viewQuery['searchTerms']);
-                    } else {
-                        $searchTerms = $viewQuery['searchTerms'];
-                    }
+                // Apply search terms
+                if (!empty($viewQuery['searchTerms'])) {
+                    $searchTerms = is_array($viewQuery['searchTerms'])
+                        ? implode(' ', $viewQuery['searchTerms'])
+                        : $viewQuery['searchTerms'];
 
                     $existingSearch = $query['_search'] ?? '';
                     $query['_search'] = trim($existingSearch . ' ' . $searchTerms);
@@ -3372,23 +3389,105 @@ class ObjectService
         return $text;
     }//end createSlugHelper()
 
+    /**
+     * Filter objects based on RBAC and multi-organization permissions
+     *
+     * @param array $objects Array of objects to filter
+     * @param bool  $rbac    Whether to apply RBAC filtering
+     * @param bool  $multi   Whether to apply multi-organization filtering
+     *
+     * @return array Filtered array of objects
+     *
+     * @phpstan-param  array<int, array<string, mixed>> $objects
+     * @psalm-param    array<int, array<string, mixed>> $objects
+     * @phpstan-return array<int, array<string, mixed>>
+     * @psalm-return   array<int, array<string, mixed>>
+     */
+    private function filterObjectsForPermissions(array $objects, bool $rbac, bool $multi): array
+    {
+        $filteredObjects = [];
+        $currentUser     = $this->userSession->getUser();
+        $userId          = $currentUser ? $currentUser->getUID() : null;
+        $activeOrganisation = $this->getActiveOrganisationForContext();
+
+        foreach ($objects as $object) {
+            $self = $object['@self'] ?? [];
+
+            // Check RBAC permissions if enabled
+            if ($rbac && $userId !== null) {
+                $objectOwner  = $self['owner'] ?? null;
+                $objectSchema = $self['schema'] ?? null;
+
+                if ($objectSchema !== null) {
+                    try {
+                        $schema = $this->schemaMapper->find($objectSchema);
+                        // TODO: Add property-level RBAC check for 'create' action here
+                        // Check individual property permissions before allowing property values to be set
+                        if (!$this->hasPermission($schema, 'create', $userId, $objectOwner, $rbac)) {
+                            continue;
+                            // Skip this object if user doesn't have permission
+                        }
+                    } catch (\Exception $e) {
+                        // Skip objects with invalid schemas
+                        continue;
+                    }
+                }
+            }
+
+            // Check multi-organization filtering if enabled
+            if ($multi && $activeOrganisation !== null) {
+                $objectOrganisation = $self['organisation'] ?? null;
+                if ($objectOrganisation !== null && $objectOrganisation !== $activeOrganisation) {
+                    continue;
+                    // Skip objects from different organizations
+                }
+            }
+
+            $filteredObjects[] = $object;
+        }//end foreach
+
+        return $filteredObjects;
+
+    }//end filterObjectsForPermissions()
 
 
+    /**
+     * Validate that all objects have required fields in their @self section
+     *
+     * @param array $objects Array of objects to validate
+     *
+     * @throws \InvalidArgumentException If required fields are missing
+     *
+     * @return void
+     *
+     * @phpstan-param array<int, array<string, mixed>> $objects
+     * @psalm-param   array<int, array<string, mixed>> $objects
+     */
+    private function validateRequiredFields(array $objects): void
+    {
+        $requiredFields = ['register', 'schema'];
 
+        foreach ($objects as $index => $object) {
+            // Check if object has @self section
+            if (!isset($object['@self']) || !is_array($object['@self'])) {
+                throw new \InvalidArgumentException(
+                    "Object at index {$index} is missing required '@self' section"
+                );
+            }
 
+            $self = $object['@self'];
 
+            // Check each required field
+            foreach ($requiredFields as $field) {
+                if (!isset($self[$field]) || empty($self[$field])) {
+                    throw new \InvalidArgumentException(
+                        "Object at index {$index} is missing required field '{$field}' in @self section"
+                    );
+                }
+            }
+        }
 
-
-
-
-
-
-
-
-
-
-
-
+    }//end validateRequiredFields()
 
 
     /**

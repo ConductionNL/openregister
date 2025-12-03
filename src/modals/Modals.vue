@@ -16,11 +16,11 @@ import { navigationStore } from '../store/store.js'
 		<ExportConfiguration />
 		<PublishConfiguration />
 		<EditSchema v-if="navigationStore.modal === 'editSchema'" />
-		<ExploreSchema v-if="navigationStore.modal === 'exploreSchema'" />
+		<ExploreSchema v-if="navigationStore.dialog === 'exploreSchema'" />
 		<DeleteSchema />
-		<ValidateSchema v-if="navigationStore.modal === 'validateSchema'" />
-		<DeleteSchemaObjects v-if="navigationStore.modal === 'deleteSchemaObjects'" />
-		<PublishSchemaObjects v-if="navigationStore.modal === 'publishSchemaObjects'" />
+		<ValidateSchema v-if="navigationStore.dialog === 'validateSchema'" />
+		<DeleteSchemaObjects v-if="navigationStore.dialog === 'deleteSchemaObjects'" />
+		<PublishSchemaObjects v-if="navigationStore.dialog === 'publishSchemaObjects'" />
 		<UploadSchema />
 		<EditSchemaProperty v-if="navigationStore.modal === 'editSchemaProperty'" />
 		<DeleteSchemaProperty />

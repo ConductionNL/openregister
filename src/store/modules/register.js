@@ -149,6 +149,80 @@ export const useRegisterStore = defineStore('register', {
 				throw new Error(`Failed to delete register: ${error.message}`)
 			}
 		},
+		// Publish a register
+		async publishRegister(registerId, date = null) {
+			if (!registerId) {
+				throw new Error('No register ID provided')
+			}
+
+			console.log('Publishing register...')
+
+			let endpoint = `/index.php/apps/openregister/api/registers/${registerId}/publish`
+			if (date) {
+				endpoint += `?date=${encodeURIComponent(date)}`
+			}
+
+			try {
+				const response = await fetch(endpoint, {
+					method: 'POST',
+				})
+
+				if (!response.ok) {
+					const errorData = await response.json().catch(() => ({}))
+					throw new Error(errorData.error || `HTTP error! status: ${response.status}`)
+				}
+
+				const responseData = await response.json()
+
+				await this.refreshRegisterList()
+				// Update the register item if it's currently selected
+				if (this.registerItem && this.registerItem.id === registerId) {
+					this.setRegisterItem(responseData)
+				}
+
+				return { response, data: responseData }
+			} catch (error) {
+				console.error('Error publishing register:', error)
+				throw new Error(`Failed to publish register: ${error.message}`)
+			}
+		},
+		// Depublish a register
+		async depublishRegister(registerId, date = null) {
+			if (!registerId) {
+				throw new Error('No register ID provided')
+			}
+
+			console.log('Depublishing register...')
+
+			let endpoint = `/index.php/apps/openregister/api/registers/${registerId}/depublish`
+			if (date) {
+				endpoint += `?date=${encodeURIComponent(date)}`
+			}
+
+			try {
+				const response = await fetch(endpoint, {
+					method: 'POST',
+				})
+
+				if (!response.ok) {
+					const errorData = await response.json().catch(() => ({}))
+					throw new Error(errorData.error || `HTTP error! status: ${response.status}`)
+				}
+
+				const responseData = await response.json()
+
+				await this.refreshRegisterList()
+				// Update the register item if it's currently selected
+				if (this.registerItem && this.registerItem.id === registerId) {
+					this.setRegisterItem(responseData)
+				}
+
+				return { response, data: responseData }
+			} catch (error) {
+				console.error('Error depublishing register:', error)
+				throw new Error(`Failed to depublish register: ${error.message}`)
+			}
+		},
 		// Create or save a register from store
 		async saveRegister(registerItem) {
 			if (!registerItem) {
