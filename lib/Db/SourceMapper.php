@@ -84,12 +84,12 @@ class SourceMapper extends QBMapper
 
 
     /**
-     * Constructor for the SourceMapper
+     * Constructor
      *
-     * @param IDBConnection       $db                  The database connection
-     * @param OrganisationService $organisationService Organisation service for multi-tenancy
+     * @param IDBConnection       $db                  Database connection
+     * @param OrganisationService $organisationService Organisation service
      * @param IUserSession        $userSession         User session
-     * @param IGroupManager       $groupManager        Group manager for RBAC
+     * @param IGroupManager       $groupManager        Group manager
      * @param IEventDispatcher    $eventDispatcher     Event dispatcher
      */
     public function __construct(
@@ -99,7 +99,7 @@ class SourceMapper extends QBMapper
         IGroupManager $groupManager,
         IEventDispatcher $eventDispatcher
     ) {
-        parent::__construct($db, 'openregister_sources');
+        parent::__construct($db, 'openregister_sources', Source::class);
         $this->organisationService = $organisationService;
         $this->userSession         = $userSession;
         $this->groupManager        = $groupManager;
@@ -267,6 +267,8 @@ class SourceMapper extends QBMapper
      *
      * @return Source The deleted source
      * @throws \Exception If user doesn't have delete permission or access to this organisation
+     *
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function delete(Entity $entity): Source
     {

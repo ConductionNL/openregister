@@ -195,7 +195,7 @@ class MongoDbService
         $client = $this->getClient(config: $config);
 
         // Convert update data to dot notation for nested updates.
-        $dotUpdate = new Dot($update);
+        new Dot($update);
 
         // Prepare update query.
         $object           = self::BASE_OBJECT;
@@ -205,7 +205,7 @@ class MongoDbService
         $object['dataSource']     = $config['mongodbCluster'];
 
         // Execute update via API.
-        $returnData = $client->post(
+        $client->post(
             uri: 'action/updateOne',
             options: ['json' => $object]
         );
@@ -238,7 +238,7 @@ class MongoDbService
         $object['dataSource'] = $config['mongodbCluster'];
 
         // Execute deletion via API.
-        $returnData = $client->post(
+        $client->post(
             uri: 'action/deleteOne',
             options: ['json' => $object]
         );

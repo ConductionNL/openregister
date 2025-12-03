@@ -26,7 +26,7 @@ namespace OCA\OpenRegister\Service;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\OrganisationMapper;
-use OCA\OpenRegister\Service\GuzzleSolrService;
+use OCP\AppFramework\IAppContainer;
 use OCP\ICacheFactory;
 use OCP\IMemcache;
 use OCP\IUserSession;
@@ -55,13 +55,6 @@ class ObjectCacheService
      * @var array<string, ObjectEntity>
      */
     private array $objectCache = [];
-
-    /**
-     * Cache of relationship mappings to avoid repeated lookups
-     *
-     * @var array<string, array<string>>
-     */
-    private array $relationshipCache = [];
 
     /**
      * Maximum number of objects to keep in memory cache
@@ -125,24 +118,31 @@ class ObjectCacheService
      */
     private IUserSession $userSession;
 
+    /**
+     * Container for lazy loading GuzzleSolrService to break circular dependency
+     *
+     * @var IAppContainer|null
+     */
+    private ?IAppContainer $container = null;
+
 
     /**
      * Constructor for ObjectCacheService
      *
-     * @param ObjectEntityMapper     $objectEntityMapper The object entity mapper
-     * @param OrganisationMapper     $organisationMapper The organisation entity mapper
-     * @param LoggerInterface        $logger             Logger for performance monitoring
-     * @param GuzzleSolrService|null $guzzleSolrService  Lightweight SOLR service using Guzzle HTTP
-     * @param ICacheFactory|null     $cacheFactory       Cache factory for query result caching
-     * @param IUserSession|null      $userSession        User session for cache key generation
+     * @param ObjectEntityMapper $objectEntityMapper The object entity mapper
+     * @param OrganisationMapper $organisationMapper The organisation entity mapper
+     * @param LoggerInterface    $logger             Logger for performance monitoring
+     * @param ICacheFactory|null $cacheFactory       Cache factory for query result caching
+     * @param IUserSession|null  $userSession        User session for cache key generation
+     * @param IAppContainer|null $container          Container for lazy loading GuzzleSolrService (optional)
      */
     public function __construct(
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly OrganisationMapper $organisationMapper,
         private readonly LoggerInterface $logger,
-        private readonly ?GuzzleSolrService $guzzleSolrService=null,
         ?ICacheFactory $cacheFactory=null,
-        ?IUserSession $userSession=null
+        ?IUserSession $userSession=null,
+        ?IAppContainer $container=null
     ) {
         // Initialize query cache if available.
         if ($cacheFactory !== null) {
@@ -174,22 +174,38 @@ class ObjectCacheService
 
 
         };
+        $this->container   = $container;
 
     }//end __construct()
 
 
     /**
-     * Get GuzzleSolrService instance using direct DI injection
+     * Get GuzzleSolrService instance using lazy loading from container
      *
-     * Since Guzzle is lightweight, we can use direct DI registration without
-     * performance issues. Returns null if SOLR is unavailable or disabled.
+     * Lazy loads GuzzleSolrService from container to break circular dependency.
+     * Returns null if SOLR is unavailable or disabled.
      *
      * @return GuzzleSolrService|null SOLR service instance or null
      */
     private function getSolrService(): ?GuzzleSolrService
     {
-        // Since Guzzle is lightweight, we use direct DI injection (no factory needed!).
-        return $this->guzzleSolrService;
+        // Lazy-load GuzzleSolrService from container to break circular dependency.
+        if ($this->container === null) {
+            return null;
+        }
+
+        try {
+            return $this->container->get(\OCA\OpenRegister\Service\GuzzleSolrService::class);
+        } catch (\Exception $e) {
+            // If GuzzleSolrService is not available, return null (graceful degradation).
+            $this->logger->debug(
+                    'GuzzleSolrService not available',
+                    [
+                        'error' => $e->getMessage(),
+                    ]
+                    );
+            return null;
+        }
 
     }//end getSolrService()
 
@@ -250,6 +266,8 @@ class ObjectCacheService
      * @param bool         $commit Whether to commit immediately
      *
      * @return bool True if indexing was successful or SOLR unavailable
+     *
+     * @psalm-suppress UnusedReturnValue
      */
     private function indexObjectInSolr(ObjectEntity $object, bool $commit=false): bool
     {
@@ -318,6 +336,8 @@ class ObjectCacheService
      * @param bool         $commit Whether to commit immediately
      *
      * @return bool True if removal was successful or SOLR unavailable
+     *
+     * @psalm-suppress UnusedReturnValue
      */
     private function removeObjectFromSolr(ObjectEntity $object, bool $commit=false): bool
     {
@@ -355,97 +375,6 @@ class ObjectCacheService
         }//end try
 
     }//end removeObjectFromSolr()
-
-
-    /**
-     * Create SOLR document from ObjectEntity
-     *
-     * This method creates a SOLR document structure that matches the ObjectEntity
-     * architecture, with metadata fields at root level and flexible object data.
-     *
-     * @param ObjectEntity $object Object to convert to SOLR document
-     *
-     * @return array SOLR document array
-     */
-    private function createSolrDocumentFromObject(ObjectEntity $object): array
-    {
-        // Get object data.
-        $objectData  = $object->getObject();
-        $objectArray = $object->getObjectArray();
-
-        // Base SOLR document matching ObjectEntity structure.
-        $document = [
-            // Core identifiers (always present).
-            'id'               => $object->getUuid(),
-            'object_id_i'      => $object->getId(),
-            'uuid_s'           => $object->getUuid(),
-
-            // Context fields.
-            'register_id_i'    => (int) $object->getRegister(),
-            'schema_id_i'      => (int) $object->getSchema(),
-            'schema_version_s' => $object->getSchemaVersion(),
-
-            // Ownership and organization.
-            'owner_s'          => $object->getOwner(),
-            'organisation_s'   => $object->getOrganisation(),
-            'application_s'    => $object->getApplication(),
-
-            // Metadata fields (extracted from object data or entity).
-            'name_s'           => $object->getName(),
-            'name_txt'         => $object->getName(),
-        // For full-text search.
-            'description_s'    => $object->getDescription(),
-            'description_txt'  => $object->getDescription(),
-            'summary_s'        => $object->getSummary(),
-            'summary_txt'      => $object->getSummary(),
-            'image_s'          => $object->getImage(),
-
-            // URL and navigation.
-            'slug_s'           => $object->getSlug(),
-            'uri_s'            => $object->getUri(),
-            'folder_s'         => $object->getFolder(),
-
-            // Timestamps.
-            'created_dt'       => $object->getCreated()?->format('Y-m-d\\TH:i:s\\Z'),
-            'updated_dt'       => $object->getUpdated()?->format('Y-m-d\\TH:i:s\\Z'),
-            'published_dt'     => $object->getPublished()?->format('Y-m-d\\TH:i:s\\Z'),
-            'depublished_dt'   => $object->getDepublished()?->format('Y-m-d\\TH:i:s\\Z'),
-            'expires_dt'       => $object->getExpires()?->format('Y-m-d\\TH:i:s\\Z'),
-
-            // Status fields.
-            'version_s'        => $object->getVersion(),
-            'size_s'           => $object->getSize(),
-
-            // Arrays and complex data.
-            'files_ss'         => $object->getFiles(),
-            'relations_ss'     => $object->getRelations(),
-            'groups_ss'        => $object->getGroups(),
-
-            // The flexible object data (JSON stored as text for SOLR).
-            'object_txt'       => json_encode($objectData, JSON_UNESCAPED_UNICODE),
-
-            // Full-text search catch-all field.
-            '_text_'           => $this->buildFullTextContent(object: $object, objectData: $objectData),
-        ];
-
-        // Add dynamic fields from object data.
-        $document = array_merge($document, $this->extractDynamicFieldsFromObject($objectData));
-
-        // Remove null values, but keep published/depublished fields for proper filtering.
-        return array_filter(
-                $document,
-                function ($value, $key) {
-                    // Always keep published/depublished fields even if null for proper Solr filtering.
-                    if (in_array($key, ['published_dt', 'depublished_dt']) === true) {
-                        return true;
-                    }
-
-                    return $value !== null && $value !== '' && $value !== [];
-                },
-                ARRAY_FILTER_USE_BOTH
-                );
-
-    }//end createSolrDocumentFromObject()
 
 
     /**
@@ -527,14 +456,14 @@ class ObjectCacheService
     /**
      * Extract text content from array recursively
      *
-     * @param array      $data        Array to extract text from
-     * @param array|null $textContent Reference to text content array
+     * @param array $data        Array to extract text from
+     * @param array $textContent Reference to text content array
      *
      * @return void
      */
     private function extractTextFromArray(array $data, array &$textContent): void
     {
-        foreach ($data as $key => $value) {
+        foreach ($data as $_key => $value) {
             if (is_string($value) === true) {
                 $textContent[] = $value;
             } else if (is_array($value) === true) {
@@ -677,65 +606,6 @@ class ObjectCacheService
 
 
     /**
-     * Preload relationship data for multiple objects
-     *
-     * This method analyzes objects and preloads their relationship targets
-     * to prevent N+1 queries during rendering.
-     *
-     * @param array $objects Array of objects to analyze
-     * @param array $extend  Array of relationship fields to preload
-     *
-     * @return array<ObjectEntity> Array of preloaded related objects
-     *
-     * @phpstan-param  array<ObjectEntity> $objects
-     * @phpstan-param  array<string> $extend
-     * @phpstan-return array<ObjectEntity>
-     * @psalm-param    array<ObjectEntity> $objects
-     * @psalm-param    array<string> $extend
-     * @psalm-return   array<ObjectEntity>
-     */
-    public function preloadRelationships(array $objects, array $extend): array
-    {
-        if (empty($objects) === true || empty($extend) === true) {
-            return [];
-        }
-
-        $allRelationshipIds = [];
-
-        // Extract all relationship IDs.
-        foreach ($objects as $object) {
-            if (($object instanceof ObjectEntity) === false) {
-                continue;
-            }
-
-            $objectData = $object->getObject();
-
-            foreach ($extend as $field) {
-                if (str_starts_with($field, '@') === true) {
-                    continue;
-                }
-
-                $value = $objectData[$field] ?? null;
-
-                if (is_array($value) === true) {
-                    foreach ($value as $relId) {
-                        if (is_string($relId) === true || is_int($relId) === true) {
-                            $allRelationshipIds[] = (string) $relId;
-                        }
-                    }
-                } else if (is_string($value) === true || is_int($value) === true) {
-                    $allRelationshipIds[] = (string) $value;
-                }
-            }
-        }//end foreach
-
-        // Preload all relationship targets.
-        return $this->preloadObjects($allRelationshipIds);
-
-    }//end preloadRelationships()
-
-
-    /**
      * Get cache statistics
      *
      * Returns information about cache performance for monitoring and optimization.
@@ -769,134 +639,6 @@ class ObjectCacheService
                 );
 
     }//end getStats()
-
-
-    /**
-     * Get cached query result for search operations
-     *
-     * This method provides caching for expensive search queries with filters,
-     * pagination, and authorization context to avoid repeated database execution.
-     *
-     * @param array       $query                  Search query parameters
-     * @param string|null $activeOrganisationUuid Active organization UUID
-     * @param bool        $rbac                   Whether RBAC is enabled
-     * @param bool        $multi                  Whether multi-tenancy is enabled
-     *
-     * @return array|int|null Cached search results or null if not cached
-     *
-     * @phpstan-return array<ObjectEntity>|int|null
-     * @psalm-return   array<ObjectEntity>|int|null
-     */
-    public function getCachedSearchResult(array $query, ?string $activeOrganisationUuid, bool $rbac, bool $multi): array|int|null
-    {
-        $cacheKey = $this->generateSearchCacheKey(query: $query, activeOrganisationUuid: $activeOrganisationUuid, rbac: $rbac, multi: $multi);
-
-        // Check in-memory cache first (fastest).
-        if (($this->inMemoryQueryCache[$cacheKey] ?? null) !== null) {
-            $this->stats['query_hits']++;
-            $this->logger->debug(
-                    '🚀 SEARCH CACHE HIT (in-memory)',
-                    [
-                        'cacheKey' => substr($cacheKey, 0, 16).'...',
-                    ]
-                    );
-            return $this->inMemoryQueryCache[$cacheKey];
-        }
-
-        // Check distributed cache.
-        if ($this->queryCache !== null) {
-            $cachedResult = $this->queryCache->get($cacheKey);
-            if ($cachedResult !== null) {
-                // Store in in-memory cache for faster future access.
-                $this->inMemoryQueryCache[$cacheKey] = $cachedResult;
-                $this->stats['query_hits']++;
-                $this->logger->debug(
-                        '⚡ SEARCH CACHE HIT (distributed)',
-                        [
-                            'cacheKey' => substr($cacheKey, 0, 16).'...',
-                        ]
-                        );
-                return $cachedResult;
-            }
-        }
-
-        $this->stats['query_misses']++;
-        $this->logger->debug(
-                '❌ SEARCH CACHE MISS',
-                [
-                    'cacheKey' => substr($cacheKey, 0, 16).'...',
-                ]
-                );
-        return null;
-
-    }//end getCachedSearchResult()
-
-
-    /**
-     * Cache search query results
-     *
-     * This method stores search results in both in-memory and distributed caches
-     * for improved performance on repeated queries.
-     *
-     * @param array       $query                  Search query parameters
-     * @param string|null $activeOrganisationUuid Active organization UUID
-     * @param bool        $rbac                   Whether RBAC is enabled
-     * @param bool        $multi                  Whether multi-tenancy is enabled
-     * @param array|int   $result                 Search results to cache
-     * @param int         $ttl                    Cache TTL in seconds (default: 300 = 5 minutes)
-     *
-     * @return void
-     *
-     * @phpstan-param array<ObjectEntity>|int $result
-     * @psalm-param   array<ObjectEntity>|int $result
-     */
-    public function cacheSearchResult(
-        array $query,
-        ?string $activeOrganisationUuid,
-        bool $rbac,
-        bool $multi,
-        array|int $result,
-        int $ttl=300
-    ): void {
-        // Enforce maximum cache TTL for office environments.
-        $ttl = min($ttl, self::MAX_CACHE_TTL);
-
-        $cacheKey = $this->generateSearchCacheKey(query: $query, activeOrganisationUuid: $activeOrganisationUuid, rbac: $rbac, multi: $multi);
-
-        // Store in in-memory cache.
-        $this->inMemoryQueryCache[$cacheKey] = $result;
-
-        // Store in distributed cache if available.
-        if ($this->queryCache !== null) {
-            try {
-                $this->queryCache->set($cacheKey, $result, $ttl);
-            } catch (\Exception $e) {
-                $this->logger->warning(
-                        'Failed to cache search result',
-                        [
-                            'error'    => $e->getMessage(),
-                            'cacheKey' => substr($cacheKey, 0, 16).'...',
-                        ]
-                        );
-            }
-        }
-
-        $this->logger->debug(
-                '💾 SEARCH RESULT CACHED',
-                [
-                    'cacheKey'   => substr($cacheKey, 0, 16).'...',
-                    'resultType' => is_array($result) === true ? 'array('.count($result).')' : 'count('.$result.')',
-                    'ttl'        => $ttl.'s',
-                ]
-                );
-
-        // Limit in-memory cache size to prevent memory issues.
-        if (count($this->inMemoryQueryCache) > 50) {
-            // Remove oldest entries (simple FIFO).
-            $this->inMemoryQueryCache = array_slice($this->inMemoryQueryCache, -25, null, true);
-        }
-
-    }//end cacheSearchResult()
 
 
     /**
@@ -965,8 +707,7 @@ class ObjectCacheService
      */
     private function clearSchemaRelatedCaches(?int $schemaId=null, ?int $registerId=null, string $operation='unknown'): void
     {
-        $startTime    = microtime(true);
-        $clearedCount = 0;
+        $startTime = microtime(true);
 
         // **STRATEGY 1**: Clear all in-memory search caches (fast).
         $this->inMemoryQueryCache = [];
@@ -1044,7 +785,7 @@ class ObjectCacheService
         if ($object !== null) {
             $registerId = $registerId ?? ($object->getRegister() !== null ? (int) $object->getRegister() : null);
             $schemaId   = $schemaId ?? ($object->getSchema() !== null ? (int) $object->getSchema() : null);
-            $orgId      = $object->getOrganisation();
+            $object->getOrganisation();
             // Track organization for future use.
             // Clear individual object from cache.
             $this->clearObjectFromCache($object);
@@ -1123,40 +864,6 @@ class ObjectCacheService
                 );
 
     }//end clearObjectFromCache()
-
-
-    /**
-     * Clear caches for specific register/schema combination
-     *
-     * Used when register or schema configurations change that might affect
-     * object queries and validation.
-     *
-     * @param int|null $registerId Register ID to clear caches for
-     * @param int|null $schemaId   Schema ID to clear caches for
-     *
-     * @return void
-     */
-    public function invalidateForSchemaChange(?int $registerId=null, ?int $schemaId=null): void
-    {
-        $startTime = microtime(true);
-
-        // Clear search caches since schema changes affect query results.
-        $this->clearSearchCache();
-
-        // For individual object cache, we keep objects but they'll be re-validated.
-        // against new schema on next access.
-        $executionTime = round((microtime(true) - $startTime) * 1000, 2);
-
-        $this->logger->info(
-                'Object cache invalidated for schema change',
-                [
-                    'registerId'    => $registerId,
-                    'schemaId'      => $schemaId,
-                    'executionTime' => $executionTime.'ms',
-                ]
-                );
-
-    }//end invalidateForSchemaChange()
 
 
     /**
@@ -1691,298 +1398,6 @@ class ObjectCacheService
 
 
     /**
-     * Warm up SOLR index with all objects (bulk operation)
-     *
-     * Efficiently indexes all objects in the database to SOLR in batches,
-     * optimized for handling 200K+ objects with performance monitoring.
-     *
-     * @param int|null $registerId  Optional register filter
-     * @param int|null $schemaId    Optional schema filter
-     * @param int      $batchSize   Number of objects to process per batch
-     * @param int      $commitEvery Commit to SOLR every N batches
-     *
-     * @return array Performance statistics
-     */
-    public function warmupSolrIndex(?int $registerId=null, ?int $schemaId=null, int $batchSize=500, int $commitEvery=10): array
-    {
-        // Get SOLR service using factory pattern (performance optimized).
-        $solrService = $this->getSolrService();
-        if ($solrService === null || $solrService->isAvailable() === false) {
-            return [
-                'success' => false,
-                'message' => 'SOLR service is not available',
-                'stats'   => [],
-            ];
-        }
-
-        $startTime      = microtime(true);
-        $totalProcessed = 0;
-        $totalIndexed   = 0;
-        $totalErrors    = 0;
-        $batchCount     = 0;
-
-        $this->logger->info(
-                '🔥 STARTING SOLR INDEX WARMUP',
-                [
-                    'registerId'  => $registerId,
-                    'schemaId'    => $schemaId,
-                    'batchSize'   => $batchSize,
-                    'commitEvery' => $commitEvery,
-                ]
-                );
-
-        try {
-            // Get total count for progress tracking - use countAll with no published filter to get ALL objects.
-            $totalCount = $this->objectEntityMapper->countAll(
-                filters: [],
-                search: null,
-                ids: null,
-                uses: null,
-                includeDeleted: false,
-                register: null,
-            // Don't filter by register for total count.
-                schema: null,
-            // Don't filter by schema for total count.
-                published: null,
-            // Count ALL objects (published and unpublished).
-                rbac: false,
-                multi: false
-            );
-
-            $this->logger->info(
-                    '📊 SOLR WARMUP: Total objects to process (ALL objects, not just published)',
-                    [
-                        'totalCount'        => $totalCount,
-                        'registerId'        => $registerId,
-                        'schemaId'          => $schemaId,
-                        'estimatedDuration' => round(($totalCount / $batchSize) * 2).'s',
-                    ]
-                    );
-
-            $offset = 0;
-
-            while (true) {
-                $batchStartTime = microtime(true);
-
-                // Load batch of objects using findAll with limit/offset.
-                $filters = [];
-                if ($registerId !== null) {
-                    $filters['register'] = $registerId;
-                }
-
-                if ($schemaId !== null) {
-                    $filters['schema'] = $schemaId;
-                }
-
-                $objects = $this->objectEntityMapper->findAll(
-                    limit: $batchSize,
-                    offset: $offset,
-                    filters: $filters
-                );
-
-                if (empty($objects) === true) {
-                    break;
-                    // No more objects.
-                }
-
-                $batchCount++;
-                $batchIndexed = 0;
-                $batchErrors  = 0;
-
-                // Prepare batch of SOLR documents using consistent schema-aware mapping.
-                $solrDocuments = [];
-                foreach ($objects as $object) {
-                    try {
-                        // Use the same createSolrDocument method as single object creation for consistency.
-                        $solrDocument    = $solrService->createSolrDocument($object);
-                        $solrDocuments[] = $solrDocument;
-                        $batchIndexed++;
-                    } catch (\Exception $e) {
-                        $batchErrors++;
-                        $this->logger->warning(
-                                'Failed to create SOLR document',
-                                [
-                                    'object_id' => $object->getId(),
-                                    'error'     => $e->getMessage(),
-                                ]
-                                );
-                    }
-                }
-
-                // Bulk index documents in SOLR.
-                if (empty($solrDocuments) === false) {
-                    $bulkResult = $solrService->bulkIndex(documents: $solrDocuments, commit: true);
-                    if ($bulkResult === false) {
-                        $batchErrors += count($solrDocuments);
-                        $this->logger->warning(
-                                'Bulk index failed for batch',
-                                [
-                                    'batchCount'     => $batchCount,
-                                    'documentsCount' => count($solrDocuments),
-                                ]
-                                );
-                    }
-                }
-
-                // Commit periodically for memory management.
-                if ($batchCount % $commitEvery === 0) {
-                    $solrService->commit();
-                    $this->logger->debug(
-                            '💾 SOLR COMMIT',
-                            [
-                                'batchesProcessed' => $batchCount,
-                                'objectsProcessed' => $totalProcessed + count($objects),
-                            ]
-                            );
-                }
-
-                $totalProcessed += count($objects);
-                $totalIndexed   += $batchIndexed;
-                $totalErrors    += $batchErrors;
-                $offset         += $batchSize;
-
-                $batchDuration   = microtime(true) - $batchStartTime;
-                $progressPercent = round(($totalProcessed / $totalCount) * 100, 1);
-
-                // Log progress every 10 batches.
-                if ($batchCount % 10 === 0) {
-                    $this->logger->info(
-                            '📈 SOLR WARMUP PROGRESS',
-                            [
-                                'batchCount'          => $batchCount,
-                                'processed'           => $totalProcessed,
-                                'total'               => $totalCount,
-                                'progress'            => $progressPercent.'%',
-                                'indexed'             => $totalIndexed,
-                                'errors'              => $totalErrors,
-                                'batchDuration'       => round($batchDuration * 1000).'ms',
-                                'avgObjectsPerSecond' => round(count($objects) / $batchDuration),
-                            ]
-                            );
-                }
-
-                // Memory management.
-                if ($batchCount % 50 === 0) {
-                    $this->logger->debug(
-                            '🧹 MEMORY CLEANUP',
-                            [
-                                'memoryUsage' => round(memory_get_usage() / 1024 / 1024, 2).'MB',
-                                'peakMemory'  => round(memory_get_peak_usage() / 1024 / 1024, 2).'MB',
-                            ]
-                            );
-                }
-
-                // Prevent memory exhaustion.
-                unset($objects, $solrDocuments);
-            }//end while
-
-            // Final commit.
-            $solrService->commit();
-
-            $totalDuration       = microtime(true) - $startTime;
-            $avgObjectsPerSecond = $totalProcessed > 0 ? round($totalProcessed / $totalDuration) : 0;
-
-            $stats = [
-                'success'             => true,
-                'totalProcessed'      => $totalProcessed,
-                'totalIndexed'        => $totalIndexed,
-                'totalErrors'         => $totalErrors,
-                'batchCount'          => $batchCount,
-                'duration'            => round($totalDuration, 2),
-                'avgObjectsPerSecond' => $avgObjectsPerSecond,
-                'memoryPeak'          => round(memory_get_peak_usage() / 1024 / 1024, 2).'MB',
-                'errorRate'           => $totalProcessed > 0 ? round(($totalErrors / $totalProcessed) * 100, 2).'%' : '0%',
-            ];
-
-            $this->logger->info(message: '✅ SOLR INDEX WARMUP COMPLETED', context: $stats);
-
-            return ['success' => true, 'stats' => $stats];
-        } catch (\Exception $e) {
-            $duration = microtime(true) - $startTime;
-
-            $this->logger->error(
-                    '❌ SOLR WARMUP FAILED',
-                    [
-                        'error'     => $e->getMessage(),
-                        'processed' => $totalProcessed,
-                        'duration'  => round($duration, 2),
-                        'trace'     => $e->getTraceAsString(),
-                    ]
-                    );
-
-            return [
-                'success' => false,
-                'message' => $e->getMessage(),
-                'stats'   => [
-                    'totalProcessed' => $totalProcessed,
-                    'totalIndexed'   => $totalIndexed,
-                    'totalErrors'    => $totalErrors,
-                    'duration'       => round($duration, 2),
-                ],
-            ];
-        }//end try
-
-    }//end warmupSolrIndex()
-
-
-    /**
-     * Clear entire SOLR index for a register/schema
-     *
-     * @param int|null $registerId Optional register filter
-     * @param int|null $schemaId   Optional schema filter
-     *
-     * @return bool True if clearing was successful
-     */
-    public function clearSolrIndex(?int $registerId=null, ?int $schemaId=null): bool
-    {
-        // Get SOLR service using factory pattern (performance optimized).
-        $solrService = $this->getSolrService();
-        if ($solrService === null || $solrService->isAvailable() === false) {
-            return true;
-            // Graceful degradation.
-        }
-
-        try {
-            // Build query to clear specific register/schema or all.
-            $query = '*:*';
-            // Default: clear all.
-            if ($registerId !== null && $schemaId !== null) {
-                $query = 'register_id_i:'.$registerId.' AND schema_id_i:'.$schemaId;
-            } else if ($registerId !== null) {
-                $query = 'register_id_i:'.$registerId;
-            } else if ($schemaId !== null) {
-                $query = 'schema_id_i:'.$schemaId;
-            }
-
-            $result = $solrService->deleteByQuery(query: $query, commit: true);
-
-            $this->logger->info(
-                    '🗑️  SOLR INDEX CLEARED',
-                    [
-                        'registerId' => $registerId,
-                        'schemaId'   => $schemaId,
-                        'query'      => $query,
-                        'success'    => $result,
-                    ]
-                    );
-
-            return $result;
-        } catch (\Exception $e) {
-            $this->logger->error(
-                    'Failed to clear SOLR index',
-                    [
-                        'registerId' => $registerId,
-                        'schemaId'   => $schemaId,
-                        'error'      => $e->getMessage(),
-                    ]
-                    );
-            return false;
-        }//end try
-
-    }//end clearSolrIndex()
-
-
-    /**
      * Get comprehensive SOLR dashboard statistics
      *
      * @return array Dashboard statistics from SolrService
@@ -2089,44 +1504,6 @@ class ObjectCacheService
         }
 
     }//end clearSolrIndexForDashboard()
-
-
-    /**
-     * Test SOLR connection
-     *
-     * @return array Connection test results
-     */
-    public function testSolrConnection(): array
-    {
-        $solrService = $this->getSolrService();
-        if ($solrService === null) {
-            return [
-                'success' => false,
-                'message' => 'SOLR service is not available',
-                'details' => [],
-            ];
-        }
-
-        return $solrService->testConnection();
-
-    }//end testSolrConnection()
-
-
-    /**
-     * Get SOLR service statistics
-     *
-     * @return array SOLR statistics
-     */
-    public function getSolrStats(): array
-    {
-        $solrService = $this->getSolrService();
-        if ($solrService === null) {
-            return ['available' => false];
-        }
-
-        return $solrService->getStats();
-
-    }//end getSolrStats()
 
 
 }//end class

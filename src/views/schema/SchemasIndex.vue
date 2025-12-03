@@ -126,6 +126,24 @@ import { schemaStore, navigationStore, configurationStore } from '../../store/st
 										</template>
 										Edit
 									</NcActionButton>
+									<NcActionButton
+										v-if="!schema.published || (schema.depublished && new Date(schema.depublished) <= new Date())"
+										close-after-click
+										@click="publishSchema(schema)">
+										<template #icon>
+											<Publish :size="20" />
+										</template>
+										Publish
+									</NcActionButton>
+									<NcActionButton
+										v-if="schema.published && (!schema.depublished || new Date(schema.depublished) > new Date())"
+										close-after-click
+										@click="depublishSchema(schema)">
+										<template #icon>
+											<PublishOff :size="20" />
+										</template>
+										Depublish
+									</NcActionButton>
 									<NcActionButton v-tooltip="schema.stats?.objects?.total > 0 ? 'Cannot delete: objects are still attached' : ''"
 										close-after-click
 										:disabled="schema.stats?.objects?.total > 0"
@@ -259,6 +277,24 @@ import { schemaStore, navigationStore, configurationStore } from '../../store/st
 												</template>
 												Edit
 											</NcActionButton>
+											<NcActionButton
+												v-if="!schema.published || (schema.depublished && new Date(schema.depublished) <= new Date())"
+												close-after-click
+												@click="publishSchema(schema)">
+												<template #icon>
+													<Publish :size="20" />
+												</template>
+												Publish
+											</NcActionButton>
+											<NcActionButton
+												v-if="schema.published && (!schema.depublished || new Date(schema.depublished) > new Date())"
+												close-after-click
+												@click="depublishSchema(schema)">
+												<template #icon>
+													<PublishOff :size="20" />
+												</template>
+												Depublish
+											</NcActionButton>
 											<NcActionButton v-tooltip="schema.stats?.objects?.total > 0 ? 'Cannot delete: objects are still attached' : ''"
 												close-after-click
 												:disabled="schema.stats?.objects?.total > 0"
@@ -302,8 +338,11 @@ import Plus from 'vue-material-design-icons/Plus.vue'
 import ChevronDown from 'vue-material-design-icons/ChevronDown.vue'
 import ChevronUp from 'vue-material-design-icons/ChevronUp.vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
+import Publish from 'vue-material-design-icons/Publish.vue'
+import PublishOff from 'vue-material-design-icons/PublishOff.vue'
 
 import PaginationComponent from '../../components/PaginationComponent.vue'
+import { showError, showSuccess } from '@nextcloud/dialogs'
 
 export default {
 	name: 'SchemasIndex',
@@ -323,6 +362,8 @@ export default {
 		ChevronDown,
 		ChevronUp,
 		CogOutline,
+		Publish,
+		PublishOff,
 		PaginationComponent,
 	},
 	data() {
@@ -487,7 +528,7 @@ export default {
 			if (!schema || !schema.id) return false
 
 			return configurationStore.configurationList.some(
-				config => config.schemas && config.schemas.includes(schema.id),
+				config => config.schemas && config.schemas.some(configSchema => configSchema.id === schema.id),
 			)
 		},
 		/**
@@ -500,7 +541,7 @@ export default {
 			if (!schema || !schema.id) return null
 
 			return configurationStore.configurationList.find(
-				config => config.schemas && config.schemas.includes(schema.id),
+				config => config.schemas && config.schemas.some(configSchema => configSchema.id === schema.id),
 			) || null
 		},
 		/**
@@ -551,6 +592,24 @@ export default {
 		},
 		onPageSizeChanged(pageSize) {
 			schemaStore.setPagination(1, pageSize)
+		},
+		async publishSchema(schema) {
+			try {
+				await schemaStore.publishSchema(schema.id)
+				showSuccess(t('openregister', 'Schema published successfully'))
+			} catch (error) {
+				console.error('Error publishing schema:', error)
+				showError(t('openregister', 'Failed to publish schema: {error}', { error: error.message }))
+			}
+		},
+		async depublishSchema(schema) {
+			try {
+				await schemaStore.depublishSchema(schema.id)
+				showSuccess(t('openregister', 'Schema depublished successfully'))
+			} catch (error) {
+				console.error('Error depublishing schema:', error)
+				showError(t('openregister', 'Failed to depublish schema: {error}', { error: error.message }))
+			}
 		},
 	},
 }

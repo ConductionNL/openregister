@@ -83,14 +83,16 @@ class FileMapper extends QBMapper
 
 
     /**
-     * FileMapper constructor.
+     * Constructor
      *
-     * @param IDBConnection $db           The database connection
-     * @param IURLGenerator $urlGenerator URL generator for share links
+     * @param IDBConnection $db           Database connection
+     * @param IURLGenerator $urlGenerator URL generator
      */
-    public function __construct(IDBConnection $db, IURLGenerator $urlGenerator)
-    {
-        parent::__construct($db, 'filecache');
+    public function __construct(
+        IDBConnection $db,
+        IURLGenerator $urlGenerator
+    ) {
+        parent::__construct($db, 'openregister_files', File::class);
         $this->urlGenerator = $urlGenerator;
 
     }//end __construct()

@@ -39,6 +39,10 @@ use Psr\Log\LoggerInterface;
  *
  * @package OCA\OpenRegister\Controller
  */
+/**
+ * @psalm-suppress UnusedClass
+ */
+
 class ConfigurationController extends Controller
 {
 

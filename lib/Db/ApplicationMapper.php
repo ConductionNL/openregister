@@ -50,6 +50,8 @@ use OCP\IUserSession;
  * @method list<Application> findEntities(IQueryBuilder $query)
  *
  * @template-extends QBMapper<Application>
+ *
+ * @psalm-suppress PossiblyUnusedMethod
  */
 class ApplicationMapper extends QBMapper
 {
@@ -85,12 +87,12 @@ class ApplicationMapper extends QBMapper
 
 
     /**
-     * ApplicationMapper constructor.
+     * Constructor
      *
-     * @param IDBConnection       $db                  Database connection instance
-     * @param OrganisationService $organisationService Organisation service for multi-tenancy
+     * @param IDBConnection       $db                  Database connection
+     * @param OrganisationService $organisationService Organisation service
      * @param IUserSession        $userSession         User session
-     * @param IGroupManager       $groupManager        Group manager for RBAC
+     * @param IGroupManager       $groupManager        Group manager
      * @param IEventDispatcher    $eventDispatcher     Event dispatcher
      */
     public function __construct(
@@ -320,6 +322,8 @@ class ApplicationMapper extends QBMapper
      *
      * @return Application The deleted application
      * @throws \Exception If user doesn't have delete permission or access to this organisation
+     *
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function delete(Entity $entity): Entity
     {

@@ -321,6 +321,28 @@ class Schema extends Entity implements JsonSerializable
      */
     protected ?array $anyOf = null;
 
+    /**
+     * Publication timestamp.
+     *
+     * When set, this schema becomes publicly accessible regardless of organisation restrictions
+     * if published bypass is enabled. The schema is considered published when:
+     * - published <= now AND
+     * - (depublished IS NULL OR depublished > now)
+     *
+     * @var DateTime|null Publication timestamp
+     */
+    protected ?DateTime $published = null;
+
+    /**
+     * Depublication timestamp.
+     *
+     * When set, this schema becomes inaccessible after this date/time.
+     * Used together with published to control publication lifecycle.
+     *
+     * @var DateTime|null Depublication timestamp
+     */
+    protected ?DateTime $depublished = null;
+
 
     /**
      * Constructor for the Schema class
@@ -358,6 +380,8 @@ class Schema extends Entity implements JsonSerializable
         $this->addType(fieldName: 'deleted', type: 'datetime');
         $this->addType(fieldName: 'configuration', type: 'json');
         $this->addType(fieldName: 'groups', type: 'json');
+        $this->addType(fieldName: 'published', type: 'datetime');
+        $this->addType(fieldName: 'depublished', type: 'datetime');
 
     }//end __construct()
 
@@ -427,6 +451,8 @@ class Schema extends Entity implements JsonSerializable
      * @throws \Exception If the properties are invalid
      *
      * @return bool True if the properties are valid
+     *
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function validateProperties(SchemaPropertyValidatorService $validator): bool
     {
@@ -459,6 +485,8 @@ class Schema extends Entity implements JsonSerializable
      * @throws \InvalidArgumentException If the authorization structure is invalid
      *
      * @return bool True if the authorization structure is valid
+     *
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function validateAuthorization(): bool
     {
@@ -720,6 +748,16 @@ class Schema extends Entity implements JsonSerializable
             $deleted = $this->deleted->format('c');
         }
 
+        $published = null;
+        if (isset($this->published) === true) {
+            $published = $this->published->format('c');
+        }
+
+        $depublished = null;
+        if (isset($this->depublished) === true) {
+            $depublished = $this->depublished->format('c');
+        }
+
         return [
             'id'             => $this->id,
             'uuid'           => $this->uuid,
@@ -747,6 +785,8 @@ class Schema extends Entity implements JsonSerializable
             'groups'         => $this->groups,
             'authorization'  => $this->authorization,
             'deleted'        => $deleted,
+            'published'      => $published,
+            'depublished'    => $depublished,
             'configuration'  => $this->configuration,
             'allOf'          => $this->allOf,
             'oneOf'          => $this->oneOf,
@@ -1456,6 +1496,60 @@ class Schema extends Entity implements JsonSerializable
         $this->markFieldUpdated('anyOf');
 
     }//end setAnyOf()
+
+
+    /**
+     * Get the publication timestamp
+     *
+     * @return DateTime|null Publication timestamp
+     */
+    public function getPublished(): ?DateTime
+    {
+        return $this->published;
+
+    }//end getPublished()
+
+
+    /**
+     * Set the publication timestamp
+     *
+     * @param DateTime|null $published Publication timestamp
+     *
+     * @return void
+     */
+    public function setPublished(?DateTime $published): void
+    {
+        $this->published = $published;
+        $this->markFieldUpdated('published');
+
+    }//end setPublished()
+
+
+    /**
+     * Get the depublication timestamp
+     *
+     * @return DateTime|null Depublication timestamp
+     */
+    public function getDepublished(): ?DateTime
+    {
+        return $this->depublished;
+
+    }//end getDepublished()
+
+
+    /**
+     * Set the depublication timestamp
+     *
+     * @param DateTime|null $depublished Depublication timestamp
+     *
+     * @return void
+     */
+    public function setDepublished(?DateTime $depublished): void
+    {
+        $this->depublished = $depublished;
+        $this->markFieldUpdated('depublished');
+
+    }//end setDepublished()
 
 
     /**

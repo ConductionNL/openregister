@@ -37,13 +37,6 @@ class EndpointService
 {
 
     /**
-     * Endpoint mapper
-     *
-     * @var EndpointMapper
-     */
-    private EndpointMapper $endpointMapper;
-
-    /**
      * Endpoint log mapper
      *
      * @var EndpointLogMapper
@@ -70,31 +63,6 @@ class EndpointService
      * @var IGroupManager
      */
     private IGroupManager $groupManager;
-
-
-    /**
-     * Constructor
-     *
-     * @param EndpointMapper    $endpointMapper    Endpoint mapper
-     * @param EndpointLogMapper $endpointLogMapper Endpoint log mapper
-     * @param LoggerInterface   $logger            Logger
-     * @param IUserSession      $userSession       User session
-     * @param IGroupManager     $groupManager      Group manager
-     */
-    public function __construct(
-        EndpointMapper $endpointMapper,
-        EndpointLogMapper $endpointLogMapper,
-        LoggerInterface $logger,
-        IUserSession $userSession,
-        IGroupManager $groupManager
-    ) {
-        $this->endpointMapper    = $endpointMapper;
-        $this->endpointLogMapper = $endpointLogMapper;
-        $this->logger            = $logger;
-        $this->userSession       = $userSession;
-        $this->groupManager      = $groupManager;
-
-    }//end __construct()
 
 
     /**
@@ -201,7 +169,7 @@ class EndpointService
      * @phpstan-return array{success: bool, statusCode: int, response: mixed, error?: string}
      * @psalm-return   array{success: bool, statusCode: int, response: mixed, error?: string}
      */
-    private function executeViewEndpoint(Endpoint $endpoint, array $request): array
+    private function executeViewEndpoint(Endpoint $_endpoint, array $_request): array
     {
         // Placeholder for view execution logic.
         // This would integrate with the view service to execute the view.
@@ -224,7 +192,7 @@ class EndpointService
      * @phpstan-return array{success: bool, statusCode: int, response: mixed, error?: string}
      * @psalm-return   array{success: bool, statusCode: int, response: mixed, error?: string}
      */
-    private function executeAgentEndpoint(Endpoint $endpoint, array $request): array
+    private function executeAgentEndpoint(Endpoint $_endpoint, array $_request): array
     {
         try {
             // Get required services.
@@ -375,183 +343,6 @@ class EndpointService
 
 
     /**
-     * Call Ollama API with function calling support
-     *
-     * @param string $ollamaUrl    Ollama API URL
-     * @param string $model        Model name
-     * @param array  $messages     Message history
-     * @param array  $functions    Available functions
-     * @param mixed  $agent        The agent object
-     * @param mixed  $toolRegistry Tool registry
-     *
-     * @return array Response from Ollama/function execution
-     */
-    private function callOllamaWithTools(string $ollamaUrl, string $model, array $messages, array $functions, $agent, $toolRegistry): array
-    {
-        $maxIterations = 5;
-        // Prevent infinite loops.
-        $iteration = 0;
-
-        while ($iteration < $maxIterations) {
-            $iteration++;
-
-            $this->logger->debug(
-                    '[EndpointService] Calling Ollama (iteration '.$iteration.')',
-                    [
-                        'model'    => $model,
-                        'messages' => count($messages),
-                        'tools'    => count($functions),
-                    ]
-                    );
-
-            // Build Ollama chat request.
-            $requestData = [
-                'model'    => $model,
-                'messages' => $messages,
-                'stream'   => false,
-            ];
-
-            // Add tools if available.
-            if (!empty($functions)) {
-                $requestData['tools'] = array_map(
-                        function ($func) {
-                            // Ensure parameters.properties is an object, not an array.
-                            $parameters = $func['parameters'] ?? ['type' => 'object', 'properties' => new \stdClass()];
-
-                            // Convert empty properties array to object for JSON encoding.
-                            if (($parameters['properties'] ?? null) !== null && is_array($parameters['properties']) === true && empty($parameters['properties']) === true) {
-                                $parameters['properties'] = new \stdClass();
-                            }
-
-                            return [
-                                'type'     => 'function',
-                                'function' => [
-                                    'name'        => $func['name'],
-                                    'description' => $func['description'] ?? '',
-                                    'parameters'  => $parameters,
-                                ],
-                            ];
-                        },
-                        $functions
-                        );
-            }//end if
-
-            // Call Ollama.
-            $ch = curl_init(rtrim($ollamaUrl, '/').'/api/chat');
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_POST, true);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($requestData));
-            curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-            curl_setopt($ch, CURLOPT_TIMEOUT, 120);
-
-            $response = curl_exec($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            curl_close($ch);
-
-            if ($httpCode !== 200) {
-                $this->logger->error(
-                        '[EndpointService] Ollama API error',
-                        [
-                            'httpCode' => $httpCode,
-                            'response' => $response,
-                        ]
-                        );
-
-                return [
-                    'error'   => 'Ollama API error: HTTP '.$httpCode,
-                    'details' => $response,
-                ];
-            }
-
-            $result = json_decode($response, true);
-
-            if (!$result || !isset($result['message'])) {
-                return [
-                    'error'    => 'Invalid response from Ollama',
-                    'response' => $response,
-                ];
-            }
-
-            $assistantMessage = $result['message'];
-            $messages[]       = $assistantMessage;
-
-            $this->logger->debug(
-                    '[EndpointService] Ollama response received',
-                    [
-                        'role'         => $assistantMessage['role'] ?? null,
-                        'hasContent'   => !empty($assistantMessage['content']),
-                        'hasToolCalls' => !empty($assistantMessage['tool_calls']),
-                    ]
-                    );
-
-            // Check if LLM wants to call a tool.
-            if (!empty($assistantMessage['tool_calls'])) {
-                $this->logger->info(
-                        '[EndpointService] LLM requested tool calls',
-                        [
-                            'count' => count($assistantMessage['tool_calls']),
-                        ]
-                        );
-
-                // Execute each tool call.
-                foreach ($assistantMessage['tool_calls'] as $toolCall) {
-                    $functionName = $toolCall['function']['name'] ?? null;
-                    $rawArgs      = $toolCall['function']['arguments'] ?? '{}';
-                    $functionArgs = (is_string($rawArgs) === true) === true ? json_decode($rawArgs, true) : $rawArgs;
-
-                    $this->logger->info(
-                            '[EndpointService] Executing tool call',
-                            [
-                                'function'  => $functionName,
-                                'arguments' => $functionArgs,
-                            ]
-                            );
-
-                    // Find and execute the tool function.
-                    $functionResult = $this->executeToolFunction($functionName, $functionArgs, $agent, $toolRegistry);
-
-                    // Add tool result to messages.
-                    // If result is already a string, use as-is; otherwise JSON encode.
-                    $content = is_string($functionResult) ? $functionResult : json_encode($functionResult);
-
-                    $messages[] = [
-                        'role'         => 'tool',
-                        'content'      => $content,
-                        'tool_call_id' => $toolCall['id'] ?? 'tool_'.$iteration,
-                    ];
-
-                    $this->logger->info(
-                            '[EndpointService] Tool executed',
-                            [
-                                'function' => $functionName,
-                                'success'  => !isset($functionResult['error']),
-                            ]
-                            );
-                }//end foreach
-
-                // Continue loop to get final response from LLM.
-                continue;
-            }//end if
-
-            // No more tool calls - return final response.
-            return [
-                'answer'        => $assistantMessage['content'] ?? '',
-                'iterations'    => $iteration,
-                'toolCallsMade' => $iteration > 1,
-            ];
-        }//end while
-
-        // Max iterations reached.
-        return [
-            'answer'     => 'Maximum iterations reached',
-            'iterations' => $iteration,
-            'warning'    => 'Agent may not have completed the task',
-        ];
-
-    }//end callOllamaWithTools()
-
-
-    /**
      * Execute a tool function
      *
      * @param string $functionName Function name
@@ -653,7 +444,7 @@ class EndpointService
      * @phpstan-return array{success: bool, statusCode: int, response: mixed, error?: string}
      * @psalm-return   array{success: bool, statusCode: int, response: mixed, error?: string}
      */
-    private function executeWebhookEndpoint(Endpoint $endpoint, array $request): array
+    private function executeWebhookEndpoint(Endpoint $_endpoint, array $_request): array
     {
         // Placeholder for webhook execution logic.
         // This would integrate with the webhook service to trigger the webhook.
@@ -676,7 +467,7 @@ class EndpointService
      * @phpstan-return array{success: bool, statusCode: int, response: mixed, error?: string}
      * @psalm-return   array{success: bool, statusCode: int, response: mixed, error?: string}
      */
-    private function executeRegisterEndpoint(Endpoint $endpoint, array $request): array
+    private function executeRegisterEndpoint(Endpoint $_endpoint, array $_request): array
     {
         // Placeholder for register execution logic.
         // This would integrate with the register/object service to handle CRUD operations.
@@ -699,7 +490,7 @@ class EndpointService
      * @phpstan-return array{success: bool, statusCode: int, response: mixed, error?: string}
      * @psalm-return   array{success: bool, statusCode: int, response: mixed, error?: string}
      */
-    private function executeSchemaEndpoint(Endpoint $endpoint, array $request): array
+    private function executeSchemaEndpoint(Endpoint $_endpoint, array $_request): array
     {
         // Placeholder for schema execution logic.
         // This would integrate with the schema/object service to handle schema-specific operations.

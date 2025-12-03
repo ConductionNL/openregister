@@ -44,24 +44,26 @@ use Psr\Log\LoggerInterface;
 class FileTextExtractionJob extends QueuedJob
 {
 
+    /**
+     * Configuration service
+     *
+     * @var IAppConfig
+     */
+    private IAppConfig $config;
 
     /**
-     * Constructor
+     * Logger service
      *
-     * @param ITimeFactory          $timeFactory           Time factory for job scheduling
-     * @param TextExtractionService $textExtractionService Text extraction service
-     * @param LoggerInterface       $logger                Logger instance
-     * @param IAppConfig            $config                Application configuration
+     * @var LoggerInterface
      */
-    public function __construct(
-        ITimeFactory $timeFactory,
-        private readonly TextExtractionService $textExtractionService,
-        private readonly LoggerInterface $logger,
-        private readonly IAppConfig $config,
-    ) {
-        parent::__construct($timeFactory);
+    private LoggerInterface $logger;
 
-    }//end __construct()
+    /**
+     * Text extraction service
+     *
+     * @var TextExtractionService
+     */
+    private TextExtractionService $textExtractionService;
 
 
     /**

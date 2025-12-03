@@ -30,6 +30,10 @@ use OCP\IRequest;
  * Class AuditTrailController
  * Handles all audit trail related operations
  */
+/**
+ * @psalm-suppress UnusedClass
+ */
+
 class AuditTrailController extends Controller
 {
 

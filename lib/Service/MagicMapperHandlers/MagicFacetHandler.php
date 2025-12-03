@@ -69,55 +69,6 @@ class MagicFacetHandler
 
 
     /**
-     * Get facets for objects in a specific register-schema table
-     *
-     * @param array    $facetConfig Facet configuration array
-     * @param array    $baseQuery   Base query filters to apply
-     * @param Register $register    Register context
-     * @param Schema   $schema      Schema context
-     * @param string   $tableName   Target dynamic table name
-     *
-     * @return (array|mixed)[][] Facet results organized by field
-     *
-     * @throws \OCP\DB\Exception If a database error occurs
-     *
-     * @psalm-return array<array<array|mixed>>
-     */
-    public function getFacets(array $facetConfig, array $baseQuery, Register $register, Schema $schema, string $tableName): array
-    {
-        if ($facetConfig === []) {
-            return [];
-        }
-
-        $facets = [];
-
-        // Process metadata facets (@self).
-        if (($facetConfig['@self'] ?? null) !== null && is_array($facetConfig['@self']) === true) {
-            $facets['@self'] = [];
-            foreach ($facetConfig['@self'] as $field => $config) {
-                $facets['@self'][$field] = $this->getMetadataFieldFacet($field, $config, $baseQuery, $tableName);
-            }
-        }
-
-        // Process schema property facets.
-        $objectFacetConfig = array_filter(
-                $facetConfig,
-                function ($key) {
-                    return $key !== '@self';
-                },
-                ARRAY_FILTER_USE_KEY
-                );
-
-        foreach ($objectFacetConfig as $field => $config) {
-            $facets[$field] = $this->getSchemaPropertyFacet($field, $config, $baseQuery, $schema, $tableName);
-        }
-
-        return $facets;
-
-    }//end getFacets()
-
-
-    /**
      * Get facet data for a metadata field
      *
      * @param string $field     Metadata field name
@@ -496,28 +447,6 @@ class MagicFacetHandler
         }
 
     }//end applyBaseFilters()
-
-
-    /**
-     * Get facetable fields from schema definition
-     *
-     * @param Register $register Register context
-     * @param Schema   $schema   Schema context
-     *
-     * @return array[] Array of facetable fields with their configurations
-     *
-     * @psalm-return array{'@self': array, schema_properties: array}
-     */
-    public function getFacetableFields(Register $register, Schema $schema): array
-    {
-        $facetableFields = [
-            '@self'             => $this->getMetadataFacetableFields(),
-            'schema_properties' => $this->getSchemaFacetableFields($schema),
-        ];
-
-        return $facetableFields;
-
-    }//end getFacetableFields()
 
 
     /**

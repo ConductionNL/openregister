@@ -90,12 +90,6 @@ class NamedEntityRecognitionService
     public function __construct(
         private readonly GdprEntityMapper $entityMapper,
         private readonly EntityRelationMapper $entityRelationMapper,
-        /**
-         */
-        private readonly ChunkMapper $chunkMapper,
-        /**
-         */
-        private readonly SettingsService $settingsService,
         private readonly IDBConnection $db,
         private readonly LoggerInterface $logger
     ) {
@@ -228,69 +222,6 @@ class NamedEntityRecognitionService
         ];
 
     }//end extractFromChunk()
-
-
-    /**
-     * Extract entities from multiple chunks in batch.
-     *
-     * @param array<int, Chunk> $chunks  Chunks to process.
-     * @param array             $options Processing options.
-     *
-     * @return array{
-     *     total_chunks: int,
-     *     processed: int,
-     *     failed: int,
-     *     total_entities: int,
-     *     total_relations: int,
-     *     errors: array<int, string>
-     * }
-     */
-    public function extractFromChunks(array $chunks, array $options=[]): array
-    {
-        $this->logger->info(
-                message: '[NamedEntityRecognitionService] Batch extracting entities',
-                context: [
-                    'chunk_count' => count($chunks),
-                ]
-                );
-
-        $processed      = 0;
-        $failed         = 0;
-        $totalEntities  = 0;
-        $totalRelations = 0;
-        $errors         = [];
-
-        foreach ($chunks as $chunk) {
-            try {
-                $result = $this->extractFromChunk($chunk, $options);
-
-                $processed++;
-                $totalEntities  += $result['entities_found'];
-                $totalRelations += $result['relations_created'];
-            } catch (Exception $e) {
-                $failed++;
-                $errors[$chunk->getId()] = $e->getMessage();
-
-                $this->logger->error(
-                        message: '[NamedEntityRecognitionService] Failed to process chunk',
-                        context: [
-                            'chunk_id' => $chunk->getId(),
-                            'error'    => $e->getMessage(),
-                        ]
-                        );
-            }//end try
-        }//end foreach
-
-        return [
-            'total_chunks'    => count($chunks),
-            'processed'       => $processed,
-            'failed'          => $failed,
-            'total_entities'  => $totalEntities,
-            'total_relations' => $totalRelations,
-            'errors'          => $errors,
-        ];
-
-    }//end extractFromChunks()
 
 
     /**

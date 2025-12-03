@@ -1074,61 +1074,6 @@ class MariaDbFacetHandler
 
 
     /**
-     * Get facetable object fields by analyzing JSON data in the database
-     *
-     * This method analyzes the JSON object data to determine which fields
-     * can be used for faceting and what types of facets are appropriate.
-     * It samples objects to determine field types and characteristics.
-     *
-     * @param array $baseQuery  Base query filters to apply for context
-     * @param int   $sampleSize Maximum number of objects to analyze (default: 100)
-     *
-     * @phpstan-param array<string, mixed> $baseQuery
-     * @phpstan-param int $sampleSize
-     *
-     * @psalm-param array<string, mixed> $baseQuery
-     * @psalm-param int $sampleSize
-     *
-     * @throws \OCP\DB\Exception If a database error occurs
-     *
-     * @return array Facetable object fields with their configuration
-     */
-    public function getFacetableFields(array $baseQuery=[], int $sampleSize=100): array
-    {
-        // Get sample objects to analyze.
-        $sampleObjects = $this->getSampleObjects($baseQuery, $sampleSize);
-
-        if (empty($sampleObjects) === true) {
-            return [];
-        }
-
-        // Analyze fields across all sample objects.
-        $fieldAnalysis = [];
-
-        foreach ($sampleObjects as $objectData) {
-            $this->analyzeObjectFields($objectData, $fieldAnalysis);
-        }
-
-        // Convert analysis to facetable field configuration.
-        $facetableFields = [];
-
-        foreach ($fieldAnalysis as $fieldPath => $analysis) {
-            // Only include fields that appear in at least 10% of objects.
-            $appearanceRate = $analysis['count'] / count($sampleObjects);
-            if ($appearanceRate >= 0.1) {
-                $fieldConfig = $this->determineFieldConfiguration($fieldPath, $analysis);
-                if ($fieldConfig !== null) {
-                    $facetableFields[$fieldPath] = $fieldConfig;
-                }
-            }
-        }
-
-        return $facetableFields;
-
-    }//end getFacetableFields()
-
-
-    /**
      * Get sample objects for field analysis
      *
      * @param array $baseQuery  Base query filters to apply

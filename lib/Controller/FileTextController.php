@@ -39,6 +39,10 @@ use Psr\Log\LoggerInterface;
  * @author   OpenRegister Team
  * @license  AGPL-3.0-or-later
  */
+/**
+ * @psalm-suppress UnusedClass
+ */
+
 class FileTextController extends Controller
 {
 

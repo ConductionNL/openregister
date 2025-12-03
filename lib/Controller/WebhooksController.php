@@ -42,6 +42,10 @@ use Psr\Log\LoggerInterface;
  * @license  AGPL-3.0-or-later
  * @link     https://github.com/ConductionNL/openregister
  */
+/**
+ * @psalm-suppress UnusedClass
+ */
+
 class WebhooksController extends Controller
 {
 

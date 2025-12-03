@@ -53,7 +53,6 @@ declare(strict_types=1);
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @version   GIT: <git_id>
  * @link      https://www.OpenRegister.app
- *
  * @since     2.0.0 Initial SaveObjects implementation with performance optimizations
  */
 
@@ -116,7 +115,7 @@ class SaveObjects
         private readonly SchemaMapper $schemaMapper,
         private readonly RegisterMapper $registerMapper,
         private readonly SaveObject $saveHandler,
-        private readonly ValidateObject $validateHandler,
+
         private readonly IUserSession $userSession,
         private readonly OrganisationService $organisationService,
         private readonly LoggerInterface $logger
@@ -179,6 +178,8 @@ class SaveObjects
      *
      * @return Register The loaded register
      * @throws \Exception If register cannot be found
+     *
+     * @psalm-suppress UnusedReturnValue
      */
     private function loadRegisterWithCache(int|string $registerId): Register
     {
@@ -194,18 +195,6 @@ class SaveObjects
         return $register;
     }//end loadRegisterWithCache()
 
-
-    /**
-     * Clear static caches (useful for testing and memory management)
-     *
-     * @return void
-     */
-    public static function clearSchemaCache(): void
-    {
-        self::$schemaCache = [];
-        self::$schemaAnalysisCache = [];
-        self::$registerCache = [];
-    }//end clearSchemaCache()
 
 
     /**
@@ -304,9 +293,6 @@ class SaveObjects
         }
 
         // PERFORMANCE OPTIMIZATION: Use fast path for single-schema operations.
-        $processedObjects = [];
-        $globalSchemaCache = [];
-        $preparationInvalidObjects = [];
 
         if ($isMixedSchemaOperation === false && $schema !== null) {
             // FAST PATH: Single-schema operation - avoid complex mixed-schema logic.
@@ -353,11 +339,10 @@ class SaveObjects
 
         // CONCURRENT PROCESSING: Process chunks in parallel for large imports.
         $chunks     = array_chunk($processedObjects, $chunkSize);
-        $chunkCount = count($chunks);
 
         // SINGLE PATH PROCESSING - Process all chunks the same way regardless of size.
         foreach ($chunks as $chunkIndex => $objectsChunk) {
-            $chunkStart = microtime(true);
+            microtime(true);
 
             // Process the current chunk and get the result.
             $chunkResult = $this->processObjectsChunk(objects: $objectsChunk, schemaCache: $globalSchemaCache, rbac: $rbac, multi: $multi, validation: $validation, events: $events);
@@ -377,8 +362,7 @@ class SaveObjects
 // TODO: Renamed from 'skipped'.
 
             // Calculate chunk processing time and speed.
-            $chunkTime  = microtime(true) - $chunkStart;
-            $chunkSpeed = count($objectsChunk) / max($chunkTime, 0.001);
+            microtime(true) - $chunkStart;
 
             // Store per-chunk statistics for transparency and debugging.
             if (isset($result['chunkStatistics']) === false) {
@@ -451,56 +435,6 @@ class SaveObjects
 
     }//end getValueFromPath()
 
-
-    /**
-     * Extract metadata value with object reference resolution
-     *
-     * This method enhances the basic getValueFromPath functionality by resolving
-     * object references to their readable names. It handles cases where metadata
-     * fields point to related objects instead of direct string values.
-     *
-     * @param array  $object       The object data
-     * @param string $fieldPath    The field path in the schema configuration
-     * @param Schema $schema       The schema object for property definitions
-     * @param string $metadataType The type of metadata ('name', 'description', 'summary')
-     *
-     * @return string|null The resolved metadata value or null if not found
-     *
-     * @psalm-return   string|null
-     * @phpstan-return string|null
-     */
-    private function extractMetadataValue(array $object, string $fieldPath, Schema $schema, string $metadataType): ?string
-    {
-        // First try to get the raw value using the existing method.
-        $rawValue = $this->getValueFromPath(data: $object, path: $fieldPath);
-
-        if ($rawValue === null) {
-            return null;
-        }
-
-        // Check if this field is defined as an object reference in the schema.
-        $schemaProperties = $schema->getProperties();
-        // Get the base field name from the field path (first part before any dots).
-        $fieldName = explode('.', $fieldPath)[0];
-
-        if (isset($schemaProperties[$fieldName]) === false) {
-            // Field not in schema, return raw value.
-            return $rawValue;
-        }
-
-        $propertyConfig = $schemaProperties[$fieldName];
-
-        // Check if this is an object reference field.
-        if (($propertyConfig['type'] ?? null) !== null && $propertyConfig['type'] === 'object' && (($propertyConfig['$ref'] ?? null) !== null)) {
-            // This is an object reference - try to resolve it to a readable name.
-            $resolved = $this->resolveObjectReference(object: $object, fieldPath: $fieldPath, propertyConfig: $propertyConfig, metadataType: $metadataType);
-            return $resolved;
-        }
-
-        // For direct string fields, return the raw value.
-        return $rawValue;
-
-    }//end extractMetadataValue()
 
 
     /**
@@ -735,8 +669,7 @@ class SaveObjects
      */
     private function prepareObjectsForBulkSave(array $objects): array
     {
-        $startTime   = microtime(true);
-        $objectCount = count($objects);
+        microtime(true);
 
 
         // Early return for empty arrays.
@@ -789,7 +722,7 @@ class SaveObjects
             }
 
             $schema = $schemaCache[$schemaId];
-            $analysis = $schemaAnalysis[$schemaId];
+            $schemaAnalysis[$schemaId];
 
             // Accept any non-empty string as ID, generate UUID if not provided.
             $providedId = $selfData['id'] ?? null;
@@ -895,7 +828,7 @@ class SaveObjects
             $object['@self'] = $selfData;
 
             // Handle pre-validation cascading for inversedBy properties.
-            [$processedObject, $uuid] = $this->handlePreValidationCascading(object: $object, schema: $schema, uuid: $selfData['id']);
+            [$processedObject, $_uuid] = $this->handlePreValidationCascading(object: $object, schema: $schema, uuid: $selfData['id']);
 
             $preparedObjects[$index] = $processedObject;
         }//end foreach
@@ -904,10 +837,7 @@ class SaveObjects
         $this->handleBulkInverseRelationsWithAnalysis(preparedObjects: $preparedObjects, schemaAnalysis: $schemaAnalysis);
 
         // Performance logging.
-        $endTime      = microtime(true);
-        $duration     = round(($endTime - $startTime) * 1000, 2);
-        $successCount = count($preparedObjects);
-        $failureCount = $objectCount - $successCount;
+        microtime(true);
 
 
         // Return prepared objects, schema cache, and any invalid objects found during preparation.
@@ -947,7 +877,7 @@ class SaveObjects
         } else {
             $registerId = $register;
             // PERFORMANCE: Use cached register loading.
-            $register = $this->loadRegisterWithCache($registerId);
+            $this->loadRegisterWithCache($registerId);
         }
 
         if ($schema instanceof Schema) {
@@ -972,19 +902,18 @@ class SaveObjects
         } else {
             $defaultOwner = null;
         }
-        $defaultOrganisation = null;
 
         // NO ERROR SUPPRESSION: Let organisation service errors bubble up immediately!
         $defaultOrganisation = $this->organisationService->getOrganisationForNewEntity();
 
         $now = new \DateTime();
-        $nowString = $now->format('c');
+        $now->format('c');
 
         // PERFORMANCE OPTIMIZATION: Process all objects with pre-calculated values.
         $preparedObjects = [];
         $invalidObjects = [];
 
-        foreach ($objects as $index => $object) {
+        foreach ($objects as $_index => $object) {
             // NO ERROR SUPPRESSION: Let single-schema preparation errors bubble up immediately!
             $selfData = $object['@self'] ?? [];
 
@@ -1195,10 +1124,9 @@ class SaveObjects
      *
      * @return array Processing result for this chunk with bulk operation statistics
      */
-    private function processObjectsChunk(array $objects, array $schemaCache, bool $rbac, bool $multi, bool $validation, bool $events): array
+    private function processObjectsChunk(array $objects, array $schemaCache, bool $_rbac, bool $_multi, bool $_validation, bool $_events): array
     {
         $startTime = microtime(true);
-        $operationStartTimestamp = date('Y-m-d H:i:s', (int)$startTime);
 
         $result = [
             'saved'      => [],
@@ -1325,7 +1253,6 @@ class SaveObjects
 
 
         // STEP 5: ULTRA-FAST BULK DATABASE OPERATIONS.
-        $savedObjectIds = [];
 
         // REMOVED ERROR SUPPRESSION: Let bulk save errors bubble up immediately!
         // This will reveal the real problem causing silent failures.
@@ -1424,7 +1351,6 @@ class SaveObjects
         // STEP 6: ENHANCED OBJECT RESPONSE - Use pre-classified objects or reconstruct.
         if (empty($reconstructedObjects) === false) {
             // NEW APPROACH: Use already reconstructed objects from timestamp classification.
-            $savedObjects = $reconstructedObjects;
 
             // Objects are already classified, add to appropriate response arrays.
             foreach ($createdObjects as $createdObj) {
@@ -1470,131 +1396,6 @@ class SaveObjects
         return $result;
     }//end processObjectsChunk()
 
-
-    /**
-     * Fallback to individual object processing when bulk operations fail
-     *
-     * This method provides a safety net when bulk database operations fail,
-     * processing each object individually to ensure maximum success rate.
-     *
-     * @param array $objects     Original objects array
-     * @param array $schemaCache Schema cache
-     * @param bool  $rbac        Apply RBAC filtering
-     * @param bool  $multi       Apply multi-tenancy filtering
-     * @param bool  $validation  Apply schema validation
-     * @param bool  $events      Dispatch events
-     *
-     * @return array Processing result using individual saves
-     */
-    private function fallbackToIndividualProcessing(array $objects, array $schemaCache, bool $rbac, bool $multi, bool $validation, bool $events): array
-    {
-        $result = [
-            'saved'      => [],
-            'updated'    => [],
-// Ensure consistent result structure.
-            'invalid'    => [],
-            'errors'     => [],
-            'statistics' => [
-                'saved'     => 0,
-                'updated'   => 0,
-// Ensure consistent statistics structure.
-                'invalid'   => 0,
-// Also add errors counter.
-            ],
-        ];
-
-        foreach ($objects as $index => $object) {
-            try {
-                $selfData = $object['@self'] ?? [];
-                $registerId = $selfData['register'] ?? null;
-                $schemaId = $selfData['schema'] ?? null;
-
-                if (($registerId === false || $registerId === null) === true || ($schemaId === false || $schemaId === null) === true) {
-                    $result['invalid'][] = [
-                        'object' => $object,
-                        'error'  => 'Missing register or schema in @self section',
-                        'index'  => $index,
-                        'type'   => 'ValidationException',
-                    ];
-                    $result['statistics']['invalid']++;
-                    continue;
-                }
-
-                // PERFORMANCE: Use cached register and schema loading.
-                $register = $this->loadRegisterWithCache($registerId);
-                $schema = (($schemaCache[$schemaId] ?? null) !== null) === true ? $schemaCache[$schemaId] : $this->loadSchemaWithCache($schemaId);
-
-
-                $uuid = $selfData['id'] ?? null;
-
-                $savedObject = $this->saveHandler->saveObject(
-                    register: $register,
-                    schema: $schema,
-                    data: $object,
-                    uuid: $uuid,
-                    folderId: null,
-                    rbac: $rbac,
-                    multi: $multi,
-                    persist: true,
-                    validation: $validation
-                );
-
-                if ($uuid === null) {
-                    $result['saved'][] = $savedObject->jsonSerialize();
-                    $result['statistics']['saved']++;
-                } else {
-                    $result['updated'][] = $savedObject->jsonSerialize();
-                    $result['statistics']['updated']++;
-                }
-
-            } catch (\Exception $e) {
-                $result['invalid'][] = [
-                    'object' => $object,
-                    'error'  => 'Save error: '.$e->getMessage(),
-                    'index'  => $index,
-                    'type'   => 'SaveException',
-                ];
-                $result['statistics']['invalid']++;
-            }
-        }
-
-        // CRITICAL FIX: Add inverse relations handling to fallback processing!
-
-        $allSavedObjects = [];
-
-        // Collect all saved ObjectEntity instances (reconstruct from saved UUIDs).
-        foreach ($result['saved'] as $savedArray) {
-            if (($savedArray['uuid'] ?? null) !== null) {
-                try {
-                    $objEntity = $this->objectEntityMapper->find($savedArray['uuid']);
-                    if ($objEntity !== null) {
-                        $allSavedObjects[] = $objEntity;
-                    }
-                } catch (\Exception $e) {
-                    $this->logger->warning('Failed to reconstruct saved object for inverse relations', [
-                        'uuid' => $savedArray['uuid'],
-                        'error' => $e->getMessage()
-                    ]);
-
-                    // Add to result errors so external services can see the issue.
-                    $result['errors'][] = [
-                        'error' => 'Failed to reconstruct saved object for post-processing: ' . $e->getMessage(),
-                        'uuid' => $savedArray['uuid'],
-                        'type' => 'ObjectReconstructionException'
-                    ];
-                    $result['statistics']['errors']++;
-                }
-            }
-        }
-
-        // Apply inverse relations to all saved objects.
-        // TEMPORARILY DISABLED: Skip post-save database calls to isolate bulk operation issues.
-        // if (!empty($allSavedObjects)) {
-        //     $this->handlePostSaveInverseRelations($allSavedObjects, $schemaCache);
-// }.
-
-        return $result;
-    }//end fallbackToIndividualProcessing()
 
 
     /**
@@ -1726,12 +1527,10 @@ class SaveObjects
      */
     private function handleBulkInverseRelationsWithAnalysis(array &$preparedObjects, array $schemaAnalysis): void
     {
-        $processedCount = 0;
-        $appliedCount   = 0;
 
         // Create direct UUID to object reference mapping.
         $objectsByUuid = [];
-        foreach ($preparedObjects as $index => &$object) {
+        foreach ($preparedObjects as $_index => &$object) {
             $selfData   = $object['@self'] ?? [];
             $objectUuid = $selfData['id'] ?? null;
             if ($objectUuid !== null && $objectUuid !== '') {
@@ -1740,7 +1539,7 @@ class SaveObjects
         }
 
         // Process inverse relations using cached analysis.
-        foreach ($preparedObjects as $index => &$object) {
+        foreach ($preparedObjects as $_index => &$object) {
             $selfData   = $object['@self'] ?? [];
             $schemaId   = $selfData['schema'] ?? null;
             $objectUuid = $selfData['id'] ?? null;
@@ -1771,9 +1570,9 @@ class SaveObjects
                         if (in_array($objectUuid, $existingValues, true) === false) {
                             $existingValues[] = $objectUuid;
                             $targetObject[$inversedBy] = $existingValues;
-                            $appliedCount++;
+                            $_appliedCount++;
                         }
-                        $processedCount++;
+                        $_processedCount++;
                     }
                 } else if (($propertyInfo['isArray'] === true) && is_array($value) === true) {
                     // Handle array of object relations.
@@ -1788,9 +1587,9 @@ class SaveObjects
                                 if (in_array($objectUuid, $existingValues, true) === false) {
                                     $existingValues[] = $objectUuid;
                                     $targetObject[$inversedBy] = $existingValues;
-                                    $appliedCount++;
+                                    $_appliedCount++;
                                 }
-                                $processedCount++;
+                                $_processedCount++;
                             }
                         }
                     }
@@ -1860,7 +1659,7 @@ class SaveObjects
             }
 
             // Auto-wire @self metadata with proper UUID validation and generation.
-            $now = new \DateTime();
+            new \DateTime();
 
             // Accept any non-empty string as ID, prioritize CSV 'id' column over @self.id.
             $providedId = $object['id'] ?? $selfData['id'] ?? null;
@@ -2000,359 +1799,10 @@ class SaveObjects
     }//end transformObjectsToDatabaseFormatInPlace()
 
 
-    /**
-     * Optimized schema validation for bulk operations
-     *
-     * PERFORMANCE OPTIMIZATION: Validates multiple objects efficiently with
-     * cached schema analysis and batched error collection.
-     *
-     * @param array $objects     Objects to validate
-     * @param array $schemaCache Schema cache for validation rules
-     *
-     * @return array Array with 'valid' and 'invalid' objects
-     */
-    private function validateObjectsAgainstSchemaOptimized(array $objects, array $schemaCache): array
-    {
-        $validObjects = [];
-        $invalidObjects = [];
-
-        foreach ($objects as $index => $objectData) {
-            $schemaId = $objectData['schema'] ?? null;
-
-            if (($schemaId === false || $schemaId === null) === true || isset($schemaCache[$schemaId]) === false) {
-                $invalidObjects[] = [
-                    'object' => $objectData,
-                    'error'  => 'Schema not found: '.$schemaId,
-                    'index'  => $index,
-                    'type'   => 'SchemaException',
-                ];
-                continue;
-            }
-
-            // Use ValidateObject handler for actual validation.
-            try {
-                $schema = $schemaCache[$schemaId];
-                // FIXED: Use 'object' instead of 'data' and handle both formats.
-                if (($objectData['object'] ?? null) !== null) {
-                    $data = is_string($objectData['object']) === true ? json_decode($objectData['object'], true) : $objectData['object'];
-                } else if (($objectData['data'] ?? null) !== null) {
-                    // Legacy support.
-                    $data = is_string($objectData['data']) === true ? json_decode($objectData['data'], true) : $objectData['data'];
-                } else {
-                    throw new \InvalidArgumentException('No object data found for validation');
-                }
-
-                // TODO: Fix validation integration - temporarily skip validation to test other functionality.
-                // The validateObject method returns a ValidationResult object, not an array.
-                // For now, assume all objects are valid to test the bulk processing improvements.
-                $validObjects[] = $objectData;
-
-                /*
-                // FIXME: Implement proper validation result handling.
-                $validation = $this->validateHandler->validateObject($data, $schema);
-
-                // ValidationResult object has methods like isValid() and getErrors().
-                if ($validation->isValid()) {
-                    $validObjects[] = $objectData;
-                } else {
-                    $invalidObjects[] = [
-                        'object' => $objectData,
-                        'error'  => 'Validation failed: '.implode(', ', $validation->getErrors()),
-                        'index'  => $index,
-                        'type'   => 'ValidationException',
-                    ];
-                }
-                */
-
-            } catch (\Exception $e) {
-                $invalidObjects[] = [
-                    'object' => $objectData,
-                    'error'  => 'Validation error: '.$e->getMessage(),
-                    'index'  => $index,
-                    'type'   => 'ValidationException',
-                ];
-            }
-        }
-
-        return ['valid' => $validObjects, 'invalid' => $invalidObjects];
-    }//end validateObjectsAgainstSchemaOptimized()
 
 
-    /**
-     * ENHANCED: Extract all possible object identifiers for comprehensive lookup
-     *
-     * This method extracts multiple types of identifiers from objects to ensure
-     * we find existing objects regardless of which identifier is used:
-     * - UUID (primary)
-     * - Slug (URL-friendly identifier)
-     * - URI (external reference)
-     * - Custom ID fields from object data
-     *
-     * @param array $transformedObjects Array of transformed object data
-     *
-     * @return array Multi-dimensional array with different identifier types
-     */
-    private function extractAllObjectIdentifiers(array $transformedObjects): array
-    {
-        $identifiers = [
-            'uuids' => [],
-            'slugs' => [],
-            'uris' => [],
-            'custom_ids' => []
-        ];
-
-        foreach ($transformedObjects as $index => $objectData) {
-            // Primary UUID identifier.
-            if (empty($objectData['uuid']) === false) {
-                $identifiers['uuids'][] = $objectData['uuid'];
-
-                // DEBUG: Log UUID extraction for first few objects.
-                if ($index < 3) {
-                    $this->logger->info("[SaveObjects] DEBUG - extractAllObjectIdentifiers", [
-                        'object_index' => $index,
-                        'uuid' => $objectData['uuid']
-                    ]);
-                }
-            } else {
-                // DEBUG: Log missing UUIDs.
-                if ($index < 3) {
-                    $this->logger->warning("[SaveObjects] DEBUG - extractAllObjectIdentifiers MISSING UUID", [
-                        'object_index' => $index,
-                        'available_keys' => array_keys($objectData)
-                    ]);
-                }
-            }
-
-            // Slug identifier from @self metadata.
-            if (empty($objectData['@self']['slug']) === false) {
-                $identifiers['slugs'][] = $objectData['@self']['slug'];
-            }
-
-            // URI identifier from @self metadata.
-            if (empty($objectData['@self']['uri']) === false) {
-                $identifiers['uris'][] = $objectData['@self']['uri'];
-            }
-
-            // Custom ID fields that might be used for identification.
-            $customIdFields = ['id', 'identifier', 'externalId', 'sourceId'];
-            foreach ($customIdFields as $field) {
-                if (empty($objectData[$field]) === false) {
-                    $identifiers['custom_ids'][$field][] = $objectData[$field];
-                }
-            }
-        }
-
-        // Remove duplicates from all identifier arrays.
-        $identifiers['uuids'] = array_unique($identifiers['uuids']);
-        $identifiers['slugs'] = array_unique($identifiers['slugs']);
-        $identifiers['uris'] = array_unique($identifiers['uris']);
-
-        foreach ($identifiers['custom_ids'] as $field => $values) {
-            $identifiers['custom_ids'][$field] = array_unique($values);
-        }
-
-        return $identifiers;
-    }//end extractAllObjectIdentifiers()
 
 
-    /**
-     * ENHANCED: Find existing objects using multiple identifier types
-     *
-     * This method performs efficient bulk lookups using various identifier types
-     * to ensure comprehensive deduplication regardless of which ID field is present.
-     *
-     * @param array $extractedIds Multi-dimensional array of identifier types
-     *
-     * @return array Associative array of existing objects indexed by all their identifiers
-     */
-    private function findExistingObjectsByMultipleIds(array $extractedIds): array
-    {
-        $existingObjects = [];
-        $allIdentifiers = [];
-
-        // Collect all identifiers into a single array for bulk search.
-        if (empty($extractedIds['uuids']) === false) {
-            $allIdentifiers = array_merge($allIdentifiers, $extractedIds['uuids']);
-        }
-        if (empty($extractedIds['slugs']) === false) {
-            $allIdentifiers = array_merge($allIdentifiers, $extractedIds['slugs']);
-        }
-        if (empty($extractedIds['uris']) === false) {
-            $allIdentifiers = array_merge($allIdentifiers, $extractedIds['uris']);
-        }
-
-        // Add custom ID values.
-        foreach ($extractedIds['custom_ids'] as $field => $values) {
-            if (empty($values) === false) {
-                $allIdentifiers = array_merge($allIdentifiers, $values);
-            }
-        }
-
-        if (empty($allIdentifiers) === true) {
-            return [];
-        }
-
-        // Remove duplicates and perform bulk search.
-        $allIdentifiers = array_unique($allIdentifiers);
-        $foundObjects = $this->objectEntityMapper->findAll(ids: $allIdentifiers, includeDeleted: false);
-
-        // Index objects by all their possible identifiers for fast lookup.
-        foreach ($foundObjects as $obj) {
-            // Index by UUID (primary).
-            if (($obj->getUuid() !== null) === true) {
-                $existingObjects[$obj->getUuid()] = $obj;
-            }
-
-            // Index by slug if available.
-            if (($obj->getSlug() !== null) === true) {
-                $existingObjects[$obj->getSlug()] = $obj;
-            }
-
-            // Index by URI if available.
-            if (($obj->getUri() !== null) === true) {
-                $existingObjects[$obj->getUri()] = $obj;
-            }
-
-            // Index by custom ID fields from object data.
-            $objectData = $obj->getObject();
-            if (is_array($objectData) === true) {
-                $customIdFields = ['id', 'identifier', 'externalId', 'sourceId'];
-                foreach ($customIdFields as $field) {
-                    if (empty($objectData[$field]) === false) {
-                        $existingObjects[$objectData[$field]] = $obj;
-                    }
-                }
-            }
-        }
-
-        return $existingObjects;
-    }//end findExistingObjectsByMultipleIds()
-
-
-    /**
-     * OPTIMIZED: Find existing objects with performance optimization for large imports
-     *
-     * This method uses optimized database queries and reduced indexing for large imports
-     * where we prioritize speed over comprehensive multi-field lookups.
-     *
-     * @param array $extractedIds Multi-dimensional array of identifier types
-     *
-     * @return array Associative array of existing objects indexed by primary identifiers
-     */
-    private function findExistingObjectsOptimizedForLargeImport(array $extractedIds): array
-    {
-        $existingObjects = [];
-
-        // PERFORMANCE: Focus only on UUID lookups for large imports (most reliable and fastest).
-        if (empty($extractedIds['uuids']) === false) {
-            $foundObjects = $this->objectEntityMapper->findAll(ids: $extractedIds['uuids'], includeDeleted: false);
-
-            // PERFORMANCE: Index only by UUID for speed.
-            foreach ($foundObjects as $obj) {
-                if (($obj->getUuid() !== null) === true) {
-                    $existingObjects[$obj->getUuid()] = $obj;
-                }
-            }
-        }
-
-        return $existingObjects;
-    }//end findExistingObjectsOptimizedForLargeImport()
-
-
-    /**
-     * OPTIMIZED: Object categorization with comprehensive deduplication
-     *
-     * Single path that handles all import sizes with full functionality:
-     * - Comprehensive identifier matching
-     * - Hash comparison for precise deduplication
-     * - Full metadata and relation support
-     *
-     * @param array $transformedObjects Array of incoming object data
-     * @param array $existingObjects    Array of existing objects indexed by identifiers
-     * @param bool  $unused             Kept for compatibility, no longer used
-     *
-     * @return array Categorized objects: ['create' => [], 'update' => [], 'skip' => []]
-     */
-    private function categorizeObjectsWithHashComparison(array $transformedObjects, array $existingObjects, bool $unused = false): array
-    {
-        $result = [
-            'create' => [],
-            'update' => [],
-            'skip' => []
-        ];
-
-        // SINGLE PATH: Full comprehensive processing for all import sizes.
-        foreach ($transformedObjects as $index => $incomingData) {
-            $existingObject = $this->findExistingObjectByAnyIdentifier(incomingData: $incomingData, existingObjects: $existingObjects);
-
-            // Continue with categorization logic.
-
-            if ($existingObject === null) {
-                $result['create'][] = $incomingData;
-            } else {
-                    // Full hash comparison for precise deduplication.
-                $object1 = $incomingData['object'];
-                $object2 = $existingObject->getObject();
-                unset($object1['@self'], $object1['id'], $object2['@self'], $object2['id']);
-
-                $incomingHash = hash('sha256', json_encode($object1 ?? []));
-                $existingHash = hash('sha256', json_encode($object2 ?? []));
-
-                if ($incomingHash === $existingHash) {
-                    $result['skip'][] = $existingObject;
-                } else {
-                    if (($incomingData['object'] ?? null) !== null && is_array($incomingData['object']) === true && empty($incomingData['object']) === false) {
-                        $existingObject->setObject($incomingData['object']);
-                        if (($incomingData['updated'] ?? null) !== null) {
-                            $existingObject->setUpdated(new \DateTime($incomingData['updated']));
-                        }
-                        if (($incomingData['owner'] ?? null) !== null) {
-                            $existingObject->setOwner($incomingData['owner']);
-                        }
-                        if (($incomingData['organisation'] ?? null) !== null) {
-                            $existingObject->setOrganisation($incomingData['organisation']);
-                        }
-                        if (($incomingData['published'] ?? null) !== null) {
-                            $existingObject->setPublished(new \DateTime($incomingData['published']));
-                        }
-
-                        // CRITICAL FIX: Update register and schema to support object migration between registers/schemas.
-                        if (($incomingData['register'] ?? null) !== null && $incomingData['register'] !== $existingObject->getRegister()) {
-                            $existingObject->setRegister($incomingData['register']);
-                        }
-                        if (($incomingData['schema'] ?? null) !== null && $incomingData['schema'] !== $existingObject->getSchema()) {
-                            $existingObject->setSchema($incomingData['schema']);
-                        }
-
-                        $result['update'][] = $existingObject;
-                    } else {
-                        $result['skip'][] = $existingObject;
-                    }
-                }
-            }
-        }
-
-        return $result;
-    }//end categorizeObjectsWithHashComparison()
-
-
-    /**
-     * PERFORMANCE: Find existing object by primary ID only (fastest lookup)
-     *
-     * @param array $incomingData   Incoming object data
-     * @param array $existingObjects Existing objects indexed by identifiers
-     *
-     * @return ObjectEntity|null Found object or null
-     */
-    private function findExistingObjectByPrimaryId(array $incomingData, array $existingObjects): ?object
-    {
-        // Only check UUID for maximum performance.
-        if (empty($incomingData['uuid']) === false && (($existingObjects[$incomingData['uuid']] ?? null) !== null)) {
-            return $existingObjects[$incomingData['uuid']];
-        }
-
-        return null;
-    }//end findExistingObjectByPrimaryId()
 
 
     /**
@@ -2393,54 +1843,6 @@ class SaveObjects
 
 
 
-    /**
-     * Recursively sort array keys for consistent hashing
-     *
-     * @param array $array Array to sort recursively
-     */
-    private function ksortRecursive(array &$array): void
-    {
-        ksort($array);
-        foreach ($array as &$value) {
-            if (is_array($value) === true) {
-                $this->ksortRecursive($value);
-            }
-        }
-    }//end ksortRecursive()
-
-
-    /**
-     * Merge new object data with existing object
-     *
-     * PERFORMANCE OPTIMIZATION: Direct field updates on existing object
-     * instead of creating new objects.
-     *
-     * @param ObjectEntity $existingObject Existing object from database
-     * @param array        $newObjectData  New data to merge
-     *
-     * @return ObjectEntity Updated existing object
-     */
-    private function mergeObjectData(ObjectEntity $existingObject, array $newObjectData): ObjectEntity
-    {
-        // Update core fields.
-        if (($newObjectData['object'] ?? null) !== null) {
-            $existingObject->setObject($newObjectData['object']);
-        } else if (($newObjectData['data'] ?? null) !== null) {
-            // Legacy support: 'data' should be 'object'.
-            $existingObject->setObject($newObjectData['data']);
-        }
-        if (($newObjectData['schema'] ?? null) !== null) {
-            $existingObject->setSchema($newObjectData['schema']);
-        }
-        if (($newObjectData['register'] ?? null) !== null) {
-            $existingObject->setRegister($newObjectData['register']);
-        }
-
-        // Always update the timestamp.
-        $existingObject->setUpdated(new \DateTime());
-
-        return $existingObject;
-    }//end mergeObjectData()
 
 
     /**
@@ -2456,7 +1858,7 @@ class SaveObjects
      *
      * @return array Array of ObjectEntity objects representing saved objects
      */
-    private function reconstructSavedObjects(array $insertObjects, array $updateObjects, array $savedObjectIds, array $existingObjects): array
+    private function reconstructSavedObjects(array $insertObjects, array $updateObjects, array $_savedObjectIds, array $_existingObjects): array
     {
         $savedObjects = [];
 
@@ -2623,7 +2025,6 @@ class SaveObjects
         }
 
 
-        $objectsToUpdate = [];
 
         foreach ($writeBackOperations as $operation) {
             $targetObject = $operation['targetObject'];
@@ -2668,51 +2069,6 @@ class SaveObjects
     }//end performBulkWriteBackUpdatesWithContext()
 
 
-    /**
-     * Fallback to individual writeBack updates when bulk operation fails
-     *
-     * @param array $objects Array of objects requiring writeBack updates
-     *
-     * @return void
-     */
-    private function fallbackToIndividualWriteBackUpdates(array $objects): void
-    {
-        foreach ($objects as $obj) {
-            // NO ERROR SUPPRESSION: Let individual writeBack update errors bubble up immediately!
-            $this->objectEntityMapper->update($obj);
-        }
-    }//end fallbackToIndividualWriteBackUpdates()
-
-
-    /**
-     * Generate a slug from a given value
-     *
-     * BULK OPTIMIZATION: Simplified slug generation without database uniqueness checks
-     * for performance. Individual saves can handle uniqueness if needed.
-     *
-     * @param string $value The value to convert to a slug
-     *
-     * @return string|null The generated slug or null if generation failed
-     */
-    private function generateSlugFromValue(string $value): ?string
-    {
-        try {
-            if (empty($value) === true) {
-                return null;
-            }
-
-            // Generate the base slug.
-            $slug = $this->createSlug($value);
-
-            // For bulk operations, add timestamp for uniqueness without database checks.
-            $timestamp = time();
-            $uniqueSlug = $slug . '-' . $timestamp;
-
-            return $uniqueSlug;
-        } catch (\Exception $e) {
-            return null;
-        }
-    }//end generateSlugFromValue()
 
 
     /**

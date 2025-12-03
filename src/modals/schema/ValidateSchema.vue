@@ -4,7 +4,7 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 </script>
 
 <template>
-	<NcDialog v-if="navigationStore.modal === 'validateSchema'"
+	<NcDialog v-if="navigationStore.dialog === 'validateSchema'"
 		name="Validate Schema Objects"
 		size="large"
 		:can-close="false">
@@ -235,12 +235,12 @@ export default {
 			},
 			immediate: true,
 		},
-		// Watch for dialog state changes to load count when modal becomes visible
-		'navigationStore.modal': {
-			handler(newModal) {
-				console.info('Modal changed to:', newModal)
-				if (newModal === 'validateSchema' && schemaStore.schemaItem?.id) {
-					console.info('ValidateSchema modal opened, loading object count')
+		// Watch for dialog state changes to load count when dialog becomes visible
+		'navigationStore.dialog': {
+			handler(newDialog) {
+				console.info('Dialog changed to:', newDialog)
+				if (newDialog === 'validateSchema' && schemaStore.schemaItem?.id) {
+					console.info('ValidateSchema dialog opened, loading object count')
 					this.loadObjectCount()
 				}
 			},
@@ -248,7 +248,7 @@ export default {
 		},
 	},
 	async mounted() {
-		console.info('ValidateSchema modal mounted, schemaItem:', schemaStore.schemaItem)
+		console.info('ValidateSchema dialog mounted, schemaItem:', schemaStore.schemaItem)
 		await this.loadObjectCount()
 	},
 	methods: {
@@ -318,7 +318,7 @@ export default {
 		},
 
 		closeDialog() {
-			navigationStore.setModal(false)
+			navigationStore.setDialog(false)
 			this.loading = false
 			this.error = false
 			this.validationResults = null

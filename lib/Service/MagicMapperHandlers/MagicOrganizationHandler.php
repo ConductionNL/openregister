@@ -71,137 +71,18 @@ class MagicOrganizationHandler
      */
     public function __construct(
         /**
-         * Database connection.
+         * @psalm-suppress UnusedProperty
          */
-        private readonly IDBConnection $db,
         private readonly IUserSession $userSession,
-        private readonly IGroupManager $groupManager,
         /**
-         * User manager.
+         * @psalm-suppress UnusedProperty
          */
-        private readonly IUserManager $userManager,
+        private readonly IGroupManager $groupManager,
         private readonly IAppConfig $appConfig,
         private readonly LoggerInterface $logger
     ) {
 
     }//end __construct()
-
-
-    /**
-     * Apply organization filtering for multi-tenancy to dynamic table queries
-     *
-     * This method adds WHERE conditions to filter objects based on the user's
-     * active organization, ensuring proper data isolation between tenants.
-     *
-     * @param IQueryBuilder $qb                     Query builder to modify
-     * @param Register      $register               Register context
-     * @param Schema        $schema                 Schema context
-     * @param string        $tableAlias             Table alias for the dynamic table (default: 't')
-     * @param string|null   $activeOrganisationUuid Active organization UUID to filter by
-     * @param bool          $multi                  Whether to apply multitenancy filtering (default: true)
-     *
-     * @return void
-     */
-    public function applyOrganizationFilters(
-        IQueryBuilder $qb,
-        Register $register,
-        Schema $schema,
-        string $tableAlias='t',
-        ?string $activeOrganisationUuid=null,
-        bool $multi=true
-    ): void {
-        // If multitenancy is disabled, skip all organization filtering.
-        if ($multi === false || $this->isMultiTenancyEnabled() === false) {
-            return;
-        }
-
-        // Get current user to check if they're admin.
-        $user = $this->userSession->getUser();
-        if ($user !== null) {
-            $userId = $user->getUID();
-        } else {
-            $userId = null;
-        }
-
-        if ($userId === null) {
-            // For unauthenticated requests, show published objects only.
-            $this->applyUnauthenticatedOrganizationAccess($qb, $tableAlias);
-            return;
-        }
-
-        // Use provided active organization UUID or return (no filtering).
-        if ($activeOrganisationUuid === null) {
-            return;
-        }
-
-        // Check if this is the system-wide default organization.
-        $systemDefaultOrgUuid = $this->getSystemDefaultOrganizationUuid();
-        $isSystemDefaultOrg   = ($activeOrganisationUuid === $systemDefaultOrgUuid);
-
-        if ($user !== null) {
-            $userGroups = $this->groupManager->getUserGroupIds($user);
-
-            // Check if user is admin and admin override is enabled.
-            if (in_array('admin', $userGroups, true) === true) {
-                if ($this->isAdminOverrideEnabled() === true) {
-                    return;
-                    // No filtering for admin users when override is enabled.
-                }
-
-                // If admin override is disabled, apply organization filtering for admin users.
-                // Note: $activeOrganisationUuid cannot be null here because we checked and returned early at line 125.
-                // This check is redundant but kept for defensive programming.
-                //
-                if ($activeOrganisationUuid === null) {
-                    return;
-                    // No filtering if no active organization.
-                }
-
-                if ($isSystemDefaultOrg === true) {
-                    return;
-                    // Admin with default org sees everything.
-                }
-
-                // Continue with organization filtering for non-default org.
-            }//end if
-        }//end if
-
-        $organizationColumn = $tableAlias.'._organisation';
-
-        // Build organization filter conditions.
-        $orgConditions = $qb->expr()->orX();
-
-        // Objects explicitly belonging to the user's organization.
-        $orgConditions->add(
-            $qb->expr()->eq($organizationColumn, $qb->createNamedParameter($activeOrganisationUuid))
-        );
-
-        // Include published objects from any organization if configured to do so.
-        if ($this->shouldPublishedObjectsBypassMultiTenancy() === true) {
-            $now = (new \DateTime())->format('Y-m-d H:i:s');
-            $orgConditions->add(
-                $qb->expr()->andX(
-                    $qb->expr()->isNotNull("{$tableAlias}._published"),
-                    $qb->expr()->lte("{$tableAlias}._published", $qb->createNamedParameter($now)),
-                    $qb->expr()->orX(
-                        $qb->expr()->isNull("{$tableAlias}._depublished"),
-                        $qb->expr()->gt("{$tableAlias}._depublished", $qb->createNamedParameter($now))
-                    )
-                )
-            );
-        }
-
-        // If this is the system-wide default organization, include additional objects.
-        if ($isSystemDefaultOrg === true) {
-            // Include objects with NULL organization (legacy data).
-            $orgConditions->add(
-                $qb->expr()->isNull($organizationColumn)
-            );
-        }
-
-        $qb->andWhere($orgConditions);
-
-    }//end applyOrganizationFilters()
 
 
     /**
@@ -312,65 +193,6 @@ class MagicOrganizationHandler
         return $rbacData['adminOverride'] ?? true;
 
     }//end isAdminOverrideEnabled()
-
-
-    /**
-     * Get current user's active organization
-     *
-     * @return null Active organization UUID or null
-     */
-    public function getCurrentUserActiveOrganization()
-    {
-        $user = $this->userSession->getUser();
-        if ($user === null) {
-            return null;
-        }
-
-        // This would typically come from OrganisationService.
-        // For now, return null and let the caller provide it.
-        return null;
-
-    }//end getCurrentUserActiveOrganization()
-
-
-    /**
-     * Check if user belongs to specific organization
-     *
-     * @param string   $userId         User ID to check
-     * @param string   $organizationId Organization UUID to check
-     * @param Register $register       Register context
-     * @param Schema   $schema         Schema context
-     *
-     * @return true True if user belongs to organization
-     */
-    public function userBelongsToOrganization(string $userId, string $organizationId, Register $register, Schema $schema): bool
-    {
-        // This would implement organization membership checks.
-        // For now, simplified implementation.
-        return true;
-
-    }//end userBelongsToOrganization()
-
-
-    /**
-     * Set default organization for objects that don't have one
-     *
-     * @param array  $objects        Array of object data
-     * @param string $defaultOrgUuid Default organization UUID
-     *
-     * @return array Array of objects with organization set
-     */
-    public function setDefaultOrganization(array $objects, string $defaultOrgUuid): array
-    {
-        foreach ($objects as &$object) {
-            if (!isset($object['_organisation']) === false || $object['_organisation'] === '') {
-                $object['_organisation'] = $defaultOrgUuid;
-            }
-        }
-
-        return $objects;
-
-    }//end setDefaultOrganization()
 
 
 }//end class

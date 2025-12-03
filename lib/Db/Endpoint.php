@@ -230,6 +230,18 @@ class Endpoint extends Entity implements JsonSerializable
 
 
     /**
+     * Get the endpoint path
+     *
+     * @return string|null The endpoint path
+     */
+    public function getEndpoint(): ?string
+    {
+        return $this->endpoint;
+
+    }//end getEndpoint()
+
+
+    /**
      * Get the endpoint array representation
      *
      * @return array The endpoint array or empty array if null

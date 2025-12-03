@@ -92,16 +92,14 @@ class ViewMapper extends QBMapper
 
 
     /**
-     * Constructor for ViewMapper
+     * Constructor
      *
-     * @param IDBConnection             $db                        The database connection
-     * @param OrganisationService       $organisationService       Organisation service for multi-tenancy
+     * @param IDBConnection             $db                        Database connection
+     * @param OrganisationService       $organisationService       Organisation service
      * @param IUserSession              $userSession               User session
-     * @param IGroupManager             $groupManager              Group manager for RBAC
+     * @param IGroupManager             $groupManager              Group manager
      * @param ConfigurationCacheService $configurationCacheService Configuration cache service
      * @param IEventDispatcher          $eventDispatcher           Event dispatcher
-     *
-     * @return void
      */
     public function __construct(
         IDBConnection $db,
@@ -111,7 +109,7 @@ class ViewMapper extends QBMapper
         ConfigurationCacheService $configurationCacheService,
         IEventDispatcher $eventDispatcher
     ) {
-        parent::__construct($db, 'openregister_view');
+        parent::__construct($db, 'openregister_views', View::class);
         $this->organisationService = $organisationService;
         $this->userSession         = $userSession;
         $this->groupManager        = $groupManager;
@@ -278,6 +276,8 @@ class ViewMapper extends QBMapper
      *
      * @return View The deleted view
      * @throws \Exception If user doesn't have delete permission or access to this organisation
+     *
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function delete(Entity $entity): View
     {
@@ -295,24 +295,6 @@ class ViewMapper extends QBMapper
         return $entity;
 
     }//end delete()
-
-
-    /**
-     * Delete a view by ID
-     *
-     * @param int|string $id The ID of the view to delete
-     *
-     * @return void
-     *
-     * @throws \OCP\AppFramework\Db\DoesNotExistException If view not found
-     * @throws \Exception If user doesn't have delete permission
-     */
-    public function deleteById($id): void
-    {
-        $entity = $this->find($id);
-        $this->delete($entity);
-
-    }//end deleteById()
 
 
     /**

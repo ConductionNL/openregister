@@ -51,6 +51,26 @@ class EndpointMapper extends QBMapper
     use MultiTenancyTrait;
 
     /**
+     * EndpointMapper constructor
+     *
+     * @param IDBConnection       $db                  Database connection
+     * @param OrganisationService $organisationService Organisation service
+     * @param IUserSession        $userSession         User session
+     * @param IGroupManager       $groupManager        Group manager
+     */
+    public function __construct(
+        IDBConnection $db,
+        OrganisationService $organisationService,
+        IUserSession $userSession,
+        IGroupManager $groupManager
+    ) {
+        parent::__construct($db, 'openregister_endpoints', Endpoint::class);
+        $this->organisationService = $organisationService;
+        $this->userSession         = $userSession;
+        $this->groupManager        = $groupManager;
+    }
+
+    /**
      * Organisation service for multi-tenancy
      *
      * @var OrganisationService
@@ -72,51 +92,6 @@ class EndpointMapper extends QBMapper
     private IGroupManager $groupManager;
 
 
-    /**
-     * EndpointMapper constructor
-     *
-     * @param IDBConnection       $db                  Database connection
-     * @param OrganisationService $organisationService Organisation service
-     * @param IUserSession        $userSession         User session
-     * @param IGroupManager       $groupManager        Group manager
-     */
-    public function __construct(
-        IDBConnection $db,
-        OrganisationService $organisationService,
-        IUserSession $userSession,
-        IGroupManager $groupManager
-    ) {
-        parent::__construct($db, 'openregister_endpoints', Endpoint::class);
-        $this->organisationService = $organisationService;
-        $this->userSession         = $userSession;
-        $this->groupManager        = $groupManager;
-
-    }//end __construct()
-
-
-    /**
-     * Find endpoint by UUID
-     *
-     * @param string $uuid Endpoint UUID
-     *
-     * @return Endpoint
-     * @throws DoesNotExistException
-     * @throws MultipleObjectsReturnedException
-     */
-    public function findByUuid(string $uuid): Endpoint
-    {
-        $qb = $this->db->getQueryBuilder();
-
-        $qb->select('*')
-            ->from($this->getTableName())
-            ->where($qb->expr()->eq('uuid', $qb->createNamedParameter($uuid)));
-
-        // Apply organisation filter.
-        $this->applyOrganisationFilter($qb);
-
-        return $this->findEntity($qb);
-
-    }//end findByUuid()
 
 
     /**
@@ -254,10 +229,12 @@ class EndpointMapper extends QBMapper
      *
      * @param Entity $entity Endpoint entity to delete
      *
-     * @return Entity
+     * @return Endpoint
      * @throws \Exception
+     *
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
-    public function delete(Entity $entity): Entity
+    public function delete(Entity $entity): Endpoint
     {
         // Check RBAC permissions.
         $this->verifyRbacPermission('delete', 'endpoint');

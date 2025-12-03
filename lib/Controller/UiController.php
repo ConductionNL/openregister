@@ -24,6 +24,10 @@ use OCP\IRequest;
  *
  * @psalm-type TemplateName = 'index'
  */
+/**
+ * @psalm-suppress UnusedClass
+ */
+
 class UiController extends Controller
 {
 

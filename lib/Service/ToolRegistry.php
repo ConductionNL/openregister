@@ -257,44 +257,4 @@ class ToolRegistry
     }//end getTools()
 
 
-    /**
-     * Check if a tool exists
-     *
-     * @param string $id Tool identifier
-     *
-     * @return bool True if tool exists
-     */
-    public function hasTool(string $id): bool
-    {
-        $this->loadTools();
-        return isset($this->tools[$id]);
-
-    }//end hasTool()
-
-
-    /**
-     * Get tools by app
-     *
-     * Returns all tools registered by a specific app.
-     *
-     * @param string $appName App name
-     *
-     * @return array Array of tool IDs and metadata
-     */
-    public function getToolsByApp(string $appName): array
-    {
-        $this->loadTools();
-
-        $result = [];
-        foreach ($this->tools as $id => $data) {
-            if ($data['metadata']['app'] === $appName) {
-                $result[$id] = $data['metadata'];
-            }
-        }
-
-        return $result;
-
-    }//end getToolsByApp()
-
-
 }//end class

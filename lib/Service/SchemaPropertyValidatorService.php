@@ -31,13 +31,6 @@ class SchemaPropertyValidatorService
 {
 
     /**
-     * Logger instance for logging operations
-     *
-     * @var LoggerInterface The logger instance
-     */
-    private LoggerInterface $logger;
-
-    /**
      * Valid JSON Schema types
      *
      * @var array<string> List of valid JSON Schema types
@@ -105,18 +98,6 @@ class SchemaPropertyValidatorService
 
 
     /**
-     * Constructor
-     *
-     * @param LoggerInterface $logger The logger instance
-     */
-    public function __construct(LoggerInterface $logger)
-    {
-        $this->logger = $logger;
-
-    }//end __construct()
-
-
-    /**
      * Validate a property definition against JSON Schema rules
      *
      * @param array  $property The property definition to validate
@@ -124,6 +105,8 @@ class SchemaPropertyValidatorService
      *
      * @throws Exception If the property definition is invalid
      * @return bool True if the property is valid
+     *
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function validateProperty(array $property, string $path=''): bool
     {
@@ -236,30 +219,6 @@ class SchemaPropertyValidatorService
 
 
     /**
-     * Get the list of valid types
-     *
-     * @return array<string> List of valid JSON Schema types
-     */
-    public function getValidTypes(): array
-    {
-        return $this->validTypes;
-
-    }//end getValidTypes()
-
-
-    /**
-     * Get the list of valid string formats
-     *
-     * @return array<string> List of valid string formats
-     */
-    public function getValidStringFormats(): array
-    {
-        return $this->validStringFormats;
-
-    }//end getValidStringFormats()
-
-
-    /**
      * Validate file-specific properties
      *
      * Validates file property configuration options including allowedTypes,
@@ -278,6 +237,8 @@ class SchemaPropertyValidatorService
      *
      * @psalm-return   bool
      * @phpstan-return bool
+     *
+     * @psalm-suppress UnusedReturnValue
      */
     private function validateFileProperty(array $property, string $path): bool
     {

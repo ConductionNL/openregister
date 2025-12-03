@@ -14,10 +14,8 @@ declare(strict_types=1);
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * @version GIT: <git-id>
- *
- * @link https://OpenRegister.app
+ * @version   GIT: <git-id>
+ * @link      https://OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Db\ObjectHandlers;
@@ -75,15 +73,14 @@ class OptimizedFacetHandler
      *
      * @phpstan-param array<string, array> $facetConfig
      * @phpstan-param array<string, mixed> $baseQuery
-     *
-     * @psalm-param array<string, array> $facetConfig
-     * @psalm-param array<string, mixed> $baseQuery
+     * @psalm-param   array<string, array> $facetConfig
+     * @psalm-param   array<string, mixed> $baseQuery
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
      * @return array Combined facet results
      */
-    public function getBatchedFacets(array $facetConfig, array $baseQuery = []): array
+    public function getBatchedFacets(array $facetConfig, array $baseQuery=[]): array
     {
         $results = [];
 
@@ -95,13 +92,13 @@ class OptimizedFacetHandler
         }
 
         // Separate metadata facets from JSON field facets.
-        $metadataFacets = [];
+        $metadataFacets  = [];
         $jsonFieldFacets = [];
 
         foreach ($facetConfig as $facetName => $config) {
             if ($facetName === '@self' && is_array($config) === true) {
                 $metadataFacets = $config;
-            } elseif ($facetName !== '@self') {
+            } else if ($facetName !== '@self') {
                 $jsonFieldFacets[$facetName] = $config;
             }
         }
@@ -118,6 +115,7 @@ class OptimizedFacetHandler
             if ($type === 'terms') {
                 $results[$fieldName] = $this->getOptimizedJsonTermsFacet($fieldName, $baseQuery);
             }
+
             // Add other facet types as needed.
         }
 
@@ -140,9 +138,8 @@ class OptimizedFacetHandler
      *
      * @phpstan-param array<string, array> $metadataConfig
      * @phpstan-param array<string, mixed> $baseQuery
-     *
-     * @psalm-param array<string, array> $metadataConfig
-     * @psalm-param array<string, mixed> $baseQuery
+     * @psalm-param   array<string, array> $metadataConfig
+     * @psalm-param   array<string, mixed> $baseQuery
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
@@ -158,6 +155,7 @@ class OptimizedFacetHandler
             if ($type === 'terms') {
                 $results[$field] = $this->getOptimizedMetadataTermsFacet($field, $baseQuery);
             }
+
             // Add other facet types as needed (date_histogram, range).
         }
 
@@ -177,9 +175,8 @@ class OptimizedFacetHandler
      *
      * @phpstan-param string $field
      * @phpstan-param array<string, mixed> $baseQuery
-     *
-     * @psalm-param string $field
-     * @psalm-param array<string, mixed> $baseQuery
+     * @psalm-param   string $field
+     * @psalm-param   array<string, mixed> $baseQuery
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
@@ -198,15 +195,14 @@ class OptimizedFacetHandler
             ->orderBy('doc_count', 'DESC')
             ->setMaxResults(100);
         // Limit results for performance.
-
         // Apply optimized base filters.
         $this->applyOptimizedBaseFilters($queryBuilder, $baseQuery);
 
-        $result = $queryBuilder->executeQuery();
+        $result  = $queryBuilder->executeQuery();
         $buckets = [];
 
         while (($row = $result->fetch()) !== false) {
-            $key = $row[$field];
+            $key   = $row[$field];
             $label = $this->getFieldLabel($field, $key);
 
             $buckets[] = [
@@ -235,9 +231,8 @@ class OptimizedFacetHandler
      *
      * @phpstan-param string $field
      * @phpstan-param array<string, mixed> $baseQuery
-     *
-     * @psalm-param string $field
-     * @psalm-param array<string, mixed> $baseQuery
+     * @psalm-param   string $field
+     * @psalm-param   array<string, mixed> $baseQuery
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
@@ -246,7 +241,7 @@ class OptimizedFacetHandler
     private function getOptimizedJsonTermsFacet(string $field, array $baseQuery): array
     {
         $queryBuilder = $this->db->getQueryBuilder();
-        $jsonPath = '$.' . $field;
+        $jsonPath     = '$'.$field;
 
         // Check if we should skip this facet due to too much data.
         $estimatedRows = $this->estimateRowCount($baseQuery);
@@ -261,24 +256,23 @@ class OptimizedFacetHandler
 
         // Use optimized JSON query with limits.
         $queryBuilder->selectAlias(
-                $queryBuilder->createFunction("JSON_UNQUOTE(JSON_EXTRACT(object, " . $queryBuilder->createNamedParameter($jsonPath) . "))"),
+                $queryBuilder->createFunction("JSON_UNQUOTE(JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath)."))"),
                 'field_value'
             )
             ->selectAlias($queryBuilder->createFunction('COUNT(*)'), 'doc_count')
             ->from('openregister_objects')
             ->where(
                 $queryBuilder->expr()->isNotNull(
-                    $queryBuilder->createFunction("JSON_EXTRACT(object, " . $queryBuilder->createNamedParameter($jsonPath) . ")")
+                    $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
                 )
             )
             ->groupBy('field_value')
             ->orderBy('doc_count', 'DESC');
         // Limit results for performance.
-
         // Apply optimized base filters.
         $this->applyOptimizedBaseFilters($queryBuilder, $baseQuery);
 
-        $result = $queryBuilder->executeQuery();
+        $result  = $queryBuilder->executeQuery();
         $buckets = [];
 
         while (($row = $result->fetch()) !== false) {
@@ -310,18 +304,16 @@ class OptimizedFacetHandler
      *
      * @phpstan-param IQueryBuilder $queryBuilder
      * @phpstan-param array<string, mixed> $baseQuery
-     *
-     * @psalm-param IQueryBuilder $queryBuilder
-     * @psalm-param array<string, mixed> $baseQuery
+     * @psalm-param   IQueryBuilder $queryBuilder
+     * @psalm-param   array<string, mixed> $baseQuery
      *
      * @return void
      */
     private function applyOptimizedBaseFilters(IQueryBuilder $queryBuilder, array $baseQuery): void
     {
         // Apply filters in order of index selectivity (most selective first).
-
         // 1. Most selective: ID-based filters.
-        if (($baseQuery['_ids'] ?? null) !== null && is_array($baseQuery['_ids']) === true && !empty($baseQuery['_ids']) === false) {
+        if (($baseQuery['_ids'] ?? null) !== null && is_array($baseQuery['_ids']) === true && empty($baseQuery['_ids']) === false) {
             $queryBuilder->andWhere(
                 $queryBuilder->expr()->in('id', $queryBuilder->createNamedParameter($baseQuery['_ids'], \Doctrine\DBAL\Connection::PARAM_INT_ARRAY))
             );
@@ -374,8 +366,7 @@ class OptimizedFacetHandler
      * @param array $baseQuery Base query filters
      *
      * @phpstan-param array<string, mixed> $baseQuery
-     *
-     * @psalm-param array<string, mixed> $baseQuery
+     * @psalm-param   array<string, mixed> $baseQuery
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
@@ -416,9 +407,8 @@ class OptimizedFacetHandler
      *
      * @phpstan-param array<string, mixed> $facetConfig
      * @phpstan-param array<string, mixed> $baseQuery
-     *
-     * @psalm-param array<string, mixed> $facetConfig
-     * @psalm-param array<string, mixed> $baseQuery
+     * @psalm-param   array<string, mixed> $facetConfig
+     * @psalm-param   array<string, mixed> $baseQuery
      *
      * @return string Cache key
      */
@@ -437,9 +427,8 @@ class OptimizedFacetHandler
      *
      * @phpstan-param string $field
      * @phpstan-param mixed $value
-     *
-     * @psalm-param string $field
-     * @psalm-param mixed $value
+     * @psalm-param   string $field
+     * @psalm-param   mixed $value
      *
      * @return string Human-readable label
      */

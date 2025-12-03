@@ -37,27 +37,33 @@ use Psr\Container\ContainerInterface;
 class RevertService
 {
 
+    /**
+     * Audit trail mapper
+     *
+     * @var AuditTrailMapper
+     */
+    private AuditTrailMapper $auditTrailMapper;
 
     /**
-     * Constructor for RevertService
+     * Container
      *
-     * @param AuditTrailMapper   $auditTrailMapper   The audit trail mapper
-     * @param ObjectEntityMapper $objectEntityMapper The object entity mapper
-     * @param RegisterMapper     $registerMapper     The register mapper
-     * @param SchemaMapper       $schemaMapper       The schema mapper
-     * @param ContainerInterface $container          The DI container
-     * @param IEventDispatcher   $eventDispatcher    The event dispatcher
+     * @var ContainerInterface
      */
-    public function __construct(
-        private readonly AuditTrailMapper $auditTrailMapper,
-        private readonly ObjectEntityMapper $objectEntityMapper,
-        private readonly RegisterMapper $registerMapper,
-        private readonly SchemaMapper $schemaMapper,
-        private readonly ContainerInterface $container,
-        private readonly IEventDispatcher $eventDispatcher
-    ) {
+    private ContainerInterface $container;
 
-    }//end __construct()
+    /**
+     * Event dispatcher
+     *
+     * @var IEventDispatcher
+     */
+    private IEventDispatcher $eventDispatcher;
+
+    /**
+     * Object entity mapper
+     *
+     * @var ObjectEntityMapper
+     */
+    private ObjectEntityMapper $objectEntityMapper;
 
 
     /**

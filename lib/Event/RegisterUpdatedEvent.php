@@ -32,6 +32,8 @@ class RegisterUpdatedEvent extends Event
      * The updated register state
      *
      * @var Register The register after update
+     *
+     * @psalm-suppress UnusedProperty
      */
     private Register $newRegister;
 
@@ -39,6 +41,8 @@ class RegisterUpdatedEvent extends Event
      * The previous register state
      *
      * @var Register The register before update
+     *
+     * @psalm-suppress UnusedProperty
      */
     private Register $oldRegister;
 
@@ -58,30 +62,6 @@ class RegisterUpdatedEvent extends Event
         $this->oldRegister = $oldRegister;
 
     }//end __construct()
-
-
-    /**
-     * Get the updated register
-     *
-     * @return Register The register after update
-     */
-    public function getNewRegister(): Register
-    {
-        return $this->newRegister;
-
-    }//end getNewRegister()
-
-
-    /**
-     * Get the original register
-     *
-     * @return Register The register before update
-     */
-    public function getOldRegister(): Register
-    {
-        return $this->oldRegister;
-
-    }//end getOldRegister()
 
 
 }//end class

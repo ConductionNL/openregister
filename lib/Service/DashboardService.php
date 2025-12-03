@@ -39,28 +39,75 @@ use Psr\Log\LoggerInterface;
 class DashboardService
 {
 
+    /**
+     * Object entity mapper
+     *
+     * @var ObjectEntityMapper
+     */
+    private ObjectEntityMapper $objectMapper;
+
+    /**
+     * Audit trail mapper
+     *
+     * @var AuditTrailMapper
+     */
+    private AuditTrailMapper $auditTrailMapper;
+
+    /**
+     * Webhook log mapper
+     *
+     * @var WebhookLogMapper
+     */
+    private WebhookLogMapper $webhookLogMapper;
+
+    /**
+     * Register mapper
+     *
+     * @var RegisterMapper
+     */
+    private RegisterMapper $registerMapper;
+
+    /**
+     * Logger
+     *
+     * @var LoggerInterface
+     */
+    private LoggerInterface $logger;
+
+    /**
+     * Schema mapper
+     *
+     * @var SchemaMapper
+     */
+    private SchemaMapper $schemaMapper;
+
 
     /**
      * Constructor for DashboardService
      *
-     * @param RegisterMapper     $registerMapper   The register mapper instance
-     * @param SchemaMapper       $schemaMapper     The schema mapper instance
-     * @param ObjectEntityMapper $objectMapper     The object entity mapper instance
-     * @param AuditTrailMapper   $auditTrailMapper The audit trail mapper instance
-     * @param WebhookLogMapper   $webhookLogMapper The webhook log mapper instance
-     * @param IDBConnection      $db               The database connection instance
-     * @param LoggerInterface    $logger           The logger instance
+     * @param ObjectEntityMapper $objectMapper     Object entity mapper
+     * @param AuditTrailMapper   $auditTrailMapper Audit trail mapper
+     * @param WebhookLogMapper   $webhookLogMapper Webhook log mapper
+     * @param RegisterMapper     $registerMapper   Register mapper
+     * @param SchemaMapper       $schemaMapper     Schema mapper
+     * @param LoggerInterface    $logger           Logger instance
      *
      * @return void
      */
     public function __construct(
-        private readonly RegisterMapper $registerMapper,
-        private readonly SchemaMapper $schemaMapper,
-        private readonly ObjectEntityMapper $objectMapper,
-        private readonly AuditTrailMapper $auditTrailMapper,
-        private readonly WebhookLogMapper $webhookLogMapper,
-        private readonly LoggerInterface $logger
+        ObjectEntityMapper $objectMapper,
+        AuditTrailMapper $auditTrailMapper,
+        WebhookLogMapper $webhookLogMapper,
+        RegisterMapper $registerMapper,
+        SchemaMapper $schemaMapper,
+        LoggerInterface $logger
     ) {
+        $this->objectMapper     = $objectMapper;
+        $this->auditTrailMapper = $auditTrailMapper;
+        $this->webhookLogMapper = $webhookLogMapper;
+        $this->registerMapper   = $registerMapper;
+        $this->schemaMapper     = $schemaMapper;
+        $this->logger           = $logger;
 
     }//end __construct()
 

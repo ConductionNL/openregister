@@ -10,10 +10,8 @@
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * @version GIT: <git-id>
- *
- * @link https://www.OpenRegister.app
+ * @version   GIT: <git-id>
+ * @link      https://www.OpenRegister.app
  */
 
 declare(strict_types=1);
@@ -59,43 +57,12 @@ class WebhookService
     private LoggerInterface $logger;
 
     /**
-     * Background job list
-     *
-     * @var IJobList
-     */
-    private IJobList $jobList;
-
-    /**
      * Webhook log mapper
      *
      * @var WebhookLogMapper
      */
     private WebhookLogMapper $webhookLogMapper;
 
-
-    /**
-     * Constructor
-     *
-     * @param WebhookMapper    $webhookMapper  Webhook mapper
-     * @param WebhookLogMapper $webhookLogMapper Webhook log mapper
-     * @param Client           $client         HTTP client
-     * @param LoggerInterface  $logger         Logger
-     * @param IJobList         $jobList        Background job list
-     */
-    public function __construct(
-        WebhookMapper $webhookMapper,
-        WebhookLogMapper $webhookLogMapper,
-        Client $client,
-        LoggerInterface $logger,
-        IJobList $jobList
-    ) {
-        $this->webhookMapper   = $webhookMapper;
-        $this->webhookLogMapper = $webhookLogMapper;
-        $this->client          = $client;
-        $this->logger          = $logger;
-        $this->jobList         = $jobList;
-
-    }//end __construct()
 
 
     /**
@@ -107,7 +74,7 @@ class WebhookService
      *
      * @return void
      */
-    public function dispatchEvent(Event $event, string $eventName, array $payload): void
+    public function dispatchEvent(Event $_event, string $eventName, array $payload): void
     {
         // Find all webhooks matching this event.
         $webhooks = $this->webhookMapper->findForEvent($eventName);
@@ -351,7 +318,7 @@ class WebhookService
         $keys = explode('.', $key);
 
         foreach ($keys as $k) {
-            if (!isset($array[$k])) {
+            if (isset($array[$k]) === false) {
                 return null;
             }
 
@@ -489,7 +456,6 @@ class WebhookService
         // Note: Retry is handled by WebhookRetryJob cron job.
         // The next_retry_at timestamp is already set in the webhook log entry.
         // No need to schedule a job here - the cron job will pick it up.
-
     }//end scheduleRetry()
 
 

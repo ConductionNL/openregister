@@ -21,19 +21,20 @@ namespace OCA\OpenRegister\Service;
 use Exception;
 use OCP\IAppConfig;
 use OCP\IConfig;
+use OCP\IDBConnection;
 use OCP\IRequest;
 use OCP\App\IAppManager;
-use Psr\Container\ContainerInterface;
+use OCP\AppFramework\IAppContainer;
 use OCP\AppFramework\Http\JSONResponse;
 use OC_App;
 use OCA\OpenRegister\AppInfo\Application;
 use OCP\IGroupManager;
 use OCP\IUserManager;
-use OCA\OpenRegister\Service\GuzzleSolrService;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\SearchTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\ObjectCacheService;
 use OCA\OpenRegister\Service\SchemaCacheService;
@@ -102,6 +103,97 @@ class SettingsService
 {
 
     /**
+     * Configuration service
+     *
+     * @var IConfig
+     */
+    private IConfig $config;
+
+    /**
+     * Audit trail mapper
+     *
+     * @var AuditTrailMapper
+     */
+    private AuditTrailMapper $auditTrailMapper;
+
+    /**
+     * Cache factory
+     *
+     * @var ICacheFactory
+     */
+    private ICacheFactory $cacheFactory;
+
+    /**
+     * Database connection (lazy-loaded when needed)
+     *
+     * @var IDBConnection|null
+     */
+    private ?IDBConnection $db = null;
+
+    /**
+     * Object cache service (lazy-loaded when needed)
+     *
+     * @var ObjectCacheService|null
+     */
+    private ?ObjectCacheService $objectCacheService = null;
+
+    /**
+     * Group manager
+     *
+     * @var IGroupManager
+     */
+    private IGroupManager $groupManager;
+
+    /**
+     * Logger
+     *
+     * @var LoggerInterface
+     */
+    private LoggerInterface $logger;
+
+    /**
+     * Object entity mapper
+     *
+     * @var ObjectEntityMapper
+     */
+    private ObjectEntityMapper $objectEntityMapper;
+
+    /**
+     * Organisation mapper
+     *
+     * @var OrganisationMapper
+     */
+    private OrganisationMapper $organisationMapper;
+
+    /**
+     * Schema cache service
+     *
+     * @var SchemaCacheService
+     */
+    private SchemaCacheService $schemaCacheService;
+
+    /**
+     * Schema facet cache service
+     *
+     * @var SchemaFacetCacheService
+     */
+    private SchemaFacetCacheService $schemaFacetCacheService;
+
+    /**
+     * Search trail mapper
+     *
+     * @var SearchTrailMapper
+     */
+    private SearchTrailMapper $searchTrailMapper;
+
+    /**
+     * User manager
+     *
+     * @var IUserManager
+     */
+    private IUserManager $userManager;
+
+    /**
      * This property holds the name of the application, which is used for identification and configuration purposes.
      *
      * @var string $appName The name of the app.
@@ -122,100 +214,69 @@ class SettingsService
      */
     private const MIN_OPENREGISTER_VERSION = '0.1.7';
 
+    /**
+     * Container for lazy loading services to break circular dependencies
+     *
+     * @var IAppContainer|null
+     */
+    private ?IAppContainer $container = null;
+
 
     /**
-     * SettingsService constructor.
+     * Constructor for SettingsService
      *
-     * @param IAppConfig              $config                  App configuration interface.
-     * @param IConfig                 $systemConfig            System configuration interface.
-     * @param IRequest                $request                 Request interface.
-     * @param ContainerInterface      $container               Container for dependency injection.
-     * @param IAppManager             $appManager              App manager interface.
-     * @param IGroupManager           $groupManager            Group manager interface.
-     * @param IUserManager            $userManager             User manager interface.
-     * @param OrganisationMapper      $organisationMapper      Organisation mapper for database operations.
-     * @param AuditTrailMapper        $auditTrailMapper        Audit trail mapper for database operations.
-     * @param SearchTrailMapper       $searchTrailMapper       Search trail mapper for database operations.
-     * @param ObjectEntityMapper      $objectEntityMapper      Object entity mapper for database operations.
-     * @param SchemaCacheService      $schemaCacheService      Schema cache service for cache management.
-     * @param SchemaFacetCacheService $schemaFacetCacheService Schema facet cache service for cache management.
-     * @param ICacheFactory           $cacheFactory            Cache factory for distributed cache access.
-     * @param LoggerInterface         $logger                  Logger for error and warning logging.
+     * @param IConfig                 $config                  Configuration service
+     * @param AuditTrailMapper        $auditTrailMapper        Audit trail mapper
+     * @param ICacheFactory           $cacheFactory            Cache factory
+     * @param IGroupManager           $groupManager            Group manager
+     * @param LoggerInterface         $logger                  Logger
+     * @param ObjectEntityMapper      $objectEntityMapper      Object entity mapper
+     * @param OrganisationMapper      $organisationMapper      Organisation mapper
+     * @param SchemaCacheService      $schemaCacheService      Schema cache service
+     * @param SchemaFacetCacheService $schemaFacetCacheService Schema facet cache service
+     * @param SearchTrailMapper       $searchTrailMapper       Search trail mapper
+     * @param IUserManager            $userManager             User manager
+     * @param IDBConnection           $db                      Database connection
+     * @param ObjectCacheService|null $objectCacheService      Object cache service (optional, lazy-loaded)
+     * @param IAppContainer|null      $container               Container for lazy loading (optional)
+     * @param string                  $appName                 Application name
+     *
+     * @return void
      */
     public function __construct(
-        private readonly IAppConfig $config,
-        private readonly IConfig $systemConfig,
-        private readonly IRequest $request,
-        private readonly ContainerInterface $container,
-        private readonly IAppManager $appManager,
-        private readonly IGroupManager $groupManager,
-        private readonly IUserManager $userManager,
-        private readonly OrganisationMapper $organisationMapper,
-        private readonly AuditTrailMapper $auditTrailMapper,
-        private readonly SearchTrailMapper $searchTrailMapper,
-        private readonly ObjectEntityMapper $objectEntityMapper,
-        private readonly SchemaCacheService $schemaCacheService,
-        private readonly SchemaFacetCacheService $schemaFacetCacheService,
-        private readonly ICacheFactory $cacheFactory,
-        private readonly LoggerInterface $logger
+        IConfig $config,
+        AuditTrailMapper $auditTrailMapper,
+        ICacheFactory $cacheFactory,
+        IGroupManager $groupManager,
+        LoggerInterface $logger,
+        ObjectEntityMapper $objectEntityMapper,
+        OrganisationMapper $organisationMapper,
+        SchemaCacheService $schemaCacheService,
+        SchemaFacetCacheService $schemaFacetCacheService,
+        SearchTrailMapper $searchTrailMapper,
+        IUserManager $userManager,
+        IDBConnection $db,
+        ?ObjectCacheService $objectCacheService=null,
+        ?IAppContainer $container=null,
+        string $appName='openregister'
     ) {
-        // Indulge in setting the application name for identification and configuration purposes.
-        $this->appName = 'openregister';
+        $this->config           = $config;
+        $this->auditTrailMapper = $auditTrailMapper;
+        $this->cacheFactory     = $cacheFactory;
+        $this->groupManager     = $groupManager;
+        $this->logger           = $logger;
+        $this->objectEntityMapper      = $objectEntityMapper;
+        $this->organisationMapper      = $organisationMapper;
+        $this->schemaCacheService      = $schemaCacheService;
+        $this->schemaFacetCacheService = $schemaFacetCacheService;
+        $this->searchTrailMapper       = $searchTrailMapper;
+        $this->userManager = $userManager;
+        $this->db          = $db;
+        $this->objectCacheService = $objectCacheService;
+        $this->container          = $container;
+        $this->appName            = $appName;
 
     }//end __construct()
-
-
-    /**
-     * Checks if OpenRegister is installed and meets version requirements.
-     *
-     * @param string|null $minVersion Minimum required version (e.g. '1.0.0').
-     *
-     * @return bool True if OpenRegister is installed and meets version requirements.
-     */
-    public function isOpenRegisterInstalled(?string $minVersion=self::MIN_OPENREGISTER_VERSION): bool
-    {
-        if ($this->appManager->isInstalled(self::OPENREGISTER_APP_ID) === false) {
-            return false;
-        }
-
-        if ($minVersion === null) {
-            return true;
-        }
-
-        $currentVersion = $this->appManager->getAppVersion(self::OPENREGISTER_APP_ID);
-        return version_compare($currentVersion, $minVersion, '>=');
-
-    }//end isOpenRegisterInstalled()
-
-
-    /**
-     * Checks if OpenRegister is enabled.
-     *
-     * @return bool True if OpenRegister is enabled.
-     */
-    public function isOpenRegisterEnabled(): bool
-    {
-        return $this->appManager->isEnabled(self::OPENREGISTER_APP_ID) === true;
-
-    }//end isOpenRegisterEnabled()
-
-
-    /**
-     * Check if RBAC is enabled
-     *
-     * @return bool True if RBAC is enabled, false otherwise
-     */
-    public function isRbacEnabled(): bool
-    {
-        $rbacConfig = $this->config->getValueString($this->appName, 'rbac', '');
-        if (empty($rbacConfig) === true) {
-            return false;
-        }
-
-        $rbacData = json_decode($rbacConfig, true);
-        return $rbacData['enabled'] ?? false;
-
-    }//end isRbacEnabled()
 
 
     /**
@@ -225,7 +286,7 @@ class SettingsService
      */
     public function isMultiTenancyEnabled(): bool
     {
-        $multitenancyConfig = $this->config->getValueString($this->appName, 'multitenancy', '');
+        $multitenancyConfig = $this->config->getAppValue($this->appName, 'multitenancy', '');
         if (empty($multitenancyConfig) === true) {
             return false;
         }
@@ -234,25 +295,6 @@ class SettingsService
         return $multitenancyData['enabled'] ?? false;
 
     }//end isMultiTenancyEnabled()
-
-
-    /**
-     * Check if published objects should bypass multi-tenancy restrictions
-     *
-     * @return bool True if published objects should bypass multi-tenancy, false otherwise
-     */
-    public function shouldPublishedObjectsBypassMultiTenancy(): bool
-    {
-        $multitenancyConfig = $this->config->getValueString($this->appName, 'multitenancy', '');
-        if (empty($multitenancyConfig) === true) {
-            return false;
-            // Default to false for security.
-        }
-
-        $multitenancyData = json_decode($multitenancyConfig, true);
-        return $multitenancyData['publishedObjectsBypassMultiTenancy'] ?? false;
-
-    }//end shouldPublishedObjectsBypassMultiTenancy()
 
 
     /**
@@ -273,7 +315,7 @@ class SettingsService
             ];
 
             // RBAC Settings.
-            $rbacConfig = $this->config->getValueString($this->appName, 'rbac', '');
+            $rbacConfig = $this->config->getAppValue($this->appName, 'rbac', '');
             if (empty($rbacConfig) === true) {
                 $data['rbac'] = [
                     'enabled'             => false,
@@ -294,7 +336,7 @@ class SettingsService
             }
 
             // Multitenancy Settings.
-            $multitenancyConfig = $this->config->getValueString($this->appName, 'multitenancy', '');
+            $multitenancyConfig = $this->config->getAppValue($this->appName, 'multitenancy', '');
             if (empty($multitenancyConfig) === true) {
                 $data['multitenancy'] = [
                     'enabled'                            => false,
@@ -324,7 +366,7 @@ class SettingsService
             $data['availableUsers'] = $this->getAvailableUsers();
 
             // Retention Settings with defaults.
-            $retentionConfig = $this->config->getValueString($this->appName, 'retention', '');
+            $retentionConfig = $this->config->getAppValue($this->appName, 'retention', '');
             if (empty($retentionConfig) === true) {
                 $data['retention'] = [
                     'objectArchiveRetention' => 31536000000,
@@ -362,7 +404,7 @@ class SettingsService
             }//end if
 
             // SOLR Search Configuration.
-            $solrConfig = $this->config->getValueString($this->appName, 'solr', '');
+            $solrConfig = $this->config->getAppValue($this->appName, 'solr', '');
 
             if (empty($solrConfig) === true) {
                 $data['solr'] = [
@@ -510,7 +552,7 @@ class SettingsService
                     'defaultObjectOwner'  => $rbacData['defaultObjectOwner'] ?? '',
                     'adminOverride'       => $rbacData['adminOverride'] ?? true,
                 ];
-                $this->config->setValueString($this->appName, 'rbac', json_encode($rbacConfig));
+                $this->config->setAppValue($this->appName, 'rbac', json_encode($rbacConfig));
             }
 
             // Handle Multitenancy settings.
@@ -524,7 +566,7 @@ class SettingsService
                     'publishedObjectsBypassMultiTenancy' => $multitenancyData['publishedObjectsBypassMultiTenancy'] ?? false,
                     'adminOverride'                      => $multitenancyData['adminOverride'] ?? true,
                 ];
-                $this->config->setValueString($this->appName, 'multitenancy', json_encode($multitenancyConfig));
+                $this->config->setAppValue($this->appName, 'multitenancy', json_encode($multitenancyConfig));
             }
 
             // Handle Retention settings.
@@ -541,7 +583,7 @@ class SettingsService
                     'auditTrailsEnabled'     => $retentionData['auditTrailsEnabled'] ?? true,
                     'searchTrailsEnabled'    => $retentionData['searchTrailsEnabled'] ?? true,
                 ];
-                $this->config->setValueString($this->appName, 'retention', json_encode($retentionConfig));
+                $this->config->setAppValue($this->appName, 'retention', json_encode($retentionConfig));
             }
 
             // Handle SOLR settings.
@@ -569,7 +611,7 @@ class SettingsService
                     'objectCollection'  => $solrData['objectCollection'] ?? null,
                     'fileCollection'    => $solrData['fileCollection'] ?? null,
                 ];
-                $this->config->setValueString($this->appName, 'solr', json_encode($solrConfig));
+                $this->config->setAppValue($this->appName, 'solr', json_encode($solrConfig));
             }//end if
 
             // Return the updated settings.
@@ -579,33 +621,6 @@ class SettingsService
         }//end try
 
     }//end updateSettings()
-
-
-    /**
-     * Get the current publishing options.
-     *
-     * @return array The current publishing options configuration.
-     * @throws \RuntimeException If publishing options retrieval fails.
-     */
-    public function getPublishingOptions(): array
-    {
-        try {
-            // Retrieve publishing options from configuration with defaults to false.
-            $publishingOptions = [
-                // Convert string 'true'/'false' to boolean for auto publish attachments setting.
-                'auto_publish_attachments'      => $this->config->getValueString($this->appName, 'auto_publish_attachments', 'false') === 'true',
-                // Convert string 'true'/'false' to boolean for auto publish objects setting.
-                'auto_publish_objects'          => $this->config->getValueString($this->appName, 'auto_publish_objects', 'false') === 'true',
-                // Convert string 'true'/'false' to boolean for old style publishing view setting.
-                'use_old_style_publishing_view' => $this->config->getValueString($this->appName, 'use_old_style_publishing_view', 'false') === 'true',
-            ];
-
-            return $publishingOptions;
-        } catch (Exception $e) {
-            throw new \RuntimeException('Failed to retrieve publishing options: '.$e->getMessage());
-        }
-
-    }//end getPublishingOptions()
 
 
     /**
@@ -635,9 +650,9 @@ class SettingsService
                     // Convert boolean or string to string format for storage.
                     $value = $options[$option] === true || $options[$option] === 'true' ? 'true' : 'false';
                     // Store the value in the configuration.
-                    $this->config->setValueString($this->appName, $option, $value);
+                    $this->config->setAppValue($this->appName, $option, $value);
                     // Retrieve and convert back to boolean for the response.
-                    $updatedOptions[$option] = $this->config->getValueString($this->appName, $option) === 'true';
+                    $updatedOptions[$option] = $this->config->getAppValue($this->appName, $option, '') === 'true';
                 }
             }
 
@@ -791,7 +806,7 @@ class SettingsService
             ];
 
             // Get database connection for optimized queries.
-            $db = $this->container->get('OCP\IDBConnection');
+            $db = $this->db;
 
             // **OPTIMIZED QUERIES**: Use direct SQL COUNT queries for maximum performance
             // 1. Objects table - comprehensive stats with single query
@@ -1005,8 +1020,20 @@ class SettingsService
         $now = time();
         if ($cachedStats === null || ($now - $lastUpdate) > 30) {
             try {
-                $objectCacheService = $this->container->get(ObjectCacheService::class);
-                $cachedStats        = $objectCacheService->getStats();
+                $objectCacheService = $this->objectCacheService;
+                if ($objectCacheService === null && $this->container !== null) {
+                    try {
+                        $objectCacheService = $this->container->get(ObjectCacheService::class);
+                    } catch (\Exception $e) {
+                        throw new \Exception('ObjectCacheService not available');
+                    }
+                }
+
+                if ($objectCacheService === null) {
+                    throw new \Exception('ObjectCacheService not available');
+                }
+
+                $cachedStats = $objectCacheService->getStats();
             } catch (Exception $e) {
                 // If no object cache stats available, use defaults.
                 $cachedStats = [
@@ -1020,7 +1047,7 @@ class SettingsService
                     'name_misses'     => 0,
                     'name_warmups'    => 0,
                 ];
-            }
+            }//end try
 
             $lastUpdate = $now;
         }//end if
@@ -1110,7 +1137,7 @@ class SettingsService
      * @return array Results of cache clearing operations
      * @throws \RuntimeException If cache clearing fails
      */
-    public function clearCache(string $type='all', ?string $userId=null, array $options=[]): array
+    public function clearCache(string $type='all', ?string $userId=null, array $_options=[]): array
     {
         try {
             $results = [
@@ -1175,11 +1202,23 @@ class SettingsService
      *
      * @return array Clear operation results
      */
-    private function clearObjectCache(?string $userId=null): array
+    private function clearObjectCache(?string $_userId=null): array
     {
         try {
-            $objectCacheService = $this->container->get(ObjectCacheService::class);
-            $beforeStats        = $objectCacheService->getStats();
+            $objectCacheService = $this->objectCacheService;
+            if ($objectCacheService === null && $this->container !== null) {
+                try {
+                    $objectCacheService = $this->container->get(ObjectCacheService::class);
+                } catch (\Exception $e) {
+                    throw new \Exception('ObjectCacheService not available');
+                }
+            }
+
+            if ($objectCacheService === null) {
+                throw new \Exception('ObjectCacheService not available');
+            }
+
+            $beforeStats = $objectCacheService->getStats();
             $objectCacheService->clearCache();
             $afterStats = $objectCacheService->getStats();
 
@@ -1210,7 +1249,19 @@ class SettingsService
     private function clearNamesCache(): array
     {
         try {
-            $objectCacheService  = $this->container->get(ObjectCacheService::class);
+            $objectCacheService = $this->objectCacheService;
+            if ($objectCacheService === null && $this->container !== null) {
+                try {
+                    $objectCacheService = $this->container->get(ObjectCacheService::class);
+                } catch (\Exception $e) {
+                    throw new \Exception('ObjectCacheService not available');
+                }
+            }
+
+            if ($objectCacheService === null) {
+                throw new \Exception('ObjectCacheService not available');
+            }
+
             $beforeStats         = $objectCacheService->getStats();
             $beforeNameCacheSize = $beforeStats['name_cache_size'] ?? 0;
 
@@ -1255,8 +1306,20 @@ class SettingsService
     {
         try {
             $startTime          = microtime(true);
-            $objectCacheService = $this->container->get(ObjectCacheService::class);
-            $beforeStats        = $objectCacheService->getStats();
+            $objectCacheService = $this->objectCacheService;
+            if ($objectCacheService === null && $this->container !== null) {
+                try {
+                    $objectCacheService = $this->container->get(ObjectCacheService::class);
+                } catch (\Exception $e) {
+                    throw new \Exception('ObjectCacheService not available');
+                }
+            }
+
+            if ($objectCacheService === null) {
+                throw new \Exception('ObjectCacheService not available');
+            }
+
+            $beforeStats = $objectCacheService->getStats();
 
             $loadedCount = $objectCacheService->warmupNameCache();
 
@@ -1294,7 +1357,7 @@ class SettingsService
      *
      * @return array Clear operation results
      */
-    private function clearSchemaCache(?string $userId=null): array
+    private function clearSchemaCache(?string $_userId=null): array
     {
         try {
             $beforeStats = $this->schemaCacheService->getCacheStatistics();
@@ -1330,7 +1393,7 @@ class SettingsService
      *
      * @return array Clear operation results
      */
-    private function clearFacetCache(?string $userId=null): array
+    private function clearFacetCache(?string $_userId=null): array
     {
         try {
             $beforeStats = $this->schemaFacetCacheService->getCacheStatistics();
@@ -1363,7 +1426,7 @@ class SettingsService
      *
      * @return array Clear operation results
      */
-    private function clearDistributedCache(?string $userId=null): array
+    private function clearDistributedCache(?string $_userId=null): array
     {
         try {
             $distributedCache = $this->cacheFactory->createDistributed('openregister');
@@ -1397,7 +1460,7 @@ class SettingsService
     public function getSolrSettings(): array
     {
         try {
-            $solrConfig = $this->config->getValueString($this->appName, 'solr', '');
+            $solrConfig = $this->config->getAppValue($this->appName, 'solr', '');
             if (empty($solrConfig) === true) {
                 return [
                     'enabled'        => false,
@@ -1428,508 +1491,6 @@ class SettingsService
 
 
     /**
-     * Test SOLR connection with current settings (includes Zookeeper test for SolrCloud)
-     *
-     * @return array Connection test results with status and details
-     */
-    public function testSolrConnection(): array
-    {
-        try {
-            // Delegate to GuzzleSolrService for consistent configuration and URL handling.
-            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
-            return $guzzleSolrService->testConnection();
-        } catch (Exception $e) {
-            return [
-                'success'    => false,
-                'message'    => 'Connection test failed: '.$e->getMessage(),
-                'details'    => [
-                    'exception' => $e->getMessage(),
-                    'file'      => $e->getFile(),
-                    'line'      => $e->getLine(),
-                    'trace'     => $e->getTraceAsString(),
-                ],
-                'components' => [],
-            ];
-        }
-
-    }//end testSolrConnection()
-
-
-    /**
-     * Test Zookeeper connectivity for SolrCloud
-     *
-     * @param  array $solrSettings SOLR configuration
-     * @return array Zookeeper test results
-     */
-    private function testZookeeperConnection(array $solrSettings): array
-    {
-        try {
-            $zookeeperHosts = $solrSettings['zookeeperHosts'] ?? 'zookeeper:2181';
-            $hosts          = explode(',', $zookeeperHosts);
-
-            $successfulHosts = [];
-            $failedHosts     = [];
-
-            foreach ($hosts as $host) {
-                $host = trim($host);
-                if (empty($host) === true) {
-                    continue;
-                }
-
-                // Test Zookeeper connection using SOLR's Zookeeper API.
-                $url = sprintf(
-                    '%s://%s:%d%s/admin/collections?action=CLUSTERSTATUS&wt=json',
-                    $solrSettings['scheme'],
-                    $solrSettings['host'],
-                    $solrSettings['port'],
-                    $solrSettings['path']
-                );
-
-                $context = stream_context_create(
-                        [
-                            'http' => [
-                                'timeout' => 5,
-                                'method'  => 'GET',
-                            ],
-                        ]
-                        );
-
-                $response = @file_get_contents($url, false, $context);
-
-                if ($response !== false) {
-                    $data = json_decode($response, true);
-                    if (($data['cluster'] ?? null) !== null) {
-                        $successfulHosts[] = $host;
-                    } else {
-                        $failedHosts[] = $host;
-                    }
-                } else {
-                    $failedHosts[] = $host;
-                }
-            }//end foreach
-
-            return [
-                'success' => empty($successfulHosts) === false,
-                'message' => empty($successfulHosts) === false ? 'Zookeeper accessible via '.implode(', ', $successfulHosts) : 'Zookeeper not accessible via any host',
-                'details' => [
-                    'zookeeper_hosts'  => $zookeeperHosts,
-                    'successful_hosts' => $successfulHosts,
-                    'failed_hosts'     => $failedHosts,
-                    'test_method'      => 'SOLR Collections API',
-                ],
-            ];
-        } catch (Exception $e) {
-            return [
-                'success' => false,
-                'message' => 'Zookeeper test failed: '.$e->getMessage(),
-                'details' => [
-                    'error'           => $e->getMessage(),
-                    'zookeeper_hosts' => $solrSettings['zookeeperHosts'] ?? 'zookeeper:2181',
-                ],
-            ];
-        }//end try
-
-    }//end testZookeeperConnection()
-
-
-    /**
-     * Test SOLR connectivity
-     *
-     * @param  array $solrSettings SOLR configuration
-     * @return array SOLR test results
-     */
-    private function testSolrConnectivity(array $solrSettings): array
-    {
-        try {
-            // Build SOLR URL - handle Kubernetes service names properly.
-            $host = $solrSettings['host'];
-
-            // Check if it's a Kubernetes service name (contains .svc.cluster.local).
-            if (strpos($host, '.svc.cluster.local') !== false) {
-                // Kubernetes service - don't append port, it's handled by the service.
-                $baseUrl = sprintf(
-                    '%s://%s%s',
-                    $solrSettings['scheme'],
-                    $host,
-                    $solrSettings['path']
-                );
-            } else {
-                // Regular hostname - append port (default to 8983 if not provided).
-                $port    = empty($solrSettings['port']) === false ? $solrSettings['port'] : 8983;
-                $baseUrl = sprintf(
-                    '%s://%s:%d%s',
-                    $solrSettings['scheme'],
-                    $host,
-                    $port,
-                    $solrSettings['path']
-                );
-            }
-
-            // Test basic SOLR connectivity with admin endpoints
-            // Try multiple common SOLR admin endpoints for maximum compatibility.
-            $testEndpoints = [
-                '/admin/ping?wt=json',
-                '/solr/admin/ping?wt=json',
-                '/admin/info/system?wt=json',
-            ];
-
-            $testUrl   = null;
-            $testType  = 'admin_ping';
-            $lastError = null;
-
-            // Create HTTP context with timeout.
-            $context = stream_context_create(
-                    [
-                        'http' => [
-                            'timeout' => 10,
-                            'method'  => 'GET',
-                            'header'  => [
-                                'Accept: application/json',
-                                'Content-Type: application/json',
-                            ],
-                        ],
-                    ]
-                    );
-
-            // Try each endpoint until one works.
-            $response     = false;
-            $responseTime = 0;
-
-            foreach ($testEndpoints as $endpoint) {
-                $testUrl      = $baseUrl.$endpoint;
-                $startTime    = microtime(true);
-                $response     = @file_get_contents($testUrl, false, $context);
-                $responseTime = (microtime(true) - $startTime) * 1000;
-
-                if ($response !== false) {
-                    // Found a working endpoint.
-                    break;
-                } else {
-                    $lastError = "Failed to connect to: ".$testUrl;
-                }
-            }
-
-            if ($response === false) {
-                return [
-                    'success' => false,
-                    'message' => 'SOLR server not responding on any admin endpoint',
-                    'details' => [
-                        'tested_endpoints' => array_map(
-                                function ($endpoint) use ($baseUrl) {
-                                    return $baseUrl.$endpoint;
-                                },
-                                $testEndpoints
-                                ),
-                        'last_error'       => $lastError,
-                        'test_type'        => $testType,
-                        'response_time_ms' => round($responseTime, 2),
-                    ],
-                ];
-            }
-
-            $data = json_decode($response, true);
-
-            // Validate admin response - be flexible about response format
-            // Check for successful response - different endpoints have different formats.
-            $isValidResponse = false;
-
-            if (($data['status'] ?? null) !== null && $data['status'] === 'OK') {
-                // Standard ping response.
-                $isValidResponse = true;
-            } else if (($data['responseHeader']['status'] ?? null) !== null && $data['responseHeader']['status'] === 0) {
-                // System info response.
-                $isValidResponse = true;
-            } else if (is_array($data) === true && empty($data) === false) {
-                // Any valid JSON response indicates SOLR is responding.
-                $isValidResponse = true;
-            }
-
-            if (($isValidResponse === false)) {
-                return [
-                    'success' => false,
-                    'message' => 'SOLR admin endpoint returned invalid response',
-                    'details' => [
-                        'url'              => $testUrl,
-                        'test_type'        => $testType,
-                        'response'         => $data,
-                        'response_time_ms' => round($responseTime, 2),
-                    ],
-                ];
-            }
-
-            return [
-                'success' => true,
-                'message' => 'SOLR server responding correctly',
-                'details' => [
-                    'url'              => $testUrl,
-                    'test_type'        => $testType,
-                    'response_time_ms' => round($responseTime, 2),
-                    'solr_status'      => $data['status'] ?? 'OK',
-                    'use_cloud'        => $solrSettings['useCloud'] ?? false,
-                    'server_info'      => $data['responseHeader'] ?? [],
-                    'working_endpoint' => str_replace($baseUrl, '', $testUrl),
-                ],
-            ];
-        } catch (Exception $e) {
-            return [
-                'success' => false,
-                'message' => 'SOLR connectivity test failed: '.$e->getMessage(),
-                'details' => [
-                    'error'     => $e->getMessage(),
-                    'url'       => $baseUrl ?? 'unknown',
-                    'test_type' => $testType ?? 'unknown',
-                ],
-            ];
-        }//end try
-
-    }//end testSolrConnectivity()
-
-
-    /**
-     * Test SOLR collection/core availability
-     *
-     * @param  array $solrSettings SOLR configuration
-     * @return array Collection test results
-     */
-    private function testSolrCollection(array $solrSettings): array
-    {
-        try {
-            $collectionName = $solrSettings['collection'] ?? $solrSettings['core'] ?? 'openregister';
-
-            // Build SOLR URL - handle Kubernetes service names properly.
-            $host = $solrSettings['host'];
-
-            // Check if it's a Kubernetes service name (contains .svc.cluster.local).
-            if (strpos($host, '.svc.cluster.local') !== false) {
-                // Kubernetes service - don't append port, it's handled by the service.
-                $baseUrl = sprintf(
-                    '%s://%s%s',
-                    $solrSettings['scheme'],
-                    $host,
-                    $solrSettings['path']
-                );
-            } else {
-                // Regular hostname - append port (default to 8983 if not provided).
-                $port    = empty($solrSettings['port']) === false ? $solrSettings['port'] : 8983;
-                $baseUrl = sprintf(
-                    '%s://%s:%d%s',
-                    $solrSettings['scheme'],
-                    $host,
-                    $port,
-                    $solrSettings['path']
-                );
-            }
-
-            // For SolrCloud, test collection existence.
-            if ($solrSettings['useCloud'] ?? false) {
-                $url = $baseUrl.'/admin/collections?action=CLUSTERSTATUS&wt=json';
-
-                $context = stream_context_create(
-                        [
-                            'http' => [
-                                'timeout' => 10,
-                                'method'  => 'GET',
-                            ],
-                        ]
-                        );
-
-                $response = @file_get_contents($url, false, $context);
-
-                if ($response === false) {
-                    return [
-                        'success' => false,
-                        'message' => 'Failed to check collection status',
-                        'details' => ['url' => $url],
-                    ];
-                }
-
-                $data        = json_decode($response, true);
-                $collections = $data['cluster']['collections'] ?? [];
-
-                if (($collections[$collectionName] ?? null) !== null) {
-                    return [
-                        'success' => true,
-                        'message' => "Collection '{$collectionName}' exists and is available",
-                        'details' => [
-                            'collection' => $collectionName,
-                            'status'     => $collections[$collectionName]['status'] ?? 'unknown',
-                            'shards'     => count($collections[$collectionName]['shards'] ?? []),
-                        ],
-                    ];
-                } else {
-                    return [
-                        'success' => false,
-                        'message' => "Collection '{$collectionName}' not found",
-                        'details' => [
-                            'collection'            => $collectionName,
-                            'available_collections' => array_keys($collections),
-                        ],
-                    ];
-                }
-            } else {
-                // For standalone SOLR, test core existence.
-                $url = $baseUrl.'/admin/cores?action=STATUS&core='.urlencode($collectionName).'&wt=json';
-
-                $context = stream_context_create(
-                        [
-                            'http' => [
-                                'timeout' => 10,
-                                'method'  => 'GET',
-                            ],
-                        ]
-                        );
-
-                $response = @file_get_contents($url, false, $context);
-
-                if ($response === false) {
-                    return [
-                        'success' => false,
-                        'message' => 'Failed to check core status',
-                        'details' => ['url' => $url],
-                    ];
-                }
-
-                $data = json_decode($response, true);
-
-                if (($data['status'][$collectionName] ?? null) !== null) {
-                    return [
-                        'success' => true,
-                        'message' => "Core '{$collectionName}' exists and is available",
-                        'details' => [
-                            'core'   => $collectionName,
-                            'status' => $data['status'][$collectionName]['status'] ?? 'unknown',
-                        ],
-                    ];
-                } else {
-                    return [
-                        'success' => false,
-                        'message' => "Core '{$collectionName}' not found",
-                        'details' => [
-                            'core'            => $collectionName,
-                            'available_cores' => array_keys($data['status'] ?? []),
-                        ],
-                    ];
-                }
-            }//end if
-        } catch (Exception $e) {
-            return [
-                'success' => false,
-                'message' => 'Collection test failed: '.$e->getMessage(),
-                'details' => [
-                    'error'      => $e->getMessage(),
-                    'collection' => $solrSettings['collection'] ?? $solrSettings['core'] ?? 'openregister',
-                ],
-            ];
-        }//end try
-
-    }//end testSolrCollection()
-
-
-    /**
-     * Test SOLR collection query functionality
-     *
-     * @param  array $solrSettings SOLR configuration
-     * @return array Query test results
-     */
-    private function testSolrQuery(array $solrSettings): array
-    {
-        try {
-            $collectionName = $solrSettings['collection'] ?? $solrSettings['core'] ?? 'openregister';
-
-            // Build SOLR URL - handle Kubernetes service names properly.
-            $host = $solrSettings['host'];
-
-            // Check if it's a Kubernetes service name (contains .svc.cluster.local).
-            if (strpos($host, '.svc.cluster.local') !== false) {
-                // Kubernetes service - don't append port, it's handled by the service.
-                $baseUrl = sprintf(
-                    '%s://%s%s',
-                    $solrSettings['scheme'],
-                    $host,
-                    $solrSettings['path']
-                );
-            } else {
-                // Regular hostname - append port (default to 8983 if not provided).
-                $port    = empty($solrSettings['port']) === false ? $solrSettings['port'] : 8983;
-                $baseUrl = sprintf(
-                    '%s://%s:%d%s',
-                    $solrSettings['scheme'],
-                    $host,
-                    $port,
-                    $solrSettings['path']
-                );
-            }
-
-            // Test collection select query.
-            $testUrl = $baseUrl.'/'.$collectionName.'/select?q=*:*&rows=0&wt=json';
-
-            $context = stream_context_create(
-                    [
-                        'http' => [
-                            'timeout' => 10,
-                            'method'  => 'GET',
-                        ],
-                    ]
-                    );
-
-            $startTime    = microtime(true);
-            $response     = @file_get_contents($testUrl, false, $context);
-            $responseTime = (microtime(true) - $startTime) * 1000;
-
-            if ($response === false) {
-                return [
-                    'success' => false,
-                    'message' => 'Collection query failed',
-                    'details' => [
-                        'url'              => $testUrl,
-                        'collection'       => $collectionName,
-                        'response_time_ms' => round($responseTime, 2),
-                    ],
-                ];
-            }
-
-            $data = json_decode($response, true);
-
-            // Check for successful query response.
-            if (isset($data['responseHeader']['status']) === true || $data['responseHeader']['status'] !== 0) {
-                return [
-                    'success' => false,
-                    'message' => 'Collection query returned error',
-                    'details' => [
-                        'url'              => $testUrl,
-                        'collection'       => $collectionName,
-                        'response'         => $data,
-                        'response_time_ms' => round($responseTime, 2),
-                    ],
-                ];
-            }
-
-            return [
-                'success' => true,
-                'message' => 'Collection query successful',
-                'details' => [
-                    'url'              => $testUrl,
-                    'collection'       => $collectionName,
-                    'response_time_ms' => round($responseTime, 2),
-                    'num_found'        => $data['response']['numFound'] ?? 0,
-                    'query_time'       => $data['responseHeader']['QTime'] ?? 0,
-                ],
-            ];
-        } catch (Exception $e) {
-            return [
-                'success' => false,
-                'message' => 'Query test failed: '.$e->getMessage(),
-                'details' => [
-                    'error'      => $e->getMessage(),
-                    'collection' => $solrSettings['collection'] ?? $solrSettings['core'] ?? 'openregister',
-                ],
-            ];
-        }//end try
-
-    }//end testSolrQuery()
-
-
-    /**
      * Complete SOLR warmup: mirror schemas and index objects from the database
      *
      * This method performs comprehensive SOLR index warmup by:
@@ -1943,138 +1504,28 @@ class SettingsService
      * @return array Warmup operation results with statistics and status
      * @throws \RuntimeException If SOLR warmup fails
      */
-    public function warmupSolrIndex(int $batchSize=2000, int $maxObjects=0, string $mode='serial', bool $collectErrors=false): array
+
+
+    /**
+     * Complete SOLR warmup: mirror schemas and index objects from the database
+     *
+     * @deprecated This method is deprecated. Use GuzzleSolrService->warmupIndex() directly via controller.
+     * This method is kept for backward compatibility but should not be used.
+     * The controller now uses GuzzleSolrService directly to avoid circular dependencies.
+     *
+     * @param  int $batchSize  Number of objects to process per batch (default 1000, parameter kept for API compatibility)
+     * @param  int $maxObjects Maximum number of objects to index (0 = all)
+     * @return array Warmup operation results with statistics and status
+     * @throws \RuntimeException Always throws exception indicating method is deprecated
+     */
+    public function warmupSolrIndex(int $_batchSize=2000, int $maxObjects=0, string $mode='serial', bool $collectErrors=false): array
     {
-        try {
-            $solrSettings = $this->getSolrSettings();
-
-            if (($solrSettings['enabled'] === false)) {
-                return [
-                    'success' => false,
-                    'message' => 'SOLR is disabled in settings',
-                    'stats'   => [
-                        'totalProcessed' => 0,
-                        'totalIndexed'   => 0,
-                        'totalErrors'    => 0,
-                        'duration'       => 0,
-                    ],
-                ];
-            }
-
-            // Get SolrService for bulk indexing via direct DI.
-            $solrService = $this->container->get(GuzzleSolrService::class);
-
-            if ($solrService === null) {
-                return [
-                    'success' => false,
-                    'message' => 'SOLR service not available',
-                    'stats'   => [
-                        'totalProcessed' => 0,
-                        'totalIndexed'   => 0,
-                        'totalErrors'    => 0,
-                        'duration'       => 0,
-                    ],
-                ];
-            }
-
-            $startTime = microtime(true);
-
-            // Get all schemas for schema mirroring.
-            $schemas = [];
-            try {
-                $schemaMapper = $this->container->get('OCA\OpenRegister\Db\SchemaMapper');
-                $schemas      = $schemaMapper->findAll();
-            } catch (Exception $e) {
-                // Continue without schema mirroring if schema mapper is not available.
-                $this->logger->warning('Schema mapper not available for warmup', ['error' => $e->getMessage()]);
-            }
-
-            // **COMPLETE WARMUP**: Mirror schemas + index objects + cache warmup
-            $warmupResult = $solrService->warmupIndex($schemas, $maxObjects, $mode, $collectErrors);
-
-            $totalDuration = microtime(true) - $startTime;
-
-            if ($warmupResult['success'] === true) {
-                $operations       = $warmupResult['operations'] ?? [];
-                $indexed          = $operations['objects_indexed'] ?? 0;
-                $schemasProcessed = $operations['schemas_processed'] ?? 0;
-                $fieldsCreated    = $operations['fields_created'] ?? 0;
-                $objectsPerSecond = $totalDuration > 0 ? round($indexed / $totalDuration, 2) : 0;
-
-                return [
-                    'success' => true,
-                    'message' => 'SOLR complete warmup finished successfully',
-                    'stats'   => [
-                        'totalProcessed'    => $indexed,
-                        'totalIndexed'      => $indexed,
-                        'totalErrors'       => $operations['indexing_errors'] ?? 0,
-                        'totalObjectsFound' => $warmupResult['total_objects_found'] ?? 0,
-                        'batchesProcessed'  => $warmupResult['batches_processed'] ?? 0,
-                        'maxObjectsLimit'   => $warmupResult['max_objects_limit'] ?? $maxObjects,
-                        'duration'          => round($totalDuration, 2),
-                        'objectsPerSecond'  => $objectsPerSecond,
-                        'successRate'       => $indexed > 0 ? round((($indexed - ($operations['indexing_errors'] ?? 0)) / $indexed) * 100, 2) : 100.0,
-                        'schemasProcessed'  => $schemasProcessed,
-                        'fieldsCreated'     => $fieldsCreated,
-                        'operations'        => $operations,
-                    ],
-                ];
-            } else {
-                return [
-                    'success' => false,
-                    'message' => $warmupResult['error'] ?? 'SOLR complete warmup failed',
-                    'stats'   => [
-                        'totalProcessed' => 0,
-                        'totalIndexed'   => 0,
-                        'totalErrors'    => 1,
-                        'duration'       => round($totalDuration, 2),
-                        'operations'     => $warmupResult['operations'] ?? [],
-                    ],
-                ];
-            }//end if
-        } catch (Exception $e) {
-            $this->logger->error(
-                    'SOLR warmup failed with exception',
-                    [
-                        'error' => $e->getMessage(),
-                        'class' => get_class($e),
-                        'file'  => $e->getFile(),
-                        'line'  => $e->getLine(),
-                    ]
-                    );
-
-            // **ERROR COLLECTION MODE**: Return errors in response if collectErrors is true
-            if ($collectErrors === true) {
-                return [
-                    'success' => false,
-                    'message' => 'SOLR warmup failed with errors (collected mode)',
-                    'stats'   => [
-                        'totalProcessed'        => 0,
-                        'totalIndexed'          => 0,
-                        'totalErrors'           => 1,
-                        'duration'              => microtime(true) - ($startTime ?? microtime(true)),
-                        'error_collection_mode' => true,
-                    ],
-                    'errors'  => [
-                        [
-                            'type'      => 'warmup_exception',
-                            'message'   => $e->getMessage(),
-                            'class'     => get_class($e),
-                            'file'      => $e->getFile(),
-                            'line'      => $e->getLine(),
-                            'timestamp' => date('c'),
-                        ],
-                    ],
-                ];
-            }//end if
-
-            // **ERROR VISIBILITY**: Re-throw exception to expose errors in controller (default behavior)
-            throw new \RuntimeException(
-                'SOLR warmup failed: '.$e->getMessage(),
-                0,
-                $e
-            );
-        }//end try
+        // NOTE: This method is deprecated. Use GuzzleSolrService->warmupIndex() directly via controller.
+        // This method is kept for backward compatibility but should not be used.
+        // The controller now uses GuzzleSolrService directly to avoid circular dependencies.
+        throw new \RuntimeException(
+            'SettingsService::warmupSolrIndex() is deprecated. Use GuzzleSolrService->warmupIndex() directly via controller.'
+        );
 
     }//end warmupSolrIndex()
 
@@ -2091,8 +1542,20 @@ class SettingsService
     public function getSolrDashboardStats(): array
     {
         try {
-            $objectCacheService = $this->container->get(ObjectCacheService::class);
-            $rawStats           = $objectCacheService->getSolrDashboardStats();
+            $objectCacheService = $this->objectCacheService;
+            if ($objectCacheService === null && $this->container !== null) {
+                try {
+                    $objectCacheService = $this->container->get(ObjectCacheService::class);
+                } catch (\Exception $e) {
+                    throw new \Exception('ObjectCacheService not available');
+                }
+            }
+
+            if ($objectCacheService === null) {
+                throw new \Exception('ObjectCacheService not available');
+            }
+
+            $rawStats = $objectCacheService->getSolrDashboardStats();
 
             // Transform the raw stats into the expected dashboard structure.
             return $this->transformSolrStatsToDashboard($rawStats);
@@ -2220,7 +1683,8 @@ class SettingsService
             'cores'        => [
                 'active_core'  => $rawStats['collection'] ?? 'unknown',
                 'core_status'  => $rawStats['available'] ? 'active' : 'inactive',
-                'endpoint_url' => $this->container->get(GuzzleSolrService::class)->getEndpointUrl($rawStats['collection'] ?? null),
+                'endpoint_url' => 'N/A',
+            // Endpoint URL no longer available in SettingsService (use GuzzleSolrService directly)
             ],
             'performance'  => [
                 'total_searches'     => $serviceStats['searches'] ?? 0,
@@ -2276,91 +1740,6 @@ class SettingsService
 
 
     /**
-     * Perform SOLR management operations
-     *
-     * Executes various SOLR index management operations including commit, optimize,
-     * clear, and warmup with proper error handling and result reporting.
-     *
-     * @param string $operation Operation to perform (commit, optimize, clear, warmup)
-     *
-     * @return array Operation results with success status and details
-     * @throws \InvalidArgumentException If operation is not supported
-     */
-    public function manageSolr(string $operation): array
-    {
-        try {
-            $objectCacheService = $this->container->get(ObjectCacheService::class);
-
-            switch ($operation) {
-                case 'commit':
-                    $result = $objectCacheService->commitSolr();
-                    return [
-                        'success'   => $result['success'] ?? false,
-                        'operation' => 'commit',
-                        'message'   => $result['success'] ? 'Index committed successfully' : 'Commit failed',
-                        'details'   => $result,
-                        'timestamp' => date('c'),
-                    ];
-
-                case 'optimize':
-                    $result = $objectCacheService->optimizeSolr();
-                    return [
-                        'success'   => $result['success'] ?? false,
-                        'operation' => 'optimize',
-                        'message'   => $result['success'] ? 'Index optimized successfully' : 'Optimization failed',
-                        'details'   => $result,
-                        'timestamp' => date('c'),
-                    ];
-
-                case 'clear':
-                    $result = $objectCacheService->clearSolrIndexForDashboard();
-                    return [
-                        'success'   => $result['success'] ?? false,
-                        'operation' => 'clear',
-                        'message'   => $result['success'] ? 'Index cleared successfully' : 'Clear operation failed',
-                        'details'   => $result,
-                        'timestamp' => date('c'),
-                    ];
-
-                case 'warmup':
-                    return $this->warmupSolrIndex();
-
-                default:
-                    return [
-                        'success'   => false,
-                        'operation' => $operation,
-                        'message'   => 'Unknown operation: '.$operation,
-                        'timestamp' => date('c'),
-                    ];
-            }//end switch
-        } catch (Exception $e) {
-            return [
-                'success'   => false,
-                'operation' => $operation,
-                'message'   => 'Operation failed: '.$e->getMessage(),
-                'timestamp' => date('c'),
-                'error'     => $e->getMessage(),
-            ];
-        }//end try
-
-    }//end manageSolr()
-
-
-    /**
-     * Test SOLR connection and get comprehensive status information
-     *
-     * @deprecated Use GuzzleSolrService::testConnectionForDashboard() directly
-     * @return     array Connection test results with detailed status information
-     */
-    public function testSolrConnectionForDashboard(): array
-    {
-        $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
-        return $guzzleSolrService->testConnectionForDashboard();
-
-    }//end testSolrConnectionForDashboard()
-
-
-    /**
      * Get focused SOLR settings only
      *
      * @return array SOLR configuration with tenant information
@@ -2369,7 +1748,7 @@ class SettingsService
     public function getSolrSettingsOnly(): array
     {
         try {
-            $solrConfig = $this->config->getValueString($this->appName, 'solr', '');
+            $solrConfig = $this->config->getAppValue($this->appName, 'solr', '');
 
             if (empty($solrConfig) === true) {
                 return [
@@ -2482,7 +1861,7 @@ class SettingsService
     public function getSolrFacetConfiguration(): array
     {
         try {
-            $facetConfig = $this->config->getValueString($this->appName, 'solr_facet_config', '');
+            $facetConfig = $this->config->getAppValue($this->appName, 'solr_facet_config', '');
             if (empty($facetConfig) === true) {
                 return [
                     'facets'           => [],
@@ -2541,7 +1920,7 @@ class SettingsService
             // Validate the configuration structure.
             $validatedConfig = $this->validateFacetConfiguration($facetConfig);
 
-            $this->config->setValueString($this->appName, 'solr_facet_config', json_encode($validatedConfig));
+            $this->config->setAppValue($this->appName, 'solr_facet_config', json_encode($validatedConfig));
             return $validatedConfig;
         } catch (Exception $e) {
             throw new \RuntimeException('Failed to update SOLR facet configuration: '.$e->getMessage());
@@ -2620,7 +1999,7 @@ class SettingsService
     public function getRbacSettingsOnly(): array
     {
         try {
-            $rbacConfig = $this->config->getValueString($this->appName, 'rbac', '');
+            $rbacConfig = $this->config->getAppValue($this->appName, 'rbac', '');
 
             $rbacData = [];
             if (empty($rbacConfig) === true) {
@@ -2695,7 +2074,7 @@ class SettingsService
     public function getOrganisationSettingsOnly(): array
     {
         try {
-            $organisationConfig = $this->config->getValueString($this->appName, 'organisation', '');
+            $organisationConfig = $this->config->getAppValue($this->appName, 'organisation', '');
 
             $organisationData = [];
             if (empty($organisationConfig) === true) {
@@ -2736,7 +2115,7 @@ class SettingsService
                 'auto_create_default_organisation' => $organisationData['auto_create_default_organisation'] ?? true,
             ];
 
-            $this->config->setValueString($this->appName, 'organisation', json_encode($organisationConfig));
+            $this->config->setAppValue($this->appName, 'organisation', json_encode($organisationConfig));
 
             return [
                 'organisation' => $organisationConfig,
@@ -2824,18 +2203,6 @@ class SettingsService
 
 
     /**
-     * Get multitenancy settings (alias for getMultitenancySettingsOnly)
-     *
-     * @return array Multitenancy configuration settings
-     */
-    public function getMultitenancySettings(): array
-    {
-        return $this->getMultitenancySettingsOnly();
-
-    }//end getMultitenancySettings()
-
-
-    /**
      * Get multitenancy settings only (detailed implementation)
      *
      * @return array Multitenancy configuration settings
@@ -2843,7 +2210,7 @@ class SettingsService
     public function getMultitenancySettingsOnly(): array
     {
         try {
-            $multitenancyConfig = $this->config->getValueString($this->appName, 'multitenancy', '');
+            $multitenancyConfig = $this->config->getAppValue($this->appName, 'multitenancy', '');
 
             $multitenancyData = [];
             if (empty($multitenancyConfig) === true) {
@@ -2916,7 +2283,7 @@ class SettingsService
     public function getLLMSettingsOnly(): array
     {
         try {
-            $llmConfig = $this->config->getValueString($this->appName, 'llm', '');
+            $llmConfig = $this->config->getAppValue($this->appName, 'llm', '');
 
             if (empty($llmConfig) === true) {
                 // Return default configuration.
@@ -3024,7 +2391,7 @@ class SettingsService
                 ],
             ];
 
-            $this->config->setValueString($this->appName, 'llm', json_encode($llmConfig));
+            $this->config->setAppValue($this->appName, 'llm', json_encode($llmConfig));
             return $llmConfig;
         } catch (Exception $e) {
             throw new \RuntimeException('Failed to update LLM settings: '.$e->getMessage());
@@ -3042,7 +2409,7 @@ class SettingsService
     public function getFileSettingsOnly(): array
     {
         try {
-            $fileConfig = $this->config->getValueString($this->appName, 'fileManagement', '');
+            $fileConfig = $this->config->getAppValue($this->appName, 'fileManagement', '');
 
             if (empty($fileConfig) === true) {
                 // Return default configuration.
@@ -3110,7 +2477,7 @@ class SettingsService
                 'dolphinApiKey'        => $fileData['dolphinApiKey'] ?? '',
             ];
 
-            $this->config->setValueString($this->appName, 'fileManagement', json_encode($fileConfig));
+            $this->config->setAppValue($this->appName, 'fileManagement', json_encode($fileConfig));
             return $fileConfig;
         } catch (Exception $e) {
             throw new \RuntimeException('Failed to update File Management settings: '.$e->getMessage());
@@ -3137,7 +2504,7 @@ class SettingsService
     public function getObjectSettingsOnly(): array
     {
         try {
-            $objectConfig = $this->config->getValueString($this->appName, 'objectManagement', '');
+            $objectConfig = $this->config->getAppValue($this->appName, 'objectManagement', '');
 
             if (empty($objectConfig) === true) {
                 return [
@@ -3199,7 +2566,7 @@ class SettingsService
                 'autoRetry'            => $objectData['autoRetry'] ?? true,
             ];
 
-            $this->config->setValueString($this->appName, 'objectManagement', json_encode($objectConfig));
+            $this->config->setAppValue($this->appName, 'objectManagement', json_encode($objectConfig));
             return $objectConfig;
         } catch (Exception $e) {
             throw new \RuntimeException('Failed to update Object Management settings: '.$e->getMessage());
@@ -3217,7 +2584,7 @@ class SettingsService
     public function getRetentionSettingsOnly(): array
     {
         try {
-            $retentionConfig = $this->config->getValueString($this->appName, 'retention', '');
+            $retentionConfig = $this->config->getAppValue($this->appName, 'retention', '');
 
             if (empty($retentionConfig) === true) {
                 return [

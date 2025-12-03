@@ -101,7 +101,7 @@ class AbstractNodeFolderEventListener implements IEventListener
      * @return void
      *
      */
-    private function handleNodeCreated(NodeCreatedEvent $event): void
+    private function handleNodeCreated(NodeCreatedEvent $_event): void
     {
         // ObjectService doesn't have nodeCreatedEventFunction, these methods need to be implemented.
         // For now, log the event but don't call non-existent method.
@@ -119,7 +119,7 @@ class AbstractNodeFolderEventListener implements IEventListener
      * @return void
      *
      */
-    private function handleNodeDeleted(NodeDeletedEvent $event): void
+    private function handleNodeDeleted(NodeDeletedEvent $_event): void
     {
         // ObjectService doesn't have nodeDeletedEventFunction, these methods need to be implemented.
         // For now, log the event but don't call non-existent method.
@@ -137,7 +137,7 @@ class AbstractNodeFolderEventListener implements IEventListener
      * @return void
      *
      */
-    private function handleNodeTouched(NodeTouchedEvent $event): void
+    private function handleNodeTouched(NodeTouchedEvent $_event): void
     {
         // ObjectService doesn't have nodeTouchedEventFunction, these methods need to be implemented.
         // For now, log the event but don't call non-existent method.
@@ -155,7 +155,7 @@ class AbstractNodeFolderEventListener implements IEventListener
      * @return void
      *
      */
-    private function handleNodeWritten(NodeWrittenEvent $event): void
+    private function handleNodeWritten(NodeWrittenEvent $_event): void
     {
         // ObjectService doesn't have nodeWrittenEventFunction, these methods need to be implemented.
         // For now, log the event but don't call non-existent method.
