@@ -136,6 +136,16 @@ class RegisterMapper extends QBMapper
      */
     public function find(string | int $id, ?array $extend=[], ?bool $published = null, bool $rbac = true, bool $multi = true): Register
     {
+        // Log search attempt for debugging
+        if (isset($this->logger) === true) {
+            $this->logger->info('[RegisterMapper] Searching for register', [
+                'identifier' => $id,
+                'rbac' => $rbac,
+                'multi' => $multi,
+                'published' => $published,
+            ]);
+        }
+
         // Verify RBAC permission to read registers if RBAC is enabled
         if ($rbac === true) {
             // @todo: remove this hotfix for solr - uncomment when ready
@@ -152,12 +162,65 @@ class RegisterMapper extends QBMapper
                     $qb->expr()->eq('slug', $qb->createNamedParameter($id, IQueryBuilder::PARAM_STR))
                 )
             );
+
+        // Check if register exists before applying filters (for debugging)
+        $qbBeforeFilter = clone $qb;
+        $existsBeforeFilter = false;
+        try {
+            $testResult = $this->findEntity(query: $qbBeforeFilter);
+            $existsBeforeFilter = true;
+            if (isset($this->logger) === true) {
+                $this->logger->debug('[RegisterMapper] Register exists before filters', [
+                    'identifier' => $id,
+                    'registerId' => $testResult->getId(),
+                    'organisation' => $testResult->getOrganisation(),
+                    'published' => $testResult->getPublished(),
+                    'depublished' => $testResult->getDepublished(),
+                ]);
+            }
+        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+            if (isset($this->logger) === true) {
+                $this->logger->warning('[RegisterMapper] Register does not exist in database', [
+                    'identifier' => $id,
+                ]);
+            }
+        }
         
         // Apply organisation filter with published entity bypass support
         // Published registers can bypass multi-tenancy restrictions if configured
         // applyOrganisationFilter handles $multiTenancyEnabled=false internally
         // Use $published parameter if provided, otherwise check config
         $enablePublished = $published !== null ? $published : $this->shouldPublishedObjectsBypassMultiTenancy();
+        
+        // Log multitenancy configuration
+        if (isset($this->logger) === true) {
+            $activeOrgUuids = $this->getActiveOrganisationUuids();
+            $isAdmin = false;
+            $adminOverrideEnabled = false;
+            $user = $this->userSession->getUser();
+            if ($user !== null && isset($this->groupManager) === true) {
+                $userGroups = $this->groupManager->getUserGroupIds($user);
+                $isAdmin = in_array('admin', $userGroups);
+            }
+            if ($isAdmin === true && isset($this->appConfig) === true) {
+                $multitenancyConfig = $this->appConfig->getValueString('openregister', 'multitenancy', '');
+                if (empty($multitenancyConfig) === false) {
+                    $multitenancyData = json_decode($multitenancyConfig, true);
+                    $adminOverrideEnabled = $multitenancyData['adminOverride'] ?? false;
+                }
+            }
+            
+            $this->logger->info('[RegisterMapper] Applying multitenancy filters', [
+                'identifier' => $id,
+                'multiEnabled' => $multi,
+                'enablePublished' => $enablePublished,
+                'activeOrganisations' => $activeOrgUuids,
+                'isAdmin' => $isAdmin,
+                'adminOverrideEnabled' => $adminOverrideEnabled,
+                'existsBeforeFilter' => $existsBeforeFilter,
+            ]);
+        }
+        
         $this->applyOrganisationFilter(
             qb: $qb,
             columnName: 'organisation',
@@ -168,7 +231,22 @@ class RegisterMapper extends QBMapper
         );
         
         // Just return the entity; do not attach stats here
-        return $this->findEntity(query: $qb);
+        try {
+            return $this->findEntity(query: $qb);
+        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+            // Log detailed error information
+            if (isset($this->logger) === true) {
+                $this->logger->error('[RegisterMapper] Register not found after filters', [
+                    'identifier' => $id,
+                    'existsBeforeFilter' => $existsBeforeFilter,
+                    'multiEnabled' => $multi,
+                    'enablePublished' => $enablePublished,
+                    'rbacEnabled' => $rbac,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+            throw $e;
+        }
 
     }//end find()
 
