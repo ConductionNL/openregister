@@ -39,6 +39,10 @@ use Psr\Log\LoggerInterface;
  * @version   GIT: <git_id>
  * @link      https://www.OpenRegister.app
  */
+/**
+ * @psalm-suppress UnusedClass
+ */
+
 class SolrController extends Controller
 {
 

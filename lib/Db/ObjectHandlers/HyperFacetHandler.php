@@ -15,10 +15,8 @@ declare(strict_types=1);
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * @version GIT: <git-id>
- *
- * @link https://OpenRegister.app
+ * @version   GIT: <git-id>
+ * @link      https://OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Db\ObjectHandlers;
@@ -65,16 +63,14 @@ use React\Promise\PromiseInterface;
  * - Popular combinations: <10ms from cache
  * - Large datasets: Progressive enhancement (fast→accurate)
  *
- * @category   Handler
- * @package    OCA\OpenRegister\Db\ObjectHandlers
+ * @category Handler
+ * @package  OCA\OpenRegister\Db\ObjectHandlers
  *
- * @author     Conduction Development Team <dev@conduction.nl>
- * @copyright  2024 Conduction B.V.
- * @license    EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * @version    GIT: <git-id>
- *
- * @link       https://www.OpenRegister.app
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version   GIT: <git-id>
+ * @link      https://www.OpenRegister.app
  */
 class HyperFacetHandler
 {
@@ -108,10 +104,14 @@ class HyperFacetHandler
     /**
      * Cache TTL constants for different data types
      */
-    private const FACET_RESULT_TTL = 300;      // 5 minutes - facet results
-    private const FRAGMENT_CACHE_TTL = 900;    // 15 minutes - query fragments
-    private const CARDINALITY_TTL = 3600;      // 1 hour - cardinality estimates
-    private const SCHEMA_FACET_TTL = 86400;    // 24 hours - schema facet configs
+    // 5 minutes - facet results.
+    private const FACET_RESULT_TTL = 300;
+    // 15 minutes - query fragments.
+    private const FRAGMENT_CACHE_TTL = 900;
+    // 1 hour - cardinality estimates.
+    private const CARDINALITY_TTL = 3600;
+    // 24 hours - schema facet configs.
+    private const SCHEMA_FACET_TTL = 86400;
 
     /**
      * Thresholds for switching between exact and approximate calculations
@@ -126,9 +126,12 @@ class HyperFacetHandler
     /**
      * Sampling rates for different dataset sizes
      */
-    private const SMALL_SAMPLE_RATE = 1.0;    // 100% - exact
-    private const MEDIUM_SAMPLE_RATE = 0.1;   // 10% sampling
-    private const LARGE_SAMPLE_RATE = 0.05;   // 5% sampling
+    // 100% - exact.
+    private const SMALL_SAMPLE_RATE = 1.0;
+    // 10% sampling.
+    private const MEDIUM_SAMPLE_RATE = 0.1;
+    // 5% sampling.
+    private const LARGE_SAMPLE_RATE = 0.05;
 
 
     /**
@@ -168,18 +171,17 @@ class HyperFacetHandler
 
             // **LAYER 3**: Cardinality estimation cache (local is sufficient).
             $this->cardinalityCache = $this->cacheFactory->createLocal('openregister_cardinality');
-
         } catch (\Exception $e) {
             // Fallback to local caches if distributed unavailable.
             try {
-                $this->facetCache = $this->cacheFactory->createLocal('openregister_facets');
-                $this->fragmentCache = $this->cacheFactory->createLocal('openregister_facet_fragments');
-                $this->cardinalityCache = $this->cacheFactory->createLocal('openregister_cardinality');
+                $this->facetCache         = $this->cacheFactory->createLocal('openregister_facets');
+                $this->fragmentCache      = $this->cacheFactory->createLocal('openregister_facet_fragments');
+                $this->cardinalityCache    = $this->cacheFactory->createLocal('openregister_cardinality');
             } catch (\Exception $fallbackError) {
                 // No caching available - will use in-memory caching.
                 $this->logger->warning('Facet caching unavailable, performance will be reduced');
-            }
-        }
+            }//end try
+        }//end try
 
     }//end initializeCaches()
 
@@ -214,38 +216,44 @@ class HyperFacetHandler
      *
      * @return array Optimized facet results with performance metadata
      *
-     * @phpstan-param array<string, mixed> $facetConfig
-     * @phpstan-param array<string, mixed> $baseQuery
+     * @phpstan-param  array<string, mixed> $facetConfig
+     * @phpstan-param  array<string, mixed> $baseQuery
      * @phpstan-return array<string, mixed>
-     * @psalm-param   array<string, mixed> $facetConfig
+     * @psalm-param    array<string, mixed> $facetConfig
      * @psalm-return   array<string, mixed>
      */
-    public function getHyperOptimizedFacets(array $facetConfig, array $baseQuery = []): array
+    public function getHyperOptimizedFacets(array $facetConfig, array $baseQuery=[]): array
     {
         $startTime = microtime(true);
 
         // **STEP 1**: Lightning-fast cache check.
-        $cacheKey = $this->generateIntelligentCacheKey($facetConfig, $baseQuery);
+        $cacheKey     = $this->generateIntelligentCacheKey($facetConfig, $baseQuery);
         $cachedResult = $this->getCachedFacetResult($cacheKey);
 
         if ($cachedResult !== null) {
-            $this->logger->debug('Hyper cache hit - instant facet response', [
-                'cacheKey' => substr($cacheKey, 0, 20) . '...',
-                'responseTime' => '<10ms',
-                'source' => 'cache_layer_1'
-            ]);
+            $this->logger->debug(
+                'Hyper cache hit - instant facet response',
+                [
+                    'cacheKey'     => substr($cacheKey, 0, 20).'...',
+                    'responseTime' => '<10ms',
+                    'source'       => 'cache_layer_1',
+                ]
+            );
             return $cachedResult;
-        }
+        }//end if
 
         // **STEP 2**: Intelligent dataset analysis for optimization strategy selection.
-        $datasetStats = $this->analyzeDatasetSize($baseQuery);
+        $datasetStats         = $this->analyzeDatasetSize($baseQuery);
         $optimizationStrategy = $this->selectOptimizationStrategy($datasetStats);
 
-        $this->logger->debug('Dataset analysis completed', [
-            'estimatedSize' => $datasetStats['estimated_size'],
-            'strategy' => $optimizationStrategy,
-            'analysisTime' => round((microtime(true) - $startTime) * 1000, 2) . 'ms'
-        ]);
+        $this->logger->debug(
+            'Dataset analysis completed',
+            [
+                'estimatedSize' => $datasetStats['estimated_size'],
+                'strategy'      => $optimizationStrategy,
+                'analysisTime'  => round((microtime(true) - $startTime) * 1000, 2).'ms',
+            ]
+        );
 
         // **STEP 3**: Execute optimized facet calculation based on strategy.
         switch ($optimizationStrategy) {
@@ -306,9 +314,9 @@ class HyperFacetHandler
      *
      * @return array Dataset statistics for optimization decisions
      *
-     * @phpstan-param array<string, mixed> $baseQuery
+     * @phpstan-param  array<string, mixed> $baseQuery
      * @phpstan-return array<string, mixed>
-     * @psalm-param   array<string, mixed> $baseQuery
+     * @psalm-param    array<string, mixed> $baseQuery
      * @psalm-return   array<string, mixed>
      */
     private function analyzeDatasetSize(array $baseQuery): array
@@ -373,9 +381,9 @@ class HyperFacetHandler
      *
      * @return string Optimization strategy identifier
      *
-     * @phpstan-param array<string, mixed> $datasetStats
+     * @phpstan-param  array<string, mixed> $datasetStats
      * @phpstan-return string
-     * @psalm-param   array<string, mixed> $datasetStats
+     * @psalm-param    array<string, mixed> $datasetStats
      * @psalm-return   string
      */
     private function selectOptimizationStrategy(array $datasetStats): string
@@ -417,16 +425,16 @@ class HyperFacetHandler
      *
      * @return array Exact facet results
      *
-     * @phpstan-param array<string, mixed> $facetConfig
-     * @phpstan-param array<string, mixed> $baseQuery
-     * @phpstan-param array<string, mixed> $datasetStats
+     * @phpstan-param  array<string, mixed> $facetConfig
+     * @phpstan-param  array<string, mixed> $baseQuery
+     * @phpstan-param  array<string, mixed> $datasetStats
      * @phpstan-return array<string, mixed>
-     * @psalm-param   array<string, mixed> $facetConfig
-     * @psalm-param   array<string, mixed> $baseQuery
-     * @psalm-param   array<string, mixed> $datasetStats
+     * @psalm-param    array<string, mixed> $facetConfig
+     * @psalm-param    array<string, mixed> $baseQuery
+     * @psalm-param    array<string, mixed> $datasetStats
      * @psalm-return   array<string, mixed>
      */
-    private function calculateExactFacetsParallel(array $facetConfig, array $baseQuery, array $datasetStats): array
+    private function calculateExactFacetsParallel(array $facetConfig, array $baseQuery, array $_datasetStats): array
     {
         // **OPTIMIZATION**: Separate metadata facets from JSON facets for optimal processing.
         [$metadataFacets, $jsonFacets] = $this->separateFacetTypes($facetConfig);
@@ -472,13 +480,13 @@ class HyperFacetHandler
      *
      * @return array Sampled facet results with confidence intervals
      *
-     * @phpstan-param array<string, mixed> $facetConfig
-     * @phpstan-param array<string, mixed> $baseQuery
-     * @phpstan-param array<string, mixed> $datasetStats
+     * @phpstan-param  array<string, mixed> $facetConfig
+     * @phpstan-param  array<string, mixed> $baseQuery
+     * @phpstan-param  array<string, mixed> $datasetStats
      * @phpstan-return array<string, mixed>
-     * @psalm-param   array<string, mixed> $facetConfig
-     * @psalm-param   array<string, mixed> $baseQuery
-     * @psalm-param   array<string, mixed> $datasetStats
+     * @psalm-param    array<string, mixed> $facetConfig
+     * @psalm-param    array<string, mixed> $baseQuery
+     * @psalm-param    array<string, mixed> $datasetStats
      * @psalm-return   array<string, mixed>
      */
     private function calculateSampledFacetsParallel(array $facetConfig, array $baseQuery, array $datasetStats): array
@@ -525,13 +533,13 @@ class HyperFacetHandler
      *
      * @return array Approximate facet results with accuracy indicators
      *
-     * @phpstan-param array<string, mixed> $facetConfig
-     * @phpstan-param array<string, mixed> $baseQuery
-     * @phpstan-param array<string, mixed> $datasetStats
+     * @phpstan-param  array<string, mixed> $facetConfig
+     * @phpstan-param  array<string, mixed> $baseQuery
+     * @phpstan-param  array<string, mixed> $datasetStats
      * @phpstan-return array<string, mixed>
-     * @psalm-param   array<string, mixed> $facetConfig
-     * @psalm-param   array<string, mixed> $baseQuery
-     * @psalm-param   array<string, mixed> $datasetStats
+     * @psalm-param    array<string, mixed> $facetConfig
+     * @psalm-param    array<string, mixed> $baseQuery
+     * @psalm-param    array<string, mixed> $datasetStats
      * @psalm-return   array<string, mixed>
      */
     private function calculateApproximateFacetsHyperLogLog(array $facetConfig, array $baseQuery, array $datasetStats): array
@@ -573,10 +581,10 @@ class HyperFacetHandler
      *
      * @return PromiseInterface Promise resolving to metadata facet results
      *
-     * @phpstan-param array<string, mixed> $metadataFacets
-     * @phpstan-param array<string, mixed> $baseQuery
+     * @phpstan-param  array<string, mixed> $metadataFacets
+     * @phpstan-param  array<string, mixed> $baseQuery
      * @phpstan-return PromiseInterface
-     * @psalm-param   array<string, mixed> $metadataFacets
+     * @psalm-param    array<string, mixed> $metadataFacets
      * @psalm-return   PromiseInterface
      */
     private function processMetadataFacetsParallel(array $metadataFacets, array $baseQuery): PromiseInterface
@@ -627,13 +635,13 @@ class HyperFacetHandler
      *
      * @return array Batched facet results
      *
-     * @phpstan-param array<string> $fields
-     * @phpstan-param array<string, mixed> $facetConfig
-     * @phpstan-param array<string, mixed> $baseQuery
+     * @phpstan-param  array<string> $fields
+     * @phpstan-param  array<string, mixed> $facetConfig
+     * @phpstan-param  array<string, mixed> $baseQuery
      * @phpstan-return array<string, mixed>
-     * @psalm-param   array<string> $fields
-     * @psalm-param   array<string, mixed> $facetConfig
-     * @psalm-param   array<string, mixed> $baseQuery
+     * @psalm-param    array<string> $fields
+     * @psalm-param    array<string, mixed> $facetConfig
+     * @psalm-param    array<string, mixed> $baseQuery
      * @psalm-return   array<string, mixed>
      */
     private function getBatchedMetadataFacets(array $fields, array $facetConfig, array $baseQuery): array
@@ -816,11 +824,11 @@ class HyperFacetHandler
      *
      * @return string Intelligent cache key
      *
-     * @phpstan-param array<string, mixed> $facetConfig
-     * @phpstan-param array<string, mixed> $baseQuery
+     * @phpstan-param  array<string, mixed> $facetConfig
+     * @phpstan-param  array<string, mixed> $baseQuery
      * @phpstan-return string
-     * @psalm-param   array<string, mixed> $facetConfig
-     * @psalm-param   array<string, mixed> $baseQuery
+     * @psalm-param    array<string, mixed> $facetConfig
+     * @psalm-param    array<string, mixed> $baseQuery
      * @psalm-return   string
      */
     private function generateIntelligentCacheKey(array $facetConfig, array $baseQuery): string
@@ -989,9 +997,9 @@ class HyperFacetHandler
      *
      * @return array Array containing [metadataFacets, jsonFacets]
      *
-     * @phpstan-param array<string, mixed> $facetConfig
+     * @phpstan-param  array<string, mixed> $facetConfig
      * @phpstan-return array<array<string, mixed>>
-     * @psalm-param   array<string, mixed> $facetConfig
+     * @psalm-param    array<string, mixed> $facetConfig
      * @psalm-return   array<array<string, mixed>>
      */
     private function separateFacetTypes(array $facetConfig): array
@@ -1059,7 +1067,7 @@ class HyperFacetHandler
 
 
     // Placeholder methods that would need to be implemented based on specific requirements.
-    private function processJsonFacetsParallel(array $jsonFacets, array $baseQuery): PromiseInterface
+    private function processJsonFacetsParallel(array $_jsonFacets, array $_baseQuery): PromiseInterface
     {
         return new Promise(function ($resolve) {
             // Simplified for now.
@@ -1112,7 +1120,7 @@ class HyperFacetHandler
      *
      * @return array Facet results
      */
-    private function calculateMetadataFacetsHyperFast(array $config, array $baseQuery): array
+    private function calculateMetadataFacetsHyperFast(array $_config, array $_baseQuery): array
     {
 // Simplified - would use index-optimized queries.
     }
@@ -1146,7 +1154,7 @@ class HyperFacetHandler
      *
      * @return array Facet results
      */
-    private function calculateSingleMetadataFacet(string $field, array $config, array $baseQuery): array
+    private function calculateSingleMetadataFacet(string $_field, array $_config, array $_baseQuery): array
     {
 // Would implement specific facet calculation.
     }
@@ -1159,7 +1167,7 @@ class HyperFacetHandler
      *
      * @return string Human-readable label
      */
-    private function getFieldLabel(string $field, mixed $value): string
+    private function getFieldLabel(string $_field, mixed $_value): string
     {
 // Simplified label generation.
     }
@@ -1172,7 +1180,7 @@ class HyperFacetHandler
      *
      * @return void
      */
-    private function applyJsonFieldFilters(IQueryBuilder $queryBuilder, array $filters): void
+    private function applyJsonFieldFilters(IQueryBuilder $_queryBuilder, array $_filters): void
     {
         // Apply JSON field filters efficiently.
     }

@@ -31,6 +31,10 @@ use Psr\Log\LoggerInterface;
  *
  * @package OCA\OpenRegister\Controller
  */
+/**
+ * @psalm-suppress UnusedClass
+ */
+
 class UserSettingsController extends Controller
 {
 

@@ -174,6 +174,8 @@ class ObjectEntity extends Entity implements JsonSerializable
      * Files associated with the object.
      *
      * @var array|null Files associated with the object
+     *
+     * @psalm-suppress PossiblyUnusedProperty
      */
     protected ?array $files = [];
 
@@ -181,6 +183,8 @@ class ObjectEntity extends Entity implements JsonSerializable
      * Relations to other objects stored as an array of file IDs.
      *
      * @var array|null Array of file IDs that are related to this object
+     *
+     * @psalm-suppress PossiblyUnusedProperty
      */
     protected ?array $relations = [];
 
@@ -202,6 +206,8 @@ class ObjectEntity extends Entity implements JsonSerializable
      * Authorization details for the object.
      *
      * @var array|null JSON object describing authorizations
+     *
+     * @psalm-suppress PossiblyUnusedProperty
      */
     protected ?array $authorization = [];
 
@@ -230,6 +236,8 @@ class ObjectEntity extends Entity implements JsonSerializable
      * Validation results for the object.
      *
      * @var array|null Array describing validation results
+     *
+     * @psalm-suppress PossiblyUnusedProperty
      */
     protected ?array $validation = [];
 
@@ -237,6 +245,8 @@ class ObjectEntity extends Entity implements JsonSerializable
      * Deletion details if the object is deleted.
      *
      * @var array|null Array describing deletion details
+     *
+     * @psalm-suppress PossiblyUnusedProperty
      */
     protected ?array $deleted = [];
 
@@ -244,6 +254,8 @@ class ObjectEntity extends Entity implements JsonSerializable
      * Geographical details for the object.
      *
      * @var array|null Array describing geographical details
+     *
+     * @psalm-suppress PossiblyUnusedProperty
      */
     protected ?array $geo = [];
 
@@ -251,6 +263,8 @@ class ObjectEntity extends Entity implements JsonSerializable
      * Retention details for the object.
      *
      * @var array|null Array describing retention details
+     *
+     * @psalm-suppress PossiblyUnusedProperty
      */
     protected ?array $retention = [];
 
@@ -396,6 +410,8 @@ class ObjectEntity extends Entity implements JsonSerializable
      * @var         array|null
      * @phpstan-var array<string, array<string>>|null
      * @psalm-var   array<string, list<string>>|null
+     *
+     * @psalm-suppress PossiblyUnusedProperty
      */
     protected ?array $groups = [];
 
@@ -403,6 +419,8 @@ class ObjectEntity extends Entity implements JsonSerializable
      * The expiration timestamp for this object
      *
      * @var DateTime|null The expiration timestamp for this object
+     *
+     * @psalm-suppress PossiblyUnusedProperty
      */
     protected ?DateTime $expires = null;
 
@@ -715,6 +733,8 @@ class ObjectEntity extends Entity implements JsonSerializable
      * @throws Exception If object is already locked by another user
      *
      * @return bool True if lock was successful
+     *
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function lock(IUserSession $userSession, ?string $process=null, ?int $duration=3600): bool
     {
@@ -777,6 +797,8 @@ class ObjectEntity extends Entity implements JsonSerializable
      * @throws Exception If object is locked by another user
      *
      * @return bool True if unlock was successful
+     *
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function unlock(IUserSession $userSession): bool
     {

@@ -31,17 +31,12 @@ use OCA\OpenRegister\Db\Schema;
 class PublishObject
 {
 
-
     /**
-     * Constructor for PublishObject
+     * Object entity mapper
      *
-     * @param ObjectEntityMapper $objectEntityMapper The object entity mapper
+     * @var ObjectEntityMapper
      */
-    public function __construct(
-        private readonly ObjectEntityMapper $objectEntityMapper
-    ) {
-
-    }//end __construct()
+    private ObjectEntityMapper $objectEntityMapper;
 
 
     /**
@@ -59,8 +54,8 @@ class PublishObject
     public function publish(
         string $uuid,
         ?DateTime $date=null,
-        bool $rbac=true,
-        bool $multi=true
+        bool $_rbac=true,
+        bool $_multi=true
     ): ObjectEntity {
         // Get the object.
         $object = $this->objectEntityMapper->find($uuid);

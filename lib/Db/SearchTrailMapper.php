@@ -760,46 +760,6 @@ class SearchTrailMapper extends QBMapper
 
 
     /**
-     * Clear all search trail logs (not just expired ones)
-     *
-     * This method deletes all search trail logs from the database
-     *
-     * @return bool True if any logs were deleted, false otherwise
-     *
-     * @throws \Exception Database operation exceptions
-     */
-    public function clearAllLogs(): bool
-    {
-        try {
-            // Get the query builder for database operations.
-            $qb = $this->db->getQueryBuilder();
-
-            // Build the delete query to remove ALL search trail logs.
-            $qb->delete($this->getTableName());
-
-            // Execute the query and get the number of affected rows.
-            $result = $qb->executeStatement();
-
-            // Return true if any rows were affected (i.e., any logs were deleted).
-            return $result > 0;
-        } catch (\Exception $e) {
-            // Log the error for debugging purposes.
-            \OC::$server->getLogger()->error(
-                    'Failed to clear all search trail logs: '.$e->getMessage(),
-                    [
-                        'app'       => 'openregister',
-                        'exception' => $e,
-                    ]
-                    );
-
-            // Re-throw the exception so the caller knows something went wrong.
-            throw $e;
-        }//end try
-
-    }//end clearAllLogs()
-
-
-    /**
      * Apply filters to the query builder
      *
      * @param IQueryBuilder $qb      The query builder
@@ -992,61 +952,6 @@ class SearchTrailMapper extends QBMapper
         $searchTrail->setSession($sessionId);
 
     }//end setUserInformation()
-
-
-    /**
-     * Calculate the total size of search trails with optional filters
-     *
-     * Sums the size column of search trails matching the given criteria
-     *
-     * @param array         $filters Filter criteria
-     * @param string|null   $search  Search term
-     * @param DateTime|null $from    Start date filter
-     * @param DateTime|null $to      End date filter
-     *
-     * @return int Total size in bytes
-     */
-    public function sizeSearchTrails(
-        array $filters=[],
-        ?string $search=null,
-        ?DateTime $from=null,
-        ?DateTime $to=null
-    ): int {
-        $qb = $this->db->getQueryBuilder();
-
-        $qb->select($qb->func()->sum('size'))
-            ->from($this->getTableName());
-
-        // Apply filters.
-        $this->applyFilters($qb, $filters);
-
-        // Apply search term.
-        if ($search !== null) {
-            $qb->andWhere(
-                $qb->expr()->orX(
-                    $qb->expr()->like('search_term', $qb->createNamedParameter('%'.$search.'%')),
-                    $qb->expr()->like('request_uri', $qb->createNamedParameter('%'.$search.'%')),
-                    $qb->expr()->like('user_agent', $qb->createNamedParameter('%'.$search.'%'))
-                )
-            );
-        }
-
-        // Apply date filters.
-        if ($from !== null) {
-            $qb->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($from->format('Y-m-d H:i:s'))));
-        }
-
-        if ($to !== null) {
-            $qb->andWhere($qb->expr()->lte('created', $qb->createNamedParameter($to->format('Y-m-d H:i:s'))));
-        }
-
-        $result = $qb->executeQuery();
-        $size   = $result->fetchOne();
-        $result->closeCursor();
-
-        return (int) ($size ?? 0);
-
-    }//end sizeSearchTrails()
 
 
     /**

@@ -73,7 +73,7 @@ class WebhookMapper extends QBMapper
 
 
     /**
-     * WebhookMapper constructor
+     * Constructor
      *
      * @param IDBConnection       $db                  Database connection
      * @param OrganisationService $organisationService Organisation service
@@ -92,31 +92,6 @@ class WebhookMapper extends QBMapper
         $this->groupManager        = $groupManager;
 
     }//end __construct()
-
-
-    /**
-     * Find webhook by UUID
-     *
-     * @param string $uuid Webhook UUID
-     *
-     * @return Webhook
-     * @throws DoesNotExistException
-     * @throws MultipleObjectsReturnedException
-     */
-    public function findByUuid(string $uuid): Webhook
-    {
-        $qb = $this->db->getQueryBuilder();
-
-        $qb->select('*')
-            ->from($this->getTableName())
-            ->where($qb->expr()->eq('uuid', $qb->createNamedParameter($uuid)));
-
-        // Apply organisation filter.
-        $this->applyOrganisationFilter($qb);
-
-        return $this->findEntity($qb);
-
-    }//end findByUuid()
 
 
     /**
@@ -293,6 +268,8 @@ class WebhookMapper extends QBMapper
      * @param bool    $incrementOnly Only increment counters, don't update timestamps
      *
      * @return Webhook
+     *
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function updateStatistics(Webhook $webhook, bool $success, bool $incrementOnly=false): Webhook
     {

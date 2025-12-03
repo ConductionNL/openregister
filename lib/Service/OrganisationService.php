@@ -95,6 +95,13 @@ class OrganisationService
     private OrganisationMapper $organisationMapper;
 
     /**
+     * App config for storing user preferences
+     *
+     * @var IAppConfig
+     */
+    private IAppConfig $appConfig;
+
+    /**
      * User session for getting current user
      *
      * @var IUserSession
@@ -161,6 +168,7 @@ class OrganisationService
         IUserSession $userSession,
         ISession $session,
         IConfig $config,
+        IAppConfig $appConfig,
         IGroupManager $groupManager,
         IUserManager $userManager,
         LoggerInterface $logger,
@@ -170,6 +178,7 @@ class OrganisationService
         $this->userSession        = $userSession;
         $this->session            = $session;
         $this->config          = $config;
+        $this->appConfig       = $appConfig;
         $this->groupManager    = $groupManager;
         $this->userManager     = $userManager;
         $this->logger          = $logger;
@@ -272,7 +281,6 @@ class OrganisationService
     private function fetchDefaultOrganisationFromDatabase(): Organisation
     {
         // Try to get default organisation UUID from settings.
-        $defaultOrgUuid = null;
         if ($this->settingsService !== null) {
             $defaultOrgUuid = $this->settingsService->getDefaultOrganisationUuid();
         } else {
@@ -410,7 +418,7 @@ class OrganisationService
      *
      * @return array Array of Organisation objects
      */
-    public function getUserOrganisations(bool $useCache=true): array
+    public function getUserOrganisations(bool $_useCache=true): array
     {
         $user = $this->getCurrentUser();
         if ($user === null) {
@@ -628,7 +636,7 @@ class OrganisationService
         }
 
         try {
-            $organisation = $this->organisationMapper->removeUserFromOrganisation(organisationUuid: $organisationUuid, userId: $userId);
+            $this->organisationMapper->removeUserFromOrganisation(organisationUuid: $organisationUuid, userId: $userId);
 
             // If this was the active organisation, clear cache and reset.
             $activeOrg = $this->getActiveOrganisation();
@@ -759,25 +767,6 @@ class OrganisationService
 
 
     /**
-     * Create a new organisation with a specific UUID
-     *
-     * @param string $name           Organisation name
-     * @param string $description    Organisation description
-     * @param string $uuid           Specific UUID to use
-     * @param bool   $addCurrentUser Whether to add current user as owner and member
-     *
-     * @return Organisation The created organisation
-     *
-     * @throws Exception If user not logged in, UUID is invalid, or organisation creation fails
-     */
-    public function createOrganisationWithUuid(string $name, string $description, string $uuid, bool $addCurrentUser=true): Organisation
-    {
-        return $this->createOrganisation(name: $name, description: $description, addCurrentUser: $addCurrentUser, uuid: $uuid);
-
-    }//end createOrganisationWithUuid()
-
-
-    /**
      * Check if current user has access to an organisation
      *
      * @param string $organisationUuid The organisation UUID to check
@@ -865,6 +854,8 @@ class OrganisationService
      * @param bool $clearPersistent Whether to also clear persistent active organisation setting
      *
      * @return bool True if cache cleared
+     *
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function clearCache(bool $clearPersistent=false): bool
     {
@@ -1352,34 +1343,6 @@ class OrganisationService
         $this->clearDefaultOrganisationCache();
 
     }//end setDefaultOrganisationId()
-
-
-    /**
-     * Get the default organisation object
-     *
-     * @return Organisation|null The default organisation, or null if not set
-     */
-    public function getDefaultOrganisation(): ?Organisation
-    {
-        $defaultOrgId = $this->getDefaultOrganisationId();
-        if ($defaultOrgId === null) {
-            return null;
-        }
-
-        try {
-            return $this->organisationMapper->findByUuid($defaultOrgId);
-        } catch (\Exception $e) {
-            $this->logger->warning(
-                    'Default organisation not found',
-                    [
-                        'uuid'  => $defaultOrgId,
-                        'error' => $e->getMessage(),
-                    ]
-                    );
-            return null;
-        }
-
-    }//end getDefaultOrganisation()
 
 
     /**

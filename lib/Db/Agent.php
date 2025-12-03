@@ -371,25 +371,6 @@ class Agent extends Entity implements JsonSerializable
 
 
     /**
-     * Validate UUID format
-     *
-     * @param string $uuid The UUID to validate
-     *
-     * @return bool True if UUID format is valid
-     */
-    public static function isValidUuid(string $uuid): bool
-    {
-        try {
-            Uuid::fromString($uuid);
-            return true;
-        } catch (\InvalidArgumentException $e) {
-            return false;
-        }
-
-    }//end isValidUuid()
-
-
-    /**
      * Check if a user is invited to access this private agent
      *
      * @param string $userId The user ID to check
@@ -405,50 +386,6 @@ class Agent extends Entity implements JsonSerializable
         return in_array($userId, $this->invitedUsers, true);
 
     }//end hasInvitedUser()
-
-
-    /**
-     * Add a user to the invited users list
-     *
-     * @param string $userId The user ID to add
-     *
-     * @return void
-     */
-    public function addInvitedUser(string $userId): void
-    {
-        if ($this->invitedUsers === null) {
-            $this->invitedUsers = [];
-        }
-
-        if (in_array($userId, $this->invitedUsers, true) === false) {
-            $this->invitedUsers[] = $userId;
-            $this->markFieldUpdated('invitedUsers');
-        }
-
-    }//end addInvitedUser()
-
-
-    /**
-     * Remove a user from the invited users list
-     *
-     * @param string $userId The user ID to remove
-     *
-     * @return void
-     */
-    public function removeInvitedUser(string $userId): void
-    {
-        if ($this->invitedUsers === null) {
-            return;
-        }
-
-        $key = array_search($userId, $this->invitedUsers, true);
-        if ($key !== false) {
-            unset($this->invitedUsers[$key]);
-            $this->invitedUsers = array_values($this->invitedUsers);
-            $this->markFieldUpdated('invitedUsers');
-        }
-
-    }//end removeInvitedUser()
 
 
     /**
@@ -579,93 +516,6 @@ class Agent extends Entity implements JsonSerializable
         ];
 
     }//end jsonSerialize()
-
-
-    /**
-     * Get the configuration that manages this agent (transient property)
-     *
-     * @return Configuration|null The managing configuration or null
-     */
-    public function getManagedByConfigurationEntity(): ?Configuration
-    {
-        return $this->managedByConfiguration;
-
-    }//end getManagedByConfigurationEntity()
-
-
-    /**
-     * Set the configuration that manages this agent (transient property)
-     *
-     * @param Configuration|null $configuration The managing configuration
-     *
-     * @return void
-     */
-    public function setManagedByConfigurationEntity(?Configuration $configuration): void
-    {
-        $this->managedByConfiguration = $configuration;
-
-    }//end setManagedByConfigurationEntity()
-
-
-    /**
-     * Check if this agent is managed by a configuration
-     *
-     * Returns true if this agent's ID appears in any of the provided configurations' agents arrays.
-     *
-     * @param array<Configuration> $configurations Array of Configuration entities to check against
-     *
-     * @return bool True if managed by a configuration, false otherwise
-     *
-     * @phpstan-param array<Configuration> $configurations
-     * @psalm-param   array<Configuration> $configurations
-     */
-    public function isManagedByConfiguration(array $configurations): bool
-    {
-        if (empty($configurations) === true || $this->id === null) {
-            return false;
-        }
-
-        foreach ($configurations as $configuration) {
-            $agents = $configuration->getAgents();
-            if (in_array($this->id, $agents, true) === true) {
-                return true;
-            }
-        }
-
-        return false;
-
-    }//end isManagedByConfiguration()
-
-
-    /**
-     * Get the configuration that manages this agent
-     *
-     * Returns the first configuration that has this agent's ID in its agents array.
-     * Returns null if the agent is not managed by any configuration.
-     *
-     * @param array<Configuration> $configurations Array of Configuration entities to check against
-     *
-     * @return Configuration|null The configuration managing this agent, or null
-     *
-     * @phpstan-param array<Configuration> $configurations
-     * @psalm-param   array<Configuration> $configurations
-     */
-    public function getManagedByConfiguration(array $configurations): ?Configuration
-    {
-        if (empty($configurations) === true || $this->id === null) {
-            return null;
-        }
-
-        foreach ($configurations as $configuration) {
-            $agents = $configuration->getAgents();
-            if (in_array($this->id, $agents, true) === true) {
-                return $configuration;
-            }
-        }
-
-        return null;
-
-    }//end getManagedByConfiguration()
 
 
     /**

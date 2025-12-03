@@ -48,24 +48,12 @@ use Symfony\Component\Yaml\Yaml;
 class UploadService
 {
 
-
     /**
-     * Constructor for the UploadService class.
+     * HTTP client
      *
-     * @param Client         $client         The Guzzle HTTP client.
-     * @param SchemaMapper   $schemaMapper   The schema mapper.
-     * @param RegisterMapper $registerMapper The register mapper.
-     *
-     * @return void
+     * @var Client
      */
-    public function __construct(
-        private Client $client,
-        private readonly SchemaMapper $schemaMapper,
-        private readonly RegisterMapper $registerMapper,
-    ) {
-        $this->client = new Client([]);
-
-    }//end __construct()
+    private Client $client;
 
 
     /**
@@ -198,59 +186,6 @@ class UploadService
         throw new \Exception('File upload handling is not yet implemented');
 
     }//end getJSONfromFile()
-
-
-    /**
-     * Handles adding schemas to a register during upload.
-     *
-     * @param Register $register The register to add schemas to.
-     * @param array    $phpArray The PHP array containing the uploaded json data.
-     *
-     * @throws \OCP\DB\Exception
-     *
-     * @return Register The updated register.
-     */
-    public function handleRegisterSchemas(Register $register, array $phpArray): Register
-    {
-        // Process and save schemas.
-        foreach ($phpArray['components']['schemas'] as $schemaName => $schemaData) {
-            // Check if a schema with this title already exists.
-            $schema = $this->registerMapper->hasSchemaWithTitle(registerId: $register->getId(), schemaTitle: $schemaName);
-            if ($schema === null) {
-                // Check if a schema with this title already exists for this register.
-                try {
-                    $schemas = $this->schemaMapper->findAll(filters: ['title' => $schemaName]);
-                    if (count($schemas) > 0) {
-                        $schema = $schemas[0];
-                    } else {
-                        // None found so, Create a new schema.
-                        $schema = new Schema();
-                        $schema->setTitle($schemaName);
-                        $schema->setUuid((string) Uuid::v4());
-                        $this->schemaMapper->insert($schema);
-                    }
-                } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-                    // None found so, Create a new schema.
-                    $schema = new Schema();
-                    $schema->setTitle($schemaName);
-                    $schema->setUuid((string) Uuid::v4());
-                    $this->schemaMapper->insert($schema);
-                }
-            }//end if
-
-            $schema->hydrate($schemaData);
-            $this->schemaMapper->update($schema);
-            // Add the schema to the register.
-            $schemas   = $register->getSchemas();
-            $schemas[] = $schema->getId();
-            $register->setSchemas($schemas);
-            // Lets save the updated register.
-            $register = $this->registerMapper->update($register);
-        }//end foreach
-
-        return $register;
-
-    }//end handleRegisterSchemas()
 
 
 }//end class

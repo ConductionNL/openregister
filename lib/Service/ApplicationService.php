@@ -49,22 +49,6 @@ class ApplicationService
 
 
     /**
-     * Constructor for ApplicationService
-     *
-     * @param ApplicationMapper $applicationMapper The application mapper
-     * @param LoggerInterface   $logger            The logger instance
-     */
-    public function __construct(
-        ApplicationMapper $applicationMapper,
-        LoggerInterface $logger
-    ) {
-        $this->applicationMapper = $applicationMapper;
-        $this->logger            = $logger;
-
-    }//end __construct()
-
-
-    /**
      * Get all applications
      *
      * @param int|null $limit   Maximum number of results
@@ -94,22 +78,6 @@ class ApplicationService
         return $this->applicationMapper->find($id);
 
     }//end find()
-
-
-    /**
-     * Get applications by organisation
-     *
-     * @param string $organisationId Organisation UUID
-     * @param int    $limit          Maximum number of results
-     * @param int    $offset         Offset for pagination
-     *
-     * @return Application[] Array of applications
-     */
-    public function findByOrganisation(string $organisationId, int $limit=50, int $offset=0): array
-    {
-        return $this->applicationMapper->findByOrganisation($organisationId, $limit, $offset);
-
-    }//end findByOrganisation()
 
 
     /**
@@ -174,20 +142,6 @@ class ApplicationService
         $this->logger->info(message: 'Application deleted successfully', context: ['id' => $id]);
 
     }//end delete()
-
-
-    /**
-     * Count applications by organisation
-     *
-     * @param string $organisationId Organisation UUID
-     *
-     * @return int Number of applications
-     */
-    public function countByOrganisation(string $organisationId): int
-    {
-        return $this->applicationMapper->countByOrganisation($organisationId);
-
-    }//end countByOrganisation()
 
 
     /**

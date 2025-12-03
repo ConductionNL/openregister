@@ -40,13 +40,6 @@ class SchemaService
 {
 
     /**
-     * Database connection for direct queries
-     *
-     * @var IDBConnection
-     */
-    private IDBConnection $db;
-
-    /**
      * Schema mapper for schema operations
      *
      * @var SchemaMapper
@@ -66,28 +59,6 @@ class SchemaService
      * @var LoggerInterface
      */
     private LoggerInterface $logger;
-
-
-    /**
-     * Constructor for the SchemaService
-     *
-     * @param IDBConnection      $db                 Database connection
-     * @param SchemaMapper       $schemaMapper       Schema mapper
-     * @param ObjectEntityMapper $objectEntityMapper Object entity mapper
-     * @param LoggerInterface    $logger             Logger instance
-     */
-    public function __construct(
-        IDBConnection $db,
-        SchemaMapper $schemaMapper,
-        ObjectEntityMapper $objectEntityMapper,
-        LoggerInterface $logger
-    ) {
-        $this->db           = $db;
-        $this->schemaMapper = $schemaMapper;
-        $this->objectEntityMapper = $objectEntityMapper;
-        $this->logger = $logger;
-
-    }//end __construct()
 
 
     /**
@@ -183,7 +154,7 @@ class SchemaService
      *
      * @return array Analysis results with discovered properties and statistics
      */
-    private function analyzeObjectProperties(array $objects, array $existingProperties=[]): array
+    private function analyzeObjectProperties(array $objects, array $_existingProperties=[]): array
     {
         $discoveredProperties = [];
         $usageStats           = [];
@@ -837,7 +808,7 @@ class SchemaService
      *
      * @return array Array of improvement suggestions for existing properties
      */
-    private function analyzeExistingProperties(array $existingProperties, array $discoveredProperties, array $usageStats): array
+    private function analyzeExistingProperties(array $existingProperties, array $discoveredProperties, array $_usageStats): array
     {
         $improvements = [];
 
@@ -928,7 +899,6 @@ class SchemaService
 
         // Missing constraints for strings.
         if ($recommendedType === 'string' || $currentType === 'string') {
-            $actualType    = $currentType === true ?: $recommendedType;
             $suggestConfig = [];
 
             // Check for missing maxLength.
@@ -991,8 +961,6 @@ class SchemaService
 
         // Missing constraints for numbers.
         if ($recommendedType === 'number' || $recommendedType === 'integer' || $currentType === 'number' || $currentType === 'integer') {
-            $actualType = $currentType === true ?: $recommendedType;
-
             if (($analysis['numeric_range'] ?? null) !== null) {
                 $range = $analysis['numeric_range'];
 

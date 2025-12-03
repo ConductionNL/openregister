@@ -31,33 +31,37 @@ use OCA\OpenRegister\Db\SchemaMapper;
 class LogService
 {
 
-
     /**
-     * Constructor for LogService
+     * Audit trail mapper
      *
-     * @param AuditTrailMapper   $auditTrailMapper   The audit trail mapper
-     * @param ObjectEntityMapper $objectEntityMapper The object entity mapper
-     * @param RegisterMapper     $registerMapper     The register mapper
-     * @param SchemaMapper       $schemaMapper       The schema mapper
+     * @var AuditTrailMapper
      */
-
+    private AuditTrailMapper $auditTrailMapper;
 
     /**
-     * @param RegisterMapper $registerMapper Register mapper (unused but kept for future use)
-     * @param SchemaMapper   $schemaMapper   Schema mapper (unused but kept for future use)
+     * Object entity mapper
+     *
+     * @var ObjectEntityMapper
      */
-    public function __construct(
-        private readonly AuditTrailMapper $auditTrailMapper,
-        private readonly ObjectEntityMapper $objectEntityMapper,
-        /**
-         */
-        private readonly RegisterMapper $registerMapper,
-        /**
-         */
-        private readonly SchemaMapper $schemaMapper
-    ) {
+    private ObjectEntityMapper $objectEntityMapper;
 
-    }//end __construct()
+    /**
+     * Register mapper
+     *
+     * @var RegisterMapper
+     *
+     * @psalm-suppress UnusedProperty
+     */
+    private RegisterMapper $registerMapper;
+
+    /**
+     * Schema mapper
+     *
+     * @var SchemaMapper
+     *
+     * @psalm-suppress UnusedProperty
+     */
+    private SchemaMapper $schemaMapper;
 
 
     /**

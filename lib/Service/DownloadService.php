@@ -38,74 +38,19 @@ use OCP\IURLGenerator;
 class DownloadService
 {
 
+    /**
+     * Register mapper
+     *
+     * @var RegisterMapper
+     */
+    private RegisterMapper $registerMapper;
 
     /**
-     * Constructor for the DownloadService class.
+     * Schema mapper
      *
-     * @param IURLGenerator  $urlGenerator   The URL generator service.
-     * @param SchemaMapper   $schemaMapper   The schema mapper service.
-     * @param RegisterMapper $registerMapper The register mapper service.
-     *
-     * @return void
+     * @var SchemaMapper
      */
-    public function __construct(
-        private IURLGenerator $urlGenerator,
-        private SchemaMapper $schemaMapper,
-        private RegisterMapper $registerMapper
-    ) {
-
-    }//end __construct()
-
-
-    /**
-     * Download a DB entity as a file. Depending on given Accept-header the file type might differ.
-     *
-     * @param string     $objectType The type of object to download.
-     * @param string|int $id         The id of the object to download.
-     * @param string     $accept     The Accept-header from the download request.
-     *
-     * @throws Exception
-     *
-     * @return (int|string)[] The response data for the download request.
-     *
-     * @psalm-return array{error: string, statusCode: 400|404}
-     */
-    public function download(string $objectType, string | int $id, string $accept): array
-    {
-        // Get the appropriate mapper for the object type.
-        $mapper = $this->getMapper($objectType);
-
-        try {
-            $object = $mapper->find(id: $id);
-        } catch (Exception $exception) {
-            return ['error' => "Could not find $objectType with id $id.", 'statusCode' => 404];
-        }
-
-        $objectArray = $object->jsonSerialize();
-        $filename    = $objectArray['title'].ucfirst($objectType).'-v'.$objectArray['version'];
-
-        if (str_contains($accept, 'application/json') === true || $accept === '*/*') {
-            $url = $this->urlGenerator->getAbsoluteURL(
-                $this->urlGenerator->linkToRoute('openregister.'.ucfirst($objectType).'s.show', ['id' => $object->getId()])
-            );
-
-            $objArray['title']   = $objectArray['title'];
-            $objArray['$id']     = $url;
-            $objArray['$schema'] = 'https://docs.commongateway.nl/schemas/'.ucfirst($objectType).'.schema.json';
-            $objArray['version'] = $objectArray['version'];
-            $objArray['type']    = $objectType;
-            unset($objectArray['title'], $objectArray['version'], $objectArray['id'], $objectArray['uuid']);
-            $objArray = array_merge($objArray, $objectArray);
-
-            // Convert the object data to JSON.
-            $jsonData = json_encode($objArray, JSON_PRETTY_PRINT);
-
-            $this->downloadJson(jsonData: $jsonData, filename: $filename);
-        }
-
-        return ['error' => "The Accept type $accept is not supported.", 'statusCode' => 400];
-
-    }//end download()
+    private SchemaMapper $schemaMapper;
 
 
     /**

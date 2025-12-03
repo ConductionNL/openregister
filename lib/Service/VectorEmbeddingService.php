@@ -543,9 +543,9 @@ class VectorEmbeddingService
         string $model,
         int $dimensions,
         int $chunkIndex=0,
-        int $totalChunks=1,
-        ?string $chunkText=null,
-        array $metadata=[]
+        int $_totalChunks=1,
+        ?string $_chunkText=null,
+        array $_metadata=[]
     ): string {
         $this->logger->debug(
                 message: '[VectorEmbeddingService] Storing vector in Solr',
@@ -876,6 +876,8 @@ class VectorEmbeddingService
      * @return int The ID of the inserted vector
      *
      * @throws \Exception If storage fails
+     *
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function storeVector(
         string $entityType,
@@ -1564,100 +1566,6 @@ class VectorEmbeddingService
 
 
     /**
-     * Delete vectors for an entity
-     *
-     * @param string $entityType Entity type
-     * @param string $entityId   Entity ID
-     *
-     * @return int Number of vectors deleted
-     *
-     * @throws \Exception If deletion fails
-     */
-    public function deleteVectors(string $entityType, string $entityId): int
-    {
-        $this->logger->info(
-                message: 'Deleting vectors',
-                context: [
-                    'entity_type' => $entityType,
-                    'entity_id'   => $entityId,
-                ]
-                );
-
-        try {
-            $qb      = $this->db->getQueryBuilder();
-            $deleted = $qb->delete('openregister_vectors')
-                ->where($qb->expr()->eq('entity_type', $qb->createNamedParameter($entityType)))
-                ->andWhere($qb->expr()->eq('entity_id', $qb->createNamedParameter($entityId)))
-                ->executeStatement();
-
-            $this->logger->info(
-                    message: 'Vectors deleted',
-                    context: [
-                        'count'       => $deleted,
-                        'entity_type' => $entityType,
-                        'entity_id'   => $entityId,
-                    ]
-                    );
-
-            return $deleted;
-        } catch (\Exception $e) {
-            $this->logger->error(
-                    message: 'Failed to delete vectors',
-                    context: [
-                        'error' => $e->getMessage(),
-                    ]
-                    );
-            throw new \Exception('Vector deletion failed: '.$e->getMessage());
-        }//end try
-
-    }//end deleteVectors()
-
-
-    /**
-     * Get vector count for specific entity type(s)
-     *
-     * @param string|null $entityType Filter by entity type ('object', 'file', or null for all)
-     * @param array       $filters    Additional filters (e.g., entity_id, model)
-     *
-     * @return int Total count
-     */
-    public function getVectorCount(?string $entityType=null, array $filters=[]): int
-    {
-        try {
-            $qb = $this->db->getQueryBuilder();
-            $qb->select($qb->func()->count('*', 'total'))
-                ->from('openregister_vectors');
-
-            // Filter by entity type.
-            if ($entityType !== null) {
-                $qb->andWhere($qb->expr()->eq('entity_type', $qb->createNamedParameter($entityType)));
-            }
-
-            // Apply additional filters.
-            foreach ($filters as $field => $value) {
-                $qb->andWhere($qb->expr()->eq($field, $qb->createNamedParameter($value)));
-            }
-
-            $result = $qb->executeQuery();
-            $count  = (int) $result->fetchOne();
-            $result->closeCursor();
-
-            return $count;
-        } catch (\Exception $e) {
-            $this->logger->error(
-                    message: 'Failed to get vector count',
-                    context: [
-                        'entity_type' => $entityType,
-                        'error'       => $e->getMessage(),
-                    ]
-                    );
-            return 0;
-        }//end try
-
-    }//end getVectorCount()
-
-
-    /**
      * Get vector statistics
      *
      * @return array Statistics about stored vectors
@@ -2276,187 +2184,6 @@ class VectorEmbeddingService
         return $dotProduct / ($magnitude1 * $magnitude2);
 
     }//end cosineSimilarity()
-
-
-    /**
-     * Vectorize file chunks
-     *
-     * Generates embeddings for file chunks and stores them in the vector database.
-     *
-     * @param int           $fileId   File ID
-     * @param array<string> $chunks   Text chunks
-     * @param array         $metadata File metadata
-     * @param string|null   $provider Embedding provider (null = use default)
-     *
-     * @return (bool|float|int|string[])[] Result
-     *
-     * @throws \Exception If vectorization fails
-     *
-     * @psalm-return array{success: bool, vectors_created: int<0, max>, errors: array<string>, execution_time_ms: float}
-     */
-    public function vectorizeFileChunks(int $fileId, array $chunks, array $metadata=[], ?string $provider=null): array
-    {
-        $this->logger->info(
-                message: 'Vectorizing file chunks',
-                context: [
-                    'file_id'     => $fileId,
-                    'chunk_count' => count($chunks),
-                ]
-                );
-
-        $startTime      = microtime(true);
-        $vectorsCreated = 0;
-        $errors         = [];
-
-        foreach ($chunks as $index => $chunkText) {
-            try {
-                // Generate embedding.
-                $embeddingData = $this->generateEmbedding($chunkText, $provider);
-
-                // Store in vector database.
-                $this->storeVector(
-                    entityType: 'file_chunk',
-                    entityId: "{$fileId}_chunk_{$index}",
-                    embedding: $embeddingData['embedding'],
-                    model: $embeddingData['model'],
-                    dimensions: $embeddingData['dimensions'],
-                    metadata: array_merge(
-                            $metadata,
-                            [
-                                'file_id'     => $fileId,
-                                'chunk_index' => $index,
-                                'chunk_text'  => substr($chunkText, 0, 1000),
-                // Store first 1000 chars for preview.
-                                'model'       => $embeddingData['model'],
-                                'dimensions'  => $embeddingData['dimensions'],
-                            ]
-                            )
-                );
-
-                $vectorsCreated++;
-            } catch (\Exception $e) {
-                $errors[$index] = $e->getMessage();
-                $this->logger->error(
-                        message: 'Failed to vectorize chunk',
-                        context: [
-                            'file_id'     => $fileId,
-                            'chunk_index' => $index,
-                            'error'       => $e->getMessage(),
-                        ]
-                        );
-            }//end try
-        }//end foreach
-
-        $executionTime = round((microtime(true) - $startTime) * 1000, 2);
-
-        $this->logger->info(
-                message: 'Completed file chunk vectorization',
-                context: [
-                    'file_id'           => $fileId,
-                    'vectors_created'   => $vectorsCreated,
-                    'errors'            => count($errors),
-                    'execution_time_ms' => $executionTime,
-                ]
-                );
-
-        return [
-            'success'           => count($errors) === 0,
-            'vectors_created'   => $vectorsCreated,
-            'errors'            => $errors,
-            'execution_time_ms' => $executionTime,
-        ];
-
-    }//end vectorizeFileChunks()
-
-
-    /**
-     * Search file chunks by semantic similarity
-     *
-     * @param string   $query    Search query text
-     * @param int      $limit    Maximum results to return
-     * @param float    $minScore Minimum similarity score (0-1)
-     * @param int|null $fileId   Optional file ID filter
-     *
-     * @return array<array> Search results with scores and metadata
-     *
-     * @throws \Exception If search fails
-     */
-    public function searchFileChunks(string $query, int $limit=10, float $minScore=0.7, ?int $fileId=null): array
-    {
-        $this->logger->debug(
-                message: 'Searching file chunks',
-                context: [
-                    'query'     => $query,
-                    'limit'     => $limit,
-                    'min_score' => $minScore,
-                    'file_id'   => $fileId,
-                ]
-                );
-
-        // Generate query embedding.
-        $queryEmbedding = $this->generateEmbedding($query);
-
-        // Build filter.
-        $filter = ['entity_type' => 'file_chunk'];
-        if ($fileId !== null) {
-            $filter['file_id'] = $fileId;
-        }
-
-        // Search similar vectors.
-        // searchSimilarVectors method doesn't exist, use alternative search method.
-        // Note: This is a placeholder - searchSimilarVectors needs to be implemented or replaced.
-        $results = [];
-        $this->logger->warning('searchSimilarVectors method not implemented, returning empty results');
-
-        return $results;
-
-    }//end searchFileChunks()
-
-
-    /**
-     * Get vector statistics for file chunks
-     *
-     * @return array{total_chunks: int, unique_files: int, average_dimensions: int}
-     */
-    public function getFileChunkVectorStats(): array
-    {
-        $qb = $this->db->getQueryBuilder();
-
-        $qb->select($qb->createFunction('COUNT(*) as total'))
-            ->from('openregister_vectors')
-            ->where($qb->expr()->eq('entity_type', $qb->createNamedParameter('file_chunk')));
-
-        $result = $qb->execute();
-        $total  = (int) $result->fetchOne();
-        $result->closeCursor();
-
-        // Count unique files.
-        $qb = $this->db->getQueryBuilder();
-        $qb->select($qb->createFunction('COUNT(DISTINCT JSON_EXTRACT(metadata, \'$.file_id\')) as unique_files'))
-            ->from('openregister_vectors')
-            ->where($qb->expr()->eq('entity_type', $qb->createNamedParameter('file_chunk')));
-
-        $result      = $qb->execute();
-        $uniqueFiles = (int) $result->fetchOne();
-        $result->closeCursor();
-
-        // Get average dimensions.
-        $qb = $this->db->getQueryBuilder();
-        $qb->select($qb->createFunction('AVG(dimensions) as avg_dimensions'))
-            ->from('openregister_vectors')
-            ->where($qb->expr()->eq('entity_type', $qb->createNamedParameter('file_chunk')));
-
-        $result        = $qb->execute();
-        $avgDimensions = (int) $result->fetchOne();
-        $result->closeCursor();
-
-        return [
-            'total_chunks'       => $total,
-            'unique_files'       => $uniqueFiles,
-            'average_dimensions' => $avgDimensions,
-        ];
-
-    }//end getFileChunkVectorStats()
 
 
     /**

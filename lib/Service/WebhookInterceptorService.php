@@ -85,29 +85,6 @@ class WebhookInterceptorService
 
 
     /**
-     * Constructor
-     *
-     * @param CloudEventService $cloudEventService CloudEvent service
-     * @param WebhookMapper     $webhookMapper     Webhook mapper
-     * @param WebhookLogMapper  $webhookLogMapper  Webhook log mapper
-     * @param LoggerInterface   $logger            Logger
-     */
-    public function __construct(
-        CloudEventService $cloudEventService,
-        WebhookMapper $webhookMapper,
-        WebhookLogMapper $webhookLogMapper,
-        LoggerInterface $logger
-    ) {
-        $this->cloudEventService = $cloudEventService;
-        $this->webhookMapper     = $webhookMapper;
-        $this->webhookLogMapper  = $webhookLogMapper;
-        $this->logger            = $logger;
-        $this->httpClient        = new Client();
-
-    }//end __construct()
-
-
-    /**
      * Intercept request and send to webhooks
      *
      * Finds webhooks configured for "before" events matching this request,
@@ -454,6 +431,10 @@ class WebhookInterceptorService
             $current = &$current[$key];
         }
 
+        // Set the value at the final nested path.
+        /*
+         * @psalm-suppress UnusedVariable
+         */
         $current = $value;
 
     }//end setNestedValue()

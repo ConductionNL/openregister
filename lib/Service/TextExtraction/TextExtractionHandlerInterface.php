@@ -30,14 +30,6 @@ interface TextExtractionHandlerInterface
 
 
     /**
-     * Get the source type this handler supports.
-     *
-     * @return string Source type identifier (e.g., 'file', 'object', 'agenda', 'email')
-     */
-    public function getSourceType(): string;
-
-
-    /**
      * Extract text from a source.
      *
      * @param int                  $sourceId   Source identifier.
@@ -66,18 +58,6 @@ interface TextExtractionHandlerInterface
 
 
     /**
-     * Check if source needs extraction or re-extraction.
-     *
-     * @param int  $sourceId        Source identifier.
-     * @param int  $sourceTimestamp Source modification timestamp.
-     * @param bool $force           Force flag.
-     *
-     * @return bool True if extraction is needed.
-     */
-    public function needsExtraction(int $sourceId, int $sourceTimestamp, bool $force): bool;
-
-
-    /**
      * Get source metadata for a given source ID.
      *
      * @param int $sourceId Source identifier.
@@ -87,16 +67,6 @@ interface TextExtractionHandlerInterface
      * @throws \OCP\AppFramework\Db\DoesNotExistException If source not found.
      */
     public function getSourceMetadata(int $sourceId): array;
-
-
-    /**
-     * Get the timestamp when the source was last modified.
-     *
-     * @param int $sourceId Source identifier.
-     *
-     * @return int Unix timestamp.
-     */
-    public function getSourceTimestamp(int $sourceId): int;
 
 
 }//end interface

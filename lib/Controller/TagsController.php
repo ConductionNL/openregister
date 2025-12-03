@@ -28,6 +28,10 @@ use Exception;
 /**
  * Class TagsController
  */
+/**
+ * @psalm-suppress UnusedClass
+ */
+
 class TagsController extends Controller
 {
 

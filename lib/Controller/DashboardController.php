@@ -30,6 +30,10 @@ use Psr\Log\LoggerInterface;
  * Controller for handling dashboard related operations in the application.
  * Provides functionality to display the dashboard page and retrieve dashboard data.
  */
+/**
+ * @psalm-suppress UnusedClass
+ */
+
 class DashboardController extends Controller
 {
 

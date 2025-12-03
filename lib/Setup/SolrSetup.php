@@ -131,42 +131,6 @@ class SolrSetup
 
 
     /**
-     * Get detailed error information from the last failed operation
-     *
-     * @return array|null Error details or null if no error occurred
-     */
-    public function getLastErrorDetails(): ?array
-    {
-        return $this->lastErrorDetails;
-
-    }//end getLastErrorDetails()
-
-
-    /**
-     * Get infrastructure resources created during setup
-     *
-     * @return array Summary of created resources and configuration status
-     */
-    public function getInfrastructureCreated(): array
-    {
-        return $this->infrastructureCreated;
-
-    }//end getInfrastructureCreated()
-
-
-    /**
-     * Get detailed setup progress information
-     *
-     * @return array Setup progress with step details
-     */
-    public function getSetupProgress(): array
-    {
-        return $this->setupProgress;
-
-    }//end getSetupProgress()
-
-
-    /**
      * Track a setup step with detailed information
      *
      * @param int    $stepNumber  Step number (1-5)
@@ -896,7 +860,7 @@ class SolrSetup
      */
     private function allComponentsSuccessful(array $components): bool
     {
-        foreach ($components as $component => $result) {
+        foreach ($components as $_component => $result) {
             if (($result['success'] ?? false) === false) {
                 return false;
             }
@@ -1840,81 +1804,6 @@ class SolrSetup
 
 
     /**
-     * Check if a SOLR collection exists (SolrCloud)
-     *
-     * @param  string $collectionName Name of the collection to check
-     * @return bool True if collection exists, false otherwise
-     */
-    private function collectionExists(string $collectionName): bool
-    {
-        $url = $this->buildSolrUrl('/admin/collections?action=CLUSTERSTATUS&wt=json');
-
-        try {
-            $requestOptions = ['timeout' => 10];
-
-            // Add authentication if configured.
-            if (empty($this->solrConfig['username']) === false && empty($this->solrConfig['password']) === false) {
-                $requestOptions['auth'] = [$this->solrConfig['username'], $this->solrConfig['password']];
-            }
-
-            $response = $this->httpClient->get($url, $requestOptions);
-
-            if ($response->getStatusCode() !== 200) {
-                $this->logger->debug(
-                        'Failed to check collection existence - HTTP error',
-                        [
-                            'collection'  => $collectionName,
-                            'url'         => $url,
-                            'status_code' => $response->getStatusCode(),
-                        ]
-                        );
-                return false;
-            }
-
-            $data = json_decode((string) $response->getBody(), true);
-
-            if ($data === null) {
-                $this->logger->debug(
-                        'Failed to check collection existence - Invalid JSON',
-                        [
-                            'collection' => $collectionName,
-                            'url'        => $url,
-                            'json_error' => json_last_error_msg(),
-                        ]
-                        );
-                return false;
-            }
-
-            // Collection exists if it's in the cluster status.
-            $exists = isset($data['cluster']['collections'][$collectionName]);
-
-            $this->logger->debug(
-                    'Collection existence check completed',
-                    [
-                        'collection'            => $collectionName,
-                        'exists'                => $exists,
-                        'available_collections' => array_keys($data['cluster']['collections'] ?? []),
-                    ]
-                    );
-
-            return $exists;
-        } catch (\Exception $e) {
-            $this->logger->debug(
-                    'Failed to check collection existence - Exception',
-                    [
-                        'collection'     => $collectionName,
-                        'url'            => $url,
-                        'error'          => $e->getMessage(),
-                        'exception_type' => get_class($e),
-                    ]
-                    );
-            return false;
-        }//end try
-
-    }//end collectionExists()
-
-
-    /**
      * Create a new SOLR collection using a configSet (SolrCloud)
      *
      * @param  string $collectionName Name for the new collection
@@ -2309,98 +2198,6 @@ class SolrSetup
 
 
     /**
-     * Check if a SOLR core exists
-     *
-     * @param  string $coreName Name of the core to check
-     * @return bool True if core exists, false otherwise
-     */
-    private function coreExists(string $coreName): bool
-    {
-        $url = $this->buildSolrUrl(
-                sprintf(
-                        '/admin/cores?action=STATUS&core=%s&wt=json',
-                        urlencode($coreName)
-                )
-        );
-
-        try {
-            $response = $this->httpClient->get($url, ['timeout' => 10]);
-            $data     = json_decode((string) $response->getBody(), true);
-        } catch (\Exception $e) {
-            $this->logger->warning(
-                    'Failed to check core existence',
-                    [
-                        'core'  => $coreName,
-                        'error' => $e->getMessage(),
-                        'url'   => $url,
-                    ]
-                    );
-            return false;
-        }
-
-        // Core exists if it's in the status response.
-        return isset($data['status'][$coreName]);
-
-    }//end coreExists()
-
-
-    /**
-     * Create a new SOLR core using a configSet
-     *
-     * @param  string $coreName      Name for the new core
-     * @param  string $configSetName Name of the configSet to use
-     * @return bool True if core was created successfully
-     */
-    private function createCore(string $coreName, string $configSetName): bool
-    {
-        $url = $this->buildSolrUrl(
-                sprintf(
-                        '/admin/cores?action=CREATE&name=%s&configSet=%s&wt=json',
-                        urlencode($coreName),
-                        urlencode($configSetName)
-                )
-                );
-
-        try {
-            $response = $this->httpClient->get($url, ['timeout' => 30]);
-            $data     = json_decode((string) $response->getBody(), true);
-        } catch (\Exception $e) {
-            $this->logger->error(
-                    'Failed to create core',
-                    [
-                        'core'      => $coreName,
-                        'configSet' => $configSetName,
-                        'error'     => $e->getMessage(),
-                        'url'       => $url,
-                    ]
-                    );
-            return false;
-        }
-
-        if (($data['responseHeader']['status'] ?? -1) === 0) {
-            $this->logger->info(
-                    'Core created successfully',
-                    [
-                        'core'      => $coreName,
-                        'configSet' => $configSetName,
-                    ]
-                    );
-            return true;
-        }
-
-        $this->logger->error(
-                'Core creation failed',
-                [
-                    'core'     => $coreName,
-                    'response' => $data,
-                ]
-                );
-        return false;
-
-    }//end createCore()
-
-
-    /**
      * Configure SOLR schema fields for OpenRegister ObjectEntity metadata
      *
      * This method sets up all the necessary field types and fields based on the
@@ -2650,153 +2447,6 @@ class SolrSetup
 
 
     /**
-     * Apply schema fields to a SOLR collection (shared method)
-     *
-     * This static method can be used by both setup and warmup processes to apply
-     * the standard ObjectEntity schema fields to any SOLR collection.
-     *
-     * @param  \GuzzleHttp\Client       $httpClient     HTTP client for SOLR requests
-     * @param  array                    $solrConfig     SOLR configuration
-     * @param  string                   $collectionName Name of the collection to update
-     * @param  \Psr\Log\LoggerInterface $logger         Logger for operation tracking
-     * @return array Results with success status and field counts
-     */
-    public static function applySchemaFields(
-        \GuzzleHttp\Client $httpClient,
-        array $solrConfig,
-        string $collectionName,
-        \Psr\Log\LoggerInterface $logger
-    ): array {
-        $logger->info(
-                message: 'Applying ObjectEntity schema fields to SOLR collection',
-                context: [
-                    'collection' => $collectionName,
-                ]
-                );
-
-        $fieldDefinitions = self::getObjectEntityFieldDefinitions();
-        $results          = [
-            'success'        => true,
-            'total_fields'   => count($fieldDefinitions),
-            'fields_added'   => 0,
-            'fields_updated' => 0,
-            'fields_failed'  => 0,
-            'errors'         => [],
-        ];
-
-        // Build SOLR URL helper.
-        $buildUrl = function (string $path) use ($solrConfig): string {
-            $host     = $solrConfig['host'] ?? 'localhost';
-            $port     = $solrConfig['port'] ?? null;
-            $scheme   = $solrConfig['scheme'] ?? 'http';
-            $basePath = $solrConfig['path'] ?? '/solr';
-
-            // Handle Kubernetes service names and port logic.
-            if (strpos($host, '.svc.cluster.local') !== false) {
-                return sprintf('%s://%s%s%s', $scheme, $host, $basePath, $path);
-            } else {
-                if ($port !== null && $port > 0) {
-                    return sprintf('%s://%s:%d%s%s', $scheme, $host, $port, $basePath, $path);
-                } else {
-                    return sprintf('%s://%s%s%s', $scheme, $host, $basePath, $path);
-                }
-            }
-        };
-
-        $schemaUrl = $buildUrl('/'.$collectionName.'/schema');
-
-        foreach ($fieldDefinitions as $fieldName => $fieldConfig) {
-            try {
-                // Try to add the field first.
-                $addPayload = [
-                    'add-field' => array_merge(['name' => $fieldName], $fieldConfig),
-                ];
-
-                $response = $httpClient->post(
-                        $schemaUrl,
-                        [
-                            'headers' => ['Content-Type' => 'application/json'],
-                            'json'    => $addPayload,
-                            'timeout' => 30,
-                        ]
-                        );
-
-                if ($response->getStatusCode() === 200) {
-                    $data = json_decode((string) $response->getBody(), true);
-                    if (($data['responseHeader']['status'] ?? -1) === 0) {
-                        $results['fields_added']++;
-                        $logger->debug(message: 'Added schema field', context: ['field' => $fieldName]);
-                        continue;
-                    }
-                }
-
-                // If add failed, try to replace.
-                $replacePayload = [
-                    'replace-field' => array_merge(['name' => $fieldName], $fieldConfig),
-                ];
-
-                $response = $httpClient->post(
-                        $schemaUrl,
-                        [
-                            'headers' => ['Content-Type' => 'application/json'],
-                            'json'    => $replacePayload,
-                            'timeout' => 30,
-                        ]
-                        );
-
-                if ($response->getStatusCode() === 200) {
-                    $data = json_decode((string) $response->getBody(), true);
-                    if (($data['responseHeader']['status'] ?? -1) === 0) {
-                        $results['fields_updated']++;
-                        $logger->debug(message: 'Updated schema field', context: ['field' => $fieldName]);
-                        continue;
-                    }
-                }
-
-                // Both add and replace failed.
-                $results['fields_failed']++;
-                $results['errors'][] = "Failed to add/update field: {$fieldName}";
-                $logger->warning(
-                        message: 'Failed to add/update schema field',
-                        context: [
-                            'field'         => $fieldName,
-                            'last_response' => (string) $response->getBody(),
-                        ]
-                        );
-            } catch (\Exception $e) {
-                $results['fields_failed']++;
-                $results['errors'][] = "Exception for field {$fieldName}: ".$e->getMessage();
-                $logger->error(
-                        message: 'Exception applying schema field',
-                        context: [
-                            'field'          => $fieldName,
-                            'error'          => $e->getMessage(),
-                            'exception_type' => get_class($e),
-                        ]
-                        );
-            }//end try
-        }//end foreach
-
-        $results['success'] = $results['fields_failed'] === 0;
-
-        $logger->info(
-                'Schema field application completed',
-                [
-                    'collection'     => $collectionName,
-                    'total_fields'   => $results['total_fields'],
-                    'fields_added'   => $results['fields_added'],
-                    'fields_updated' => $results['fields_updated'],
-                    'fields_failed'  => $results['fields_failed'],
-                    'success'        => $results['success'],
-                ]
-                );
-
-        return $results;
-
-    }//end applySchemaFields()
-
-
-    /**
      * Get field definitions for ObjectEntity metadata fields (shared method)
      *
      * Based on ObjectEntity.php properties, this method returns the proper
@@ -3008,26 +2658,6 @@ class SolrSetup
         ];
 
     }//end getObjectEntityFieldDefinitions()
-
-
-    /**
-     * Add or update a field in the SOLR schema
-     *
-     * @param  string $fieldName   Name of the field to add/update
-     * @param  array  $fieldConfig Field configuration (type, stored, indexed, etc.)
-     * @return bool True if field was added/updated successfully
-     */
-    private function addOrUpdateSchemaField(string $fieldName, array $fieldConfig): bool
-    {
-        // Try to add the field first (will fail if it already exists).
-        if ($this->addSchemaField($fieldName, $fieldConfig) === true) {
-            return true;
-        }
-
-        // If add failed, try to replace the existing field.
-        return $this->replaceSchemaField($fieldName, $fieldConfig);
-
-    }//end addOrUpdateSchemaField()
 
 
     /**
@@ -3256,42 +2886,6 @@ class SolrSetup
         return ($data['responseHeader']['status'] ?? -1) === 0;
 
     }//end testCollectionQuery()
-
-
-    /**
-     * Test that a core responds to queries correctly
-     *
-     * @param  string $coreName Name of the core to test
-     * @return bool True if core responds to queries properly
-     */
-    private function testCoreQuery(string $coreName): bool
-    {
-        $url = $this->buildSolrUrl(
-                sprintf(
-                        '/%s/select?q=*:*&rows=0&wt=json',
-                        urlencode($coreName)
-                )
-        );
-
-        try {
-            $response = $this->httpClient->get($url, ['timeout' => 10]);
-            $data     = json_decode((string) $response->getBody(), true);
-        } catch (\Exception $e) {
-            $this->logger->warning(
-                    'Failed to test core query',
-                    [
-                        'core'  => $coreName,
-                        'error' => $e->getMessage(),
-                        'url'   => $url,
-                    ]
-                    );
-            return false;
-        }
-
-        // Valid response should have a response header with status 0.
-        return ($data['responseHeader']['status'] ?? -1) === 0;
-
-    }//end testCoreQuery()
 
 
 }//end class

@@ -41,6 +41,10 @@ use Psr\Log\LoggerInterface;
  * @license  EUPL-1.2
  * @link     https://github.com/ConductionNL/openregister
  */
+/**
+ * @psalm-suppress UnusedClass
+ */
+
 class EndpointsController extends Controller
 {
 
@@ -218,7 +222,7 @@ class EndpointsController extends Controller
                 context: [
                     'id'   => $endpoint->getId(),
                     'name' => $endpoint->getName(),
-                    'path' => $endpoint->endpoint,
+                    'path' => $endpoint->getEndpoint(),
                 ]
             );
 

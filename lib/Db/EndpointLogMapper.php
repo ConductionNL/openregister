@@ -46,7 +46,7 @@ class EndpointLogMapper extends QBMapper
 
 
     /**
-     * EndpointLogMapper constructor
+     * Constructor
      *
      * @param IDBConnection $db Database connection
      */
@@ -191,23 +191,6 @@ class EndpointLogMapper extends QBMapper
         ];
 
     }//end getStatistics()
-
-
-    /**
-     * Delete old expired logs
-     *
-     * @return int Number of deleted logs
-     */
-    public function deleteExpired(): int
-    {
-        $qb = $this->db->getQueryBuilder();
-
-        $qb->delete($this->getTableName())
-            ->where($qb->expr()->lt('expires', $qb->createNamedParameter(new \DateTime(), IQueryBuilder::PARAM_DATE)));
-
-        return $qb->executeStatement();
-
-    }//end deleteExpired()
 
 
 }//end class

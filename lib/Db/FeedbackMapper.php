@@ -66,7 +66,8 @@ class FeedbackMapper extends QBMapper
      *
      * @param Entity $entity Entity to insert
      *
-     * @return Feedback Inserted entity
+     * @return       Feedback Inserted entity
+     * @psalm-return Feedback
      */
     public function insert(Entity $entity): Feedback
     {
@@ -93,7 +94,8 @@ class FeedbackMapper extends QBMapper
      *
      * @param Entity $entity Entity to update
      *
-     * @return Feedback Updated entity
+     * @return       Feedback Updated entity
+     * @psalm-return Feedback
      */
     public function update(Entity $entity): Feedback
     {
@@ -101,29 +103,6 @@ class FeedbackMapper extends QBMapper
         return parent::update($entity);
 
     }//end update()
-
-
-    /**
-     * Find feedback by UUID
-     *
-     * @param string $uuid UUID to search for
-     *
-     * @return Feedback Found feedback entity
-     *
-     * @throws DoesNotExistException
-     * @throws MultipleObjectsReturnedException
-     */
-    public function findByUuid(string $uuid): Feedback
-    {
-        $qb = $this->db->getQueryBuilder();
-
-        $qb->select('*')
-            ->from($this->tableName)
-            ->where($qb->expr()->eq('uuid', $qb->createNamedParameter($uuid, IQueryBuilder::PARAM_STR)));
-
-        return $this->findEntity($qb);
-
-    }//end findByUuid()
 
 
     /**
@@ -150,130 +129,6 @@ class FeedbackMapper extends QBMapper
         }
 
     }//end findByMessage()
-
-
-    /**
-     * Find all feedback for a conversation
-     *
-     * @param int $conversationId Conversation ID
-     *
-     * @return array<Feedback>
-     */
-    public function findByConversation(int $conversationId): array
-    {
-        $qb = $this->db->getQueryBuilder();
-
-        $qb->select('*')
-            ->from($this->tableName)
-            ->where($qb->expr()->eq('conversation_id', $qb->createNamedParameter($conversationId, IQueryBuilder::PARAM_INT)))
-            ->orderBy('created', 'DESC');
-
-        return $this->findEntities($qb);
-
-    }//end findByConversation()
-
-
-    /**
-     * Find all feedback for an agent
-     *
-     * @param int $agentId Agent ID
-     * @param int $limit   Limit
-     * @param int $offset  Offset
-     *
-     * @return array<Feedback>
-     */
-    public function findByAgent(int $agentId, int $limit=100, int $offset=0): array
-    {
-        $qb = $this->db->getQueryBuilder();
-
-        $qb->select('*')
-            ->from($this->tableName)
-            ->where($qb->expr()->eq('agent_id', $qb->createNamedParameter($agentId, IQueryBuilder::PARAM_INT)))
-            ->orderBy('created', 'DESC')
-            ->setMaxResults($limit)
-            ->setFirstResult($offset);
-
-        return $this->findEntities($qb);
-
-    }//end findByAgent()
-
-
-    /**
-     * Count feedback by agent and type
-     *
-     * @param int         $agentId Agent ID
-     * @param string|null $type    'positive' or 'negative' (null for all)
-     *
-     * @return int
-     */
-    public function countByAgent(int $agentId, ?string $type=null): int
-    {
-        $qb = $this->db->getQueryBuilder();
-
-        $qb->select($qb->func()->count('*', 'count'))
-            ->from($this->tableName)
-            ->where($qb->expr()->eq('agent_id', $qb->createNamedParameter($agentId, IQueryBuilder::PARAM_INT)));
-
-        if ($type !== null) {
-            $qb->andWhere($qb->expr()->eq('type', $qb->createNamedParameter($type, IQueryBuilder::PARAM_STR)));
-        }
-
-        $result = $qb->execute();
-        $count  = (int) $result->fetchOne();
-        $result->closeCursor();
-
-        return $count;
-
-    }//end countByAgent()
-
-
-    /**
-     * Find all feedback by user
-     *
-     * @param string      $userId       User ID
-     * @param string|null $organisation Organisation UUID
-     * @param int         $limit        Limit
-     * @param int         $offset       Offset
-     *
-     * @return array<Feedback>
-     */
-    public function findByUser(string $userId, ?string $organisation=null, int $limit=100, int $offset=0): array
-    {
-        $qb = $this->db->getQueryBuilder();
-
-        $qb->select('*')
-            ->from($this->tableName)
-            ->where($qb->expr()->eq('user_id', $qb->createNamedParameter($userId, IQueryBuilder::PARAM_STR)))
-            ->orderBy('created', 'DESC')
-            ->setMaxResults($limit)
-            ->setFirstResult($offset);
-
-        if ($organisation !== null) {
-            $qb->andWhere($qb->expr()->eq('organisation', $qb->createNamedParameter($organisation, IQueryBuilder::PARAM_STR)));
-        }
-
-        return $this->findEntities($qb);
-
-    }//end findByUser()
-
-
-    /**
-     * Delete all feedback for a message
-     *
-     * @param int $messageId Message ID
-     *
-     * @return void
-     */
-    public function deleteByMessage(int $messageId): void
-    {
-        $qb = $this->db->getQueryBuilder();
-
-        $qb->delete($this->tableName)
-            ->where($qb->expr()->eq('message_id', $qb->createNamedParameter($messageId, IQueryBuilder::PARAM_INT)));
-
-        $qb->execute();
-
-    }//end deleteByMessage()
 
 
     /**

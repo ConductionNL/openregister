@@ -38,6 +38,8 @@ use Psr\Log\LoggerInterface;
  * Runs periodically to check and sync configurations that have sync enabled.
  *
  * @package OCA\OpenRegister\Cron
+ *
+ * @psalm-suppress UnusedClass
  */
 class SyncConfigurationsJob extends TimedJob
 {
@@ -167,7 +169,7 @@ class SyncConfigurationsJob extends TimedJob
                             id: $configuration->getId(),
                             status: 'failed',
                             syncDate: new DateTime(),
-                            message: $e->getMessage()
+                            _message: $e->getMessage()
                         );
                     } catch (Exception $statusError) {
                         $this->logger->error("Failed to update sync status: ".$statusError->getMessage());

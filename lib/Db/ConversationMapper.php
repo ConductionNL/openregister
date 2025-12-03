@@ -57,13 +57,15 @@ class ConversationMapper extends QBMapper
 
 
     /**
-     * ConversationMapper constructor.
+     * Constructor
      *
-     * @param IDBConnection    $db              Database connection instance
+     * @param IDBConnection    $db              Database connection
      * @param IEventDispatcher $eventDispatcher Event dispatcher
      */
-    public function __construct(IDBConnection $db, IEventDispatcher $eventDispatcher)
-    {
+    public function __construct(
+        IDBConnection $db,
+        IEventDispatcher $eventDispatcher
+    ) {
         parent::__construct($db, 'openregister_conversations', Conversation::class);
         $this->eventDispatcher = $eventDispatcher;
 
@@ -144,6 +146,8 @@ class ConversationMapper extends QBMapper
      * @param Entity $entity The conversation entity to delete
      *
      * @return Conversation The deleted conversation entity
+     *
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function delete(Entity $entity): Conversation
     {
@@ -288,44 +292,6 @@ class ConversationMapper extends QBMapper
 
 
     /**
-     * Find all conversations using a specific agent
-     *
-     * @param int  $agentId        Agent ID
-     * @param bool $includeDeleted Whether to include soft-deleted conversations
-     * @param int  $limit          Maximum number of results
-     * @param int  $offset         Offset for pagination
-     *
-     * @return Conversation[] Array of Conversation entities
-     *
-     * @psalm-return array<Conversation>
-     */
-    public function findByAgent(
-        int $agentId,
-        bool $includeDeleted=false,
-        int $limit=50,
-        int $offset=0
-    ): array {
-        $qb = $this->db->getQueryBuilder();
-
-        $qb->select('*')
-            ->from($this->tableName)
-            ->where($qb->expr()->eq('agent_id', $qb->createNamedParameter($agentId, IQueryBuilder::PARAM_INT)));
-
-        // Exclude soft-deleted conversations unless requested.
-        if ($includeDeleted === false) {
-            $qb->andWhere($qb->expr()->isNull('deleted_at'));
-        }
-
-        $qb->orderBy('updated', 'DESC')
-            ->setMaxResults($limit)
-            ->setFirstResult($offset);
-
-        return $this->findEntities($qb);
-
-    }//end findByAgent()
-
-
-    /**
      * Find conversations by user and agent with matching title pattern
      *
      * Used to check for duplicate conversation names and generate unique titles.
@@ -366,44 +332,6 @@ class ConversationMapper extends QBMapper
         return $titles;
 
     }//end findTitlesByUserAgent()
-
-
-    /**
-     * Find conversations by organisation
-     *
-     * @param int  $organisation   Organisation ID
-     * @param bool $includeDeleted Whether to include soft-deleted conversations
-     * @param int  $limit          Maximum number of results
-     * @param int  $offset         Offset for pagination
-     *
-     * @return Conversation[] Array of Conversation entities
-     *
-     * @psalm-return array<Conversation>
-     */
-    public function findByOrganisation(
-        int $organisation,
-        bool $includeDeleted=false,
-        int $limit=50,
-        int $offset=0
-    ): array {
-        $qb = $this->db->getQueryBuilder();
-
-        $qb->select('*')
-            ->from($this->tableName)
-            ->where($qb->expr()->eq('organisation', $qb->createNamedParameter($organisation, IQueryBuilder::PARAM_INT)));
-
-        // Exclude soft-deleted conversations unless requested.
-        if ($includeDeleted === false) {
-            $qb->andWhere($qb->expr()->isNull('deleted_at'));
-        }
-
-        $qb->orderBy('updated', 'DESC')
-            ->setMaxResults($limit)
-            ->setFirstResult($offset);
-
-        return $this->findEntities($qb);
-
-    }//end findByOrganisation()
 
 
     /**
@@ -487,6 +415,8 @@ class ConversationMapper extends QBMapper
      *
      * @throws DoesNotExistException
      * @throws MultipleObjectsReturnedException
+     *
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function softDelete(int $id): Conversation
     {
@@ -518,36 +448,6 @@ class ConversationMapper extends QBMapper
         return $this->update($conversation);
 
     }//end restore()
-
-
-    /**
-     * Hard delete old soft-deleted conversations
-     *
-     * Permanently removes conversations that have been soft-deleted
-     * for more than the specified number of days.
-     *
-     * @param int $daysOld Number of days old (default: 30)
-     *
-     * @return \OCP\DB\IResult|int Number of conversations deleted
-     */
-    public function cleanupOldDeleted(int $daysOld=30): int|\OCP\DB\IResult
-    {
-        $threshold = new \DateTime("-{$daysOld} days");
-
-        $qb = $this->db->getQueryBuilder();
-
-        $qb->delete($this->tableName)
-            ->where($qb->expr()->isNotNull('deleted_at'))
-            ->andWhere(
-                $qb->expr()->lt(
-                    'deleted_at',
-                    $qb->createNamedParameter($threshold, IQueryBuilder::PARAM_DATE)
-                )
-            );
-
-        return $qb->execute();
-
-    }//end cleanupOldDeleted()
 
 
     /**

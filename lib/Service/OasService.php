@@ -46,32 +46,26 @@ class OasService
      */
     private array $oas = [];
 
+    /**
+     * Register mapper
+     *
+     * @var RegisterMapper
+     */
+    private RegisterMapper $registerMapper;
 
     /**
-     * Constructor for OasService
+     * Schema mapper
      *
-     * @param RegisterMapper  $registerMapper The register mapper for fetching registers
-     * @param SchemaMapper    $schemaMapper   The schema mapper for fetching schemas
-     * @param IURLGenerator   $urlGenerator   The URL generator for creating paths
-     * @param IConfig         $config         The config service for app settings
-     * @param LoggerInterface $logger         The logger interface
-     *
-     * @return void
+     * @var SchemaMapper
      */
-    public function __construct(
-        private readonly RegisterMapper $registerMapper,
-        private readonly SchemaMapper $schemaMapper,
-        private readonly IURLGenerator $urlGenerator
-        /*
-        private readonly IConfig $config,
-        private readonly LoggerInterface $logger
-        */
-    ) {
-        // Initialize the OAS array with the base OAS.
-        $this->oas = $this->getBaseOas();
+    private SchemaMapper $schemaMapper;
 
-    }//end __construct()
-
+    /**
+     * URL generator
+     *
+     * @var IURLGenerator
+     */
+    private IURLGenerator $urlGenerator;
 
     /**
      * Create OpenAPI Specification for register(s)
@@ -127,11 +121,14 @@ class OasService
             }
 
             // Update info while preserving base contact and license.
-            $this->oas['info'] = array_merge($this->oas['info'], [
-                'title'       => $register->getTitle().' API',
-                'version'     => $register->getVersion(),
-                'description' => $description,
-            ]);
+            $this->oas['info'] = array_merge(
+                $this->oas['info'],
+                [
+                    'title'       => $register->getTitle().' API',
+                    'version'     => $register->getVersion(),
+                    'description' => $description,
+                ]
+            );
         }
 
         // Initialize tags array.
@@ -146,8 +143,8 @@ class OasService
             }
 
             // Add schema to components with sanitized name.
-            $schemaDefinition = $this->enrichSchema($schema);
-            $sanitizedSchemaName = $this->sanitizeSchemaName($schemaTitle);
+            $schemaDefinition     = $this->enrichSchema($schema);
+            $sanitizedSchemaName  = $this->sanitizeSchemaName($schemaTitle);
 
             // Validate schema definition before adding.
             if (empty($schemaDefinition) === false && is_array($schemaDefinition) === true) {
@@ -159,7 +156,7 @@ class OasService
                     'description' => $schema->getDescription() ?? 'Operations for '.$schemaTitle,
                 ];
             } else {
-            }
+            }//end if
         }
 
         // Initialize paths array.
@@ -270,6 +267,7 @@ class OasService
     }//end enrichSchema()
 
 
+
     /**
      * Sanitize property definition to be valid OpenAPI schema
      *
@@ -285,7 +283,7 @@ class OasService
         // If it's not an array, convert to basic string type.
         if (is_array($propertyDefinition) === false) {
             return [
-                'type' => 'string',
+                'type'        => 'string',
                 'description' => 'Property value',
             ];
         }
@@ -295,14 +293,40 @@ class OasService
 
         // Standard OpenAPI schema keywords that are allowed.
         $allowedSchemaKeywords = [
-            'type', 'format', 'description', 'example', 'examples',
-            'default', 'enum', 'const', 'multipleOf', 'maximum',
-            'exclusiveMaximum', 'minimum', 'exclusiveMinimum',
-            'maxLength', 'minLength', 'pattern', 'maxItems',
-            'minItems', 'uniqueItems', 'maxProperties', 'minProperties',
-            'required', 'properties', 'items', 'additionalProperties',
-            'allOf', 'anyOf', 'oneOf', 'not', '$ref', 'nullable',
-            'readOnly', 'writeOnly', 'title'
+            'type',
+            'format',
+            'description',
+            'example',
+            'examples',
+            'default',
+            'enum',
+            'const',
+            'multipleOf',
+            'maximum',
+            'exclusiveMaximum',
+            'minimum',
+            'exclusiveMinimum',
+            'maxLength',
+            'minLength',
+            'pattern',
+            'maxItems',
+            'minItems',
+            'uniqueItems',
+            'maxProperties',
+            'minProperties',
+            'required',
+            'properties',
+            'items',
+            'additionalProperties',
+            'allOf',
+            'anyOf',
+            'oneOf',
+            'not',
+            '$ref',
+            'nullable',
+            'readOnly',
+            'writeOnly',
+            'title',
         ];
 
         // Copy only valid OpenAPI schema keywords.
@@ -316,12 +340,12 @@ class OasService
         // oneOf must have at least 1 item, remove if empty.
         if (($cleanDef['oneOf'] ?? null) !== null && (empty($cleanDef['oneOf']) === true || is_array($cleanDef['oneOf']) === false) === true) {
             unset($cleanDef['oneOf']);
-        }
+        }//end if
 
         // anyOf must have at least 1 item, remove if empty.
         if (($cleanDef['anyOf'] ?? null) !== null && (empty($cleanDef['anyOf']) === true || is_array($cleanDef['anyOf']) === false) === true) {
             unset($cleanDef['anyOf']);
-        }
+        }//end if
 
         // allOf must have at least 1 item, remove if empty or invalid.
         if (($cleanDef['allOf'] ?? null) !== null) {
@@ -349,12 +373,12 @@ class OasService
         // $ref must be a non-empty string, remove if empty.
         if (($cleanDef['$ref'] ?? null) !== null && (empty($cleanDef['$ref']) === true || is_string($cleanDef['$ref']) === false) === true) {
             unset($cleanDef['$ref']);
-        }
+        }//end if
 
         // enum must have at least 1 item, remove if empty.
         if (($cleanDef['enum'] ?? null) !== null && (empty($cleanDef['enum']) === true || is_array($cleanDef['enum']) === false) === true) {
             unset($cleanDef['enum']);
-        }
+        }//end if
 
         // Ensure we have at least a type.
         if (isset($cleanDef['type']) === false && isset($cleanDef['$ref']) === false) {
@@ -419,7 +443,7 @@ class OasService
             switch ($endpoint) {
                 case 'audit-trails':
                     $this->oas['paths'][$basePath.'/{id}/audit-trails'] = [
-                        'get'  => $this->createLogsOperation($schema),
+                        'get' => $this->createLogsOperation($schema),
                     ];
                     break;
 
@@ -1265,7 +1289,7 @@ class OasService
                 unset($schema['allOf']);
             } else {
                 $validAllOfItems = [];
-                foreach ($schema['allOf'] as $index => $item) {
+                foreach ($schema['allOf'] as $_index => $item) {
                     if (is_array($item) === false || empty($item) === true) {
                     } else {
                         // Validate each allOf item has required structure.

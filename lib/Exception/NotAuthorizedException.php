@@ -31,23 +31,5 @@ class NotAuthorizedException extends Exception
 {
 
 
-    /**
-     * Constructor for NotAuthorizedException.
-     *
-     * @param string         $message  The error message
-     * @param int            $code     The error code
-     * @param Throwable|null $previous The previous exception
-     *
-     * @return void
-     */
-    public function __construct(
-        string $message='User is not authorized to perform this action',
-        int $code=403,
-        ?Throwable $previous=null
-    ) {
-        parent::__construct($message, $code, $previous);
-
-    }//end __construct()
-
 
 }//end class
