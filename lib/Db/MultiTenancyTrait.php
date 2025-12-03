@@ -85,6 +85,32 @@ trait MultiTenancyTrait
 
 
     /**
+     * Check if published objects should bypass multi-tenancy filtering.
+     *
+     * This checks the app configuration to determine if published entities
+     * (objects, schemas, registers) should bypass organization filtering.
+     *
+     * @return bool True if published bypass is enabled in config, false otherwise
+     */
+    protected function shouldPublishedObjectsBypassMultiTenancy(): bool
+    {
+        if (isset($this->appConfig) === false) {
+            return false; // Default to false if appConfig not available
+        }
+
+        $multitenancyConfig = $this->appConfig->getValueString('openregister', 'multitenancy', '');
+        if (empty($multitenancyConfig) === true) {
+            return false; // Default to false for security
+        }
+
+        $multitenancyData = json_decode($multitenancyConfig, true);
+        $bypassEnabled = $multitenancyData['publishedObjectsBypassMultiTenancy'] ?? false;
+        return $bypassEnabled;
+
+    }//end shouldPublishedObjectsBypassMultiTenancy()
+
+
+    /**
      * Get the current user ID.
      *
      * @return string|null The current user ID or null if no user is logged in
@@ -242,15 +268,20 @@ trait MultiTenancyTrait
             }
 
             // Include published entities if bypass is enabled (works for objects, schemas, registers)
+            // Note: Organizations can see their own depublished items via the organization filter above.
+            // The depublished check here only applies to the published bypass (entities from OTHER organizations).
             if ($publishedBypassEnabled === true && $enablePublished === true) {
                 $now = (new \DateTime())->format('Y-m-d H:i:s');
                 $publishedColumn = $tableAlias ? $tableAlias . '.published' : 'published';
                 $depublishedColumn = $tableAlias ? $tableAlias . '.depublished' : 'depublished';
                 
+                // Published bypass condition: entity must be published AND not depublished
+                // This ensures depublished entities from OTHER organizations are never visible via published bypass
                 $orgConditions->add(
                     $qb->expr()->andX(
                         $qb->expr()->isNotNull($publishedColumn),
                         $qb->expr()->lte($publishedColumn, $qb->createNamedParameter($now)),
+                        // Depublished check: must be NULL (never depublished) OR in the future (not yet depublished)
                         $qb->expr()->orX(
                             $qb->expr()->isNull($depublishedColumn),
                             $qb->expr()->gt($depublishedColumn, $qb->createNamedParameter($now))
@@ -316,6 +347,8 @@ trait MultiTenancyTrait
         $orgConditions = $qb->expr()->orX();
 
         // Include entities from active organisation(s) and parents
+        // IMPORTANT: Users can see their own organization's depublished items
+        // The depublished check only applies to published bypass (other organizations)
         $orgConditions->add(
             $qb->expr()->in($organisationColumn, $qb->createNamedParameter($activeOrganisationUuids, IQueryBuilder::PARAM_STR_ARRAY))
         );
@@ -335,7 +368,13 @@ trait MultiTenancyTrait
         // - Published objects bypass organization filtering (visible from ANY organization)
         // - Published objects do NOT bypass RBAC create/update/delete (still require permissions)
         //
-        // RESULT: Users see ALL published objects from ALL organizations
+        // IMPORTANT: Depublished entities from OTHER organizations are excluded from published bypass.
+        // Organizations can still see their own depublished items via the organization filter above.
+        // The depublished check here only applies to entities accessed via published bypass (from other organizations).
+        //
+        // RESULT: Users see:
+        // - ALL published (but not depublished) objects from ALL organizations (via published bypass)
+        // - ALL objects (including depublished) from their own organization (via organization filter)
         // This is intentional when publishedObjectsBypassMultiTenancy is enabled in config
         //
         // If users report seeing too many objects from other organizations, check:
@@ -347,10 +386,13 @@ trait MultiTenancyTrait
             $publishedColumn = $tableAlias ? $tableAlias . '.published' : 'published';
             $depublishedColumn = $tableAlias ? $tableAlias . '.depublished' : 'depublished';
             
+            // Published bypass condition: entity must be published AND not depublished
+            // This ensures depublished entities from OTHER organizations are never visible via published bypass
             $orgConditions->add(
                 $qb->expr()->andX(
                     $qb->expr()->isNotNull($publishedColumn),
                     $qb->expr()->lte($publishedColumn, $qb->createNamedParameter($now)),
+                    // Depublished check: must be NULL (never depublished) OR in the future (not yet depublished)
                     $qb->expr()->orX(
                         $qb->expr()->isNull($depublishedColumn),
                         $qb->expr()->gt($depublishedColumn, $qb->createNamedParameter($now))
@@ -361,7 +403,7 @@ trait MultiTenancyTrait
             if (isset($this->logger) === true) {
                 $this->logger->warning('[MultiTenancyTrait] Published bypass enabled - users will see published objects from ALL organizations', [
                     'config' => 'publishedObjectsBypassMultiTenancy: true',
-                    'impact' => 'All published objects visible across all organizations',
+                    'impact' => 'All published (but not depublished) objects visible across all organizations',
                     'recommendation' => 'Disable if users should only see objects from their organization'
                 ]);
             }
