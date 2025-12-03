@@ -290,9 +290,16 @@ Applies organisation filtering to a query builder.
 - '$qb': The query builder to modify
 - '$columnName': The column name for organisation (default: 'organisation')
 - '$allowNullOrg': Whether to include entities with null organisation
+- '$tableAlias': Optional table alias for published/depublished columns
+- '$enablePublished': Whether to enable published entity bypass (default: false)
+- '$multiTenancyEnabled': Whether multitenancy is enabled (default: true)
 
 **Behavior:**
-- All users (including admins) see only entities from their active organisation
+- All users (including admins) see entities from their active organisation AND parent organisations
+- Children can see ALL items from parent organisations (including depublished items)
+- Users can see their own organisation's depublished items
+- Published entities can bypass organisation filtering if 'publishedObjectsBypassMultiTenancy' is enabled in config
+- Depublished entities from OTHER organisations are excluded from published bypass
 - Admins must set an active organisation to access data
 
 ### setOrganisationOnCreate()
@@ -375,11 +382,28 @@ try {
 Admins (users in the 'admin' group) have special privileges:
 - **RBAC Bypass**: Admins bypass all RBAC permission checks (create, read, update, delete)
 - **Organisation Access**: Admins can see ALL organisations and set ANY organisation as active
-- **Data Filtering**: Once an admin sets an active organisation, they ONLY see data from that organisation (no bypass)
+- **Data Filtering**: Once an admin sets an active organisation, they see data from that organisation AND its parent organisations
+- **NULL Org Access**: Admins can access entities with NULL organisation (legacy data) if '$allowNullOrg' is true
 
 This ensures admins work within an organisational context while having full permissions within that context.
 
-### 8. Default Organisation
+### 8. Organisation Hierarchy
+
+OpenRegister supports hierarchical organisation structures:
+- **Parent-Child Relationships**: Organisations can have parent organisations
+- **Child Access**: Children can see ALL items from parent organisations (including depublished items)
+- **Own Organisation**: Users can see ALL items from their own organisation (including depublished items)
+- **Published Bypass**: Published (and not depublished) items from ANY organisation are visible if 'publishedObjectsBypassMultiTenancy' is enabled
+
+### 9. Published/Depublished Entities
+
+Entities (objects, schemas, registers) can have 'published' and 'depublished' date fields:
+- **Published Entities**: Can bypass organisation filtering if 'publishedObjectsBypassMultiTenancy' is enabled in config
+- **Depublished Entities**: Are excluded from published bypass (not visible from other organisations)
+- **Own Organisation**: Users can always see depublished items from their own organisation
+- **Parent Organisations**: Children can always see depublished items from parent organisations
+
+### 10. Default Organisation
 
 Users without organisations are automatically added to the default organisation on first access.
 
