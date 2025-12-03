@@ -248,7 +248,7 @@ export default {
 
 			return {
 				options: schemaStore.schemaList
-					.filter(schema => registerStore.registerItem.schemas.includes(schema.id))
+					.filter(schema => registerStore.registerItem.schemas.some(registerSchema => registerSchema.id === schema.id))
 					.map(schema => ({
 						value: schema.id,
 						label: schema.title,

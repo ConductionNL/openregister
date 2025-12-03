@@ -144,6 +144,80 @@ export const useSchemaStore = defineStore('schema', {
 				throw new Error(`Failed to delete schema: ${error.message}`)
 			}
 		},
+		// Publish a schema
+		async publishSchema(schemaId, date = null) {
+			if (!schemaId) {
+				throw new Error('No schema ID provided')
+			}
+
+			console.log('Publishing schema...')
+
+			let endpoint = `/index.php/apps/openregister/api/schemas/${schemaId}/publish`
+			if (date) {
+				endpoint += `?date=${encodeURIComponent(date)}`
+			}
+
+			try {
+				const response = await fetch(endpoint, {
+					method: 'POST',
+				})
+
+				if (!response.ok) {
+					const errorData = await response.json().catch(() => ({}))
+					throw new Error(errorData.error || `HTTP error! status: ${response.status}`)
+				}
+
+				const responseData = await response.json()
+
+				await this.refreshSchemaList()
+				// Update the schema item if it's currently selected
+				if (this.schemaItem && this.schemaItem.id === schemaId) {
+					this.setSchemaItem(responseData)
+				}
+
+				return { response, data: responseData }
+			} catch (error) {
+				console.error('Error publishing schema:', error)
+				throw new Error(`Failed to publish schema: ${error.message}`)
+			}
+		},
+		// Depublish a schema
+		async depublishSchema(schemaId, date = null) {
+			if (!schemaId) {
+				throw new Error('No schema ID provided')
+			}
+
+			console.log('Depublishing schema...')
+
+			let endpoint = `/index.php/apps/openregister/api/schemas/${schemaId}/depublish`
+			if (date) {
+				endpoint += `?date=${encodeURIComponent(date)}`
+			}
+
+			try {
+				const response = await fetch(endpoint, {
+					method: 'POST',
+				})
+
+				if (!response.ok) {
+					const errorData = await response.json().catch(() => ({}))
+					throw new Error(errorData.error || `HTTP error! status: ${response.status}`)
+				}
+
+				const responseData = await response.json()
+
+				await this.refreshSchemaList()
+				// Update the schema item if it's currently selected
+				if (this.schemaItem && this.schemaItem.id === schemaId) {
+					this.setSchemaItem(responseData)
+				}
+
+				return { response, data: responseData }
+			} catch (error) {
+				console.error('Error depublishing schema:', error)
+				throw new Error(`Failed to depublish schema: ${error.message}`)
+			}
+		},
 		// Create or save a schema from store
 		async saveSchema(schemaItem) {
 			if (!schemaItem) {
