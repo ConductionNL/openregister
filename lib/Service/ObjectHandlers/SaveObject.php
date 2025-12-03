@@ -662,20 +662,28 @@ class SaveObject
                             ]
                             );
                 }//end try
-            /** @psalm-suppress ParadoxicalCondition */
-            /** @psalm-suppress TypeDoesNotContainType */
-            } else if (is_array($imageValue) === true && !empty($imageValue) && isset($imageValue['downloadUrl']) === true) {
-                $downloadUrl = $imageValue['downloadUrl'];
-                if (is_string($downloadUrl) === true && trim($downloadUrl) !== '') {
-                    // Single file object - use its downloadUrl.
-                    $entity->setImage($downloadUrl);
-                }
-            /** @psalm-suppress ParadoxicalCondition */
-            /** @psalm-suppress TypeDoesNotContainType */
-            } else if (is_array($imageValue) === true && !empty($imageValue) && isset($imageValue['accessUrl']) === true) {
-                $accessUrl = $imageValue['accessUrl'];
-                if (is_string($accessUrl) === true && trim($accessUrl) !== '') {
-                    $entity->setImage($accessUrl);
+            } else if (is_array($imageValue) === true) {
+                // Check for downloadUrl first (preferred).
+                // Use array_key_exists to safely check and access array keys.
+                // Add type assertion to help Psalm understand this is a non-empty array.
+                /** @var array<string, mixed> $imageValue */
+                if (array_key_exists('downloadUrl', $imageValue) === true) {
+                    $downloadUrlValue = $imageValue['downloadUrl'];
+                    if (is_string($downloadUrlValue) === true) {
+                        $downloadUrl = trim($downloadUrlValue);
+                        if ($downloadUrl !== '') {
+                            // Single file object - use its downloadUrl.
+                            $entity->setImage($downloadUrl);
+                        }
+                    }
+                } else if (array_key_exists('accessUrl', $imageValue) === true) {
+                    $accessUrlValue = $imageValue['accessUrl'];
+                    if (is_string($accessUrlValue) === true) {
+                        $accessUrl = trim($accessUrlValue);
+                        if ($accessUrl !== '') {
+                            $entity->setImage($accessUrl);
+                        }
+                    }
                 }
             } else if (is_string($imageValue) === true && trim($imageValue) !== '') {
                 // Regular string URL.

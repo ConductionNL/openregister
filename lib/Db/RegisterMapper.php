@@ -94,13 +94,6 @@ class RegisterMapper extends QBMapper
 
 
     /**
-     * App configuration for reading multitenancy settings
-     *
-     * @var IAppConfig
-     */
-    private IAppConfig $appConfig;
-
-    /**
      * Organisation service for multi-tenancy (from trait)
      *
      * @var OrganisationService

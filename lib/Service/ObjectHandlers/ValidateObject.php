@@ -963,15 +963,16 @@ class ValidateObject
             if ($schema instanceof Schema) {
                 $schemaObject = $schema->getSchemaObject($this->urlGenerator);
             } else if ($schema !== null) {
-                /** @psalm-suppress TypeDoesNotContainType */
-                /** @psalm-suppress NoValue */
+                // Explicitly handle int and string types separately for better type narrowing.
                 if (is_int($schema) === true) {
                     $schemaObject = $this->schemaMapper->find($schema)->getSchemaObject($this->urlGenerator);
-                /** @psalm-suppress TypeDoesNotContainType */
-                /** @psalm-suppress NoValue */
-                } else if (is_string($schema) === true) { // phpcs:ignore
-                    /** @psalm-suppress TypeDoesNotContainType */
-                    $schemaObject = $this->schemaMapper->find($schema)->getSchemaObject($this->urlGenerator);
+                } else {
+                    // At this point, $schema is string|null (not int, not Schema).
+                    // Since we've already checked !== null, it must be string.
+                    // Use type annotation to help Psalm understand.
+                    /** @var string $schemaString */
+                    $schemaString = $schema;
+                    $schemaObject = $this->schemaMapper->find($schemaString)->getSchemaObject($this->urlGenerator);
                 }
             }
         }
