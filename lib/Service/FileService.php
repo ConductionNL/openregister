@@ -1095,7 +1095,6 @@ class FileService
         }//end try
 
     }//end checkOwnership()
-    }//end checkOwnership()
 
     /**
      * Formats a single Node file into a metadata array.

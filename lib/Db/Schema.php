@@ -161,7 +161,8 @@ class Schema extends Entity implements JsonSerializable
      *
      * @var array|null Facet configuration with field types and options
      */
-    protected ?array $facets = null;
+    /** @var array|string|null */
+    protected $facets = null;
 
     /**
      * Source of the schema
@@ -244,7 +245,8 @@ class Schema extends Entity implements JsonSerializable
      * @phpstan-var array<string, mixed>|null
      * @psalm-var   array<string, mixed>|null
      */
-    protected ?array $configuration = null;
+    /** @var array|string|null */
+    protected $configuration = null;
 
     /**
      * The icon for the schema from Material Design Icons

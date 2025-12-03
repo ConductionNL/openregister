@@ -73,7 +73,7 @@ class SearchController extends Controller
      *
      * @return JSONResponse A JSON response containing the search results
      *
-     * @psalm-return JSONResponse<200, array<array{id: mixed, name: mixed, type: mixed, url: mixed, source: mixed}>, array<never, never>>
+     * @psalm-return JSONResponse<200, array{facets: array<never, never>|mixed, results: array<array{id: mixed|null, name: mixed|'Unknown', source: 'openregister', type: 'object', url: mixed|null}>, total: int|mixed}, array<never, never>>
      */
     public function search(): JSONResponse
     {

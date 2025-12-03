@@ -293,7 +293,7 @@ class ApplicationTool extends AbstractTool implements ToolInterface
      *
      * @param string      $name        Application name
      * @param string|null $description Application description
-     * @param string|null $domain      Application domain/URL
+     * @param string|null $_domain     Application domain/URL (unused, kept for API compatibility)
      *
      * @return array Response with created application
      */
@@ -339,7 +339,7 @@ class ApplicationTool extends AbstractTool implements ToolInterface
      * @param string      $uuid        Application UUID
      * @param string|null $name        New name
      * @param string|null $description New description
-     * @param string|null $domain      New domain
+     * @param string|null $_domain     New domain (unused, kept for API compatibility)
      *
      * @return array Response with updated application
      */

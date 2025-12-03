@@ -87,8 +87,10 @@ class UploadService
 
         if (empty($data['file']) === false) {
             // @todo use .json file content from POST as $json.
-            //
-            return $this->getJSONfromFile();
+            // Method always throws, so this is unreachable but kept for API compatibility.
+            $this->getJSONfromFile();
+            // This line is never reached as getJSONfromFile() always throws.
+            return [];
         }
 
         if (empty($data['url']) === false) {

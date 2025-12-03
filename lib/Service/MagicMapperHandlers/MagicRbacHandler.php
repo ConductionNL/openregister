@@ -97,16 +97,13 @@ class MagicRbacHandler
     {
         $authorization = $schema->getAuthorization();
 
-        if (empty($authorization) === true || $authorization === '{}') {
+        if (empty($authorization) === true) {
             // No authorization - public access allowed.
             return;
         }
 
-        if (is_string($authorization) === true) {
-            $authConfig = json_decode($authorization, true);
-        } else {
-            $authConfig = $authorization;
-        }
+        // Authorization is always an array from getAuthorization().
+        $authConfig = $authorization;
 
         if (is_array($authConfig) === false) {
             // Invalid config - no automatic access, use explicit published filter.

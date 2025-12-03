@@ -326,70 +326,66 @@ class FilesController extends Controller
 
             // Normalize single file upload to array structure.
             // $_FILES can have 'name' as string (single file) or array (multiple files).
-            /*
-             * @var string|array<int, string>|null $fileName
-             */
+            /** @var string|array<int, string>|null $fileName */
             $fileName = $files['name'] ?? null;
-            if ($fileName !== null) {
-                // $fileName can be string or array from $_FILES.
-                if (!is_array($fileName)) {
-                    // Single file upload.
-                    $tags = $data['tags'] ?? '';
+            if ($fileName !== null && is_array($fileName) === false) {
+                // Single file upload - $fileName is a string.
+                $tags = $data['tags'] ?? '';
+                if (is_array($tags) === false) {
+                    $tags = explode(',', $tags);
+                }
+
+                $typeValue    = $files['type'] ?? '';
+                $tmpNameValue = $files['tmp_name'] ?? '';
+                $errorValue   = $files['error'] ?? UPLOAD_ERR_NO_FILE;
+                $sizeValue    = $files['size'] ?? 0;
+
+                $uploadedFiles[] = [
+                    'name'     => $fileName,
+                    'type'     => $typeValue,
+                    'tmp_name' => $tmpNameValue,
+                    'error'    => $errorValue,
+                    'size'     => $sizeValue,
+                    'share'    => $data['share'] === 'true',
+                    'tags'     => $tags,
+                ];
+            } else if (is_array($fileName)) {
+                // Multiple file upload - $fileName is an array.
+                // Loop through each file using the count of 'name'.
+                for ($i = 0; $i < count($fileName); $i++) {
+                    $tags = $data['tags'][$i] ?? '';
                     if (is_array($tags) === false) {
                         $tags = explode(',', $tags);
                     }
 
-                    $typeValue    = $files['type'] ?? '';
-                    $tmpNameValue = $files['tmp_name'] ?? '';
-                    $errorValue   = $files['error'] ?? UPLOAD_ERR_NO_FILE;
-                    $sizeValue    = $files['size'] ?? 0;
+                    /*
+                     * @var array<int, string>|null $typeArray
+                     * @var array<int, string>|null $tmpNameArray
+                     * @var array<int, int>|null $errorArray
+                     * @var array<int, int>|null $sizeArray
+                     */
+                    $typeArray    = is_array($files['type'] ?? null) ? $files['type'] : null;
+                    $tmpNameArray = is_array($files['tmp_name'] ?? null) ? $files['tmp_name'] : null;
+                    // Get error and size arrays, handling both single values and arrays.
+                    /** @var int|array<int, int>|null $errorValue */
+                    $errorValue = $files['error'] ?? null;
+                    /** @var int|array<int, int>|null $sizeValue */
+                    $sizeValue  = $files['size'] ?? null;
+                    /** @var array<int, int>|null $errorArray */
+                    $errorArray = is_array($errorValue) ? $errorValue : null;
+                    /** @var array<int, int>|null $sizeArray */
+                    $sizeArray  = is_array($sizeValue) ? $sizeValue : null;
 
                     $uploadedFiles[] = [
-                        'name'     => $fileName,
-                        'type'     => $typeValue,
-                        'tmp_name' => $tmpNameValue,
-                        'error'    => $errorValue,
-                        'size'     => $sizeValue,
+                        'name'     => $fileName[$i] ?? '',
+                        'type'     => ($typeArray !== null && isset($typeArray[$i])) ? $typeArray[$i] : '',
+                        'tmp_name' => ($tmpNameArray !== null && isset($tmpNameArray[$i])) ? $tmpNameArray[$i] : '',
+                        'error'    => ($errorArray !== null && isset($errorArray[$i])) ? $errorArray[$i] : (is_int($errorValue) ? $errorValue : UPLOAD_ERR_NO_FILE),
+                        'size'     => ($sizeArray !== null && isset($sizeArray[$i])) ? $sizeArray[$i] : (is_int($sizeValue) ? $sizeValue : 0),
                         'share'    => $data['share'] === 'true',
                         'tags'     => $tags,
                     ];
-                } else {
-                    // Multiple file upload.
-                    // Loop through each file using the count of 'name'.
-                    for ($i = 0; $i < count($fileName); $i++) {
-                        $tags = $data['tags'][$i] ?? '';
-                        if (is_array($tags) === false) {
-                            $tags = explode(',', $tags);
-                        }
-
-                        /*
-                         * @var array<int, string>|null $typeArray
-                         * @var array<int, string>|null $tmpNameArray
-                         * @var array<int, int>|null $errorArray
-                         * @var array<int, int>|null $sizeArray
-                         */
-                        $typeArray    = is_array($files['type'] ?? null) ? $files['type'] : null;
-                        $tmpNameArray = is_array($files['tmp_name'] ?? null) ? $files['tmp_name'] : null;
-                        /*
-                         * @var array<int, int>|null $errorArray
-                         */
-                        $errorArray = is_array($files['error'] ?? null) ? $files['error'] : null;
-                        /*
-                         * @var array<int, int>|null $sizeArray
-                         */
-                        $sizeArray = is_array($files['size'] ?? null) ? $files['size'] : null;
-
-                        $uploadedFiles[] = [
-                            'name'     => $fileName[$i] ?? '',
-                            'type'     => ($typeArray !== null && isset($typeArray[$i])) ? $typeArray[$i] : '',
-                            'tmp_name' => ($tmpNameArray !== null && isset($tmpNameArray[$i])) ? $tmpNameArray[$i] : '',
-                            'error'    => (is_array($errorArray) && isset($errorArray[$i])) ? $errorArray[$i] : UPLOAD_ERR_NO_FILE,
-                            'size'     => (is_array($sizeArray) && isset($sizeArray[$i])) ? $sizeArray[$i] : 0,
-                            'share'    => $data['share'] === 'true',
-                            'tags'     => $tags,
-                        ];
-                    }//end for
-                }//end if
+                }//end for
             }//end if
 
             // Get the uploaded file from the request if a single file hase been uploaded.

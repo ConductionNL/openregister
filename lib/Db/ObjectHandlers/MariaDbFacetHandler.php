@@ -1471,6 +1471,11 @@ class MariaDbFacetHandler
             // Check if all types are simple (string, integer, float, boolean, numeric_string, date).
             $simpleTypes = ['string', 'integer', 'float', 'boolean', 'numeric_string', 'date'];
 
+            // If types array is empty, consider it valid (no types to check).
+            if (empty($types) === true) {
+                return true;
+            }
+
             foreach (array_keys($types) as $type) {
                 if (in_array($type, $simpleTypes, true) === false) {
                     return false;

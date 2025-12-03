@@ -1268,20 +1268,24 @@ class ObjectService
         // Add register and schema to @self if provided.
         // Support both single values and arrays for multi-register/schema filtering.
         if ($register !== null) { // phpcs:ignore
-            if (is_array($register) === true) {
+            /** @var int|string|array $registerValue */
+            $registerValue = $register;
+            if (is_array($registerValue) === true) {
                 // Convert array values to integers.
-                $query['@self']['register'] = array_map('intval', $register);
+                $query['@self']['register'] = array_map('intval', $registerValue);
             } else {
-                $query['@self']['register'] = (int) $register;
+                $query['@self']['register'] = (int) $registerValue;
             }
         }
 
         if ($schema !== null) { // phpcs:ignore
-            if (is_array($schema) === true) {
+            /** @var int|string|array $schemaValue */
+            $schemaValue = $schema;
+            if (is_array($schemaValue) === true) {
                 // Convert array values to integers.
-                $query['@self']['schema'] = array_map('intval', $schema);
+                $query['@self']['schema'] = array_map('intval', $schemaValue);
             } else {
-                $query['@self']['schema'] = (int) $schema;
+                $query['@self']['schema'] = (int) $schemaValue;
             }
         }
 
@@ -4047,7 +4051,7 @@ class ObjectService
                 uuid: null,
             // Let it generate a new UUID.
                 folderId: null,
-                rbac: true,
+                _rbac: true,
             // Use default RBAC for internal cascading operations.
                 multi: true
             // Use default multitenancy for internal cascading operations.
@@ -5431,8 +5435,8 @@ class ObjectService
         }
 
         // **ULTRA-SELECTIVE LOADING**: Load only absolutely essential fields for 500ms target.
-        // ObjectEntityMapper extends QBMapper which has $this->db property.
-        $qb = $this->objectEntityMapper->db->getQueryBuilder();
+        // Use public method to get query builder from ObjectEntityMapper.
+        $qb = $this->objectEntityMapper->getQueryBuilder();
 
         $qb->select(
             'o.id',
@@ -5647,9 +5651,9 @@ class ObjectService
 
         // No specific schema filter - get all schemas (for global facetable discovery).
         // **PERFORMANCE OPTIMIZATION**: Cache all schemas when doing global queries.
-        return $this->getCachedEntities(entityType: 'schema', ids: 'all', fallbackFunc: function($ids) {
+        return $this->getCachedEntities(entityType: 'schema', ids: 'all', fallbackFunc: function($_ids) {
             // **TYPE SAFETY**: Convert 'all' to proper null limit for SchemaMapper::findAll().
-// null = no limit (get all).
+            // null = no limit (get all).
         });
 
     }//end getSchemasForQuery()

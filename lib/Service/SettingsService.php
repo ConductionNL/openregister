@@ -1198,7 +1198,7 @@ class SettingsService
     /**
      * Clear object cache service
      *
-     * @param string|null $userId Specific user ID
+     * @param string|null $_userId Specific user ID (unused, kept for API compatibility)
      *
      * @return array Clear operation results
      */
@@ -1353,7 +1353,7 @@ class SettingsService
     /**
      * Clear schema cache service
      *
-     * @param string|null $userId Specific user ID
+     * @param string|null $_userId Specific user ID (unused, kept for API compatibility)
      *
      * @return array Clear operation results
      */
@@ -1365,8 +1365,8 @@ class SettingsService
             $afterStats = $this->schemaCacheService->getCacheStatistics();
 
             // Stats arrays may contain 'entries' key even if not in type definition.
-            $beforeEntries = (is_array($beforeStats) && array_key_exists('entries', $beforeStats)) ? $beforeStats['entries'] : 0;
-            $afterEntries  = (is_array($afterStats) && array_key_exists('entries', $afterStats)) ? $afterStats['entries'] : 0;
+            $beforeEntries = array_key_exists('entries', $beforeStats) ? $beforeStats['entries'] : 0;
+            $afterEntries  = array_key_exists('entries', $afterStats) ? $afterStats['entries'] : 0;
             return [
                 'service' => 'schema',
                 'cleared' => $beforeEntries - $afterEntries,
@@ -1389,7 +1389,7 @@ class SettingsService
     /**
      * Clear facet cache service
      *
-     * @param string|null $userId Specific user ID
+     * @param string|null $_userId Specific user ID (unused, kept for API compatibility)
      *
      * @return array Clear operation results
      */
@@ -1513,8 +1513,10 @@ class SettingsService
      * This method is kept for backward compatibility but should not be used.
      * The controller now uses GuzzleSolrService directly to avoid circular dependencies.
      *
-     * @param  int $batchSize  Number of objects to process per batch (default 1000, parameter kept for API compatibility)
-     * @param  int $maxObjects Maximum number of objects to index (0 = all)
+     * @param  int $_batchSize  Number of objects to process per batch (unused, kept for API compatibility)
+     * @param  int $maxObjects Maximum number of objects to index (unused, kept for API compatibility)
+     * @param  string $mode Processing mode (unused, kept for API compatibility)
+     * @param  bool $collectErrors Whether to collect errors (unused, kept for API compatibility)
      * @return array Warmup operation results with statistics and status
      * @throws \RuntimeException Always throws exception indicating method is deprecated
      */
@@ -1839,7 +1841,7 @@ class SettingsService
                 'fileCollection'    => $solrData['fileCollection'] ?? null,
             ];
 
-            $this->config->setValueString($this->appName, 'solr', json_encode($solrConfig));
+            $this->config->setAppValue($this->appName, 'solr', json_encode($solrConfig));
             return $solrConfig;
         } catch (Exception $e) {
             throw new \RuntimeException('Failed to update SOLR settings: '.$e->getMessage());
@@ -2051,7 +2053,7 @@ class SettingsService
                 'adminOverride'       => $rbacData['adminOverride'] ?? true,
             ];
 
-            $this->config->setValueString($this->appName, 'rbac', json_encode($rbacConfig));
+            $this->config->setAppValue($this->appName, 'rbac', json_encode($rbacConfig));
 
             return [
                 'rbac'            => $rbacConfig,
@@ -2261,7 +2263,7 @@ class SettingsService
                 'adminOverride'                      => $multitenancyData['adminOverride'] ?? true,
             ];
 
-            $this->config->setValueString($this->appName, 'multitenancy', json_encode($multitenancyConfig));
+            $this->config->setAppValue($this->appName, 'multitenancy', json_encode($multitenancyConfig));
 
             return [
                 'multitenancy'     => $multitenancyConfig,
@@ -2650,7 +2652,7 @@ class SettingsService
                 'searchTrailsEnabled'    => $retentionData['searchTrailsEnabled'] ?? true,
             ];
 
-            $this->config->setValueString($this->appName, 'retention', json_encode($retentionConfig));
+            $this->config->setAppValue($this->appName, 'retention', json_encode($retentionConfig));
             return $retentionConfig;
         } catch (Exception $e) {
             throw new \RuntimeException('Failed to update Retention settings: '.$e->getMessage());

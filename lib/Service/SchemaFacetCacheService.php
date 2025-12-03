@@ -592,8 +592,8 @@ class SchemaFacetCacheService
     /**
      * Determine appropriate facet types for a property
      *
-     * @param string $type   Property type
-     * @param string $format Property format
+     * @param string $type    Property type
+     * @param string $_format Property format (unused, kept for API compatibility)
      *
      * @return string[] Array of supported facet types
      *

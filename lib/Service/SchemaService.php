@@ -318,7 +318,7 @@ class SchemaService
         // Date-Time formats.
         if (preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/', $value) === 1) {
             $parsed = DateTime::createFromFormat(DATE_ISO8601, $value);
-            if ($parsed !== false && $parsed !== false) {
+            if ($parsed !== false) {
                 return 'date-time';
             }
         }

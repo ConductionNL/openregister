@@ -196,9 +196,20 @@ class ObjectEntityMapper extends QBMapper
         $this->organisationService = $organisationService;
         $this->authorizationExceptionService = $authorizationExceptionService;
 
-// Try to get max_allowed_packet from database configuration.
+        // Try to get max_allowed_packet from database configuration.
         $this->initializeMaxPacketSize();
     }//end __construct()
+
+
+    /**
+     * Get query builder instance
+     *
+     * @return IQueryBuilder Query builder instance
+     */
+    public function getQueryBuilder(): IQueryBuilder
+    {
+        return $this->db->getQueryBuilder();
+    }//end getQueryBuilder()
 
 
     /**
@@ -358,7 +369,8 @@ class ObjectEntityMapper extends QBMapper
                 'action'    => $action,
                 'exception' => $e->getMessage(),
             ]);
-// Fall back to normal RBAC on error.
+            // Fall back to normal RBAC on error.
+            return null;
         }
 
     }//end applyAuthorizationExceptions()
@@ -1359,7 +1371,7 @@ class ObjectEntityMapper extends QBMapper
             $this->logger->info('🏢 ORG FILTERING COMPLETED', [
                 'orgTime' => $perfTimings['org_filtering'] . 'ms',
                 'multiEnabled' => $multi,
-                'hasActiveOrg' => $activeOrganisationUuid === true ? 'yes' : 'no'
+                'hasActiveOrg' => $activeOrganisationUuid !== null ? 'yes' : 'no'
             ]);
         }
 
@@ -1660,8 +1672,8 @@ class ObjectEntityMapper extends QBMapper
         string $tableAlias = '',
         bool $bypassPublishedFilter = false
     ): void {
-// By default, only include objects where 'deleted' is NULL unless $includeDeleted is true.
-        $deletedColumn = $tableAlias === true ? $tableAlias . '.deleted' : 'deleted';
+        // By default, only include objects where 'deleted' is NULL unless $includeDeleted is true.
+        $deletedColumn = $tableAlias !== '' ? $tableAlias . '.deleted' : 'deleted';
         if ($includeDeleted === false) {
             $queryBuilder->andWhere($queryBuilder->expr()->isNull($deletedColumn));
         }
@@ -1674,8 +1686,8 @@ class ObjectEntityMapper extends QBMapper
         // Published objects from other organizations won't be visible (they don't pass org filter)
         if ($published === true && !$bypassPublishedFilter) {
             $now = (new \DateTime())->format('Y-m-d H:i:s');
-            $publishedColumn = $tableAlias === true ? $tableAlias . '.published' : 'published';
-            $depublishedColumn = $tableAlias === true ? $tableAlias . '.depublished' : 'depublished';
+            $publishedColumn = $tableAlias !== '' ? $tableAlias . '.published' : 'published';
+            $depublishedColumn = $tableAlias !== '' ? $tableAlias . '.depublished' : 'depublished';
             $queryBuilder->andWhere(
                 $queryBuilder->expr()->andX(
                     $queryBuilder->expr()->isNotNull($publishedColumn),
@@ -1690,7 +1702,7 @@ class ObjectEntityMapper extends QBMapper
 
 // Add register filter if provided.
         if ($register !== null) {
-            $registerColumn = $tableAlias === true ? $tableAlias . '.register' : 'register';
+            $registerColumn = !empty($tableAlias) ? $tableAlias . '.register' : 'register';
             if (is_array($register) === true) {
 // Handle array of register IDs.
                 $queryBuilder->andWhere(
@@ -1711,7 +1723,7 @@ class ObjectEntityMapper extends QBMapper
 
 // Add schema filter if provided.
         if ($schema !== null) {
-            $schemaColumn = $tableAlias === true ? $tableAlias . '.schema' : 'schema';
+            $schemaColumn = !empty($tableAlias) ? $tableAlias . '.schema' : 'schema';
             if (is_array($schema) === true) {
 // Handle array of schema IDs.
                 $queryBuilder->andWhere(
@@ -1746,7 +1758,7 @@ class ObjectEntityMapper extends QBMapper
      * @psalm-param   mixed $value
      * @psalm-param   string $type
      *
-     * @return Register|Schema|array|null The processed value
+     * @return Register|Schema|array<int|string>|int|string|null The processed value
      */
     private function processRegisterSchemaValue(mixed $value, string $_type): mixed
     {
@@ -2941,6 +2953,8 @@ class ObjectEntityMapper extends QBMapper
             $objectCount++;
         }
 
+        // Safety check: $objectCount should always be > 0 here since $sampleObjects is not empty.
+        // @psalm-suppress TypeDoesNotContainType
         if ($objectCount === 0) {
             return $baseChunkSize;
         }
@@ -3022,7 +3036,8 @@ class ObjectEntityMapper extends QBMapper
             return $size;
         }
 
-// Default estimate for unknown types.
+        // Default estimate for unknown types.
+        return 0;
     }//end estimateObjectSize()
 
     /**
@@ -3391,7 +3406,7 @@ class ObjectEntityMapper extends QBMapper
      * @phpstan-param  array<int, ObjectEntity> $updateObjects
      * @psalm-param    array<int, ObjectEntity> $updateObjects
      * @phpstan-return array<int, string>
-     * @psalm-return   array<int, string>
+     * @psalm-return   list<string>
      */
     private function bulkUpdate(array $updateObjects): array
     {
@@ -3399,7 +3414,7 @@ class ObjectEntityMapper extends QBMapper
             return [];
         }
 
-// Use the proper table name method to avoid prefix issues @todo: make dynamic.
+        // Use the proper table name method to avoid prefix issues @todo: make dynamic.
         $tableName = 'openregister_objects';
         $updatedIds = [];
 
@@ -3407,34 +3422,39 @@ class ObjectEntityMapper extends QBMapper
         foreach ($updateObjects as $object) {
             $dbId = $object->getId();
             if ($dbId === null) {
-// Skip objects without database ID.
+                // Skip objects without database ID.
+                continue;
             }
 
-// Get all column names from the object.
+            // Get all column names from the object.
             $columns = $this->getEntityColumns($object);
 
-// Build UPDATE statement for this object.
+            // Build UPDATE statement for this object.
             $qb = $this->db->getQueryBuilder();
             $qb->update($tableName);
 
-// Set values for each column.
+            // Set values for each column.
             foreach ($columns as $column) {
                 if ($column === 'id') {
-// Skip primary key.
+                    // Skip primary key.
+                    continue;
                 }
 
                 $value = $this->getEntityValue($object, $column);
                 $qb->set($column, $qb->createNamedParameter($value));
             }
 
-// Add WHERE clause for this specific ID.
+            // Add WHERE clause for this specific ID.
             $qb->where($qb->expr()->eq('id', $qb->createNamedParameter($dbId)));
 
-// Execute the update for this object.
+            // Execute the update for this object.
             $qb->executeStatement();
 
-// Collect UUID for return (findAll() accepts UUIDs).
-            $updatedIds[] = $object->getUuid();
+            // Collect UUID for return (findAll() accepts UUIDs).
+            $uuid = $object->getUuid();
+            if ($uuid !== null) {
+                $updatedIds[] = $uuid;
+            }
         }
 
         return $updatedIds;

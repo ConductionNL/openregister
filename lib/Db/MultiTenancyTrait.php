@@ -583,7 +583,7 @@ trait MultiTenancyTrait
 
         // Check if user is in the organisation's users list.
         $orgUsers = $activeOrg->getUserIds();
-        if (is_array($orgUsers) === true && in_array($userId, $orgUsers) === true) {
+        if (in_array($userId, $orgUsers) === true) {
             // User is explicitly listed in the organisation - check authorization
         } else {
             // User is not in the organisation.
