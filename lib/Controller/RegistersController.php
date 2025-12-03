@@ -211,14 +211,7 @@ class RegistersController extends Controller
                     $expandedSchemas = [];
                     foreach ($register['schemas'] as $schemaId) {
                         try {
-                            // TODO: Quickfix - bypass organization filter for schema expansion in registers
-                            // This is a temporary measure to ensure schemas linked to registers are always found.
-                            // A more robust solution might involve explicit permissions for linked entities
-                            // or ensuring schemas are published if they are meant to be globally accessible.
-                            // The register itself has already passed organization/RBAC checks, so linked schemas
-                            // should be accessible for expansion purposes.
-                            // Use $multi=false to bypass organization filter since register already validated
-                            $schema = $this->schemaMapper->find($schemaId, [], null, true, false);
+                            $schema = $this->schemaMapper->find($schemaId);
                             $expandedSchemas[] = $schema->jsonSerialize();
                         } catch (DoesNotExistException $e) {
                             // Schema not found, skip it
