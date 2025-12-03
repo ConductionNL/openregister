@@ -131,7 +131,7 @@ import { schemaStore, navigationStore, configurationStore } from '../../store/st
 										close-after-click
 										@click="publishSchema(schema)">
 										<template #icon>
-											<ArrowUp :size="20" />
+											<Publish :size="20" />
 										</template>
 										Publish
 									</NcActionButton>
@@ -140,7 +140,7 @@ import { schemaStore, navigationStore, configurationStore } from '../../store/st
 										close-after-click
 										@click="depublishSchema(schema)">
 										<template #icon>
-											<ArrowDown :size="20" />
+											<PublishOff :size="20" />
 										</template>
 										Depublish
 									</NcActionButton>
@@ -282,7 +282,7 @@ import { schemaStore, navigationStore, configurationStore } from '../../store/st
 												close-after-click
 												@click="publishSchema(schema)">
 												<template #icon>
-													<ArrowUp :size="20" />
+													<Publish :size="20" />
 												</template>
 												Publish
 											</NcActionButton>
@@ -291,7 +291,7 @@ import { schemaStore, navigationStore, configurationStore } from '../../store/st
 												close-after-click
 												@click="depublishSchema(schema)">
 												<template #icon>
-													<ArrowDown :size="20" />
+													<PublishOff :size="20" />
 												</template>
 												Depublish
 											</NcActionButton>
@@ -338,8 +338,8 @@ import Plus from 'vue-material-design-icons/Plus.vue'
 import ChevronDown from 'vue-material-design-icons/ChevronDown.vue'
 import ChevronUp from 'vue-material-design-icons/ChevronUp.vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
-import ArrowUp from 'vue-material-design-icons/ArrowUp.vue'
-import ArrowDown from 'vue-material-design-icons/ArrowDown.vue'
+import Publish from 'vue-material-design-icons/Publish.vue'
+import PublishOff from 'vue-material-design-icons/PublishOff.vue'
 
 import PaginationComponent from '../../components/PaginationComponent.vue'
 import { showError, showSuccess } from '@nextcloud/dialogs'
@@ -362,8 +362,8 @@ export default {
 		ChevronDown,
 		ChevronUp,
 		CogOutline,
-		ArrowUp,
-		ArrowDown,
+		Publish,
+		PublishOff,
 		PaginationComponent,
 	},
 	data() {
