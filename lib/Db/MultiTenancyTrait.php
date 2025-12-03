@@ -94,12 +94,12 @@ trait MultiTenancyTrait
      */
     protected function shouldPublishedObjectsBypassMultiTenancy(): bool
     {
-        if (!isset($this->appConfig)) {
+        if (isset($this->appConfig) === false) {
             return false; // Default to false if appConfig not available
         }
 
         $multitenancyConfig = $this->appConfig->getValueString('openregister', 'multitenancy', '');
-        if (empty($multitenancyConfig)) {
+        if (empty($multitenancyConfig) === true) {
             return false; // Default to false for security
         }
 
@@ -239,7 +239,7 @@ trait MultiTenancyTrait
         }
         
         // CASE 1: No active organisation set
-        if (empty($activeOrganisationUuids)) {
+        if (empty($activeOrganisationUuids) === true) {
             // Build conditions for users without active organisation
             $orgConditions = $qb->expr()->orX();
 
@@ -530,7 +530,7 @@ trait MultiTenancyTrait
     protected function hasRbacPermission(string $action, string $entityType): bool
     {
         // Admins always have all permissions
-        if ($this->isCurrentUserAdmin()) {
+        if ($this->isCurrentUserAdmin() === true) {
             return true;
         }
 
@@ -631,7 +631,7 @@ trait MultiTenancyTrait
      */
     protected function verifyRbacPermission(string $action, string $entityType): void
     {
-        if (!$this->hasRbacPermission($action, $entityType)) {
+        if ($this->hasRbacPermission($action, $entityType) === false) {
             throw new \Exception(
                 "Access denied: You do not have permission to {$action} {$entityType} entities.",
                 Response::HTTP_FORBIDDEN
