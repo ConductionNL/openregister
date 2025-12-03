@@ -108,6 +108,8 @@ import EditAgent from './agent/EditAgent.vue'
 import DeleteAgent from './agent/DeleteAgent.vue'
 import EditWebhook from './webhook/EditWebhook.vue'
 import ViewWebhookLog from './webhook/ViewWebhookLog.vue'
+import EditEndpoint from './endpoint/EditEndpoint.vue'
+import DeleteEndpoint from './endpoint/DeleteEndpoint.vue'
 export default {
 	name: 'Modals',
 	components: {

@@ -37,9 +37,8 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 						</tr>
 					</thead>
 					<tbody>
-						<!-- eslint-disable-next-line vue/no-v-for-template-key -->
-						<template v-for="(sheetSummary, sheetKey) in importResults" :key="sheetKey">
-							<tr>
+						<template v-for="(sheetSummary, sheetKey) in importResults">
+							<tr :key="sheetKey">
 								<td class="sheetName">
 									{{ sheetKey }}
 									<div v-if="sheetSummary.schema" class="schemaInfo">
@@ -147,7 +146,6 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 								</td>
 							</tr>
 						</template>
-						<!-- eslint-enable vue/no-v-for-template-key -->
 					</tbody>
 				</table>
 			</div>

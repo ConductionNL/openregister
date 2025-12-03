@@ -22,7 +22,7 @@ import { endpointStore, navigationStore } from '../../store/store.js'
 				<NcTextField
 					:value.sync="endpointStore.endpointItem.endpoint"
 					label="Endpoint Path*"
-					placeholder="/api/example/{{id}}"
+					:placeholder="endpointPlaceholder"
 					required
 					maxlength="255" />
 				<NcSelect
@@ -99,6 +99,7 @@ export default {
 		return {
 			methodOptions: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS', 'HEAD'],
 			targetTypeOptions: ['view', 'agent', 'webhook', 'register', 'schema'],
+			endpointPlaceholder: '/api/example/{{id}}',
 		}
 	},
 	methods: {
