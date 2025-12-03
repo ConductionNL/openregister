@@ -30,6 +30,7 @@ use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 use OCP\IGroupManager;
 use OCP\IUserSession;
+use OCP\IAppConfig;
 use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 
@@ -72,6 +73,13 @@ class RegisterMapper extends QBMapper
      */
     private FileService $fileService;
 
+    /**
+     * App configuration for reading multitenancy settings
+     *
+     * @var IAppConfig
+     */
+    private IAppConfig $appConfig;
+
 
     /**
      * Constructor for RegisterMapper
@@ -83,6 +91,7 @@ class RegisterMapper extends QBMapper
      * @param OrganisationService  $organisationService The organisation service (for multi-tenancy)
      * @param IUserSession         $userSession         The user session (for multi-tenancy)
      * @param IGroupManager        $groupManager        The group manager (for RBAC)
+     * @param IAppConfig           $appConfig           App configuration for multitenancy settings
      *
      * @return void
      */
@@ -93,7 +102,8 @@ class RegisterMapper extends QBMapper
         ObjectEntityMapper $objectEntityMapper,
         OrganisationService $organisationService,
         IUserSession $userSession,
-        IGroupManager $groupManager
+        IGroupManager $groupManager,
+        IAppConfig $appConfig
     ) {
         parent::__construct($db, 'openregister_registers');
         $this->schemaMapper       = $schemaMapper;
@@ -104,6 +114,7 @@ class RegisterMapper extends QBMapper
         $this->organisationService = $organisationService;
         $this->userSession         = $userSession;
         $this->groupManager        = $groupManager;
+        $this->appConfig           = $appConfig;
 
     }//end __construct()
 
@@ -113,17 +124,23 @@ class RegisterMapper extends QBMapper
      *
      * Includes RBAC and organisation filtering for multi-tenancy.
      *
-     * @param int|string $id     The ID of the register to find
-     * @param array      $extend Optional array of extensions (e.g., ['@self.stats'])
+     * @param int|string $id        The ID of the register to find
+     * @param array      $extend    Optional array of extensions (e.g., ['@self.stats'])
+     * @param bool|null  $published Whether to enable published bypass (default: null = check config)
+     * @param bool       $rbac      Whether to apply RBAC permission checks (default: true)
+     * @param bool       $multi     Whether to apply multi-tenancy filtering (default: true)
      *
      * @return Register The found register, possibly with stats
      *
      * @throws \Exception If RBAC permission check fails
      */
-    public function find(string | int $id, ?array $extend=[]): Register
+    public function find(string | int $id, ?array $extend=[], ?bool $published = null, bool $rbac = true, bool $multi = true): Register
     {
-        // Verify RBAC permission to read registers @todo: remove this hotfix for solr
-        //$this->verifyRbacPermission('read', 'register');
+        // Verify RBAC permission to read registers if RBAC is enabled
+        if ($rbac === true) {
+            // @todo: remove this hotfix for solr - uncomment when ready
+            //$this->verifyRbacPermission('read', 'register');
+        }
 
         $qb = $this->db->getQueryBuilder();
         $qb->select('*')
@@ -138,13 +155,16 @@ class RegisterMapper extends QBMapper
         
         // Apply organisation filter with published entity bypass support
         // Published registers can bypass multi-tenancy restrictions if configured
+        // applyOrganisationFilter handles $multiTenancyEnabled=false internally
+        // Use $published parameter if provided, otherwise check config
+        $enablePublished = $published !== null ? $published : $this->shouldPublishedObjectsBypassMultiTenancy();
         $this->applyOrganisationFilter(
             qb: $qb,
             columnName: 'organisation',
             allowNullOrg: true,
             tableAlias: '',
-            enablePublished: true,
-            multiTenancyEnabled: true
+            enablePublished: $enablePublished,
+            multiTenancyEnabled: $multi
         );
         
         // Just return the entity; do not attach stats here
@@ -154,24 +174,26 @@ class RegisterMapper extends QBMapper
 
 
     /**
-     * Finds multiple schemas by id
+     * Finds multiple registers by id
      *
-     * @param array $ids The ids of the schemas
+     * @param array $ids  The ids of the registers
+     * @param bool  $rbac Whether to apply RBAC permission checks (default: true)
+     * @param bool  $multi Whether to apply multi-tenancy filtering (default: true)
      *
-     * @throws \OCP\AppFramework\Db\DoesNotExistException If a schema does not exist
-     * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple schemas are found
+     * @throws \OCP\AppFramework\Db\DoesNotExistException If a register does not exist
+     * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple registers are found
      * @throws \OCP\DB\Exception If a database error occurs
      *
      * @todo: refactor this into find all
      *
-     * @return array The schemas
+     * @return array The registers
      */
-    public function findMultiple(array $ids): array
+    public function findMultiple(array $ids, ?bool $published = null, bool $rbac = true, bool $multi = true): array
     {
         $result = [];
         foreach ($ids as $id) {
             try {
-                $result[] = $this->find($id);
+                $result[] = $this->find($id, [], $published, $rbac, $multi);
             } catch (\OCP\AppFramework\Db\DoesNotExistException | \OCP\AppFramework\Db\MultipleObjectsReturnedException | \OCP\DB\Exception) {
                 // Catch all exceptions but do nothing.
             }
@@ -225,6 +247,9 @@ class RegisterMapper extends QBMapper
      * @param array|null $searchConditions Array of search conditions
      * @param array|null $searchParams     Array of search parameters
      * @param array      $extend           Optional array of extensions (e.g., ['@self.stats'])
+     * @param bool|null  $published       Whether to enable published bypass (default: null = check config)
+     * @param bool       $rbac            Whether to apply RBAC permission checks (default: true)
+     * @param bool       $multi           Whether to apply multi-tenancy filtering (default: true)
      *
      * @return array Array of found registers, possibly with stats
      */
@@ -234,19 +259,22 @@ class RegisterMapper extends QBMapper
         ?array $filters=[],
         ?array $searchConditions=[],
         ?array $searchParams=[],
-        ?array $extend=[]
+        ?array $extend=[],
+        ?bool $published = null,
+        bool $rbac = true,
+        bool $multi = true
     ): array {
-        // Verify RBAC permission to read registers
-        // $this->verifyRbacPermission('read', 'register');
+        // Verify RBAC permission to read registers if RBAC is enabled
+        if ($rbac === true) {
+            // @todo: remove this hotfix for solr - uncomment when ready
+            //$this->verifyRbacPermission('read', 'register');
+        }
 
         $qb = $this->db->getQueryBuilder();
         $qb->select('*')
             ->from('openregister_registers')
             ->setMaxResults($limit)
             ->setFirstResult($offset);
-        
-        // Apply organisation filter (all users including admins must have active org)
-        //$this->applyOrganisationFilter($qb);
         
         foreach ($filters as $filter => $value) {
             if ($value === 'IS NOT NULL') {
@@ -264,6 +292,20 @@ class RegisterMapper extends QBMapper
                 $qb->setParameter($param, $value);
             }
         }
+
+        // Apply organisation filter with published entity bypass support
+        // Published registers can bypass multi-tenancy restrictions if configured
+        // applyOrganisationFilter handles $multiTenancyEnabled=false internally
+        // Use $published parameter if provided, otherwise check config
+        $enablePublished = $published !== null ? $published : $this->shouldPublishedObjectsBypassMultiTenancy();
+        $this->applyOrganisationFilter(
+            qb: $qb,
+            columnName: 'organisation',
+            allowNullOrg: true,
+            tableAlias: '',
+            enablePublished: $enablePublished,
+            multiTenancyEnabled: $multi
+        );
 
         // Just return the entities; do not attach stats here
         return $this->findEntities(query: $qb);
@@ -473,20 +515,30 @@ class RegisterMapper extends QBMapper
     /**
      * Get all schemas associated with a register
      *
-     * @param int $registerId The ID of the register
+     * @param int      $registerId The ID of the register
+     * @param bool|null $published  Whether to enable published bypass (default: null = check config)
+     * @param bool     $rbac       Whether to apply RBAC permission checks (default: true)
+     * @param bool     $multi      Whether to apply multi-tenancy filtering (default: true)
      *
      * @return array Array of schemas
      */
-    public function getSchemasByRegisterId(int $registerId): array
+    public function getSchemasByRegisterId(int $registerId, ?bool $published = null, bool $rbac = true, bool $multi = true): array
     {
-        $register  = $this->find($registerId);
+        $register  = $this->find($registerId, [], $published, $rbac, $multi);
         $schemaIds = $register->getSchemas();
 
         $schemas = [];
 
         // Fetch each schema by its ID.
+        // Use $multi=false to bypass organization filter since the register has already passed access checks
+        // This ensures schemas linked to accessible registers can always be found
         foreach ($schemaIds as $schemaId) {
-            $schemas[] = $this->schemaMapper->find((int) $schemaId);
+            try {
+                $schemas[] = $this->schemaMapper->find((int) $schemaId, [], $published, $rbac, false);
+            } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+                // Schema not found, skip it (similar to RegistersController behavior)
+                continue;
+            }
         }
 
         return $schemas;
