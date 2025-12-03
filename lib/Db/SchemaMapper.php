@@ -30,6 +30,7 @@ use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 use OCP\IGroupManager;
 use OCP\IUserSession;
+use OCP\IAppConfig;
 use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Service\SchemaPropertyValidatorService;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
@@ -81,6 +82,13 @@ class SchemaMapper extends QBMapper
     private IGroupManager $groupManager;
 
     /**
+     * App configuration for reading multitenancy settings
+     *
+     * @var IAppConfig
+     */
+    private IAppConfig $appConfig;
+
+    /**
      * Constructor for the SchemaMapper
      *
      * @param IDBConnection                  $db                  The database connection
@@ -89,6 +97,7 @@ class SchemaMapper extends QBMapper
      * @param OrganisationService            $organisationService Organisation service for multi-tenancy
      * @param IUserSession                   $userSession         User session
      * @param IGroupManager                  $groupManager        Group manager for RBAC
+     * @param IAppConfig                     $appConfig           App configuration for multitenancy settings
      */
     public function __construct(
         IDBConnection $db,
@@ -96,7 +105,8 @@ class SchemaMapper extends QBMapper
         SchemaPropertyValidatorService $validator,
         OrganisationService $organisationService,
         IUserSession $userSession,
-        IGroupManager $groupManager
+        IGroupManager $groupManager,
+        IAppConfig $appConfig
     ) {
         parent::__construct($db, 'openregister_schemas');
         $this->eventDispatcher = $eventDispatcher;
@@ -104,6 +114,7 @@ class SchemaMapper extends QBMapper
         $this->organisationService = $organisationService;
         $this->userSession         = $userSession;
         $this->groupManager        = $groupManager;
+        $this->appConfig           = $appConfig;
 
     }//end __construct()
 
@@ -115,16 +126,23 @@ class SchemaMapper extends QBMapper
      * an 'extend' property set, it will load the parent schema and merge its
      * properties with the current schema, providing the complete resolved schema.
      *
-     * @param int|string $id     The id of the schema
-     * @param array      $extend Optional array of extensions (e.g., ['@self.stats'])
+     * @param int|string $id        The id of the schema
+     * @param array      $extend    Optional array of extensions (e.g., ['@self.stats'])
+     * @param bool|null  $published Whether to enable published bypass (default: null = check config)
+     * @param bool       $rbac      Whether to apply RBAC permission checks (default: true)
+     * @param bool       $multi     Whether to apply multi-tenancy filtering (default: true)
+     *                              Set to false to bypass organization filter (e.g., when expanding schemas for registers)
      *
      * @return Schema The schema, possibly with stats and resolved extensions
      * @throws \Exception If user doesn't have read permission
      */
-    public function find(string | int $id, ?array $extend=[]): Schema
+    public function find(string | int $id, ?array $extend=[], ?bool $published = null, bool $rbac = true, bool $multi = true): Schema
     {
-        // Verify RBAC permission to read @todo: remove this hotfix for solr
-        //$this->verifyRbacPermission('read', 'schema');
+        // Verify RBAC permission to read if RBAC is enabled
+        if ($rbac === true) {
+            // @todo: remove this hotfix for solr - uncomment when ready
+            //$this->verifyRbacPermission('read', 'schema');
+        }
 
         $qb = $this->db->getQueryBuilder();
         $qb->select('*')
@@ -139,13 +157,17 @@ class SchemaMapper extends QBMapper
 
         // Apply organisation filter with published entity bypass support
         // Published schemas can bypass multi-tenancy restrictions if configured
+        // Set $multi=false to bypass organization filter (e.g., when expanding schemas for registers)
+        // applyOrganisationFilter handles $multiTenancyEnabled=false internally
+        // Use $published parameter if provided, otherwise check config
+        $enablePublished = $published !== null ? $published : $this->shouldPublishedObjectsBypassMultiTenancy();
         $this->applyOrganisationFilter(
             qb: $qb,
             columnName: 'organisation',
             allowNullOrg: true,
             tableAlias: '',
-            enablePublished: true,
-            multiTenancyEnabled: true
+            enablePublished: $enablePublished,
+            multiTenancyEnabled: $multi
         );
 
         // Get the schema entity
@@ -162,7 +184,9 @@ class SchemaMapper extends QBMapper
     /**
      * Finds multiple schemas by id
      *
-     * @param array $ids The ids of the schemas
+     * @param array $ids  The ids of the schemas
+     * @param bool  $rbac Whether to apply RBAC permission checks (default: true)
+     * @param bool  $multi Whether to apply multi-tenancy filtering (default: true)
      *
      * @throws \OCP\AppFramework\Db\DoesNotExistException If a schema does not exist
      * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple schemas are found
@@ -172,12 +196,12 @@ class SchemaMapper extends QBMapper
      *
      * @return array The schemas
      */
-    public function findMultiple(array $ids): array
+    public function findMultiple(array $ids, ?bool $published = null, bool $rbac = true, bool $multi = true): array
     {
         $result = [];
         foreach ($ids as $id) {
             try {
-                $result[] = $this->find($id);
+                $result[] = $this->find($id, [], $published, $rbac, $multi);
             } catch (\OCP\AppFramework\Db\DoesNotExistException | \OCP\AppFramework\Db\MultipleObjectsReturnedException | \OCP\DB\Exception) {
                 // Catch all exceptions but do nothing.
             }
@@ -231,6 +255,9 @@ class SchemaMapper extends QBMapper
      * @param array|null $searchConditions The search conditions to apply
      * @param array|null $searchParams     The search parameters to apply
      * @param array      $extend           Optional array of extensions (e.g., ['@self.stats'])
+     * @param bool|null  $published       Whether to enable published bypass (default: null = check config)
+     * @param bool       $rbac            Whether to apply RBAC permission checks (default: true)
+     * @param bool       $multi           Whether to apply multi-tenancy filtering (default: true)
      *
      * @return array The schemas, possibly with stats
      * @throws \Exception If user doesn't have read permission
@@ -241,10 +268,16 @@ class SchemaMapper extends QBMapper
         ?array $filters=[],
         ?array $searchConditions=[],
         ?array $searchParams=[],
-        ?array $extend=[]
+        ?array $extend=[],
+        ?bool $published = null,
+        bool $rbac = true,
+        bool $multi = true
     ): array {
-        // Verify RBAC permission to read
-       //$this->verifyRbacPermission('read', 'schema');
+        // Verify RBAC permission to read if RBAC is enabled
+        if ($rbac === true) {
+            // @todo: remove this hotfix for solr - uncomment when ready
+            //$this->verifyRbacPermission('read', 'schema');
+        }
 
         $qb = $this->db->getQueryBuilder();
 
@@ -272,13 +305,16 @@ class SchemaMapper extends QBMapper
 
         // Apply organisation filter with published entity bypass support
         // Published schemas can bypass multi-tenancy restrictions if configured
+        // applyOrganisationFilter handles $multiTenancyEnabled=false internally
+        // Use $published parameter if provided, otherwise check config
+        $enablePublished = $published !== null ? $published : $this->shouldPublishedObjectsBypassMultiTenancy();
         $this->applyOrganisationFilter(
             qb: $qb,
             columnName: 'organisation',
             allowNullOrg: true,
             tableAlias: '',
-            enablePublished: true,
-            multiTenancyEnabled: true
+            enablePublished: $enablePublished,
+            multiTenancyEnabled: $multi
         );
 
         // Just return the entities; do not attach stats here
