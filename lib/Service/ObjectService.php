@@ -483,13 +483,14 @@ class ObjectService
             id: $id,
             register: $this->currentRegister,
             schema: $this->currentSchema,
-            extend: $extend,
+            _extend: $extend,
             files: $files,
             rbac: $rbac,
             multi: $multi
         );
 
         // If the object is not found, return null.
+        /** @psalm-suppress TypeDoesNotContainNull - GetObject::find() may return null */
         if ($object === null) {
             return null;
         }
@@ -530,8 +531,8 @@ class ObjectService
             extend: $extend,
             registers: $registers,
             schemas: $schemas,
-            rbac: $rbac,
-            multi: $multi
+            _rbac: $rbac,
+            _multi: $multi
         );
 
     }//end find()
@@ -579,7 +580,7 @@ class ObjectService
             id: $id,
             register: $this->currentRegister,
             schema: $this->currentSchema,
-            extend: $extend,
+            _extend: $extend,
             files: $files,
             rbac: $rbac,
             multi: $multi
@@ -636,7 +637,6 @@ class ObjectService
         }
 
         // Delegate the findAll operation to the handler.
-        /** @var $objects ObjectEntity[] **/
         $objects = $this->getHandler->findAll(
             limit: $config['limit'] ?? null,
             offset: $config['offset'] ?? null,
@@ -688,9 +688,10 @@ class ObjectService
                             fields: $config['fields'] ?? null,
                             registers: $registers,
                             schemas: $schemas,
-                            rbac: $rbac,
-                            multi: $multi
+                            _rbac: $rbac,
+                            _multi: $multi
                         );
+                        /** @var callable(mixed): void $resolve */
                         $resolve($renderedObject);
                     } catch(\Throwable $e) {
                         $reject($e);
@@ -699,6 +700,7 @@ class ObjectService
             );
         }
 
+        /** @psalm-suppress UndefinedFunction - React\Async\await is from external library */
         $objects = Async\await(all($promises));
 
         return $objects;
@@ -785,7 +787,7 @@ class ObjectService
     {
         // Get logs for the specified object.
         $object = $this->objectEntityMapper->find($uuid);
-        $logs   = $this->getHandler->findLogs($object, filters: $filters, rbac: $rbac, multi: $multi);
+        $logs   = $this->getHandler->findLogs($object, filters: $filters);
 
         return $logs;
 
@@ -973,11 +975,11 @@ class ObjectService
             data: $object,
             uuid: $uuid,
             folderId: $folderId,
-            rbac: $rbac,
+            _rbac: $rbac,
             multi: $multi,
             persist: true,
             silent: $silent,
-            validation: true,
+            _validation: true,
             uploadedFiles: $uploadedFiles
         );
 
@@ -992,8 +994,8 @@ class ObjectService
             extend: $extend,
             registers: $registers,
             schemas: $schemas,
-            rbac: $rbac,
-            multi: $multi
+            _rbac: $rbac,
+            _multi: $multi
         );
 
     }//end saveObject()
@@ -1035,8 +1037,8 @@ class ObjectService
             schema: $this->currentSchema,
             uuid: $uuid,
             originalObjectId: null,
-            rbac: $rbac,
-            multi: $multi
+            _rbac: $rbac,
+            _multi: $multi
         );
 
     }//end deleteObject()
@@ -1098,7 +1100,7 @@ class ObjectService
 
             $objects  = $this->findAll(config: ['filters' => $value]);
             $foundIds = array_map(
-                    function (ObjectEntity $object) use ($property, $_key) {
+                    function (ObjectEntity $object) use ($property, $key) {
                         $idRaw = $object->jsonSerialize()[$property['inversedBy']];
 
                         if (Uuid::isValid($idRaw) === true) {
@@ -1230,6 +1232,7 @@ class ObjectService
                         $current[$part] = $value;
                     } else {
                         // Intermediate part: create nested array if needed.
+                        /** @psalm-suppress TypeDoesNotContainType */
                         if (isset($current[$part]) === false || is_array($current[$part]) === false) {
                             $current[$part] = [];
                         }
@@ -1826,8 +1829,8 @@ class ObjectService
              unset: $unset,
              registers: $registers,
              schemas: $schemas,
-             rbac: $rbac,
-             multi: $multi
+             _rbac: $rbac,
+             _multi: $multi
             );
         }
 
@@ -1881,7 +1884,7 @@ class ObjectService
         }
 
         // Use the new optimized countSearchObjects method from ObjectEntityMapper with organization context.
-        return $this->objectEntityMapper->countSearchObjects(query: $query, activeOrganisationUuid: $activeOrganisationUuid, rbac: $rbac, multi: $multi, ids: $ids, uses: $uses);
+        return $this->objectEntityMapper->countSearchObjects(query: $query, _activeOrganisationUuid: $activeOrganisationUuid, _rbac: $rbac, _multi: $multi, ids: $ids, uses: $uses);
 
     }//end countSearchObjects()
 
@@ -2848,7 +2851,9 @@ class ObjectService
                     function ($resolve, $reject) use ($baseQuery, $sampleSize) {
                         try {
                             $result = $this->getFacetableFields(baseQuery: $baseQuery, sampleSize: $sampleSize);
-                            $resolve($result);
+                            /** @var callable(mixed): void $resolve */
+                            /** @var callable(mixed): void $resolve */
+                        $resolve($result);
                         } catch (\Throwable $e) {
                             $this->logger->error(message: '❌ FACETABLE PROMISE ERROR', context: [
                                 'error' => $e->getMessage(),
@@ -2872,6 +2877,7 @@ class ObjectService
                             'resultCount' => count($result),
                             'limit' => $paginatedQuery['_limit'] ?? 20
                         ]);
+                        /** @var callable(mixed): void $resolve */
                         $resolve($result);
                     } catch (\Throwable $e) {
                         $reject($e);
@@ -2884,6 +2890,7 @@ class ObjectService
                 function ($resolve, $reject) use ($countQuery) {
                     try {
                         $result = $this->getFacetsForObjects($countQuery);
+                        /** @var callable(mixed): void $resolve */
                         $resolve($result);
                     } catch (\Throwable $e) {
                         $reject($e);
@@ -2896,6 +2903,7 @@ class ObjectService
                 function ($resolve, $reject) use ($countQuery, $rbac, $multi) {
                     try {
                         $result = $this->countSearchObjects(query: $countQuery, rbac: $rbac, multi: $multi);
+                        /** @var callable(mixed): void $resolve */
                         $resolve($result);
                     } catch (\Throwable $e) {
                         $reject($e);
@@ -2993,10 +3001,11 @@ class ObjectService
     public function searchObjectsPaginatedSync(array $query=[], bool $rbac=true, bool $multi=true, bool $published=false, bool $deleted=false): array
     {
         // Execute the async version and wait for the result.
-        $promise = $this->searchObjectsPaginatedAsync(query: $query, rbac: $rbac, multi: $multi, published: $published, deleted: $deleted);
+        $promise = $this->searchObjectsPaginatedAsync(query: $query, rbac: $rbac, multi: $multi, _published: $published, _deleted: $deleted);
 
         // Use React's await functionality to get the result synchronously.
         // Note: The async version already logs the search trail, so we don't need to log again.
+        /** @psalm-suppress UndefinedFunction - React\Async\await is from external library */
         return \React\Async\await($promise);
 
     }//end searchObjectsPaginatedSync()
@@ -3065,8 +3074,8 @@ class ObjectService
             filter: $filter,
             fields: $fields,
             unset: $unset,
-            rbac: $rbac,
-            multi: $multi
+            _rbac: $rbac,
+            _multi: $multi
         )->jsonSerialize();
 
     }//end renderEntity()
@@ -3109,8 +3118,8 @@ class ObjectService
         return $this->publishHandler->publish(
             uuid: $uuid,
             date: $date,
-            rbac: $rbac,
-            multi: $multi
+            _rbac: $rbac,
+            _multi: $multi
         );
 
     }//end publish()
@@ -3134,8 +3143,8 @@ class ObjectService
         return $this->depublishHandler->depublish(
             uuid: $uuid,
             date: $date,
-            rbac: $rbac,
-            multi: $multi
+            _rbac: $rbac,
+            _multi: $multi
         );
 
     }//end depublish()

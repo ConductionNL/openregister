@@ -73,6 +73,7 @@ class GuzzleSolrService
      *            autoCommit: bool, commitWithin: int, enableLogging: bool,
      *            useCloud?: bool, collection?: string, configSet?: string, objectCollection?: string}
      */
+    /** @psalm-suppress InvalidPropertyAssignmentValue - solrConfig is initialized with compatible array structure */
     private array $solrConfig = [];
 
     /**
@@ -194,9 +195,11 @@ class GuzzleSolrService
     private function initializeConfig(): void
     {
         try {
+            // @psalm-suppress InvalidPropertyAssignmentValue - getSolrSettings() returns array with compatible shape
             $this->solrConfig = $this->settingsService->getSolrSettings();
         } catch (\Exception $e) {
             $this->logger->warning(message: 'Failed to load SOLR settings', context: ['error' => $e->getMessage()]);
+            /** @psalm-suppress InvalidPropertyAssignmentValue - ['enabled' => false] is compatible with solrConfig type */
             $this->solrConfig = ['enabled' => false];
         }
 
@@ -242,6 +245,7 @@ class GuzzleSolrService
         // Currently using direct Guzzle client to bypass Nextcloud's 'allow_local_address' restrictions.
         // Future improvement: $this->httpClient = $clientService->newClient(['allow_local_address' => true]).
         // This is necessary for SOLR/Zookeeper connections in Kubernetes environments.
+        /** @psalm-suppress InvalidPropertyAssignmentValue - GuzzleClient used intentionally, will switch to IClient later */
         $this->httpClient = new GuzzleClient($clientConfig);
 
     }//end initializeHttpClient()
@@ -1571,7 +1575,7 @@ class GuzzleSolrService
                     $extractedValues = $this->extractIndexableArrayValues(arrayValue: $fieldValue, fieldName: $fieldName);
 
                     if (empty($extractedValues) === false) {
-                        $solrFieldName = $this->mapFieldToSolrType(fieldName: $fieldName, fieldType: 'array', fieldValue: $extractedValues);
+                        $solrFieldName = $this->mapFieldToSolrType(fieldName: $fieldName, _fieldType: 'array', _fieldValue: $extractedValues);
                         if ($solrFieldName !== null && $this->validateFieldForSolr(fieldName: $solrFieldName, fieldValue: $extractedValues, solrFieldTypes: $solrFieldTypes) === true) {
                             $document[$solrFieldName] = $extractedValues;
                             $this->logger->debug(
@@ -1639,7 +1643,7 @@ class GuzzleSolrService
                 }
 
                 // Map field based on schema type to appropriate SOLR field name.
-                $solrFieldName = $this->mapFieldToSolrType(fieldName: $fieldName, fieldType: $fieldType, fieldValue: $fieldValue);
+                $solrFieldName = $this->mapFieldToSolrType(fieldName: $fieldName, _fieldType: $fieldType, _fieldValue: $fieldValue);
 
                 if ($solrFieldName !== null && $solrFieldName !== '') {
                     $convertedValue = $this->convertValueForSolr(value: $fieldValue, fieldType: $fieldType);
@@ -2130,7 +2134,7 @@ class GuzzleSolrService
                     );
 
             // Apply additional filters (RBAC, multi-tenancy, published, deleted).
-            $this->applyAdditionalFilters(solrQuery: $solrQuery, rbac: $rbac, multi: $multi, published: $published, deleted: $deleted);
+            $this->applyAdditionalFilters(solrQuery: $solrQuery, rbac: $rbac, _multi: $multi, _published: $published, _deleted: $deleted);
 
             // Execute the search.
             $extend = $query['_extend'] ?? [];
@@ -3653,6 +3657,7 @@ class GuzzleSolrService
                     ]
                     );
 
+            /** @var \Psr\Http\Message\ResponseInterface $response */
             $statusCode   = $response->getStatusCode();
             $responseBody = $response->getBody()->getContents();
 
@@ -3853,7 +3858,7 @@ class GuzzleSolrService
 
                 // Re-run the same query with faceting enabled to get contextual facets.
                 // This is much more efficient than making separate calls.
-                $contextualFacetData = $this->getContextualFacetsFromSameQuery(solrQuery: $solrQuery, originalQuery: $originalQuery);
+                $contextualFacetData = $this->getContextualFacetsFromSameQuery(solrQuery: $solrQuery, _originalQuery: $originalQuery);
 
                 // Also discover all available facetable fields from SOLR schema.
                 $allFacetableFields = $this->discoverFacetableFieldsFromSolr();
@@ -4577,6 +4582,7 @@ class GuzzleSolrService
                     ]
                     );
 
+            /** @var \Psr\Http\Message\ResponseInterface $response */
             $responseData = json_decode($response->getBody()->getContents(), true);
 
             if ($response->getStatusCode() === 200 && (($responseData['responseHeader']['status'] ?? null) !== null) && $responseData['responseHeader']['status'] === 0) {
@@ -5607,10 +5613,7 @@ class GuzzleSolrService
      */
     public function warmupIndex(array $schemas=[], int $maxObjects=0, string $mode='serial', bool $collectErrors=false, int $batchSize=1000, array $schemaIds=[]): array
     {
-        // Ensure schemaIds is always an array.
-        if ($schemaIds === null) {
-            $schemaIds = [];
-        }
+        // schemaIds is already an array with default value []
 
         if ($this->isAvailable() === false) {
             return [
@@ -5634,7 +5637,7 @@ class GuzzleSolrService
         // **MEMORY TRACKING**: Capture initial memory usage and predict requirements.
         $initialMemoryUsage = memory_get_usage(true);
         $initialMemoryPeak  = memory_get_peak_usage(true);
-        $memoryPrediction   = $this->predictWarmupMemoryUsage(maxObjects: $maxObjects, schemaIds: $schemaIds);
+        $memoryPrediction   = $this->predictWarmupMemoryUsage($maxObjects, $schemaIds);
 
         // **CRITICAL**: Disable profiler during warmup - even with reduced logging, 26K+ queries overwhelm profiler.
         $profilerWasEnabled = false;
@@ -6173,6 +6176,7 @@ class GuzzleSolrService
                                 ]
                                 );
 
+                        /** @var \Psr\Http\Message\ResponseInterface $response */
                         $responseData = json_decode($response->getBody()->getContents(), true);
 
                         if (($responseData['responseHeader']['status'] ?? null) !== null) {
@@ -6855,6 +6859,7 @@ class GuzzleSolrService
 
             // Make the schema request.
             $response   = $this->httpClient->get($schemaUrl, $requestOptions);
+            /** @var \Psr\Http\Message\ResponseInterface $response */
             $schemaData = json_decode($response->getBody()->getContents(), true);
 
             if (($schemaData === null || $schemaData === false) === true || isset($schemaData['schema']) === false) {
@@ -7323,6 +7328,7 @@ class GuzzleSolrService
                     ]
                     );
 
+            /** @var \Psr\Http\Message\ResponseInterface $response */
             $schemaData = json_decode($response->getBody()->getContents(), true);
 
             if (isset($schemaData['fields']) === false || is_array($schemaData['fields']) === false) {
@@ -7448,6 +7454,7 @@ class GuzzleSolrService
                     ]
                     );
 
+            /** @var \Psr\Http\Message\ResponseInterface $response */
             $schemaData = json_decode($response->getBody()->getContents(), true);
 
             if (isset($schemaData['fields']) === false || is_array($schemaData['fields']) === false) {
@@ -7647,6 +7654,7 @@ class GuzzleSolrService
                     ]
                     );
 
+            /** @var \Psr\Http\Message\ResponseInterface $response */
             $responseBody = $response->getBody()->getContents();
             $data         = json_decode($responseBody, true);
 
@@ -7918,6 +7926,7 @@ class GuzzleSolrService
                     ]
                     );
 
+            /** @var \Psr\Http\Message\ResponseInterface $response */
             $responseBody = $response->getBody()->getContents();
             $data         = json_decode($responseBody, true);
 
@@ -8384,6 +8393,7 @@ class GuzzleSolrService
      * @param  array  $facetData Processed facet data
      * @param  string $fieldName Field name
      * @return array Facet data with custom configuration applied
+     * @psalm-suppress UnusedParam - Parameters kept for future use
      */
     private function applyFacetConfiguration(array $facetData, string $fieldName): array
     {
@@ -8471,6 +8481,7 @@ class GuzzleSolrService
      *
      * @param  array $facets Facet data to sort
      * @return array Sorted facet data
+     * @psalm-suppress UnusedParam - Parameters kept for future use
      */
     private function sortFacetsWithConfiguration(array $facets): array
     {
@@ -9942,6 +9953,7 @@ class GuzzleSolrService
             }
 
             $response = $this->httpClient->get($queryUrl, $requestOptions);
+            /** @var \Psr\Http\Message\ResponseInterface $response */
             $result   = json_decode($response->getBody()->getContents(), true);
 
             $totalChunks = $result['response']['numFound'] ?? 0;
@@ -9957,6 +9969,7 @@ class GuzzleSolrService
             $requestOptions['query'] = $uniqueFilesQuery;
 
             $response2 = $this->httpClient->get($queryUrl, $requestOptions);
+            /** @var \Psr\Http\Message\ResponseInterface $response2 */
             $result2   = json_decode($response2->getBody()->getContents(), true);
 
             $uniqueFiles = count($result2['facet_counts']['facet_fields']['file_id'] ?? []) / 2;

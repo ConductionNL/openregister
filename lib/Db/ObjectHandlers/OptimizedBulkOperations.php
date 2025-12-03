@@ -231,7 +231,8 @@ class OptimizedBulkOperations
         // - 2 for each existing row updated.
         // - 0 for unchanged rows.
         $totalObjects = count($objects);
-        $affectedRows = $result;
+        // @psalm-suppress RedundantCast
+        $affectedRows = (int)$result->rowCount();
 
         // Estimate created vs updated (rough calculation).
         // If affected_rows == totalObjects, all were created.

@@ -336,7 +336,7 @@ class SaveObject
                     continue;
                 }
 
-                $currentPath = (($prefix !== null && $prefix !== '') === true) ? $prefix.'.'.$key : $key;
+                $currentPath = (($prefix !== '') === true) ? $prefix.'.'.$key : $key;
 
                 if (is_array($value) === true && empty($value) === true) {
                     // Check if this is an array property in the schema.
@@ -662,12 +662,21 @@ class SaveObject
                             ]
                             );
                 }//end try
-            } else if (is_array($imageValue) === true && (($imageValue['downloadUrl'] ?? null) !== null)) {
-                // Single file object - use its downloadUrl.
-                $entity->setImage($imageValue['downloadUrl']);
-            } else if (is_array($imageValue) === true && (($imageValue['accessUrl'] ?? null) !== null)) {
-                // Fallback to accessUrl if downloadUrl not available.
-                $entity->setImage($imageValue['accessUrl']);
+            /** @psalm-suppress ParadoxicalCondition */
+            /** @psalm-suppress TypeDoesNotContainType */
+            } else if (is_array($imageValue) === true && !empty($imageValue) && isset($imageValue['downloadUrl']) === true) {
+                $downloadUrl = $imageValue['downloadUrl'];
+                if (is_string($downloadUrl) === true && trim($downloadUrl) !== '') {
+                    // Single file object - use its downloadUrl.
+                    $entity->setImage($downloadUrl);
+                }
+            /** @psalm-suppress ParadoxicalCondition */
+            /** @psalm-suppress TypeDoesNotContainType */
+            } else if (is_array($imageValue) === true && !empty($imageValue) && isset($imageValue['accessUrl']) === true) {
+                $accessUrl = $imageValue['accessUrl'];
+                if (is_string($accessUrl) === true && trim($accessUrl) !== '') {
+                    $entity->setImage($accessUrl);
+                }
             } else if (is_string($imageValue) === true && trim($imageValue) !== '') {
                 // Regular string URL.
                 $entity->setImage(trim($imageValue));
@@ -740,7 +749,10 @@ class SaveObject
      * @psalm-return   string|null
      * @phpstan-return string|null
      */
-    private function getValueFromPath(array $data, string $path): ?string
+    /**
+     * @return mixed
+     */
+    private function getValueFromPath(array $data, string $path)
     {
         $keys    = explode('.', $path);
         $current = $data;
@@ -1471,6 +1483,7 @@ class SaveObject
                 try {
                     // Find the target object.
                     $targetObject = $this->objectEntityMapper->find($targetUuid);
+                    /** @psalm-suppress TypeDoesNotContainNull - find() throws DoesNotExistException, never returns null */
                     if ($targetObject === null) {
                         continue;
                     }
@@ -1723,7 +1736,7 @@ class SaveObject
                     existingObject: $existingObject,
                     schema: $schema,
                     data: $data,
-                    selfData: $selfData ?? [],
+                    selfData: $selfData,
                     folderId: $folderId
                 );
                 // If not persisting, return the prepared object.
@@ -1762,8 +1775,8 @@ class SaveObject
             objectEntity: $objectEntity,
             schema: $schema,
             data: $data,
-            selfData: $selfData ?? [],
-            multi: $multi
+                    selfData: $selfData,
+                    _multi: $multi
         );
 
         // If not persisting, return the prepared object.
@@ -3291,8 +3304,7 @@ class SaveObject
             "\xCA\xFE\xBA\xBE" => 'Java class file',
             "PK\x03\x04"       => false,
         // ZIP - need deeper inspection as JARs are ZIPs.
-            "\x50\x4B\x03\x04" => false,
-        // ZIP alternate.
+            // Note: "\x50\x4B\x03\x04" is the same as "PK\x03\x04" (PK in hex), so removed duplicate.
         ];
 
         foreach ($magicBytes as $signature => $description) {
@@ -3377,7 +3389,7 @@ class SaveObject
      * @phpstan-param  string $propertyName
      * @psalm-param    int|null $index
      * @phpstan-param  int|null $index
-     * @psalm-return   array<int, string>
+     * @psalm-return   list<string>
      * @phpstan-return array<int, string>
      */
     private function prepareAutoTags(array $fileConfig, string $propertyName, ?int $index=null): array
@@ -3387,6 +3399,16 @@ class SaveObject
         // Replace placeholders in auto tags.
         $processedTags = [];
         foreach ($autoTags as $tag) {
+            // Handle both string tags and array tags (flatten arrays).
+            if (is_array($tag)) {
+                $tag = implode(',', array_filter($tag, 'is_string'));
+            }
+            
+            // Ensure tag is a string.
+            if (!is_string($tag)) {
+                continue;
+            }
+            
             // Replace property name placeholder.
             $tag = str_replace('{property}', $propertyName, $tag);
             $tag = str_replace('{propertyName}', $propertyName, $tag);

@@ -282,9 +282,11 @@ class ObjectsProvider implements IFilteringProvider
         }
 
         // Set pagination limits for Nextcloud search.
-        $searchQuery['_limit'] = $limit ?? 25;
+        /** @psalm-suppress TypeDoesNotContainType */
+        $searchQuery['_limit'] = ($limit !== null) ? $limit : 25;
         // Default limit for search interface.
-        $searchQuery['_offset'] = $offset ?? 0;
+        /** @psalm-suppress TypeDoesNotContainType */
+        $searchQuery['_offset'] = ($offset !== null) ? $offset : 0;
 
         $this->logger->debug(
                 'OpenRegister search requested',

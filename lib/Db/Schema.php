@@ -973,8 +973,9 @@ class Schema extends Entity implements JsonSerializable
 
         // Handle JSON strings from database.
         if (is_string($configuration) === true) {
+            /** @psalm-suppress NoValue - json_decode returns array when successful */
             $decoded = json_decode($configuration, true);
-            if (json_last_error() === JSON_ERROR_NONE) {
+            if (json_last_error() === JSON_ERROR_NONE && $decoded !== null) {
                 $configuration = $decoded;
             } else {
                 // Invalid JSON, set to null.

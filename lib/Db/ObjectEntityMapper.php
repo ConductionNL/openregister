@@ -52,6 +52,8 @@ use Symfony\Component\Uid\Uuid;
  * The ObjectEntityMapper class
  *
  * @package OCA\OpenRegister\Db
+ *
+ * @template-extends QBMapper<ObjectEntity>
  */
 class ObjectEntityMapper extends QBMapper
 {
@@ -818,7 +820,7 @@ class ObjectEntityMapper extends QBMapper
         if ($ids !== null && empty($ids) === false) {
 
             $numericIds = array_filter($ids, function (string $id) {
-                return strlen(intval($id)) === strlen($id);
+                return strlen((string)intval($id)) === strlen($id);
             });
 
             $orX = $qb->expr()->orX();
@@ -1587,7 +1589,7 @@ class ObjectEntityMapper extends QBMapper
             allowNullOrg: true,
             tableAlias: 'o',
             enablePublished: true,
-            multiTenancyEnabled: $multi
+            multiTenancyEnabled: true
         );
 
 // Handle filtering by IDs/UUIDs if provided (same as searchObjects).
@@ -1962,6 +1964,8 @@ class ObjectEntityMapper extends QBMapper
      * @throws \OCP\DB\Exception If a database error occurs.
      *
      * @return Entity The inserted entity.
+     *
+     * @psalm-suppress LessSpecificImplementedReturnType - ObjectEntity is more specific than Entity
      */
     public function insert(Entity $entity): Entity
     {
@@ -1993,6 +1997,8 @@ class ObjectEntityMapper extends QBMapper
      * @throws \OCP\AppFramework\Db\DoesNotExistException If the entity does not exist
      *
      * @return Entity The updated entity
+     *
+     * @psalm-suppress LessSpecificImplementedReturnType - ObjectEntity is more specific than Entity
      */
     public function update(Entity $entity, bool $includeDeleted = false): Entity
     {
@@ -2038,17 +2044,17 @@ class ObjectEntityMapper extends QBMapper
      *
      * @return ObjectEntity The deleted object
      */
-    public function delete(Entity $object): ObjectEntity
+    public function delete(Entity $entity): ObjectEntity
     {
         $this->eventDispatcher->dispatchTyped(
-            new ObjectDeletingEvent($object)
+            new ObjectDeletingEvent($entity)
         );
-        $result = parent::delete($object);
+        $result = parent::delete($entity);
 
         // Dispatch deletion event.
 
         $this->eventDispatcher->dispatchTyped(
-            new ObjectDeletedEvent($object)
+            new ObjectDeletedEvent($entity)
         );
 
         return $result;
@@ -2954,11 +2960,12 @@ class ObjectEntityMapper extends QBMapper
         }
 
         // Safety check: $objectCount should always be > 0 here since $sampleObjects is not empty.
-        // @psalm-suppress TypeDoesNotContainType
+        /** @psalm-suppress TypeDoesNotContainType */
         if ($objectCount === 0) {
             return $baseChunkSize;
         }
 
+        /** @psalm-suppress TypeDoesNotContainType */
         $averageObjectSize = $totalSize / $objectCount;
 
         // Use the maximum object size to be extra safe, not the average
@@ -3079,10 +3086,13 @@ class ObjectEntityMapper extends QBMapper
             $objectCount++;
         }
 
+        // Safety check: $objectCount should always be > 0 here since $sampleObjects is not empty.
+        /** @psalm-suppress TypeDoesNotContainType */
         if ($objectCount === 0) {
             return $baseBatchSize;
         }
 
+        /** @psalm-suppress TypeDoesNotContainType */
         $averageObjectSize = $totalSize / $objectCount;
 
         // Use the maximum object size to be extra safe, not the average
@@ -3305,7 +3315,9 @@ class ObjectEntityMapper extends QBMapper
                     $stmt = $this->db->prepare($batchSql);
                     $result = $stmt->execute($parameters);
 
-                    if ($result === true) {
+                    // Check if execution was successful (IResult).
+                    // @psalm-suppress TypeDoesNotContainType
+                    if ($result !== false) {
                         $batchSuccess = true;
                     } else {
                         throw new \Exception('Statement execution returned false');
@@ -4304,7 +4316,9 @@ class ObjectEntityMapper extends QBMapper
                 $stmt = $this->db->prepare($sql);
                 $result = $stmt->execute($parameters);
 
-                if (($result === true) && (($objectData['uuid'] ?? null) !== null) === true) {
+                // Check if execution was successful (IResult) and UUID exists.
+                // @psalm-suppress TypeDoesNotContainType
+                if ($result !== false && (($objectData['uuid'] ?? null) !== null) === true) {
                     $processedIds[] = $objectData['uuid'];
                 }
 

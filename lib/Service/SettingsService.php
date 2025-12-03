@@ -1422,7 +1422,7 @@ class SettingsService
     /**
      * Clear distributed cache
      *
-     * @param string|null $userId Specific user ID (unused, kept for API compatibility)
+     * @param string|null $_userId Specific user ID (unused, kept for API compatibility)
      *
      * @return array Clear operation results
      */

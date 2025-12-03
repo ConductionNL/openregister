@@ -433,7 +433,7 @@ class RenderObject
                     $objectData[$propertyName] = $this->hydrateFileProperty(
                      propertyValue: $propertyValue,
                      propertyConfig: $propertyConfig,
-                     propertyName: $propertyName
+                     _propertyName: $propertyName
                     );
                 }
             }//end foreach
@@ -700,7 +700,9 @@ class RenderObject
         bool $_multi=true
     ): ObjectEntity {
         if ($entity->getUuid() !== null && in_array($entity->getUuid(), $visitedIds, true) === true) {
-            return $entity->setObject(object: ['@circular' => true, 'id' => $entity->getUuid()]);
+            // @psalm-suppress NullableReturnStatement - setObject() returns $this (ObjectEntity) despite void annotation
+            $entity->setObject(object: ['@circular' => true, 'id' => $entity->getUuid()]);
+            return $entity;
         }
 
         if ($entity->getUuid() !== null) {
@@ -781,13 +783,13 @@ class RenderObject
             $objectData = $this->handleInversedProperties(
                 entity: $entity,
                 objectData: $objectData,
-                depth: $depth,
-                filter: $filter,
-                fields: $fields,
-                unset: $unset,
-                registers: $registers,
-                schemas: $schemas,
-                objects: $objects
+                _depth: $depth,
+                _filter: $filter,
+                _fields: $fields,
+                _unset: $unset,
+                _registers: $registers,
+                _schemas: $schemas,
+                _objects: $objects
             );
         }
 

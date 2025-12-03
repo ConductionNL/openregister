@@ -50,6 +50,8 @@ use OCA\OpenRegister\Service\FileService;
  * @method Register findEntity(IQueryBuilder $query)
  * @method Register[] findAll(int|null $limit = null, int|null $offset = null)
  * @method list<Register> findEntities(IQueryBuilder $query)
+ *
+ * @template-extends QBMapper<Register>
  */
 class RegisterMapper extends QBMapper
 {
@@ -98,6 +100,13 @@ class RegisterMapper extends QBMapper
      */
     private IAppConfig $appConfig;
 
+    /**
+     * Organisation service for multi-tenancy (from trait)
+     *
+     * @var OrganisationService
+     */
+    protected OrganisationService $organisationService;
+
 
     /**
      * Constructor for RegisterMapper
@@ -118,6 +127,7 @@ class RegisterMapper extends QBMapper
         SchemaMapper $schemaMapper,
         IEventDispatcher $eventDispatcher,
         ObjectEntityMapper $objectEntityMapper,
+        OrganisationService $organisationService,
         IUserSession $userSession,
         IGroupManager $groupManager,
         IAppConfig $appConfig
@@ -420,6 +430,7 @@ class RegisterMapper extends QBMapper
      * @return Entity The inserted entity
      *
      * @throws \Exception If RBAC permission check fails
+     * @psalm-suppress LessSpecificImplementedReturnType - Register is more specific than Entity
      */
     public function insert(Entity $entity): Entity
     {
@@ -511,6 +522,8 @@ class RegisterMapper extends QBMapper
      * @param Entity $entity The entity to update
      *
      * @return Entity The updated entity
+     *
+     * @psalm-suppress LessSpecificImplementedReturnType - Register is more specific than Entity
      */
     public function update(Entity $entity): Entity
     {

@@ -217,6 +217,13 @@ class Organisation extends Entity implements JsonSerializable
      */
     protected ?array $roles = null;
 
+    /**
+     * User count for this organisation (computed property, not stored in database)
+     *
+     * @var int|null Number of users in this organisation
+     */
+    public ?int $userCount = null;
+
 
     /**
      * Organisation constructor

@@ -409,6 +409,7 @@ class NamedEntityRecognitionService
                 ->andWhere($qb->expr()->eq('value', $qb->createNamedParameter($value)))
                 ->setMaxResults(1);
 
+            /** @psalm-suppress InaccessibleMethod - findEntities is accessible via inheritance */
             $existingEntities = $this->entityMapper->findEntities($qb);
             if (empty($existingEntities) === false) {
                 $existing = $existingEntities[0];

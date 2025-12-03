@@ -58,9 +58,9 @@ class SolrSetup
     /**
      * HTTP client for SOLR requests (from GuzzleSolrService)
      *
-     * @var GuzzleClient
+     * @var \OCP\Http\Client\IClient
      */
-    private GuzzleClient $httpClient;
+    private \OCP\Http\Client\IClient $httpClient;
 
     /**
      * SOLR service for authenticated HTTP client and configuration
@@ -1395,6 +1395,26 @@ class SolrSetup
             return $success;
         } catch (\GuzzleHttp\Exception\GuzzleException $e) {
             // Capture Guzzle HTTP errors (network, timeout, etc.).
+            $requestMethod = 'unknown';
+            $responseCode = null;
+            $responseBody = null;
+            $urlAttempted = 'unknown';
+
+            // @psalm-suppress UndefinedInterfaceMethod - Methods exist on specific exception types
+            if (method_exists($e, 'getRequest') && $e->getRequest() !== null) {
+                $requestMethod = $e->getRequest()->getMethod();
+                $urlAttempted = (string) $e->getRequest()->getUri();
+            }
+
+            // @psalm-suppress UndefinedInterfaceMethod - Methods exist on specific exception types
+            if (method_exists($e, 'hasResponse') && $e->hasResponse() === true && method_exists($e, 'getResponse')) {
+                $response = $e->getResponse();
+                if ($response !== null) {
+                    $responseCode = $response->getStatusCode();
+                    $responseBody = (string) $response->getBody();
+                }
+            }
+
             $this->lastErrorDetails = [
                 'primary_error'     => 'HTTP request to SOLR failed',
                 'error_type'        => 'guzzle_http_error',
@@ -1403,14 +1423,14 @@ class SolrSetup
                 'step_name'         => 'Collection Creation',
                 'collection'        => $tenantCollectionName,
                 'configSet'         => $tenantConfigSetName,
-                'url_attempted'     => ($e->getRequest() !== null) === true ? $e->getRequest()->getUri() : 'unknown',
+                'url_attempted'     => $urlAttempted,
                 'exception_type'    => get_class($e),
                 'exception_message' => $e->getMessage(),
                 'error_category'    => 'network_connectivity',
                 'guzzle_details'    => [
-                    'request_method' => ($e->getRequest() !== null) === true ? $e->getRequest()->getMethod() : 'unknown',
-                    'response_code'  => ($e->hasResponse() === true) === true ? $e->getResponse()->getStatusCode() : null,
-                    'response_body'  => ($e->hasResponse() === true) === true ? (string) $e->getResponse()->getBody() : null,
+                    'request_method' => $requestMethod,
+                    'response_code'  => $responseCode,
+                    'response_body'  => $responseBody,
                 ],
             ];
 

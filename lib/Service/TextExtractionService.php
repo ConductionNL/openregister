@@ -445,6 +445,7 @@ class TextExtractionService
      * @return (array|int|mixed|null)[][]
      *
      * @psalm-return list<array{
+     *     checksum: mixed|null,
      *     chunk_index: int<0, max>,
      *     detection_method: mixed|null,
      *     end_offset: int<0, max>|mixed,
@@ -452,7 +453,7 @@ class TextExtractionService
      *     language_confidence: mixed|null,
      *     language_level: mixed|null,
      *     overlap_size: int,
-     *     position_reference: array<string, mixed>,
+     *     position_reference: array{end?: 0|mixed, path?: mixed|null, start?: 0|mixed, type: 'property-path'|'text-range'},
      *     start_offset: 0|mixed,
      *     text_content: mixed
      * }>
@@ -1371,6 +1372,7 @@ class TextExtractionService
                 // Iterate through rows and columns.
                 for ($row = 1; $row <= $highestRow; $row++) {
                     $rowData = [];
+                    // @psalm-suppress StringIncrement - Excel column increment is intentional
                     for ($col = 'A'; $col !== $highestColumn; $col++) {
                         $value = $sheet->getCell($col.$row)->getValue();
                         if ($value !== null && $value !== '') {

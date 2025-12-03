@@ -287,13 +287,13 @@ class MySQLJsonService implements IDatabaseJsonService
                 continue;
             }
 
-            if (is_array($value) === true && array_is_list($value) === false) {
-                // Handle complex filters (after/before).
-                $builder = $this->jsonFilterArray(builder: $builder, filter: $filter, values: $value);
-                continue;
-            }
-
             if (is_array($value) === true) {
+                if (array_is_list($value) === false) {
+                    // Handle complex filters (after/before).
+                    $builder = $this->jsonFilterArray(builder: $builder, filter: $filter, values: $value);
+                    continue;
+                }
+                
                 // Handle array of values with IN clause and contains check.
                 $builder->createNamedParameter(
                 value: $value,

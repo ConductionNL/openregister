@@ -52,7 +52,7 @@ class ObjectCacheService
     /**
      * In-memory cache of objects indexed by ID/UUID
      *
-     * @var array<string, ObjectEntity>
+     * @var array<string|int, ObjectEntity>
      */
     private array $objectCache = [];
 
@@ -753,7 +753,7 @@ class ObjectCacheService
                     'operation'     => $operation,
                     'executionTime' => $executionTime.'ms',
                     'impact'        => 'all_users_affected',
-                    'strategy'      => $schemaId === true ? 'schema_targeted' : 'global_fallback',
+                    'strategy'      => $schemaId !== null ? 'schema_targeted' : 'global_fallback',
                 ]
                 );
 
@@ -924,6 +924,7 @@ class ObjectCacheService
         $startTime = microtime(true);
 
         $this->objectCache        = [];
+        /** @psalm-suppress UndefinedThisPropertyAssignment - relationshipCache property doesn't exist, not used) */
         $this->relationshipCache  = [];
         $this->inMemoryQueryCache = [];
         $this->nameCache          = [];

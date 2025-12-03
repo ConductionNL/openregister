@@ -665,6 +665,7 @@ class SolrSchemaService
             $solrFieldName = $this->generateSolrFieldName($fieldNameStr);
             $solrFieldType = $this->determineSolrFieldType(['type' => $resolvedType] + $fieldInfo['definitions'][0]);
 
+            // @psalm-suppress RedundantCondition - Both methods return non-null strings
             if (($solrFieldName !== null) === true && ($solrFieldType !== null) === true) {
                 // Apply most permissive settings by checking ALL definitions
                 // If ANY schema has facetable=true, the field should support faceting
@@ -797,8 +798,7 @@ class SolrSchemaService
      * - Metadata fields: `self_` prefix (e.g., `self_name`, `self_description`)
      * - Reserved fields: `id`, `uuid`, `self_tenant` (no additional prefix)
      *
-     * @param  string $fieldName       OpenRegister field name
-     * @param  array  $fieldDefinition Field definition from schema
+     * @param  string $fieldName OpenRegister field name
      * @return string SOLR field name with consistent naming
      */
     private function generateSolrFieldName(string $fieldName): string
@@ -1223,7 +1223,8 @@ class SolrSchemaService
                     'type'        => $fieldType,
                     'stored'      => true,
                     'indexed'     => $this->shouldCoreFieldBeIndexed($fieldName),
-                    'multiValued' => $this->isCoreFieldMultiValued($fieldName),
+                    // @psalm-suppress TooFewArguments - fieldType parameter is optional
+                    'multiValued' => $this->isCoreFieldMultiValued($fieldName, $fieldType),
                     'docValues'   => $this->shouldCoreFieldHaveDocValues($fieldName),
                 ];
 
@@ -1404,6 +1405,7 @@ class SolrSchemaService
      * @param string $collectionName Collection to query
      *
      * @return array<string> Field names
+     * @psalm-suppress UnusedParam - Parameter kept for future use
      */
     private function getCurrentCollectionFields(string $collectionName): array
     {

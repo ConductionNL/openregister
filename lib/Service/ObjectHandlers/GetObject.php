@@ -204,7 +204,7 @@ class GetObject
             schema: $schema,
             published: $published,
             rbac: $rbac,
-            multi: $multi
+            _multi: $multi
         );
 
         // If files are to be included, hydrate each object with its file information.
