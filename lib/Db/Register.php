@@ -401,7 +401,9 @@ class Register extends Entity implements JsonSerializable
      *         users: 0,
      *         groups: int<0, max>
      *     },
-     *     deleted: null|string
+     *     deleted: null|string,
+     *     published: null|string,
+     *     depublished: null|string
      * }
      */
     public function jsonSerialize(): array

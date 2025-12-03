@@ -369,7 +369,8 @@ class ObjectsProvider implements IFilteringProvider
             $parts[] = $this->l10n->t('Updated: %s', [date('Y-m-d H:i', strtotime($object['updated']))]);
         }
 
-        return implode(' • ', $parts) === true ?: $this->l10n->t('Open Register Object');
+        $description = implode(' • ', $parts);
+        return $description !== '' ? $description : $this->l10n->t('Open Register Object');
 
     }//end buildDescription()
 

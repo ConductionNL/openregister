@@ -5350,9 +5350,9 @@ class GuzzleSolrService
      * This allows other services like SolrSetup to use the same authenticated
      * HTTP client without duplicating authentication logic.
      *
-     * @return GuzzleClient The configured and authenticated HTTP client
+     * @return \OCP\Http\Client\IClient The configured and authenticated HTTP client
      */
-    public function getHttpClient(): GuzzleClient
+    public function getHttpClient(): \OCP\Http\Client\IClient
     {
         return $this->httpClient;
 

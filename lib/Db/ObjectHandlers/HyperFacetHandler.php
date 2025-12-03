@@ -1122,7 +1122,8 @@ class HyperFacetHandler
      */
     private function calculateMetadataFacetsHyperFast(array $_config, array $_baseQuery): array
     {
-// Simplified - would use index-optimized queries.
+        // Simplified - would use index-optimized queries.
+        return [];
     }
 
     /**
@@ -1156,7 +1157,8 @@ class HyperFacetHandler
      */
     private function calculateSingleMetadataFacet(string $_field, array $_config, array $_baseQuery): array
     {
-// Would implement specific facet calculation.
+        // Would implement specific facet calculation.
+        return [];
     }
 
     /**
@@ -1169,7 +1171,8 @@ class HyperFacetHandler
      */
     private function getFieldLabel(string $_field, mixed $_value): string
     {
-// Simplified label generation.
+        // Simplified label generation.
+        return (string) $_value;
     }
 
     /**

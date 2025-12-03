@@ -135,7 +135,7 @@ class RegisterService
             filters: $filters,
             searchConditions: $searchConditions,
             searchParams: $searchParams,
-            _extend: $extend
+            extend: $extend
         );
 
     }//end findAll()

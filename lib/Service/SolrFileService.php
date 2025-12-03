@@ -582,7 +582,7 @@ class SolrFileService
      */
     private function commandExists(string $command): bool
     {
-
+        /** @psalm-suppress ForbiddenCode */
         $result = shell_exec(sprintf('which %s 2>/dev/null', escapeshellarg($command)));
         return !empty($result);
 
@@ -1107,7 +1107,7 @@ class SolrFileService
                 } else {
                     $stats['failed']++;
                     // Result array may contain 'error' or 'message' keys even if not in type definition.
-                    $errorMsg = (is_array($result) && array_key_exists('error', $result)) ? $result['error'] : ((is_array($result) && array_key_exists('message', $result)) ? $result['message'] : 'Unknown error');
+                    $errorMsg = array_key_exists('error', $result) ? $result['error'] : (array_key_exists('message', $result) ? $result['message'] : 'Unknown error');
                     $stats['errors'][$fileText->getFileId()] = $errorMsg;
                 }//end if
             } catch (\Exception $e) {

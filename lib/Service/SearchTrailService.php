@@ -47,6 +47,13 @@ class SearchTrailService
      */
     private bool $selfClearingEnabled = false;
 
+    /**
+     * Retention period in days for search trails.
+     *
+     * @var int
+     */
+    private int $retentionDays = 365;
+
 
     /**
      * Constructor for SearchTrailService
@@ -530,7 +537,7 @@ class SearchTrailService
     /**
      * Clean up old search trail logs
      *
-     * @param DateTime|null $before Delete entries older than this date
+     * @param DateTime|null $_before Delete entries older than this date (unused, kept for API compatibility)
      *
      * @return (bool|int|string)[] Cleanup results
      *
@@ -705,8 +712,8 @@ class SearchTrailService
     /**
      * Calculate activity insights from search activity data
      *
-     * @param array  $activity Search activity data
-     * @param string $interval Time interval used
+     * @param array  $activity  Search activity data
+     * @param string $_interval Time interval used (unused, kept for API compatibility)
      *
      * @return (float|int|mixed|null|string)[] Activity insights and trends
      *

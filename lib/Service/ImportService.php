@@ -230,8 +230,8 @@ class ImportService
      * @param bool          $events     Whether to dispatch object lifecycle events (default: false).
      *
      * @return         array<string, array> Summary of import with sheet-based results.
-     * @phpstan-return array<string, array{found: int, created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
-     * @psalm-return   array<string, array{found: int, created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
+     * @phpstan-return array<string, array{found: int, created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>, debug?: array, schema?: array{id: int, slug: null|string, title: null|string}}>
+     * @psalm-return   array<string, array{created: array<array-key, mixed>, errors: array<array-key, mixed>, found: int, unchanged: array<array-key, mixed>, updated: array<array-key, mixed>, debug?: array<array-key, mixed>, schema?: array{id: int, slug: null|string, title: null|string}}>
      */
     public function importFromExcel(string $filePath, ?Register $register=null, ?Schema $schema=null, int $chunkSize=self::DEFAULT_CHUNK_SIZE, bool $validation=false, bool $events=false, bool $rbac=true, bool $multi=true, bool $publish=false, ?IUser $currentUser=null): array
     {
@@ -285,8 +285,8 @@ class ImportService
      * @param IUser|null    $currentUser Current user for RBAC checks (default: null).
      *
      * @return         array<string, array> Summary of import with sheet-based results.
-     * @phpstan-return array<string, array{created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
-     * @psalm-return   array<string, array{created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
+     * @phpstan-return array<string, array{created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>, found?: int, schema?: array{id: int, slug: null|string, title: null|string}}>
+     * @psalm-return   array<string, array{created: array<array-key, mixed>, errors: array<array-key, mixed>, found: int, unchanged: array<array-key, mixed>, updated: array<array-key, mixed>, schema: array{id: int, slug: null|string, title: null|string}}>
      */
     public function importFromCsv(
         string $filePath,
@@ -357,8 +357,8 @@ class ImportService
      * @param bool        $events      Whether to dispatch object lifecycle events
      *
      * @return         array<string, array> Summary of import with sheet-based results
-     * @phpstan-return array<string, array{found: int, created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
-     * @psalm-return   array<string, array{found: int, created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
+     * @phpstan-return array<string, array{found: int, created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>, schema?: array{id: int, slug: null|string, title: null|string}, debug?: array}>
+     * @psalm-return   array<string, array{created: array<array-key, mixed>, errors: array<array-key, mixed>, found: int, unchanged: array<array-key, mixed>, updated: array<array-key, mixed>, schema?: array{id: int, slug: null|string, title: null|string}, debug?: array}>
      */
     private function processMultiSchemaSpreadsheetAsync(Spreadsheet $spreadsheet, Register $register, int $chunkSize, bool $validation=false, bool $events=false, bool $rbac=true, bool $multi=true, bool $publish=false, ?IUser $currentUser=null): array
     {
@@ -450,9 +450,9 @@ class ImportService
      * @param bool          $validation  Whether to validate objects against schema definitions
      * @param bool          $events      Whether to dispatch object lifecycle events
      *
-     * @return         array<string, array> Sheet processing summary
-     * @phpstan-return array<string, array{found: int, created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
-     * @psalm-return   array<string, array{found: int, created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
+     * @return         array Sheet processing summary
+     * @phpstan-return array{found: int, created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>, deduplication_efficiency?: string}
+     * @psalm-return   array{created: array<array-key, mixed>, errors: array<array-key, mixed>, found: int, unchanged: array<array-key, mixed>, updated: array<array-key, mixed>, deduplication_efficiency?: non-empty-lowercase-string}
      */
     private function processSpreadsheetBatch(
         Spreadsheet $spreadsheet,
@@ -587,9 +587,9 @@ class ImportService
      * @param bool                                          $validation Whether to validate objects against schema definitions
      * @param bool                                          $events     Whether to dispatch object lifecycle events
      *
-     * @return         array<string, array> Sheet processing summary
-     * @phpstan-return array<string, array{found: int, created: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
-     * @psalm-return   array<string, array{found: int, created: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
+     * @return         array Sheet processing summary
+     * @phpstan-return array{found: int, created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>, performance?: array{efficiency: float, objectsPerSecond: float, totalFound: int, totalProcessed: int, totalTime: float, totalTimeMs: float}, deduplication_efficiency?: string}
+     * @psalm-return   array{created: array<array-key, mixed>, errors: array<array-key, mixed>, found: int, unchanged: array<array-key, mixed>, updated: array<array-key, mixed>, performance?: array{efficiency: 0|float, objectsPerSecond: float, totalFound: int<0, max>, totalProcessed: int<0, max>, totalTime: float, totalTimeMs: float}, deduplication_efficiency?: non-empty-lowercase-string}
      */
     private function processCsvSheet(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet, Register $register, Schema $schema, int $chunkSize, bool $validation=false, bool $events=false, bool $rbac=true, bool $multi=true, bool $publish=false, ?IUser $currentUser=null): array
     {
@@ -744,9 +744,10 @@ class ImportService
      * @param Schema   $schema   The schema
      * @param int      $rowIndex Row index for error reporting
      *
-     * @return array<string, mixed>|null Object data or null if transformation fails
+     * @return array<string, mixed> Object data (always returns array)
+     * @psalm-return array{'@self': non-empty-array<string, int|non-empty-mixed|string>, ...<int|string, mixed>}
      */
-    private function transformCsvRowToObject(array $rowData, Register $register, Schema $schema, int $rowIndex, ?IUser $currentUser=null): ?array
+    private function transformCsvRowToObject(array $rowData, Register $register, Schema $schema, int $rowIndex, ?IUser $currentUser=null): array
     {
         // Use instance cache instead of static to prevent issues between requests.
         $schemaId = $schema->getId();
@@ -909,8 +910,8 @@ class ImportService
      * @param Schema|null                                   $schema        Optional schema
      *
      * @return         array<string, array> Chunk processing result
-     * @phpstan-return array{objects: array<int, array<string, mixed>>, errors: array<int, array<string, mixed>>}
-     * @psalm-return   array{objects: array<int, array<string, mixed>>, errors: array<int, array<string, mixed>>}
+     * @phpstan-return array{objects: array<int, array<string, mixed>>}
+     * @psalm-return   array{objects: list<array<string, mixed>>}
      */
     private function processExcelChunk(
         \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet,
@@ -1073,7 +1074,8 @@ class ImportService
      * @param Schema|null                                   $schema           Optional schema
      * @param array                                         $schemaProperties Schema properties
      *
-     * @return array<string, array> Chunk processing summary
+     * @return array Chunk processing summary
+     * @psalm-return array{created: list<mixed>, errors: list<mixed>, found: int, unchanged: array<never, never>, updated: list<mixed>}
      */
     private function processChunk(
         \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet,
@@ -1652,10 +1654,13 @@ class ImportService
     {
         if ($totalImported > 10000) {
             // Fast mode for large imports.
+            return 'fast';
         } else if ($totalImported > 1000) {
             // Balanced mode for medium imports.
+            return 'balanced';
         } else {
             // Safe mode for small imports.
+            return 'safe';
         }
 
     }//end getRecommendedWarmupMode()

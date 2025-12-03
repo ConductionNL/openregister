@@ -629,29 +629,29 @@ class ObjectsController extends Controller
             /*
              * @var array{name: array<int, string>|string, type: array<int, string>|string, tmp_name: array<int, string>|string, error: array<int, int>|int, size: array<int, int>|int} $fileData
              */
-            if (is_array($fileData['name']) === true) {
+            /** @var string|array<int, string> $nameValue */
+            $nameValue = $fileData['name'];
+            if (is_array($nameValue) === true) {
                 // Handle array uploads: images[] becomes images with array values.
                 // We need to preserve all files, so use indexed keys: images[0], images[1], etc.
-                /*
-                 * @var array<int, string> $nameArray
-                 */
-                $nameArray = $fileData['name'];
-                /*
-                 * @var array<int, string> $typeArray
-                 */
-                $typeArray = is_array($fileData['type']) ? $fileData['type'] : [];
-                /*
-                 * @var array<int, string> $tmpNameArray
-                 */
-                $tmpNameArray = is_array($fileData['tmp_name']) ? $fileData['tmp_name'] : [];
-                /*
-                 * @var array<int, int> $errorArray
-                 */
-                $errorArray = is_array($fileData['error']) ? $fileData['error'] : [];
-                /*
-                 * @var array<int, int> $sizeArray
-                 */
-                $sizeArray = is_array($fileData['size']) ? $fileData['size'] : [];
+                // In PHP $_FILES, when name is an array, all other fields are also arrays.
+                /** @var array<int, string> $nameArray */
+                $nameArray = $nameValue;
+                // Extract values - in $_FILES structure, when name is array, others are arrays too.
+                // Use mixed type and then check to help Psalm understand.
+                /** @var mixed $typeRaw */
+                $typeRaw = $fileData['type'];
+                /** @var mixed $tmpNameRaw */
+                $tmpNameRaw = $fileData['tmp_name'];
+                /** @var mixed $errorRaw */
+                $errorRaw = $fileData['error'];
+                /** @var mixed $sizeRaw */
+                $sizeRaw = $fileData['size'];
+                // Convert to arrays, handling both array and scalar cases for safety.
+                $typeArray    = is_array($typeRaw) ? $typeRaw : [];
+                $tmpNameArray = is_array($tmpNameRaw) ? $tmpNameRaw : [];
+                $errorArray   = is_array($errorRaw) ? $errorRaw : [];
+                $sizeArray    = is_array($sizeRaw) ? $sizeRaw : [];
                 $fileCount = count($nameArray);
                 for ($i = 0; $i < $fileCount; $i++) {
                     // Use indexed key to preserve all files: images[0], images[1], images[2].
@@ -764,29 +764,29 @@ class ObjectsController extends Controller
             /*
              * @var array{name: array<int, string>|string, type: array<int, string>|string, tmp_name: array<int, string>|string, error: array<int, int>|int, size: array<int, int>|int} $fileData
              */
-            if (is_array($fileData['name']) === true) {
+            /** @var string|array<int, string> $nameValue */
+            $nameValue = $fileData['name'];
+            if (is_array($nameValue) === true) {
                 // Handle array uploads: images[] becomes images with array values.
                 // We need to preserve all files, so use indexed keys: images[0], images[1], etc.
-                /*
-                 * @var array<int, string> $nameArray
-                 */
-                $nameArray = $fileData['name'];
-                /*
-                 * @var array<int, string> $typeArray
-                 */
-                $typeArray = is_array($fileData['type']) ? $fileData['type'] : [];
-                /*
-                 * @var array<int, string> $tmpNameArray
-                 */
-                $tmpNameArray = is_array($fileData['tmp_name']) ? $fileData['tmp_name'] : [];
-                /*
-                 * @var array<int, int> $errorArray
-                 */
-                $errorArray = is_array($fileData['error']) ? $fileData['error'] : [];
-                /*
-                 * @var array<int, int> $sizeArray
-                 */
-                $sizeArray = is_array($fileData['size']) ? $fileData['size'] : [];
+                // In PHP $_FILES, when name is an array, all other fields are also arrays.
+                /** @var array<int, string> $nameArray */
+                $nameArray = $nameValue;
+                // Extract values - in $_FILES structure, when name is array, others are arrays too.
+                // Use mixed type and then check to help Psalm understand.
+                /** @var mixed $typeRaw */
+                $typeRaw = $fileData['type'];
+                /** @var mixed $tmpNameRaw */
+                $tmpNameRaw = $fileData['tmp_name'];
+                /** @var mixed $errorRaw */
+                $errorRaw = $fileData['error'];
+                /** @var mixed $sizeRaw */
+                $sizeRaw = $fileData['size'];
+                // Convert to arrays, handling both array and scalar cases for safety.
+                $typeArray    = is_array($typeRaw) ? $typeRaw : [];
+                $tmpNameArray = is_array($tmpNameRaw) ? $tmpNameRaw : [];
+                $errorArray   = is_array($errorRaw) ? $errorRaw : [];
+                $sizeArray    = is_array($sizeRaw) ? $sizeRaw : [];
                 $fileCount = count($nameArray);
                 for ($i = 0; $i < $fileCount; $i++) {
                     // Use indexed key to preserve all files: images[0], images[1], images[2].

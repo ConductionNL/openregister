@@ -414,7 +414,7 @@ class OrganisationService
     /**
      * Get organisations for the current user
      *
-     * @param bool $useCache Whether to use session cache (temporarily disabled)
+     * @param bool $_useCache Whether to use session cache (temporarily disabled)
      *
      * @return array Array of Organisation objects
      */

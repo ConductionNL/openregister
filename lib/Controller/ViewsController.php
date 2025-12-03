@@ -267,7 +267,7 @@ class ViewsController extends Controller
             $data = $this->request->getParams();
 
             // Validate required fields.
-            if (!isset($data['name']) === false || empty($data['name']) === true) {
+            if (isset($data['name']) === false || empty($data['name']) === true) {
                 return new JSONResponse(
                         data: [
                             'error' => 'View name is required',
@@ -365,7 +365,7 @@ class ViewsController extends Controller
             $data = $this->request->getParams();
 
             // Validate required fields.
-            if (!isset($data['name']) === false || empty($data['name']) === true) {
+            if (isset($data['name']) === false || empty($data['name']) === true) {
                 return new JSONResponse(
                         data: [
                             'error' => 'View name is required',

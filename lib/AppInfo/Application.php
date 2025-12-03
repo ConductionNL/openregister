@@ -262,7 +262,8 @@ class Application extends App implements IBootstrap
                     $container->get(SchemaPropertyValidatorService::class),
                     $container->get(OrganisationService::class),
                     $container->get('OCP\IUserSession'),
-                    $container->get('OCP\IGroupManager')
+                    $container->get('OCP\IGroupManager'),
+                    $container->get('OCP\IAppConfig')
                     );
                 }
                 );
@@ -298,7 +299,8 @@ class Application extends App implements IBootstrap
                     $container->get('OCP\EventDispatcher\IEventDispatcher'),
                     $container->get(ObjectEntityMapper::class),
                     $container->get('OCP\IUserSession'),
-                    $container->get('OCP\IGroupManager')
+                    $container->get('OCP\IGroupManager'),
+                    $container->get('OCP\IAppConfig')
                     );
                 }
                 );
