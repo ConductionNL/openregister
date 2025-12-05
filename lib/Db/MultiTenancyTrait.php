@@ -306,8 +306,9 @@ trait MultiTenancyTrait
 
             // If no conditions were added, deny all access.
             if ($orgConditions->count() === 0) {
-                $qb->andWhere($qb->expr()->eq('1', $qb->createNamedParameter('0')));
-                // Always false.
+                // Use raw SQL to create an always-false condition (1 = 0).
+                // Note: Using raw SQL instead of literal() as it avoids query builder interpretation issues.
+                $qb->andWhere('1 = 0');
             } else {
                 $qb->andWhere($orgConditions);
             }
