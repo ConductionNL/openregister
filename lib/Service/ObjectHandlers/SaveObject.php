@@ -1648,7 +1648,7 @@ class SaveObject
         if ($uuid === null && (isset($selfData['id']) || isset($data['id']))) {
             $uuid = $selfData['id'] ?? $data['id'];
         }
-        
+
         if ($uuid === '') {
             $uuid = null;
         }
@@ -1985,6 +1985,19 @@ class SaveObject
 
         // NOTE: Relations are already updated in prepareObjectForCreation() - no need to update again
         // Duplicate call would overwrite relations after handleInverseRelationsWriteBack removes properties
+        // Update object relations.
+
+        try {
+            $objectEntity = $this->updateObjectRelations($existingObject, $preparedData, $schema);
+        } catch (Exception $e) {
+            // CRITICAL FIX: Relation processing failures indicate serious data integrity issues!
+            throw new \Exception(
+                'Object relations processing failed: ' . $e->getMessage() .
+                '. This indicates invalid relation data or schema configuration problems.',
+                0,
+                $e
+            );
+        }
 
         return $existingObject;
 
