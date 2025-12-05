@@ -666,7 +666,9 @@ class SaveObject
                 // Check for downloadUrl first (preferred).
                 // Use array_key_exists to safely check and access array keys.
                 // Add type assertion to help Psalm understand this is a non-empty array.
-                /** @var array<string, mixed> $imageValue */
+                /*
+                 * @var array<string, mixed> $imageValue
+                 */
                 if (array_key_exists('downloadUrl', $imageValue) === true) {
                     $downloadUrlValue = $imageValue['downloadUrl'];
                     if (is_string($downloadUrlValue) === true) {
@@ -757,6 +759,8 @@ class SaveObject
      * @psalm-return   string|null
      * @phpstan-return string|null
      */
+
+
     /**
      * @return mixed
      */
@@ -1491,7 +1495,9 @@ class SaveObject
                 try {
                     // Find the target object.
                     $targetObject = $this->objectEntityMapper->find($targetUuid);
-                    /** @psalm-suppress TypeDoesNotContainNull - find() throws DoesNotExistException, never returns null */
+                    /*
+                     * @psalm-suppress TypeDoesNotContainNull - find() throws DoesNotExistException, never returns null
+                     */
                     if ($targetObject === null) {
                         continue;
                     }
@@ -3411,12 +3417,12 @@ class SaveObject
             if (is_array($tag)) {
                 $tag = implode(',', array_filter($tag, 'is_string'));
             }
-            
+
             // Ensure tag is a string.
             if (!is_string($tag)) {
                 continue;
             }
-            
+
             // Replace property name placeholder.
             $tag = str_replace('{property}', $propertyName, $tag);
             $tag = str_replace('{propertyName}', $propertyName, $tag);
@@ -3427,7 +3433,7 @@ class SaveObject
             }
 
             $processedTags[] = $tag;
-        }
+        }//end foreach
 
         return $processedTags;
 

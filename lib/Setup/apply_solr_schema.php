@@ -30,7 +30,7 @@ echo "- API: /apps/openregister/api/settings/solr/fields/create\n\n";
 echo "Exiting without making changes...\n";
 exit(1);
 
-/**
+/*
  * DEPRECATED CODE BELOW - This code is unreachable due to exit(1) above.
  * Kept for reference only. Do not use this script.
  *

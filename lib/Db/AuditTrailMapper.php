@@ -85,8 +85,8 @@ class AuditTrailMapper extends QBMapper
         $qb->select('*')
             ->from('openregister_audit_trails')
             ->where(
-                $qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT))
-            );
+                    $qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT))
+                    );
 
         return $this->findEntity(query: $qb);
 
@@ -169,8 +169,8 @@ class AuditTrailMapper extends QBMapper
         // Add search on changed field if search term provided.
         if ($search !== null && $search !== '') {
             $qb->andWhere(
-                $qb->expr()->like('changed', $qb->createNamedParameter('%'.$search.'%'))
-            );
+                    $qb->expr()->like('changed', $qb->createNamedParameter('%'.$search.'%'))
+                    );
         }
 
         // Add sorting.
@@ -337,44 +337,47 @@ class AuditTrailMapper extends QBMapper
         $qb->select('*')
             ->from('openregister_audit_trails')
             ->where(
-                $qb->expr()->eq('object_id', $qb->createNamedParameter($objectId, IQueryBuilder::PARAM_INT))
-            )
+                    $qb->expr()->eq('object_id', $qb->createNamedParameter($objectId, IQueryBuilder::PARAM_INT))
+                    )
             ->andWhere(
-                $qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid, IQueryBuilder::PARAM_STR))
-            )
+                    $qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid, IQueryBuilder::PARAM_STR))
+                    )
             ->orderBy('created', 'DESC');
 
         // Add condition based on until parameter.
         if ($until instanceof \DateTime === true) {
             $qb->andWhere(
-                $qb->expr()->gte(
-                    'created',
-                    $qb->createNamedParameter(
-                        $until->format('Y-m-d H:i:s'),
-                        IQueryBuilder::PARAM_STR
-                    )
-                )
-            );
+                    $qb->expr()->gte(
+                            'created',
+                            $qb->createNamedParameter(
+                                    $until->format('Y-m-d H:i:s'),
+                                    IQueryBuilder::PARAM_STR
+                                    )
+                            )
+                    );
         } else if (is_string($until) === true) {
             if ($this->isSemanticVersion($until) === true) {
                 // Handle semantic version.
                 $qb->andWhere(
-                    $qb->expr()->eq('version', $qb->createNamedParameter($until, IQueryBuilder::PARAM_STR))
-                );
+                        $qb->expr()->eq('version', $qb->createNamedParameter($until, IQueryBuilder::PARAM_STR))
+                        );
             } else {
                 // Handle audit trail ID.
                 $qb->andWhere(
-                    $qb->expr()->eq('id', $qb->createNamedParameter($until, IQueryBuilder::PARAM_STR))
-                );
+                        $qb->expr()->eq('id', $qb->createNamedParameter($until, IQueryBuilder::PARAM_STR))
+                        );
                 // We want all entries up to and including this ID.
                 $qb->orWhere(
-                    $qb->expr()->gt(
-                        'created',
-                        $qb->createFunction(
-                            sprintf(
-                                '(SELECT created FROM `*PREFIX*openregister_audit_trails` WHERE id = %s)',
-                                    $qb->createNamedParameter($until, IQueryBuilder::PARAM_STR)
-                            )
+                        $qb->expr()->gt(
+                                'created',
+                                $qb->createFunction(
+                                        sprintf(
+                                                '(SELECT created FROM `*PREFIX*openregister_audit_trails` WHERE id = %s)',
+                                                $qb->createNamedParameter($until, IQueryBuilder::PARAM_STR)
+                                                )
+                                        )
+                                )
+                        );
                         )
                     )
                 );
@@ -419,8 +422,8 @@ class AuditTrailMapper extends QBMapper
 
         // Get audit trail entries until the specified point.
         $auditTrails = $this->findByObjectUntil(
-            objectId: $object->getId(),
-            objectUuid: $object->getUuid(),
+                objectId: $object->getId(),
+                objectUuid: $object->getUuid(),
             until: $until
         );
 
@@ -491,8 +494,8 @@ class AuditTrailMapper extends QBMapper
         try {
             $qb = $this->db->getQueryBuilder();
             $qb->select(
-                $qb->createFunction('COUNT(id) as total'),
-                $qb->createFunction('COALESCE(SUM(size), 0) as size')
+                    $qb->createFunction('COUNT(id) as total'),
+                    $qb->createFunction('COALESCE(SUM(size), 0) as size')
             )
                 ->from($this->getTableName());
 
@@ -515,13 +518,14 @@ class AuditTrailMapper extends QBMapper
                     if (($combination['register'] ?? null) !== null) {
                         $orConditions->add($qb->expr()->isNull('register'));
                         $orConditions->add(
-                            $qb->expr()->neq(
-                                'register',
-                                $qb->createNamedParameter(
-                                    $combination['register'],
-                                    IQueryBuilder::PARAM_INT
-                                )
-                            )
+                                $qb->expr()->neq(
+                                        'register',
+                                        $qb->createNamedParameter(
+                                                $combination['register'],
+                                                IQueryBuilder::PARAM_INT
+                                                )
+                                        )
+                                );
                         );
                     }
 
@@ -529,13 +533,14 @@ class AuditTrailMapper extends QBMapper
                     if (($combination['schema'] ?? null) !== null) {
                         $orConditions->add($qb->expr()->isNull('schema'));
                         $orConditions->add(
-                            $qb->expr()->neq(
-                                'schema',
-                                $qb->createNamedParameter(
-                                    $combination['schema'],
-                                    IQueryBuilder::PARAM_INT
-                                )
-                            )
+                                $qb->expr()->neq(
+                                        'schema',
+                                        $qb->createNamedParameter(
+                                                $combination['schema'],
+                                                IQueryBuilder::PARAM_INT
+                                                )
+                                        )
+                                );
                         );
                     }//end if
 
@@ -606,10 +611,10 @@ class AuditTrailMapper extends QBMapper
 
             // Main query for orphaned audit trails.
             $qb->select(
-                $qb->createFunction('DATE(created) as date'),
-                'action',
-                $qb->createFunction('COUNT(*) as count')
-            )
+                    $qb->createFunction('DATE(created) as date'),
+                    'action',
+                    $qb->createFunction('COUNT(*) as count')
+                    )
                 ->from($this->getTableName())
                 ->groupBy('date', 'action')
                 ->orderBy('date', 'ASC');
@@ -706,19 +711,19 @@ class AuditTrailMapper extends QBMapper
             // Get recent action counts.
             $qb = $this->db->getQueryBuilder();
             $qb->select(
-                'action',
-                $qb->createFunction('COUNT(*) as count')
+                    'action',
+                    $qb->createFunction('COUNT(*) as count')
             )
                 ->from($this->getTableName())
                 ->where(
-                    $qb->expr()->gte(
-                        'created',
-                        $qb->createNamedParameter(
-                            (new \DateTime())->modify("-{$hours} hours")->format('Y-m-d H:i:s'),
-                            IQueryBuilder::PARAM_STR
+                        $qb->expr()->gte(
+                                'created',
+                                $qb->createNamedParameter(
+                                        (new \DateTime())->modify("-{$hours} hours")->format('Y-m-d H:i:s'),
+                                        IQueryBuilder::PARAM_STR
+                                        )
+                                )
                         )
-                    )
-                )
                 ->groupBy('action');
 
             // Add register filter if provided.
@@ -797,19 +802,19 @@ class AuditTrailMapper extends QBMapper
         try {
             $qb = $this->db->getQueryBuilder();
             $qb->select(
-                'action',
-                $qb->createFunction('COUNT(*) as count')
-            )
+                    'action',
+                    $qb->createFunction('COUNT(*) as count')
+                    )
                 ->from($this->getTableName())
                 ->where(
-                    $qb->expr()->gte(
-                        'created',
-                        $qb->createNamedParameter(
-                            (new \DateTime())->modify("-{$hours} hours")->format('Y-m-d H:i:s'),
-                            IQueryBuilder::PARAM_STR
+                        $qb->expr()->gte(
+                                'created',
+                                $qb->createNamedParameter(
+                                        (new \DateTime())->modify("-{$hours} hours")->format('Y-m-d H:i:s'),
+                                        IQueryBuilder::PARAM_STR
+                                        )
+                                )
                         )
-                    )
-                )
                 ->groupBy('action');
 
             // Add register filter if provided.
@@ -874,19 +879,19 @@ class AuditTrailMapper extends QBMapper
         try {
             $qb = $this->db->getQueryBuilder();
             $qb->select(
-                'object',
-                $qb->createFunction('COUNT(*) as count')
-            )
+                    'object',
+                    $qb->createFunction('COUNT(*) as count')
+                    )
                 ->from($this->getTableName())
                 ->where(
-                    $qb->expr()->gte(
-                        'created',
-                        $qb->createNamedParameter(
-                            (new \DateTime())->modify("-{$hours} hours")->format('Y-m-d H:i:s'),
-                            IQueryBuilder::PARAM_STR
+                        $qb->expr()->gte(
+                                'created',
+                                $qb->createNamedParameter(
+                                        (new \DateTime())->modify("-{$hours} hours")->format('Y-m-d H:i:s'),
+                                        IQueryBuilder::PARAM_STR
+                                        )
+                                )
                         )
-                    )
-                )
                 ->groupBy('object')
                 ->orderBy('count', 'DESC');
 
@@ -1042,11 +1047,11 @@ class AuditTrailMapper extends QBMapper
             // Update audit trails that don't have an expiry date set.
             $qb->update($this->getTableName())
                 ->set(
-                       'expires',
-                       $qb->createFunction(
-                   sprintf('DATE_ADD(created, INTERVAL %d SECOND)', $retentionSeconds)
-                )
-                       )
+                        'expires',
+                        $qb->createFunction(
+                                sprintf('DATE_ADD(created, INTERVAL %d SECOND)', $retentionSeconds)
+                                )
+                        )
                 ->where($qb->expr()->isNull('expires'));
 
             // Execute the update and return number of affected rows.

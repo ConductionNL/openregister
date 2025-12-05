@@ -326,7 +326,9 @@ class FilesController extends Controller
 
             // Normalize single file upload to array structure.
             // $_FILES can have 'name' as string (single file) or array (multiple files).
-            /** @var string|array<int, string>|null $fileName */
+            /*
+             * @var string|array<int, string>|null $fileName
+             */
             $fileName = $files['name'] ?? null;
             if ($fileName !== null && is_array($fileName) === false) {
                 // Single file upload - $fileName is a string.
@@ -367,9 +369,13 @@ class FilesController extends Controller
                     $typeArray    = is_array($files['type'] ?? null) ? $files['type'] : null;
                     $tmpNameArray = is_array($files['tmp_name'] ?? null) ? $files['tmp_name'] : null;
                     // Get error and size arrays, handling both single values and arrays.
-                    /** @var int|array<int, int>|null $errorValue */
+                    /*
+                     * @var int|array<int, int>|null $errorValue
+                     */
                     $errorValue = $files['error'] ?? null;
-                    /** @var int|array<int, int>|null $sizeValue */
+                    /*
+                     * @var int|array<int, int>|null $sizeValue
+                     */
                     $sizeValue  = $files['size'] ?? null;
                     $errorArray = is_array($errorValue) ? $errorValue : null;
                     $sizeArray  = is_array($sizeValue) ? $sizeValue : null;

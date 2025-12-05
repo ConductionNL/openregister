@@ -1513,10 +1513,10 @@ class SettingsService
      * This method is kept for backward compatibility but should not be used.
      * The controller now uses GuzzleSolrService directly to avoid circular dependencies.
      *
-     * @param  int $_batchSize  Number of objects to process per batch (unused, kept for API compatibility)
-     * @param  int $maxObjects Maximum number of objects to index (unused, kept for API compatibility)
-     * @param  string $mode Processing mode (unused, kept for API compatibility)
-     * @param  bool $collectErrors Whether to collect errors (unused, kept for API compatibility)
+     * @param  int    $_batchSize    Number of objects to process per batch (unused, kept for API compatibility)
+     * @param  int    $maxObjects    Maximum number of objects to index (unused, kept for API compatibility)
+     * @param  string $mode          Processing mode (unused, kept for API compatibility)
+     * @param  bool   $collectErrors Whether to collect errors (unused, kept for API compatibility)
      * @return array Warmup operation results with statistics and status
      * @throws \RuntimeException Always throws exception indicating method is deprecated
      */

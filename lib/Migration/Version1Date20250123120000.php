@@ -91,13 +91,13 @@ class Version1Date20250123120000 extends SimpleMigrationStep
             // Add active field (boolean flag for active organisation).
             if ($table->hasColumn('active') === false) {
                 $table->addColumn(
-                    'active',
-                    Types::BOOLEAN,
-                    [
-                        'notnull' => false,
-                        'default' => true,
-                    ]
-                );
+                        'active',
+                        Types::BOOLEAN,
+                        [
+                            'notnull' => false,
+                            'default' => true,
+                        ]
+                        );
                 $output->info(message: 'Added active column to organisations table');
             }
         }

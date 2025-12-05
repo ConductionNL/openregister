@@ -989,29 +989,36 @@ class RegistersController extends Controller
 
             // Get the register
             $register = $this->registerMapper->find($id);
-            
+
             // Set published date and clear depublished date if set
             $register->setPublished($date);
             $register->setDepublished(null);
-            
+
             // Update the register
             $updatedRegister = $this->registerMapper->update($register);
-            
-            $this->logger->info('Register published', [
-                'register_id' => $id,
-                'published_date' => $date->format('Y-m-d H:i:s')
-            ]);
+
+            $this->logger->info(
+                    'Register published',
+                    [
+                        'register_id'    => $id,
+                        'published_date' => $date->format('Y-m-d H:i:s'),
+                    ]
+                    );
 
             return new JSONResponse($updatedRegister->jsonSerialize());
         } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => 'Register not found'], 404);
         } catch (\Exception $e) {
-            $this->logger->error('Failed to publish register', [
-                'register_id' => $id,
-                'error' => $e->getMessage()
-            ]);
+            $this->logger->error(
+                    'Failed to publish register',
+                    [
+                        'register_id' => $id,
+                        'error'       => $e->getMessage(),
+                    ]
+                    );
             return new JSONResponse(['error' => $e->getMessage()], 400);
-        }
+        }//end try
+
     }//end publish()
 
 
@@ -1040,28 +1047,35 @@ class RegistersController extends Controller
 
             // Get the register
             $register = $this->registerMapper->find($id);
-            
+
             // Set depublished date
             $register->setDepublished($date);
-            
+
             // Update the register
             $updatedRegister = $this->registerMapper->update($register);
-            
-            $this->logger->info('Register depublished', [
-                'register_id' => $id,
-                'depublished_date' => $date->format('Y-m-d H:i:s')
-            ]);
+
+            $this->logger->info(
+                    'Register depublished',
+                    [
+                        'register_id'      => $id,
+                        'depublished_date' => $date->format('Y-m-d H:i:s'),
+                    ]
+                    );
 
             return new JSONResponse($updatedRegister->jsonSerialize());
         } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => 'Register not found'], 404);
         } catch (\Exception $e) {
-            $this->logger->error('Failed to depublish register', [
-                'register_id' => $id,
-                'error' => $e->getMessage()
-            ]);
+            $this->logger->error(
+                    'Failed to depublish register',
+                    [
+                        'register_id' => $id,
+                        'error'       => $e->getMessage(),
+                    ]
+                    );
             return new JSONResponse(['error' => $e->getMessage()], 400);
-        }
+        }//end try
+
     }//end depublish()
 
 

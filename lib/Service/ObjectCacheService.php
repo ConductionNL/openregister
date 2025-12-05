@@ -923,8 +923,10 @@ class ObjectCacheService
     {
         $startTime = microtime(true);
 
-        $this->objectCache        = [];
-        /** @psalm-suppress UndefinedThisPropertyAssignment - relationshipCache property doesn't exist, not used) */
+        $this->objectCache = [];
+        /*
+         * @psalm-suppress UndefinedThisPropertyAssignment - relationshipCache property doesn't exist, not used)
+         */
         $this->relationshipCache  = [];
         $this->inMemoryQueryCache = [];
         $this->nameCache          = [];

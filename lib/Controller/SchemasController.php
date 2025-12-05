@@ -820,33 +820,40 @@ class SchemasController extends Controller
 
             // Get the schema
             $schema = $this->schemaMapper->find($id);
-            
+
             // Set published date and clear depublished date if set
             $schema->setPublished($date);
             $schema->setDepublished(null);
-            
+
             // Update the schema
             $updatedSchema = $this->schemaMapper->update($schema);
-            
+
             // **CACHE INVALIDATION**: Clear schema cache when publication status changes
             $this->schemaCacheService->invalidateForSchemaChange($updatedSchema->getId(), 'publish');
             $this->schemaFacetCacheService->invalidateForSchemaChange($updatedSchema->getId(), 'publish');
-            
-            $this->logger->info('Schema published', [
-                'schema_id' => $id,
-                'published_date' => $date->format('Y-m-d H:i:s')
-            ]);
+
+            $this->logger->info(
+                    'Schema published',
+                    [
+                        'schema_id'      => $id,
+                        'published_date' => $date->format('Y-m-d H:i:s'),
+                    ]
+                    );
 
             return new JSONResponse($updatedSchema->jsonSerialize());
         } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => 'Schema not found'], 404);
         } catch (\Exception $e) {
-            $this->logger->error('Failed to publish schema', [
-                'schema_id' => $id,
-                'error' => $e->getMessage()
-            ]);
+            $this->logger->error(
+                    'Failed to publish schema',
+                    [
+                        'schema_id' => $id,
+                        'error'     => $e->getMessage(),
+                    ]
+                    );
             return new JSONResponse(['error' => $e->getMessage()], 400);
-        }
+        }//end try
+
     }//end publish()
 
 
@@ -875,32 +882,39 @@ class SchemasController extends Controller
 
             // Get the schema
             $schema = $this->schemaMapper->find($id);
-            
+
             // Set depublished date
             $schema->setDepublished($date);
-            
+
             // Update the schema
             $updatedSchema = $this->schemaMapper->update($schema);
-            
+
             // **CACHE INVALIDATION**: Clear schema cache when publication status changes
             $this->schemaCacheService->invalidateForSchemaChange($updatedSchema->getId(), 'depublish');
             $this->schemaFacetCacheService->invalidateForSchemaChange($updatedSchema->getId(), 'depublish');
-            
-            $this->logger->info('Schema depublished', [
-                'schema_id' => $id,
-                'depublished_date' => $date->format('Y-m-d H:i:s')
-            ]);
+
+            $this->logger->info(
+                    'Schema depublished',
+                    [
+                        'schema_id'        => $id,
+                        'depublished_date' => $date->format('Y-m-d H:i:s'),
+                    ]
+                    );
 
             return new JSONResponse($updatedSchema->jsonSerialize());
         } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => 'Schema not found'], 404);
         } catch (\Exception $e) {
-            $this->logger->error('Failed to depublish schema', [
-                'schema_id' => $id,
-                'error' => $e->getMessage()
-            ]);
+            $this->logger->error(
+                    'Failed to depublish schema',
+                    [
+                        'schema_id' => $id,
+                        'error'     => $e->getMessage(),
+                    ]
+                    );
             return new JSONResponse(['error' => $e->getMessage()], 400);
-        }
+        }//end try
+
     }//end depublish()
 
 

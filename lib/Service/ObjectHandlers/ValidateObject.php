@@ -970,7 +970,9 @@ class ValidateObject
                     // At this point, $schema is string|null (not int, not Schema).
                     // Since we've already checked !== null, it must be string.
                     // Use type annotation to help Psalm understand.
-                    /** @var string $schemaString */
+                    /*
+                     * @var string $schemaString
+                     */
                     $schemaString = $schema;
                     $schemaObject = $this->schemaMapper->find($schemaString)->getSchemaObject($this->urlGenerator);
                 }
@@ -1048,39 +1050,43 @@ class ValidateObject
 
         // Modify schema to allow null values for non-required fields.
         // This ensures that null values are valid for optional fields.
-        /** @psalm-suppress NoValue */
+        /*
+         * @psalm-suppress NoValue
+         */
         if (property_exists($schemaObject, 'properties') === true) {
             $properties = $schemaObject->properties;
-            /** @psalm-suppress TypeDoesNotContainType */
+            /*
+             * @psalm-suppress TypeDoesNotContainType
+             */
             if (isset($properties) === true && is_array($properties) === true) {
                 foreach ($properties as $propertyName => $propertySchema) {
-                // Skip required fields - they should not allow null unless explicitly defined.
-                if (in_array($propertyName, $requiredFields) === true) {
-                    continue;
-                }
-
-                // Special handling for enum fields - only allow null if not explicitly defined in enum.
-                if (($propertySchema->enum ?? null) !== null && is_array($propertySchema->enum) === true) {
-                    // If enum doesn't include null, don't add it automatically.
-                    // Enum fields should be either set to a valid enum value or omitted entirely.
-                    if (in_array(null, $propertySchema->enum, true) === false) {
+                    // Skip required fields - they should not allow null unless explicitly defined.
+                    if (in_array($propertyName, $requiredFields) === true) {
                         continue;
                     }
-                }
 
-                // For non-required fields, allow null values by modifying the type.
-                if (($propertySchema->type ?? null) !== null && is_string($propertySchema->type) === true) {
-                    // Convert single type to array with null support.
-                    $propertySchema->type = [$propertySchema->type, 'null'];
-                } else if (($propertySchema->type ?? null) !== null && is_array($propertySchema->type) === true) {
-                    // Add null to existing type array if not already present.
-                    if (in_array('null', $propertySchema->type, true) === false) {
-                        $propertySchema->type[] = 'null';
+                    // Special handling for enum fields - only allow null if not explicitly defined in enum.
+                    if (($propertySchema->enum ?? null) !== null && is_array($propertySchema->enum) === true) {
+                        // If enum doesn't include null, don't add it automatically.
+                        // Enum fields should be either set to a valid enum value or omitted entirely.
+                        if (in_array(null, $propertySchema->enum, true) === false) {
+                            continue;
+                        }
                     }
-                }
-            }//end foreach
-            }//end if inner
-        }//end if property_exists
+
+                    // For non-required fields, allow null values by modifying the type.
+                    if (($propertySchema->type ?? null) !== null && is_string($propertySchema->type) === true) {
+                        // Convert single type to array with null support.
+                        $propertySchema->type = [$propertySchema->type, 'null'];
+                    } else if (($propertySchema->type ?? null) !== null && is_array($propertySchema->type) === true) {
+                        // Add null to existing type array if not already present.
+                        if (in_array('null', $propertySchema->type, true) === false) {
+                            $propertySchema->type[] = 'null';
+                        }
+                    }
+                }//end foreach
+            }//end if
+        }//end if
 
         $validator = new Validator();
         $validator->setMaxErrors(100);

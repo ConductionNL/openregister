@@ -461,8 +461,8 @@ class Register extends Entity implements JsonSerializable
             'organisation'  => $this->organisation,
             'authorization' => $this->authorization,
             'groups'        => $groups,
-            'published'      => $published,
-            'depublished'    => $depublished,
+            'published'     => $published,
+            'depublished'   => $depublished,
             'quota'         => [
                 'storage'   => null,
         // To be set via admin configuration.

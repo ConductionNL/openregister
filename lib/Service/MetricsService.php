@@ -431,12 +431,16 @@ class MetricsService
         }
 
         // $days can never be 0 here because we check empty($growthData) === true above
-        /** @psalm-suppress TypeDoesNotContainType */
+        /*
+         * @psalm-suppress TypeDoesNotContainType
+         */
         if ($days <= 0) {
             return 0.0;
         }
 
-        /** @psalm-suppress TypeDoesNotContainType */
+        /*
+         * @psalm-suppress TypeDoesNotContainType
+         */
         return round($totalVectors / $days, 2);
 
     }//end calculateAverageVectorsPerDay()

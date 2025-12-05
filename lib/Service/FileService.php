@@ -441,8 +441,8 @@ class FileService
             }
         } catch (exception $e) {
             $this->logger->error(
-                message: 'Failed to create folder for entity: {message}',
-                context: ['message' => $e->getMessage(), 'exception' => $e]
+                    message: 'Failed to create folder for entity: {message}',
+                    context: ['message' => $e->getMessage(), 'exception' => $e]
             );
             return null;
         }
@@ -1034,8 +1034,8 @@ class FileService
         } catch (NotFoundException $e) {
             // File exists but we can't access it - likely an ownership issue.
             $this->logger->warning(
-                message: "checkOwnership: File {$file->getName()} (ID: {$file->getId()}) exists but not accessible, checking ownership"
-            );
+                    message: "checkOwnership: File {$file->getName()} (ID: {$file->getId()}) exists but not accessible, checking ownership"
+                    );
 
             try {
                 $fileOwner        = $file->getOwner();
@@ -1043,66 +1043,66 @@ class FileService
 
                 if ($fileOwner === null || $fileOwner->getUID() !== $openRegisterUser->getUID()) {
                     $this->logger->info(
-                        message: "checkOwnership: File {$file->getName()} (ID: {$file->getId()}) has incorrect owner, attempting to fix"
-                    );
+                            message: "checkOwnership: File {$file->getName()} (ID: {$file->getId()}) has incorrect owner, attempting to fix"
+                            );
 
                     // Try to fix the ownership.
                     $ownershipFixed = $this->ownFile($file);
 
                     if ($ownershipFixed === true) {
                         $this->logger->info(
-                            message: "checkOwnership: Successfully fixed ownership for file {$file->getName()} (ID: {$file->getId()})"
-                        );
+                                message: "checkOwnership: Successfully fixed ownership for file {$file->getName()} (ID: {$file->getId()})"
+                                );
                     } else {
                         $this->logger->error(
-                            message: "checkOwnership: Failed to fix ownership for file {$file->getName()} (ID: {$file->getId()})"
-                        );
+                                message: "checkOwnership: Failed to fix ownership for file {$file->getName()} (ID: {$file->getId()})"
+                                );
                         throw new Exception("Failed to fix file ownership for file: ".$file->getName());
                     }
                 } else {
                     $this->logger->info(
-                        message: "checkOwnership: File {$file->getName()} (ID: {$file->getId()}) already has correct owner, but still not accessible"
-                    );
+                            message: "checkOwnership: File {$file->getName()} (ID: {$file->getId()}) already has correct owner, but still not accessible"
+                            );
                 }//end if
             } catch (Exception $ownershipException) {
                 $this->logger->error(
-                    message: "checkOwnership: Error checking/fixing ownership for file {$file->getName()}: ".$ownershipException->getMessage()
-                );
+                        message: "checkOwnership: Error checking/fixing ownership for file {$file->getName()}: ".$ownershipException->getMessage()
+                        );
                 throw new Exception("Ownership check failed for file: ".$file->getName());
             }//end try
         } catch (NotPermittedException $e) {
             // Permission denied - likely an ownership issue.
             $this->logger->warning(
-                message: "checkOwnership: Permission denied for file {$file->getName()} (ID: {$file->getId()}), attempting ownership fix"
-            );
+                    message: "checkOwnership: Permission denied for file {$file->getName()} (ID: {$file->getId()}), attempting ownership fix"
+                    );
 
             try {
                 $ownershipFixed = $this->ownFile($file);
 
                 if ($ownershipFixed === true) {
                     $this->logger->info(
-                        message: "checkOwnership: Successfully fixed ownership for file {$file->getName()} "
-                            ."(ID: {$file->getId()}) after permission error"
-                    );
+                            message: "checkOwnership: Successfully fixed ownership for file {$file->getName()} "
+                                ."(ID: {$file->getId()}) after permission error"
+                            );
                 } else {
                     $this->logger->error(
-                        message: "checkOwnership: Failed to fix ownership for file {$file->getName()} "
-                            ."(ID: {$file->getId()}) after permission error"
-                    );
+                            message: "checkOwnership: Failed to fix ownership for file {$file->getName()} "
+                                ."(ID: {$file->getId()}) after permission error"
+                            );
                     throw new Exception("Failed to fix file ownership after permission error:".$file->getName());
                 }
             } catch (Exception $ownershipException) {
                 $this->logger->error(
-                    message: "checkOwnership: Error fixing ownership after permission error for file {$file->getName()}: "
-                        .$ownershipException->getMessage()
+                        message: "checkOwnership: Error fixing ownership after permission error for file {$file->getName()}: "
+                            .$ownershipException->getMessage()
                 );
                 throw new Exception("Ownership fix failed after permission error:".$file->getName());
             }//end try
         } catch (Exception $e) {
             // Other exceptions - log but don't necessarily fix ownership.
             $this->logger->debug(
-                message: "checkOwnership: Other exception while checking file {$file->getName()}: ".$e->getMessage()
-            );
+                    message: "checkOwnership: Other exception while checking file {$file->getName()}: ".$e->getMessage()
+                    );
         }//end try
 
     }//end checkOwnership()
@@ -1479,9 +1479,9 @@ class FileService
         // @TODO: The ownership check should be done on the Node before calling this method.
 
         $tagIds = $this->systemTagMapper->getTagIdsForObjects(
-            objIds: [$fileId],
-            objectType: $this::FILE_TAG_TYPE
-        );
+                objIds: [$fileId],
+                objectType: $this::FILE_TAG_TYPE
+                );
         if (isset($tagIds[$fileId]) === false || empty($tagIds[$fileId]) === true) {
             return [];
         }
@@ -1705,9 +1705,9 @@ class FileService
         try {
             // Check if a share already exists with this user.
             $existingShares = $this->shareManager->getSharesBy(
-                userId: $this->getUser()->getUID(),
-                shareType: \OCP\Share\IShare::TYPE_USER,
-                path: $file
+                    userId: $this->getUser()->getUID(),
+                    shareType: \OCP\Share\IShare::TYPE_USER,
+                    path: $file
             );
 
             foreach ($existingShares as $share) {
@@ -2364,9 +2364,9 @@ class FileService
 		try {
             // Check if the file already exists for this object.
             $existingFile = $this->getFile(
-                object: $objectEntity,
-                file: $fileName
-            );
+                    object: $objectEntity,
+                    file: $fileName
+                    );
 
             if ($existingFile !== null) {
                 // File exists, update it.
@@ -2374,18 +2374,18 @@ class FileService
 
                 // Update the existing file - pass the object so updateFile can find it in the object folder.
                 return $this->updateFile(
-                    filePath: $existingFile->getId(),
-                    content: $content,
-                    tags: $tags,
-                    object: $objectEntity
-                );
+                        filePath: $existingFile->getId(),
+                        content: $content,
+                        tags: $tags,
+                        object: $objectEntity
+                        );
             } else {
                 // File doesn't exist, create it.
                 $this->logger->info(message: "File $fileName doesn't exist for object {$objectEntity->getId()}, creating...");
 
                 return $this->addFile(
-                    objectEntity: $objectEntity,
-                    fileName: $fileName,
+                        objectEntity: $objectEntity,
+                        fileName: $fileName,
                     content: $content,
                     share: $share,
                     tags: $tags
@@ -2737,9 +2737,9 @@ class FileService
         try {
             $openRegisterUser = $this->getUser();
             $shareInfo = $this->fileMapper->publishFile(
-                fileId: $fileNode->getId(),
-                sharedBy: $openRegisterUser->getUID(),
-                shareOwner: $openRegisterUser->getUID(),
+                    fileId: $fileNode->getId(),
+                    sharedBy: $openRegisterUser->getUID(),
+                    shareOwner: $openRegisterUser->getUID(),
 // Read only.
             );
 

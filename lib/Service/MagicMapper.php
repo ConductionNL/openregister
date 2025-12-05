@@ -598,7 +598,9 @@ class MagicMapper
     private function checkTableExistsInDatabase(string $tableName): bool
     {
         try {
-            /** @psalm-suppress UndefinedInterfaceMethod - getSchemaManager() exists on Doctrine DBAL Connection */
+            /*
+             * @psalm-suppress UndefinedInterfaceMethod - getSchemaManager() exists on Doctrine DBAL Connection
+             */
             $schemaManager = $this->db->getSchemaManager();
             return $schemaManager->tablesExist([$tableName]);
         } catch (Exception $e) {
@@ -2026,7 +2028,9 @@ class MagicMapper
     private function getExistingTableColumns(string $tableName): array
     {
         try {
-            /** @psalm-suppress UndefinedInterfaceMethod - getSchemaManager() exists on Doctrine DBAL Connection */
+            /*
+             * @psalm-suppress UndefinedInterfaceMethod - getSchemaManager() exists on Doctrine DBAL Connection
+             */
             $schemaManager = $this->db->getSchemaManager();
             $columns       = $schemaManager->listTableColumns($tableName);
 
@@ -2135,7 +2139,9 @@ class MagicMapper
     private function dropTable(string $tableName): void
     {
         try {
-            /** @psalm-suppress UndefinedInterfaceMethod - getSchemaManager() exists on Doctrine DBAL Connection */
+            /*
+             * @psalm-suppress UndefinedInterfaceMethod - getSchemaManager() exists on Doctrine DBAL Connection
+             */
             $schemaManager = $this->db->getSchemaManager();
             $schemaManager->dropTable($tableName);
 
@@ -2179,7 +2185,9 @@ class MagicMapper
      */
     private function isJsonString(string $string): bool
     {
-        /** @psalm-suppress UnusedFunctionCall - json_decode is used to check for errors via json_last_error() */
+        /*
+         * @psalm-suppress UnusedFunctionCall - json_decode is used to check for errors via json_last_error()
+         */
         json_decode($string);
         return json_last_error() === JSON_ERROR_NONE;
 
@@ -2232,7 +2240,9 @@ class MagicMapper
     public function getExistingRegisterSchemaTables(): array
     {
         try {
-            /** @psalm-suppress UndefinedInterfaceMethod - getSchemaManager() exists on Doctrine DBAL Connection */
+            /*
+             * @psalm-suppress UndefinedInterfaceMethod - getSchemaManager() exists on Doctrine DBAL Connection
+             */
             $schemaManager = $this->db->getSchemaManager();
             $allTables     = $schemaManager->listTableNames();
 

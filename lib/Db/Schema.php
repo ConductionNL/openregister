@@ -161,7 +161,10 @@ class Schema extends Entity implements JsonSerializable
      *
      * @var array|null Facet configuration with field types and options
      */
-    /** @var array|string|null */
+
+    /**
+     * @var array|string|null
+     */
     protected $facets = null;
 
     /**
@@ -245,7 +248,10 @@ class Schema extends Entity implements JsonSerializable
      * @phpstan-var array<string, mixed>|null
      * @psalm-var   array<string, mixed>|null
      */
-    /** @var array|string|null */
+
+    /**
+     * @var array|string|null
+     */
     protected $configuration = null;
 
     /**
@@ -973,7 +979,9 @@ class Schema extends Entity implements JsonSerializable
 
         // Handle JSON strings from database.
         if (is_string($configuration) === true) {
-            /** @psalm-suppress NoValue - json_decode returns array when successful */
+            /*
+             * @psalm-suppress NoValue - json_decode returns array when successful
+             */
             $decoded = json_decode($configuration, true);
             if (json_last_error() === JSON_ERROR_NONE && $decoded !== null) {
                 $configuration = $decoded;

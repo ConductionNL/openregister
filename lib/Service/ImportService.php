@@ -744,7 +744,7 @@ class ImportService
      * @param Schema   $schema   The schema
      * @param int      $rowIndex Row index for error reporting
      *
-     * @return array<string, mixed> Object data (always returns array)
+     * @return       array<string, mixed> Object data (always returns array)
      * @psalm-return array{'@self': non-empty-array<string, int|non-empty-mixed|string>, ...<int|string, mixed>}
      */
     private function transformCsvRowToObject(array $rowData, Register $register, Schema $schema, int $rowIndex, ?IUser $currentUser=null): array
@@ -755,7 +755,9 @@ class ImportService
         $schemaIdKey = is_string($schemaId) ? $schemaId : (string) $schemaId;
 
         if (!isset($this->schemaPropertiesCache[$schemaIdKey])) {
-            /** @psalm-suppress InvalidPropertyAssignmentValue - getProperties() returns array compatible with array<string, array> */
+            /*
+             * @psalm-suppress InvalidPropertyAssignmentValue - getProperties() returns array compatible with array<string, array>
+             */
             $this->schemaPropertiesCache[$schemaIdKey] = $schema->getProperties();
         }
 
@@ -1075,7 +1077,7 @@ class ImportService
      * @param Schema|null                                   $schema           Optional schema
      * @param array                                         $schemaProperties Schema properties
      *
-     * @return array Chunk processing summary
+     * @return       array Chunk processing summary
      * @psalm-return array{created: list<mixed>, errors: list<mixed>, found: int, unchanged: array<never, never>, updated: list<mixed>}
      */
     private function processChunk(
@@ -1115,7 +1117,9 @@ class ImportService
                         function (callable $resolve, callable $_reject) use ($rowData, $index, $register, $schema, $startRow) {
                             // NO ERROR SUPPRESSION: Let processRow errors bubble up immediately!
                             $result = $this->processRow(rowData: $rowData, register: $register, schema: $schema, _rowIndex: $startRow + $index);
-                            /** @var callable(mixed): void $resolve */
+                            /*
+                             * @var callable(mixed): void $resolve
+                             */
                             $resolve($result);
                         }
                         );
@@ -1124,8 +1128,10 @@ class ImportService
             // Process promises in batches to limit concurrency.
             $batchSize = self::MAX_CONCURRENT;
             for ($i = 0; $i < count($promises); $i += $batchSize) {
-                $batch   = array_slice($promises, $i, $batchSize);
-                /** @psalm-suppress UndefinedFunction - React\Async\await is from external library */
+                $batch = array_slice($promises, $i, $batchSize);
+                /*
+                 * @psalm-suppress UndefinedFunction - React\Async\await is from external library
+                 */
                 $results = \React\Async\await(\React\Promise\all($batch));
 
                 foreach ($results as $result) {

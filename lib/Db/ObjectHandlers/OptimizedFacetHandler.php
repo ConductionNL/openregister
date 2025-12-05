@@ -262,10 +262,10 @@ class OptimizedFacetHandler
             ->selectAlias($queryBuilder->createFunction('COUNT(*)'), 'doc_count')
             ->from('openregister_objects')
             ->where(
-                $queryBuilder->expr()->isNotNull(
-                    $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
-                )
-            )
+                    $queryBuilder->expr()->isNotNull(
+                            $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
+                            )
+                    );
             ->groupBy('field_value')
             ->orderBy('doc_count', 'DESC');
         // Limit results for performance.
@@ -315,8 +315,8 @@ class OptimizedFacetHandler
         // 1. Most selective: ID-based filters.
         if (($baseQuery['_ids'] ?? null) !== null && is_array($baseQuery['_ids']) === true && empty($baseQuery['_ids']) === false) {
             $queryBuilder->andWhere(
-                $queryBuilder->expr()->in('id', $queryBuilder->createNamedParameter($baseQuery['_ids'], \Doctrine\DBAL\Connection::PARAM_INT_ARRAY))
-            );
+                    $queryBuilder->expr()->in('id', $queryBuilder->createNamedParameter($baseQuery['_ids'], \Doctrine\DBAL\Connection::PARAM_INT_ARRAY))
+                    );
         }
 
         // 2. High selectivity: register/schema filters.
@@ -338,14 +338,15 @@ class OptimizedFacetHandler
         if ($published === true) {
             $now = (new \DateTime())->format('Y-m-d H:i:s');
             $queryBuilder->andWhere(
-                $queryBuilder->expr()->andX(
-                    $queryBuilder->expr()->isNotNull('published'),
-                    $queryBuilder->expr()->lte('published', $queryBuilder->createNamedParameter($now)),
-                    $queryBuilder->expr()->orX(
-                        $queryBuilder->expr()->isNull('depublished'),
-                        $queryBuilder->expr()->gt('depublished', $queryBuilder->createNamedParameter($now))
-                    )
-                )
+                    $queryBuilder->expr()->andX(
+                            $queryBuilder->expr()->isNotNull('published'),
+                            $queryBuilder->expr()->lte('published', $queryBuilder->createNamedParameter($now)),
+                            $queryBuilder->expr()->orX(
+                                    $queryBuilder->expr()->isNull('depublished'),
+                                    $queryBuilder->expr()->gt('depublished', $queryBuilder->createNamedParameter($now))
+                                    )
+                            )
+                    );
             );
         }
 
