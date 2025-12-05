@@ -582,7 +582,9 @@ class SolrFileService
      */
     private function commandExists(string $command): bool
     {
-        /** @psalm-suppress ForbiddenCode */
+        /*
+         * @psalm-suppress ForbiddenCode
+         */
         $result = shell_exec(sprintf('which %s 2>/dev/null', escapeshellarg($command)));
         return !empty($result);
 

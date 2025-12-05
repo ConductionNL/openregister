@@ -63,14 +63,14 @@ use OCP\IURLGenerator;
  *   published: string|null
  * }
  *
- * @method \OCP\AppFramework\Db\Entity insert(\OCP\AppFramework\Db\Entity $entity)
- * @method \OCP\AppFramework\Db\Entity update(\OCP\AppFramework\Db\Entity $entity)
- * @method \OCP\AppFramework\Db\Entity insertOrUpdate(\OCP\AppFramework\Db\Entity $entity)
- * @method \OCP\AppFramework\Db\Entity delete(\OCP\AppFramework\Db\Entity $entity)
- * @method \OCP\AppFramework\Db\Entity find(int|string $id)
- * @method \OCP\AppFramework\Db\Entity findEntity(IQueryBuilder $query)
- * @method File[] findAll(int|null $limit = null, int|null $offset = null)
- * @method File[] findEntities(IQueryBuilder $query)
+ * @method         \OCP\AppFramework\Db\Entity insert(\OCP\AppFramework\Db\Entity $entity)
+ * @method         \OCP\AppFramework\Db\Entity update(\OCP\AppFramework\Db\Entity $entity)
+ * @method         \OCP\AppFramework\Db\Entity insertOrUpdate(\OCP\AppFramework\Db\Entity $entity)
+ * @method         \OCP\AppFramework\Db\Entity delete(\OCP\AppFramework\Db\Entity $entity)
+ * @method         \OCP\AppFramework\Db\Entity find(int|string $id)
+ * @method         \OCP\AppFramework\Db\Entity findEntity(IQueryBuilder $query)
+ * @method         File[] findAll(int|null $limit = null, int|null $offset = null)
+ * @method         File[] findEntities(IQueryBuilder $query)
  * @psalm-suppress LessSpecificImplementedReturnType - File[] is more specific than list<Entity>
  *
  * @template-extends QBMapper<Entity>

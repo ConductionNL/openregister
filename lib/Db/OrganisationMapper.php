@@ -121,7 +121,7 @@ class OrganisationMapper extends QBMapper
          * @var Organisation $oldEntity
          */
         // QBMapper doesn't have a find() method, use findByUuid instead.
-        $oldEntity = $this->findByUuid((string)$entity->getId());
+        $oldEntity = $this->findByUuid((string) $entity->getId());
 
         if ($entity instanceof Organisation) {
             $entity->setUpdated(new \DateTime());

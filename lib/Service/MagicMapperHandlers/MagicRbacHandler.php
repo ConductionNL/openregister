@@ -105,7 +105,9 @@ class MagicRbacHandler
         // Authorization is always an array from getAuthorization().
         $authConfig = $authorization;
 
-        /** @psalm-suppress TypeDoesNotContainType */
+        /*
+         * @psalm-suppress TypeDoesNotContainType
+         */
         if (is_array($authConfig) === false) {
             // Invalid config - no automatic access, use explicit published filter.
             return;

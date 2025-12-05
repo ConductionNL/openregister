@@ -1396,14 +1396,14 @@ class SolrSetup
         } catch (\GuzzleHttp\Exception\GuzzleException $e) {
             // Capture Guzzle HTTP errors (network, timeout, etc.).
             $requestMethod = 'unknown';
-            $responseCode = null;
-            $responseBody = null;
-            $urlAttempted = 'unknown';
+            $responseCode  = null;
+            $responseBody  = null;
+            $urlAttempted  = 'unknown';
 
             // @psalm-suppress UndefinedInterfaceMethod - Methods exist on specific exception types
             if (method_exists($e, 'getRequest') && $e->getRequest() !== null) {
                 $requestMethod = $e->getRequest()->getMethod();
-                $urlAttempted = (string) $e->getRequest()->getUri();
+                $urlAttempted  = (string) $e->getRequest()->getUri();
             }
 
             // @psalm-suppress UndefinedInterfaceMethod - Methods exist on specific exception types

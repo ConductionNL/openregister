@@ -91,39 +91,39 @@ class Version1Date20250801000000 extends SimpleMigrationStep
             // Add users field (JSON array of user IDs).
             if ($table->hasColumn('users') === false) {
                 $table->addColumn(
-                    'users',
-                    Types::JSON,
-                    [
-                        'notnull' => false,
-                        'default' => '[]',
-                    ]
-                );
+                        'users',
+                        Types::JSON,
+                        [
+                            'notnull' => false,
+                            'default' => '[]',
+                        ]
+                        );
                 $output->info(message: 'Added users column to organisations table');
             }
 
             // Add owner field (user ID who owns the organisation).
             if ($table->hasColumn('owner') === false) {
                 $table->addColumn(
-                    'owner',
-                    Types::STRING,
-                    [
-                        'notnull' => false,
-                        'length'  => 255,
-                    ]
-                );
+                        'owner',
+                        Types::STRING,
+                        [
+                            'notnull' => false,
+                            'length'  => 255,
+                        ]
+                        );
                 $output->info(message: 'Added owner column to organisations table');
             }
 
             // Add slug field (URL-friendly identifier).
             if ($table->hasColumn('slug') === false) {
                 $table->addColumn(
-                    'slug',
-                    Types::STRING,
-                    [
-                        'notnull' => false,
-                        'length'  => 255,
-                    ]
-                );
+                        'slug',
+                        Types::STRING,
+                        [
+                            'notnull' => false,
+                            'length'  => 255,
+                        ]
+                        );
                 $output->info(message: 'Added slug column to organisations table');
             }//end if
 

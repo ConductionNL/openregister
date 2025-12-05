@@ -50,7 +50,7 @@ class SearchTrailService
     /**
      * Retention period in days for search trails.
      *
-     * @var int
+     * @var integer
      */
     private int $retentionDays = 365;
 

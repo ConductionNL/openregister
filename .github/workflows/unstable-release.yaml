@@ -1,0 +1,296 @@
+name: Unstable Release
+
+on:
+  push:
+    branches:
+      - feature/php-linting
+
+jobs:
+  release-management:
+    runs-on: ubuntu-latest
+    steps:
+    
+      # Step 1: Checkout Code
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          ssh-key: ${{ secrets.DEPLOY_KEY }}
+
+      # Step 2: Set the app name (use the repo name)
+      - name: Set app env
+        run: |
+          echo "APP_NAME=${GITHUB_REPOSITORY##*/}" >> $GITHUB_ENV
+
+      # Step 3: Get current version from info.xml, increment patch and add unstable suffix
+      - name: Get current version and append unstable suffix
+        id: increment_version
+        run: |
+          # Get version from main branch
+          git fetch origin main
+          main_version=$(git show origin/main:appinfo/info.xml | grep -oP '(?<=<version>)[^<]+' || echo "")
+          
+          # Get current version from feature/php-linting branch
+          current_version=$(grep -oP '(?<=<version>)[^<]+' appinfo/info.xml || echo "")
+          
+          # Split main version into parts
+          IFS='.' read -ra main_version_parts <<< "$main_version"
+          
+          # Increment patch version by 1 from main
+          next_patch=$((main_version_parts[2] + 1))
+          
+          # Extract unstable counter from current version if it exists
+          unstable_counter=1
+          if [[ $current_version =~ -unstable\.([0-9]+)$ ]]; then
+            # If current patch version is still ahead of main, increment counter
+            current_patch=$(echo $current_version | grep -oP '^[0-9]+\.[0-9]+\.(\d+)' | cut -d. -f3)
+            if [ "$current_patch" -eq "$next_patch" ]; then
+              unstable_counter=$((BASH_REMATCH[1] + 1))
+            fi
+          fi
+          
+          unstable_version="${main_version_parts[0]}.${main_version_parts[1]}.${next_patch}-unstable.${unstable_counter}"
+          
+          echo "NEW_VERSION=$unstable_version" >> $GITHUB_ENV
+          echo "new_version=$unstable_version" >> $GITHUB_OUTPUT
+          echo "Main version: $main_version"
+          echo "Current version: $current_version"
+          echo "Using unstable version: $unstable_version"
+
+      # Step 4: Update the version in info.xml
+      - name: Update version in info.xml
+        run: |
+          sed -i "s|<version>.*</version>|<version>${{ env.NEW_VERSION }}</version>|" appinfo/info.xml
+
+      # Step 5: Commit the new version
+      - name: Commit version update
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          
+          # Check if there are changes to commit
+          if git diff --quiet && git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git add appinfo/info.xml
+            git commit -m "Bump unstable version to ${{ env.NEW_VERSION }} [skip ci]"
+            git push
+          fi
+
+      # Step 6: Prepare the signing certificates
+      - name: Prepare Signing Certificate and Key
+        run: |
+          echo "${{ secrets.NEXTCLOUD_SIGNING_CERT }}" > signing-cert.crt
+          echo "${{ secrets.NEXTCLOUD_SIGNING_KEY }}" > signing-key.key
+
+      # Step 7: Install npm dependencies
+      - name: Install npm dependencies
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.x'
+
+      # Step 8: Set up PHP and install required extensions
+      - name: Set up PHP and install extensions
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: zip, gd
+
+      # Step 9: Run npm install, build and composer install
+      - run: npm ci
+      - run: npm run build
+      - run: composer install --no-dev --optimize-autoloader --classmap-authoritative
+      
+      # Step 9a: Verify vendor dependencies are installed
+      - name: Verify vendor dependencies
+        run: |
+          echo "Checking critical dependencies..."
+          
+          # Check that vendor directory exists and has content
+          if [ ! -d "vendor" ] || [ -z "$(ls -A vendor 2>/dev/null)" ]; then
+            echo "ERROR: vendor directory is missing or empty"
+            exit 1
+          fi
+          
+          # Check specific critical dependencies
+          missing_deps=0
+          
+          if [ ! -d "vendor/openai-php/client/src" ]; then
+            echo "ERROR: openai-php/client source files not found"
+            missing_deps=1
+          fi
+          
+          if [ ! -d "vendor/theodo-group/llphant/src" ]; then
+            echo "ERROR: theodo-group/llphant source files not found"
+            missing_deps=1
+          fi
+          
+          if [ $missing_deps -eq 1 ]; then
+            echo "HINT: Check composer.json dependencies and composer install output"
+            exit 1
+          fi
+          
+          echo "✓ All critical dependencies verified with source files"
+
+      # Step 10: Copy the files into the package directory
+      - name: Copy the package files into the package
+        run: |
+          mkdir -p package/${{ github.event.repository.name }}
+          rsync -av --progress \
+            --exclude='/package' \
+            --exclude='/.git' \
+            --exclude='/.github' \
+            --exclude='/.cursor' \
+            --exclude='/.vscode' \
+            --exclude='/.nextcloud' \
+            --exclude='/docker' \
+            --exclude='/docker-compose.yml' \
+            --exclude='/docs' \
+            --exclude='/website' \
+            --exclude='/node_modules' \
+            --exclude='/src' \
+            --exclude='/phpcs-custom-sniffs' \
+            --exclude='/resources' \
+            --exclude='/tests' \
+            --exclude='/path' \
+            --exclude='/package.json' \
+            --exclude='/package-lock.json' \
+            --exclude='/composer.json' \
+            --exclude='/composer.lock' \
+            --exclude='/composer-setup.php' \
+            --exclude='/phpcs.xml' \
+            --exclude='/phpmd.xml' \
+            --exclude='/psalm.xml' \
+            --exclude='/phpunit.xml' \
+            --exclude='/.phpunit.cache' \
+            --exclude='.phpunit.result.cache' \
+            --exclude='/jest.config.js' \
+            --exclude='/webpack.config.js' \
+            --exclude='/tsconfig.json' \
+            --exclude='/.babelrc' \
+            --exclude='/.eslintrc.js' \
+            --exclude='/.prettierrc' \
+            --exclude='/stylelint.config.js' \
+            --exclude='/.spectral.yml' \
+            --exclude='/.gitignore' \
+            --exclude='/.gitattributes' \
+            --exclude='/.php-cs-fixer.dist.php' \
+            --exclude='/.nvmrc' \
+            --exclude='/changelog-ci-config.json' \
+            --exclude='/coverage.txt' \
+            --exclude='/signing-key.key' \
+            --exclude='/signing-cert.crt' \
+            --exclude='/openapi.json' \
+            --exclude='/*_ANALYSIS.md' \
+            --exclude='/*_FIX.md' \
+            --exclude='/*_SUMMARY.md' \
+            --exclude='/*_GUIDE.md' \
+            ./ package/${{ github.event.repository.name }}/
+
+      # Step 11: Verify package contents before creating tarball
+      - name: Verify package vendor directory
+        run: |
+          echo "Verifying package contains complete vendor dependencies..."
+          
+          # Check vendor directory was copied
+          if [ ! -d "package/${{ github.event.repository.name }}/vendor" ]; then
+            echo "ERROR: vendor directory not found in package"
+            exit 1
+          fi
+          
+          # Verify vendor packages have source files (not just LICENSE)
+          if [ ! -d "package/${{ github.event.repository.name }}/vendor/openai-php/client/src" ]; then
+            echo "ERROR: openai-php/client/src not found in package"
+            echo "HINT: Check rsync exclusion patterns - they may be too broad"
+            ls -la package/${{ github.event.repository.name }}/vendor/openai-php/client/ || true
+            exit 1
+          fi
+          
+          # Quick sanity check: count vendor subdirectories
+          vendor_count=$(find package/${{ github.event.repository.name }}/vendor -maxdepth 1 -type d | wc -l)
+          if [ $vendor_count -lt 10 ]; then
+            echo "WARNING: Only $vendor_count vendor directories found (expected 20+)"
+            echo "Listing vendor contents:"
+            ls -la package/${{ github.event.repository.name }}/vendor/
+          fi
+          
+          echo "✓ Package vendor directory verified with source files"
+      
+      # Step 12: Create the TAR.GZ archive
+      - name: Create Tarball
+        run: |
+          cd package && tar -czf ../nextcloud-release.tar.gz ${{ github.event.repository.name }}
+
+      # Step 13: Sign the TAR.GZ file with OpenSSL
+      - name: Sign the TAR.GZ file with OpenSSL
+        run: |
+          openssl dgst -sha512 -sign signing-key.key nextcloud-release.tar.gz | openssl base64 -out nextcloud-release.signature
+
+      # Step 13a: Upload tarball as workflow artifact for easy inspection
+      - name: Upload tarball as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nextcloud-release-${{ env.NEW_VERSION }}
+          path: |
+            nextcloud-release.tar.gz
+            nextcloud-release.signature
+          retention-days: 30
+
+      # Step 14: Generate Git version information (optional, for logging)
+      - name: Git Version
+        id: version
+        uses: codacy/git-version@2.7.1
+        with:
+          release-branch: feature/php-linting
+
+      # Step 15: Extract repository description (optional)
+      - name: Extract repository description
+        id: repo-description
+        run: |
+          description=$(jq -r '.description' <(curl -s https://api.github.com/repos/${{ github.repository }}))
+          echo "REPO_DESCRIPTION=$description" >> $GITHUB_ENV
+
+      # Step 16: Output the version (for logging)
+      - name: Use the version
+        run: |
+          echo "Git Version info: ${{ steps.version.outputs.version }}"
+
+      # Step 17: Create a new GitHub release (as prerelease)
+      - name: Upload Unstable Release
+        uses: ncipollo/release-action@v1.12.0
+        with:
+          tag: v${{ env.NEW_VERSION }}
+          name: Unstable Release ${{ env.NEW_VERSION }}
+          draft: false
+          prerelease: true
+
+      # Step 18: Attach the tarball as asset to the GitHub release
+      - name: Attach tarball to GitHub release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: nextcloud-release.tar.gz
+          asset_name: ${{ env.APP_NAME }}-${{ env.NEW_VERSION }}.tar.gz
+          tag: v${{ env.NEW_VERSION }}
+          overwrite: true
+
+      # Step 19: Upload the app to the Nextcloud App Store as unstable/nightly
+      - name: Upload app to Nextcloud appstore
+        uses: nextcloud-releases/nextcloud-appstore-push-action@a011fe619bcf6e77ddebc96f9908e1af4071b9c1
+        with:
+          app_name: ${{ env.APP_NAME }}
+          appstore_token: ${{ secrets.NEXTCLOUD_APPSTORE_TOKEN }}
+          download_url: https://github.com/${{ github.repository }}/releases/download/v${{ env.NEW_VERSION }}/${{ env.APP_NAME }}-${{ env.NEW_VERSION }}.tar.gz
+          app_private_key: ${{ secrets.NEXTCLOUD_SIGNING_KEY }}
+          nightly: true
+
+      # Step 20: Verify the release
+      - name: Verify version and contents
+        run: |
+          echo "App version: ${{ env.NEW_VERSION }}"
+          echo "Tarball contents:"
+          tar -tvf nextcloud-release.tar.gz | head -100
+          echo "Verify vendor directory in tarball:"
+          tar -tvf nextcloud-release.tar.gz | grep "vendor/openai-php/client" | head -5 || echo "WARNING: openai-php/client not found in tarball!"
+          echo "info.xml contents:"
+          tar -xOf nextcloud-release.tar.gz ${{ env.APP_NAME }}/appinfo/info.xml

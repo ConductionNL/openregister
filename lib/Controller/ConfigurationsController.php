@@ -295,9 +295,9 @@ class ConfigurationsController extends Controller
 
             // Return as downloadable file.
             return new DataDownloadResponse(
-                $jsonContent,
-                $filename,
-                'application/json'
+                    $jsonContent,
+                    $filename,
+                    'application/json'
             );
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => 'Failed to export configuration: '.$e->getMessage()], statusCode: 400);

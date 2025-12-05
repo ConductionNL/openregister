@@ -1300,7 +1300,9 @@ class SchemaService
                     return ['type' => 'string'];
                 case 'integer':
                     return ['type' => 'integer'];
-                /** @psalm-suppress TypeDoesNotContainType */
+                /*
+                 * @psalm-suppress TypeDoesNotContainType
+                 */
                 case 'double':
                 case 'float':
                     return ['type' => 'number'];
@@ -1311,7 +1313,7 @@ class SchemaService
                 default:
                     return ['type' => 'string'];
             }
-        }
+        }//end if
 
         return ['type' => 'string'];
 

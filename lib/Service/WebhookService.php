@@ -395,7 +395,7 @@ class WebhookService
         }
 
         $response = $this->client->request(
-            method: $webhook->getMethod(),
+                method: $webhook->getMethod(),
             uri: $webhook->getUrl(),
             options: $options
         );

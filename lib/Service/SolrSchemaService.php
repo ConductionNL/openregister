@@ -1404,7 +1404,7 @@ class SolrSchemaService
      *
      * @param string $collectionName Collection to query
      *
-     * @return array<string> Field names
+     * @return         array<string> Field names
      * @psalm-suppress UnusedParam - Parameter kept for future use
      */
     private function getCurrentCollectionFields(string $collectionName): array

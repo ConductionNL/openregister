@@ -232,7 +232,7 @@ class HyperFacetHandler
 
         if ($cachedResult !== null) {
             $this->logger->debug(
-                'Hyper cache hit - instant facet response',
+                    'Hyper cache hit - instant facet response',
                 [
                     'cacheKey'     => substr($cacheKey, 0, 20).'...',
                     'responseTime' => '<10ms',
@@ -246,8 +246,8 @@ class HyperFacetHandler
         $datasetStats         = $this->analyzeDatasetSize($baseQuery);
         $optimizationStrategy = $this->selectOptimizationStrategy($datasetStats);
 
-        $this->logger->debug(
-            'Dataset analysis completed',
+            $this->logger->debug(
+                    'Dataset analysis completed',
             [
                 'estimatedSize' => $datasetStats['estimated_size'],
                 'strategy'      => $optimizationStrategy,
@@ -749,13 +749,15 @@ class HyperFacetHandler
         if ($published === true) {
             $now = (new \DateTime())->format('Y-m-d H:i:s');
             $queryBuilder->andWhere(
-                $queryBuilder->expr()->andX(
-                    $queryBuilder->expr()->isNotNull('published'),
-                    $queryBuilder->expr()->lte('published', $queryBuilder->createNamedParameter($now)),
-                    $queryBuilder->expr()->orX(
-                        $queryBuilder->expr()->isNull('depublished'),
-                        $queryBuilder->expr()->gt('depublished', $queryBuilder->createNamedParameter($now))
-                    )
+                    $queryBuilder->expr()->andX(
+                            $queryBuilder->expr()->isNotNull('published'),
+                            $queryBuilder->expr()->lte('published', $queryBuilder->createNamedParameter($now)),
+                            $queryBuilder->expr()->orX(
+                                    $queryBuilder->expr()->isNull('depublished'),
+                                    $queryBuilder->expr()->gt('depublished', $queryBuilder->createNamedParameter($now))
+                                    )
+                            )
+                    );
                 )
             );
         }

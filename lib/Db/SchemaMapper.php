@@ -141,12 +141,12 @@ class SchemaMapper extends QBMapper
      * @return Schema The schema, possibly with stats and resolved extensions
      * @throws \Exception If user doesn't have read permission
      */
-    public function find(string | int $id, ?array $extend=[], ?bool $published = null, bool $rbac = true, bool $multi = true): Schema
+    public function find(string | int $id, ?array $extend=[], ?bool $published=null, bool $rbac=true, bool $multi=true): Schema
     {
         // Verify RBAC permission to read if RBAC is enabled
         if ($rbac === true) {
             // @todo: remove this hotfix for solr - uncomment when ready
-            //$this->verifyRbacPermission('read', 'schema');
+            // $this->verifyRbacPermission('read', 'schema');
         }
 
         $qb = $this->db->getQueryBuilder();
@@ -176,7 +176,7 @@ class SchemaMapper extends QBMapper
         );
 
         $result = $qb->executeQuery();
-        $row = $result->fetch();
+        $row    = $result->fetch();
         $result->closeCursor();
 
         if ($row === false) {
@@ -216,8 +216,8 @@ class SchemaMapper extends QBMapper
     /**
      * Finds multiple schemas by id
      *
-     * @param array $ids  The ids of the schemas
-     * @param bool  $rbac Whether to apply RBAC permission checks (default: true)
+     * @param array $ids   The ids of the schemas
+     * @param bool  $rbac  Whether to apply RBAC permission checks (default: true)
      * @param bool  $multi Whether to apply multi-tenancy filtering (default: true)
      *
      * @throws \OCP\AppFramework\Db\DoesNotExistException If a schema does not exist
@@ -228,7 +228,7 @@ class SchemaMapper extends QBMapper
      *
      * @return array The schemas
      */
-    public function findMultiple(array $ids, ?bool $published = null, bool $rbac = true, bool $multi = true): array
+    public function findMultiple(array $ids, ?bool $published=null, bool $rbac=true, bool $multi=true): array
     {
         $result = [];
         foreach ($ids as $id) {
@@ -288,9 +288,9 @@ class SchemaMapper extends QBMapper
      * @param array|null $searchConditions The search conditions to apply
      * @param array|null $searchParams     The search parameters to apply
      * @param array      $extend           Optional array of extensions (e.g., ['@self.stats'])
-     * @param bool|null  $published       Whether to enable published bypass (default: null = check config)
-     * @param bool       $rbac            Whether to apply RBAC permission checks (default: true)
-     * @param bool       $multi           Whether to apply multi-tenancy filtering (default: true)
+     * @param bool|null  $published        Whether to enable published bypass (default: null = check config)
+     * @param bool       $rbac             Whether to apply RBAC permission checks (default: true)
+     * @param bool       $multi            Whether to apply multi-tenancy filtering (default: true)
      *
      * @return array The schemas, multi: possibly with stats
      * @throws \Exception If user doesn't have read permission
@@ -302,14 +302,14 @@ class SchemaMapper extends QBMapper
         ?array $searchConditions=[],
         ?array $searchParams=[],
         ?array $extend=[],
-        ?bool $published = null,
-        bool $rbac = true,
-        bool $multi = true
+        ?bool $published=null,
+        bool $rbac=true,
+        bool $multi=true
     ): array {
         // Verify RBAC permission to read if RBAC is enabled
         if ($rbac === true) {
             // @todo: remove this hotfix for solr - uncomment when ready
-            //$this->verifyRbacPermission('read', 'schema');
+            // $this->verifyRbacPermission('read', 'schema');
         }
 
         $qb = $this->db->getQueryBuilder();
@@ -374,7 +374,7 @@ class SchemaMapper extends QBMapper
         // $this->verifyRbacPermission('create', 'schema');
         // Auto-set organisation from active session.
         $this->setOrganisationOnCreate($entity);
-        
+
         // Auto-set owner from current user session
         $this->setOwnerOnCreate($entity);
 

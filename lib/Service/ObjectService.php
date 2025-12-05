@@ -480,11 +480,11 @@ class ObjectService
 
         // Retrieve the object using the current register, schema, ID, extend properties, and file information.
         $object = $this->getHandler->find(
-            id: $id,
-            register: $this->currentRegister,
-            schema: $this->currentSchema,
-            _extend: $extend,
-            files: $files,
+                id: $id,
+                register: $this->currentRegister,
+                schema: $this->currentSchema,
+                _extend: $extend,
+                files: $files,
             rbac: $rbac,
             multi: $multi
         );
@@ -509,8 +509,8 @@ class ObjectService
         if ($isNotPublished === true || $isDepublished === true) {
             // Check user has permission to read this specific object (includes object owner check).
             $this->checkPermission(
-                schema: $this->currentSchema,
-                action: 'read',
+                    schema: $this->currentSchema,
+                    action: 'read',
                 userId: null,
                 objectOwner: $object->getOwner(),
                 rbac: $rbac
@@ -527,8 +527,8 @@ class ObjectService
         $schemas = [$this->currentSchema->getId() => $this->currentSchema];
 
         return $this->renderHandler->renderEntity(
-            entity: $object,
-            extend: $extend,
+                entity: $object,
+                extend: $extend,
             registers: $registers,
             schemas: $schemas,
             _rbac: $rbac,
@@ -577,11 +577,11 @@ class ObjectService
 
         // Use the silent find method from the GetObject handler.
         return $this->getHandler->findSilent(
-            id: $id,
-            register: $this->currentRegister,
-            schema: $this->currentSchema,
-            _extend: $extend,
-            files: $files,
+                id: $id,
+                register: $this->currentRegister,
+                schema: $this->currentSchema,
+                _extend: $extend,
+                files: $files,
             rbac: $rbac,
             multi: $multi
         );
@@ -638,11 +638,11 @@ class ObjectService
 
         // Delegate the findAll operation to the handler.
         $objects = $this->getHandler->findAll(
-            limit: $config['limit'] ?? null,
-            offset: $config['offset'] ?? null,
-            filters: $config['filters'] ?? [],
-            sort: $config['sort'] ?? [],
-            search: $config['search'] ?? null,
+                limit: $config['limit'] ?? null,
+                offset: $config['offset'] ?? null,
+                filters: $config['filters'] ?? [],
+                sort: $config['sort'] ?? [],
+                search: $config['search'] ?? null,
             files: $config['files'] ?? false,
             uses: $config['uses'] ?? null,
             ids: $config['ids'] ?? null,
@@ -682,9 +682,9 @@ class ObjectService
                 function ($resolve, $reject) use ($object, $config, $registers, $schemas, $rbac, $multi) {
                     try {
                         $renderedObject = $this->renderHandler->renderEntity(
-                            entity: $object,
-                            extend: $config['extend'] ?? [],
-                            filter: $config['unset'] ?? null,
+                                entity: $object,
+                                extend: $config['extend'] ?? [],
+                                filter: $config['unset'] ?? null,
                             fields: $config['fields'] ?? null,
                             registers: $registers,
                             schemas: $schemas,
@@ -747,9 +747,9 @@ class ObjectService
         unset($config['limit']);
 
         return $this->objectEntityMapper->countAll(
-            filters: $config['filters'] ?? [],
-            search: $config['search'] ?? null,
-            ids: $config['ids'] ?? null,
+                filters: $config['filters'] ?? [],
+                search: $config['search'] ?? null,
+                ids: $config['ids'] ?? null,
             uses: $config['uses'] ?? null,
             published: $config['published'] ?? false
         );
@@ -970,9 +970,9 @@ class ObjectService
         // Let SaveObject handle the UUID logic completely.
 
         $savedObject = $this->saveHandler->saveObject(
-            register: $this->currentRegister,
-            schema: $this->currentSchema,
-            data: $object,
+                register: $this->currentRegister,
+                schema: $this->currentSchema,
+                data: $object,
             uuid: $uuid,
             folderId: $folderId,
             _rbac: $rbac,
@@ -990,9 +990,9 @@ class ObjectService
 
         // Render and return the saved object.
         return $this->renderHandler->renderEntity(
-            entity: $savedObject,
-            extend: $extend,
-            registers: $registers,
+                entity: $savedObject,
+                extend: $extend,
+                registers: $registers,
             schemas: $schemas,
             _rbac: $rbac,
             _multi: $multi
@@ -1033,9 +1033,9 @@ class ObjectService
         }
 
         return $this->deleteHandler->deleteObject(
-            register: $this->currentRegister,
-            schema: $this->currentSchema,
-            uuid: $uuid,
+                register: $this->currentRegister,
+                schema: $this->currentSchema,
+                uuid: $uuid,
             originalObjectId: null,
             _rbac: $rbac,
             _multi: $multi
@@ -1821,9 +1821,9 @@ class ObjectService
             }
 
             $objects[$key] = $this->renderHandler->renderEntity(
-             entity: $object,
-             // Use limited extends if available.
-             extend: $limitedExtends ?? $extend,
+                    entity: $object,
+                    // Use limited extends if available.
+                    extend: $limitedExtends ?? $extend,
              filter: $filter,
              fields: $fields,
              unset: $unset,
@@ -3068,9 +3068,9 @@ class ObjectService
         bool $multi=true
     ): array {
         return $this->renderHandler->renderEntity(
-            entity: $entity,
-            extend: $extend,
-            depth: $depth,
+                entity: $entity,
+                extend: $extend,
+                depth: $depth,
             filter: $filter,
             fields: $fields,
             unset: $unset,
@@ -3116,9 +3116,9 @@ class ObjectService
 
         // Use the publish handler to publish the object.
         return $this->publishHandler->publish(
-            uuid: $uuid,
-            date: $date,
-            _rbac: $rbac,
+                uuid: $uuid,
+                date: $date,
+                _rbac: $rbac,
             _multi: $multi
         );
 
@@ -3141,9 +3141,9 @@ class ObjectService
     {
         // Use the depublish handler to depublish the object.
         return $this->depublishHandler->depublish(
-            uuid: $uuid,
-            date: $date,
-            _rbac: $rbac,
+                uuid: $uuid,
+                date: $date,
+                _rbac: $rbac,
             _multi: $multi
         );
 
@@ -3249,9 +3249,9 @@ class ObjectService
         // ARCHITECTURAL DELEGATION: Use specialized SaveObjects handler for bulk operations.
         // This provides better separation of concerns and optimized bulk processing.
         $bulkResult = $this->saveObjectsHandler->saveObjects(
-            objects: $objects,
-            register: $this->currentRegister,
-            schema: $this->currentSchema,
+                objects: $objects,
+                register: $this->currentRegister,
+                schema: $this->currentSchema,
             rbac: $rbac,
             multi: $multi,
             validation: $validation,
@@ -3278,8 +3278,8 @@ class ObjectService
                 // **BULK CACHE COORDINATION**: Invalidate collection caches for affected contexts.
                 // This ensures that GET collection calls immediately see the bulk imported objects.
                 $this->objectCacheService->invalidateForObjectChange(
-                    object: null, // Bulk operation affects multiple objects.
-                    operation: 'bulk_save',
+                        object: null, // Bulk operation affects multiple objects.
+                        operation: 'bulk_save',
                     registerId: $this->currentRegister?->getId(),
                     schemaId: $this->currentSchema?->getId()
                 );
@@ -3796,8 +3796,8 @@ class ObjectService
 
                     // Create new file in target object folder.
                     $this->fileService->addFile(
-                        objectEntity: $targetObject,
-                        fileName: $fileName,
+                            objectEntity: $targetObject,
+                            fileName: $fileName,
                         content: $fileContent,
                         share: false,
                         tags: []
@@ -4054,8 +4054,8 @@ class ObjectService
 
             // Create the object.
             $createdObject = $this->saveHandler->saveObject(
-                register: $targetRegister,
-                schema: $targetSchema,
+                    register: $targetRegister,
+                    schema: $targetSchema,
                 data: $objectData,
                 uuid: null,
             // Let it generate a new UUID.
@@ -4409,9 +4409,9 @@ class ObjectService
             // Only create search trail if search trails are enabled.
             if ($this->isSearchTrailsEnabled() === true) {
                 // Create the search trail entry using the service with actual execution time.
-        $this->searchTrailService->createSearchTrail(
-            query: $query,
-            resultCount: $resultCount,
+                $this->searchTrailService->createSearchTrail(
+                        query: $query,
+                        resultCount: $resultCount,
             totalResults: $totalResults,
             responseTime: $executionTime,
             executionType: $executionType
@@ -4529,7 +4529,7 @@ class ObjectService
                 ]);
 
                 $this->objectCacheService->invalidateForObjectChange(
-                    object: null, // Bulk operation affects multiple objects.
+                        object: null, // Bulk operation affects multiple objects.
                     operation: 'bulk_delete',
                     registerId: null, // Affects multiple registers potentially.
                     schemaId: null   // Affects multiple schemas potentially.
@@ -4596,7 +4596,7 @@ class ObjectService
                 ]);
 
                 $this->objectCacheService->invalidateForObjectChange(
-                    object: null, // Bulk operation affects multiple objects.
+                        object: null, // Bulk operation affects multiple objects.
                     operation: 'bulk_publish',
                     registerId: null, // Affects multiple registers potentially.
                     schemaId: null   // Affects multiple schemas potentially.
@@ -4663,7 +4663,7 @@ class ObjectService
                 ]);
 
                 $this->objectCacheService->invalidateForObjectChange(
-                    object: null, // Bulk operation affects multiple objects.
+                        object: null, // Bulk operation affects multiple objects.
                     operation: 'bulk_depublish',
 // Affects multiple registers potentially.
 // Affects multiple schemas potentially.
@@ -4718,7 +4718,7 @@ class ObjectService
                 ]);
 
                 $this->objectCacheService->invalidateForObjectChange(
-                    object: null,
+                        object: null,
                     operation: 'bulk_publish',
                     registerId: null,
                     schemaId: $schemaId
@@ -4776,7 +4776,7 @@ class ObjectService
                 ]);
 
                 $this->objectCacheService->invalidateForObjectChange(
-                    object: null,
+                        object: null,
                     operation: 'bulk_delete',
                     registerId: null,
                     schemaId: $schemaId
@@ -4832,7 +4832,7 @@ class ObjectService
                 ]);
 
                 $this->objectCacheService->invalidateForObjectChange(
-                    object: null,
+                        object: null,
                     operation: 'bulk_delete',
                     registerId: $registerId,
                     schemaId: null
@@ -4890,9 +4890,9 @@ class ObjectService
                 // Use saveObject with silent=true to validate without actually saving.
                 // This will trigger validation and return any errors.
                 $this->saveObject(
-                    object: $objectData,
-                    register: $object->getRegister(),
-                    schema: $schemaId,
+                        object: $objectData,
+                        register: $object->getRegister(),
+                        schema: $schemaId,
                     uuid: $object->getUuid(),
                     rbac: false,
                     multi: false,
@@ -5448,9 +5448,9 @@ class ObjectService
         $qb = $this->objectEntityMapper->getQueryBuilder();
 
         $qb->select(
-            'o.id',
-            'o.uuid',
-            'o.slug',
+                'o.id',
+                'o.uuid',
+                'o.slug',
             'o.name',
             // **500MS OPTIMIZATION**: Minimal fields for relationships - description/summary often large.
             $qb->createFunction('

@@ -149,8 +149,6 @@ class ObjectEntityMapper extends QBMapper
     private float $maxPacketSizeBuffer = 0.5;
 
 
-
-
     /**
      * Constructor for the ObjectEntityMapper
      *
@@ -177,15 +175,15 @@ class ObjectEntityMapper extends QBMapper
         IAppConfig $appConfig,
         LoggerInterface $logger,
         OrganisationService $organisationService,
-        ?AuthorizationExceptionService $authorizationExceptionService = null
+        ?AuthorizationExceptionService $authorizationExceptionService=null
     ) {
         parent::__construct($db, 'openregister_objects');
 
         if ($db->getDatabasePlatform() instanceof MySQLPlatform === true) {
-            $this->databaseJsonService = $mySQLJsonService;
-            $this->searchHandler = new MariaDbSearchHandler();
+            $this->databaseJsonService  = $mySQLJsonService;
+            $this->searchHandler        = new MariaDbSearchHandler();
             $this->metaDataFacetHandler = new MetaDataFacetHandler($db);
-            $this->mariaDbFacetHandler = new MariaDbFacetHandler($db);
+            $this->mariaDbFacetHandler  = new MariaDbFacetHandler($db);
         }
 
         $this->eventDispatcher = $eventDispatcher;
@@ -195,11 +193,12 @@ class ObjectEntityMapper extends QBMapper
         $this->userManager     = $userManager;
         $this->appConfig       = $appConfig;
         $this->logger          = $logger;
-        $this->organisationService = $organisationService;
+        $this->organisationService           = $organisationService;
         $this->authorizationExceptionService = $authorizationExceptionService;
 
         // Try to get max_allowed_packet from database configuration.
         $this->initializeMaxPacketSize();
+
     }//end __construct()
 
 
@@ -211,6 +210,7 @@ class ObjectEntityMapper extends QBMapper
     public function getQueryBuilder(): IQueryBuilder
     {
         return $this->db->getQueryBuilder();
+
     }//end getQueryBuilder()
 
 
@@ -228,6 +228,7 @@ class ObjectEntityMapper extends QBMapper
 
         $rbacData = json_decode($rbacConfig, true);
         return $rbacData['enabled'] ?? false;
+
     }//end isRbacEnabled()
 
 
@@ -245,6 +246,7 @@ class ObjectEntityMapper extends QBMapper
 
         $multitenancyData = json_decode($multitenancyConfig, true);
         return $multitenancyData['enabled'] ?? false;
+
     }//end isMultiTenancyEnabled()
 
 
@@ -262,7 +264,9 @@ class ObjectEntityMapper extends QBMapper
 
         $multitenancyData = json_decode($multitenancyConfig, true);
         return $multitenancyData['adminOverride'] ?? true;
+
     }//end isMultitenancyAdminOverrideEnabled()
+
 
     /**
      * Initialize the max packet size buffer based on database configuration
@@ -272,28 +276,36 @@ class ObjectEntityMapper extends QBMapper
     private function initializeMaxPacketSize(): void
     {
         try {
-// Try to get the actual max_allowed_packet value from the database.
-            $stmt = $this->db->executeQuery('SHOW VARIABLES LIKE \'max_allowed_packet\'');
+            // Try to get the actual max_allowed_packet value from the database.
+            $stmt   = $this->db->executeQuery('SHOW VARIABLES LIKE \'max_allowed_packet\'');
             $result = $stmt->fetch();
 
             if (($result !== null) === true && ($result['Value'] ?? null) !== null) {
                 $maxPacketSize = (int) $result['Value'];
 
-// Adjust buffer based on detected packet size.
-                if ($maxPacketSize > 67108864) { // > 64MB
-                    $this->maxPacketSizeBuffer = 0.6; // 60% buffer
-                } else if ($maxPacketSize > 33554432) { // > 32MB
-                    $this->maxPacketSizeBuffer = 0.5; // 50% buffer
-                } else if ($maxPacketSize > 16777216) { // > 16MB
-                    $this->maxPacketSizeBuffer = 0.4; // 40% buffer
+                // Adjust buffer based on detected packet size.
+                if ($maxPacketSize > 67108864) {
+                    // > 64MB
+                    $this->maxPacketSizeBuffer = 0.6;
+                    // 60% buffer
+                } else if ($maxPacketSize > 33554432) {
+                    // > 32MB
+                    $this->maxPacketSizeBuffer = 0.5;
+                    // 50% buffer
+                } else if ($maxPacketSize > 16777216) {
+                    // > 16MB
+                    $this->maxPacketSizeBuffer = 0.4;
+                    // 40% buffer
                 } else {
-                    $this->maxPacketSizeBuffer = 0.3; // 30% buffer for smaller packet sizes
+                    $this->maxPacketSizeBuffer = 0.3;
+                    // 30% buffer for smaller packet sizes
                 }
-
-            }
+            }//end if
         } catch (\Exception $e) {
-        }
-    }
+        }//end try
+
+    }//end initializeMaxPacketSize()
+
 
     /**
      * Get the actual max_allowed_packet value from the database
@@ -303,7 +315,7 @@ class ObjectEntityMapper extends QBMapper
     public function getMaxAllowedPacketSize(): int
     {
         try {
-            $stmt = $this->db->executeQuery('SHOW VARIABLES LIKE \'max_allowed_packet\'');
+            $stmt   = $this->db->executeQuery('SHOW VARIABLES LIKE \'max_allowed_packet\'');
             $result = $stmt->fetch();
 
             if (($result !== null) === true && ($result['Value'] ?? null) !== null) {
@@ -312,9 +324,10 @@ class ObjectEntityMapper extends QBMapper
         } catch (\Exception $e) {
         }
 
-// Default fallback value (16MB).
+        // Default fallback value (16MB).
         return 16777216;
-    }
+
+    }//end getMaxAllowedPacketSize()
 
 
     /**
@@ -335,49 +348,51 @@ class ObjectEntityMapper extends QBMapper
     private function applyAuthorizationExceptions(
         IQueryBuilder $qb,
         string $userId,
-        string $objectTableAlias = 'o',
-        string $schemaTableAlias = 's',
-        string $action = 'read'
+        string $objectTableAlias='o',
+        string $schemaTableAlias='s',
+        string $action='read'
     ): ?bool {
-// If authorization exception service is not available, skip exception handling.
+        // If authorization exception service is not available, skip exception handling.
         if ($this->authorizationExceptionService === null) {
             return null;
         }
 
         try {
-// Use optimized method to check if user has any authorization exceptions.
+            // Use optimized method to check if user has any authorization exceptions.
             $hasExceptions = $this->authorizationExceptionService->userHasExceptionsOptimized($userId);
             if (($hasExceptions === false)) {
-// No exceptions for this user, fall back to normal RBAC.
+                // No exceptions for this user, fall back to normal RBAC.
             }
 
             // For query builder-based authorization, we need to add conditions for exceptions
             // This is complex because we need to handle both inclusions and exclusions
             // at the database level. For now, we'll rely on post-processing or
             // implement simplified exception handling here.
-
-            $this->logger->debug('User has authorization exceptions, applying complex filtering', [
-                'user_id' => $userId,
-                'action'  => $action,
-            ]);
+            $this->logger->debug(
+                    'User has authorization exceptions, applying complex filtering',
+                    [
+                        'user_id' => $userId,
+                        'action'  => $action,
+                    ]
+                    );
 
             // @todo: Implement complex query building for exceptions
             // For now, return null to fall back to normal RBAC with post-processing
             return null;
-
         } catch (\Exception $e) {
-            $this->logger->error('Error applying authorization exceptions', [
-                'user_id'   => $userId,
-                'action'    => $action,
-                'exception' => $e->getMessage(),
-            ]);
+            $this->logger->error(
+                    'Error applying authorization exceptions',
+                    [
+                        'user_id'   => $userId,
+                        'action'    => $action,
+                        'exception' => $e->getMessage(),
+                    ]
+                    );
             // Fall back to normal RBAC on error.
             return null;
-        }
+        }//end try
 
     }//end applyAuthorizationExceptions()
-
-
 
 
     /**
@@ -401,10 +416,10 @@ class ObjectEntityMapper extends QBMapper
             return true;
         }
 
-// Check user groups against authorized groups.
+        // Check user groups against authorized groups.
         $userObj = $this->userManager->get($userId);
         if ($userObj !== null) {
-            $userGroups = $this->groupManager->getUserGroupIds($userObj);
+            $userGroups       = $this->groupManager->getUserGroupIds($userObj);
             $authorizedGroups = $authorization[$action] ?? [];
 
             if (empty(array_intersect($userGroups, $authorizedGroups)) === false) {
@@ -424,49 +439,55 @@ class ObjectEntityMapper extends QBMapper
      * permissions according to the schema's authorization configuration, taking into
      * account authorization exceptions that may override normal RBAC rules.
      *
-     * @param IQueryBuilder $qb The query builder to modify
-     * @param string $objectTableAlias Optional alias for the objects table (default: 'o')
-     * @param string $schemaTableAlias Optional alias for the schemas table (default: 's')
-     * @param string|null $userId Optional user ID (defaults to current user)
-     * @param bool $rbac Whether to apply RBAC checks (default: true). If false, no filtering is applied.
-     * @param bool $disablePublishedBypass If true, disable published object bypass for RBAC (default: false)
+     * @param IQueryBuilder $qb                     The query builder to modify
+     * @param string        $objectTableAlias       Optional alias for the objects table (default: 'o')
+     * @param string        $schemaTableAlias       Optional alias for the schemas table (default: 's')
+     * @param string|null   $userId                 Optional user ID (defaults to current user)
+     * @param bool          $rbac                   Whether to apply RBAC checks (default: true). If false, no filtering is applied.
+     * @param bool          $disablePublishedBypass If true, disable published object bypass for RBAC (default: false)
      *
      * @return void
      */
-    private function applyRbacFilters(IQueryBuilder $qb, string $objectTableAlias = 'o', string $schemaTableAlias = 's', ?string $userId = null, bool $rbac = true, bool $disablePublishedBypass = false): void
+    private function applyRbacFilters(IQueryBuilder $qb, string $objectTableAlias='o', string $schemaTableAlias='s', ?string $userId=null, bool $rbac=true, bool $disablePublishedBypass=false): void
     {
         $rbacMethodStart = microtime(true);
 
-// If RBAC is disabled, skip all permission filtering.
+        // If RBAC is disabled, skip all permission filtering.
         if ($rbac === false || $this->isRbacEnabled() === false) {
-            $this->logger->info('🔓 RBAC DISABLED - Skipping authorization checks', [
-                'rbacParam' => $rbac,
-                'rbacConfigEnabled' => $this->isRbacEnabled()
-            ]);
+            $this->logger->info(
+                    '🔓 RBAC DISABLED - Skipping authorization checks',
+                    [
+                        'rbacParam'         => $rbac,
+                        'rbacConfigEnabled' => $this->isRbacEnabled(),
+                    ]
+                    );
             return;
         }
 
-        $this->logger->info('🔒 RBAC FILTERING - Starting authorization checks', [
-            'userId' => $userId ?? 'from_session',
-            'objectAlias' => $objectTableAlias,
-            'schemaAlias' => $schemaTableAlias
-        ]);
-// Get current user if not provided.
+        $this->logger->info(
+                '🔒 RBAC FILTERING - Starting authorization checks',
+                [
+                    'userId'      => $userId ?? 'from_session',
+                    'objectAlias' => $objectTableAlias,
+                    'schemaAlias' => $schemaTableAlias,
+                ]
+                );
+        // Get current user if not provided.
         if ($userId === null) {
             $user = $this->userSession->getUser();
             if ($user === null) {
-// For unauthenticated requests, show objects that allow public access OR are published.
+                // For unauthenticated requests, show objects that allow public access OR are published.
                 $now = (new \DateTime())->format('Y-m-d H:i:s');
                 $qb->andWhere(
                     $qb->expr()->orX(
-// Schemas with no authorization (open access).
+                // Schemas with no authorization (open access).
                         $qb->expr()->orX(
                             $qb->expr()->isNull("{$schemaTableAlias}.authorization"),
                             $qb->expr()->eq("{$schemaTableAlias}.authorization", $qb->createNamedParameter('{}'))
                         ),
-// Schemas that explicitly allow public read access.
+                    // Schemas that explicitly allow public read access.
                         $this->createJsonContainsCondition($qb, "{$schemaTableAlias}.authorization", '$.read', 'public'),
-// Objects that are currently published (publication-based public access).
+                    // Objects that are currently published (publication-based public access).
                         $qb->expr()->andX(
                             $qb->expr()->isNotNull("{$objectTableAlias}.published"),
                             $qb->expr()->lte("{$objectTableAlias}.published", $qb->createNamedParameter($now)),
@@ -478,14 +499,15 @@ class ObjectEntityMapper extends QBMapper
                     )
                 );
                 return;
-            }
-            $userId = $user->getUID();
-        }
+            }//end if
 
-// Get user object first, then user groups.
+            $userId = $user->getUID();
+        }//end if
+
+        // Get user object first, then user groups.
         $userObj = $this->userManager->get($userId);
         if ($userObj === null) {
-// User doesn't exist, handle as unauthenticated with publication-based access.
+            // User doesn't exist, handle as unauthenticated with publication-based access.
             $now = (new \DateTime())->format('Y-m-d H:i:s');
             $qb->andWhere(
                 $qb->expr()->orX(
@@ -494,7 +516,7 @@ class ObjectEntityMapper extends QBMapper
                         $qb->expr()->eq("{$schemaTableAlias}.authorization", $qb->createNamedParameter('{}'))
                     ),
                     $this->createJsonContainsCondition($qb, "{$schemaTableAlias}.authorization", '$.read', 'public'),
-// Objects that are currently published (publication-based public access).
+                // Objects that are currently published (publication-based public access).
                     $qb->expr()->andX(
                         $qb->expr()->isNotNull("{$objectTableAlias}.published"),
                         $qb->expr()->lte("{$objectTableAlias}.published", $qb->createNamedParameter($now)),
@@ -506,26 +528,26 @@ class ObjectEntityMapper extends QBMapper
                 )
             );
             return;
-        }
+        }//end if
 
         $userGroups = $this->groupManager->getUserGroupIds($userObj);
 
-// Admin users and schema owners see everything.
+        // Admin users and schema owners see everything.
         if (in_array('admin', $userGroups, true) === true) {
-// No filtering needed for admin users.
+            // No filtering needed for admin users.
         }
 
-// Check for authorization exceptions first (highest priority).
+        // Check for authorization exceptions first (highest priority).
         $exceptionResult = $this->applyAuthorizationExceptions($qb, $userId, $objectTableAlias, $schemaTableAlias, 'read');
         if ($exceptionResult === false) {
-// User is explicitly denied access via exclusion - apply very restrictive filter.
-// Always false.
+            // User is explicitly denied access via exclusion - apply very restrictive filter.
+            // Always false.
             return;
         }
-        // Note: If $exceptionResult is true (inclusion), we still apply normal RBAC as additional conditions
-// If $exceptionResult is null, we proceed with normal RBAC.
 
-// Build conditions for read access.
+        // Note: If $exceptionResult is true (inclusion), we still apply normal RBAC as additional conditions
+        // If $exceptionResult is null, we proceed with normal RBAC.
+        // Build conditions for read access.
         $readConditions = $qb->expr()->orX();
 
         // 1. Schemas with no authorization (open access)
@@ -539,7 +561,6 @@ class ObjectEntityMapper extends QBMapper
         // 2. Schemas where read action is not specified (open read access)
         // For now, skip this condition - it's complex to implement without NOT operator
         // This means we'll be slightly more restrictive but still functional
-
         // 3. User is the object owner
         $readConditions->add(
             $qb->expr()->eq("{$objectTableAlias}.owner", $qb->createNamedParameter($userId))
@@ -576,10 +597,13 @@ class ObjectEntityMapper extends QBMapper
         $qb->andWhere($readConditions);
 
         $rbacMethodTime = round((microtime(true) - $rbacMethodStart) * 1000, 2);
-        $this->logger->info('✅ RBAC FILTERING - Authorization checks completed', [
-            'rbacMethodTime' => $rbacMethodTime . 'ms',
-            'conditionsApplied' => $readConditions->count()
-        ]);
+        $this->logger->info(
+                '✅ RBAC FILTERING - Authorization checks completed',
+                [
+                    'rbacMethodTime'    => $rbacMethodTime.'ms',
+                    'conditionsApplied' => $readConditions->count(),
+                ]
+                );
 
     }//end applyRbacFilters()
 
@@ -597,7 +621,7 @@ class ObjectEntityMapper extends QBMapper
         }
 
         $multitenancyData = json_decode($multitenancyConfig, true);
-        $bypassEnabled = $multitenancyData['publishedObjectsBypassMultiTenancy'] ?? false;
+        $bypassEnabled    = $multitenancyData['publishedObjectsBypassMultiTenancy'] ?? false;
         return $bypassEnabled;
 
     }//end shouldPublishedObjectsBypassMultiTenancy()
@@ -606,25 +630,24 @@ class ObjectEntityMapper extends QBMapper
     /**
      * Create a JSON_CONTAINS condition for checking if an array contains a value
      *
-     * @param IQueryBuilder $qb The query builder
-     * @param string $column The JSON column name
-     * @param string $path The JSON path (e.g., '$.read')
-     * @param string $value The value to check for
+     * @param IQueryBuilder $qb     The query builder
+     * @param string        $column The JSON column name
+     * @param string        $path   The JSON path (e.g., '$.read')
+     * @param string        $value  The value to check for
      *
      * @return string The SQL condition
      */
     private function createJsonContainsCondition(IQueryBuilder $qb, string $column, string $path, string $value): string
     {
-// For MySQL/MariaDB, use JSON_CONTAINS to check if array contains value.
+        // For MySQL/MariaDB, use JSON_CONTAINS to check if array contains value.
         if ($this->db->getDatabasePlatform() instanceof MySQLPlatform) {
-            return "JSON_CONTAINS({$column}, " . $qb->createNamedParameter(json_encode($value)) . ", '{$path}')";
+            return "JSON_CONTAINS({$column}, ".$qb->createNamedParameter(json_encode($value)).", '{$path}')";
         }
 
-// Fallback for other databases - this is less efficient but functional.
-        return "{$column} LIKE " . $qb->createNamedParameter('%"' . $value . '"%');
+        // Fallback for other databases - this is less efficient but functional.
+        return "{$column} LIKE ".$qb->createNamedParameter('%"'.$value.'"%');
 
     }//end createJsonContainsCondition()
-
 
 
     /**
@@ -690,7 +713,6 @@ class ObjectEntityMapper extends QBMapper
     }//end find()
 
 
-
     /**
      * Find all ObjectEntities
      *
@@ -740,21 +762,21 @@ class ObjectEntityMapper extends QBMapper
      * @return array<int, ObjectEntity> An array of ObjectEntity objects.
      */
     public function findAll(
-        ?int $limit = null,
-        ?int $offset = null,
-        ?array $filters = [],
-        ?array $searchConditions = [],
-        ?array $searchParams = [],
-        ?array $sort = [],
-        ?string $search = null,
-        ?array $ids = null,
-        ?string $uses = null,
-        bool $includeDeleted = false,
-        ?Register $register = null,
-        ?Schema $schema = null,
-        ?bool $published = false,
-        bool $rbac = true,
-        bool $_multi = true
+        ?int $limit=null,
+        ?int $offset=null,
+        ?array $filters=[],
+        ?array $searchConditions=[],
+        ?array $searchParams=[],
+        ?array $sort=[],
+        ?string $search=null,
+        ?array $ids=null,
+        ?string $uses=null,
+        bool $includeDeleted=false,
+        ?Register $register=null,
+        ?Schema $schema=null,
+        ?bool $published=false,
+        bool $rbac=true,
+        bool $_multi=true
     ): array {
         // Filter out system variables (starting with _).
         $filters = array_filter(
@@ -792,10 +814,10 @@ class ObjectEntityMapper extends QBMapper
             ->setMaxResults($limit)
             ->setFirstResult($offset);
 
-// Apply RBAC filtering based on user permissions.
+        // Apply RBAC filtering based on user permissions.
         $this->applyRbacFilters($qb, 'o', 's', null, $rbac);
 
-		// By default, only include objects where 'deleted' is NULL unless $includeDeleted is true.
+        // By default, only include objects where 'deleted' is NULL unless $includeDeleted is true.
         if ($includeDeleted === false) {
             $qb->andWhere($qb->expr()->isNull('o.deleted'));
         }
@@ -803,7 +825,7 @@ class ObjectEntityMapper extends QBMapper
         // If published filter is set, only include objects that are currently published.
         if ($published === true) {
             $now = (new \DateTime())->format('Y-m-d H:i:s');
-// published <= now AND (depublished IS NULL OR depublished > now).
+            // published <= now AND (depublished IS NULL OR depublished > now).
             $qb->andWhere(
                 $qb->expr()->andX(
                     $qb->expr()->isNotNull('o.published'),
@@ -818,10 +840,12 @@ class ObjectEntityMapper extends QBMapper
 
         // Handle filtering by IDs/UUIDs if provided.
         if ($ids !== null && empty($ids) === false) {
-
-            $numericIds = array_filter($ids, function (string $id) {
-                return strlen((string)intval($id)) === strlen($id);
-            });
+            $numericIds = array_filter(
+                    $ids,
+                    function (string $id) {
+                        return strlen((string) intval($id)) === strlen($id);
+                    }
+                    );
 
             $orX = $qb->expr()->orX();
             $orX->add($qb->expr()->in('o.id', $qb->createNamedParameter($numericIds, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
@@ -843,17 +867,17 @@ class ObjectEntityMapper extends QBMapper
         foreach ($filters as $filter => $value) {
             if ($value === 'IS NOT NULL' && in_array($filter, self::MAIN_FILTERS) === true) {
                 // Add condition for IS NOT NULL.
-                $qb->andWhere($qb->expr()->isNotNull('o.' . $filter));
+                $qb->andWhere($qb->expr()->isNotNull('o.'.$filter));
             } else if ($value === 'IS NULL' && in_array($filter, self::MAIN_FILTERS) === true) {
                 // Add condition for IS NULL.
-                $qb->andWhere($qb->expr()->isNull('o.' . $filter));
+                $qb->andWhere($qb->expr()->isNull('o.'.$filter));
             } else if (in_array($filter, self::MAIN_FILTERS) === true) {
                 if (is_array($value) === true) {
                     // If the value is an array, use IN to search for any of the values in the array.
-                    $qb->andWhere($qb->expr()->in('o.' . $filter, $qb->createNamedParameter($value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
+                    $qb->andWhere($qb->expr()->in('o.'.$filter, $qb->createNamedParameter($value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
                 } else {
                     // Otherwise, use equality for the filter.
-                    $qb->andWhere($qb->expr()->eq('o.' . $filter, $qb->createNamedParameter($value)));
+                    $qb->andWhere($qb->expr()->eq('o.'.$filter, $qb->createNamedParameter($value)));
                 }
             }
         }
@@ -908,7 +932,7 @@ class ObjectEntityMapper extends QBMapper
 
         $searchTerms = [];
 
-// Handle array search terms.
+        // Handle array search terms.
         if (is_array($search) === true) {
             $searchTerms = array_filter(
                 array_map('trim', $search),
@@ -917,7 +941,7 @@ class ObjectEntityMapper extends QBMapper
                 }
             );
         } else if (is_string($search) === true) {
-// Handle comma-separated values in string.
+            // Handle comma-separated values in string.
             $searchTerms = array_filter(
                 array_map('trim', explode(',', $search)),
                 function ($term) {
@@ -926,29 +950,30 @@ class ObjectEntityMapper extends QBMapper
             );
         }
 
-// If no valid search terms, return null.
+        // If no valid search terms, return null.
         if (empty($searchTerms) === true) {
             return null;
         }
 
-// Process each search term to make them case-insensitive and support partial matches.
+        // Process each search term to make them case-insensitive and support partial matches.
         $processedTerms = [];
         foreach ($searchTerms as $term) {
-// Convert to lowercase for case-insensitive matching.
+            // Convert to lowercase for case-insensitive matching.
             $lowerTerm = strtolower(trim($term));
 
-// Add wildcards for partial matching if not already present.
+            // Add wildcards for partial matching if not already present.
             if (str_starts_with($lowerTerm, '*') === false && str_starts_with($lowerTerm, '%') === false) {
-                $lowerTerm = '*' . $lowerTerm;
+                $lowerTerm = '*'.$lowerTerm;
             }
+
             if (str_ends_with($lowerTerm, '*') === false && str_ends_with($lowerTerm, '%') === false) {
-                $lowerTerm = $lowerTerm . '*';
+                $lowerTerm = $lowerTerm.'*';
             }
 
             $processedTerms[] = $lowerTerm;
         }
 
-// Join multiple terms with OR logic (any term can match).
+        // Join multiple terms with OR logic (any term can match).
         return implode(' OR ', $processedTerms);
 
     }//end processSearchParameter()
@@ -1166,29 +1191,31 @@ class ObjectEntityMapper extends QBMapper
      *
      * @return array<int, ObjectEntity>|int An array of ObjectEntity objects matching the criteria, or integer count if _count is true
      */
-    public function searchObjects(array $query = [], ?string $activeOrganisationUuid = null, bool $rbac = true, bool $multi = true, ?array $ids = null, ?string $uses = null): array|int {
+    public function searchObjects(array $query=[], ?string $activeOrganisationUuid=null, bool $rbac=true, bool $multi=true, ?array $ids=null, ?string $uses=null): array|int
+    {
         // **PERFORMANCE DEBUGGING**: Start detailed timing for ObjectEntityMapper
         $mapperStartTime = microtime(true);
-        $perfTimings = [];
+        $perfTimings     = [];
 
-        $this->logger->info('🎯 MAPPER START - ObjectEntityMapper::searchObjects called', [
-            'queryKeys' => array_keys($query),
-            'rbac' => $rbac,
-            'multi' => $multi,
-            'activeOrg' => ($activeOrganisationUuid !== null) ? 'set' : 'null'
-        ]);
+        $this->logger->info(
+                '🎯 MAPPER START - ObjectEntityMapper::searchObjects called',
+                [
+                    'queryKeys' => array_keys($query),
+                    'rbac'      => $rbac,
+                    'multi'     => $multi,
+                    'activeOrg' => ($activeOrganisationUuid !== null) ? 'set' : 'null',
+                ]
+                );
 
-// Extract options from query (prefixed with _).
-        $extractStart = microtime(true);
-        $limit = $query['_limit'] ?? null;
-        $offset = $query['_offset'] ?? null;
-        $order = $query['_order'] ?? [];
-        $search = $this->processSearchParameter($query['_search'] ?? null);
+        // Extract options from query (prefixed with _).
+        $extractStart   = microtime(true);
+        $limit          = $query['_limit'] ?? null;
+        $offset         = $query['_offset'] ?? null;
+        $order          = $query['_order'] ?? [];
+        $search         = $this->processSearchParameter($query['_search'] ?? null);
         $includeDeleted = $query['_includeDeleted'] ?? false;
         // Convert _published to boolean if it exists (handles string "false" from HTTP requests)
-        $published = isset($query['_published'])
-            ? filter_var($query['_published'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false
-            : false;
+        $published = isset($query['_published']) ? filter_var($query['_published'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false : false;
         // Check if _published is explicitly set to false to disable published bypass mechanism
         // When _published=false: published objects still visible but must respect multi-tenancy and RBAC
         // - Published objects from user's organization: visible (pass org filter)
@@ -1198,46 +1225,53 @@ class ObjectEntityMapper extends QBMapper
         $disablePublishedBypass = isset($query['_published']) && $published === false;
 
         if ($disablePublishedBypass === true) {
-            $this->logger->info('🔒 PUBLISHED BYPASS DISABLED - Published objects must respect multi-tenancy and RBAC', [
-                'reason' => '_published=false parameter set',
-                'impact' => 'Published objects will NOT bypass organization filtering or RBAC checks',
-                'note' => 'Published objects from user\'s organization will still be visible'
-            ]);
+            $this->logger->info(
+                    '🔒 PUBLISHED BYPASS DISABLED - Published objects must respect multi-tenancy and RBAC',
+                    [
+                        'reason' => '_published=false parameter set',
+                        'impact' => 'Published objects will NOT bypass organization filtering or RBAC checks',
+                        'note'   => 'Published objects from user\'s organization will still be visible',
+                    ]
+                    );
         }
+
         // ids parameter is now passed as method parameter, not from query
         $count = $query['_count'] ?? false;
         $perfTimings['extract_options'] = round((microtime(true) - $extractStart) * 1000, 2);
 
-// Extract metadata from @self.
+        // Extract metadata from @self.
         $metadataFilters = [];
-        $register = null;
-        $schema = null;
+        $register        = null;
+        $schema          = null;
 
         if (isset($query['@self']) === true && is_array($query['@self']) === true) {
             $metadataFilters = $query['@self'];
 
-// Process register: convert objects to IDs and handle arrays.
+            // Process register: convert objects to IDs and handle arrays.
             if (isset($metadataFilters['register']) === true) {
                 $register = $this->processRegisterSchemaValue($metadataFilters['register'], 'register');
-// Keep in metadataFilters for search handler to process properly with other filters.
+                // Keep in metadataFilters for search handler to process properly with other filters.
                 $metadataFilters['register'] = $register;
             }
 
-// Process schema: convert objects to IDs and handle arrays.
+            // Process schema: convert objects to IDs and handle arrays.
             if (isset($metadataFilters['schema']) === true) {
                 $schema = $this->processRegisterSchemaValue($metadataFilters['schema'], 'schema');
-// Keep in metadataFilters for search handler to process properly with other filters.
+                // Keep in metadataFilters for search handler to process properly with other filters.
                 $metadataFilters['schema'] = $schema;
             }
         }
 
-// Clean the query: remove @self and all properties prefixed with _.
-        $cleanQuery = array_filter($query, function($key) {
-            return $key !== '@self' && str_starts_with($key, '_') === false;
-        }, ARRAY_FILTER_USE_KEY);
+        // Clean the query: remove @self and all properties prefixed with _.
+        $cleanQuery = array_filter(
+                $query,
+                function ($key) {
+                    return $key !== '@self' && str_starts_with($key, '_') === false;
+                },
+                ARRAY_FILTER_USE_KEY
+                );
 
-
-// If search handler is not available, fall back to the original methods.
+        // If search handler is not available, fall back to the original methods.
         if ($this->searchHandler === null) {
             if ($count === true) {
                 return $this->countAll(
@@ -1265,7 +1299,7 @@ class ObjectEntityMapper extends QBMapper
                 schema: $schema,
                 published: $published
             );
-        }
+        }//end if
 
         $queryBuilder = $this->db->getQueryBuilder();
 
@@ -1273,18 +1307,18 @@ class ObjectEntityMapper extends QBMapper
         $performanceBypass = ($_GET['_bypass_auth'] ?? '') === 'true' || ($_SERVER['HTTP_X_BYPASS_AUTH'] ?? '') === 'true';
 
         // **PERFORMANCE OPTIMIZATION**: Detect simple vs complex requests early
-        $hasExtend = empty($query['_extend'] ?? []) === false;
+        $hasExtend        = empty($query['_extend'] ?? []) === false;
         $hasComplexFields = empty($query['_fields'] ?? null) === false;
-        $isSimpleRequest = ($hasExtend === false) && ($hasComplexFields === false);
+        $isSimpleRequest  = ($hasExtend === false) && ($hasComplexFields === false);
 
         // **PERFORMANCE OPTIMIZATION**: Smart RBAC skipping for public data (30-40% improvement)
         $isSimplePublicRequest = $isSimpleRequest && $published !== false && empty($cleanQuery) && $search === null;
         // Smart bypass: only when RBAC explicitly disabled and it's a simple public request.
         $smartBypass = $isSimplePublicRequest && ($rbac === false);
 
-// Build base query - different for count vs search.
+        // Build base query - different for count vs search.
         if ($count === true) {
-// For count queries, use COUNT(*) and skip pagination.
+            // For count queries, use COUNT(*) and skip pagination.
             $queryBuilder->selectAlias($queryBuilder->createFunction('COUNT(*)'), 'count')
                 ->from('openregister_objects', 'o');
 
@@ -1294,22 +1328,27 @@ class ObjectEntityMapper extends QBMapper
                 $queryBuilder->leftJoin('o', 'openregister_schemas', 's', 'o.schema = s.id');
                 $this->logger->debug('📊 COUNT: Including schema join for RBAC');
             } else {
-                $this->logger->debug('🚀 PERFORMANCE: Skipping schema join for count', [
-                    'expectedImprovement' => '15-20%'
-                ]);
+                $this->logger->debug(
+                        '🚀 PERFORMANCE: Skipping schema join for count',
+                        [
+                            'expectedImprovement' => '15-20%',
+                        ]
+                        );
             }
         } else {
             // **PERFORMANCE OPTIMIZATION**: Selective field loading for 500ms target
-
             // **SIMPLIFIED LOADING**: Always load all fields for consistency and reliability
             // This avoids missing fields like relations, files, authorization, etc.
             // Performance impact is minimal compared to maintenance burden of selective loading
             $queryBuilder->select('o.*');
 
-            $this->logger->debug('📊 PERFORMANCE: Using full field loading', [
-                'selectedFields' => 'all_fields',
-                'reason' => 'consistency_and_reliability'
-            ]);
+            $this->logger->debug(
+                    '📊 PERFORMANCE: Using full field loading',
+                    [
+                        'selectedFields' => 'all_fields',
+                        'reason'         => 'consistency_and_reliability',
+                    ]
+                    );
 
             $queryBuilder->from('openregister_objects', 'o')
                 ->setMaxResults($limit)
@@ -1321,28 +1360,37 @@ class ObjectEntityMapper extends QBMapper
                 $queryBuilder->leftJoin('o', 'openregister_schemas', 's', 'o.schema = s.id');
                 $this->logger->debug('📊 SEARCH: Including schema join for RBAC');
             } else {
-                $this->logger->debug('🚀 PERFORMANCE: Skipping schema join for search', [
-                    'expectedImprovement' => '15-20%'
-                ]);
+                $this->logger->debug(
+                        '🚀 PERFORMANCE: Skipping schema join for search',
+                        [
+                            'expectedImprovement' => '15-20%',
+                        ]
+                        );
             }
-        }
+        }//end if
 
         if ($performanceBypass === true) {
-            $this->logger->info('⚠️  PERFORMANCE BYPASS MODE - Skipping all authorization checks', [
-                'WARNING' => 'This should ONLY be used for performance testing!'
-            ]);
+            $this->logger->info(
+                    '⚠️  PERFORMANCE BYPASS MODE - Skipping all authorization checks',
+                    [
+                        'WARNING' => 'This should ONLY be used for performance testing!',
+                    ]
+                    );
         } else if ($smartBypass === true) {
-            $this->logger->debug('🚀 PERFORMANCE: Smart RBAC bypass for public data', [
-                'reason' => 'simple_public_request',
-                'expectedImprovement' => '30-40%',
-                'conditions' => [
-                    'simple_request' => $isSimpleRequest,
-                    'public_data' => $published !== false,
-                    'no_filters' => empty($cleanQuery),
-                    'no_search' => $search === null,
-                    'rbac_disabled' => !$rbac
-                ]
-            ]);
+            $this->logger->debug(
+                    '🚀 PERFORMANCE: Smart RBAC bypass for public data',
+                    [
+                        'reason'              => 'simple_public_request',
+                        'expectedImprovement' => '30-40%',
+                        'conditions'          => [
+                            'simple_request' => $isSimpleRequest,
+                            'public_data'    => $published !== false,
+                            'no_filters'     => empty($cleanQuery),
+                            'no_search'      => $search === null,
+                            'rbac_disabled'  => !$rbac,
+                        ],
+                    ]
+                    );
         } else {
             // **PERFORMANCE TIMING**: RBAC filtering (suspected bottleneck)
             $rbacStart = microtime(true);
@@ -1350,10 +1398,13 @@ class ObjectEntityMapper extends QBMapper
             $this->applyRbacFilters($queryBuilder, 'o', 's', null, $rbac, $disablePublishedBypass);
             $perfTimings['rbac_filtering'] = round((microtime(true) - $rbacStart) * 1000, 2);
 
-            $this->logger->info('🔒 RBAC FILTERING COMPLETED', [
-                'rbacTime' => $perfTimings['rbac_filtering'] . 'ms',
-                'rbacEnabled' => $rbac
-            ]);
+            $this->logger->info(
+                    '🔒 RBAC FILTERING COMPLETED',
+                    [
+                        'rbacTime'    => $perfTimings['rbac_filtering'].'ms',
+                        'rbacEnabled' => $rbac,
+                    ]
+                    );
 
             // **PERFORMANCE TIMING**: Organization filtering (suspected bottleneck)
             $orgStart = microtime(true);
@@ -1363,27 +1414,31 @@ class ObjectEntityMapper extends QBMapper
             $this->applyOrganisationFilter(
                 qb: $queryBuilder,
                 columnName: 'organisation',
-// Admins can see legacy NULL org objects.
+            // Admins can see legacy NULL org objects.
                 tableAlias: 'o',
-                enablePublished: $enablePublishedBypass,    // Disable if _published=false
+                enablePublished: $enablePublishedBypass,
+            // Disable if _published=false
                 multiTenancyEnabled: $multi
             );
             $perfTimings['org_filtering'] = round((microtime(true) - $orgStart) * 1000, 2);
 
-            $this->logger->info('🏢 ORG FILTERING COMPLETED', [
-                'orgTime' => $perfTimings['org_filtering'] . 'ms',
-                'multiEnabled' => $multi,
-                'hasActiveOrg' => $activeOrganisationUuid !== null ? 'yes' : 'no'
-            ]);
-        }
+            $this->logger->info(
+                    '🏢 ORG FILTERING COMPLETED',
+                    [
+                        'orgTime'      => $perfTimings['org_filtering'].'ms',
+                        'multiEnabled' => $multi,
+                        'hasActiveOrg' => $activeOrganisationUuid !== null ? 'yes' : 'no',
+                    ]
+                    );
+        }//end if
 
-// Handle basic filters - skip register/schema if they're in metadata filters (to avoid double filtering).
-        $basicRegister = isset($metadataFilters['register']) === true ? null : $register;
-        $basicSchema = isset($metadataFilters['schema']) === true ? null : $schema;
+        // Handle basic filters - skip register/schema if they're in metadata filters (to avoid double filtering).
+        $basicRegister         = isset($metadataFilters['register']) === true ? null : $register;
+        $basicSchema           = isset($metadataFilters['schema']) === true ? null : $schema;
         $bypassPublishedFilter = $this->shouldPublishedObjectsBypassMultiTenancy();
         $this->applyBasicFilters($queryBuilder, $includeDeleted, $published, $basicRegister, $basicSchema, 'o', $bypassPublishedFilter);
 
-// Handle filtering by IDs/UUIDs if provided.
+        // Handle filtering by IDs/UUIDs if provided.
         if ($ids !== null && empty($ids) === false) {
             $orX = $queryBuilder->expr()->orX();
             $orX->add($queryBuilder->expr()->in('o.id', $queryBuilder->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
@@ -1391,108 +1446,121 @@ class ObjectEntityMapper extends QBMapper
             $queryBuilder->andWhere($orX);
         }
 
-// Handle filtering by uses in relations if provided.
+        // Handle filtering by uses in relations if provided.
         if ($uses !== null) {
             $queryBuilder->andWhere(
                 $queryBuilder->expr()->isNotNull(
                     $queryBuilder->createFunction(
-                        "JSON_SEARCH(o.relations, 'one', " . $queryBuilder->createNamedParameter($uses) . ", NULL, '$')"
+                        "JSON_SEARCH(o.relations, 'one', ".$queryBuilder->createNamedParameter($uses).", NULL, '$')"
                     )
                 )
             );
         }
 
-// Use cleaned query as object filters.
+        // Use cleaned query as object filters.
         $objectFilters = $cleanQuery;
 
-// Apply metadata filters (register, schema, etc.).
+        // Apply metadata filters (register, schema, etc.).
         if (empty($metadataFilters) === false) {
             $queryBuilder = $this->searchHandler->applyMetadataFilters($queryBuilder, $metadataFilters);
         }
 
-// Apply object field filters (JSON searches).
+        // Apply object field filters (JSON searches).
         if (empty($objectFilters) === false) {
             $queryBuilder = $this->searchHandler->applyObjectFilters($queryBuilder, $objectFilters);
         }
 
-// Apply full-text search if provided.
+        // Apply full-text search if provided.
         if ($search !== null && trim($search) !== '') {
             $queryBuilder = $this->searchHandler->applyFullTextSearch($queryBuilder, trim($search));
         }
 
-// Apply ordering (skip for count queries as it's not needed and would be inefficient).
+        // Apply ordering (skip for count queries as it's not needed and would be inefficient).
         if ($count === false && empty($order) === false) {
             $metadataSort = [];
-            $objectSort = [];
+            $objectSort   = [];
 
             foreach ($order as $field => $direction) {
                 if (str_starts_with($field, '@self.') === true) {
-// Remove @self. prefix for metadata sorting.
+                    // Remove @self. prefix for metadata sorting.
                     $metadataField = str_replace('@self.', '', $field);
                     $metadataSort[$metadataField] = $direction;
                 } else {
-// Object field sorting.
+                    // Object field sorting.
                     $objectSort[$field] = $direction;
                 }
             }
 
-// Apply metadata sorting (standard SQL fields).
+            // Apply metadata sorting (standard SQL fields).
             foreach ($metadataSort as $field => $direction) {
                 $direction = strtoupper($direction);
                 if (in_array($direction, ['ASC', 'DESC']) === false) {
                     $direction = 'ASC';
                 }
+
                 $queryBuilder->addOrderBy($field, $direction);
             }
 
-// Apply object field sorting (JSON fields).
+            // Apply object field sorting (JSON fields).
             if (empty($objectSort) === false) {
                 $queryBuilder = $this->searchHandler->applySorting($queryBuilder, $objectSort);
             }
-        }
+        }//end if
 
         // **PERFORMANCE TIMING**: Database execution (final bottleneck check)
         $dbExecutionStart = microtime(true);
 
-// Return appropriate result based on count flag.
+        // Return appropriate result based on count flag.
         if ($count === true) {
-            $this->logger->info('📊 EXECUTING COUNT QUERY', [
-                'totalPrepTime' => round((microtime(true) - $mapperStartTime) * 1000, 2) . 'ms'
-            ]);
+            $this->logger->info(
+                    '📊 EXECUTING COUNT QUERY',
+                    [
+                        'totalPrepTime' => round((microtime(true) - $mapperStartTime) * 1000, 2).'ms',
+                    ]
+                    );
 
-            $result = $queryBuilder->executeQuery();
+            $result      = $queryBuilder->executeQuery();
             $countResult = (int) $result->fetchOne();
 
-            $perfTimings['db_execution'] = round((microtime(true) - $dbExecutionStart) * 1000, 2);
+            $perfTimings['db_execution']      = round((microtime(true) - $dbExecutionStart) * 1000, 2);
             $perfTimings['total_mapper_time'] = round((microtime(true) - $mapperStartTime) * 1000, 2);
 
-            $this->logger->info('🎯 MAPPER COMPLETE - COUNT RESULT', [
-                'countResult' => $countResult,
-                'dbExecutionTime' => $perfTimings['db_execution'] . 'ms',
-                'totalMapperTime' => $perfTimings['total_mapper_time'] . 'ms',
-                'timingBreakdown' => $perfTimings
-            ]);
+            $this->logger->info(
+                    '🎯 MAPPER COMPLETE - COUNT RESULT',
+                    [
+                        'countResult'     => $countResult,
+                        'dbExecutionTime' => $perfTimings['db_execution'].'ms',
+                        'totalMapperTime' => $perfTimings['total_mapper_time'].'ms',
+                        'timingBreakdown' => $perfTimings,
+                    ]
+                    );
 
             return $countResult;
         } else {
-            $this->logger->info('📋 EXECUTING SEARCH QUERY', [
-                'totalPrepTime' => round((microtime(true) - $mapperStartTime) * 1000, 2) . 'ms'
-            ]);
+            $this->logger->info(
+                    '📋 EXECUTING SEARCH QUERY',
+                    [
+                        'totalPrepTime' => round((microtime(true) - $mapperStartTime) * 1000, 2).'ms',
+                    ]
+                    );
 
             $entities = $this->findEntities($queryBuilder);
 
-            $perfTimings['db_execution'] = round((microtime(true) - $dbExecutionStart) * 1000, 2);
+            $perfTimings['db_execution']      = round((microtime(true) - $dbExecutionStart) * 1000, 2);
             $perfTimings['total_mapper_time'] = round((microtime(true) - $mapperStartTime) * 1000, 2);
 
-            $this->logger->info('🎯 MAPPER COMPLETE - SEARCH RESULTS', [
-                'resultCount' => count($entities),
-                'dbExecutionTime' => $perfTimings['db_execution'] . 'ms',
-                'totalMapperTime' => $perfTimings['total_mapper_time'] . 'ms',
-                'timingBreakdown' => $perfTimings
-            ]);
+            $this->logger->info(
+                    '🎯 MAPPER COMPLETE - SEARCH RESULTS',
+                    [
+                        'resultCount'     => count($entities),
+                        'dbExecutionTime' => $perfTimings['db_execution'].'ms',
+                        'totalMapperTime' => $perfTimings['total_mapper_time'].'ms',
+                        'timingBreakdown' => $perfTimings,
+                    ]
+                    );
 
             return $entities;
-        }
+        }//end if
 
     }//end searchObjects()
 
@@ -1520,43 +1588,46 @@ class ObjectEntityMapper extends QBMapper
      *
      * @return int The number of objects matching the criteria
      */
-    public function countSearchObjects(array $query = [], ?string $_activeOrganisationUuid = null, bool $_rbac = true, bool $_multi = true, ?array $ids = null, ?string $uses = null): int
+    public function countSearchObjects(array $query=[], ?string $_activeOrganisationUuid=null, bool $_rbac=true, bool $_multi=true, ?array $ids=null, ?string $uses=null): int
     {
-// Extract options from query (prefixed with _).
-        $search = $this->processSearchParameter($query['_search'] ?? null);
+        // Extract options from query (prefixed with _).
+        $search         = $this->processSearchParameter($query['_search'] ?? null);
         $includeDeleted = $query['_includeDeleted'] ?? false;
-        $published = $query['_published'] ?? false;
-// ids parameter is now passed as method parameter, not from query.
-
-// Extract metadata from @self.
+        $published      = $query['_published'] ?? false;
+        // ids parameter is now passed as method parameter, not from query.
+        // Extract metadata from @self.
         $metadataFilters = [];
-        $register = null;
-        $schema = null;
+        $register        = null;
+        $schema          = null;
 
         if (isset($query['@self']) === true && is_array($query['@self']) === true) {
             $metadataFilters = $query['@self'];
 
-// Process register: convert objects to IDs and handle arrays.
+            // Process register: convert objects to IDs and handle arrays.
             if (isset($metadataFilters['register']) === true) {
                 $register = $this->processRegisterSchemaValue($metadataFilters['register'], 'register');
-// Keep in metadataFilters for search handler to process properly with other filters.
+                // Keep in metadataFilters for search handler to process properly with other filters.
                 $metadataFilters['register'] = $register;
             }
 
-// Process schema: convert objects to IDs and handle arrays.
+            // Process schema: convert objects to IDs and handle arrays.
             if (isset($metadataFilters['schema']) === true) {
                 $schema = $this->processRegisterSchemaValue($metadataFilters['schema'], 'schema');
-// Keep in metadataFilters for search handler to process properly with other filters.
+                // Keep in metadataFilters for search handler to process properly with other filters.
                 $metadataFilters['schema'] = $schema;
             }
         }
 
-// Clean the query: remove @self and all properties prefixed with _.
-        $cleanQuery = array_filter($query, function($key) {
-            return $key !== '@self' && str_starts_with($key, '_') === false;
-        }, ARRAY_FILTER_USE_KEY);
+        // Clean the query: remove @self and all properties prefixed with _.
+        $cleanQuery = array_filter(
+                $query,
+                function ($key) {
+                    return $key !== '@self' && str_starts_with($key, '_') === false;
+                },
+                ARRAY_FILTER_USE_KEY
+                );
 
-// If search handler is not available, fall back to the original countAll method.
+        // If search handler is not available, fall back to the original countAll method.
         if ($this->searchHandler === null) {
             return $this->countAll(
                 filters: $cleanQuery,
@@ -1572,17 +1643,17 @@ class ObjectEntityMapper extends QBMapper
 
         $queryBuilder = $this->db->getQueryBuilder();
 
-// Build base count query - use COUNT(*) instead of selecting all columns.
+        // Build base count query - use COUNT(*) instead of selecting all columns.
         $queryBuilder->selectAlias($queryBuilder->createFunction('COUNT(*)'), 'count')
             ->from('openregister_objects', 'o');
 
-// Handle basic filters - skip register/schema if they're in metadata filters (to avoid double filtering).
-        $basicRegister = isset($metadataFilters['register']) === true ? null : $register;
-        $basicSchema = isset($metadataFilters['schema']) === true ? null : $schema;
+        // Handle basic filters - skip register/schema if they're in metadata filters (to avoid double filtering).
+        $basicRegister         = isset($metadataFilters['register']) === true ? null : $register;
+        $basicSchema           = isset($metadataFilters['schema']) === true ? null : $schema;
         $bypassPublishedFilter = $this->shouldPublishedObjectsBypassMultiTenancy();
         $this->applyBasicFilters($queryBuilder, $includeDeleted, $published, $basicRegister, $basicSchema, 'o', $bypassPublishedFilter);
 
-// Apply organization filtering for multi-tenancy (no RBAC in count queries due to no schema join).
+        // Apply organization filtering for multi-tenancy (no RBAC in count queries due to no schema join).
         $this->applyOrganisationFilter(
             qb: $queryBuilder,
             columnName: 'organisation',
@@ -1592,7 +1663,7 @@ class ObjectEntityMapper extends QBMapper
             multiTenancyEnabled: true
         );
 
-// Handle filtering by IDs/UUIDs if provided (same as searchObjects).
+        // Handle filtering by IDs/UUIDs if provided (same as searchObjects).
         if ($ids !== null && empty($ids) === false) {
             $orX = $queryBuilder->expr()->orX();
             $orX->add($queryBuilder->expr()->in('o.id', $queryBuilder->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
@@ -1600,42 +1671,40 @@ class ObjectEntityMapper extends QBMapper
             $queryBuilder->andWhere($orX);
         }
 
-// Handle filtering by uses in relations if provided (same as searchObjects).
+        // Handle filtering by uses in relations if provided (same as searchObjects).
         if ($uses !== null) {
             $queryBuilder->andWhere(
                 $queryBuilder->expr()->isNotNull(
                     $queryBuilder->createFunction(
-                        "JSON_SEARCH(o.relations, 'one', " . $queryBuilder->createNamedParameter($uses) . ", NULL, '$')"
+                        "JSON_SEARCH(o.relations, 'one', ".$queryBuilder->createNamedParameter($uses).", NULL, '$')"
                     )
                 )
             );
         }
 
-// Use cleaned query as object filters.
+        // Use cleaned query as object filters.
         $objectFilters = $cleanQuery;
 
-// Apply metadata filters (register, schema, etc.).
+        // Apply metadata filters (register, schema, etc.).
         if (empty($metadataFilters) === false) {
             $queryBuilder = $this->searchHandler->applyMetadataFilters($queryBuilder, $metadataFilters);
         }
 
-// Apply object field filters (JSON searches).
+        // Apply object field filters (JSON searches).
         if (empty($objectFilters) === false) {
             $queryBuilder = $this->searchHandler->applyObjectFilters($queryBuilder, $objectFilters);
         }
 
-// Apply full-text search if provided.
+        // Apply full-text search if provided.
         if ($search !== null && trim($search) !== '') {
             $queryBuilder = $this->searchHandler->applyFullTextSearch($queryBuilder, trim($search));
         }
 
-// Note: We don't apply sorting for count queries as it's not needed and would be inefficient.
-
+        // Note: We don't apply sorting for count queries as it's not needed and would be inefficient.
         $result = $queryBuilder->executeQuery();
         return (int) $result->fetchOne();
 
     }//end countSearchObjects()
-
 
 
     /**
@@ -1643,12 +1712,12 @@ class ObjectEntityMapper extends QBMapper
      *
      * Handles common filters like deleted, published, register, and schema.
      *
-     * @param IQueryBuilder     $queryBuilder   The query builder to modify
-     * @param bool              $includeDeleted Whether to include deleted objects
-     * @param bool|null         $published      If true, only return currently published objects
-     * @param mixed             $register       Optional register(s) to filter by (single/array, string/int/object)
-     * @param mixed             $schema         Optional schema(s) to filter by (single/array, string/int/object)
-     * @param string            $tableAlias     The table alias to use (default: '')
+     * @param IQueryBuilder $queryBuilder   The query builder to modify
+     * @param bool          $includeDeleted Whether to include deleted objects
+     * @param bool|null     $published      If true, only return currently published objects
+     * @param mixed         $register       Optional register(s) to filter by (single/array, string/int/object)
+     * @param mixed         $schema         Optional schema(s) to filter by (single/array, string/int/object)
+     * @param string        $tableAlias     The table alias to use (default: '')
      *
      * @phpstan-param IQueryBuilder $queryBuilder
      * @phpstan-param bool $includeDeleted
@@ -1671,11 +1740,11 @@ class ObjectEntityMapper extends QBMapper
         ?bool $published,
         mixed $register,
         mixed $schema,
-        string $tableAlias = '',
-        bool $bypassPublishedFilter = false
+        string $tableAlias='',
+        bool $bypassPublishedFilter=false
     ): void {
         // By default, only include objects where 'deleted' is NULL unless $includeDeleted is true.
-        $deletedColumn = $tableAlias !== '' ? $tableAlias . '.deleted' : 'deleted';
+        $deletedColumn = $tableAlias !== '' ? $tableAlias.'.deleted' : 'deleted';
         if ($includeDeleted === false) {
             $queryBuilder->andWhere($queryBuilder->expr()->isNull($deletedColumn));
         }
@@ -1688,8 +1757,8 @@ class ObjectEntityMapper extends QBMapper
         // Published objects from other organizations won't be visible (they don't pass org filter)
         if ($published === true && !$bypassPublishedFilter) {
             $now = (new \DateTime())->format('Y-m-d H:i:s');
-            $publishedColumn = $tableAlias !== '' ? $tableAlias . '.published' : 'published';
-            $depublishedColumn = $tableAlias !== '' ? $tableAlias . '.depublished' : 'depublished';
+            $publishedColumn   = $tableAlias !== '' ? $tableAlias.'.published' : 'published';
+            $depublishedColumn = $tableAlias !== '' ? $tableAlias.'.depublished' : 'depublished';
             $queryBuilder->andWhere(
                 $queryBuilder->expr()->andX(
                     $queryBuilder->expr()->isNotNull($publishedColumn),
@@ -1702,42 +1771,42 @@ class ObjectEntityMapper extends QBMapper
             );
         }
 
-// Add register filter if provided.
+        // Add register filter if provided.
         if ($register !== null) {
-            $registerColumn = !empty($tableAlias) ? $tableAlias . '.register' : 'register';
+            $registerColumn = !empty($tableAlias) ? $tableAlias.'.register' : 'register';
             if (is_array($register) === true) {
-// Handle array of register IDs.
+                // Handle array of register IDs.
                 $queryBuilder->andWhere(
                     $queryBuilder->expr()->in($registerColumn, $queryBuilder->createNamedParameter($register, \Doctrine\DBAL\Connection::PARAM_INT_ARRAY))
                 );
             } else if (is_object($register) === true && method_exists($register, 'getId') === true) {
-// Handle single register object.
+                // Handle single register object.
                 $queryBuilder->andWhere(
                     $queryBuilder->expr()->eq($registerColumn, $queryBuilder->createNamedParameter($register->getId(), IQueryBuilder::PARAM_INT))
                 );
             } else {
-// Handle single register ID (string/int).
+                // Handle single register ID (string/int).
                 $queryBuilder->andWhere(
                     $queryBuilder->expr()->eq($registerColumn, $queryBuilder->createNamedParameter($register, IQueryBuilder::PARAM_INT))
                 );
             }
         }
 
-// Add schema filter if provided.
+        // Add schema filter if provided.
         if ($schema !== null) {
-            $schemaColumn = !empty($tableAlias) ? $tableAlias . '.schema' : 'schema';
+            $schemaColumn = !empty($tableAlias) ? $tableAlias.'.schema' : 'schema';
             if (is_array($schema) === true) {
-// Handle array of schema IDs.
+                // Handle array of schema IDs.
                 $queryBuilder->andWhere(
                     $queryBuilder->expr()->in($schemaColumn, $queryBuilder->createNamedParameter($schema, \Doctrine\DBAL\Connection::PARAM_INT_ARRAY))
                 );
             } else if (is_object($schema) === true && method_exists($schema, 'getId') === true) {
-// Handle single schema object.
+                // Handle single schema object.
                 $queryBuilder->andWhere(
                     $queryBuilder->expr()->eq($schemaColumn, $queryBuilder->createNamedParameter($schema->getId(), IQueryBuilder::PARAM_INT))
                 );
             } else {
-// Handle single schema ID (string/int).
+                // Handle single schema ID (string/int).
                 $queryBuilder->andWhere(
                     $queryBuilder->expr()->eq($schemaColumn, $queryBuilder->createNamedParameter($schema, IQueryBuilder::PARAM_INT))
                 );
@@ -1768,54 +1837,55 @@ class ObjectEntityMapper extends QBMapper
             return null;
         }
 
-// Handle arrays.
+        // Handle arrays.
         if (is_array($value) === true) {
             // Check if this is an operator array (e.g., ['or' => '...'], ['and' => '...'])
-// Operator keys to preserve.
+            // Operator keys to preserve.
             $operatorKeys = ['or', 'and', 'gte', 'lte', 'gt', 'lt', 'eq', 'ne', '~', '!~', '^', '!^', '$', '!$'];
 
-// If any operator key exists, preserve the entire structure.
+            // If any operator key exists, preserve the entire structure.
             foreach ($operatorKeys as $opKey) {
                 if (isset($value[$opKey]) === true) {
-// This is an operator array, return it as-is.
+                    // This is an operator array, return it as-is.
                     return $value;
                 }
             }
 
-// Otherwise, process as a regular value array.
+            // Otherwise, process as a regular value array.
             $processedValues = [];
             foreach ($value as $item) {
                 if (is_object($item) === true && method_exists($item, 'getId') === true) {
-// Convert object to ID.
+                    // Convert object to ID.
                     $processedValues[] = $item->getId();
                 } else if (is_string($item) === true || is_int($item) === true) {
-// Keep string/int values as-is.
+                    // Keep string/int values as-is.
                     $processedValues[] = $item;
                 } else {
-// Invalid value type, skip it.
+                    // Invalid value type, skip it.
                     continue;
                 }
             }
-            return empty($processedValues) === false ? $processedValues : null;
-        }
 
-// Handle single values.
+            return empty($processedValues) === false ? $processedValues : null;
+        }//end if
+
+        // Handle single values.
         if (is_object($value) === true) {
             if (method_exists($value, 'getId') === true) {
-// Return the object itself for the basic filter logic to handle.
+                // Return the object itself for the basic filter logic to handle.
                 return $value;
             } else {
-// Invalid object type.
+                // Invalid object type.
                 return null;
             }
         }
 
-// Handle string/int values.
+        // Handle string/int values.
         if (is_string($value) === true || is_int($value) === true) {
             return $value;
         }
 
-// Invalid value type.
+        // Invalid value type.
         return null;
 
     }//end processRegisterSchemaValue()
@@ -1855,7 +1925,7 @@ class ObjectEntityMapper extends QBMapper
             ->from('openregister_objects', 'o')
             ->leftJoin('o', 'openregister_schemas', 's', 'o.schema = s.id');
 
-// Filter out system variables (starting with _).
+        // Filter out system variables (starting with _).
         $filters = array_filter(
             $filters ?? [],
             function ($key) {
@@ -1873,17 +1943,17 @@ class ObjectEntityMapper extends QBMapper
             $filters['page']
         );
 
-// Add register to filters if provided.
+        // Add register to filters if provided.
         if ($register !== null) {
             $filters['register'] = $register->getId();
         }
 
-// Add schema to filters if provided.
+        // Add schema to filters if provided.
         if ($schema !== null) {
             $filters['schema'] = $schema->getId();
         }
 
-// Apply RBAC filtering based on user permissions.
+        // Apply RBAC filtering based on user permissions.
         $this->applyRbacFilters($qb, 'o', 's', null, $rbac);
 
         // By default, only include objects where 'deleted' is NULL unless $includeDeleted is true.
@@ -1894,7 +1964,7 @@ class ObjectEntityMapper extends QBMapper
         // If published filter is set, only include objects that are currently published.
         if ($published === true) {
             $now = (new \DateTime())->format('Y-m-d H:i:s');
-// published <= now AND (depublished IS NULL OR depublished > now).
+            // published <= now AND (depublished IS NULL OR depublished > now).
             $qb->andWhere(
                 $qb->expr()->andX(
                     $qb->expr()->isNotNull('o.published'),
@@ -1906,7 +1976,6 @@ class ObjectEntityMapper extends QBMapper
                 )
             );
         }
-
 
         // Handle filtering by IDs/UUIDs if provided.
         if ($ids !== null && empty($ids) === false) {
@@ -1929,18 +1998,18 @@ class ObjectEntityMapper extends QBMapper
 
         foreach ($filters as $filter => $value) {
             if ($value === 'IS NOT NULL' && in_array($filter, self::MAIN_FILTERS) === true) {
-// Add condition for IS NOT NULL.
-                $qb->andWhere($qb->expr()->isNotNull('o.' . $filter));
+                // Add condition for IS NOT NULL.
+                $qb->andWhere($qb->expr()->isNotNull('o.'.$filter));
             } else if ($value === 'IS NULL' && in_array($filter, self::MAIN_FILTERS) === true) {
-// Add condition for IS NULL.
-                $qb->andWhere($qb->expr()->isNull('o.' . $filter));
+                // Add condition for IS NULL.
+                $qb->andWhere($qb->expr()->isNull('o.'.$filter));
             } else if (in_array($filter, self::MAIN_FILTERS) === true) {
                 if (is_array($value) === true) {
                     // If the value is an array, use IN to search for any of the values in the array.
-                    $qb->andWhere($qb->expr()->in('o.' . $filter, $qb->createNamedParameter($value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
+                    $qb->andWhere($qb->expr()->in('o.'.$filter, $qb->createNamedParameter($value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
                 } else {
                     // Otherwise, use equality for the filter.
-                    $qb->andWhere($qb->expr()->eq('o.' . $filter, $qb->createNamedParameter($value)));
+                    $qb->andWhere($qb->expr()->eq('o.'.$filter, $qb->createNamedParameter($value)));
                 }
             }
         }
@@ -1973,7 +2042,7 @@ class ObjectEntityMapper extends QBMapper
         $object = $entity->getObject();
         unset($object['@self'], $object['id']);
         $entity->setObject($object);
-// Set the size to the byte size of the serialized object.
+        // Set the size to the byte size of the serialized object.
         $this->eventDispatcher->dispatchTyped(new ObjectCreatingEvent($entity));
 
         $entity = parent::insert($entity);
@@ -1986,11 +2055,10 @@ class ObjectEntityMapper extends QBMapper
     }//end insert()
 
 
-
     /**
      * Updates an entity in the database
      *
-     * @param Entity $entity        The entity to update
+     * @param Entity $entity         The entity to update
      * @param bool   $includeDeleted Whether to include deleted objects when finding the old object
      *
      * @throws \OCP\DB\Exception If a database error occurs
@@ -2000,12 +2068,10 @@ class ObjectEntityMapper extends QBMapper
      *
      * @psalm-suppress LessSpecificImplementedReturnType - ObjectEntity is more specific than Entity
      */
-    public function update(Entity $entity, bool $includeDeleted = false): Entity
+    public function update(Entity $entity, bool $includeDeleted=false): Entity
     {
         // For ObjectEntity, we need to find by the internal database ID, not UUID
-// The getId() method returns the database primary key.
-
-
+        // The getId() method returns the database primary key.
         $qb = $this->db->getQueryBuilder();
         $qb->select('*')
             ->from('openregister_objects')
@@ -2021,7 +2087,7 @@ class ObjectEntityMapper extends QBMapper
         $object = $entity->getObject();
         unset($object['@self'], $object['id']);
         $entity->setObject($object);
-// Set the size to the byte size of the serialized object.
+        // Set the size to the byte size of the serialized object.
         $this->eventDispatcher->dispatchTyped(new ObjectUpdatingEvent($entity, $oldObject));
 
         $entity = parent::update($entity);
@@ -2032,7 +2098,6 @@ class ObjectEntityMapper extends QBMapper
         return $entity;
 
     }//end update()
-
 
 
     /**
@@ -2052,7 +2117,6 @@ class ObjectEntityMapper extends QBMapper
         $result = parent::delete($entity);
 
         // Dispatch deletion event.
-
         $this->eventDispatcher->dispatchTyped(
             new ObjectDeletedEvent($entity)
         );
@@ -2060,7 +2124,6 @@ class ObjectEntityMapper extends QBMapper
         return $result;
 
     }//end delete()
-
 
 
     /**
@@ -2139,7 +2202,6 @@ class ObjectEntityMapper extends QBMapper
         $object = $this->update($object);
 
         // Dispatch lock event.
-
         $this->eventDispatcher->dispatchTyped(new ObjectLockedEvent($object));
 
         return $object;
@@ -2173,13 +2235,11 @@ class ObjectEntityMapper extends QBMapper
         $object = $this->update($object);
 
         // Dispatch unlock event.
-
         $this->eventDispatcher->dispatchTyped(new ObjectUnlockedEvent($object));
 
         return $object;
 
     }//end unlockObject()
-
 
 
     /**
@@ -2201,7 +2261,7 @@ class ObjectEntityMapper extends QBMapper
         // **PERFORMANCE OPTIMIZATION**: Add logging for monitoring
         $startTime = microtime(true);
 
-// Filter out empty values and ensure uniqueness.
+        // Filter out empty values and ensure uniqueness.
         $cleanIds = array_filter(array_unique($ids), fn($id) => !empty($id));
 
         if (empty($cleanIds) === true) {
@@ -2210,10 +2270,13 @@ class ObjectEntityMapper extends QBMapper
 
         // **PERFORMANCE OPTIMIZATION**: Limit bulk queries for safety
         if (count($cleanIds) > 1000) {
-            $this->logger->warning('findMultiple called with excessive IDs - limiting for performance', [
-                'requestedIds' => count($cleanIds),
-                'limitedTo' => 1000
-            ]);
+            $this->logger->warning(
+                    'findMultiple called with excessive IDs - limiting for performance',
+                    [
+                        'requestedIds' => count($cleanIds),
+                        'limitedTo'    => 1000,
+                    ]
+                    );
             $cleanIds = array_slice($cleanIds, 0, 1000);
         }
 
@@ -2230,11 +2293,14 @@ class ObjectEntityMapper extends QBMapper
 
         // **PERFORMANCE OPTIMIZATION**: Log execution time
         $executionTime = round((microtime(true) - $startTime) * 1000, 2);
-        $this->logger->debug('findMultiple completed', [
-            'executionTime' => $executionTime . 'ms',
-            'requestedIds' => count($cleanIds),
-            'foundObjects' => count($result)
-        ]);
+        $this->logger->debug(
+                'findMultiple completed',
+                [
+                    'executionTime' => $executionTime.'ms',
+                    'requestedIds'  => count($cleanIds),
+                    'foundObjects'  => count($result),
+                ]
+                );
 
         return $result;
 
@@ -2263,7 +2329,6 @@ class ObjectEntityMapper extends QBMapper
             ->leftJoin('o', 'openregister_schemas', 's', 'o.schema = s.id')
             ->where($qb->expr()->eq('o.schema', $qb->createNamedParameter($schemaId, \Doctrine\DBAL\ParameterType::INTEGER)));
         // Exclude deleted objects.
-
         return $this->findEntities($qb);
 
     }//end findBySchema()
@@ -2291,10 +2356,10 @@ class ObjectEntityMapper extends QBMapper
      *               - locked: Number of locked objects.
      *               - published: Number of published objects.
      */
-    public function getStatistics(int|array|null $registerId = null, int|array|null $schemaId = null, array $exclude = []): array
+    public function getStatistics(int|array|null $registerId=null, int|array|null $schemaId=null, array $exclude=[]): array
     {
         try {
-            $qb = $this->db->getQueryBuilder();
+            $qb  = $this->db->getQueryBuilder();
             $now = (new \DateTime())->format('Y-m-d H:i:s');
             $qb->select(
                 $qb->createFunction('COUNT(id) as total'),
@@ -2302,14 +2367,14 @@ class ObjectEntityMapper extends QBMapper
                 $qb->createFunction('COUNT(CASE WHEN validation IS NOT NULL THEN 1 END) as invalid'),
                 $qb->createFunction('COUNT(CASE WHEN deleted IS NOT NULL THEN 1 END) as deleted'),
                 $qb->createFunction('COUNT(CASE WHEN locked IS NOT NULL AND locked = TRUE THEN 1 END) as locked'),
-// Only count as published if published <= now and (depublished is null or depublished > now).
+            // Only count as published if published <= now and (depublished is null or depublished > now).
                 $qb->createFunction(
                     "COUNT(CASE WHEN published IS NOT NULL AND published <= '".$now."' AND (depublished IS NULL OR depublished > '".$now."') THEN 1 END) as published"
                 )
             )
                 ->from($this->getTableName());
 
-// Add register filter if provided (support int or array).
+            // Add register filter if provided (support int or array).
             if ($registerId !== null) {
                 if (is_array($registerId) === true) {
                     $qb->andWhere($qb->expr()->in('register', $qb->createNamedParameter($registerId, \Doctrine\DBAL\Connection::PARAM_INT_ARRAY)));
@@ -2413,12 +2478,18 @@ class ObjectEntityMapper extends QBMapper
             $results = $qb->executeQuery()->fetchAll();
 
             return [
-                'labels' => array_map(function ($row) {
-                    return $row['register_name'] ?? 'Unknown';
-                }, $results),
-                'series' => array_map(function ($row) {
-                    return (int) $row['count'];
-                }, $results),
+                'labels' => array_map(
+                        function ($row) {
+                            return $row['register_name'] ?? 'Unknown';
+                        },
+                        $results
+                        ),
+                'series' => array_map(
+                        function ($row) {
+                            return (int) $row['count'];
+                        },
+                        $results
+                        ),
             ];
         } catch (\Exception $e) {
             return [
@@ -2468,12 +2539,18 @@ class ObjectEntityMapper extends QBMapper
             $results = $qb->executeQuery()->fetchAll();
 
             return [
-                'labels' => array_map(function ($row) {
-                    return $row['schema_name'] ?? 'Unknown';
-                }, $results),
-                'series' => array_map(function ($row) {
-                    return (int) $row['count'];
-                }, $results),
+                'labels' => array_map(
+                        function ($row) {
+                            return $row['schema_name'] ?? 'Unknown';
+                        },
+                        $results
+                        ),
+                'series' => array_map(
+                        function ($row) {
+                            return (int) $row['count'];
+                        },
+                        $results
+                        ),
             ];
         } catch (\Exception $e) {
             return [
@@ -2517,6 +2594,7 @@ class ObjectEntityMapper extends QBMapper
                 if ($range['min'] !== null) {
                     $qb->andWhere($qb->expr()->gte('size', $qb->createNamedParameter($range['min'], IQueryBuilder::PARAM_INT)));
                 }
+
                 if ($range['max'] !== null) {
                     $qb->andWhere($qb->expr()->lt('size', $qb->createNamedParameter($range['max'], IQueryBuilder::PARAM_INT)));
                 }
@@ -2531,7 +2609,7 @@ class ObjectEntityMapper extends QBMapper
                     $qb->andWhere($qb->expr()->eq('schema', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)));
                 }
 
-                $count = $qb->executeQuery()->fetchOne();
+                $count     = $qb->executeQuery()->fetchOne();
                 $results[] = [
                     'label' => $range['label'],
                     'count' => (int) $count,
@@ -2539,12 +2617,18 @@ class ObjectEntityMapper extends QBMapper
             }//end foreach
 
             return [
-                'labels' => array_map(function ($row) {
-                    return $row['label'];
-                }, $results),
-                'series' => array_map(function ($row) {
-                    return $row['count'];
-                }, $results),
+                'labels' => array_map(
+                        function ($row) {
+                            return $row['label'];
+                        },
+                        $results
+                        ),
+                'series' => array_map(
+                        function ($row) {
+                            return $row['count'];
+                        },
+                        $results
+                        ),
             ];
         } catch (\Exception $e) {
             return [
@@ -2564,8 +2648,8 @@ class ObjectEntityMapper extends QBMapper
      *
      * @param array $query The search query array containing filters and facet configuration
      *                     - _facets: Simple facet configuration
-     *                       - @self: Metadata field facets
-     *                       - Direct keys: Object field facets
+     *                     - @self: Metadata field facets
+     *                     - Direct keys: Object field facets
      *
      * @phpstan-param array<string, mixed> $query
      * @psalm-param   array<string, mixed> $query
@@ -2574,20 +2658,20 @@ class ObjectEntityMapper extends QBMapper
      *
      * @return array Simple facet data using the new handlers
      */
-    public function getSimpleFacets(array $query = []): array
+    public function getSimpleFacets(array $query=[]): array
     {
-// Check if handlers are available.
+        // Check if handlers are available.
         if ($this->metaDataFacetHandler === null || $this->mariaDbFacetHandler === null) {
             return [];
         }
 
-// Extract facet configuration.
+        // Extract facet configuration.
         $facetConfig = $query['_facets'] ?? [];
         if (empty($facetConfig) === true) {
             return [];
         }
 
-// Extract base query (without facet config).
+        // Extract base query (without facet config).
         $baseQuery = $query;
         unset($baseQuery['_facets']);
 
@@ -2611,10 +2695,14 @@ class ObjectEntityMapper extends QBMapper
             }
         }
 
-// Process object field facets.
-        $objectFacetConfig = array_filter($facetConfig, function($key) {
-            return $key !== '@self';
-        }, ARRAY_FILTER_USE_KEY);
+        // Process object field facets.
+        $objectFacetConfig = array_filter(
+                $facetConfig,
+                function ($key) {
+                    return $key !== '@self';
+                },
+                ARRAY_FILTER_USE_KEY
+                );
 
         foreach ($objectFacetConfig as $field => $config) {
             $type = $config['type'] ?? 'terms';
@@ -2622,10 +2710,10 @@ class ObjectEntityMapper extends QBMapper
             if ($type === 'terms') {
                 $facets[$field] = $this->mariaDbFacetHandler->getTermsFacet($field, $baseQuery);
             } else if ($type === 'date_histogram') {
-                $interval = $config['interval'] ?? 'month';
+                $interval       = $config['interval'] ?? 'month';
                 $facets[$field] = $this->mariaDbFacetHandler->getDateHistogramFacet($field, $interval, $baseQuery);
             } else if ($type === 'range') {
-                $ranges = $config['ranges'] ?? [];
+                $ranges         = $config['ranges'] ?? [];
                 $facets[$field] = $this->mariaDbFacetHandler->getRangeFacet($field, $ranges, $baseQuery);
             }
         }
@@ -2633,10 +2721,6 @@ class ObjectEntityMapper extends QBMapper
         return $facets;
 
     }//end getSimpleFacets()
-
-
-
-
 
 
     /**
@@ -2656,18 +2740,18 @@ class ObjectEntityMapper extends QBMapper
      *
      * @return array Facetable fields with their configuration based on schema definitions
      */
-    public function getFacetableFieldsFromSchemas(array $baseQuery = []): array
+    public function getFacetableFieldsFromSchemas(array $baseQuery=[]): array
     {
         $facetableFields = [];
 
-// Get schemas to analyze based on query context.
+        // Get schemas to analyze based on query context.
         $schemas = $this->getSchemasForQuery($baseQuery);
 
         if (empty($schemas) === true) {
             return [];
         }
 
-// Process each schema's properties.
+        // Process each schema's properties.
         foreach ($schemas as $schema) {
             $properties = $schema->getProperties();
 
@@ -2675,7 +2759,7 @@ class ObjectEntityMapper extends QBMapper
                 continue;
             }
 
-// Analyze each property for facetable configuration.
+            // Analyze each property for facetable configuration.
             foreach ($properties as $propertyKey => $property) {
                 if ($this->isPropertyFacetable($property) === true) {
                     $fieldConfig = $this->generateFieldConfigFromProperty($propertyKey, $property);
@@ -2693,7 +2777,7 @@ class ObjectEntityMapper extends QBMapper
                     }
                 }
             }
-        }
+        }//end foreach
 
         return $facetableFields;
 
@@ -2730,12 +2814,12 @@ class ObjectEntityMapper extends QBMapper
             }
         }
 
-// Get schemas from the schema mapper.
+        // Get schemas from the schema mapper.
         if (empty($schemaFilters) === true) {
-// Get all schemas.
+            // Get all schemas.
             return $this->schemaMapper->findAll();
         } else {
-// Get specific schemas.
+            // Get specific schemas.
             return $this->schemaMapper->findMultiple($schemaFilters);
         }
 
@@ -2774,13 +2858,13 @@ class ObjectEntityMapper extends QBMapper
      */
     private function generateFieldConfigFromProperty(string $propertyKey, array $property): ?array
     {
-        $type = $property['type'] ?? 'string';
-        $format = $property['format'] ?? '';
-        $title = $property['title'] ?? $propertyKey;
+        $type        = $property['type'] ?? 'string';
+        $format      = $property['format'] ?? '';
+        $title       = $property['title'] ?? $propertyKey;
         $description = $property['description'] ?? "Schema field: $propertyKey";
-        $example = $property['example'] ?? null;
+        $example     = $property['example'] ?? null;
 
-// Determine appropriate facet types based on property type and format.
+        // Determine appropriate facet types based on property type and format.
         $facetTypes = $this->determineFacetTypesFromProperty($type, $format);
 
         if (empty($facetTypes) === true) {
@@ -2788,20 +2872,20 @@ class ObjectEntityMapper extends QBMapper
         }
 
         $config = [
-            'type' => $type,
-            'format' => $format,
-            'title' => $title,
+            'type'        => $type,
+            'format'      => $format,
+            'title'       => $title,
             'description' => $description,
             'facet_types' => $facetTypes,
-            'source' => 'schema'
+            'source'      => 'schema',
         ];
 
-// Add example if available.
+        // Add example if available.
         if ($example !== null) {
             $config['example'] = $example;
         }
 
-// Add additional configuration based on type.
+        // Add additional configuration based on type.
         switch ($type) {
             case 'string':
                 if ($format === 'date' || $format === 'date-time') {
@@ -2817,6 +2901,7 @@ class ObjectEntityMapper extends QBMapper
                 if (($property['minimum'] ?? null) !== null) {
                     $config['minimum'] = $property['minimum'];
                 }
+
                 if (($property['maximum'] ?? null) !== null) {
                     $config['maximum'] = $property['maximum'];
                 }
@@ -2829,7 +2914,7 @@ class ObjectEntityMapper extends QBMapper
             case 'array':
                 $config['cardinality'] = 'array';
                 break;
-        }
+        }//end switch
 
         return $config;
 
@@ -2874,7 +2959,7 @@ class ObjectEntityMapper extends QBMapper
 
             default:
                 return ['terms'];
-        }
+        }//end switch
 
     }//end determineFacetTypesFromProperty()
 
@@ -2894,14 +2979,14 @@ class ObjectEntityMapper extends QBMapper
      */
     private function mergeFieldConfigs(array $existing, array $new): array
     {
-// Merge facet types.
+        // Merge facet types.
         $existingFacetTypes = $existing['facet_types'] ?? [];
-        $newFacetTypes = $new['facet_types'] ?? [];
+        $newFacetTypes      = $new['facet_types'] ?? [];
         $merged = $existing;
 
         $merged['facet_types'] = array_unique(array_merge($existingFacetTypes, $newFacetTypes));
 
-// Use the more descriptive title and description if available.
+        // Use the more descriptive title and description if available.
         if (empty($existing['title']) === true && empty($new['title']) === false) {
             $merged['title'] = $new['title'];
         }
@@ -2933,11 +3018,11 @@ class ObjectEntityMapper extends QBMapper
      */
     private function calculateOptimalChunkSize(array $insertObjects, array $updateObjects): int
     {
-// Start with a very conservative chunk size to prevent packet size issues.
+        // Start with a very conservative chunk size to prevent packet size issues.
         $baseChunkSize = 25;
 
-// Sample objects to estimate data size.
-        $sampleSize = min(20, max(5, count($insertObjects) + count($updateObjects)));
+        // Sample objects to estimate data size.
+        $sampleSize    = min(20, max(5, count($insertObjects) + count($updateObjects)));
         $sampleObjects = array_merge(
             array_slice($insertObjects, 0, intval($sampleSize / 2)),
             array_slice($updateObjects, 0, intval($sampleSize / 2))
@@ -2947,54 +3032,60 @@ class ObjectEntityMapper extends QBMapper
             return $baseChunkSize;
         }
 
-// Calculate average object size in bytes.
-        $totalSize = 0;
-        $objectCount = 0;
+        // Calculate average object size in bytes.
+        $totalSize     = 0;
+        $objectCount   = 0;
         $maxObjectSize = 0;
 
         foreach ($sampleObjects as $object) {
-            $objectSize = $this->estimateObjectSize($object);
-            $totalSize += $objectSize;
+            $objectSize    = $this->estimateObjectSize($object);
+            $totalSize    += $objectSize;
             $maxObjectSize = max($maxObjectSize, $objectSize);
             $objectCount++;
         }
 
         // Safety check: $objectCount should always be > 0 here since $sampleObjects is not empty.
-        /** @psalm-suppress TypeDoesNotContainType */
+        /*
+         * @psalm-suppress TypeDoesNotContainType
+         */
         if ($objectCount === 0) {
             return $baseChunkSize;
         }
 
-        /** @psalm-suppress TypeDoesNotContainType */
+        /*
+         * @psalm-suppress TypeDoesNotContainType
+         */
         $averageObjectSize = $totalSize / $objectCount;
 
         // Use the maximum object size to be extra safe, not the average
-// This prevents issues when some objects are much larger than others.
+        // This prevents issues when some objects are much larger than others.
         $safetyObjectSize = max($averageObjectSize, $maxObjectSize);
 
         // Calculate safe chunk size based on actual max_allowed_packet value
-// Use the dynamic buffer percentage for SQL overhead, column names, and safety.
+        // Use the dynamic buffer percentage for SQL overhead, column names, and safety.
         $maxPacketSize = $this->getMaxAllowedPacketSize() * $this->maxPacketSizeBuffer;
         $safeChunkSize = intval($maxPacketSize / $safetyObjectSize);
 
         // Ensure chunk size is within very conservative bounds
-// Maximum of 100 objects per chunk to prevent memory issues.
+        // Maximum of 100 objects per chunk to prevent memory issues.
         $optimalChunkSize = max(5, min(100, $safeChunkSize));
 
-// If we have very large objects, be extra conservative.
-        if ($safetyObjectSize > 1000000) { // 1MB per object
+        // If we have very large objects, be extra conservative.
+        if ($safetyObjectSize > 1000000) {
+            // 1MB per object
             $optimalChunkSize = max(5, min(25, $optimalChunkSize));
         }
 
-// If we have extremely large objects, be very conservative.
-        if ($safetyObjectSize > 5000000) { // 5MB per object
+        // If we have extremely large objects, be very conservative.
+        if ($safetyObjectSize > 5000000) {
+            // 5MB per object
             $optimalChunkSize = max(1, min(10, $optimalChunkSize));
         }
-
 
         return $optimalChunkSize;
 
     }//end calculateOptimalChunkSize()
+
 
     /**
      * Estimate the size of an object in bytes for chunk size calculation
@@ -3006,7 +3097,7 @@ class ObjectEntityMapper extends QBMapper
     private function estimateObjectSize(mixed $object): int
     {
         if (is_array($object) === true) {
-// For array objects (insert case).
+            // For array objects (insert case).
             $size = 0;
             foreach ($object as $key => $value) {
                 $size += strlen($key);
@@ -3017,16 +3108,19 @@ class ObjectEntityMapper extends QBMapper
                 } else if (is_numeric($value) === true) {
                     $size += strlen((string) $value);
                 } else {
-// Default estimate for other types.
+                    // Default estimate for other types.
                 }
             }
+
             return $size;
         } else if (is_object($object) === true) {
-// For ObjectEntity objects (update case).
-            $size = 0;
+            // For ObjectEntity objects (update case).
+            $size       = 0;
             $reflection = new \ReflectionClass($object);
             foreach ($reflection->getProperties() as $property) {
-                /** @psalm-suppress UnusedMethodCall */
+                /*
+                 * @psalm-suppress UnusedMethodCall
+                 */
                 $property->setAccessible(true);
                 $value = $property->getValue($object);
 
@@ -3037,15 +3131,18 @@ class ObjectEntityMapper extends QBMapper
                 } else if (is_numeric($value) === true) {
                     $size += strlen((string) $value);
                 } else {
-// Default estimate for other types.
+                    // Default estimate for other types.
                 }
             }
+
             return $size;
-        }
+        }//end if
 
         // Default estimate for unknown types.
         return 0;
+
     }//end estimateObjectSize()
+
 
     /**
      * Calculate optimal batch size for bulk insert operations based on actual data size
@@ -3054,7 +3151,7 @@ class ObjectEntityMapper extends QBMapper
      * and calculates a safe batch size to prevent max_allowed_packet errors.
      *
      * @param array $insertObjects Array of objects to insert
-     * @param array $columns Array of column names
+     * @param array $columns       Array of column names
      *
      * @return int Optimal batch size in number of objects
      *
@@ -3063,65 +3160,71 @@ class ObjectEntityMapper extends QBMapper
      */
     private function calculateOptimalBatchSize(array $insertObjects, array $_columns): int
     {
-// Start with a very conservative batch size to prevent packet size issues.
+        // Start with a very conservative batch size to prevent packet size issues.
         $baseBatchSize = 25;
 
-// Sample objects to estimate data size.
-        $sampleSize = min(20, max(5, count($insertObjects)));
+        // Sample objects to estimate data size.
+        $sampleSize    = min(20, max(5, count($insertObjects)));
         $sampleObjects = array_slice($insertObjects, 0, $sampleSize);
 
         if (empty($sampleObjects) === true) {
             return $baseBatchSize;
         }
 
-// Calculate average and maximum object size in bytes.
-        $totalSize = 0;
-        $objectCount = 0;
+        // Calculate average and maximum object size in bytes.
+        $totalSize     = 0;
+        $objectCount   = 0;
         $maxObjectSize = 0;
 
         foreach ($sampleObjects as $object) {
-            $objectSize = $this->estimateObjectSize($object);
-            $totalSize += $objectSize;
+            $objectSize    = $this->estimateObjectSize($object);
+            $totalSize    += $objectSize;
             $maxObjectSize = max($maxObjectSize, $objectSize);
             $objectCount++;
         }
 
         // Safety check: $objectCount should always be > 0 here since $sampleObjects is not empty.
-        /** @psalm-suppress TypeDoesNotContainType */
+        /*
+         * @psalm-suppress TypeDoesNotContainType
+         */
         if ($objectCount === 0) {
             return $baseBatchSize;
         }
 
-        /** @psalm-suppress TypeDoesNotContainType */
+        /*
+         * @psalm-suppress TypeDoesNotContainType
+         */
         $averageObjectSize = $totalSize / $objectCount;
 
         // Use the maximum object size to be extra safe, not the average
-// This prevents issues when some objects are much larger than others.
+        // This prevents issues when some objects are much larger than others.
         $safetyObjectSize = max($averageObjectSize, $maxObjectSize);
 
         // Calculate safe batch size based on actual max_allowed_packet value
-// Use the dynamic buffer percentage for SQL overhead, column names, and safety.
+        // Use the dynamic buffer percentage for SQL overhead, column names, and safety.
         $maxPacketSize = $this->getMaxAllowedPacketSize() * $this->maxPacketSizeBuffer;
         $safeBatchSize = intval($maxPacketSize / $safetyObjectSize);
 
         // Ensure batch size is within very conservative bounds
-// Maximum of 100 objects per batch to prevent memory issues.
+        // Maximum of 100 objects per batch to prevent memory issues.
         $optimalBatchSize = max(5, min(100, $safeBatchSize));
 
-// If we have very large objects, be extra conservative.
-        if ($safetyObjectSize > 1000000) { // 1MB per object
+        // If we have very large objects, be extra conservative.
+        if ($safetyObjectSize > 1000000) {
+            // 1MB per object
             $optimalBatchSize = max(5, min(25, $optimalBatchSize));
         }
 
-// If we have extremely large objects, be very conservative.
-        if ($safetyObjectSize > 5000000) { // 5MB per object
+        // If we have extremely large objects, be very conservative.
+        if ($safetyObjectSize > 5000000) {
+            // 5MB per object
             $optimalBatchSize = max(1, min(10, $optimalBatchSize));
         }
-
 
         return $optimalBatchSize;
 
     }//end calculateOptimalBatchSize()
+
 
     /**
      * Process a single chunk of insert objects within a transaction
@@ -3142,24 +3245,23 @@ class ObjectEntityMapper extends QBMapper
         $transactionStarted = false;
 
         try {
-// Start a new transaction for this chunk.
+            // Start a new transaction for this chunk.
             if ($this->db->inTransaction() === false) {
                 $this->db->beginTransaction();
                 $transactionStarted = true;
             }
 
-// Process the insert chunk.
+            // Process the insert chunk.
             $insertedIds = $this->bulkInsert($insertChunk);
 
-// Commit transaction if we started it.
+            // Commit transaction if we started it.
             if ($transactionStarted === true) {
                 $this->db->commit();
             }
 
             return $insertedIds;
-
         } catch (\Exception $e) {
-// Rollback transaction if we started it.
+            // Rollback transaction if we started it.
             if ($transactionStarted === true) {
                 try {
                     $this->db->rollBack();
@@ -3167,9 +3269,12 @@ class ObjectEntityMapper extends QBMapper
                     $this->logger->error('Error during rollback', ['exception' => $rollbackException->getMessage()]);
                 }
             }
+
             throw $e;
-        }
-    }
+        }//end try
+
+    }//end processInsertChunk()
+
 
     /**
      * Process a single chunk of update objects within a transaction
@@ -3190,24 +3295,23 @@ class ObjectEntityMapper extends QBMapper
         $transactionStarted = false;
 
         try {
-// Start a new transaction for this chunk.
+            // Start a new transaction for this chunk.
             if ($this->db->inTransaction() === false) {
                 $this->db->beginTransaction();
                 $transactionStarted = true;
             }
 
-// Process the update chunk.
+            // Process the update chunk.
             $updatedIds = $this->bulkUpdate($updateChunk);
 
-// Commit transaction if we started it.
+            // Commit transaction if we started it.
             if ($transactionStarted === true) {
                 $this->db->commit();
             }
 
             return $updatedIds;
-
         } catch (\Exception $e) {
-// Rollback transaction if we started it.
+            // Rollback transaction if we started it.
             if ($transactionStarted === true) {
                 try {
                     $this->db->rollBack();
@@ -3215,12 +3319,11 @@ class ObjectEntityMapper extends QBMapper
                     $this->logger->error('Error during rollback', ['exception' => $rollbackException->getMessage()]);
                 }
             }
+
             throw $e;
-        }
-    }
+        }//end try
 
-
-
+    }//end processUpdateChunk()
 
 
     /**
@@ -3249,48 +3352,46 @@ class ObjectEntityMapper extends QBMapper
             return [];
         }
 
-
-// Use the proper table name method to avoid prefix issues @todo: make dynamic.
+        // Use the proper table name method to avoid prefix issues @todo: make dynamic.
         $tableName = 'openregister_objects';
 
-// Get the first object to determine column structure.
+        // Get the first object to determine column structure.
         $firstObject = $insertObjects[0];
-        $columns = array_keys($firstObject);
+        $columns     = array_keys($firstObject);
 
         // DEBUG: Check for problematic 'data' key.
         if (($firstObject['data'] ?? null) !== null) {
         }
 
-// Calculate optimal batch size based on actual data size to prevent max_allowed_packet errors.
-        $batchSize = $this->calculateOptimalBatchSize($insertObjects, $columns);
+        // Calculate optimal batch size based on actual data size to prevent max_allowed_packet errors.
+        $batchSize   = $this->calculateOptimalBatchSize($insertObjects, $columns);
         $insertedIds = [];
 
-
         for ($i = 0; $i < count($insertObjects); $i += $batchSize) {
-            $batch = array_slice($insertObjects, $i, $batchSize);
+            $batch       = array_slice($insertObjects, $i, $batchSize);
             $batchNumber = ($i / $batchSize) + 1;
-// Check database connection health before processing batch.
+            // Check database connection health before processing batch.
             try {
                 $this->db->executeQuery('SELECT 1');
             } catch (\Exception $e) {
                 throw new \OCP\DB\Exception('Database connection lost during bulk insert', 0, $e);
             }
 
-// Build VALUES clause for this batch.
+            // Build VALUES clause for this batch.
             $valuesClause = [];
-            $parameters = [];
-            $paramIndex = 0;
+            $parameters   = [];
+            $paramIndex   = 0;
 
             foreach ($batch as $objectData) {
                 $rowValues = [];
                 foreach ($columns as $column) {
-                    $paramName = 'param_' . $paramIndex . '_' . $column;
-                    $rowValues[] = ':' . $paramName;
+                    $paramName   = 'param_'.$paramIndex.'_'.$column;
+                    $rowValues[] = ':'.$paramName;
 
                     $value = $objectData[$column] ?? null;
 
                     // JSON encode the object field if it's an array
-// Also handle legacy 'data' field for backward compatibility.
+                    // Also handle legacy 'data' field for backward compatibility.
                     if (($column === 'object' || $column === 'data') === true && is_array($value) === true) {
                         $value = json_encode($value);
                     }
@@ -3298,21 +3399,22 @@ class ObjectEntityMapper extends QBMapper
                     $parameters[$paramName] = $value;
                     $paramIndex++;
                 }
-                $valuesClause[] = '(' . implode(', ', $rowValues) . ')';
+
+                $valuesClause[] = '('.implode(', ', $rowValues).')';
             }
 
-// Build the complete INSERT statement for this batch.
-            $batchSql = "INSERT INTO {$tableName} (" . implode(', ', $columns) . ") VALUES " . implode(', ', $valuesClause);
+            // Build the complete INSERT statement for this batch.
+            $batchSql = "INSERT INTO {$tableName} (".implode(', ', $columns).") VALUES ".implode(', ', $valuesClause);
 
-// Execute the batch insert with retry logic and packet size error handling.
-            $maxBatchRetries = 3;
-            $batchRetryCount = 0;
-            $batchSuccess = false;
+            // Execute the batch insert with retry logic and packet size error handling.
+            $maxBatchRetries  = 3;
+            $batchRetryCount  = 0;
+            $batchSuccess     = false;
             $currentBatchSize = $batchSize;
 
             while ($batchRetryCount <= $maxBatchRetries && ($batchSuccess === false)) {
                 try {
-                    $stmt = $this->db->prepare($batchSql);
+                    $stmt   = $this->db->prepare($batchSql);
                     $result = $stmt->execute($parameters);
 
                     // Check if execution was successful (IResult).
@@ -3322,13 +3424,12 @@ class ObjectEntityMapper extends QBMapper
                     } else {
                         throw new \Exception('Statement execution returned false');
                     }
-
                 } catch (\Exception $e) {
                     $batchRetryCount++;
                     $errorMessage = $e->getMessage();
                     $this->logger->error('Error executing batch', ['batch' => $batchNumber, 'attempt' => $batchRetryCount, 'error' => $errorMessage]);
 
-// Check if this is a packet size error.
+                    // Check if this is a packet size error.
                     $isPacketSizeError = (
                         strpos($errorMessage, 'Got a packet bigger than \'max_allowed_packet\' bytes') !== false ||
                         strpos($errorMessage, 'max_allowed_packet') !== false ||
@@ -3337,20 +3438,19 @@ class ObjectEntityMapper extends QBMapper
                     );
 
                     if (($isPacketSizeError === true) && $currentBatchSize > 1) {
-// Reduce batch size more aggressively and retry with smaller batch.
-// Reduce by 70%, minimum 1.
-
-// Recreate the batch with smaller size.
-                        $batch = array_slice($insertObjects, $i, $currentBatchSize);
+                        // Reduce batch size more aggressively and retry with smaller batch.
+                        // Reduce by 70%, minimum 1.
+                        // Recreate the batch with smaller size.
+                        $batch        = array_slice($insertObjects, $i, $currentBatchSize);
                         $valuesClause = [];
-                        $parameters = [];
-                        $paramIndex = 0;
+                        $parameters   = [];
+                        $paramIndex   = 0;
 
                         foreach ($batch as $objectData) {
                             $rowValues = [];
                             foreach ($columns as $column) {
-                                $paramName = 'param_' . $paramIndex . '_' . $column;
-                                $rowValues[] = ':' . $paramName;
+                                $paramName   = 'param_'.$paramIndex.'_'.$column;
+                                $rowValues[] = ':'.$paramName;
 
                                 $value = $objectData[$column] ?? null;
 
@@ -3361,17 +3461,18 @@ class ObjectEntityMapper extends QBMapper
                                 $parameters[$paramName] = $value;
                                 $paramIndex++;
                             }
-                            $valuesClause[] = '(' . implode(', ', $rowValues) . ')';
+
+                            $valuesClause[] = '('.implode(', ', $rowValues).')';
                         }
 
-                        $batchSql = "INSERT INTO {$tableName} (" . implode(', ', $columns) . ") VALUES " . implode(', ', $valuesClause);
+                        $batchSql = "INSERT INTO {$tableName} (".implode(', ', $columns).") VALUES ".implode(', ', $valuesClause);
                         continue;
-                    }
+                    }//end if
 
                     if ($batchRetryCount <= $maxBatchRetries) {
                         sleep(2);
 
-// Try to reconnect if it's a connection error.
+                        // Try to reconnect if it's a connection error.
                         if (strpos($errorMessage, 'MySQL server has gone away') !== false) {
                             try {
                                 $this->db->close();
@@ -3382,21 +3483,20 @@ class ObjectEntityMapper extends QBMapper
                     } else {
                         throw $e;
                     }
-                }
-            }
+                }//end try
+            }//end while
 
-// Collect UUIDs from the inserted objects for return.
+            // Collect UUIDs from the inserted objects for return.
             foreach ($batch as $objectData) {
                 if (($objectData['uuid'] ?? null) !== null) {
                     $insertedIds[] = $objectData['uuid'];
                 }
             }
 
-// Clear batch variables to free memory.
+            // Clear batch variables to free memory.
             unset($batch, $valuesClause, $parameters, $batchSql);
             gc_collect_cycles();
-
-        }
+        }//end for
 
         return $insertedIds;
 
@@ -3427,10 +3527,10 @@ class ObjectEntityMapper extends QBMapper
         }
 
         // Use the proper table name method to avoid prefix issues @todo: make dynamic.
-        $tableName = 'openregister_objects';
+        $tableName  = 'openregister_objects';
         $updatedIds = [];
 
-// Process each object individually for better compatibility.
+        // Process each object individually for better compatibility.
         foreach ($updateObjects as $object) {
             $dbId = $object->getId();
             if ($dbId === null) {
@@ -3467,12 +3567,11 @@ class ObjectEntityMapper extends QBMapper
             if ($uuid !== null) {
                 $updatedIds[] = $uuid;
             }
-        }
+        }//end foreach
 
         return $updatedIds;
 
     }//end bulkUpdate()
-
 
 
     /**
@@ -3491,17 +3590,17 @@ class ObjectEntityMapper extends QBMapper
      *
      * @return array Array of processed UUIDs
      */
-    public function ultraFastBulkSave(array $insertObjects = [], array $updateObjects = []): array
+    public function ultraFastBulkSave(array $insertObjects=[], array $updateObjects=[]): array
     {
-// Use the optimized bulk operations handler for maximum performance.
+        // Use the optimized bulk operations handler for maximum performance.
         $optimizedHandler = new \OCA\OpenRegister\Db\ObjectHandlers\OptimizedBulkOperations(
             $this->db,
             $this->logger
         );
 
         return $optimizedHandler->ultraFastUnifiedBulkSave($insertObjects, $updateObjects);
-    }//end ultraFastBulkSave()
 
+    }//end ultraFastBulkSave()
 
 
     /**
@@ -3516,17 +3615,18 @@ class ObjectEntityMapper extends QBMapper
      */
     private function getEntityColumns(ObjectEntity $entity): array
     {
-// Get all field types to determine which fields are database columns.
+        // Get all field types to determine which fields are database columns.
         $fieldTypes = $entity->getFieldTypes();
-        $columns = [];
+        $columns    = [];
 
         foreach ($fieldTypes as $fieldName => $fieldType) {
-// Skip virtual fields that don't exist in the database.
+            // Skip virtual fields that don't exist in the database.
             if ($fieldType !== 'virtual') {
-// Skip schemaVersion column for now in bulk operations.
+                // Skip schemaVersion column for now in bulk operations.
                 if ($fieldName === 'schemaVersion') {
                     continue;
                 }
+
                 $columns[] = $fieldName;
             }
         }
@@ -3551,17 +3651,19 @@ class ObjectEntityMapper extends QBMapper
      */
     private function getEntityValue(ObjectEntity $entity, string $column): mixed
     {
-// Use reflection to get the value of the property.
+        // Use reflection to get the value of the property.
         $reflection = new \ReflectionClass($entity);
 
         try {
             $property = $reflection->getProperty($column);
-            /** @psalm-suppress UnusedMethodCall */
+            /*
+             * @psalm-suppress UnusedMethodCall
+             */
             $property->setAccessible(true);
             $value = $property->getValue($entity);
         } catch (\ReflectionException $e) {
-// If property doesn't exist, try to get it using getter method.
-            $getterMethod = 'get' . ucfirst($column);
+            // If property doesn't exist, try to get it using getter method.
+            $getterMethod = 'get'.ucfirst($column);
             if (method_exists($entity, $getterMethod) === true) {
                 $value = $entity->$getterMethod();
             } else {
@@ -3569,27 +3671,27 @@ class ObjectEntityMapper extends QBMapper
             }
         }
 
-// Handle DateTime objects by converting them to database format.
+        // Handle DateTime objects by converting them to database format.
         if ($value instanceof \DateTime) {
             $value = $value->format('Y-m-d H:i:s');
         }
 
-// Handle boolean values by converting them to integers for database storage.
+        // Handle boolean values by converting them to integers for database storage.
         if (is_bool($value) === true) {
             $value = $value === true ? 1 : 0;
         }
 
-// Handle null values explicitly.
+        // Handle null values explicitly.
         if ($value === null) {
             return null;
         }
 
-// JSON encode the object field if it's an array.
+        // JSON encode the object field if it's an array.
         if (($column === 'object') === true && is_array($value) === true) {
             $value = json_encode($value);
         }
 
-// Handle other array values that might need JSON encoding.
+        // Handle other array values that might need JSON encoding.
         if (is_array($value) === true && in_array($column, ['files', 'relations', 'locked', 'authorization', 'deleted', 'validation'], true) === true) {
             $value = json_encode($value);
         }
@@ -3616,30 +3718,29 @@ class ObjectEntityMapper extends QBMapper
      * @phpstan-return array<int, string>
      * @psalm-return   array<int, string>
      */
-    private function bulkDelete(array $uuids, bool $hardDelete = false): array
+    private function bulkDelete(array $uuids, bool $hardDelete=false): array
     {
         if (empty($uuids) === true) {
             return [];
         }
 
-
-// Use the proper table name method to avoid prefix issues.
-        $tableName = $this->getTableName();
+        // Use the proper table name method to avoid prefix issues.
+        $tableName  = $this->getTableName();
         $deletedIds = [];
 
-// Process deletes in smaller chunks to prevent connection issues.
+        // Process deletes in smaller chunks to prevent connection issues.
         $chunkSize = 500;
-        $chunks = array_chunk($uuids, $chunkSize);
+        $chunks    = array_chunk($uuids, $chunkSize);
 
         foreach ($chunks as $uuidChunk) {
-// Check database connection health before processing chunk.
+            // Check database connection health before processing chunk.
             try {
                 $this->db->executeQuery('SELECT 1');
             } catch (\Exception $e) {
                 throw new \OCP\DB\Exception('Database connection lost during bulk delete', 0, $e);
             }
 
-// First, get the current state of objects to determine soft vs hard delete.
+            // First, get the current state of objects to determine soft vs hard delete.
             $qb = $this->db->getQueryBuilder();
             $qb->select('id', 'uuid', 'deleted')
                 ->from($tableName)
@@ -3647,39 +3748,47 @@ class ObjectEntityMapper extends QBMapper
 
             $objects = $qb->execute()->fetchAll();
 
-// Separate objects for soft delete and hard delete.
+            // Separate objects for soft delete and hard delete.
             $softDeleteIds = [];
             $hardDeleteIds = [];
 
             foreach ($objects as $object) {
                 if ($hardDelete === true) {
-// Force hard delete for all objects when hardDelete flag is set.
+                    // Force hard delete for all objects when hardDelete flag is set.
                     $hardDeleteIds[] = $object['id'];
                 } else if (empty($object['deleted']) === true) {
-// No deleted value set - perform soft delete.
+                    // No deleted value set - perform soft delete.
                     $softDeleteIds[] = $object['id'];
                 } else {
-// Already has deleted value - perform hard delete.
+                    // Already has deleted value - perform hard delete.
                     $hardDeleteIds[] = $object['id'];
                 }
+
                 $deletedIds[] = $object['uuid'];
             }
 
-// Perform soft deletes (set deleted timestamp).
+            // Perform soft deletes (set deleted timestamp).
             if (empty($softDeleteIds) === false) {
                 $currentTime = (new \DateTime())->format('Y-m-d H:i:s');
-                $qb = $this->db->getQueryBuilder();
+                $qb          = $this->db->getQueryBuilder();
                 $qb->update($tableName)
-                    ->set('deleted', $qb->createNamedParameter(json_encode([
-                        'timestamp' => $currentTime,
-                        'reason' => 'bulk_delete'
-                    ])))
+                    ->set(
+                            'deleted',
+                            $qb->createNamedParameter(
+                            json_encode(
+                            [
+                                'timestamp' => $currentTime,
+                                'reason'    => 'bulk_delete',
+                            ]
+                            )
+                            )
+                            )
                     ->where($qb->expr()->in('id', $qb->createNamedParameter($softDeleteIds, \Doctrine\DBAL\Connection::PARAM_INT_ARRAY)));
 
                 $qb->executeStatement();
             }
 
-// Perform hard deletes (remove from database).
+            // Perform hard deletes (remove from database).
             if (empty($hardDeleteIds) === false) {
                 $qb = $this->db->getQueryBuilder();
                 $qb->delete($tableName)
@@ -3688,11 +3797,10 @@ class ObjectEntityMapper extends QBMapper
                 $qb->executeStatement();
             }
 
-// Clear chunk variables to free memory.
+            // Clear chunk variables to free memory.
             unset($uuidChunk, $objects, $softDeleteIds, $hardDeleteIds);
             gc_collect_cycles();
-
-        }
+        }//end foreach
 
         return $deletedIds;
 
@@ -3706,7 +3814,7 @@ class ObjectEntityMapper extends QBMapper
      * If a datetime is provided, it uses that value; otherwise, it uses the current datetime.
      * If false is provided, it unsets the published timestamp.
      *
-     * @param array         $uuids    Array of object UUIDs to publish
+     * @param array          $uuids    Array of object UUIDs to publish
      * @param \DateTime|bool $datetime Optional datetime for publishing (false to unset)
      *
      * @return array Array of UUIDs of published objects
@@ -3716,55 +3824,52 @@ class ObjectEntityMapper extends QBMapper
      * @phpstan-return array<int, string>
      * @psalm-return   array<int, string>
      */
-    private function bulkPublish(array $uuids, \DateTime|bool $datetime = true): array
+    private function bulkPublish(array $uuids, \DateTime|bool $datetime=true): array
     {
         if (empty($uuids) === true) {
             return [];
         }
 
-
-// Use the proper table name method to avoid prefix issues.
+        // Use the proper table name method to avoid prefix issues.
         $tableName = $this->getTableName();
 
-// Determine the published value based on the datetime parameter.
+        // Determine the published value based on the datetime parameter.
         if ($datetime === false) {
-// Unset published timestamp.
+            // Unset published timestamp.
             $publishedValue = null;
         } else if ($datetime instanceof \DateTime) {
-// Use provided datetime.
+            // Use provided datetime.
             $publishedValue = $datetime->format('Y-m-d H:i:s');
         } else {
-// Use current datetime.
+            // Use current datetime.
             $publishedValue = (new \DateTime())->format('Y-m-d H:i:s');
         }
 
-// Process publishes in smaller chunks to prevent connection issues.
-        $chunkSize = 500;
-        $chunks = array_chunk($uuids, $chunkSize);
+        // Process publishes in smaller chunks to prevent connection issues.
+        $chunkSize    = 500;
+        $chunks       = array_chunk($uuids, $chunkSize);
         $publishedIds = [];
 
-
         foreach ($chunks as $_chunkIndex => $uuidChunk) {
-
-// Check database connection health before processing chunk.
+            // Check database connection health before processing chunk.
             try {
                 $this->db->executeQuery('SELECT 1');
             } catch (\Exception $e) {
                 throw new \OCP\DB\Exception('Database connection lost during bulk publish', 0, $e);
             }
 
-// Get object IDs for the UUIDs in this chunk.
+            // Get object IDs for the UUIDs in this chunk.
             $qb = $this->db->getQueryBuilder();
             $qb->select('id', 'uuid')
                 ->from($tableName)
                 ->where($qb->expr()->in('uuid', $qb->createNamedParameter($uuidChunk, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
 
-            $objects = $qb->execute()->fetchAll();
-            $objectIds = array_column($objects, 'id');
+            $objects           = $qb->execute()->fetchAll();
+            $objectIds         = array_column($objects, 'id');
             $chunkPublishedIds = array_column($objects, 'uuid');
 
             if (empty($objectIds) === false) {
-// Update published timestamp for this chunk.
+                // Update published timestamp for this chunk.
                 $qb = $this->db->getQueryBuilder();
                 $qb->update($tableName);
 
@@ -3779,14 +3884,13 @@ class ObjectEntityMapper extends QBMapper
                 $qb->executeStatement();
             }
 
-// Add chunk results to total results.
+            // Add chunk results to total results.
             $publishedIds = array_merge($publishedIds, $chunkPublishedIds);
 
-// Clear chunk variables to free memory.
+            // Clear chunk variables to free memory.
             unset($uuidChunk, $objects, $objectIds, $chunkPublishedIds);
             gc_collect_cycles();
-
-        }
+        }//end foreach
 
         return $publishedIds;
 
@@ -3800,7 +3904,7 @@ class ObjectEntityMapper extends QBMapper
      * If a datetime is provided, it uses that value; otherwise, it uses the current datetime.
      * If false is provided, it unsets the depublished timestamp.
      *
-     * @param array         $uuids    Array of object UUIDs to depublish
+     * @param array          $uuids    Array of object UUIDs to depublish
      * @param \DateTime|bool $datetime Optional datetime for depublishing (false to unset)
      *
      * @return array Array of UUIDs of depublished objects
@@ -3810,55 +3914,52 @@ class ObjectEntityMapper extends QBMapper
      * @phpstan-return array<int, string>
      * @psalm-return   array<int, string>
      */
-    private function bulkDepublish(array $uuids, \DateTime|bool $datetime = true): array
+    private function bulkDepublish(array $uuids, \DateTime|bool $datetime=true): array
     {
         if (empty($uuids) === true) {
             return [];
         }
 
-
-// Use the proper table name method to avoid prefix issues.
+        // Use the proper table name method to avoid prefix issues.
         $tableName = $this->getTableName();
 
-// Determine the depublished value based on the datetime parameter.
+        // Determine the depublished value based on the datetime parameter.
         if ($datetime === false) {
-// Unset depublished timestamp.
+            // Unset depublished timestamp.
             $depublishedValue = null;
         } else if ($datetime instanceof \DateTime) {
-// Use provided datetime.
+            // Use provided datetime.
             $depublishedValue = $datetime->format('Y-m-d H:i:s');
         } else {
-// Use current datetime.
+            // Use current datetime.
             $depublishedValue = (new \DateTime())->format('Y-m-d H:i:s');
         }
 
-// Process depublishes in smaller chunks to prevent connection issues.
-        $chunkSize = 500;
-        $chunks = array_chunk($uuids, $chunkSize);
+        // Process depublishes in smaller chunks to prevent connection issues.
+        $chunkSize      = 500;
+        $chunks         = array_chunk($uuids, $chunkSize);
         $depublishedIds = [];
 
-
         foreach ($chunks as $_chunkIndex => $uuidChunk) {
-
-// Check database connection health before processing chunk.
+            // Check database connection health before processing chunk.
             try {
                 $this->db->executeQuery('SELECT 1');
             } catch (\Exception $e) {
                 throw new \OCP\DB\Exception('Database connection lost during bulk depublish', 0, $e);
             }
 
-// Get object IDs for the UUIDs in this chunk.
+            // Get object IDs for the UUIDs in this chunk.
             $qb = $this->db->getQueryBuilder();
             $qb->select('id', 'uuid')
                 ->from($tableName)
                 ->where($qb->expr()->in('uuid', $qb->createNamedParameter($uuidChunk, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
 
-            $objects = $qb->execute()->fetchAll();
+            $objects   = $qb->execute()->fetchAll();
             $objectIds = array_column($objects, 'id');
             $chunkDepublishedIds = array_column($objects, 'uuid');
 
             if (empty($objectIds) === false) {
-// Update depublished timestamp for this chunk.
+                // Update depublished timestamp for this chunk.
                 $qb = $this->db->getQueryBuilder();
                 $qb->update($tableName);
 
@@ -3873,14 +3974,13 @@ class ObjectEntityMapper extends QBMapper
                 $qb->executeStatement();
             }
 
-// Add chunk results to total results.
+            // Add chunk results to total results.
             $depublishedIds = array_merge($depublishedIds, $chunkDepublishedIds);
 
-// Clear chunk variables to free memory.
+            // Clear chunk variables to free memory.
             unset($uuidChunk, $objects, $objectIds, $chunkDepublishedIds);
             gc_collect_cycles();
-
-        }
+        }//end foreach
 
         return $depublishedIds;
 
@@ -3904,41 +4004,40 @@ class ObjectEntityMapper extends QBMapper
      * @phpstan-return array<int, string>
      * @psalm-return   array<int, string>
      */
-    public function deleteObjects(array $uuids = [], bool $hardDelete = false): array
+    public function deleteObjects(array $uuids=[], bool $hardDelete=false): array
     {
         if (empty($uuids) === true) {
             return [];
         }
 
-// Perform bulk operations within a database transaction for consistency.
-        $deletedObjectIds = [];
+        // Perform bulk operations within a database transaction for consistency.
+        $deletedObjectIds   = [];
         $transactionStarted = false;
 
         try {
-// Check if there's already an active transaction.
+            // Check if there's already an active transaction.
             if ($this->db->inTransaction() === false) {
-// Start database transaction only if none exists.
+                // Start database transaction only if none exists.
                 $this->db->beginTransaction();
                 $transactionStarted = true;
             }
 
-// Bulk delete objects with hard delete flag.
-            $deletedIds = $this->bulkDelete($uuids, $hardDelete);
+            // Bulk delete objects with hard delete flag.
+            $deletedIds       = $this->bulkDelete($uuids, $hardDelete);
             $deletedObjectIds = array_merge($deletedObjectIds, $deletedIds);
 
-// Commit transaction only if we started it.
+            // Commit transaction only if we started it.
             if ($transactionStarted === true) {
                 $this->db->commit();
             }
-
         } catch (\Exception $e) {
-// Rollback transaction only if we started it.
+            // Rollback transaction only if we started it.
             if ($transactionStarted === true) {
                 $this->db->rollBack();
             }
 
             throw $e;
-        }
+        }//end try
 
         return $deletedObjectIds;
 
@@ -3961,42 +4060,42 @@ class ObjectEntityMapper extends QBMapper
      * @phpstan-return array{published_count: int, published_uuids: array<int, string>, schema_id: int}
      * @psalm-return   array{published_count: int, published_uuids: array<int, string>, schema_id: int}
      */
-    public function publishObjectsBySchema(int $schemaId, bool $publishAll = false): array
+    public function publishObjectsBySchema(int $schemaId, bool $publishAll=false): array
     {
-// First, get all UUIDs for objects belonging to this schema.
+        // First, get all UUIDs for objects belonging to this schema.
         $qb = $this->db->getQueryBuilder();
         $qb->select('uuid')
             ->from($this->getTableName())
             ->where($qb->expr()->eq('schema', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)));
 
         // When publishAll is true, include ALL objects (both published and unpublished)
-// When publishAll is false, only include objects that are not published.
+        // When publishAll is false, only include objects that are not published.
         if (($publishAll === false)) {
             $qb->andWhere($qb->expr()->isNull('published'));
         }
 
         $result = $qb->executeQuery();
-        $uuids = [];
+        $uuids  = [];
         while (($row = $result->fetch()) !== false) {
             $uuids[] = $row['uuid'];
         }
+
         $result->closeCursor();
 
         if (empty($uuids) === true) {
             return [
                 'published_count' => 0,
                 'published_uuids' => [],
-                'schema_id' => $schemaId,
+                'schema_id'       => $schemaId,
             ];
         }
 
-// Use the existing bulk publish method with publishAll flag.
-// true = publish with current timestamp.
-
+        // Use the existing bulk publish method with publishAll flag.
+        // true = publish with current timestamp.
         return [
             'published_count' => count($uuids),
             'published_uuids' => $uuids,
-            'schema_id' => $schemaId,
+            'schema_id'       => $schemaId,
         ];
 
     }//end publishObjectsBySchema()
@@ -4018,42 +4117,43 @@ class ObjectEntityMapper extends QBMapper
      * @phpstan-return array{deleted_count: int, deleted_uuids: array<int, string>, schema_id: int}
      * @psalm-return   array{deleted_count: int, deleted_uuids: array<int, string>, schema_id: int}
      */
-    public function deleteObjectsBySchema(int $schemaId, bool $hardDelete = false): array
+    public function deleteObjectsBySchema(int $schemaId, bool $hardDelete=false): array
     {
-// First, get all UUIDs for objects belonging to this schema.
+        // First, get all UUIDs for objects belonging to this schema.
         $qb = $this->db->getQueryBuilder();
         $qb->select('uuid')
             ->from($this->getTableName())
             ->where($qb->expr()->eq('schema', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)));
 
         // When hardDelete is true, include ALL objects (both soft-deleted and not deleted)
-// When hardDelete is false, only include objects that are not soft-deleted.
+        // When hardDelete is false, only include objects that are not soft-deleted.
         if (($hardDelete === false)) {
             $qb->andWhere($qb->expr()->isNull('deleted'));
         }
 
         $result = $qb->executeQuery();
-        $uuids = [];
+        $uuids  = [];
         while (($row = $result->fetch()) !== false) {
             $uuids[] = $row['uuid'];
         }
+
         $result->closeCursor();
 
         if (empty($uuids) === true) {
             return [
                 'deleted_count' => 0,
                 'deleted_uuids' => [],
-                'schema_id' => $schemaId,
+                'schema_id'     => $schemaId,
             ];
         }
 
-// Use the existing bulk delete method with hard delete flag.
+        // Use the existing bulk delete method with hard delete flag.
         $deletedUuids = $this->deleteObjects($uuids, $hardDelete);
 
         return [
             'deleted_count' => count($deletedUuids),
             'deleted_uuids' => $deletedUuids,
-            'schema_id' => $schemaId,
+            'schema_id'     => $schemaId,
         ];
 
     }//end deleteObjectsBySchema()
@@ -4076,7 +4176,7 @@ class ObjectEntityMapper extends QBMapper
      */
     public function deleteObjectsByRegister(int $registerId): array
     {
-// First, get all UUIDs for objects belonging to this register.
+        // First, get all UUIDs for objects belonging to this register.
         $qb = $this->db->getQueryBuilder();
         $qb->select('uuid')
             ->from($this->getTableName())
@@ -4084,32 +4184,31 @@ class ObjectEntityMapper extends QBMapper
             ->andWhere($qb->expr()->isNull('deleted'));
 
         $result = $qb->executeQuery();
-        $uuids = [];
+        $uuids  = [];
         while (($row = $result->fetch()) !== false) {
             $uuids[] = $row['uuid'];
         }
+
         $result->closeCursor();
 
         if (empty($uuids) === true) {
             return [
                 'deleted_count' => 0,
                 'deleted_uuids' => [],
-                'register_id' => $registerId,
+                'register_id'   => $registerId,
             ];
         }
 
-// Use the existing bulk delete method.
+        // Use the existing bulk delete method.
         $deletedUuids = $this->deleteObjects($uuids);
 
         return [
             'deleted_count' => count($deletedUuids),
             'deleted_uuids' => $deletedUuids,
-            'register_id' => $registerId,
+            'register_id'   => $registerId,
         ];
 
     }//end deleteObjectsByRegister()
-
-
 
 
     /**
@@ -4119,7 +4218,7 @@ class ObjectEntityMapper extends QBMapper
      * If a datetime is provided, it uses that value; otherwise, it uses the current datetime.
      * If false is provided, it unsets the published timestamp.
      *
-     * @param array         $uuids    Array of object UUIDs to publish
+     * @param array          $uuids    Array of object UUIDs to publish
      * @param \DateTime|bool $datetime Optional datetime for publishing (false to unset)
      *
      * @return array Array of UUIDs of published objects
@@ -4129,41 +4228,40 @@ class ObjectEntityMapper extends QBMapper
      * @phpstan-return array<int, string>
      * @psalm-return   array<int, string>
      */
-    public function publishObjects(array $uuids = [], \DateTime|bool $datetime = true): array
+    public function publishObjects(array $uuids=[], \DateTime|bool $datetime=true): array
     {
         if (empty($uuids) === true) {
             return [];
         }
 
-// Perform bulk operations within a database transaction for consistency.
+        // Perform bulk operations within a database transaction for consistency.
         $publishedObjectIds = [];
         $transactionStarted = false;
 
         try {
-// Check if there's already an active transaction.
+            // Check if there's already an active transaction.
             if ($this->db->inTransaction() === false) {
-// Start database transaction only if none exists.
+                // Start database transaction only if none exists.
                 $this->db->beginTransaction();
                 $transactionStarted = true;
             }
 
-// Bulk publish objects.
-            $publishedIds = $this->bulkPublish($uuids, $datetime);
+            // Bulk publish objects.
+            $publishedIds       = $this->bulkPublish($uuids, $datetime);
             $publishedObjectIds = array_merge($publishedObjectIds, $publishedIds);
 
-// Commit transaction only if we started it.
+            // Commit transaction only if we started it.
             if ($transactionStarted === true) {
                 $this->db->commit();
             }
-
         } catch (\Exception $e) {
-// Rollback transaction only if we started it.
+            // Rollback transaction only if we started it.
             if ($transactionStarted === true) {
                 $this->db->rollBack();
             }
 
             throw $e;
-        }
+        }//end try
 
         return $publishedObjectIds;
 
@@ -4177,7 +4275,7 @@ class ObjectEntityMapper extends QBMapper
      * If a datetime is provided, it uses that value; otherwise, it uses the current datetime.
      * If false is provided, it unsets the depublished timestamp.
      *
-     * @param array         $uuids    Array of object UUIDs to depublish
+     * @param array          $uuids    Array of object UUIDs to depublish
      * @param \DateTime|bool $datetime Optional datetime for depublishing (false to unset)
      *
      * @return array Array of UUIDs of depublished objects
@@ -4187,51 +4285,51 @@ class ObjectEntityMapper extends QBMapper
      * @phpstan-return array<int, string>
      * @psalm-return   array<int, string>
      */
-    public function depublishObjects(array $uuids = [], \DateTime|bool $datetime = true): array
+    public function depublishObjects(array $uuids=[], \DateTime|bool $datetime=true): array
     {
         if (empty($uuids) === true) {
             return [];
         }
 
-// Perform bulk operations within a database transaction for consistency.
+        // Perform bulk operations within a database transaction for consistency.
         $depublishedObjectIds = [];
-        $transactionStarted = false;
+        $transactionStarted   = false;
 
         try {
-// Check if there's already an active transaction.
+            // Check if there's already an active transaction.
             if ($this->db->inTransaction() === false) {
-// Start database transaction only if none exists.
+                // Start database transaction only if none exists.
                 $this->db->beginTransaction();
                 $transactionStarted = true;
             }
 
-// Bulk depublish objects.
-            $depublishedIds = $this->bulkDepublish($uuids, $datetime);
+            // Bulk depublish objects.
+            $depublishedIds       = $this->bulkDepublish($uuids, $datetime);
             $depublishedObjectIds = array_merge($depublishedObjectIds, $depublishedIds);
 
-// Commit transaction only if we started it.
+            // Commit transaction only if we started it.
             if ($transactionStarted === true) {
                 $this->db->commit();
             }
-
         } catch (\Exception $e) {
-// Rollback transaction only if we started it.
+            // Rollback transaction only if we started it.
             if ($transactionStarted === true) {
                 $this->db->rollBack();
             }
 
             throw $e;
-        }
+        }//end try
 
         return $depublishedObjectIds;
 
     }//end depublishObjects()
 
+
     /**
      * Detect and separate extremely large objects that should be processed individually
      *
-     * @param array $objects Array of objects to check
-     * @param int $maxSafeSize Maximum safe size in bytes for batch processing
+     * @param array $objects     Array of objects to check
+     * @param int   $maxSafeSize Maximum safe size in bytes for batch processing
      *
      * @return array Array with 'large' and 'normal' object arrays
      *
@@ -4239,9 +4337,9 @@ class ObjectEntityMapper extends QBMapper
      * @phpstan-param  int $maxSafeSize
      * @phpstan-return array{large: array<int, array<string, mixed>|ObjectEntity>, normal: array<int, array<string, mixed>|ObjectEntity>}
      */
-    private function separateLargeObjects(array $objects, int $maxSafeSize = 1000000): array
+    private function separateLargeObjects(array $objects, int $maxSafeSize=1000000): array
     {
-        $largeObjects = [];
+        $largeObjects  = [];
         $normalObjects = [];
 
         foreach ($objects as $object) {
@@ -4254,12 +4352,13 @@ class ObjectEntityMapper extends QBMapper
             }
         }
 
-
         return [
-            'large' => $largeObjects,
-            'normal' => $normalObjects
+            'large'  => $largeObjects,
+            'normal' => $normalObjects,
         ];
-    }
+
+    }//end separateLargeObjects()
+
 
     /**
      * Process large objects individually to prevent packet size errors
@@ -4280,40 +4379,38 @@ class ObjectEntityMapper extends QBMapper
             return [];
         }
 
-
         $processedIds = [];
-        $tableName = 'openregister_objects';
+        $tableName    = 'openregister_objects';
 
         foreach ($largeObjects as $index => $objectData) {
             try {
-
-// Ensure we have array data for INSERT operations.
+                // Ensure we have array data for INSERT operations.
                 if (is_array($objectData) === false) {
                     continue;
                 }
 
-// Get columns from the object.
+                // Get columns from the object.
                 $columns = array_keys($objectData);
 
-// Build single INSERT statement.
-                $placeholders = ':' . implode(', :', $columns);
-                $sql = "INSERT INTO {$tableName} (" . implode(', ', $columns) . ") VALUES ({$placeholders})";
+                // Build single INSERT statement.
+                $placeholders = ':'.implode(', :', $columns);
+                $sql          = "INSERT INTO {$tableName} (".implode(', ', $columns).") VALUES ({$placeholders})";
 
-// Prepare parameters.
+                // Prepare parameters.
                 $parameters = [];
                 foreach ($columns as $column) {
                     $value = $objectData[$column] ?? null;
 
-// JSON encode the object field if it's an array.
+                    // JSON encode the object field if it's an array.
                     if (($column === 'object') === true && is_array($value) === true) {
                         $value = json_encode($value);
                     }
 
-                    $parameters[':' . $column] = $value;
+                    $parameters[':'.$column] = $value;
                 }
 
-// Execute single insert.
-                $stmt = $this->db->prepare($sql);
+                // Execute single insert.
+                $stmt   = $this->db->prepare($sql);
                 $result = $stmt->execute($parameters);
 
                 // Check if execution was successful (IResult) and UUID exists.
@@ -4322,24 +4419,25 @@ class ObjectEntityMapper extends QBMapper
                     $processedIds[] = $objectData['uuid'];
                 }
 
-// Clear memory after each large object.
+                // Clear memory after each large object.
                 unset($parameters, $sql);
                 gc_collect_cycles();
-
             } catch (\Exception $e) {
                 $this->logger->error('Error processing large object', ['index' => $index + 1, 'exception' => $e->getMessage()]);
 
-// If it's still a packet size error, log it but continue.
+                // If it's still a packet size error, log it but continue.
                 if (strpos($e->getMessage(), 'max_allowed_packet') !== false) {
                 } else {
-// Re-throw non-packet size errors.
+                    // Re-throw non-packet size errors.
                     throw $e;
                 }
-            }
-        }
+            }//end try
+        }//end foreach
 
         return $processedIds;
-    }
+
+    }//end processLargeObjectsIndividually()
+
 
     /**
      * Calculate optimal chunk size based on actual data size to prevent max_allowed_packet errors
@@ -4352,40 +4450,40 @@ class ObjectEntityMapper extends QBMapper
      * This method updates objects in batches to assign default values where they are missing.
      * It only updates objects that have null or empty values for owner or organization.
      *
-     * @param string|null $defaultOwner Default owner to assign to objects without an owner
+     * @param string|null $defaultOwner        Default owner to assign to objects without an owner
      * @param string|null $defaultOrganisation Default organization UUID to assign to objects without an organization
-     * @param int $batchSize Number of objects to process in each batch (default: 1000)
+     * @param int         $batchSize           Number of objects to process in each batch (default: 1000)
      *
      * @return array Array containing statistics about the bulk operation
      * @throws \Exception If the bulk operation fails
      */
-    public function bulkOwnerDeclaration(?string $defaultOwner = null, ?string $defaultOrganisation = null, int $batchSize = 1000): array
+    public function bulkOwnerDeclaration(?string $defaultOwner=null, ?string $defaultOrganisation=null, int $batchSize=1000): array
     {
         if ($defaultOwner === null && $defaultOrganisation === null) {
             throw new \InvalidArgumentException('At least one of defaultOwner or defaultOrganisation must be provided');
         }
 
         $results = [
-            'totalProcessed' => 0,
-            'ownersAssigned' => 0,
+            'totalProcessed'        => 0,
+            'ownersAssigned'        => 0,
             'organisationsAssigned' => 0,
-            'errors' => [],
-            'startTime' => new \DateTime(),
+            'errors'                => [],
+            'startTime'             => new \DateTime(),
         ];
 
         try {
-            $offset = 0;
+            $offset         = 0;
             $hasMoreRecords = true;
 
             while ($hasMoreRecords === true) {
-// Build query to find objects without owner or organization.
+                // Build query to find objects without owner or organization.
                 $qb = $this->db->getQueryBuilder();
                 $qb->select('id', 'uuid', 'owner', 'organisation')
-                   ->from($this->tableName)
-                   ->setMaxResults($batchSize)
-                   ->setFirstResult($offset);
+                    ->from($this->tableName)
+                    ->setMaxResults($batchSize)
+                    ->setFirstResult($offset);
 
-// Add conditions for missing owner or organization.
+                // Add conditions for missing owner or organization.
                 $conditions = [];
                 if ($defaultOwner !== null) {
                     $conditions[] = $qb->expr()->orX(
@@ -4393,6 +4491,7 @@ class ObjectEntityMapper extends QBMapper
                         $qb->expr()->eq('owner', $qb->createNamedParameter(''))
                     );
                 }
+
                 if ($defaultOrganisation !== null) {
                     $conditions[] = $qb->expr()->orX(
                         $qb->expr()->isNull('organisation'),
@@ -4404,47 +4503,47 @@ class ObjectEntityMapper extends QBMapper
                     $qb->where($qb->expr()->orX(...$conditions));
                 }
 
-                $result = $qb->executeQuery();
+                $result  = $qb->executeQuery();
                 $objects = $result->fetchAll();
 
                 if (empty($objects) === true) {
                     break;
                 }
 
-// Process batch of objects.
+                // Process batch of objects.
                 $batchResults = $this->processBulkOwnerDeclarationBatch($objects, $defaultOwner, $defaultOrganisation);
 
-// Update statistics.
-                $results['totalProcessed'] += count($objects);
-                $results['ownersAssigned'] += $batchResults['ownersAssigned'];
+                // Update statistics.
+                $results['totalProcessed']        += count($objects);
+                $results['ownersAssigned']        += $batchResults['ownersAssigned'];
                 $results['organisationsAssigned'] += $batchResults['organisationsAssigned'];
                 $results = array_merge_recursive($results, ['errors' => $batchResults['errors']]);
 
                 $offset += $batchSize;
 
-// If we got fewer records than the batch size, we're done.
+                // If we got fewer records than the batch size, we're done.
                 if (count($objects) < $batchSize) {
                     $hasMoreRecords = false;
                 }
-            }
+            }//end while
 
-            $results['endTime'] = new \DateTime();
+            $results['endTime']  = new \DateTime();
             $results['duration'] = $results['endTime']->diff($results['startTime'])->format('%H:%I:%S');
 
             return $results;
-
         } catch (\Exception $e) {
             $this->logger->error('Error during bulk owner declaration', ['exception' => $e->getMessage()]);
-            throw new \RuntimeException('Bulk owner declaration failed: ' . $e->getMessage());
-        }
+            throw new \RuntimeException('Bulk owner declaration failed: '.$e->getMessage());
+        }//end try
+
     }//end bulkOwnerDeclaration()
 
 
     /**
      * Process a batch of objects for bulk owner declaration.
      *
-     * @param array $objects Array of object data from database
-     * @param string|null $defaultOwner Default owner to assign
+     * @param array       $objects             Array of object data from database
+     * @param string|null $defaultOwner        Default owner to assign
      * @param string|null $defaultOrganisation Default organization UUID to assign
      *
      * @return array Batch processing results
@@ -4452,49 +4551,49 @@ class ObjectEntityMapper extends QBMapper
     private function processBulkOwnerDeclarationBatch(array $objects, ?string $defaultOwner, ?string $defaultOrganisation): array
     {
         $batchResults = [
-            'ownersAssigned' => 0,
+            'ownersAssigned'        => 0,
             'organisationsAssigned' => 0,
-            'errors' => []
+            'errors'                => [],
         ];
 
         foreach ($objects as $objectData) {
             try {
                 $needsUpdate = false;
-                $updateData = [];
+                $updateData  = [];
 
-// Check if owner needs to be assigned.
+                // Check if owner needs to be assigned.
                 if ($defaultOwner !== null && (empty($objectData['owner']) === true || $objectData['owner'] === null) === true) {
                     $updateData['owner'] = $defaultOwner;
-                    $needsUpdate = true;
+                    $needsUpdate         = true;
                     $batchResults['ownersAssigned']++;
                 }
 
-// Check if organization needs to be assigned.
+                // Check if organization needs to be assigned.
                 if ($defaultOrganisation !== null && (empty($objectData['organisation']) === true || $objectData['organisation'] === null) === true) {
                     $updateData['organisation'] = $defaultOrganisation;
                     $needsUpdate = true;
                     $batchResults['organisationsAssigned']++;
                 }
 
-// Update the object if needed.
+                // Update the object if needed.
                 if ($needsUpdate === true) {
-                    $this->updateObjectOwnership((int)$objectData['id'], $updateData);
+                    $this->updateObjectOwnership((int) $objectData['id'], $updateData);
                 }
-
             } catch (\Exception $e) {
-                $error = 'Error updating object ' . $objectData['uuid'] . ': ' . $e->getMessage();
+                $error = 'Error updating object '.$objectData['uuid'].': '.$e->getMessage();
                 $batchResults['errors'][] = $error;
-            }
-        }
+            }//end try
+        }//end foreach
 
         return $batchResults;
+
     }//end processBulkOwnerDeclarationBatch()
 
 
     /**
      * Update ownership information for a specific object.
      *
-     * @param int $objectId The ID of the object to update
+     * @param int   $objectId   The ID of the object to update
      * @param array $updateData Array containing owner and/or organisation data
      *
      * @return void
@@ -4504,18 +4603,18 @@ class ObjectEntityMapper extends QBMapper
     {
         $qb = $this->db->getQueryBuilder();
         $qb->update($this->tableName)
-           ->where($qb->expr()->eq('id', $qb->createNamedParameter($objectId, IQueryBuilder::PARAM_INT)));
+            ->where($qb->expr()->eq('id', $qb->createNamedParameter($objectId, IQueryBuilder::PARAM_INT)));
 
         foreach ($updateData as $field => $value) {
             $qb->set($field, $qb->createNamedParameter($value));
         }
 
-// Update the modified timestamp.
+        // Update the modified timestamp.
         $qb->set('modified', $qb->createNamedParameter(new \DateTime(), IQueryBuilder::PARAM_DATE));
 
         $qb->executeStatement();
-    }//end updateObjectOwnership()
 
+    }//end updateObjectOwnership()
 
 
     /**
@@ -4534,36 +4633,42 @@ class ObjectEntityMapper extends QBMapper
     public function setExpiryDate(int $retentionMs): int
     {
         try {
-// Convert milliseconds to seconds for DateTime calculation.
+            // Convert milliseconds to seconds for DateTime calculation.
             $retentionSeconds = intval($retentionMs / 1000);
 
-// Get the query builder.
+            // Get the query builder.
             $qb = $this->db->getQueryBuilder();
 
             // Update objects that have been deleted but don't have an expiry date set
-// We need to extract the timestamp from the JSON deleted field.
+            // We need to extract the timestamp from the JSON deleted field.
             $qb->update($this->getTableName())
-               ->set('expires', $qb->createFunction(
+                ->set(
+                       'expires',
+                       $qb->createFunction(
                    sprintf('DATE_ADD(JSON_UNQUOTE(JSON_EXTRACT(deleted, "$.deletedAt")), INTERVAL %d SECOND)', $retentionSeconds)
-               ))
-               ->where($qb->expr()->isNull('expires'))
-               ->andWhere($qb->expr()->isNotNull('deleted'))
-               ->andWhere($qb->expr()->neq('deleted', $qb->createNamedParameter('null')));
+                )
+                       )
+                ->where($qb->expr()->isNull('expires'))
+                ->andWhere($qb->expr()->isNotNull('deleted'))
+                ->andWhere($qb->expr()->neq('deleted', $qb->createNamedParameter('null')));
 
-// Execute the update and return number of affected rows.
+            // Execute the update and return number of affected rows.
             return $qb->executeStatement();
         } catch (\Exception $e) {
-// Log the error for debugging purposes.
-            \OC::$server->getLogger()->error('Failed to set expiry dates for objects: ' . $e->getMessage(), [
-                'app' => 'openregister',
-                'exception' => $e
-            ]);
+            // Log the error for debugging purposes.
+            \OC::$server->getLogger()->error(
+                    'Failed to set expiry dates for objects: '.$e->getMessage(),
+                    [
+                        'app'       => 'openregister',
+                        'exception' => $e,
+                    ]
+                    );
 
-// Re-throw the exception so the caller knows something went wrong.
+            // Re-throw the exception so the caller knows something went wrong.
             throw $e;
-        }
-    }//end setExpiryDate()
+        }//end try
 
+    }//end setExpiryDate()
 
 
     /**
@@ -4578,13 +4683,13 @@ class ObjectEntityMapper extends QBMapper
     {
         // **INDEX OPTIMIZATION**: If we have schema + register + published filters,
         // ensure they're applied in the optimal order for the composite index
-        $hasSchema = isset($filters['schema']) || isset($filters['schema_id']);
-        $hasRegister = isset($filters['registers']) || isset($filters['register']);
+        $hasSchema    = isset($filters['schema']) || isset($filters['schema_id']);
+        $hasRegister  = isset($filters['registers']) || isset($filters['register']);
         $hasPublished = ($filters['published'] ?? null) !== null;
 
         if (($hasSchema === true) && ($hasRegister === true) && ($hasPublished === true)) {
             // This will use the idx_schema_register_published composite index
-// The order of WHERE clauses can help the query planner.
+            // The order of WHERE clauses can help the query planner.
             $this->logger->debug('🚀 QUERY OPTIMIZATION: Using composite index for schema+register+published');
         }
 
@@ -4593,7 +4698,9 @@ class ObjectEntityMapper extends QBMapper
         if (($hasSchema === true) && ($hasOrganisation === true)) {
             $this->logger->debug('🚀 QUERY OPTIMIZATION: Using composite index for schema+organisation');
         }
-    }
+
+    }//end applyCompositeIndexOptimizations()
+
 
     /**
      * Optimize ORDER BY clauses to use indexes
@@ -4608,13 +4715,15 @@ class ObjectEntityMapper extends QBMapper
         $orderByParts = $qb->getQueryPart('orderBy');
 
         if (empty($orderByParts) === true) {
-// Use indexed columns for default ordering.
+            // Use indexed columns for default ordering.
             $qb->orderBy('updated', 'DESC')
-               ->addOrderBy('id', 'DESC');
+                ->addOrderBy('id', 'DESC');
 
             $this->logger->debug('🚀 QUERY OPTIMIZATION: Using indexed columns for ORDER BY');
         }
-    }
+
+    }//end optimizeOrderBy()
+
 
     /**
      * Add database-specific query hints for better performance
@@ -4630,13 +4739,13 @@ class ObjectEntityMapper extends QBMapper
         // **QUERY HINT 1**: For small result sets, suggest using indexes
         $limit = $qb->getMaxResults();
         if (($limit !== null) === true && $limit <= 50) {
-// Small result sets should benefit from index usage.
+            // Small result sets should benefit from index usage.
             $this->logger->debug('🚀 QUERY OPTIMIZATION: Small result set - favoring index usage');
         }
 
         // **QUERY HINT 2**: For RBAC-enabled queries, suggest specific execution plan
         if (($skipRbac === false)) {
-// RBAC queries should prioritize owner-based indexes.
+            // RBAC queries should prioritize owner-based indexes.
             $this->logger->debug('🚀 QUERY OPTIMIZATION: RBAC enabled - using owner-based indexes');
         }
 
@@ -4644,7 +4753,9 @@ class ObjectEntityMapper extends QBMapper
         if (($filters['object'] ?? null) !== null || $this->hasJsonFilters($filters) === true) {
             $this->logger->debug('🚀 QUERY OPTIMIZATION: JSON queries detected - using JSON indexes');
         }
-    }
+
+    }//end addQueryHints()
+
 
     /**
      * Check if filters contain JSON-based queries
@@ -4656,14 +4767,15 @@ class ObjectEntityMapper extends QBMapper
     private function hasJsonFilters(array $filters): bool
     {
         foreach ($filters as $key => $value) {
-// Check for dot-notation in filter keys (indicates JSON path queries).
+            // Check for dot-notation in filter keys (indicates JSON path queries).
             if (strpos($key, '.') !== false && $key !== 'schema.id') {
                 return true;
             }
         }
 
         return false;
-    }
+
+    }//end hasJsonFilters()
 
 
 }//end class

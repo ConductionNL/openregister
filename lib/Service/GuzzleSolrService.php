@@ -73,7 +73,10 @@ class GuzzleSolrService
      *            autoCommit: bool, commitWithin: int, enableLogging: bool,
      *            useCloud?: bool, collection?: string, configSet?: string, objectCollection?: string}
      */
-    /** @psalm-suppress InvalidPropertyAssignmentValue - solrConfig is initialized with compatible array structure */
+
+    /**
+     * @psalm-suppress InvalidPropertyAssignmentValue - solrConfig is initialized with compatible array structure
+     */
     private array $solrConfig = [];
 
     /**
@@ -199,7 +202,9 @@ class GuzzleSolrService
             $this->solrConfig = $this->settingsService->getSolrSettings();
         } catch (\Exception $e) {
             $this->logger->warning(message: 'Failed to load SOLR settings', context: ['error' => $e->getMessage()]);
-            /** @psalm-suppress InvalidPropertyAssignmentValue - ['enabled' => false] is compatible with solrConfig type */
+            /*
+             * @psalm-suppress InvalidPropertyAssignmentValue - ['enabled' => false] is compatible with solrConfig type
+             */
             $this->solrConfig = ['enabled' => false];
         }
 
@@ -245,7 +250,9 @@ class GuzzleSolrService
         // Currently using direct Guzzle client to bypass Nextcloud's 'allow_local_address' restrictions.
         // Future improvement: $this->httpClient = $clientService->newClient(['allow_local_address' => true]).
         // This is necessary for SOLR/Zookeeper connections in Kubernetes environments.
-        /** @psalm-suppress InvalidPropertyAssignmentValue - GuzzleClient used intentionally, will switch to IClient later */
+        /*
+         * @psalm-suppress InvalidPropertyAssignmentValue - GuzzleClient used intentionally, will switch to IClient later
+         */
         $this->httpClient = new GuzzleClient($clientConfig);
 
     }//end initializeHttpClient()
@@ -3657,7 +3664,9 @@ class GuzzleSolrService
                     ]
                     );
 
-            /** @var \Psr\Http\Message\ResponseInterface $response */
+            /*
+             * @var \Psr\Http\Message\ResponseInterface $response
+             */
             $statusCode   = $response->getStatusCode();
             $responseBody = $response->getBody()->getContents();
 
@@ -4582,7 +4591,9 @@ class GuzzleSolrService
                     ]
                     );
 
-            /** @var \Psr\Http\Message\ResponseInterface $response */
+            /*
+             * @var \Psr\Http\Message\ResponseInterface $response
+             */
             $responseData = json_decode($response->getBody()->getContents(), true);
 
             if ($response->getStatusCode() === 200 && (($responseData['responseHeader']['status'] ?? null) !== null) && $responseData['responseHeader']['status'] === 0) {
@@ -5614,7 +5625,6 @@ class GuzzleSolrService
     public function warmupIndex(array $schemas=[], int $maxObjects=0, string $mode='serial', bool $collectErrors=false, int $batchSize=1000, array $schemaIds=[]): array
     {
         // schemaIds is already an array with default value []
-
         if ($this->isAvailable() === false) {
             return [
                 'success'           => false,
@@ -6176,7 +6186,9 @@ class GuzzleSolrService
                                 ]
                                 );
 
-                        /** @var \Psr\Http\Message\ResponseInterface $response */
+                        /*
+                         * @var \Psr\Http\Message\ResponseInterface $response
+                         */
                         $responseData = json_decode($response->getBody()->getContents(), true);
 
                         if (($responseData['responseHeader']['status'] ?? null) !== null) {
@@ -6858,8 +6870,10 @@ class GuzzleSolrService
             }
 
             // Make the schema request.
-            $response   = $this->httpClient->get($schemaUrl, $requestOptions);
-            /** @var \Psr\Http\Message\ResponseInterface $response */
+            $response = $this->httpClient->get($schemaUrl, $requestOptions);
+            /*
+             * @var \Psr\Http\Message\ResponseInterface $response
+             */
             $schemaData = json_decode($response->getBody()->getContents(), true);
 
             if (($schemaData === null || $schemaData === false) === true || isset($schemaData['schema']) === false) {
@@ -7328,7 +7342,9 @@ class GuzzleSolrService
                     ]
                     );
 
-            /** @var \Psr\Http\Message\ResponseInterface $response */
+            /*
+             * @var \Psr\Http\Message\ResponseInterface $response
+             */
             $schemaData = json_decode($response->getBody()->getContents(), true);
 
             if (isset($schemaData['fields']) === false || is_array($schemaData['fields']) === false) {
@@ -7454,7 +7470,9 @@ class GuzzleSolrService
                     ]
                     );
 
-            /** @var \Psr\Http\Message\ResponseInterface $response */
+            /*
+             * @var \Psr\Http\Message\ResponseInterface $response
+             */
             $schemaData = json_decode($response->getBody()->getContents(), true);
 
             if (isset($schemaData['fields']) === false || is_array($schemaData['fields']) === false) {
@@ -7654,7 +7672,9 @@ class GuzzleSolrService
                     ]
                     );
 
-            /** @var \Psr\Http\Message\ResponseInterface $response */
+            /*
+             * @var \Psr\Http\Message\ResponseInterface $response
+             */
             $responseBody = $response->getBody()->getContents();
             $data         = json_decode($responseBody, true);
 
@@ -7926,7 +7946,9 @@ class GuzzleSolrService
                     ]
                     );
 
-            /** @var \Psr\Http\Message\ResponseInterface $response */
+            /*
+             * @var \Psr\Http\Message\ResponseInterface $response
+             */
             $responseBody = $response->getBody()->getContents();
             $data         = json_decode($responseBody, true);
 
@@ -8390,9 +8412,9 @@ class GuzzleSolrService
     /**
      * Apply custom facet configuration to facet data
      *
-     * @param  array  $facetData Processed facet data
-     * @param  string $fieldName Field name
-     * @return array Facet data with custom configuration applied
+     * @param          array  $facetData Processed facet data
+     * @param          string $fieldName Field name
+     * @return         array Facet data with custom configuration applied
      * @psalm-suppress UnusedParam - Parameters kept for future use
      */
     private function applyFacetConfiguration(array $facetData, string $fieldName): array
@@ -8479,8 +8501,8 @@ class GuzzleSolrService
     /**
      * Sort facets according to custom configuration
      *
-     * @param  array $facets Facet data to sort
-     * @return array Sorted facet data
+     * @param          array $facets Facet data to sort
+     * @return         array Sorted facet data
      * @psalm-suppress UnusedParam - Parameters kept for future use
      */
     private function sortFacetsWithConfiguration(array $facets): array
@@ -9953,8 +9975,10 @@ class GuzzleSolrService
             }
 
             $response = $this->httpClient->get($queryUrl, $requestOptions);
-            /** @var \Psr\Http\Message\ResponseInterface $response */
-            $result   = json_decode($response->getBody()->getContents(), true);
+            /*
+             * @var \Psr\Http\Message\ResponseInterface $response
+             */
+            $result = json_decode($response->getBody()->getContents(), true);
 
             $totalChunks = $result['response']['numFound'] ?? 0;
 
@@ -9969,8 +9993,10 @@ class GuzzleSolrService
             $requestOptions['query'] = $uniqueFilesQuery;
 
             $response2 = $this->httpClient->get($queryUrl, $requestOptions);
-            /** @var \Psr\Http\Message\ResponseInterface $response2 */
-            $result2   = json_decode($response2->getBody()->getContents(), true);
+            /*
+             * @var \Psr\Http\Message\ResponseInterface $response2
+             */
+            $result2 = json_decode($response2->getBody()->getContents(), true);
 
             $uniqueFiles = count($result2['facet_counts']['facet_fields']['file_id'] ?? []) / 2;
 

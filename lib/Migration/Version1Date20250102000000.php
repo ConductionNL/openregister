@@ -92,14 +92,14 @@ class Version1Date20250102000000 extends SimpleMigrationStep
             // Add groups field (JSON array of Nextcloud group IDs).
             if ($table->hasColumn('groups') === false) {
                 $table->addColumn(
-                    'groups',
-                    Types::JSON,
-                    [
-                        'notnull' => false,
-                        'default' => '[]',
-                        'comment' => 'Array of Nextcloud group IDs that have access to this organisation',
-                    ]
-                );
+                        'groups',
+                        Types::JSON,
+                        [
+                            'notnull' => false,
+                            'default' => '[]',
+                            'comment' => 'Array of Nextcloud group IDs that have access to this organisation',
+                        ]
+                        );
                 $output->info(message: 'Added groups column to organisations table');
             }
         }

@@ -629,7 +629,9 @@ class ObjectsController extends Controller
             /*
              * @var array{name: array<int, string>|string, type: array<int, string>|string, tmp_name: array<int, string>|string, error: array<int, int>|int, size: array<int, int>|int} $fileData
              */
-            /** @var string|array<int, string> $nameValue */
+            /*
+             * @var string|array<int, string> $nameValue
+             */
             $nameValue = $fileData['name'];
             if (is_array($nameValue) === true) {
                 // Handle array uploads: images[] becomes images with array values.
@@ -638,20 +640,28 @@ class ObjectsController extends Controller
                 $nameArray = $nameValue;
                 // Extract values - in $_FILES structure, when name is array, others are arrays too.
                 // Use mixed type and then check to help Psalm understand.
-                /** @var mixed $typeRaw */
+                /*
+                 * @var mixed $typeRaw
+                 */
                 $typeRaw = $fileData['type'];
-                /** @var mixed $tmpNameRaw */
+                /*
+                 * @var mixed $tmpNameRaw
+                 */
                 $tmpNameRaw = $fileData['tmp_name'];
-                /** @var mixed $errorRaw */
+                /*
+                 * @var mixed $errorRaw
+                 */
                 $errorRaw = $fileData['error'];
-                /** @var mixed $sizeRaw */
+                /*
+                 * @var mixed $sizeRaw
+                 */
                 $sizeRaw = $fileData['size'];
                 // Convert to arrays, handling both array and scalar cases for safety.
                 $typeArray    = is_array($typeRaw) ? $typeRaw : [];
                 $tmpNameArray = is_array($tmpNameRaw) ? $tmpNameRaw : [];
                 $errorArray   = is_array($errorRaw) ? $errorRaw : [];
                 $sizeArray    = is_array($sizeRaw) ? $sizeRaw : [];
-                $fileCount = count($nameArray);
+                $fileCount    = count($nameArray);
                 for ($i = 0; $i < $fileCount; $i++) {
                     // Use indexed key to preserve all files: images[0], images[1], images[2].
                     $uploadedFiles[$fieldName.'['.$i.']'] = [
@@ -763,7 +773,9 @@ class ObjectsController extends Controller
             /*
              * @var array{name: array<int, string>|string, type: array<int, string>|string, tmp_name: array<int, string>|string, error: array<int, int>|int, size: array<int, int>|int} $fileData
              */
-            /** @var string|array<int, string> $nameValue */
+            /*
+             * @var string|array<int, string> $nameValue
+             */
             $nameValue = $fileData['name'];
             if (is_array($nameValue) === true) {
                 // Handle array uploads: images[] becomes images with array values.
@@ -772,20 +784,28 @@ class ObjectsController extends Controller
                 $nameArray = $nameValue;
                 // Extract values - in $_FILES structure, when name is array, others are arrays too.
                 // Use mixed type and then check to help Psalm understand.
-                /** @var mixed $typeRaw */
+                /*
+                 * @var mixed $typeRaw
+                 */
                 $typeRaw = $fileData['type'];
-                /** @var mixed $tmpNameRaw */
+                /*
+                 * @var mixed $tmpNameRaw
+                 */
                 $tmpNameRaw = $fileData['tmp_name'];
-                /** @var mixed $errorRaw */
+                /*
+                 * @var mixed $errorRaw
+                 */
                 $errorRaw = $fileData['error'];
-                /** @var mixed $sizeRaw */
+                /*
+                 * @var mixed $sizeRaw
+                 */
                 $sizeRaw = $fileData['size'];
                 // Convert to arrays, handling both array and scalar cases for safety.
                 $typeArray    = is_array($typeRaw) ? $typeRaw : [];
                 $tmpNameArray = is_array($tmpNameRaw) ? $tmpNameRaw : [];
                 $errorArray   = is_array($errorRaw) ? $errorRaw : [];
                 $sizeArray    = is_array($sizeRaw) ? $sizeRaw : [];
-                $fileCount = count($nameArray);
+                $fileCount    = count($nameArray);
                 for ($i = 0; $i < $fileCount; $i++) {
                     // Use indexed key to preserve all files: images[0], images[1], images[2].
                     $uploadedFiles[$fieldName.'['.$i.']'] = [
@@ -1079,12 +1099,12 @@ class ObjectsController extends Controller
         // Return empty paginated response.
         return new JSONResponse(
                 data: $this->paginate(
-                results: [],
-                total: 0,
-                limit: $limit,
-                offset: $offset,
-                page: $page
-                )
+                        results: [],
+                        total: 0,
+                        limit: $limit,
+                        offset: $offset,
+                        page: $page
+                        )
         );
 
     }//end contracts()
@@ -1374,9 +1394,9 @@ class ObjectsController extends Controller
                 );
 
                 return new DataDownloadResponse(
-                    $csv,
-                    $filename,
-                    'text/csv'
+                            $csv,
+                            $filename,
+                            'text/csv'
                 );
 
             case 'excel':
@@ -1400,9 +1420,9 @@ class ObjectsController extends Controller
                 $content = ob_get_clean();
 
                 return new DataDownloadResponse(
-                    $content,
-                    $filename,
-                    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                            $content,
+                            $filename,
+                            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
                 );
         }//end switch
 
@@ -1802,9 +1822,9 @@ class ObjectsController extends Controller
 
             // Return the ZIP file as a download response.
             return new DataDownloadResponse(
-                $zipContent,
-                $zipInfo['filename'],
-                $zipInfo['mimeType']
+                    $zipContent,
+                    $zipInfo['filename'],
+                    $zipInfo['mimeType']
             );
         } catch (DoesNotExistException $exception) {
             return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);

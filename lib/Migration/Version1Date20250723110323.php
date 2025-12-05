@@ -91,13 +91,13 @@ class Version1Date20250723110323 extends SimpleMigrationStep
             // Add is_default field (boolean flag for default organisation).
             if ($table->hasColumn('is_default') === false) {
                 $table->addColumn(
-                    'is_default',
-                    Types::BOOLEAN,
-                    [
-                        'notnull' => false,
-                        'default' => false,
-                    ]
-                );
+                        'is_default',
+                        Types::BOOLEAN,
+                        [
+                            'notnull' => false,
+                            'default' => false,
+                        ]
+                        );
                 $output->info(message: 'Added is_default column to organisations table');
             }
         }

@@ -220,7 +220,7 @@ class Organisation extends Entity implements JsonSerializable
     /**
      * User count for this organisation (computed property, not stored in database)
      *
-     * @var int|null Number of users in this organisation
+     * @var integer|null Number of users in this organisation
      */
     public ?int $userCount = null;
 

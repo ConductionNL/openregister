@@ -293,7 +293,7 @@ class MySQLJsonService implements IDatabaseJsonService
                     $builder = $this->jsonFilterArray(builder: $builder, filter: $filter, values: $value);
                     continue;
                 }
-                
+
                 // Handle array of values with IN clause and contains check.
                 $builder->createNamedParameter(
                 value: $value,

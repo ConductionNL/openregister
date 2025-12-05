@@ -139,7 +139,7 @@ class DashboardService
      *     files: array{total: int, size: int},
      *     webhookLogs: array{total: int, size: int}
      * }
-     * @psalm-return array{
+     * @psalm-return   array{
      *     objects: array{total: int, size: int, invalid: int, deleted: int, locked: int, published: int},
      *     logs: array{total: int, size: int},
      *     files: array{total: int, size: int},

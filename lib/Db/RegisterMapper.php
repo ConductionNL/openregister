@@ -92,7 +92,6 @@ class RegisterMapper extends QBMapper
      */
     private readonly ObjectEntityMapper $objectEntityMapper;
 
-
     /**
      * Organisation service for multi-tenancy (from trait)
      *
@@ -104,14 +103,14 @@ class RegisterMapper extends QBMapper
     /**
      * Constructor for RegisterMapper
      *
-     * @param IDBConnection        $db                  The database connection
-     * @param SchemaMapper         $schemaMapper        The schema mapper
-     * @param IEventDispatcher     $eventDispatcher     The event dispatcher
-     * @param ObjectEntityMapper   $objectEntityMapper  The object entity mapper
-     * @param OrganisationService  $organisationService The organisation service (for multi-tenancy)
-     * @param IUserSession         $userSession         The user session (for multi-tenancy)
-     * @param IGroupManager        $groupManager        The group manager (for RBAC)
-     * @param IAppConfig           $appConfig           App configuration for multitenancy settings
+     * @param IDBConnection       $db                  The database connection
+     * @param SchemaMapper        $schemaMapper        The schema mapper
+     * @param IEventDispatcher    $eventDispatcher     The event dispatcher
+     * @param ObjectEntityMapper  $objectEntityMapper  The object entity mapper
+     * @param OrganisationService $organisationService The organisation service (for multi-tenancy)
+     * @param IUserSession        $userSession         The user session (for multi-tenancy)
+     * @param IGroupManager       $groupManager        The group manager (for RBAC)
+     * @param IAppConfig          $appConfig           App configuration for multitenancy settings
      *
      * @return void
      */
@@ -129,7 +128,7 @@ class RegisterMapper extends QBMapper
         $this->schemaMapper       = $schemaMapper;
         $this->eventDispatcher    = $eventDispatcher;
         $this->objectEntityMapper = $objectEntityMapper;
-        
+
         // Initialize multi-tenancy trait dependencies
         $this->organisationService = $organisationService;
         $this->userSession         = $userSession;
@@ -154,22 +153,25 @@ class RegisterMapper extends QBMapper
      *
      * @throws \Exception If RBAC permission check fails
      */
-    public function find(string | int $id, ?array $extend=[], ?bool $published = null, bool $rbac = true, bool $multi = true): Register
+    public function find(string | int $id, ?array $extend=[], ?bool $published=null, bool $rbac=true, bool $multi=true): Register
     {
         // Log search attempt for debugging
         if (isset($this->logger) === true) {
-            $this->logger->info('[RegisterMapper] Searching for register', [
-                'identifier' => $id,
-                'rbac' => $rbac,
-                'multi' => $multi,
-                'published' => $published,
-            ]);
+            $this->logger->info(
+                    '[RegisterMapper] Searching for register',
+                    [
+                        'identifier' => $id,
+                        'rbac'       => $rbac,
+                        'multi'      => $multi,
+                        'published'  => $published,
+                    ]
+                    );
         }
 
         // Verify RBAC permission to read registers if RBAC is enabled
         if ($rbac === true) {
             // @todo: remove this hotfix for solr - uncomment when ready
-            //$this->verifyRbacPermission('read', 'register');
+            // $this->verifyRbacPermission('read', 'register');
         }
 
         $qb = $this->db->getQueryBuilder();
@@ -184,63 +186,73 @@ class RegisterMapper extends QBMapper
             );
 
         // Check if register exists before applying filters (for debugging)
-        $qbBeforeFilter = clone $qb;
+        $qbBeforeFilter     = clone $qb;
         $existsBeforeFilter = false;
         try {
-            $testResult = $this->findEntity(query: $qbBeforeFilter);
+            $testResult         = $this->findEntity(query: $qbBeforeFilter);
             $existsBeforeFilter = true;
             if (isset($this->logger) === true) {
-                $this->logger->debug('[RegisterMapper] Register exists before filters', [
-                    'identifier' => $id,
-                    'registerId' => $testResult->getId(),
-                    'organisation' => $testResult->getOrganisation(),
-                    'published' => $testResult->getPublished(),
-                    'depublished' => $testResult->getDepublished(),
-                ]);
+                $this->logger->debug(
+                        '[RegisterMapper] Register exists before filters',
+                        [
+                            'identifier'   => $id,
+                            'registerId'   => $testResult->getId(),
+                            'organisation' => $testResult->getOrganisation(),
+                            'published'    => $testResult->getPublished(),
+                            'depublished'  => $testResult->getDepublished(),
+                        ]
+                        );
             }
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             if (isset($this->logger) === true) {
-                $this->logger->warning('[RegisterMapper] Register does not exist in database', [
-                    'identifier' => $id,
-                ]);
+                $this->logger->warning(
+                        '[RegisterMapper] Register does not exist in database',
+                        [
+                            'identifier' => $id,
+                        ]
+                        );
             }
-        }
-        
+        }//end try
+
         // Apply organisation filter with published entity bypass support
         // Published registers can bypass multi-tenancy restrictions if configured
         // applyOrganisationFilter handles $multiTenancyEnabled=false internally
         // Use $published parameter if provided, otherwise check config
         $enablePublished = $published !== null ? $published : $this->shouldPublishedObjectsBypassMultiTenancy();
-        
+
         // Log multitenancy configuration
         if (isset($this->logger) === true) {
             $activeOrgUuids = $this->getActiveOrganisationUuids();
-            $isAdmin = false;
+            $isAdmin        = false;
             $adminOverrideEnabled = false;
             $user = $this->userSession->getUser();
             if ($user !== null && isset($this->groupManager) === true) {
                 $userGroups = $this->groupManager->getUserGroupIds($user);
-                $isAdmin = in_array('admin', $userGroups);
+                $isAdmin    = in_array('admin', $userGroups);
             }
+
             if ($isAdmin === true && isset($this->appConfig) === true) {
                 $multitenancyConfig = $this->appConfig->getValueString('openregister', 'multitenancy', '');
                 if (empty($multitenancyConfig) === false) {
-                    $multitenancyData = json_decode($multitenancyConfig, true);
+                    $multitenancyData     = json_decode($multitenancyConfig, true);
                     $adminOverrideEnabled = $multitenancyData['adminOverride'] ?? false;
                 }
             }
-            
-            $this->logger->info('[RegisterMapper] Applying multitenancy filters', [
-                'identifier' => $id,
-                'multiEnabled' => $multi,
-                'enablePublished' => $enablePublished,
-                'activeOrganisations' => $activeOrgUuids,
-                'isAdmin' => $isAdmin,
-                'adminOverrideEnabled' => $adminOverrideEnabled,
-                'existsBeforeFilter' => $existsBeforeFilter,
-            ]);
-        }
-        
+
+            $this->logger->info(
+                    '[RegisterMapper] Applying multitenancy filters',
+                    [
+                        'identifier'           => $id,
+                        'multiEnabled'         => $multi,
+                        'enablePublished'      => $enablePublished,
+                        'activeOrganisations'  => $activeOrgUuids,
+                        'isAdmin'              => $isAdmin,
+                        'adminOverrideEnabled' => $adminOverrideEnabled,
+                        'existsBeforeFilter'   => $existsBeforeFilter,
+                    ]
+                    );
+        }//end if
+
         $this->applyOrganisationFilter(
             qb: $qb,
             columnName: 'organisation',
@@ -249,22 +261,26 @@ class RegisterMapper extends QBMapper
             enablePublished: $enablePublished,
             multiTenancyEnabled: $multi
         );
-        
+
         // Just return the entity; do not attach stats here
         try {
             return $this->findEntity(query: $qb);
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             // Log detailed error information
             if (isset($this->logger) === true) {
-                $this->logger->error('[RegisterMapper] Register not found after filters', [
-                    'identifier' => $id,
-                    'existsBeforeFilter' => $existsBeforeFilter,
-                    'multiEnabled' => $multi,
-                    'enablePublished' => $enablePublished,
-                    'rbacEnabled' => $rbac,
-                    'error' => $e->getMessage(),
-                ]);
+                $this->logger->error(
+                        '[RegisterMapper] Register not found after filters',
+                        [
+                            'identifier'         => $id,
+                            'existsBeforeFilter' => $existsBeforeFilter,
+                            'multiEnabled'       => $multi,
+                            'enablePublished'    => $enablePublished,
+                            'rbacEnabled'        => $rbac,
+                            'error'              => $e->getMessage(),
+                        ]
+                        );
             }
+
             throw $e;
         }
 
@@ -274,8 +290,8 @@ class RegisterMapper extends QBMapper
     /**
      * Finds multiple registers by id
      *
-     * @param array $ids  The ids of the registers
-     * @param bool  $rbac Whether to apply RBAC permission checks (default: true)
+     * @param array $ids   The ids of the registers
+     * @param bool  $rbac  Whether to apply RBAC permission checks (default: true)
      * @param bool  $multi Whether to apply multi-tenancy filtering (default: true)
      *
      * @throws \OCP\AppFramework\Db\DoesNotExistException If a register does not exist
@@ -286,7 +302,7 @@ class RegisterMapper extends QBMapper
      *
      * @return array The registers
      */
-    public function findMultiple(array $ids, ?bool $published = null, bool $rbac = true, bool $multi = true): array
+    public function findMultiple(array $ids, ?bool $published=null, bool $rbac=true, bool $multi=true): array
     {
         $result = [];
         foreach ($ids as $id) {
@@ -347,9 +363,9 @@ class RegisterMapper extends QBMapper
      * @param array|null $searchConditions Array of search conditions
      * @param array|null $searchParams     Array of search parameters
      * @param array      $extend           Optional array of extensions (e.g., ['@self.stats'])
-     * @param bool|null  $published       Whether to enable published bypass (default: null = check config)
-     * @param bool       $rbac            Whether to apply RBAC permission checks (default: true)
-     * @param bool       $multi           Whether to apply multi-tenancy filtering (default: true)
+     * @param bool|null  $published        Whether to enable published bypass (default: null = check config)
+     * @param bool       $rbac             Whether to apply RBAC permission checks (default: true)
+     * @param bool       $multi            Whether to apply multi-tenancy filtering (default: true)
      *
      * @return array Array of found registers, multi: possibly with stats
      */
@@ -360,14 +376,14 @@ class RegisterMapper extends QBMapper
         ?array $searchConditions=[],
         ?array $searchParams=[],
         ?array $extend=[],
-        ?bool $published = null,
-        bool $rbac = true,
-        bool $multi = true
+        ?bool $published=null,
+        bool $rbac=true,
+        bool $multi=true
     ): array {
         // Verify RBAC permission to read registers if RBAC is enabled
         if ($rbac === true) {
             // @todo: remove this hotfix for solr - uncomment when ready
-            //$this->verifyRbacPermission('read', 'register');
+            // $this->verifyRbacPermission('read', 'register');
         }
 
         $qb = $this->db->getQueryBuilder();
@@ -375,7 +391,7 @@ class RegisterMapper extends QBMapper
             ->from('openregister_registers')
             ->setMaxResults($limit)
             ->setFirstResult($offset);
-        
+
         foreach ($filters as $filter => $value) {
             if ($value === 'IS NOT NULL') {
                 $qb->andWhere($qb->expr()->isNotNull($filter));
@@ -422,7 +438,7 @@ class RegisterMapper extends QBMapper
      *
      * @return Entity The inserted entity
      *
-     * @throws \Exception If RBAC permission check fails
+     * @throws         \Exception If RBAC permission check fails
      * @psalm-suppress LessSpecificImplementedReturnType - Register is more specific than Entity
      */
     public function insert(Entity $entity): Entity
@@ -431,7 +447,7 @@ class RegisterMapper extends QBMapper
         // $this->verifyRbacPermission('create', 'register');
         // Auto-set organisation from active session.
         $this->setOrganisationOnCreate($entity);
-        
+
         // Auto-set owner from current user session
         $this->setOwnerOnCreate($entity);
 
@@ -621,14 +637,14 @@ class RegisterMapper extends QBMapper
     /**
      * Get all schemas associated with a register
      *
-     * @param int      $registerId The ID of the register
+     * @param int       $registerId The ID of the register
      * @param bool|null $published  Whether to enable published bypass (default: null = check config)
-     * @param bool     $rbac       Whether to apply RBAC permission checks (default: true)
-     * @param bool     $multi      Whether to apply multi-tenancy filtering (default: true)
+     * @param bool      $rbac       Whether to apply RBAC permission checks (default: true)
+     * @param bool      $multi      Whether to apply multi-tenancy filtering (default: true)
      *
      * @return array Array of schemas
      */
-    public function getSchemasByRegisterId(int $registerId, ?bool $published = null, bool $rbac = true, bool $multi = true): array
+    public function getSchemasByRegisterId(int $registerId, ?bool $published=null, bool $rbac=true, bool $multi=true): array
     {
         $register  = $this->find($registerId, [], $published, $rbac, $multi);
         $schemaIds = $register->getSchemas();

@@ -297,7 +297,7 @@ class SaveObjects
         if ($isMixedSchemaOperation === false && $schema !== null) {
             // FAST PATH: Single-schema operation - avoid complex mixed-schema logic.
             // NO ERROR SUPPRESSION: Let real preparation errors surface immediately.
-            [$processedObjects, $globalSchemaCache, $preparationInvalidObjects] = $this->prepareSingleSchemaObjectsOptimized(
+        [$processedObjects, $globalSchemaCache, $preparationInvalidObjects] = $this->prepareSingleSchemaObjectsOptimized(
                 objects: $objects,
                 register: $register,
                 schema: $schema
@@ -2162,10 +2162,10 @@ class SaveObjects
                     foreach ($value as $index => $item) {
                         if (is_array($item) === true) {
                             $itemRelations = $this->scanForRelations(
-                                data: $item,
-                                prefix: $currentPath.'.'.$index,
-                                schema: $schema
-                            );
+                                    data: $item,
+                                    prefix: $currentPath.'.'.$index,
+                                    schema: $schema
+                                    );
                             $relations     = array_merge($relations, $itemRelations);
                         } else if (is_string($item) === true && empty($item) === false) {
                             // String values in object arrays are always treated as relations.
@@ -2178,10 +2178,10 @@ class SaveObjects
                         if (is_array($item) === true) {
                             // Recursively scan nested arrays/objects.
                             $itemRelations = $this->scanForRelations(
-                                data: $item,
-                                prefix: $currentPath.'.'.$index,
-                                schema: $schema
-                            );
+                                    data: $item,
+                                    prefix: $currentPath.'.'.$index,
+                                    schema: $schema
+                                    );
                             $relations = array_merge($relations, $itemRelations);
                         } else if (is_string($item) === true && empty($item) === false && trim($item) !== '') {
                             // Check if the string looks like a reference.
