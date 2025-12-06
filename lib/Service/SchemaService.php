@@ -110,7 +110,7 @@ class SchemaService
         }
 
         // Analyze all object data.
-        $propertyAnalysis = $this->analyzeObjectProperties($objects, $schema->getProperties());
+        $propertyAnalysis = $this->analyzeObjectProperties(objects: $objects, _existingProperties: $schema->getProperties());
 
         // Generate suggestions for both new and existing properties.
         $newPropertySuggestions      = $this->generateSuggestions(
@@ -201,7 +201,7 @@ class SchemaService
                 }
 
                 // Merge type analysis.
-                $this->mergePropertyAnalysis($discoveredProperties[$propertyName], $propertyAnalysis);
+                $this->mergePropertyAnalysis(existingAnalysis: $discoveredProperties[$propertyName], newAnalysis: $propertyAnalysis);
 
                 // Track total usage for percentage calculation.
                 $discoveredProperties[$propertyName]['usage_count']++;
@@ -504,7 +504,7 @@ class SchemaService
             if ($existingAnalysis['object_structure'] === null) {
                 $existingAnalysis['object_structure'] = $newAnalysis['object_structure'];
             } else {
-                $this->mergeObjectStructures($existingAnalysis['object_structure'], $newAnalysis['object_structure']);
+                $this->mergeObjectStructures(existingStructure: $existingAnalysis['object_structure'], newStructure: $newAnalysis['object_structure']);
             }
         }
 
@@ -820,7 +820,7 @@ class SchemaService
 
             $analysis      = $discoveredProperties[$propertyName];
             $currentConfig = $propertyConfig;
-            $improvement   = $this->comparePropertyWithAnalysis($propertyName, $currentConfig, $analysis);
+            $improvement   = $this->comparePropertyWithAnalysis(propertyName: $propertyName, currentConfig: $currentConfig, analysis: $analysis);
 
             if (empty($improvement['issues']) === false) {
                 $usagePercentage = $analysis['usage_percentage'] ?? 0;

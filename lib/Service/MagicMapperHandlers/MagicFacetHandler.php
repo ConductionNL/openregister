@@ -85,18 +85,18 @@ class MagicFacetHandler
         // Metadata columns are prefixed with _.
         switch ($type) {
             case 'terms':
-                return $this->getTermsFacet($columnName, $baseQuery, $tableName);
+                return $this->getTermsFacet(columnName: $columnName, baseQuery: $baseQuery, tableName: $tableName);
 
             case 'date_histogram':
                 $interval = $config['interval'] ?? 'month';
-                return $this->getDateHistogramFacet($columnName, $interval, $baseQuery, $tableName);
+                return $this->getDateHistogramFacet(columnName: $columnName, interval: $interval, baseQuery: $baseQuery, tableName: $tableName);
 
             case 'range':
                 $ranges = $config['ranges'] ?? [];
-                return $this->getRangeFacet($columnName, $ranges, $baseQuery, $tableName);
+                return $this->getRangeFacet(columnName: $columnName, ranges: $ranges, baseQuery: $baseQuery, tableName: $tableName);
 
             default:
-                return $this->getTermsFacet($columnName, $baseQuery, $tableName);
+                return $this->getTermsFacet(columnName: $columnName, baseQuery: $baseQuery, tableName: $tableName);
         }
 
     }//end getMetadataFieldFacet()
@@ -126,18 +126,18 @@ class MagicFacetHandler
 
         switch ($type) {
             case 'terms':
-                return $this->getTermsFacet($columnName, $baseQuery, $tableName);
+                return $this->getTermsFacet(columnName: $columnName, baseQuery: $baseQuery, tableName: $tableName);
 
             case 'date_histogram':
                 $interval = $config['interval'] ?? 'month';
-                return $this->getDateHistogramFacet($columnName, $interval, $baseQuery, $tableName);
+                return $this->getDateHistogramFacet(columnName: $columnName, interval: $interval, baseQuery: $baseQuery, tableName: $tableName);
 
             case 'range':
                 $ranges = $config['ranges'] ?? [];
-                return $this->getRangeFacet($columnName, $ranges, $baseQuery, $tableName);
+                return $this->getRangeFacet(columnName: $columnName, ranges: $ranges, baseQuery: $baseQuery, tableName: $tableName);
 
             default:
-                return $this->getTermsFacet($columnName, $baseQuery, $tableName);
+                return $this->getTermsFacet(columnName: $columnName, baseQuery: $baseQuery, tableName: $tableName);
         }
 
     }//end getSchemaPropertyFacet()
@@ -167,7 +167,7 @@ class MagicFacetHandler
             ->setMaxResults($limit);
 
         // Apply base query filters.
-        $this->applyBaseFilters($qb, $baseQuery);
+        $this->applyBaseFilters(qb: $qb, baseQuery: $baseQuery);
 
         try {
             $result = $qb->executeQuery();
@@ -244,7 +244,7 @@ class MagicFacetHandler
             ->orderBy('period', 'ASC');
 
         // Apply base query filters.
-        $this->applyBaseFilters($qb, $baseQuery);
+        $this->applyBaseFilters(qb: $qb, baseQuery: $baseQuery);
 
         try {
             $result = $qb->executeQuery();
@@ -315,7 +315,7 @@ class MagicFacetHandler
     {
         if ($ranges === []) {
             // Auto-generate ranges based on data distribution.
-            $ranges = $this->generateAutoRanges($columnName, $tableName);
+            $ranges = $this->generateAutoRanges(columnName: $columnName, tableName: $tableName);
         }
 
         $buckets = [];

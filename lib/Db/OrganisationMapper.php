@@ -750,7 +750,7 @@ class OrganisationMapper extends QBMapper
         // Calculate maximum depth after assignment.
         $maxDepthAbove = count($parentChain) + 1;
         // Parent chain + new parent.
-        $maxDepthBelow = $this->getMaxDepthInChain($childrenChain, $organisationUuid);
+        $maxDepthBelow = $this->getMaxDepthInChain(childrenUuids: $childrenChain, rootUuid: $organisationUuid);
         $totalDepth    = $maxDepthAbove + $maxDepthBelow;
 
         if ($totalDepth > 10) {

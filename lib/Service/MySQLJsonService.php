@@ -263,7 +263,7 @@ class MySQLJsonService implements IDatabaseJsonService
         foreach ($filters as $filter => $value) {
             // Handle special @self.deleted filters.
             if (str_starts_with($filter, '@self.deleted') === true) {
-                $builder = $this->handleSelfDeletedFilter($builder, $filter, $value);
+                $builder = $this->handleSelfDeletedFilter(builder: $builder, filter: $filter, value: $value);
                 continue;
             }
 
@@ -301,7 +301,7 @@ class MySQLJsonService implements IDatabaseJsonService
                 placeHolder: ":value$filter"
                 );
                 $builder->andWhere(
-                "(json_unquote(json_extract(object, :path$filter)) IN (:value$filter))".$this->getMultipleContains($value, $filter, $builder)
+                "(json_unquote(json_extract(object, :path$filter)) IN (:value$filter))".$this->getMultipleContains(values: $value, filter: $filter, builder: $builder)
                 );
                 continue;
             }
@@ -486,8 +486,8 @@ class MySQLJsonService implements IDatabaseJsonService
                 ->groupBy('_id');
 
             // Apply filters and search.
-            $builder = $this->filterJson($builder, $filters);
-            $builder = $this->searchJson($builder, $search);
+            $builder = $this->filterJson(builder: $builder, filters: $filters);
+            $builder = $this->searchJson(builder: $builder, search: $search);
 
             // Execute query and store results.
             $result         = $builder->executeQuery();
