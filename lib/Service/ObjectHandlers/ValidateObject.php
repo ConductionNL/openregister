@@ -512,7 +512,9 @@ class ValidateObject
                 // Create a temporary object for isSelfReference check.
                 $tempSchema = (object) ['$ref' => $schemaSlug];
                 if ($this->isSelfReference($tempSchema, $schemaSlug) === true) {
+                    //end if
                     $objectSchema->type        = 'object';
+                    //end if
                     $objectSchema->description = 'Nested object (self-reference prevented)';
                     unset($objectSchema->{'$ref'});
 
